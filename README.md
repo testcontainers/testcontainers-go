@@ -14,8 +14,11 @@ This is the API I have defined:
 package main
 
 import (
-    "testing",
-    "github.com/gianarb/testcontainer"
+	"context"
+	"fmt"
+	testcontainer "github.com/gianarb/testcontainer-go"
+	"net/http"
+	"testing"
 )
 
 func TestNginxLatestReturn(t *testing.T) {
