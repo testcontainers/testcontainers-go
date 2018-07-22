@@ -3,6 +3,7 @@ package testcontainer
 import (
 	"context"
 	"strings"
+	"testing"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -26,10 +27,10 @@ type Container struct {
 }
 
 // Terminate is used to kill the container. It is usally triggered by as defer function.
-func (c *Container) Terminate(ctx context.Context) error {
-	var err error
+func (c *Container) Terminate(ctx context.Context, t *testing.T) error {
 	cli, err := client.NewEnvClient()
 	if err != nil {
+		t.Error(err)
 		return err
 	}
 	return cli.ContainerRemove(ctx, c.ID, types.ContainerRemoveOptions{
