@@ -17,7 +17,7 @@ func TestContainerCreation(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer nginxC.Terminate(ctx)
+	defer nginxC.Terminate(ctx, t)
 	ip, err := nginxC.GetIPAddress(ctx)
 	if err != nil {
 		t.Error(err)

@@ -31,7 +31,7 @@ func TestNginxLatestReturn(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer nginxC.Terminate(ctx)
+	defer nginxC.Terminate(ctx, t)
 	ip, err := nginxC.GetIPAddress(ctx)
 	if err != nil {
 		t.Error(err)
@@ -46,39 +46,43 @@ This is a simple example, you can create one container in my case using the
 `nginx` image. You can get its IP `ip, err := nginxC.GetIPAddress(ctx)` and you
 can use it to make a GET: `resp, err := http.Get(fmt.Sprintf("http://%s", ip))`
 
-To clean your environment you can defer the container termination `defer nginxC.Terminate(ctx)`.
+To clean your environment you can defer the container termination `defer
+nginxC.Terminate(ctx, t)`. `t` is `*testing.T` and it is used to notify is the
+`defer` failed marking the test as failed.
 
 You can build more complex flow using envvar to configure the containers. Let's
 suppose you are testing an application that requites redis:
 
 ```go
-ctx := context.Background()
-redisC, err := testcontainer.RunContainer(ctx, "redis", testcontainer.RequestContainer{
-    ExportedPort: []string{
-        "6379/tpc",
-    },
-})
-if err != nil {
-    t.Error(err)
-}
-defer redisC.Terminate(ctx)
-redisIP, err := redisC.GetIPAddress(ctx)
-if err != nil {
-    t.Error(err)
-}
+func TestRedisPing(t testing.T) {
+    ctx := context.Background()
+    redisC, err := testcontainer.RunContainer(ctx, "redis", testcontainer.RequestContainer{
+        ExportedPort: []string{
+            "6379/tpc",
+        },
+    })
+    if err != nil {
+        t.Error(err)
+    }
+    defer redisC.Terminate(ctx, t)
+    redisIP, err := redisC.GetIPAddress(ctx)
+    if err != nil {
+        t.Error(err)
+    }
 
-appC, err := testcontainer.RunContainer(ctx, "your/app", testcontainer.RequestContainer{
-    ExportedPort: []string{
-        "8081/tpc",
-    },
-    Env: map[string]string{
-        "REDIS_HOST": fmt.Sprintf("http://%s:6379", redisIP),
-    },
-})
-if err != nil {
-    t.Error(err)
-}
-defer appC.Terminate(ctx)
+    appC, err := testcontainer.RunContainer(ctx, "your/app", testcontainer.RequestContainer{
+        ExportedPort: []string{
+            "8081/tpc",
+        },
+        Env: map[string]string{
+            "REDIS_HOST": fmt.Sprintf("http://%s:6379", redisIP),
+        },
+    })
+    if err != nil {
+        t.Error(err)
+    }
+    defer appC.Terminate(ctx, t)
 
-// your assertions
+    // your assertions
+}
 ```
