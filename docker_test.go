@@ -7,6 +7,55 @@ import (
 	"testing"
 )
 
+func TestTwoContainersExposingTheSamePort(t *testing.T) {
+	ctx := context.Background()
+	nginxA, err := RunContainer(ctx, "nginx", RequestContainer{
+		ExportedPort: []string{
+			"80/tpc",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	defer nginxA.Terminate(ctx, t)
+
+	nginxB, err := RunContainer(ctx, "nginx", RequestContainer{
+		ExportedPort: []string{
+			"80/tpc",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	defer nginxB.Terminate(ctx, t)
+
+	ipA, err := nginxA.GetIPAddress(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	ipB, err := nginxA.GetIPAddress(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, err := http.Get(fmt.Sprintf("http://%s", ipA))
+	if err != nil {
+		t.Error(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	}
+
+	resp, err = http.Get(fmt.Sprintf("http://%s", ipB))
+	if err != nil {
+		t.Error(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	}
+}
+
 func TestContainerCreation(t *testing.T) {
 	ctx := context.Background()
 	nginxC, err := RunContainer(ctx, "nginx", RequestContainer{
