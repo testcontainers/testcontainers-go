@@ -16,6 +16,7 @@ type RequestContainer struct {
 	Env          map[string]string
 	ExportedPort []string
 	Cmd          string
+	RegistryCred string
 }
 
 // Container is the struct used to represent a single container.
@@ -88,6 +89,15 @@ func RunContainer(ctx context.Context, containerImage string, input RequestConta
 
 	if input.Cmd != "" {
 		dockerInput.Cmd = strings.Split(input.Cmd, " ")
+	}
+
+	pullOpt := types.ImagePullOptions{}
+	if input.RegistryCred != "" {
+		pullOpt.RegistryAuth = input.RegistryCred
+	}
+	_, err = cli.ImagePull(ctx, dockerInput.Image, pullOpt)
+	if err != nil {
+		return nil, err
 	}
 
 	resp, err := cli.ContainerCreate(ctx, dockerInput, nil, nil, "")
