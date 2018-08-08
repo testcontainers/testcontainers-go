@@ -11,7 +11,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	ctx := context.Background()
 	nginxA, err := RunContainer(ctx, "nginx", RequestContainer{
 		ExportedPort: []string{
-			"80/tpc",
+			"80/tcp",
 		},
 	})
 	if err != nil {
@@ -21,7 +21,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 
 	nginxB, err := RunContainer(ctx, "nginx", RequestContainer{
 		ExportedPort: []string{
-			"80/tpc",
+			"80/tcp",
 		},
 	})
 	if err != nil {
@@ -60,7 +60,7 @@ func TestContainerCreation(t *testing.T) {
 	ctx := context.Background()
 	nginxC, err := RunContainer(ctx, "nginx", RequestContainer{
 		ExportedPort: []string{
-			"80/tpc",
+			"80/tcp",
 		},
 	})
 	if err != nil {
