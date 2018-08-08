@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/testcontainer/testcontainer-go/wait"
 )
 
 // RequestContainer is the input object used to get a running container.
@@ -17,6 +18,7 @@ type RequestContainer struct {
 	ExportedPort []string
 	Cmd          string
 	RegistryCred string
+	WaitingFor   wait.WaitStrategy
 }
 
 // Container is the struct used to represent a single container.
@@ -25,6 +27,14 @@ type Container struct {
 	ID string
 	// Cache to retrieve container infromation without re-fetching them from dockerd
 	raw *types.ContainerJSON
+}
+
+func (c *Container) LivenessCheckPorts(ctx context.Context) (nat.PortSet, error) {
+	inspect, err := inspectContainer(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+	return inspect.Config.ExposedPorts, nil
 }
 
 // Terminate is used to kill the container. It is usally triggered by as defer function.
@@ -107,7 +117,16 @@ func RunContainer(ctx context.Context, containerImage string, input RequestConta
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		return nil, err
 	}
-	return &Container{
+	containerInstance := &Container{
 		ID: resp.ID,
-	}, nil
+	}
+
+	// if a WaitStrategy has been specified, wait before returning
+	if input.WaitingFor != nil {
+		if err := input.WaitingFor.WaitUntilReady(ctx, containerInstance); err != nil {
+			// return containerInstance for termination
+			return containerInstance, err
+		}
+	}
+	return containerInstance, nil
 }
