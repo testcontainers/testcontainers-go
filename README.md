@@ -25,7 +25,7 @@ func TestNginxLatestReturn(t *testing.T) {
 	ctx := context.Background()
 	nginxC, err := testcontainer.RunContainer(ctx, "nginx", testcontainer.RequestContainer{
 		ExportedPort: []string{
-			"80/tpc",
+			"80/tcp",
 		},
 	})
 	if err != nil {
@@ -58,7 +58,7 @@ func TestRedisPing(t testing.T) {
     ctx := context.Background()
     redisC, err := testcontainer.RunContainer(ctx, "redis", testcontainer.RequestContainer{
         ExportedPort: []string{
-            "6379/tpc",
+            "6379/tcp",
         },
     })
     if err != nil {
@@ -72,7 +72,7 @@ func TestRedisPing(t testing.T) {
 
     appC, err := testcontainer.RunContainer(ctx, "your/app", testcontainer.RequestContainer{
         ExportedPort: []string{
-            "8081/tpc",
+            "8081/tcp",
         },
         Env: map[string]string{
             "REDIS_HOST": fmt.Sprintf("http://%s:6379", redisIP),
