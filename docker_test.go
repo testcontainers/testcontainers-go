@@ -122,3 +122,63 @@ func TestContainerCreationTimesOut(t *testing.T) {
 		t.Error("Expected timeout")
 	}
 }
+
+func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
+	ctx := context.Background()
+	// delayed-nginx will wait 2s before opening port
+	nginxC, err := RunContainer(ctx, "nginx", RequestContainer{
+		ExportedPort: []string{
+			"80/tcp",
+		},
+		WaitingFor: wait.ForHttp("/"),
+	})
+	defer nginxC.Terminate(ctx, t)
+
+	ip, err := nginxC.GetIPAddress(ctx)
+	resp, err := http.Get(fmt.Sprintf("http://%s", ip))
+	if err != nil {
+		t.Error(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	}
+}
+
+func TestContainerRespondsWithHttp404ForNonExistingPage(t *testing.T) {
+	ctx := context.Background()
+	// delayed-nginx will wait 2s before opening port
+	nginxC, err := RunContainer(ctx, "nginx", RequestContainer{
+		ExportedPort: []string{
+			"80/tcp",
+		},
+		WaitingFor: wait.ForHttp("/nonExistingPage").WithStatusCodeMatcher(func(status int) bool {
+			return status == http.StatusNotFound
+		}),
+	})
+	defer nginxC.Terminate(ctx, t)
+
+	ip, err := nginxC.GetIPAddress(ctx)
+	resp, err := http.Get(fmt.Sprintf("http://%s/nonExistingPage", ip))
+	if err != nil {
+		t.Error(err)
+	}
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("Expected status code %d. Got %d.", http.StatusNotFound, resp.StatusCode)
+	}
+}
+
+
+func TestContainerCreationTimesOutWithHttp(t *testing.T) {
+	ctx := context.Background()
+	// delayed-nginx will wait 2s before opening port
+	nginxC, err := RunContainer(ctx, "menedev/delayed-nginx:1.15.2", RequestContainer{
+		ExportedPort: []string{
+			"80/tcp",
+		},
+		WaitingFor: wait.ForHttp("/").WithStartupTimeout(1 * time.Second),
+	})
+	defer nginxC.Terminate(ctx, t)
+	if err == nil {
+		t.Error("Expected timeout")
+	}
+}
