@@ -34,7 +34,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 		t.Error(err)
 	}
 
-	ipB, err := nginxA.GetIPAddress(ctx)
+	ipB, err := nginxB.GetIPAddress(ctx)
 	if err != nil {
 		t.Error(err)
 	}
