@@ -16,7 +16,7 @@ package main
 import (
 	"context"
 	"fmt"
-	testcontainer "github.com/gianarb/testcontainer-go"
+	testcontainer "github.com/testcontainer/testcontainer-go"
 	"net/http"
 	"testing"
 )
