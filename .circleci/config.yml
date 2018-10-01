@@ -1,0 +1,28 @@
+version: 2
+jobs:
+  build:
+    working_directory: /go/src/github.com/testcontainers/testcontainer-go
+    docker:
+      - image: golang:1.11
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - restore_cache:
+          keys:
+            - vendor-go-{{ .Branch }}-{{ .Revision }}
+            - vendor-go-{{ .Branch }}-
+            - vendor-go-
+      - save_cache:
+          key: vendor-go-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - "vendor"
+      - run:
+          name: Check fmt format
+          command: GO111MODULE=on go fmt ./...
+      - run:
+          name: Check vet
+          command: GO111MODULE=on go vet ./...
+      - run:
+          name: Check tests
+          command: GO111MODULE=on go test ./...
