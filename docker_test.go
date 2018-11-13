@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-	"github.com/testcontainer/testcontainer-go/wait"
 	"time"
+
+	"github.com/testcontainers/testcontainer-go/wait"
 )
 
 func TestTwoContainersExposingTheSamePort(t *testing.T) {
@@ -17,7 +18,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer nginxA.Terminate(ctx, t)
 
@@ -27,23 +28,23 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer nginxB.Terminate(ctx, t)
 
 	ipA, err := nginxA.GetIPAddress(ctx)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	ipB, err := nginxB.GetIPAddress(ctx)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	resp, err := http.Get(fmt.Sprintf("http://%s", ipA))
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
@@ -51,7 +52,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 
 	resp, err = http.Get(fmt.Sprintf("http://%s", ipB))
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
@@ -66,16 +67,16 @@ func TestContainerCreation(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer nginxC.Terminate(ctx, t)
 	ip, err := nginxC.GetIPAddress(ctx)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	resp, err := http.Get(fmt.Sprintf("http://%s", ip))
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
@@ -92,16 +93,16 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 		WaitingFor: wait.ForListeningPort(), // default startupTimeout is 60s
 	})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer nginxC.Terminate(ctx, t)
 	ip, err := nginxC.GetIPAddress(ctx)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	resp, err := http.Get(fmt.Sprintf("http://%s", ip))
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
@@ -117,8 +118,8 @@ func TestContainerCreationTimesOut(t *testing.T) {
 		},
 		WaitingFor: wait.ForListeningPort().WithStartupTimeout(1 * time.Second),
 	})
-	defer nginxC.Terminate(ctx, t)
 	if err == nil {
 		t.Error("Expected timeout")
+		nginxC.Terminate(ctx, t)
 	}
 }
