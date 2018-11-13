@@ -2,6 +2,7 @@ package testcontainer
 
 import (
 	"context"
+	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"github.com/testcontainer/testcontainer-go/wait"
+	"github.com/testcontainers/testcontainer-go/wait"
 )
 
 // RequestContainer is the input object used to get a running container.
@@ -105,7 +106,14 @@ func RunContainer(ctx context.Context, containerImage string, input RequestConta
 	if input.RegistryCred != "" {
 		pullOpt.RegistryAuth = input.RegistryCred
 	}
-	_, err = cli.ImagePull(ctx, dockerInput.Image, pullOpt)
+	pull, err := cli.ImagePull(ctx, dockerInput.Image, pullOpt)
+	if err != nil {
+		return nil, err
+	}
+	defer pull.Close()
+
+	// download of docker image finishes at EOF of the pull request
+	_, err = ioutil.ReadAll(pull)
 	if err != nil {
 		return nil, err
 	}
