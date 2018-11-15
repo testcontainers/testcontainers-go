@@ -32,17 +32,17 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	}
 	defer nginxB.Terminate(ctx, t)
 
-	ipA, err := nginxA.GetIPAddress(ctx)
+	ipA, portA, err := nginxA.GetHostEndpoint(ctx, "80/tcp")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ipB, err := nginxB.GetIPAddress(ctx)
+	ipB, portB, err := nginxB.GetHostEndpoint(ctx, "80/tcp")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	resp, err := http.Get(fmt.Sprintf("http://%s", ipA))
+	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ipA, portA))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 
-	resp, err = http.Get(fmt.Sprintf("http://%s", ipB))
+	resp, err = http.Get(fmt.Sprintf("http://%s:%s", ipB, portB))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,20 +61,22 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 
 func TestContainerCreation(t *testing.T) {
 	ctx := context.Background()
+
+	nginxPort := "80/tcp"
 	nginxC, err := RunContainer(ctx, "nginx", RequestContainer{
 		ExportedPort: []string{
-			"80/tcp",
+			nginxPort,
 		},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer nginxC.Terminate(ctx, t)
-	ip, err := nginxC.GetIPAddress(ctx)
+	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := http.Get(fmt.Sprintf("http://%s", ip))
+	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,10 +87,12 @@ func TestContainerCreation(t *testing.T) {
 
 func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 	ctx := context.Background()
+
+	nginxPort := "80/tcp"
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := RunContainer(ctx, "menedev/delayed-nginx:1.15.2", RequestContainer{
 		ExportedPort: []string{
-			"80/tcp",
+			nginxPort,
 		},
 		WaitingFor: wait.ForListeningPort(), // default startupTimeout is 60s
 	})
@@ -96,11 +100,11 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer nginxC.Terminate(ctx, t)
-	ip, err := nginxC.GetIPAddress(ctx)
+	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := http.Get(fmt.Sprintf("http://%s", ip))
+	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,17 +130,19 @@ func TestContainerCreationTimesOut(t *testing.T) {
 
 func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 	ctx := context.Background()
+
+	nginxPort := "80/tcp"
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := RunContainer(ctx, "nginx", RequestContainer{
 		ExportedPort: []string{
-			"80/tcp",
+			nginxPort,
 		},
 		WaitingFor: wait.ForHttp("/"),
 	})
 	defer nginxC.Terminate(ctx, t)
 
-	ip, err := nginxC.GetIPAddress(ctx)
-	resp, err := http.Get(fmt.Sprintf("http://%s", ip))
+	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
+	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port))
 	if err != nil {
 		t.Error(err)
 	}
@@ -147,10 +153,12 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 
 func TestContainerRespondsWithHttp404ForNonExistingPage(t *testing.T) {
 	ctx := context.Background()
+
+	nginxPort := "80/tcp"
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := RunContainer(ctx, "nginx", RequestContainer{
 		ExportedPort: []string{
-			"80/tcp",
+			nginxPort,
 		},
 		WaitingFor: wait.ForHttp("/nonExistingPage").WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusNotFound
@@ -158,8 +166,8 @@ func TestContainerRespondsWithHttp404ForNonExistingPage(t *testing.T) {
 	})
 	defer nginxC.Terminate(ctx, t)
 
-	ip, err := nginxC.GetIPAddress(ctx)
-	resp, err := http.Get(fmt.Sprintf("http://%s/nonExistingPage", ip))
+	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
+	resp, err := http.Get(fmt.Sprintf("http://%s:%s/nonExistingPage", ip, port))
 	if err != nil {
 		t.Error(err)
 	}
@@ -167,7 +175,6 @@ func TestContainerRespondsWithHttp404ForNonExistingPage(t *testing.T) {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusNotFound, resp.StatusCode)
 	}
 }
-
 
 func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 	ctx := context.Background()
