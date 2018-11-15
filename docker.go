@@ -2,6 +2,7 @@ package testcontainer
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -30,6 +31,7 @@ type Container struct {
 	raw *types.ContainerJSON
 }
 
+// LivenessCheckPorts returns the exposed ports for the container.
 func (c *Container) LivenessCheckPorts(ctx context.Context) (nat.PortSet, error) {
 	inspect, err := inspectContainer(ctx, c)
 	if err != nil {
@@ -75,6 +77,34 @@ func (c *Container) GetIPAddress(ctx context.Context) (string, error) {
 	return inspect.NetworkSettings.IPAddress, nil
 }
 
+// GetHostEndpoint returns the IP address and the port exposed on the host machine.
+func (c *Container) GetHostEndpoint(ctx context.Context, port string) (string, string, error) {
+	inspect, err := inspectContainer(ctx, c)
+	if err != nil {
+		return "", "", err
+	}
+
+	portSet, _, err := nat.ParsePortSpecs([]string{port})
+	if err != nil {
+		return "", "", err
+	}
+
+	for p := range portSet {
+		ports, ok := inspect.NetworkSettings.Ports[p]
+		if !ok {
+			return "", "", fmt.Errorf("port %s not found", port)
+		}
+		if len(ports) == 0 {
+			return "", "", fmt.Errorf("port %s not found", port)
+		}
+
+		return ports[0].HostIP, ports[0].HostPort, nil
+
+	}
+
+	return "", "", fmt.Errorf("port %s not found", port)
+}
+
 // RunContainer takes a RequestContainer as input and it runs a container via the docker sdk
 func RunContainer(ctx context.Context, containerImage string, input RequestContainer) (*Container, error) {
 	cli, err := client.NewEnvClient()
@@ -82,9 +112,9 @@ func RunContainer(ctx context.Context, containerImage string, input RequestConta
 		return nil, err
 	}
 
-	exposedPorts := nat.PortSet{}
-	for _, p := range input.ExportedPort {
-		exposedPorts[nat.Port(p)] = struct{}{}
+	exposedPortSet, exposedPortMap, err := nat.ParsePortSpecs(input.ExportedPort)
+	if err != nil {
+		return nil, err
 	}
 
 	env := []string{}
@@ -95,7 +125,7 @@ func RunContainer(ctx context.Context, containerImage string, input RequestConta
 	dockerInput := &container.Config{
 		Image:        containerImage,
 		Env:          env,
-		ExposedPorts: exposedPorts,
+		ExposedPorts: exposedPortSet,
 	}
 
 	if input.Cmd != "" {
@@ -118,7 +148,11 @@ func RunContainer(ctx context.Context, containerImage string, input RequestConta
 		return nil, err
 	}
 
-	resp, err := cli.ContainerCreate(ctx, dockerInput, nil, nil, "")
+	hostConfig := &container.HostConfig{
+		PortBindings: exposedPortMap,
+	}
+
+	resp, err := cli.ContainerCreate(ctx, dockerInput, hostConfig, nil, "")
 	if err != nil {
 		return nil, err
 	}
