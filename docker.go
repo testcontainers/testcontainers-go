@@ -132,20 +132,27 @@ func RunContainer(ctx context.Context, containerImage string, input RequestConta
 		dockerInput.Cmd = strings.Split(input.Cmd, " ")
 	}
 
-	pullOpt := types.ImagePullOptions{}
-	if input.RegistryCred != "" {
-		pullOpt.RegistryAuth = input.RegistryCred
-	}
-	pull, err := cli.ImagePull(ctx, dockerInput.Image, pullOpt)
+	_, _, err = cli.ImageInspectWithRaw(ctx, containerImage)
 	if err != nil {
-		return nil, err
-	}
-	defer pull.Close()
+		if client.IsErrNotFound(err) {
+			pullOpt := types.ImagePullOptions{}
+			if input.RegistryCred != "" {
+				pullOpt.RegistryAuth = input.RegistryCred
+			}
+			pull, err := cli.ImagePull(ctx, dockerInput.Image, pullOpt)
+			if err != nil {
+				return nil, err
+			}
+			defer pull.Close()
 
-	// download of docker image finishes at EOF of the pull request
-	_, err = ioutil.ReadAll(pull)
-	if err != nil {
-		return nil, err
+			// download of docker image finishes at EOF of the pull request
+			_, err = ioutil.ReadAll(pull)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
 	}
 
 	hostConfig := &container.HostConfig{
