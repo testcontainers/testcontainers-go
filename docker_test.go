@@ -122,10 +122,11 @@ func TestContainerCreationTimesOut(t *testing.T) {
 		},
 		WaitingFor: wait.ForListeningPort().WithStartupTimeout(1 * time.Second),
 	})
+
 	if err == nil {
 		t.Error("Expected timeout")
-		nginxC.Terminate(ctx, t)
 	}
+	defer nginxC.Terminate(ctx, t)
 }
 
 func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {

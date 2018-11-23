@@ -29,6 +29,8 @@ type Container struct {
 	ID string
 	// Cache to retrieve container infromation without re-fetching them from dockerd
 	raw *types.ContainerJSON
+
+	cli *client.Client
 }
 
 // LivenessCheckPorts returns the exposed ports for the container.
@@ -56,11 +58,7 @@ func inspectContainer(ctx context.Context, c *Container) (*types.ContainerJSON, 
 	if c.raw != nil {
 		return c.raw, nil
 	}
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		return nil, err
-	}
-	inspect, err := cli.ContainerInspect(ctx, c.ID)
+	inspect, err := c.cli.ContainerInspect(ctx, c.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -105,11 +103,38 @@ func (c *Container) GetHostEndpoint(ctx context.Context, port string) (string, s
 	return "", "", fmt.Errorf("port %s not found", port)
 }
 
+func (c *Container) Run(ctx context.Context) error {
+	return c.cli.ContainerStart(ctx, c.ID, types.ContainerStartOptions{})
+}
+
 // RunContainer takes a RequestContainer as input and it runs a container via the docker sdk
 func RunContainer(ctx context.Context, containerImage string, input RequestContainer) (*Container, error) {
+	containerInstance, err := CreateContainer(ctx, containerImage, input)
+	if err != nil {
+		return nil, err
+	}
+	err = containerInstance.Run(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// if a WaitStrategy has been specified, wait before returning
+	if input.WaitingFor != nil {
+		if err := input.WaitingFor.WaitUntilReady(ctx, containerInstance); err != nil {
+			// return containerInstance for termination
+			return containerInstance, err
+		}
+	}
+	return containerInstance, nil
+}
+
+// CreateContainer takes a RequestContainer as input and it runs a container via the docker sdk
+func CreateContainer(ctx context.Context, containerImage string, input RequestContainer) (*Container, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return nil, err
+	}
+	containerInstance := &Container{
+		cli: cli,
 	}
 
 	exposedPortSet, exposedPortMap, err := nat.ParsePortSpecs(input.ExportedPort)
@@ -163,19 +188,6 @@ func RunContainer(ctx context.Context, containerImage string, input RequestConta
 	if err != nil {
 		return nil, err
 	}
-	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		return nil, err
-	}
-	containerInstance := &Container{
-		ID: resp.ID,
-	}
-
-	// if a WaitStrategy has been specified, wait before returning
-	if input.WaitingFor != nil {
-		if err := input.WaitingFor.WaitUntilReady(ctx, containerInstance); err != nil {
-			// return containerInstance for termination
-			return containerInstance, err
-		}
-	}
+	containerInstance.ID = resp.ID
 	return containerInstance, nil
 }
