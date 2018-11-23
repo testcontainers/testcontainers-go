@@ -32,18 +32,22 @@ func TestNginxLatestReturn(t *testing.T) {
 		t.Error(err)
 	}
 	defer nginxC.Terminate(ctx, t)
-	ip, err := nginxC.GetIPAddress(ctx)
+	ip, err := nginxC.GetContainerIpAddress(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	resp, err := http.Get(fmt.Sprintf("http://%s", ip))
+	port, err := nginxC.GetMappedPort(ctx, 80)
+	if err != nil {
+		t.Error(err)
+	}
+	resp, err := http.Get(fmt.Sprintf("http://%s:%d", ip, port))
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 }
 ```
 This is a simple example, you can create one container in my case using the
-`nginx` image. You can get its IP `ip, err := nginxC.GetIPAddress(ctx)` and you
+`nginx` image. You can get its IP `ip, err := nginxC.GetContainerIpAddress(ctx)` and you
 can use it to make a GET: `resp, err := http.Get(fmt.Sprintf("http://%s", ip))`
 
 To clean your environment you can defer the container termination `defer
@@ -65,17 +69,20 @@ func TestRedisPing(t testing.T) {
         t.Error(err)
     }
     defer redisC.Terminate(ctx, t)
-    redisIP, err := redisC.GetIPAddress(ctx)
-    if err != nil {
-        t.Error(err)
-    }
-
+	ip, err := redisC.GetContainerIpAddress(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	redisPort, err := redisC.GetMappedPort(ctx, 6479)
+	if err != nil {
+		t.Error(err)
+	}
     appC, err := testcontainer.RunContainer(ctx, "your/app", testcontainer.RequestContainer{
         ExportedPort: []string{
             "8081/tcp",
         },
         Env: map[string]string{
-            "REDIS_HOST": fmt.Sprintf("http://%s:6379", redisIP),
+            "REDIS_HOST": fmt.Sprintf("http://%s:%d", redisIP, redisPort),
         },
     })
     if err != nil {

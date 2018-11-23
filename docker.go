@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -33,6 +34,7 @@ type Container struct {
 }
 
 // LivenessCheckPorts returns the exposed ports for the container.
+// Deprecated: Use GetMappedPort
 func (c *Container) LivenessCheckPorts(ctx context.Context) (nat.PortSet, error) {
 	inspect, err := c.inspectContainer(ctx)
 	if err != nil {
@@ -61,6 +63,7 @@ func (c *Container) inspectContainer(ctx context.Context) (*types.ContainerJSON,
 }
 
 // GetIPAddress returns the ip address for the running container.
+// Deprecated: Use GetContainerIpAddress
 func (c *Container) GetIPAddress(ctx context.Context) (string, error) {
 	inspect, err := c.inspectContainer(ctx)
 	if err != nil {
@@ -69,7 +72,39 @@ func (c *Container) GetIPAddress(ctx context.Context) (string, error) {
 	return inspect.NetworkSettings.IPAddress, nil
 }
 
+// GetContainerIpAddress returns the ip address for the running container.
+// Right now it returns the docker0 gateway ip, in the future the loginc will
+// grow in order to make the communication availalbe based on where the
+// container runs.
+func (c *Container) GetContainerIpAddress(ctx context.Context) (string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return "", err
+	}
+	return inspect.NetworkSettings.Gateway, nil
+}
+
+// GetMappedPort returns the port reachable via the GetContainerIpAddress.
+func (c *Container) GetMappedPort(ctx context.Context, port int) (int, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	for k, p := range inspect.NetworkSettings.Ports {
+		if k.Port() == strconv.Itoa(port) {
+			intp, err := strconv.Atoi(p[0].HostPort)
+			if err != nil {
+				return 0, err
+			}
+			return intp, nil
+		}
+	}
+	return 0, nil
+}
+
 // GetHostEndpoint returns the IP address and the port exposed on the host machine.
+// Deprecated: Use GetMappedPort
 func (c *Container) GetHostEndpoint(ctx context.Context, port string) (string, string, error) {
 	inspect, err := c.inspectContainer(ctx)
 	if err != nil {
@@ -91,7 +126,6 @@ func (c *Container) GetHostEndpoint(ctx context.Context, port string) (string, s
 		}
 
 		return ports[0].HostIP, ports[0].HostPort, nil
-
 	}
 
 	return "", "", fmt.Errorf("port %s not found", port)
