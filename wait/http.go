@@ -13,25 +13,25 @@ import (
 )
 
 // Implement interface
-var _ WaitStrategy = (*httpWaitStrategy)(nil)
+var _ Strategy = (*HTTPStrategy)(nil)
 
-type httpWaitStrategy struct {
-	// all WaitStrategies should have a startupTimeout to avoid waiting infinitely
+type HTTPStrategy struct {
+	// all Strategies should have a startupTimeout to avoid waiting infinitely
 	startupTimeout time.Duration
 
-	// httpWaitStrategy has additional properties
-	path              string
-	statusCodeMatcher func(status int) bool
-	useTLS            bool
+	// additional properties
+	Path              string
+	StatusCodeMatcher func(status int) bool
+	UseTLS            bool
 }
 
-// Constructor
-func HttpWaitStrategyNew(path string) *httpWaitStrategy {
-	return &httpWaitStrategy{
+// NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
+func NewHTTPStrategy(path string) *HTTPStrategy {
+	return &HTTPStrategy{
 		startupTimeout:    defaultStartupTimeout(),
-		statusCodeMatcher: defaultStatusCodeMatcher,
-		path:              path,
-		useTLS:            false,
+		Path:              path,
+		StatusCodeMatcher: defaultStatusCodeMatcher,
+		UseTLS:            false,
 	}
 
 }
@@ -40,42 +40,43 @@ func defaultStatusCodeMatcher(status int) bool {
 	return status == http.StatusOK
 }
 
-
 // fluent builders for each property
 // since go has neither covariance nor generics, the return type must be the type of the concrete implementation
 // this is true for all properties, even the "shared" ones like startupTimeout
-func (ws *httpWaitStrategy) WithStartupTimeout(startupTimeout time.Duration) *httpWaitStrategy {
+
+func (ws *HTTPStrategy) WithStartupTimeout(startupTimeout time.Duration) *HTTPStrategy {
 	ws.startupTimeout = startupTimeout
 	return ws
 }
 
-func (ws *httpWaitStrategy) WithStatusCodeMatcher(statusCodeMatcher func(status int) bool) *httpWaitStrategy {
-	ws.statusCodeMatcher = statusCodeMatcher
+func (ws *HTTPStrategy) WithStatusCodeMatcher(statusCodeMatcher func(status int) bool) *HTTPStrategy {
+	ws.StatusCodeMatcher = statusCodeMatcher
 	return ws
 }
 
-func (ws *httpWaitStrategy) WithTLS(useTLS bool) *httpWaitStrategy {
-	ws.useTLS = useTLS
+func (ws *HTTPStrategy) WithTLS(useTLS bool) *HTTPStrategy {
+	ws.UseTLS = useTLS
 	return ws
 }
 
-// Convenience method similar to Wait.java
+// ForHTTP is a convenience method similar to Wait.java
 // https://github.com/testcontainers/testcontainers-java/blob/1d85a3834bd937f80aad3a4cec249c027f31aeb4/core/src/main/java/org/testcontainers/containers/wait/strategy/Wait.java
-func ForHttp(path string) *httpWaitStrategy {
-	return HttpWaitStrategyNew(path)
+func ForHTTP(path string) *HTTPStrategy {
+	return NewHTTPStrategy(path)
 }
 
-// Implementation of WaitStrategy.WaitUntilReady
-func (ws *httpWaitStrategy) WaitUntilReady(ctx context.Context, waitStrategyTarget WaitStrategyTarget) (err error) {
+// WaitUntilReady implements Strategy.WaitUntilReady
+func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
 	// limit context to startupTimeout
-	ctx, _ = context.WithTimeout(ctx, ws.startupTimeout)
+	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
+	defer cancelContext()
 
-	ipAddress, err := waitStrategyTarget.GetIPAddress(ctx)
+	ipAddress, err := target.GetIPAddress(ctx)
 	if err != nil {
 		return
 	}
 
-	ports, err := waitStrategyTarget.LivenessCheckPorts(ctx)
+	ports, err := target.LivenessCheckPorts(ctx)
 	if err != nil {
 		return
 	}
@@ -95,18 +96,18 @@ func (ws *httpWaitStrategy) WaitUntilReady(ctx context.Context, waitStrategyTarg
 	}
 
 	var proto string
-	if ws.useTLS {
+	if ws.UseTLS {
 		proto = "https"
 	} else {
 		proto = "http"
 	}
 
-	url := fmt.Sprintf("%s://%s%s", proto, potentialAddresses[0], ws.path)
+	url := fmt.Sprintf("%s://%s%s", proto, potentialAddresses[0], ws.Path)
 
 	client := http.Client{Timeout: ws.startupTimeout}
-	req, e := http.NewRequest("GET", url, nil)
-	if e != nil {
-		return e
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
 	}
 
 	req = req.WithContext(ctx)
@@ -117,7 +118,6 @@ func (ws *httpWaitStrategy) WaitUntilReady(ctx context.Context, waitStrategyTarg
 	case len(potentialAddresses) > 1:
 		return errors.New("More than TCP Liveness Check Port currently not supported by http.httpWaitStrategy")
 	}
-
 
 	for {
 		resp, err := client.Do(req)
@@ -134,7 +134,7 @@ func (ws *httpWaitStrategy) WaitUntilReady(ctx context.Context, waitStrategyTarg
 			return err
 		}
 
-		if !ws.statusCodeMatcher(resp.StatusCode) {
+		if !ws.StatusCodeMatcher(resp.StatusCode) {
 			continue
 		}
 

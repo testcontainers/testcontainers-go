@@ -1,16 +1,17 @@
 package wait
 
 import (
-	"time"
-	"github.com/docker/go-connections/nat"
 	"context"
+	"time"
+
+	"github.com/docker/go-connections/nat"
 )
 
-type WaitStrategy interface {
-	WaitUntilReady(ctx context.Context, waitStrategyTarget WaitStrategyTarget) error
+type Strategy interface {
+	WaitUntilReady(context.Context, StrategyTarget) error
 }
 
-type WaitStrategyTarget interface {
+type StrategyTarget interface {
 	GetIPAddress(ctx context.Context) (string, error)
 	LivenessCheckPorts(ctx context.Context) (nat.PortSet, error)
 }

@@ -21,7 +21,7 @@ type RequestContainer struct {
 	ExportedPort []string
 	Cmd          string
 	RegistryCred string
-	WaitingFor   wait.WaitStrategy
+	WaitingFor   wait.Strategy
 }
 
 // Container is the struct used to represent a single container.

@@ -151,7 +151,7 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 		ExportedPort: []string{
 			nginxPort,
 		},
-		WaitingFor: wait.ForHttp("/"),
+		WaitingFor: wait.ForHTTP("/"),
 	})
 	defer nginxC.Terminate(ctx, t)
 
@@ -175,7 +175,7 @@ func TestContainerRespondsWithHttp404ForNonExistingPage(t *testing.T) {
 		ExportedPort: []string{
 			nginxPort,
 		},
-		WaitingFor: wait.ForHttp("/nonExistingPage").WithStatusCodeMatcher(func(status int) bool {
+		WaitingFor: wait.ForHTTP("/nonExistingPage").WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusNotFound
 		}),
 	})
@@ -199,7 +199,7 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 		ExportedPort: []string{
 			"80/tcp",
 		},
-		WaitingFor: wait.ForHttp("/").WithStartupTimeout(1 * time.Second),
+		WaitingFor: wait.ForHTTP("/").WithStartupTimeout(1 * time.Second),
 	})
 	defer nginxC.Terminate(ctx, t)
 	if err == nil {
