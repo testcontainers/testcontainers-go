@@ -2,25 +2,28 @@ package wait
 
 import (
 	"context"
-	"io"
 	"net"
 	"os"
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/docker/go-connections/nat"
 )
 
 // Implement interface
 var _ Strategy = (*HostPortStrategy)(nil)
 
 type HostPortStrategy struct {
+	Port nat.Port
 	// all WaitStrategies should have a startupTimeout to avoid waiting infinitely
 	startupTimeout time.Duration
 }
 
 // NewHostPortStrategy constructs a default host port strategy
-func NewHostPortStrategy() *HostPortStrategy {
+func NewHostPortStrategy(port nat.Port) *HostPortStrategy {
 	return &HostPortStrategy{
+		Port:           port,
 		startupTimeout: defaultStartupTimeout(),
 	}
 }
@@ -31,8 +34,8 @@ func NewHostPortStrategy() *HostPortStrategy {
 
 // ForListeningPort is a helper similar to those in Wait.java
 // https://github.com/testcontainers/testcontainers-java/blob/1d85a3834bd937f80aad3a4cec249c027f31aeb4/core/src/main/java/org/testcontainers/containers/wait/strategy/Wait.java
-func ForListeningPort() *HostPortStrategy {
-	return NewHostPortStrategy()
+func ForListeningPort(port nat.Port) *HostPortStrategy {
+	return NewHostPortStrategy(port)
 }
 
 func (hp *HostPortStrategy) WithStartupTimeout(startupTimeout time.Duration) *HostPortStrategy {
@@ -51,43 +54,33 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		return
 	}
 
-	ports, err := target.Ports(ctx)
+	port, err := target.MappedPort(ctx, hp.Port)
 	if err != nil {
 		return
 	}
 
-	// Bookkeeping for all opened connections
-	var closers []io.Closer
-	defer func() {
-		for _, closer := range closers {
-			closer.Close()
-		}
-	}()
+	proto := port.Proto()
+	portNumber := port.Int()
+	portString := strconv.Itoa(portNumber)
 
-	for port := range ports {
-		proto := port.Proto()
-		portNumber := port.Int()
-		portString := strconv.Itoa(portNumber)
+	dialer := net.Dialer{}
 
-		dialer := net.Dialer{}
-
-		address := net.JoinHostPort(ipAddress, portString)
-		for {
-			conn, err := dialer.DialContext(ctx, proto, address)
-			if err != nil {
-				if v, ok := err.(*net.OpError); ok {
-					if v2, ok := (v.Err).(*os.SyscallError); ok {
-						if v2.Err == syscall.ECONNREFUSED {
-							time.Sleep(100 * time.Millisecond)
-							continue
-						}
+	address := net.JoinHostPort(ipAddress, portString)
+	for {
+		conn, err := dialer.DialContext(ctx, proto, address)
+		defer conn.Close()
+		if err != nil {
+			if v, ok := err.(*net.OpError); ok {
+				if v2, ok := (v.Err).(*os.SyscallError); ok {
+					if v2.Err == syscall.ECONNREFUSED {
+						time.Sleep(100 * time.Millisecond)
+						continue
 					}
 				}
-				return err
 			}
-			closers = append(closers, conn)
-			break
+			return err
 		}
+		break
 	}
 
 	return nil

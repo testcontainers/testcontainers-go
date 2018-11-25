@@ -13,7 +13,7 @@ type Strategy interface {
 
 type StrategyTarget interface {
 	Host(context.Context) (string, error)
-	Ports(context.Context) (nat.PortMap, error)
+	MappedPort(context.Context, nat.Port) (nat.Port, error)
 }
 
 func defaultStartupTimeout() time.Duration {

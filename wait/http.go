@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/docker/go-connections/nat"
 )
 
 // Implement interface
@@ -20,6 +22,7 @@ type HTTPStrategy struct {
 	startupTimeout time.Duration
 
 	// additional properties
+	Port              nat.Port
 	Path              string
 	StatusCodeMatcher func(status int) bool
 	UseTLS            bool
@@ -29,6 +32,7 @@ type HTTPStrategy struct {
 func NewHTTPStrategy(path string) *HTTPStrategy {
 	return &HTTPStrategy{
 		startupTimeout:    defaultStartupTimeout(),
+		Port:              "80/tcp",
 		Path:              path,
 		StatusCodeMatcher: defaultStatusCodeMatcher,
 		UseTLS:            false,
@@ -46,6 +50,11 @@ func defaultStatusCodeMatcher(status int) bool {
 
 func (ws *HTTPStrategy) WithStartupTimeout(startupTimeout time.Duration) *HTTPStrategy {
 	ws.startupTimeout = startupTimeout
+	return ws
+}
+
+func (ws *HTTPStrategy) WithPort(port nat.Port) *HTTPStrategy {
+	ws.Port = port
 	return ws
 }
 
@@ -76,24 +85,19 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		return
 	}
 
-	ports, err := target.Ports(ctx)
+	port, err := target.MappedPort(ctx, ws.Port)
 	if err != nil {
 		return
 	}
 
-	potentialAddresses := make([]string, 0)
-	for port := range ports {
-		proto := port.Proto()
-		if proto != "tcp" {
-			continue
-		}
-
-		portNumber := port.Int()
-		portString := strconv.Itoa(portNumber)
-
-		address := net.JoinHostPort(ipAddress, portString)
-		potentialAddresses = append(potentialAddresses, address)
+	if port.Proto() != "tcp" {
+		return errors.New("Cannot use HTTP client on non-TCP ports")
 	}
+
+	portNumber := port.Int()
+	portString := strconv.Itoa(portNumber)
+
+	address := net.JoinHostPort(ipAddress, portString)
 
 	var proto string
 	if ws.UseTLS {
@@ -102,7 +106,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		proto = "http"
 	}
 
-	url := fmt.Sprintf("%s://%s%s", proto, potentialAddresses[0], ws.Path)
+	url := fmt.Sprintf("%s://%s%s", proto, address, ws.Path)
 
 	client := http.Client{Timeout: ws.startupTimeout}
 	req, err := http.NewRequest("GET", url, nil)
@@ -111,13 +115,6 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	}
 
 	req = req.WithContext(ctx)
-
-	switch {
-	case len(potentialAddresses) == 0:
-		return errors.New("No TCP Liveness Check Port available")
-	case len(potentialAddresses) > 1:
-		return errors.New("More than TCP Liveness Check Port currently not supported by http.httpWaitStrategy")
-	}
 
 	for {
 		resp, err := client.Do(req)
