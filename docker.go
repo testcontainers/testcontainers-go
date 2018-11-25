@@ -214,6 +214,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	hostConfig := &container.HostConfig{
 		PortBindings: exposedPortMap,
+		AutoRemove:   true,
 	}
 
 	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, nil, "")
