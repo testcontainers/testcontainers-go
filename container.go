@@ -30,6 +30,7 @@ type Container interface {
 	Host(context.Context) (string, error)                           // get host where the container port is exposed
 	MappedPort(context.Context, nat.Port) (nat.Port, error)         // get externally mapped port for a container port
 	Ports(context.Context) (nat.PortMap, error)                     // get all exposed ports
+	SessionID() string                                              // get session id
 	Start(context.Context) error                                    // start the container
 	Terminate(context.Context) error                                // terminate the container
 }
@@ -44,6 +45,8 @@ type ContainerRequest struct {
 	BindMounts   map[string]string
 	RegistryCred string
 	WaitingFor   wait.Strategy
+
+	isReaper bool // indicates whether we skip setting up a reaper for this
 }
 
 // ProviderType is an enum for the possible providers

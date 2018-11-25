@@ -15,6 +15,7 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/testcontainers/testcontainer-go/wait"
 )
@@ -29,8 +30,10 @@ type DockerContainer struct {
 	WaitingFor wait.Strategy
 
 	// Cache to retrieve container infromation without re-fetching them from dockerd
-	raw      *types.ContainerJSON
-	provider *DockerProvider
+	raw               *types.ContainerJSON
+	provider          *DockerProvider
+	sessionID         uuid.UUID
+	terminationSignal chan bool
 }
 
 // Endpoint gets proto://host:port string for the first exposed port
@@ -112,6 +115,11 @@ func (c *DockerContainer) Ports(ctx context.Context) (nat.PortMap, error) {
 	return inspect.NetworkSettings.Ports, nil
 }
 
+// SessionID gets the current session id
+func (c *DockerContainer) SessionID() string {
+	return c.sessionID.String()
+}
+
 // Start will start an already created container
 func (c *DockerContainer) Start(ctx context.Context) error {
 	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
@@ -129,10 +137,11 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 }
 
 // Terminate is used to kill the container. It is usally triggered by as defer function.
-func (c *DockerContainer) Terminate(ctx context.Context) error {
-	return c.provider.client.ContainerRemove(ctx, c.ID, types.ContainerRemoveOptions{
-		Force: true,
-	})
+func (c *DockerContainer) Terminate(_ context.Context) error {
+	if c.terminationSignal != nil {
+		c.terminationSignal <- true
+	}
+	return nil
 }
 
 func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.ContainerJSON, error) {
@@ -178,6 +187,29 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	env := []string{}
 	for envKey, envVar := range req.Env {
 		env = append(env, envKey+"="+envVar)
+	}
+
+	if req.Labels == nil {
+		req.Labels = make(map[string]string)
+	}
+
+	sessionID := uuid.NewV4()
+
+	var termSignal chan bool
+	if !req.isReaper {
+		r, err := NewReaper(ctx, sessionID.String(), p)
+		if err != nil {
+			return nil, errors.Wrap(err, "creating reaper failed")
+		}
+		termSignal, err = r.Connect()
+		if err != nil {
+			return nil, errors.Wrap(err, "connecting to reaper failed")
+		}
+		for k, v := range r.Labels() {
+			if _, ok := req.Labels[k]; !ok {
+				req.Labels[k] = v
+			}
+		}
 	}
 
 	dockerInput := &container.Config{
@@ -236,9 +268,11 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	c := &DockerContainer{
-		ID:         resp.ID,
-		WaitingFor: req.WaitingFor,
-		provider:   p,
+		ID:                resp.ID,
+		WaitingFor:        req.WaitingFor,
+		sessionID:         sessionID,
+		provider:          p,
+		terminationSignal: termSignal,
 	}
 
 	return c, nil
