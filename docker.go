@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -12,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/pkg/errors"
 	"github.com/testcontainers/testcontainer-go/wait"
 )
 
@@ -73,15 +76,14 @@ func (c *Container) GetIPAddress(ctx context.Context) (string, error) {
 }
 
 // GetContainerIpAddress returns the ip address for the running container.
-// Right now it returns the docker0 gateway ip, in the future the loginc will
-// grow in order to make the communication availalbe based on where the
-// container runs.
+// Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
+// You can use the "TC_HOST" env variable to set this yourself
 func (c *Container) GetContainerIpAddress(ctx context.Context) (string, error) {
-	inspect, err := c.inspectContainer(ctx)
+	host, err := daemonHost(*c.client)
 	if err != nil {
 		return "", err
 	}
-	return inspect.NetworkSettings.Gateway, nil
+	return host, nil
 }
 
 // GetMappedPort returns the port reachable via the GetContainerIpAddress.
@@ -205,4 +207,30 @@ func RunContainer(ctx context.Context, containerImage string, input RequestConta
 		}
 	}
 	return containerInstance, nil
+}
+
+// daemonHost gets the host or ip of the Docker daemon where ports are exposed on
+// Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
+// You can use the "TC_HOST" env variable to set this yourself
+func daemonHost(cli client.Client) (string, error) {
+	host, exists := os.LookupEnv("TC_HOST")
+	if exists {
+		return host, nil
+	}
+
+	// infer from Docker host
+	url, err := url.Parse(cli.DaemonHost())
+	if err != nil {
+		return "", err
+	}
+
+	switch url.Scheme {
+	case "http", "https", "tcp":
+		return url.Hostname(), nil
+	case "unix", "npipe":
+		// todo: get gateway address if inside container
+		return "localhost", nil
+	}
+
+	return "", errors.New("Could not determine host through env or docker host")
 }
