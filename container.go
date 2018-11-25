@@ -40,6 +40,8 @@ type ContainerRequest struct {
 	Env          map[string]string
 	ExposedPorts []string // allow specifying protocol info
 	Cmd          string
+	Labels       map[string]string
+	BindMounts   map[string]string
 	RegistryCred string
 	WaitingFor   wait.Strategy
 }

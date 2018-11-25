@@ -10,6 +10,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 
@@ -183,6 +184,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		Image:        req.Image,
 		Env:          env,
 		ExposedPorts: exposedPortSet,
+		Labels:       req.Labels,
 	}
 
 	if req.Cmd != "" {
@@ -212,8 +214,19 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
+	// prepare mounts
+	bindMounts := []mount.Mount{}
+	for hostPath, innerPath := range req.BindMounts {
+		bindMounts = append(bindMounts, mount.Mount{
+			Type:   mount.TypeBind,
+			Source: hostPath,
+			Target: innerPath,
+		})
+	}
+
 	hostConfig := &container.HostConfig{
 		PortBindings: exposedPortMap,
+		Mounts:       bindMounts,
 		AutoRemove:   true,
 	}
 
