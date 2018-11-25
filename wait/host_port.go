@@ -46,12 +46,12 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	ctx, cancelContext := context.WithTimeout(ctx, hp.startupTimeout)
 	defer cancelContext()
 
-	ipAddress, err := target.GetIPAddress(ctx)
+	ipAddress, err := target.Host(ctx)
 	if err != nil {
 		return
 	}
 
-	ports, err := target.LivenessCheckPorts(ctx)
+	ports, err := target.Ports(ctx)
 	if err != nil {
 		return
 	}

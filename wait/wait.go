@@ -12,8 +12,8 @@ type Strategy interface {
 }
 
 type StrategyTarget interface {
-	GetIPAddress(ctx context.Context) (string, error)
-	LivenessCheckPorts(ctx context.Context) (nat.PortSet, error)
+	Host(context.Context) (string, error)
+	Ports(context.Context) (nat.PortMap, error)
 }
 
 func defaultStartupTimeout() time.Duration {

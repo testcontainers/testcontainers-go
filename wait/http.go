@@ -71,12 +71,12 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
 	defer cancelContext()
 
-	ipAddress, err := target.GetIPAddress(ctx)
+	ipAddress, err := target.Host(ctx)
 	if err != nil {
 		return
 	}
 
-	ports, err := target.LivenessCheckPorts(ctx)
+	ports, err := target.Ports(ctx)
 	if err != nil {
 		return
 	}

@@ -7,40 +7,49 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainer-go/wait"
 )
 
 func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	ctx := context.Background()
-	nginxA, err := RunContainer(ctx, "nginx", RequestContainer{
-		ExportedPort: []string{
-			"80/tcp",
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
 		},
+		Started: true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxA.Terminate(ctx, t)
+	defer nginxA.Terminate(ctx)
 
-	nginxB, err := RunContainer(ctx, "nginx", RequestContainer{
-		ExportedPort: []string{
-			"80/tcp",
+	nginxB, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
 		},
+		Started: true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxB.Terminate(ctx, t)
+	defer nginxB.Terminate(ctx)
 
-	ipA, err := nginxA.GetContainerIpAddress(ctx)
+	ipA, err := nginxA.Host(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	portA, err := nginxA.GetMappedPort(ctx, 80)
+	portA, err := nginxA.MappedPort(ctx, "80/tcp")
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := http.Get(fmt.Sprintf("http://%s:%d", ipA, portA))
+	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ipA, portA.Port()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,16 +57,16 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 
-	ipB, err := nginxB.GetContainerIpAddress(ctx)
+	ipB, err := nginxB.Host(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	portB, err := nginxB.GetMappedPort(ctx, 80)
+	portB, err := nginxB.MappedPort(ctx, "80")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	resp, err = http.Get(fmt.Sprintf("http://%s:%d", ipB, portB))
+	resp, err = http.Get(fmt.Sprintf("http://%s:%s", ipB, portB.Port()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,24 +79,28 @@ func TestContainerCreation(t *testing.T) {
 	ctx := context.Background()
 
 	nginxPort := "80/tcp"
-	nginxC, err := RunContainer(ctx, "nginx", RequestContainer{
-		ExportedPort: []string{
-			nginxPort,
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				nginxPort,
+			},
 		},
+		Started: true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxC.Terminate(ctx, t)
-	ip, err := nginxC.GetContainerIpAddress(ctx)
+	defer nginxC.Terminate(ctx)
+	ip, err := nginxC.Host(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	port, err := nginxC.GetMappedPort(ctx, 80)
+	port, err := nginxC.MappedPort(ctx, "80")
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := http.Get(fmt.Sprintf("http://%s:%d", ip, port))
+	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,21 +115,25 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 
 	nginxPort := "80/tcp"
 	// delayed-nginx will wait 2s before opening port
-	nginxC, err := RunContainer(ctx, "menedev/delayed-nginx:1.15.2", RequestContainer{
-		ExportedPort: []string{
-			nginxPort,
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "menedev/delayed-nginx:1.15.2",
+			ExposedPorts: []string{
+				nginxPort,
+			},
+			WaitingFor: wait.ForListeningPort("80"), // default startupTimeout is 60s
 		},
-		WaitingFor: wait.ForListeningPort(), // default startupTimeout is 60s
+		Started: true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxC.Terminate(ctx, t)
-	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
+	defer nginxC.Terminate(ctx)
+	origin, err := nginxC.PortEndpoint(ctx, nat.Port(nginxPort), "http")
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port))
+	resp, err := http.Get(origin)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,15 +146,19 @@ func TestContainerCreationTimesOut(t *testing.T) {
 	t.Skip("Wait needs to be fixed")
 	ctx := context.Background()
 	// delayed-nginx will wait 2s before opening port
-	nginxC, err := RunContainer(ctx, "menedev/delayed-nginx:1.15.2", RequestContainer{
-		ExportedPort: []string{
-			"80/tcp",
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "menedev/delayed-nginx:1.15.2",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+			WaitingFor: wait.ForListeningPort("80").WithStartupTimeout(1 * time.Second),
 		},
-		WaitingFor: wait.ForListeningPort().WithStartupTimeout(1 * time.Second),
+		Started: true,
 	})
 	if err == nil {
 		t.Error("Expected timeout")
-		nginxC.Terminate(ctx, t)
+		nginxC.Terminate(ctx)
 	}
 }
 
@@ -147,16 +168,20 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 
 	nginxPort := "80/tcp"
 	// delayed-nginx will wait 2s before opening port
-	nginxC, err := RunContainer(ctx, "nginx", RequestContainer{
-		ExportedPort: []string{
-			nginxPort,
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				nginxPort,
+			},
+			WaitingFor: wait.ForHTTP("/"),
 		},
-		WaitingFor: wait.ForHTTP("/"),
+		Started: true,
 	})
-	defer nginxC.Terminate(ctx, t)
+	defer nginxC.Terminate(ctx)
 
-	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
-	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port))
+	origin, err := nginxC.PortEndpoint(ctx, nat.Port(nginxPort), "http")
+	resp, err := http.Get(origin)
 	if err != nil {
 		t.Error(err)
 	}
@@ -171,7 +196,19 @@ func TestContainerRespondsWithHttp404ForNonExistingPage(t *testing.T) {
 
 	nginxPort := "80/tcp"
 	// delayed-nginx will wait 2s before opening port
-	nginxC, err := RunContainer(ctx, "nginx", RequestContainer{
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				nginxPort,
+			},
+			WaitingFor: wait.ForHTTP("/nonExistingPage").WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusNotFound
+			}),
+		},
+		Started: true,
+	})
+	RunContainer(ctx, "nginx", RequestContainer{
 		ExportedPort: []string{
 			nginxPort,
 		},
@@ -179,10 +216,10 @@ func TestContainerRespondsWithHttp404ForNonExistingPage(t *testing.T) {
 			return status == http.StatusNotFound
 		}),
 	})
-	defer nginxC.Terminate(ctx, t)
+	defer nginxC.Terminate(ctx)
 
-	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
-	resp, err := http.Get(fmt.Sprintf("http://%s:%s/nonExistingPage", ip, port))
+	origin, err := nginxC.PortEndpoint(ctx, nat.Port(nginxPort), "http")
+	resp, err := http.Get(origin + "/nonExistingPage")
 	if err != nil {
 		t.Error(err)
 	}
@@ -195,13 +232,18 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 	t.Skip("Wait needs to be fixed")
 	ctx := context.Background()
 	// delayed-nginx will wait 2s before opening port
-	nginxC, err := RunContainer(ctx, "menedev/delayed-nginx:1.15.2", RequestContainer{
-		ExportedPort: []string{
-			"80/tcp",
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "menedev/delayed-nginx:1.15.2",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+			WaitingFor: wait.ForHTTP("/").WithStartupTimeout(1 * time.Second),
 		},
-		WaitingFor: wait.ForHTTP("/").WithStartupTimeout(1 * time.Second),
+		Started: true,
 	})
-	defer nginxC.Terminate(ctx, t)
+	defer nginxC.Terminate(ctx)
+
 	if err == nil {
 		t.Error("Expected timeout")
 	}
