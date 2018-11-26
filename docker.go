@@ -80,6 +80,13 @@ func (c *DockerContainer) PortEndpoint(ctx context.Context, port nat.Port, proto
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
 // You can use the "TC_HOST" env variable to set this yourself
 func (c *DockerContainer) Host(ctx context.Context) (string, error) {
+	if _, err := ioutil.ReadFile("/.dockerenv"); !os.IsNotExist(err) {
+		rest, err := c.inspectContainer(ctx)
+		if err != nil {
+			return "", err
+		}
+		return rest.NetworkSettings.Gateway, nil
+	}
 	host, err := c.provider.daemonHost()
 	if err != nil {
 		return "", err
