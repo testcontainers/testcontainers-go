@@ -1,18 +1,19 @@
 package wait
 
 import (
-	"time"
-	"github.com/docker/go-connections/nat"
 	"context"
+	"time"
+
+	"github.com/docker/go-connections/nat"
 )
 
-type WaitStrategy interface {
-	WaitUntilReady(ctx context.Context, waitStrategyTarget WaitStrategyTarget) error
+type Strategy interface {
+	WaitUntilReady(context.Context, StrategyTarget) error
 }
 
-type WaitStrategyTarget interface {
-	GetIPAddress(ctx context.Context) (string, error)
-	LivenessCheckPorts(ctx context.Context) (nat.PortSet, error)
+type StrategyTarget interface {
+	Host(context.Context) (string, error)
+	MappedPort(context.Context, nat.Port) (nat.Port, error)
 }
 
 func defaultStartupTimeout() time.Duration {

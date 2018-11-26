@@ -1,26 +1,29 @@
 package wait
 
 import (
-	"time"
-	"net"
 	"context"
-	"strconv"
-	"io"
+	"net"
 	"os"
+	"strconv"
 	"syscall"
+	"time"
+
+	"github.com/docker/go-connections/nat"
 )
 
 // Implement interface
-var _ WaitStrategy = (*hostPortWaitStrategy)(nil)
+var _ Strategy = (*HostPortStrategy)(nil)
 
-type hostPortWaitStrategy struct {
+type HostPortStrategy struct {
+	Port nat.Port
 	// all WaitStrategies should have a startupTimeout to avoid waiting infinitely
 	startupTimeout time.Duration
 }
 
-// Constructor
-func HostPortWaitStrategyNew() *hostPortWaitStrategy {
-	return &hostPortWaitStrategy{
+// NewHostPortStrategy constructs a default host port strategy
+func NewHostPortStrategy(port nat.Port) *HostPortStrategy {
+	return &HostPortStrategy{
+		Port:           port,
 		startupTimeout: defaultStartupTimeout(),
 	}
 }
@@ -28,64 +31,56 @@ func HostPortWaitStrategyNew() *hostPortWaitStrategy {
 // fluent builders for each property
 // since go has neither covariance nor generics, the return type must be the type of the concrete implementation
 // this is true for all properties, even the "shared" ones like startupTimeout
-func (hp *hostPortWaitStrategy) WithStartupTimeout(startupTimeout time.Duration) *hostPortWaitStrategy {
+
+// ForListeningPort is a helper similar to those in Wait.java
+// https://github.com/testcontainers/testcontainers-java/blob/1d85a3834bd937f80aad3a4cec249c027f31aeb4/core/src/main/java/org/testcontainers/containers/wait/strategy/Wait.java
+func ForListeningPort(port nat.Port) *HostPortStrategy {
+	return NewHostPortStrategy(port)
+}
+
+func (hp *HostPortStrategy) WithStartupTimeout(startupTimeout time.Duration) *HostPortStrategy {
 	hp.startupTimeout = startupTimeout
 	return hp
 }
 
-// Convenience method similar to Wait.java
-// https://github.com/testcontainers/testcontainers-java/blob/1d85a3834bd937f80aad3a4cec249c027f31aeb4/core/src/main/java/org/testcontainers/containers/wait/strategy/Wait.java
-func ForListeningPort() *hostPortWaitStrategy {
-	return HostPortWaitStrategyNew()
-}
-
-// Implementation of WaitStrategy.WaitUntilReady
-func (hp *hostPortWaitStrategy) WaitUntilReady(ctx context.Context, waitStrategyTarget WaitStrategyTarget) (err error) {
+// WaitUntilReady implements Strategy.WaitUntilReady
+func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
 	// limit context to startupTimeout
-	ctx, _ = context.WithTimeout(ctx, hp.startupTimeout)
+	ctx, cancelContext := context.WithTimeout(ctx, hp.startupTimeout)
+	defer cancelContext()
 
-	ipAddress, err := waitStrategyTarget.GetIPAddress(ctx)
+	ipAddress, err := target.Host(ctx)
 	if err != nil {
 		return
 	}
 
-	ports, err := waitStrategyTarget.LivenessCheckPorts(ctx)
+	port, err := target.MappedPort(ctx, hp.Port)
 	if err != nil {
 		return
 	}
 
-	// Bookkeeping for all opened connections
-	var closers []io.Closer
-	defer func() {
-		for _, closer := range closers {
-			closer.Close()
-		}
-	}()
+	proto := port.Proto()
+	portNumber := port.Int()
+	portString := strconv.Itoa(portNumber)
 
-	for port := range ports {
-		proto := port.Proto()
-		portNumber := port.Int()
-		portString := strconv.Itoa(portNumber)
+	dialer := net.Dialer{}
 
-		dialer := net.Dialer{}
-
-		address := net.JoinHostPort(ipAddress, portString)
-		for {
-			conn, err := dialer.DialContext(ctx, proto, address)
-			if err != nil {
-				if v, ok := err.(*net.OpError); ok {
-					if v2, ok := (v.Err).(*os.SyscallError); ok {
-						if v2.Err == syscall.ECONNREFUSED {
-							time.Sleep(100 * time.Millisecond)
-							continue
-						}
+	address := net.JoinHostPort(ipAddress, portString)
+	for {
+		conn, err := dialer.DialContext(ctx, proto, address)
+		defer conn.Close()
+		if err != nil {
+			if v, ok := err.(*net.OpError); ok {
+				if v2, ok := (v.Err).(*os.SyscallError); ok {
+					if v2.Err == syscall.ECONNREFUSED {
+						time.Sleep(100 * time.Millisecond)
+						continue
 					}
 				}
-				return err
 			}
-			closers = append(closers, conn)
-			break
+			return err
 		}
+		break
 	}
 
 	return nil
