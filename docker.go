@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -316,11 +317,40 @@ func (p *DockerProvider) daemonHost() (string, error) {
 	case "http", "https", "tcp":
 		p.hostCache = url.Hostname()
 	case "unix", "npipe":
-		// todo: get gateway address if inside container
-		p.hostCache = "localhost"
+		if inAContainer() {
+			ip, err := getGatewayIp()
+			if err != nil {
+				return "", err
+			}
+			p.hostCache = ip
+		} else {
+			p.hostCache = "localhost"
+		}
 	default:
 		return "", errors.New("Could not determine host through env or docker host")
 	}
 
 	return p.hostCache, nil
+}
+
+func inAContainer() bool {
+	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L15
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		return true
+	}
+	return false
+}
+
+func getGatewayIp() (string, error) {
+	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L27
+	cmd := exec.Command("sh", "-c", "ip route|awk '/default/ { print $3 }'")
+	stdout, err := cmd.Output()
+	if err != nil {
+		return "", errors.New("Failed to detect docker host")
+	}
+	ip := strings.TrimSpace(string(stdout))
+	if len(ip) == 0 {
+		return "", errors.New("Failed to parse default gateway IP")
+	}
+	return string(ip), nil
 }
