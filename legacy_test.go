@@ -142,6 +142,9 @@ func TestLegacyContainerRespondsWithHttp200ForIndex(t *testing.T) {
 		},
 		WaitingFor: wait.ForHTTP("/"),
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer nginxC.Terminate(ctx)
 
 	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
@@ -167,6 +170,9 @@ func TestLegacyContainerRespondsWithHttp404ForNonExistingPage(t *testing.T) {
 			return status == http.StatusNotFound
 		}),
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer nginxC.Terminate(ctx)
 
 	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
