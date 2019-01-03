@@ -1,3 +1,5 @@
+![](https://travis-ci.org/testcontainers/testcontainer-go.svg?branch=master)
+
 When I was working on a Zipkin PR I discovered a nice Java library called
 [testcontainers](https://www.testcontainers.org/).
 
