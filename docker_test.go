@@ -1,4 +1,4 @@
-package testcontainer
+package testcontainers
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/testcontainers/testcontainer-go/wait"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestTwoContainersExposingTheSamePort(t *testing.T) {

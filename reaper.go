@@ -1,4 +1,4 @@
-package testcontainer
+package testcontainers
 
 import (
 	"bufio"
