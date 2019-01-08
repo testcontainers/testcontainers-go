@@ -21,16 +21,16 @@ import (
 	"net/http"
 	"testing"
 
-	testcontainer "github.com/testcontainers/testcontainer-go"
+	testcontainers "github.com/testcontainers/testcontainers-go"
 )
 
 func TestNginxLatestReturn(t *testing.T) {
 	ctx := context.Background()
-	req := testcontainer.ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
 	}
-	nginxC, err := testcontainer.GenericContainer(ctx, testcontainer.GenericContainerRequest{
+	nginxC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -66,11 +66,11 @@ suppose you are testing an application that requites redis:
 ```go
 func TestRedisPing(t *testing.T) {
 	ctx := context.Background()
-	req := testcontainer.ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image:        "redis",
 		ExposedPorts: []string{"6379/tcp"},
 	}
-	redisC, err := testcontainer.GenericContainer(ctx, testcontainer.GenericContainerRequest{
+	redisC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -87,13 +87,13 @@ func TestRedisPing(t *testing.T) {
 		t.Error(err)
 	}
 
-	appReq := testcontainer.ContainerRequest{
+	appReq := testcontainers.ContainerRequest{
 		ExposedPorts: []string{"8081/tcp"},
 		Env: map[string]string{
 			"REDIS_HOST": fmt.Sprintf("http://%s:%s", ip, redisPort.Port()),
 		},
 	}
-	appC, err := testcontainer.RunContainer(ctx, "your/app", testcontainer.GenericContainerRequest{
+	appC, err := testcontainers.RunContainer(ctx, "your/app", testcontainers.GenericContainerRequest{
 		ContainerRequest: appReq,
 		Started:          true,
 	})
