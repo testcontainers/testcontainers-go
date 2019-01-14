@@ -194,7 +194,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		req.Labels = make(map[string]string)
 	}
 
-	sessionID := uuid.NewV4()
+	sessionID, err := uuid.NewV4()
+	if err != nil {
+		return nil, err
+	}
 
 	var termSignal chan bool
 	if !req.isReaper {
