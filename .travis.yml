@@ -2,6 +2,8 @@ language: go
 go:
   - 1.11.4
 
+install: true
+
 services:
   - docker
 
