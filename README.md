@@ -1,4 +1,4 @@
-![](https://travis-ci.org/testcontainers/testcontainer-go.svg?branch=master)
+[![Build Status](https://travis-ci.org/testcontainers/testcontainers-go.svg?branch=master)](https://travis-ci.org/testcontainers/testcontainers-go)
 
 When I was working on a Zipkin PR I discovered a nice Java library called
 [testcontainers](https://www.testcontainers.org/).
