@@ -21,7 +21,12 @@ func TestLegacyTwoContainersExposingTheSamePort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxA.Terminate(ctx)
+	defer func() {
+		err := nginxA.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	nginxB, err := RunContainer(ctx, "nginx", RequestContainer{
 		ExportedPort: []string{
@@ -31,7 +36,12 @@ func TestLegacyTwoContainersExposingTheSamePort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxB.Terminate(ctx)
+	defer func() {
+		err := nginxB.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	ipA, portA, err := nginxA.GetHostEndpoint(ctx, "80/tcp")
 	if err != nil {
@@ -72,7 +82,12 @@ func TestLegacyContainerCreation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
 	if err != nil {
 		t.Fatal(err)
@@ -101,7 +116,12 @@ func TestLegacyContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
 	if err != nil {
 		t.Fatal(err)
@@ -127,7 +147,10 @@ func TestLegacyContainerCreationTimesOut(t *testing.T) {
 	})
 	if err == nil {
 		t.Error("Expected timeout")
-		nginxC.Terminate(ctx)
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -145,9 +168,17 @@ func TestLegacyContainerRespondsWithHttp200ForIndex(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
+	if err != nil {
+		t.Fatal(err)
+	}
 	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port))
 	if err != nil {
 		t.Error(err)
@@ -173,9 +204,17 @@ func TestLegacyContainerRespondsWithHttp404ForNonExistingPage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	ip, port, err := nginxC.GetHostEndpoint(ctx, nginxPort)
+	if err != nil {
+		t.Fatal(err)
+	}
 	resp, err := http.Get(fmt.Sprintf("http://%s:%s/nonExistingPage", ip, port))
 	if err != nil {
 		t.Error(err)
@@ -196,7 +235,10 @@ func TestLegacyContainerCreationTimesOutWithHttp(t *testing.T) {
 	})
 
 	if err == nil {
-		nginxC.Terminate(ctx)
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
 		t.Error("Expected timeout")
 	}
 }
