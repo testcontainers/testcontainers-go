@@ -25,7 +25,12 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxA.Terminate(ctx)
+	defer func() {
+		err := nginxA.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	nginxB, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -39,7 +44,12 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxB.Terminate(ctx)
+	defer func() {
+		err := nginxB.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	ipA, err := nginxA.Host(ctx)
 	if err != nil {
@@ -91,7 +101,12 @@ func TestContainerCreation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 	ip, err := nginxC.Host(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -128,7 +143,12 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 	origin, err := nginxC.PortEndpoint(ctx, nat.Port(nginxPort), "http")
 	if err != nil {
 		t.Fatal(err)
@@ -158,7 +178,10 @@ func TestContainerCreationTimesOut(t *testing.T) {
 	})
 	if err == nil {
 		t.Error("Expected timeout")
-		nginxC.Terminate(ctx)
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -178,9 +201,20 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 		},
 		Started: true,
 	})
-	defer nginxC.Terminate(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	origin, err := nginxC.PortEndpoint(ctx, nat.Port(nginxPort), "http")
+	if err != nil {
+		t.Fatal(err)
+	}
 	resp, err := http.Get(origin)
 	if err != nil {
 		t.Error(err)
@@ -208,7 +242,10 @@ func TestContainerRespondsWithHttp404ForNonExistingPage(t *testing.T) {
 		},
 		Started: true,
 	})
-	RunContainer(ctx, "nginx", RequestContainer{
+	if err != nil {
+		t.Fatal(err)
+	}
+	rC, err := RunContainer(ctx, "nginx", RequestContainer{
 		ExportedPort: []string{
 			nginxPort,
 		},
@@ -216,9 +253,23 @@ func TestContainerRespondsWithHttp404ForNonExistingPage(t *testing.T) {
 			return status == http.StatusNotFound
 		}),
 	})
-	defer nginxC.Terminate(ctx)
+	if rC != nil {
+		t.Fatal(rC)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	origin, err := nginxC.PortEndpoint(ctx, nat.Port(nginxPort), "http")
+	if err != nil {
+		t.Fatal(err)
+	}
 	resp, err := http.Get(origin + "/nonExistingPage")
 	if err != nil {
 		t.Error(err)
@@ -242,7 +293,12 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 		},
 		Started: true,
 	})
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	if err == nil {
 		t.Error("Expected timeout")
