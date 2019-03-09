@@ -11,6 +11,25 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+func TestContainerReturnItsContainerID(t *testing.T) {
+	ctx := context.Background()
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer nginxA.Terminate(ctx)
+	if nginxA.GetContainerID() == "" {
+		t.Errorf("expected a containerID but we got an empty string.")
+	}
+}
+
 func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	ctx := context.Background()
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
