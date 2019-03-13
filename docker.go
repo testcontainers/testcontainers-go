@@ -37,6 +37,10 @@ type DockerContainer struct {
 	terminationSignal chan bool
 }
 
+func (c *DockerContainer) GetContainerID() string {
+	return c.ID
+}
+
 // Endpoint gets proto://host:port string for the first exposed port
 // Will returns just host:port if proto is ""
 func (c *DockerContainer) Endpoint(ctx context.Context, proto string) (string, error) {
