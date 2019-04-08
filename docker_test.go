@@ -7,6 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"database/sql"
+	// Import mysql into the scope of this package (required)
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -321,5 +325,50 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 
 	if err == nil {
 		t.Error("Expected timeout")
+	}
+}
+
+func TestContainerCreationWaitsForLog(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "mysql:latest",
+		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
+		Env: map[string]string{
+			"MYSQL_ROOT_PASSWORD": "password",
+			"MYSQL_DATABASE":      "database",
+		},
+		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
+	}
+	mysqlC, _ := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	defer func() {
+		t.Log("terminating container")
+		err := mysqlC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	host, _ := mysqlC.Host(ctx)
+	p, _ := mysqlC.MappedPort(ctx, "3306/tcp")
+	port := p.Int()
+	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?tls=skip-verify",
+		"root", "password", host, port, "database")
+
+	db, err := sql.Open("mysql", connectionString)
+	defer db.Close()
+
+	if err = db.Ping(); err != nil {
+		t.Errorf("error pinging db: %+v\n", err)
+	}
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
+		" `col_1` VARCHAR(128) NOT NULL, \n" +
+		" `col_2` VARCHAR(128) NOT NULL, \n" +
+		" PRIMARY KEY (`col_1`, `col_2`) \n" +
+		")")
+	if err != nil {
+		t.Errorf("error creating table: %+v\n", err)
 	}
 }

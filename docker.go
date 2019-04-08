@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -160,6 +161,16 @@ func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.Containe
 	c.raw = &inspect
 
 	return c.raw, nil
+}
+
+// Logs will fetch both STDOUT and STDERR from the current container. Returns a
+// ReadCloser and leaves it up to the caller to extract what it wants.
+func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
+	options := types.ContainerLogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+	}
+	return c.provider.client.ContainerLogs(ctx, c.ID, options)
 }
 
 // DockerProvider implements the ContainerProvider interface
