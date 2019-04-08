@@ -8,6 +8,7 @@ require (
 	github.com/docker/docker v0.7.3-0.20180815000130-e05b657120a6
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.3.3 // indirect
+	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gogo/protobuf v1.2.0 // indirect
 	github.com/google/go-cmp v0.2.0 // indirect
 	github.com/gorilla/context v1.1.1 // indirect

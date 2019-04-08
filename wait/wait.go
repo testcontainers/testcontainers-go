@@ -2,6 +2,7 @@ package wait
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/docker/go-connections/nat"
@@ -14,6 +15,7 @@ type Strategy interface {
 type StrategyTarget interface {
 	Host(context.Context) (string, error)
 	MappedPort(context.Context, nat.Port) (nat.Port, error)
+	Logs(context.Context) (io.ReadCloser, error)
 }
 
 func defaultStartupTimeout() time.Duration {

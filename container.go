@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"io"
 
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
@@ -34,6 +35,7 @@ type Container interface {
 	SessionID() string                                              // get session id
 	Start(context.Context) error                                    // start the container
 	Terminate(context.Context) error                                // terminate the container
+	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
 }
 
 // ContainerRequest represents the parameters used to get a running container
