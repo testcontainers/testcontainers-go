@@ -62,19 +62,26 @@ func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
 	defer cancelContext()
 
+LOOP:
 	for {
-		reader, err := target.Logs(ctx)
-		if err != nil {
-			time.Sleep(ws.PollInterval)
-			continue
-		}
-		b, err := ioutil.ReadAll(reader)
-		logs := string(b)
-		if strings.Contains(logs, ws.Log) {
-			break
-		} else {
-			time.Sleep(ws.PollInterval)
-			continue
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			reader, err := target.Logs(ctx)
+
+			if err != nil {
+				time.Sleep(ws.PollInterval)
+				continue
+			}
+			b, err := ioutil.ReadAll(reader)
+			logs := string(b)
+			if strings.Contains(logs, ws.Log) {
+				break LOOP
+			} else {
+				time.Sleep(ws.PollInterval)
+				continue
+			}
 		}
 	}
 
