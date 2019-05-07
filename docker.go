@@ -187,6 +187,7 @@ func NewDockerProvider() (*DockerProvider, error) {
 	if err != nil {
 		return nil, err
 	}
+	client.NegotiateAPIVersion(context.Background())
 	p := &DockerProvider{
 		client: client,
 	}
