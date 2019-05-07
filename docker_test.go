@@ -147,6 +147,55 @@ func TestContainerCreation(t *testing.T) {
 	}
 }
 
+func TestContainerCreationWithName(t *testing.T) {
+	ctx := context.Background()
+
+	creationName := fmt.Sprintf("%s_%d", "test_container", time.Now().Unix())
+	expectedName := "/" + creationName // inspect adds '/' in the beginning
+	nginxPort := "80/tcp"
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				nginxPort,
+			},
+			Name: creationName,
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	name, err := nginxC.Name(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if name != expectedName {
+		t.Errorf("Expected container name '%s'. Got '%s'.", expectedName, name)
+	}
+	ip, err := nginxC.Host(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	port, err := nginxC.MappedPort(ctx, "80")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	}
+}
+
 func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 	t.Skip("Wait needs to be fixed")
 	ctx := context.Background()
