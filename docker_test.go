@@ -328,6 +328,27 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 	}
 }
 
+func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "mysql:latest",
+		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
+		Env: map[string]string{
+			"MYSQL_ROOT_PASSWORD": "password",
+			"MYSQL_DATABASE":      "database",
+		},
+		WaitingFor: wait.ForLog("test context timeout").WithStartupTimeout(1 * time.Second),
+	}
+	_, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	if err == nil {
+		t.Error("Expected timeout")
+	}
+}
+
 func TestContainerCreationWaitsForLog(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
