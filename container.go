@@ -36,6 +36,7 @@ type Container interface {
 	Start(context.Context) error                                    // start the container
 	Terminate(context.Context) error                                // terminate the container
 	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
+	Name(context.Context) (string, error)                           // get container name
 }
 
 // ContainerRequest represents the parameters used to get a running container
@@ -48,6 +49,7 @@ type ContainerRequest struct {
 	BindMounts   map[string]string
 	RegistryCred string
 	WaitingFor   wait.Strategy
+	Name         string // for specifying container name
 
 	isReaper bool // indicates whether we skip setting up a reaper for this
 }

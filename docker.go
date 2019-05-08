@@ -173,6 +173,15 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	return c.provider.client.ContainerLogs(ctx, c.ID, options)
 }
 
+// Name gets the name of the container.
+func (c *DockerContainer) Name(ctx context.Context) (string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return "", err
+	}
+	return inspect.Name, nil
+}
+
 // DockerProvider implements the ContainerProvider interface
 type DockerProvider struct {
 	client    *client.Client
@@ -279,7 +288,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		AutoRemove:   true,
 	}
 
-	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, nil, "")
+	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, nil, req.Name)
 	if err != nil {
 		return nil, err
 	}
