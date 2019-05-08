@@ -21,7 +21,8 @@ import (
 	"net/http"
 	"testing"
 
-	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestNginxLatestReturn(t *testing.T) {
@@ -29,6 +30,7 @@ func TestNginxLatestReturn(t *testing.T) {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForHTTP("/"),
 	}
 	nginxC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
