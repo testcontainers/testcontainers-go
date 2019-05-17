@@ -51,7 +51,7 @@ type ContainerRequest struct {
 	WaitingFor   wait.Strategy
 	Name         string // for specifying container name
 
-	isReaper bool // indicates whether we skip setting up a reaper for this
+	SkipReaper bool // indicates whether we skip setting up a reaper for this
 }
 
 // ProviderType is an enum for the possible providers
