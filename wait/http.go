@@ -2,6 +2,7 @@ package wait
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -26,6 +27,7 @@ type HTTPStrategy struct {
 	Path              string
 	StatusCodeMatcher func(status int) bool
 	UseTLS            bool
+	AllowInsecure     bool
 }
 
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
@@ -65,6 +67,11 @@ func (ws *HTTPStrategy) WithStatusCodeMatcher(statusCodeMatcher func(status int)
 
 func (ws *HTTPStrategy) WithTLS(useTLS bool) *HTTPStrategy {
 	ws.UseTLS = useTLS
+	return ws
+}
+
+func (ws *HTTPStrategy) WithAllowInsecure(allowInsecure bool) *HTTPStrategy {
+	ws.AllowInsecure = allowInsecure
 	return ws
 }
 
@@ -108,7 +115,13 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 
 	url := fmt.Sprintf("%s://%s%s", proto, address, ws.Path)
 
-	client := http.Client{Timeout: ws.startupTimeout}
+	tripper := http.DefaultTransport
+
+	if ws.AllowInsecure {
+		tripper.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+
+	client := http.Client{Timeout: ws.startupTimeout, Transport: tripper}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err
