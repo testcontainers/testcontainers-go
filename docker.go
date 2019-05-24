@@ -13,6 +13,7 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
@@ -204,6 +205,22 @@ func NewDockerProvider() (*DockerProvider, error) {
 		client: client,
 	}
 	return p, nil
+}
+
+func (p *DockerProvider) ContainerFromDockerArgs(ctx context.Context, args filters.Args) (*DockerContainer, error) {
+	containers, err := p.client.ContainerList(ctx, types.ContainerListOptions{
+		Filters: args,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(containers) != 1 {
+		return nil, errors.Errorf("Impossible to get container associated to this cluster. Cluster terminated.")
+	}
+	return &DockerContainer{
+		ID:       containers[0].ID,
+		provider: p,
+	}, nil
 }
 
 // CreateContainer fulfills a request for a container without starting it
