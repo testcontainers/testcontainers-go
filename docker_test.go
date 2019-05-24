@@ -429,6 +429,7 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 
 	db, err := sql.Open("mysql", connectionString)
 	defer db.Close()
+	db.SetConnMaxLifetime(time.Second)
 
 	if err = db.Ping(); err != nil {
 		t.Errorf("error pinging db: %+v\n", err)
