@@ -50,7 +50,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 		BindMounts: map[string]string{
 			"/var/run/docker.sock": "/var/run/docker.sock",
 		},
-		isReaper: true,
+		SkipReaper: false,
 	}
 
 	c, err := provider.RunContainer(ctx, req)

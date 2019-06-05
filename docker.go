@@ -222,7 +222,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	sessionID := uuid.NewV4()
 
 	var termSignal chan bool
-	if !req.isReaper {
+	if req.SkipReaper {
 		r, err := NewReaper(ctx, sessionID.String(), p)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating reaper failed")
