@@ -286,6 +286,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		PortBindings: exposedPortMap,
 		Mounts:       bindMounts,
 		AutoRemove:   true,
+		Privileged:   req.Privileged,
 	}
 
 	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, nil, req.Name)
