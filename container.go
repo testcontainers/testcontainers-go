@@ -50,6 +50,7 @@ type ContainerRequest struct {
 	RegistryCred string
 	WaitingFor   wait.Strategy
 	Name         string // for specifying container name
+	Privileged   bool   // for starting privileged container
 
 	SkipReaper bool // indicates whether we skip setting up a reaper for this
 }
