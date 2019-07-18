@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 
@@ -185,6 +186,39 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 	return inspect.Name, nil
 }
 
+// Networks gets the names of the networks the container is attached to.
+func (c *DockerContainer) Networks(ctx context.Context) ([]string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return []string{}, err
+	}
+
+	networks := inspect.NetworkSettings.Networks
+
+	n := []string{}
+
+	for k := range networks {
+		n = append(n, k)
+	}
+
+	return n, nil
+}
+
+// DockerNetwork represents a network started using Docker
+type DockerNetwork struct {
+	ID       string // Network ID from Docker
+	Driver   string
+	Name     string
+	provider *DockerProvider
+}
+
+// Remove is used to remove the network. It is usually triggered by as defer function.
+func (n *DockerNetwork) Remove(ctx context.Context) error {
+	return n.provider.RemoveNetwork(ctx, NetworkRequest{
+		Name: n.Name,
+	})
+}
+
 // DockerProvider implements the ContainerProvider interface
 type DockerProvider struct {
 	client    *client.Client
@@ -297,7 +331,23 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		Privileged:   req.Privileged,
 	}
 
-	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, nil, req.Name)
+	endpointConfigs := map[string]*network.EndpointSettings{}
+	for _, n := range req.Networks {
+		nw, err := p.GetNetwork(ctx, NetworkRequest{
+			Name: n,
+		})
+		if err == nil {
+			endpointSetting := network.EndpointSettings{
+				NetworkID: nw.ID,
+			}
+			endpointConfigs[n] = &endpointSetting
+		}
+	}
+	networkingConfig := network.NetworkingConfig{
+		EndpointsConfig: endpointConfigs,
+	}
+
+	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, req.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -366,6 +416,51 @@ func (p *DockerProvider) daemonHost() (string, error) {
 	}
 
 	return p.hostCache, nil
+}
+
+// CreateNetwork returns the object representing a new network identified by its name
+func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) (Network, error) {
+	nc := types.NetworkCreate{
+		Driver:         req.Driver,
+		CheckDuplicate: req.CheckDuplicate,
+		Internal:       req.Internal,
+		EnableIPv6:     req.EnableIPv6,
+		Attachable:     req.Attachable,
+	}
+
+	response, err := p.client.NetworkCreate(ctx, req.Name, nc)
+	if err != nil {
+		return &DockerNetwork{}, err
+	}
+
+	n := &DockerNetwork{
+		ID:     response.ID,
+		Driver: req.Driver,
+		Name:   req.Name,
+	}
+
+	return n, nil
+}
+
+// GetNetwork returns the object representing the network identified by its name
+func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (types.NetworkResource, error) {
+	networkResource, err := p.client.NetworkInspect(ctx, req.Name, types.NetworkInspectOptions{
+		Verbose: true,
+	})
+	if err != nil {
+		return types.NetworkResource{}, err
+	}
+
+	return networkResource, err
+}
+
+// RemoveNetwork removes a network
+func (p *DockerProvider) RemoveNetwork(ctx context.Context, req NetworkRequest) error {
+	if err := p.client.NetworkRemove(ctx, req.Name); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func inAContainer() bool {
