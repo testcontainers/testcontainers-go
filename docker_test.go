@@ -18,6 +18,48 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+func TestContainerAttachedToNewNetwork(t *testing.T) {
+	networkName := "new-network"
+
+	ctx := context.Background()
+	gcr := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+			Networks: []string{
+				networkName,
+			},
+		},
+	}
+
+	provider, err := gcr.ProviderType.GetProvider()
+
+	provider.CreateNetwork(ctx, NetworkRequest{
+		Name:           networkName,
+		CheckDuplicate: true,
+	})
+
+	nginx, err := GenericContainer(ctx, gcr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer nginx.Terminate(ctx)
+
+	networks, err := nginx.Networks(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(networks) != 1 {
+		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
+	}
+	network := networks[0]
+	if network != networkName {
+		t.Errorf("Expected network name '%s'. Got '%s'.", networkName, network)
+	}
+}
+
 func TestContainerReturnItsContainerID(t *testing.T) {
 	ctx := context.Background()
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
@@ -309,7 +351,8 @@ func TestContainerCreationWithName(t *testing.T) {
 			ExposedPorts: []string{
 				nginxPort,
 			},
-			Name: creationName,
+			Name:     creationName,
+			Networks: []string{"bridge"},
 		},
 		Started: true,
 	})
@@ -328,6 +371,17 @@ func TestContainerCreationWithName(t *testing.T) {
 	}
 	if name != expectedName {
 		t.Errorf("Expected container name '%s'. Got '%s'.", expectedName, name)
+	}
+	networks, err := nginxC.Networks(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(networks) != 1 {
+		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
+	}
+	network := networks[0]
+	if network != "bridge" {
+		t.Errorf("Expected network name '%s'. Got '%s'.", "bridge", network)
 	}
 	ip, err := nginxC.Host(ctx)
 	if err != nil {

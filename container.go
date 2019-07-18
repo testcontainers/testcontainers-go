@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -20,8 +21,11 @@ type DeprecatedContainer interface {
 
 // ContainerProvider allows the creation of containers on an arbitrary system
 type ContainerProvider interface {
-	CreateContainer(context.Context, ContainerRequest) (Container, error) // create a container without starting it
-	RunContainer(context.Context, ContainerRequest) (Container, error)    // create a container and start it
+	CreateContainer(context.Context, ContainerRequest) (Container, error)      // create a container without starting it
+	CreateNetwork(context.Context, NetworkRequest) (Network, error)            // create a network
+	GetNetwork(context.Context, NetworkRequest) (types.NetworkResource, error) // get a network
+	RemoveNetwork(context.Context, NetworkRequest) error                       // remove a network
+	RunContainer(context.Context, ContainerRequest) (Container, error)         // create a container and start it
 }
 
 // Container allows getting info about and controlling a single container instance
@@ -37,6 +41,7 @@ type Container interface {
 	Terminate(context.Context) error                                // terminate the container
 	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
 	Name(context.Context) (string, error)                           // get container name
+	Networks(context.Context) ([]string, error)                     // get container networks
 }
 
 // ContainerRequest represents the parameters used to get a running container
@@ -49,8 +54,9 @@ type ContainerRequest struct {
 	BindMounts   map[string]string
 	RegistryCred string
 	WaitingFor   wait.Strategy
-	Name         string // for specifying container name
-	Privileged   bool   // for starting privileged container
+	Name         string   // for specifying container name
+	Privileged   bool     // for starting privileged container
+	Networks     []string // for specifying network names
 
 	SkipReaper bool // indicates whether we skip setting up a reaper for this
 }
