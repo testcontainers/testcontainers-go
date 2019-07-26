@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -21,11 +20,8 @@ type DeprecatedContainer interface {
 
 // ContainerProvider allows the creation of containers on an arbitrary system
 type ContainerProvider interface {
-	CreateContainer(context.Context, ContainerRequest) (Container, error)      // create a container without starting it
-	CreateNetwork(context.Context, NetworkRequest) (Network, error)            // create a network
-	GetNetwork(context.Context, NetworkRequest) (types.NetworkResource, error) // get a network
-	RemoveNetwork(context.Context, NetworkRequest) error                       // remove a network
-	RunContainer(context.Context, ContainerRequest) (Container, error)         // create a container and start it
+	CreateContainer(context.Context, ContainerRequest) (Container, error) // create a container without starting it
+	RunContainer(context.Context, ContainerRequest) (Container, error)    // create a container and start it
 }
 
 // Container allows getting info about and controlling a single container instance
@@ -70,7 +66,7 @@ const (
 )
 
 // GetProvider provides the provider implementation for a certain type
-func (t ProviderType) GetProvider() (ContainerProvider, error) {
+func (t ProviderType) GetProvider() (GenericProvider, error) {
 	switch t {
 	case ProviderDocker:
 		provider, err := NewDockerProvider()
