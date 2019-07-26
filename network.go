@@ -1,6 +1,17 @@
 package testcontainers
 
-import "context"
+import (
+	"context"
+
+	"github.com/docker/docker/api/types"
+)
+
+// NetworkProvider allows the creation of networks on an arbitrary system
+type NetworkProvider interface {
+	CreateNetwork(context.Context, NetworkRequest) (Network, error)            // create a network
+	GetNetwork(context.Context, NetworkRequest) (types.NetworkResource, error) // get a network
+	RemoveNetwork(context.Context, NetworkRequest) error                       // remove a network
+}
 
 // Network allows getting info about a single network instance
 type Network interface {
