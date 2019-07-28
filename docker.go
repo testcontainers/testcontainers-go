@@ -204,6 +204,24 @@ func (c *DockerContainer) Networks(ctx context.Context) ([]string, error) {
 	return n, nil
 }
 
+// NetworkAliases gets the aliases of the container for the networks it is attached to.
+func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return map[string][]string{}, err
+	}
+
+	networks := inspect.NetworkSettings.Networks
+
+	a := map[string][]string{}
+
+	for k := range networks {
+		a[k] = networks[k].Aliases
+	}
+
+	return a, nil
+}
+
 // DockerNetwork represents a network started using Docker
 type DockerNetwork struct {
 	ID       string // Network ID from Docker
@@ -338,6 +356,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		})
 		if err == nil {
 			endpointSetting := network.EndpointSettings{
+				Aliases:   req.NetworkAliases[n],
 				NetworkID: nw.ID,
 			}
 			endpointConfigs[n] = &endpointSetting

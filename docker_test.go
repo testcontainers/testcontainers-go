@@ -31,6 +31,11 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 			Networks: []string{
 				networkName,
 			},
+			NetworkAliases: map[string][]string{
+				networkName: []string{
+					"alias1", "alias2", "alias3",
+				},
+			},
 		},
 	}
 
@@ -57,6 +62,23 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 	network := networks[0]
 	if network != networkName {
 		t.Errorf("Expected network name '%s'. Got '%s'.", networkName, network)
+	}
+
+	networkAliases, err := nginx.NetworkAliases(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(networkAliases) != 1 {
+		t.Errorf("Expected network aliases for 1 network. Got '%d'.", len(networkAliases))
+	}
+	networkAlias := networkAliases[networkName]
+	if len(networkAlias) != 3 {
+		t.Errorf("Expected network aliases %d. Got '%d'.", 3, len(networkAlias))
+	}
+	if networkAlias[0] != "alias1" || networkAlias[1] != "alias2" || networkAlias[2] != "alias3" {
+		t.Errorf(
+			"Expected network aliases '%s', '%s' and '%s'. Got '%s', '%s' and '%s'.",
+			"alias1", "alias2", "alias3", networkAlias[0], networkAlias[1], networkAlias[2])
 	}
 }
 
@@ -336,6 +358,17 @@ func TestContainerCreation(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	}
+	networkAliases, err := nginxC.NetworkAliases(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(networkAliases) != 1 {
+		fmt.Printf("%v", networkAliases)
+		t.Errorf("Expected number of connected networks %d. Got %d.", 0, len(networkAliases))
+	}
+	if len(networkAliases["bridge"]) != 0 {
+		t.Errorf("Expected number of aliases for 'bridge' network %d. Got %d.", 0, len(networkAliases["bridge"]))
 	}
 }
 
