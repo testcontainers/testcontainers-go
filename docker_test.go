@@ -45,6 +45,9 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 		Name:           networkName,
 		CheckDuplicate: true,
 	})
+	defer provider.RemoveNetwork(ctx, NetworkRequest{
+		Name: networkName,
+	})
 
 	nginx, err := GenericContainer(ctx, gcr)
 	if err != nil {
