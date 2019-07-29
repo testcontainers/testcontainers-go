@@ -41,13 +41,14 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 
 	provider, err := gcr.ProviderType.GetProvider()
 
-	provider.CreateNetwork(ctx, NetworkRequest{
+	newNetwork, err := provider.CreateNetwork(ctx, NetworkRequest{
 		Name:           networkName,
 		CheckDuplicate: true,
 	})
-	defer provider.RemoveNetwork(ctx, NetworkRequest{
-		Name: networkName,
-	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer newNetwork.Remove(ctx)
 
 	nginx, err := GenericContainer(ctx, gcr)
 	if err != nil {
