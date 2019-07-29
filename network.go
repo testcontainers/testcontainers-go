@@ -10,7 +10,6 @@ import (
 type NetworkProvider interface {
 	CreateNetwork(context.Context, NetworkRequest) (Network, error)            // create a network
 	GetNetwork(context.Context, NetworkRequest) (types.NetworkResource, error) // get a network
-	RemoveNetwork(context.Context, NetworkRequest) error                       // remove a network
 }
 
 // Network allows getting info about a single network instance
@@ -25,5 +24,8 @@ type NetworkRequest struct {
 	Internal       bool
 	EnableIPv6     bool
 	Name           string
+	Labels         map[string]string
 	Attachable     bool
+
+	SkipReaper bool // indicates whether we skip setting up a reaper for this
 }

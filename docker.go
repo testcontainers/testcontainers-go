@@ -224,17 +224,19 @@ func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]stri
 
 // DockerNetwork represents a network started using Docker
 type DockerNetwork struct {
-	ID       string // Network ID from Docker
-	Driver   string
-	Name     string
-	provider *DockerProvider
+	ID                string // Network ID from Docker
+	Driver            string
+	Name              string
+	provider          *DockerProvider
+	terminationSignal chan bool
 }
 
 // Remove is used to remove the network. It is usually triggered by as defer function.
-func (n *DockerNetwork) Remove(ctx context.Context) error {
-	return n.provider.RemoveNetwork(ctx, NetworkRequest{
-		Name: n.Name,
-	})
+func (n *DockerNetwork) Remove(_ context.Context) error {
+	if n.terminationSignal != nil {
+		n.terminationSignal <- true
+	}
+	return nil
 }
 
 // DockerProvider implements the ContainerProvider interface
@@ -439,12 +441,36 @@ func (p *DockerProvider) daemonHost() (string, error) {
 
 // CreateNetwork returns the object representing a new network identified by its name
 func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) (Network, error) {
+	if req.Labels == nil {
+		req.Labels = make(map[string]string)
+	}
+
 	nc := types.NetworkCreate{
 		Driver:         req.Driver,
 		CheckDuplicate: req.CheckDuplicate,
 		Internal:       req.Internal,
 		EnableIPv6:     req.EnableIPv6,
 		Attachable:     req.Attachable,
+		Labels:         req.Labels,
+	}
+
+	sessionID := uuid.NewV4()
+
+	var termSignal chan bool
+	if req.SkipReaper {
+		r, err := NewReaper(ctx, sessionID.String(), p)
+		if err != nil {
+			return nil, errors.Wrap(err, "creating network reaper failed")
+		}
+		termSignal, err = r.Connect()
+		if err != nil {
+			return nil, errors.Wrap(err, "connecting to network reaper failed")
+		}
+		for k, v := range r.Labels() {
+			if _, ok := req.Labels[k]; !ok {
+				req.Labels[k] = v
+			}
+		}
 	}
 
 	response, err := p.client.NetworkCreate(ctx, req.Name, nc)
@@ -453,9 +479,10 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	}
 
 	n := &DockerNetwork{
-		ID:     response.ID,
-		Driver: req.Driver,
-		Name:   req.Name,
+		ID:                response.ID,
+		Driver:            req.Driver,
+		Name:              req.Name,
+		terminationSignal: termSignal,
 	}
 
 	return n, nil
@@ -471,15 +498,6 @@ func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (ty
 	}
 
 	return networkResource, err
-}
-
-// RemoveNetwork removes a network
-func (p *DockerProvider) RemoveNetwork(ctx context.Context, req NetworkRequest) error {
-	if err := p.client.NetworkRemove(ctx, req.Name); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func inAContainer() bool {
