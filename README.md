@@ -62,8 +62,8 @@ To clean your environment you can defer the container termination `defer
 nginxC.Terminate(ctx, t)`. `t` is `*testing.T` and it is used to notify is the
 `defer` failed marking the test as failed.
 
-You can build more complex flow using envvar to configure the containers. Let's
-suppose you are testing an application that requites redis:
+You can build more complex flow using env var to configure the containers. Let's
+suppose you are testing an application that requires redis:
 
 ```go
 func TestRedisPing(t *testing.T) {
