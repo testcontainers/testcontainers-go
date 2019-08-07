@@ -11,6 +11,9 @@ import (
 	// Import mysql into the scope of this package (required)
 	_ "github.com/go-sql-driver/mysql"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -31,6 +34,153 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 	defer nginxA.Terminate(ctx)
 	if nginxA.GetContainerID() == "" {
 		t.Errorf("expected a containerID but we got an empty string.")
+	}
+}
+
+func TestContainerStartsWithoutTheReaper(t *testing.T) {
+	t.Skip("need to use the sessionID")
+	ctx := context.Background()
+	client, err := client.NewEnvClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.NegotiateAPIVersion(ctx)
+	_, err = GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+			SkipReaper: true,
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	filtersJSON := fmt.Sprintf(`{"label":{"%s":true}}`, TestcontainerLabelIsReaper)
+	f, err := filters.FromJSON(filtersJSON)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.ContainerList(ctx, types.ContainerListOptions{
+		Filters: f,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp) != 0 {
+		t.Fatal("expected zero reaper running.")
+	}
+}
+
+func TestContainerStartsWithTheReaper(t *testing.T) {
+	ctx := context.Background()
+	client, err := client.NewEnvClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.NegotiateAPIVersion(ctx)
+	_, err = GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	filtersJSON := fmt.Sprintf(`{"label":{"%s":true}}`, TestcontainerLabelIsReaper)
+	f, err := filters.FromJSON(filtersJSON)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.ContainerList(ctx, types.ContainerListOptions{
+		Filters: f,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp) == 0 {
+		t.Fatal("expected at least one reaper to be running.")
+	}
+}
+
+func TestContainerTerminationWithReaper(t *testing.T) {
+	ctx := context.Background()
+	client, err := client.NewEnvClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.NegotiateAPIVersion(ctx)
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	containerID := nginxA.GetContainerID()
+	resp, err := client.ContainerInspect(ctx, containerID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.State.Running != true {
+		t.Fatal("The container shoud be in running state")
+	}
+	err = nginxA.Terminate(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = client.ContainerInspect(ctx, containerID)
+	if err == nil {
+		t.Fatal("expected error from container inspect.")
+	}
+}
+
+func TestContainerTerminationWithoutReaper(t *testing.T) {
+	ctx := context.Background()
+	client, err := client.NewEnvClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.NegotiateAPIVersion(ctx)
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+			SkipReaper: true,
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	containerID := nginxA.GetContainerID()
+	resp, err := client.ContainerInspect(ctx, containerID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.State.Running != true {
+		t.Fatal("The container shoud be in running state")
+	}
+	err = nginxA.Terminate(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = client.ContainerInspect(ctx, containerID)
+	if err == nil {
+		t.Fatal("expected error from container inspect.")
 	}
 }
 
