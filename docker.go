@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/cenkalti/backoff"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -258,7 +259,12 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			if req.RegistryCred != "" {
 				pullOpt.RegistryAuth = req.RegistryCred
 			}
-			pull, err := p.client.ImagePull(ctx, req.Image, pullOpt)
+			var pull io.ReadCloser
+			err := backoff.Retry(func() error {
+				var err error
+				pull, err = p.client.ImagePull(ctx, req.Image, pullOpt)
+				return err
+			}, backoff.NewExponentialBackOff())
 			if err != nil {
 				return nil, err
 			}
