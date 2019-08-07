@@ -446,61 +446,6 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 	}
 }
 
-func TestContainerRespondsWithHttp404ForNonExistingPage(t *testing.T) {
-	t.Skip("Wait needs to be fixed")
-	ctx := context.Background()
-
-	nginxPort := "80/tcp"
-	// delayed-nginx will wait 2s before opening port
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			Image: "nginx",
-			ExposedPorts: []string{
-				nginxPort,
-			},
-			WaitingFor: wait.ForHTTP("/nonExistingPage").WithStatusCodeMatcher(func(status int) bool {
-				return status == http.StatusNotFound
-			}),
-		},
-		Started: true,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	rC, err := RunContainer(ctx, "nginx", RequestContainer{
-		ExportedPort: []string{
-			nginxPort,
-		},
-		WaitingFor: wait.ForHTTP("/nonExistingPage").WithStatusCodeMatcher(func(status int) bool {
-			return status == http.StatusNotFound
-		}),
-	})
-	if rC != nil {
-		t.Fatal(rC)
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		err := nginxC.Terminate(ctx)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-
-	origin, err := nginxC.PortEndpoint(ctx, nat.Port(nginxPort), "http")
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := http.Get(origin + "/nonExistingPage")
-	if err != nil {
-		t.Error(err)
-	}
-	if resp.StatusCode != http.StatusNotFound {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusNotFound, resp.StatusCode)
-	}
-}
-
 func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 	t.Skip("Wait needs to be fixed")
 	ctx := context.Background()
