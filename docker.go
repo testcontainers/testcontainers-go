@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/cenkalti/backoff"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -36,6 +37,7 @@ type DockerContainer struct {
 	provider          *DockerProvider
 	sessionID         uuid.UUID
 	terminationSignal chan bool
+	skipReaper        bool
 }
 
 func (c *DockerContainer) GetContainerID() string {
@@ -143,11 +145,12 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 }
 
 // Terminate is used to kill the container. It is usally triggered by as defer function.
-func (c *DockerContainer) Terminate(_ context.Context) error {
-	if c.terminationSignal != nil {
-		c.terminationSignal <- true
-	}
-	return nil
+func (c *DockerContainer) Terminate(ctx context.Context) error {
+	err := c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
+		RemoveVolumes: true,
+		Force:         true,
+	})
+	return err
 }
 
 func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.ContainerJSON, error) {
@@ -222,7 +225,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	sessionID := uuid.NewV4()
 
 	var termSignal chan bool
-	if req.SkipReaper {
+	if !req.SkipReaper {
 		r, err := NewReaper(ctx, sessionID.String(), p)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating reaper failed")
@@ -256,7 +259,12 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			if req.RegistryCred != "" {
 				pullOpt.RegistryAuth = req.RegistryCred
 			}
-			pull, err := p.client.ImagePull(ctx, req.Image, pullOpt)
+			var pull io.ReadCloser
+			err := backoff.Retry(func() error {
+				var err error
+				pull, err = p.client.ImagePull(ctx, req.Image, pullOpt)
+				return err
+			}, backoff.NewExponentialBackOff())
 			if err != nil {
 				return nil, err
 			}
@@ -300,6 +308,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		sessionID:         sessionID,
 		provider:          p,
 		terminationSignal: termSignal,
+		skipReaper:        req.SkipReaper,
 	}
 
 	return c, nil

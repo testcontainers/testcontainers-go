@@ -5,6 +5,7 @@ replace github.com/docker/docker => github.com/docker/engine v0.0.0-201907171610
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Microsoft/go-winio v0.4.11 // indirect
+	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/docker/distribution v2.7.1-0.20190205005809-0d3efadf0154+incompatible // indirect
 	github.com/docker/docker v0.7.3-0.20190506211059-b20a14b54661
 	github.com/docker/go-connections v0.4.0
