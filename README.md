@@ -62,6 +62,22 @@ To clean your environment you can defer the container termination `defer
 nginxC.Terminate(ctx, t)`. `t` is `*testing.T` and it is used to notify is the
 `defer` failed marking the test as failed.
 
+
+## Build from Dockerfile
+
+Testcontainers-go gives you the ability to build and image and run a container from a Dockerfile.
+
+You can do so by specifiying a `Context` and optionally a `Dockerfile` (defaults to "Dockerfile") like so:
+
+```
+req := ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context: "/path/to/build/context",
+			Dockerfile: "CustomDockerfile",
+		},
+	}
+```
+
 ## Sending a CMD to a Container
 
 If you would like to send a CMD (command) to a container, you can pass it in to the container request via the `Cmd` field...

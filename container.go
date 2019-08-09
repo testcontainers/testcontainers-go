@@ -41,8 +41,22 @@ type Container interface {
 	NetworkAliases(context.Context) (map[string][]string, error)    // get container network aliases for a network
 }
 
+// ImageBuildInfo defines what is needed to build an image
+type ImageBuildInfo interface {
+	GetContext() string    // the path to the build context
+	GetDockerfile() string // the relative path to the Dockerfile, including the fileitself
+}
+
+// FromDockerfile represents the parameters needed to build an image from a Dockerfile
+// rather than using a pre-built one
+type FromDockerfile struct {
+	Context    string // the path to the context of of the docker build
+	Dockerfile string // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
+}
+
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
+	FromDockerfile
 	Image          string
 	Env            map[string]string
 	ExposedPorts   []string // allow specifying protocol info
@@ -77,4 +91,46 @@ func (t ProviderType) GetProvider() (GenericProvider, error) {
 		return provider, nil
 	}
 	return nil, errors.New("unknown provider")
+}
+
+// Validate ensures that the ContainerRequest does not have invalid paramters configured to it
+// ex. make sure you are not specifying both an image as well as a context
+func (c *ContainerRequest) Validate() error {
+
+	validationMethods := []func() error{
+		c.validateContextAndImage,
+	}
+
+	var err error
+	for _, validationMethod := range validationMethods {
+		err = validationMethod()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// GetContext retrieve the build context for the request
+func (c *ContainerRequest) GetContext() string {
+	return c.FromDockerfile.Context
+}
+
+// GetDockerfile returns the Dockerfile from the ContainerRequest, defaults to "Dockerfile"
+func (c *ContainerRequest) GetDockerfile() string {
+	f := c.FromDockerfile.Dockerfile
+	if f == "" {
+		return "Dockerfile"
+	}
+
+	return f
+}
+
+func (c *ContainerRequest) validateContextAndImage() error {
+	if c.FromDockerfile.Context != "" && c.Image != "" {
+		return errors.New("you cannot specify both an Image and Context in a ContainerRequest")
+	}
+
+	return nil
 }
