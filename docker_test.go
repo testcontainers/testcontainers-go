@@ -592,3 +592,80 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 		t.Errorf("error creating table: %+v\n", err)
 	}
 }
+
+func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "mysql:latest",
+		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
+		Env: map[string]string{
+			"MYSQL_ROOT_PASSWORD": "password",
+			"MYSQL_DATABASE":      "database",
+		},
+		WaitingFor: wait.ForAll(
+			wait.ForLog("I love testcontainers-go"),
+			wait.ForListeningPort("3306/tcp"),
+		),
+	}
+	_, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	if err == nil {
+		t.Fatal("Expected timeout")
+	}
+
+}
+
+func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "mysql:latest",
+		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
+		Env: map[string]string{
+			"MYSQL_ROOT_PASSWORD": "password",
+			"MYSQL_DATABASE":      "database",
+		},
+		WaitingFor: wait.ForAll(
+			wait.ForLog("port: 3306  MySQL Community Server - GPL"),
+			wait.ForListeningPort("3306/tcp"),
+		),
+	}
+
+	mysqlC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		t.Log("terminating container")
+		err := mysqlC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	host, _ := mysqlC.Host(ctx)
+	p, _ := mysqlC.MappedPort(ctx, "3306/tcp")
+	port := p.Int()
+	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?tls=skip-verify",
+		"root", "password", host, port, "database")
+
+	db, err := sql.Open("mysql", connectionString)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer db.Close()
+
+	if err = db.Ping(); err != nil {
+		t.Errorf("error pinging db: %+v\n", err)
+	}
+
+}
