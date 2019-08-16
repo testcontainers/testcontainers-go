@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/azakharenko/testcontainers-go/wait"
 	"github.com/docker/go-connections/nat"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestLegacyTwoContainersExposingTheSamePort(t *testing.T) {

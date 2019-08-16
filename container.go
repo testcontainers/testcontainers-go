@@ -4,9 +4,11 @@ import (
 	"context"
 	"io"
 
+	"github.com/docker/docker/api/types"
+
+	"github.com/azakharenko/testcontainers-go/wait"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // DeprecatedContainer shows methods that were supported before, but are now deprecated
@@ -20,8 +22,11 @@ type DeprecatedContainer interface {
 
 // ContainerProvider allows the creation of containers on an arbitrary system
 type ContainerProvider interface {
-	CreateContainer(context.Context, ContainerRequest) (Container, error) // create a container without starting it
-	RunContainer(context.Context, ContainerRequest) (Container, error)    // create a container and start it
+	CreateContainer(context.Context, ContainerRequest) (Container, error)   // create a container without starting it
+	CreateFromExistentContainer(context.Context, string) (Container, error) // use existent container
+	RunContainer(context.Context, ContainerRequest) (Container, error)      // create a container and start it
+	ListContainers(context.Context, bool) ([]Container, error)              // list containers
+	ContainerExists(context.Context, string) (bool, error)                  // check if container with given name exists
 }
 
 // Container allows getting info about and controlling a single container instance
@@ -35,8 +40,14 @@ type Container interface {
 	SessionID() string                                              // get session id
 	Start(context.Context) error                                    // start the container
 	Terminate(context.Context) error                                // terminate the container
+	Stop(context.Context) error                                     // stop the container
+	Remove(context.Context, bool) error                             // remove the container
 	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
 	Name(context.Context) (string, error)                           // get container name
+	IsRunning(ctx context.Context) (bool, error)                    // is state of container 'running'
+	State(ctx context.Context) (*types.ContainerState, error)       // state of container
+	Image(context.Context) (string, error)                          // get container image
+	ResetCache(context.Context)                                     // reset internal testcontainers-go cache
 }
 
 // ContainerRequest represents the parameters used to get a running container
@@ -51,6 +62,8 @@ type ContainerRequest struct {
 	WaitingFor   wait.Strategy
 	Name         string // for specifying container name
 	Privileged   bool   // for starting privileged container
+	Entrypoint   []string
+	AutoRemove   bool
 
 	SkipReaper bool // indicates whether we skip setting up a reaper for this
 }

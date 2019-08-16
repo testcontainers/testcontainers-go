@@ -11,12 +11,112 @@ import (
 	// Import mysql into the scope of this package (required)
 	_ "github.com/go-sql-driver/mysql"
 
+	"github.com/azakharenko/testcontainers-go/wait"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+func TestContainerRemoving(t *testing.T) {
+	ctx := context.Background()
+
+	client, err := client.NewEnvClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client.NegotiateAPIVersion(ctx)
+
+	creationName := fmt.Sprintf("%s_%d", "test_container", time.Now().Unix())
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+			SkipReaper: true,
+			Name:       creationName,
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dockerProvider, err := ProviderDocker.GetProvider()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	containerExists, err := dockerProvider.ContainerExists(ctx, creationName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containerExists {
+		t.Errorf("Container '%s' should exist", creationName)
+	}
+
+	err = nginxA.Remove(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	containerExists, err = dockerProvider.ContainerExists(ctx, creationName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if containerExists {
+		t.Errorf("Container '%s' should nod exist", creationName)
+	}
+}
+
+// also slightly checks IsRunning() method (that uses State() method inside)
+func TestContainerStopping(t *testing.T) {
+	ctx := context.Background()
+
+	client, err := client.NewEnvClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client.NegotiateAPIVersion(ctx)
+
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+			SkipReaper: true,
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	isRunning, err := nginxA.IsRunning(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !isRunning {
+		t.Fatal("The container should be in running state")
+	}
+
+	err = nginxA.Stop(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	isRunning, err = nginxA.IsRunning(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if isRunning {
+		t.Fatal("The container should not be in running state")
+	}
+}
 
 func TestContainerReturnItsContainerID(t *testing.T) {
 	ctx := context.Background()
@@ -262,9 +362,10 @@ func TestContainerCreation(t *testing.T) {
 	ctx := context.Background()
 
 	nginxPort := "80/tcp"
+	expectedImageName := "nginx"
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: expectedImageName,
 			ExposedPorts: []string{
 				nginxPort,
 			},
@@ -274,20 +375,24 @@ func TestContainerCreation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer func() {
 		err := nginxC.Terminate(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}()
+
 	ip, err := nginxC.Host(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	port, err := nginxC.MappedPort(ctx, "80")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
 	if err != nil {
 		t.Fatal(err)

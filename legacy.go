@@ -3,9 +3,9 @@ package testcontainers
 import (
 	"context"
 
+	"github.com/azakharenko/testcontainers-go/wait"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 var _ DeprecatedContainer = (*DockerContainer)(nil)

@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 
-	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/azakharenko/testcontainers-go/wait"
 )
 
 // Implement interfaces
@@ -91,6 +91,7 @@ func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return host, nil
 }
 
@@ -120,12 +121,44 @@ func (c *DockerContainer) Ports(ctx context.Context) (nat.PortMap, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return inspect.NetworkSettings.Ports, nil
 }
 
 // SessionID gets the current session id
 func (c *DockerContainer) SessionID() string {
 	return c.sessionID.String()
+}
+
+// IsRunning returns true if a container is running
+func (c *DockerContainer) IsRunning(ctx context.Context) (bool, error) {
+	state, err := c.State(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return state.Running, nil
+}
+
+// State returns current container's state
+func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
+	c.ResetCache(ctx)
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return inspect.State, nil
+}
+
+// State returns a container's image
+func (c *DockerContainer) Image(ctx context.Context) (string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return inspect.Image, nil
 }
 
 // Start will start an already created container
@@ -144,12 +177,36 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 	return nil
 }
 
+// Stop will stop a container
+func (c *DockerContainer) Stop(ctx context.Context) error {
+	if err := c.provider.client.ContainerStop(ctx, c.ID, nil); err != nil {
+		return fmt.Errorf("could not stop container '%s': %s", c.ID, err)
+	}
+
+	return nil
+}
+
+// Remove will remove a container
+func (c *DockerContainer) Remove(ctx context.Context, force bool) error {
+	removeOpts := types.ContainerRemoveOptions{
+		RemoveVolumes: false,
+		RemoveLinks:   false,
+		Force:         force,
+	}
+	if err := c.provider.client.ContainerRemove(ctx, c.ID, removeOpts); err != nil {
+		return fmt.Errorf("could not remove container '%s': %s", c.ID, err)
+	}
+
+	return nil
+}
+
 // Terminate is used to kill the container. It is usally triggered by as defer function.
 func (c *DockerContainer) Terminate(ctx context.Context) error {
 	err := c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
 		RemoveVolumes: true,
 		Force:         true,
 	})
+
 	return err
 }
 
@@ -157,6 +214,7 @@ func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.Containe
 	if c.raw != nil {
 		return c.raw, nil
 	}
+
 	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
 	if err != nil {
 		return nil, err
@@ -173,6 +231,7 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 		ShowStdout: true,
 		ShowStderr: true,
 	}
+
 	return c.provider.client.ContainerLogs(ctx, c.ID, options)
 }
 
@@ -182,7 +241,13 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return inspect.Name, nil
+}
+
+// ResetCache sets struct field raw to nil
+func (c *DockerContainer) ResetCache(ctx context.Context) {
+	c.raw = nil
 }
 
 // DockerProvider implements the ContainerProvider interface
@@ -199,10 +264,12 @@ func NewDockerProvider() (*DockerProvider, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	client.NegotiateAPIVersion(context.Background())
 	p := &DockerProvider{
 		client: client,
 	}
+
 	return p, nil
 }
 
@@ -252,6 +319,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		dockerInput.Cmd = strings.Split(req.Cmd, " ")
 	}
 
+	if len(req.Entrypoint) > 0 {
+		dockerInput.Entrypoint = req.Entrypoint
+	}
+
 	_, _, err = p.client.ImageInspectWithRaw(ctx, req.Image)
 	if err != nil {
 		if client.IsErrNotFound(err) {
@@ -293,7 +364,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	hostConfig := &container.HostConfig{
 		PortBindings: exposedPortMap,
 		Mounts:       bindMounts,
-		AutoRemove:   true,
+		AutoRemove:   req.AutoRemove,
 		Privileged:   req.Privileged,
 	}
 
@@ -309,6 +380,60 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		provider:          p,
 		terminationSignal: termSignal,
 		skipReaper:        req.SkipReaper,
+	}
+
+	return c, nil
+}
+
+// ListContainers returns current existent containers
+func (p *DockerProvider) ListContainers(ctx context.Context, all bool) ([]Container, error) {
+	containers, err := p.client.ContainerList(ctx, types.ContainerListOptions{All: all})
+	if err != nil {
+		return nil, fmt.Errorf("error while trying to list containers: %s", err)
+	}
+
+	result := make([]Container, 0, len(containers))
+	for _, c := range containers {
+		result = append(result, &DockerContainer{ID: c.ID, provider: p})
+	}
+
+	return result, nil
+}
+
+// ContainerExists returns true if container with given name exists
+func (p *DockerProvider) ContainerExists(ctx context.Context, name string) (bool, error) {
+	containers, err := p.ListContainers(ctx, true)
+	if err != nil {
+		return false, err
+	}
+
+	for _, c := range containers {
+		currentName, err := c.Name(ctx)
+		if err != nil {
+			return false, fmt.Errorf("error while trying to get container's name: %s", err)
+		}
+		if currentName == "/"+name {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// CreateFromExistentContainer returns Container interface that uses existent container
+func (p *DockerProvider) CreateFromExistentContainer(ctx context.Context, containerName string) (Container, error) {
+	sessionID := uuid.NewV4()
+
+	inspect, err := p.client.ContainerInspect(ctx, containerName) // we can use name instead of ID
+	if err != nil {
+		return nil, fmt.Errorf("error while trying to inspect thew container: %s", err)
+	}
+	id := inspect.ID
+
+	c := &DockerContainer{
+		ID:        id,
+		sessionID: sessionID,
+		provider:  p,
 	}
 
 	return c, nil

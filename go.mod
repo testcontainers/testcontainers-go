@@ -1,4 +1,4 @@
-module github.com/testcontainers/testcontainers-go
+module github.com/azakharenko/testcontainers-go
 
 replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
 

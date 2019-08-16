@@ -33,3 +33,18 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 
 	return c, nil
 }
+
+// UseExistent uses existent container
+func UseExistent(ctx context.Context, req GenericContainerRequest) (Container, error) {
+	provider, err := req.ProviderType.GetProvider()
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := provider.CreateFromExistentContainer(ctx, req.Name)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create container")
+	}
+
+	return c, nil
+}
