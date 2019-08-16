@@ -63,7 +63,7 @@ type ContainerRequest struct {
 	Name         string // for specifying container name
 	Privileged   bool   // for starting privileged container
 	Entrypoint   []string
-	AutoRemove   bool
+	DontRemove   bool
 
 	SkipReaper bool // indicates whether we skip setting up a reaper for this
 }
