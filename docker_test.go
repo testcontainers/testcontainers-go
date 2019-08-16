@@ -54,7 +54,7 @@ func TestContainerRemoving(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !containerExists {
-		t.Errorf("Container '%s' should exist", creationName)
+		t.Fatalf("Container '%s' should exist", creationName)
 	}
 
 	err = nginxA.Remove(ctx, true)
@@ -67,7 +67,7 @@ func TestContainerRemoving(t *testing.T) {
 		t.Fatal(err)
 	}
 	if containerExists {
-		t.Errorf("Container '%s' should nod exist", creationName)
+		t.Fatalf("Container '%s' should nod exist", creationName)
 	}
 }
 

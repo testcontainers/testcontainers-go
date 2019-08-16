@@ -428,10 +428,9 @@ func (p *DockerProvider) CreateFromExistentContainer(ctx context.Context, contai
 	if err != nil {
 		return nil, fmt.Errorf("error while trying to inspect thew container: %s", err)
 	}
-	id := inspect.ID
 
 	c := &DockerContainer{
-		ID:        id,
+		ID:        inspect.ID,
 		sessionID: sessionID,
 		provider:  p,
 	}
