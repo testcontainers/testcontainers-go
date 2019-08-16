@@ -6,9 +6,9 @@ import (
 
 	"github.com/docker/docker/api/types"
 
-	"github.com/azakharenko/testcontainers-go/wait"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // DeprecatedContainer shows methods that were supported before, but are now deprecated

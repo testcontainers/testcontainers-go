@@ -11,11 +11,11 @@ import (
 	// Import mysql into the scope of this package (required)
 	_ "github.com/go-sql-driver/mysql"
 
-	"github.com/azakharenko/testcontainers-go/wait"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestContainerRemoving(t *testing.T) {
