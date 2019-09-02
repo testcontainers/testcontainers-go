@@ -46,7 +46,7 @@ type ContainerRequest struct {
 	Image          string
 	Env            map[string]string
 	ExposedPorts   []string // allow specifying protocol info
-	Cmd            string
+	Cmd            []string
 	Labels         map[string]string
 	BindMounts     map[string]string
 	RegistryCred   string
@@ -55,8 +55,7 @@ type ContainerRequest struct {
 	Privileged     bool                // for starting privileged container
 	Networks       []string            // for specifying network names
 	NetworkAliases map[string][]string // for specifying network aliases
-
-	SkipReaper bool // indicates whether we skip setting up a reaper for this
+	SkipReaper     bool                // indicates whether we skip setting up a reaper for this
 }
 
 // ProviderType is an enum for the possible providers

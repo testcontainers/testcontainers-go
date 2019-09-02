@@ -300,10 +300,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		Env:          env,
 		ExposedPorts: exposedPortSet,
 		Labels:       req.Labels,
-	}
-
-	if req.Cmd != "" {
-		dockerInput.Cmd = strings.Split(req.Cmd, " ")
+		Cmd:          req.Cmd,
 	}
 
 	_, _, err = p.client.ImageInspectWithRaw(ctx, req.Image)
