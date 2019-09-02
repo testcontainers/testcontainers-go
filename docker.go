@@ -457,7 +457,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	sessionID := uuid.NewV4()
 
 	var termSignal chan bool
-	if req.SkipReaper {
+	if !req.SkipReaper {
 		r, err := NewReaper(ctx, sessionID.String(), p)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating network reaper failed")
