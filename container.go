@@ -37,20 +37,24 @@ type Container interface {
 	Terminate(context.Context) error                                // terminate the container
 	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
 	Name(context.Context) (string, error)                           // get container name
+	Networks(context.Context) ([]string, error)                     // get container networks
+	NetworkAliases(context.Context) (map[string][]string, error)    // get container network aliases for a network
 }
 
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
-	Image        string
-	Env          map[string]string
-	ExposedPorts []string // allow specifying protocol info
-	Cmd          string
-	Labels       map[string]string
-	BindMounts   map[string]string
-	RegistryCred string
-	WaitingFor   wait.Strategy
-	Name         string // for specifying container name
-	Privileged   bool   // for starting privileged container
+	Image          string
+	Env            map[string]string
+	ExposedPorts   []string // allow specifying protocol info
+	Cmd            string
+	Labels         map[string]string
+	BindMounts     map[string]string
+	RegistryCred   string
+	WaitingFor     wait.Strategy
+	Name           string              // for specifying container name
+	Privileged     bool                // for starting privileged container
+	Networks       []string            // for specifying network names
+	NetworkAliases map[string][]string // for specifying network aliases
 
 	SkipReaper bool // indicates whether we skip setting up a reaper for this
 }
@@ -64,7 +68,7 @@ const (
 )
 
 // GetProvider provides the provider implementation for a certain type
-func (t ProviderType) GetProvider() (ContainerProvider, error) {
+func (t ProviderType) GetProvider() (GenericProvider, error) {
 	switch t {
 	case ProviderDocker:
 		provider, err := NewDockerProvider()
