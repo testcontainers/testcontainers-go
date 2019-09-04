@@ -7,7 +7,7 @@ categories:
   - title: 🚀 Features
     label: type/feature
   - title: BC Break
-    label: type/bug
+    label: type/bc-break
   - title: 🐛 Bug Fixes
     label: type/bug
   - title: 📖 Documentation
