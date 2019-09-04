@@ -61,3 +61,17 @@ can use it to make a GET: `resp, err := http.Get(fmt.Sprintf("http://%s", ip))`
 To clean your environment you can defer the container termination `defer
 nginxC.Terminate(ctx, t)`. `t` is `*testing.T` and it is used to notify is the
 `defer` failed marking the test as failed.
+
+## Sending a CMD to a Container
+
+If you would like to send a CMD (command) to a container, you can pass it in to the container request via the `Cmd` field...
+
+```go
+req := ContainerRequest{
+	Image: "alpine",
+	WaitingFor: wait.ForAll(
+		wait.ForLog("command override!"),
+	),
+	Cmd: []string{"echo", "command override!"},
+}
+```

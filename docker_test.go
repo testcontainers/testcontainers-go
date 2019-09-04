@@ -705,3 +705,33 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 	}
 
 }
+
+func TestCMD(t *testing.T) {
+	/*
+		echo a unique statement to ensure that we
+		can pass in a command to the ContainerRequest
+		and it will be run when we run the container
+	*/
+
+	ctx := context.Background()
+
+	req := ContainerRequest{
+		Image: "alpine",
+		WaitingFor: wait.ForAll(
+			wait.ForLog("command override!"),
+		),
+		Cmd: []string{"echo", "command override!"},
+	}
+
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// defer not needed, but keeping it in for consistency
+	defer c.Terminate(ctx)
+}
