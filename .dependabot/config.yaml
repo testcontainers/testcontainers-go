@@ -3,4 +3,4 @@ update_configs:
     -
         package_manager: 'go:modules'
         directory: /
-        update_schedule: live
+        update_schedule: daily
