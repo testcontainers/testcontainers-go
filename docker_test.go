@@ -178,6 +178,40 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	}
 }
 
+func TestContainerTerminationResetsState(t *testing.T) {
+	ctx := context.Background()
+	client, err := client.NewEnvClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.NegotiateAPIVersion(ctx)
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+			SkipReaper: true,
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = nginxA.Terminate(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if nginxA.SessionID() != "00000000-0000-0000-0000-000000000000" {
+		t.Fatal("Internal state must be reset.")
+	}
+	ports, err := nginxA.Ports(ctx)
+	if err == nil || ports != nil {
+		t.Fatal("expected error from container inspect.")
+	}
+}
+
 func TestContainerTerminationWithReaper(t *testing.T) {
 	ctx := context.Background()
 	client, err := client.NewEnvClient()
