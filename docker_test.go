@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/go-redis/redis"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -626,6 +627,62 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 		")")
 	if err != nil {
 		t.Errorf("error creating table: %+v\n", err)
+	}
+}
+
+func Test_BuildContainerFromDockerfile(t *testing.T) {
+	t.Log("getting context")
+	context := context.Background()
+	t.Log("got context, creating container request")
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context: "./testresources",
+		},
+		ExposedPorts: []string{"6379/tcp"},
+		WaitingFor:   wait.ForLog("Ready to accept connections"),
+	}
+
+	t.Log("creating generic container request from container request")
+
+	genContainerReq := GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	t.Log("creating redis container")
+
+	redisC, err := GenericContainer(context, genContainerReq)
+
+	t.Log("created redis container")
+
+	defer func() {
+		t.Log("terminating redis container")
+		err := redisC.Terminate(context)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log("terminated redis container")
+	}()
+
+	t.Log("getting redis container endpoint")
+	endpoint, err := redisC.Endpoint(context, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log("retrieved redis container endpoint")
+
+	client := redis.NewClient(&redis.Options{
+		Addr: endpoint,
+	})
+
+	t.Log("pinging redis")
+	pong, err := client.Ping().Result()
+
+	t.Log("received response from redis")
+
+	if pong != "PONG" {
+		t.Fatalf("received unexpected response from redis: %s", pong)
 	}
 }
 

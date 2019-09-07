@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/pkg/errors"
@@ -260,6 +262,42 @@ func NewDockerProvider() (*DockerProvider, error) {
 	return p, nil
 }
 
+// BuildImage will build and image from context and Dockerfile, then return the tag
+func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
+	repo := uuid.NewV4()
+	tag := uuid.NewV4()
+
+	repoTag := fmt.Sprintf("%s:%s", repo, tag)
+
+	buildContext, err := archive.TarWithOptions(img.GetContext(), &archive.TarOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	buildOptions := types.ImageBuildOptions{
+		Dockerfile: img.GetDockerfile(),
+		Context:    buildContext,
+		Tags:       []string{repoTag},
+	}
+
+	resp, err := p.client.ImageBuild(ctx, buildContext, buildOptions)
+	if err != nil {
+		return "", err
+	}
+
+	// need to read the response from Docker, I think otherwise the image
+	// might not finish building before continuing to execute here
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	resp.Body.Close()
+
+	return repoTag, nil
+}
+
 // CreateContainer fulfills a request for a container without starting it
 func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	exposedPortSet, exposedPortMap, err := nat.ParsePortSpecs(req.ExposedPorts)
@@ -295,40 +333,53 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
+	if err = req.Validate(); err != nil {
+		return nil, err
+	}
+
+	var tag string
+	if req.FromDockerfile.Context != "" {
+		tag, err = p.BuildImage(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		tag = req.Image
+		_, _, err = p.client.ImageInspectWithRaw(ctx, tag)
+		if err != nil {
+			if client.IsErrNotFound(err) {
+				pullOpt := types.ImagePullOptions{}
+				if req.RegistryCred != "" {
+					pullOpt.RegistryAuth = req.RegistryCred
+				}
+				var pull io.ReadCloser
+				err := backoff.Retry(func() error {
+					var err error
+					pull, err = p.client.ImagePull(ctx, tag, pullOpt)
+					return err
+				}, backoff.NewExponentialBackOff())
+				if err != nil {
+					return nil, err
+				}
+				defer pull.Close()
+
+				// download of docker image finishes at EOF of the pull request
+				_, err = ioutil.ReadAll(pull)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, err
+			}
+		}
+	}
+
 	dockerInput := &container.Config{
-		Image:        req.Image,
+		Image:        tag,
 		Env:          env,
 		ExposedPorts: exposedPortSet,
 		Labels:       req.Labels,
 		Cmd:          req.Cmd,
-	}
-
-	_, _, err = p.client.ImageInspectWithRaw(ctx, req.Image)
-	if err != nil {
-		if client.IsErrNotFound(err) {
-			pullOpt := types.ImagePullOptions{}
-			if req.RegistryCred != "" {
-				pullOpt.RegistryAuth = req.RegistryCred
-			}
-			var pull io.ReadCloser
-			err := backoff.Retry(func() error {
-				var err error
-				pull, err = p.client.ImagePull(ctx, req.Image, pullOpt)
-				return err
-			}, backoff.NewExponentialBackOff())
-			if err != nil {
-				return nil, err
-			}
-			defer pull.Close()
-
-			// download of docker image finishes at EOF of the pull request
-			_, err = ioutil.ReadAll(pull)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
 	}
 
 	// prepare mounts
