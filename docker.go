@@ -153,6 +153,12 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		RemoveVolumes: true,
 		Force:         true,
 	})
+
+	if err == nil {
+		c.sessionID = uuid.UUID{}
+		c.raw = nil
+	}
+
 	return err
 }
 
