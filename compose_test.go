@@ -15,9 +15,7 @@ func TestLocalDockerCompose(t *testing.T) {
 	checkIfError(t, err)
 
 	destroyFn := func() {
-		compose.WithCommand([]string{"down"})
-
-		err := compose.Invoke()
+		err := compose.Down()
 		checkIfError(t, err)
 	}
 	defer destroyFn()
