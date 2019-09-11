@@ -18,6 +18,7 @@ const (
 
 // DockerCompose defines the contract for running Docker Compose
 type DockerCompose interface {
+	Down() execError
 	Invoke() execError
 	WithCommand([]string) DockerCompose
 	WithEnv(map[string]string) DockerCompose
@@ -46,6 +47,31 @@ func NewLocalDockerCompose(filePath string, identifier string) *LocalDockerCompo
 	dc.Identifier = identifier
 
 	return dc
+}
+
+// Down executes docker-compose down
+func (dc *LocalDockerCompose) Down() execError {
+	if which(dc.Executable) != nil {
+		panic("Local Docker Compose not found. Is " + dc.Executable + " on the PATH?")
+	}
+
+	abs, err := filepath.Abs(dc.ComposeFilePath)
+	pwd, name := filepath.Split(abs)
+
+	cmds := []string{
+		"-f", name, "down",
+	}
+
+	execErr := execute(pwd, map[string]string{}, dc.Executable, cmds)
+	err = execErr.Error
+	if err != nil {
+		args := strings.Join(dc.Cmd, " ")
+		panic(
+			"Local Docker compose exited abnormally whilst running " +
+				dc.Executable + ": [" + args + "]. " + err.Error())
+	}
+
+	return execErr
 }
 
 // Invoke invokes the docker compose
