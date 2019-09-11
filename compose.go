@@ -18,8 +18,8 @@ const (
 
 // DockerCompose defines the contract for running Docker Compose
 type DockerCompose interface {
-	Down() execError
-	Invoke() execError
+	Down() ExecError
+	Invoke() ExecError
 	WithCommand([]string) DockerCompose
 	WithEnv(map[string]string) DockerCompose
 }
@@ -50,7 +50,7 @@ func NewLocalDockerCompose(filePath string, identifier string) *LocalDockerCompo
 }
 
 // Down executes docker-compose down
-func (dc *LocalDockerCompose) Down() execError {
+func (dc *LocalDockerCompose) Down() ExecError {
 	if which(dc.Executable) != nil {
 		panic("Local Docker Compose not found. Is " + dc.Executable + " on the PATH?")
 	}
@@ -75,7 +75,7 @@ func (dc *LocalDockerCompose) Down() execError {
 }
 
 // Invoke invokes the docker compose
-func (dc *LocalDockerCompose) Invoke() execError {
+func (dc *LocalDockerCompose) Invoke() ExecError {
 	if which(dc.Executable) != nil {
 		panic("Local Docker Compose not found. Is " + dc.Executable + " on the PATH?")
 	}
@@ -119,9 +119,9 @@ func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
 	return dc
 }
 
-// execError is super struct that holds any information about an execution error, so the client code
+// ExecError is super struct that holds any information about an execution error, so the client code
 // can handle the result
-type execError struct {
+type ExecError struct {
 	Error  error
 	Stdout error
 	Stderr error
@@ -129,7 +129,7 @@ type execError struct {
 
 // execute executes a program with arguments and environment variables inside a specific directory
 func execute(
-	dirContext string, environment map[string]string, binary string, args []string) execError {
+	dirContext string, environment map[string]string, binary string, args []string) ExecError {
 
 	var errStdout, errStderr error
 
@@ -153,7 +153,7 @@ func execute(
 
 	err := cmd.Start()
 	if err != nil {
-		return execError{
+		return ExecError{
 			Error:  err,
 			Stderr: errStderr,
 			Stdout: errStdout,
@@ -170,7 +170,7 @@ func execute(
 
 	err = cmd.Wait()
 
-	return execError{
+	return ExecError{
 		Error:  err,
 		Stderr: errStderr,
 		Stdout: errStdout,

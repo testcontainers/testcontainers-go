@@ -21,7 +21,7 @@ func TestLocalDockerCompose(t *testing.T) {
 	defer destroyFn()
 }
 
-func checkIfError(t *testing.T, err execError) {
+func checkIfError(t *testing.T, err ExecError) {
 	if err.Error != nil || err.Stdout != nil || err.Stderr != nil {
 		t.Fatal(err)
 	}
