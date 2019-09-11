@@ -26,6 +26,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.2.0 // indirect
+	github.com/stretchr/testify v1.2.2
 	golang.org/x/sys v0.0.0-20181228144115-9a3f9b0469bb // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/grpc v1.17.0 // indirect
