@@ -44,7 +44,7 @@ func NewLocalDockerCompose(filePath string, identifier string) *LocalDockerCompo
 	}
 
 	dc.ComposeFilePath = filePath
-	dc.Identifier = identifier
+	dc.Identifier = strings.ToLower(identifier)
 
 	return dc
 }
