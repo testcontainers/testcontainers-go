@@ -13,7 +13,7 @@ func TestLocalDockerCompose(t *testing.T) {
 
 	identifier := strings.ToLower(RandomString(6))
 
-	compose := NewLocalDockerCompose(path, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier)
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
@@ -34,7 +34,7 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 
 	identifier := strings.ToLower(RandomString(6))
 
-	compose := NewLocalDockerCompose(path, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier)
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -50,6 +50,33 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 	checkIfError(t, err)
 
 	assertContainerEnvContainsKeyValue(t, compose.Identifier+"_nginx_1", "bar", "BAR")
+}
+
+func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
+	composeFiles := []string{
+		"testresources/docker-compose.yml",
+		"testresources/docker-compose-override.yml",
+	}
+
+	identifier := strings.ToLower(RandomString(6))
+
+	compose := NewLocalDockerCompose(composeFiles, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithEnv(map[string]string{
+			"foo": "BAR",
+			"bar": "FOO",
+		}).
+		Invoke()
+	checkIfError(t, err)
+
+	assertContainerEnvContainsKeyValue(t, compose.Identifier+"_nginx_1", "foo", "FOO")
 }
 
 func assertContainerEnvContainsKeyValue(t *testing.T, identifier string, key string, value string) {

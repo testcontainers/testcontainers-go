@@ -27,15 +27,16 @@ type DockerCompose interface {
 // LocalDockerCompose represents a Docker Compose execution using local binary
 // docker-compose or docker-compose.exe, depending on the underlying platform
 type LocalDockerCompose struct {
-	Executable      string
-	ComposeFilePath string
-	Identifier      string
-	Cmd             []string
-	Env             map[string]string
+	Executable          string
+	ComposeFilePaths    []string
+	absComposeFilePaths []string
+	Identifier          string
+	Cmd                 []string
+	Env                 map[string]string
 }
 
 // NewLocalDockerCompose returns an instance of the local Docker Compose
-func NewLocalDockerCompose(filePath string, identifier string) *LocalDockerCompose {
+func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCompose {
 	dc := &LocalDockerCompose{}
 
 	dc.Executable = "docker-compose"
@@ -43,7 +44,14 @@ func NewLocalDockerCompose(filePath string, identifier string) *LocalDockerCompo
 		dc.Executable = "docker-compose.exe"
 	}
 
-	dc.ComposeFilePath = filePath
+	dc.ComposeFilePaths = filePaths
+
+	dc.absComposeFilePaths = make([]string, len(filePaths))
+	for i, cfp := range dc.ComposeFilePaths {
+		abs, _ := filepath.Abs(cfp)
+		dc.absComposeFilePaths[i] = abs
+	}
+
 	dc.Identifier = strings.ToLower(identifier)
 
 	return dc
@@ -57,8 +65,13 @@ func (dc *LocalDockerCompose) Down() ExecError {
 func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
 	environment := map[string]string{}
 
+	composeFileEnvVariableValue := ""
+	for _, abs := range dc.absComposeFilePaths {
+		composeFileEnvVariableValue += abs + string(os.PathListSeparator)
+	}
+
 	environment[envProjectName] = dc.Identifier
-	environment[envComposeFile] = dc.ComposeFilePath
+	environment[envComposeFile] = composeFileEnvVariableValue
 
 	return environment
 }
@@ -148,16 +161,21 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 		environment[k] = v
 	}
 
-	abs, err := filepath.Abs(dc.ComposeFilePath)
-	pwd, name := filepath.Split(abs)
+	cmds := []string{}
+	pwd := "."
+	if len(dc.absComposeFilePaths) > 0 {
+		pwd, _ = filepath.Split(dc.absComposeFilePaths[0])
 
-	cmds := []string{
-		"-f", name,
+		for _, abs := range dc.absComposeFilePaths {
+			cmds = append(cmds, "-f", abs)
+		}
+	} else {
+		cmds = append(cmds, "-f", "docker-compose.yml")
 	}
 	cmds = append(cmds, args...)
 
 	execErr := execute(pwd, environment, dc.Executable, cmds)
-	err = execErr.Error
+	err := execErr.Error
 	if err != nil {
 		args := strings.Join(dc.Cmd, " ")
 		panic(
