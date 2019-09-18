@@ -51,29 +51,7 @@ func NewLocalDockerCompose(filePath string, identifier string) *LocalDockerCompo
 
 // Down executes docker-compose down
 func (dc *LocalDockerCompose) Down() ExecError {
-	if which(dc.Executable) != nil {
-		panic("Local Docker Compose not found. Is " + dc.Executable + " on the PATH?")
-	}
-
-	environment := dc.getDockerComposeEnvironment()
-
-	abs, err := filepath.Abs(dc.ComposeFilePath)
-	pwd, name := filepath.Split(abs)
-
-	cmds := []string{
-		"-f", name, "down",
-	}
-
-	execErr := execute(pwd, environment, dc.Executable, cmds)
-	err = execErr.Error
-	if err != nil {
-		args := strings.Join(dc.Cmd, " ")
-		panic(
-			"Local Docker compose exited abnormally whilst running " +
-				dc.Executable + ": [" + args + "]. " + err.Error())
-	}
-
-	return execErr
+	return executeCompose(dc, []string{"down"})
 }
 
 func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
@@ -87,33 +65,7 @@ func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
 
 // Invoke invokes the docker compose
 func (dc *LocalDockerCompose) Invoke() ExecError {
-	if which(dc.Executable) != nil {
-		panic("Local Docker Compose not found. Is " + dc.Executable + " on the PATH?")
-	}
-
-	environment := dc.getDockerComposeEnvironment()
-	for k, v := range dc.Env {
-		environment[k] = v
-	}
-
-	abs, err := filepath.Abs(dc.ComposeFilePath)
-	pwd, name := filepath.Split(abs)
-
-	cmds := []string{
-		"-f", name,
-	}
-	cmds = append(cmds, dc.Cmd...)
-
-	execErr := execute(pwd, environment, dc.Executable, cmds)
-	err = execErr.Error
-	if err != nil {
-		args := strings.Join(dc.Cmd, " ")
-		panic(
-			"Local Docker compose exited abnormally whilst running " +
-				dc.Executable + ": [" + args + "]. " + err.Error())
-	}
-
-	return execErr
+	return executeCompose(dc, dc.Cmd)
 }
 
 // WithCommand assigns the command
@@ -184,6 +136,36 @@ func execute(
 		Stderr: errStderr,
 		Stdout: errStdout,
 	}
+}
+
+func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
+	if which(dc.Executable) != nil {
+		panic("Local Docker Compose not found. Is " + dc.Executable + " on the PATH?")
+	}
+
+	environment := dc.getDockerComposeEnvironment()
+	for k, v := range dc.Env {
+		environment[k] = v
+	}
+
+	abs, err := filepath.Abs(dc.ComposeFilePath)
+	pwd, name := filepath.Split(abs)
+
+	cmds := []string{
+		"-f", name,
+	}
+	cmds = append(cmds, args...)
+
+	execErr := execute(pwd, environment, dc.Executable, cmds)
+	err = execErr.Error
+	if err != nil {
+		args := strings.Join(dc.Cmd, " ")
+		panic(
+			"Local Docker compose exited abnormally whilst running " +
+				dc.Executable + ": [" + args + "]. " + err.Error())
+	}
+
+	return execErr
 }
 
 // capturingPassThroughWriter is a writer that remembers
