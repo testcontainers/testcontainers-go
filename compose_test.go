@@ -48,7 +48,7 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		WithEnv(map[string]string{
-			"foo": "BAR",
+			"bar": "BAR",
 		}).
 		Invoke()
 	checkIfError(t, err)
@@ -78,8 +78,8 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		WithEnv(map[string]string{
-			"foo": "BAR",
-			"bar": "FOO",
+			"bar": "BAR",
+			"foo": "FOO",
 		}).
 		Invoke()
 	checkIfError(t, err)
