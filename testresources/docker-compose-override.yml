@@ -3,5 +3,5 @@ services:
   nginx:
     image: nginx:stable-alpine
     environment:
-      bar: ${foo}
-      foo: ${bar}
+      bar: ${bar}
+      foo: ${foo}
