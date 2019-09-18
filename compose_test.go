@@ -1,11 +1,14 @@
 package testcontainers
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestLocalDockerCompose(t *testing.T) {
 	path := "./testresources/docker-compose.yml"
 
-	identifier := RandomString(6)
+	identifier := strings.ToLower(RandomString(6))
 
 	compose := NewLocalDockerCompose(path, identifier)
 
