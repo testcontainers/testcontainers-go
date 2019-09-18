@@ -55,6 +55,11 @@ func (dc *LocalDockerCompose) Down() ExecError {
 		panic("Local Docker Compose not found. Is " + dc.Executable + " on the PATH?")
 	}
 
+	environment := map[string]string{
+		envProjectName: dc.Identifier,
+		envComposeFile: dc.ComposeFilePath,
+	}
+
 	abs, err := filepath.Abs(dc.ComposeFilePath)
 	pwd, name := filepath.Split(abs)
 
@@ -62,7 +67,7 @@ func (dc *LocalDockerCompose) Down() ExecError {
 		"-f", name, "down",
 	}
 
-	execErr := execute(pwd, map[string]string{}, dc.Executable, cmds)
+	execErr := execute(pwd, environment, dc.Executable, cmds)
 	err = execErr.Error
 	if err != nil {
 		args := strings.Join(dc.Cmd, " ")
