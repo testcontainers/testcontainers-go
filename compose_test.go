@@ -20,6 +20,8 @@ func TestLocalDockerCompose(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
+	assertContainerEnvContainsKeyValue(t, compose.Identifier+"_nginx_1", "bar", "")
+
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -47,13 +49,17 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	args := []string{
-		"exec", compose.Identifier + "_nginx_1", "env",
-	}
+	assertContainerEnvContainsKeyValue(t, compose.Identifier+"_nginx_1", "bar", "BAR")
+}
+
+func assertContainerEnvContainsKeyValue(t *testing.T, identifier string, key string, value string) {
+	args := []string{"exec", identifier, "env"}
 
 	output, err := executeAndGetOutput("docker", args)
 	checkIfError(t, err)
-	assert.Contains(t, output, "bar=BAR")
+
+	keyVal := key + "=" + value
+	assert.Contains(t, output, keyVal)
 }
 
 func checkIfError(t *testing.T, err ExecError) {
