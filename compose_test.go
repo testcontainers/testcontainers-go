@@ -20,7 +20,11 @@ func TestLocalDockerCompose(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assertContainerEnvContainsKeyValue(t, compose.Identifier+"_nginx_1", "bar", "")
+	present := map[string]string{
+		"bar": "",
+	}
+	absent := map[string]string{}
+	assertContainerEnvironmentVariables(t, compose.Identifier+"_nginx_1", present, absent)
 
 	destroyFn := func() {
 		err := compose.Down()
@@ -49,7 +53,11 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assertContainerEnvContainsKeyValue(t, compose.Identifier+"_nginx_1", "bar", "BAR")
+	present := map[string]string{
+		"bar": "BAR",
+	}
+	absent := map[string]string{}
+	assertContainerEnvironmentVariables(t, compose.Identifier+"_nginx_1", present, absent)
 }
 
 func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
@@ -76,17 +84,29 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assertContainerEnvContainsKeyValue(t, compose.Identifier+"_nginx_1", "foo", "FOO")
+	present := map[string]string{
+		"bar": "BAR",
+		"foo": "FOO",
+	}
+	absent := map[string]string{}
+	assertContainerEnvironmentVariables(t, compose.Identifier+"_nginx_1", present, absent)
 }
 
-func assertContainerEnvContainsKeyValue(t *testing.T, identifier string, key string, value string) {
+func assertContainerEnvironmentVariables(t *testing.T, identifier string, present map[string]string, absent map[string]string) {
 	args := []string{"exec", identifier, "env"}
 
 	output, err := executeAndGetOutput("docker", args)
 	checkIfError(t, err)
 
-	keyVal := key + "=" + value
-	assert.Contains(t, output, keyVal)
+	for k, v := range present {
+		keyVal := k + "=" + v
+		assert.Contains(t, output, keyVal)
+	}
+
+	for k, v := range absent {
+		keyVal := k + "=" + v
+		assert.NotContains(t, output, keyVal)
+	}
 }
 
 func checkIfError(t *testing.T, err ExecError) {
