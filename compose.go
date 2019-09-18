@@ -55,10 +55,7 @@ func (dc *LocalDockerCompose) Down() ExecError {
 		panic("Local Docker Compose not found. Is " + dc.Executable + " on the PATH?")
 	}
 
-	environment := map[string]string{
-		envProjectName: dc.Identifier,
-		envComposeFile: dc.ComposeFilePath,
-	}
+	environment := dc.getDockerComposeEnvironment()
 
 	abs, err := filepath.Abs(dc.ComposeFilePath)
 	pwd, name := filepath.Split(abs)
@@ -79,18 +76,25 @@ func (dc *LocalDockerCompose) Down() ExecError {
 	return execErr
 }
 
+func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
+	environment := map[string]string{}
+
+	environment[envProjectName] = dc.Identifier
+	environment[envComposeFile] = dc.ComposeFilePath
+
+	return environment
+}
+
 // Invoke invokes the docker compose
 func (dc *LocalDockerCompose) Invoke() ExecError {
 	if which(dc.Executable) != nil {
 		panic("Local Docker Compose not found. Is " + dc.Executable + " on the PATH?")
 	}
 
-	environment := map[string]string{}
+	environment := dc.getDockerComposeEnvironment()
 	for k, v := range dc.Env {
 		environment[k] = v
 	}
-	environment[envProjectName] = dc.Identifier
-	environment[envComposeFile] = dc.ComposeFilePath
 
 	abs, err := filepath.Abs(dc.ComposeFilePath)
 	pwd, name := filepath.Split(abs)
