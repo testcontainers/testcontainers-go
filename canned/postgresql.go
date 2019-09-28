@@ -35,17 +35,16 @@ type postgresqlContainer struct {
 	Container testcontainers.Container
 	db        *sql.DB
 	req       PostgreSQLContainerRequest
-	ctx       context.Context
 }
 
-func (c *postgresqlContainer) GetDriver() (*sql.DB, error) {
+func (c *postgresqlContainer) GetDriver(ctx context.Context) (*sql.DB, error) {
 
-	host, err := c.Container.Host(c.ctx)
+	host, err := c.Container.Host(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	mappedPort, err := c.Container.MappedPort(c.ctx, port)
+	mappedPort, err := c.Container.MappedPort(ctx, port)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +109,6 @@ func PostgreSQLContainer(ctx context.Context, req PostgreSQLContainerRequest) (*
 	postgresC := &postgresqlContainer{
 		Container: c,
 		req:       req,
-		ctx:       ctx,
 	}
 
 	if req.Started {
@@ -118,7 +116,7 @@ func PostgreSQLContainer(ctx context.Context, req PostgreSQLContainerRequest) (*
 			return postgresC, errors.Wrap(err, "failed to start container")
 		}
 
-		db, err := postgresC.GetDriver()
+		db, err := postgresC.GetDriver(ctx)
 		if err != nil {
 			return nil, err
 		}

@@ -17,7 +17,7 @@ func TestWriteIntoAPostgreSQLContainerViaDriver(t *testing.T) {
 	}
 	defer c.Container.Terminate(ctx)
 
-	sqlC, err := c.GetDriver()
+	sqlC, err := c.GetDriver(ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
