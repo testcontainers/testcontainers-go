@@ -3,6 +3,8 @@ package canned
 import (
 	"context"
 	"testing"
+
+	testcontainers "github.com/testcontainers/testcontainers-go"
 )
 
 func TestWriteIntoAPostgreSQLContainerViaDriver(t *testing.T) {
@@ -11,6 +13,9 @@ func TestWriteIntoAPostgreSQLContainerViaDriver(t *testing.T) {
 
 	c, err := PostgreSQLContainer(ctx, PostgreSQLContainerRequest{
 		Database: "hello",
+		GenericContainerRequest: testcontainers.GenericContainerRequest{
+			Started: true,
+		},
 	})
 	if err != nil {
 		t.Fatal(err.Error())

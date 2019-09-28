@@ -71,9 +71,12 @@ func PostgreSQLContainer(ctx context.Context, req PostgreSQLContainerRequest) (*
 		return nil, err
 	}
 
+	// With the current logic it's not really possible to allow other ports...
 	req.ExposedPorts = []string{port}
-	req.Env = map[string]string{}
-	req.Started = true
+
+	if req.Env == nil {
+		req.Env = map[string]string{}
+	}
 
 	// Set the default values if none were provided in the request
 	if req.Image == "" {
