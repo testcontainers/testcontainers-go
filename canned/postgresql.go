@@ -3,13 +3,11 @@ package canned
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
-	"net"
-	"os"
-	"syscall"
-	"time"
 
-	_ "github.com/lib/pq"
+	"github.com/docker/go-connections/nat"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	testcontainers "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -99,10 +97,14 @@ func PostgreSQLContainer(ctx context.Context, req PostgreSQLContainerRequest) (*
 	req.Env["POSTGRES_PASSWORD"] = req.Password
 	req.Env["POSTGRES_DB"] = req.Database
 
-	req.WaitingFor = wait.ForAll(
-		wait.ForLog("database system is ready to accept connections"),
-		wait.ForListeningPort(port),
-	)
+	connectorVars := map[string]interface{}{
+		"port":     port,
+		"user":     req.User,
+		"password": req.Password,
+		"database": req.Database,
+	}
+
+	req.WaitingFor = wait.ForSQL(postgresConnectorFromTarget, connectorVars)
 
 	c, err := provider.CreateContainer(ctx, req.ContainerRequest)
 	if err != nil {
@@ -118,30 +120,31 @@ func PostgreSQLContainer(ctx context.Context, req PostgreSQLContainerRequest) (*
 		if err := c.Start(ctx); err != nil {
 			return postgresC, errors.Wrap(err, "failed to start container")
 		}
-
-		db, err := postgresC.GetDriver(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		for {
-			_, err := db.ExecContext(ctx, "SELECT 1")
-			if err != nil {
-				fmt.Print(err)
-				if v, ok := err.(*net.OpError); ok {
-					if v2, ok := (v.Err).(*os.SyscallError); ok {
-						if v2.Err == syscall.ECONNRESET {
-							time.Sleep(500 * time.Millisecond)
-							continue
-						}
-					}
-				}
-
-				return nil, err
-			}
-			break
-		}
 	}
 
 	return postgresC, nil
+}
+
+func postgresConnectorFromTarget(ctx context.Context, target wait.StrategyTarget, variables wait.SQLVariables) (driver.Connector, error) {
+
+	host, err := target.Host(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	mappedPort, err := target.MappedPort(ctx, nat.Port(variables["port"].(string)))
+	if err != nil {
+		return nil, err
+	}
+
+	connString := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		host,
+		mappedPort.Int(),
+		variables["user"],
+		variables["password"],
+		variables["database"],
+	)
+
+	return pq.NewConnector(connString)
 }
