@@ -2,15 +2,11 @@ package wait
 
 import (
 	"context"
-	"net"
-	"os"
-	"syscall"
 	"time"
 
 	"database/sql"
 	"database/sql/driver"
 
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -50,24 +46,8 @@ func (ws *SQLStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 	for {
 		_, err := db.ExecContext(ctx, "SELECT 1")
 		if err != nil {
-			// First we wait a bit for TCP connections getting reset...
-			if v, ok := err.(*net.OpError); ok {
-				if v2, ok := (v.Err).(*os.SyscallError); ok {
-					if v2.Err == syscall.ECONNRESET {
-						time.Sleep(100 * time.Millisecond)
-						continue
-					}
-				}
-			}
-
-			// Then for Postgres "starting up"
-			if v, ok := err.(*pq.Error); ok {
-				if v.Message == "the database system is starting up" {
-					time.Sleep(500 * time.Millisecond)
-					continue
-				}
-			}
-			return errors.Wrap(err, "an unexpected error occurred while waiting for the DB to start")
+			time.Sleep(500 * time.Millisecond)
+			continue
 		}
 		break
 	}
