@@ -18,6 +18,7 @@ var _ Strategy = (*SQLStrategy)(nil)
 
 type SQLStrategy struct {
 	startupTimeout  time.Duration
+	PollInterval    time.Duration
 	ConnectorSource SQLConnectorFromTarget
 	SQLVariables    SQLVariables
 }
@@ -25,6 +26,7 @@ type SQLStrategy struct {
 func NewSQLStrategy(ds SQLConnectorFromTarget, sv SQLVariables) *SQLStrategy {
 	return &SQLStrategy{
 		startupTimeout:  defaultStartupTimeout(),
+		PollInterval:    500 * time.Millisecond,
 		ConnectorSource: ds,
 		SQLVariables:    sv,
 	}
@@ -34,7 +36,22 @@ func ForSQL(ds SQLConnectorFromTarget, sv SQLVariables) *SQLStrategy {
 	return NewSQLStrategy(ds, sv)
 }
 
+// WithStartupTimeout can be used to change the default startup timeout
+func (ws *SQLStrategy) WithStartupTimeout(startupTimeout time.Duration) *SQLStrategy {
+	ws.startupTimeout = startupTimeout
+	return ws
+}
+
+// WithPollInterval can be used to override the default polling interval of 100 milliseconds
+func (ws *SQLStrategy) WithPollInterval(pollInterval time.Duration) *SQLStrategy {
+	ws.PollInterval = pollInterval
+	return ws
+}
+
 func (ws *SQLStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
+
+	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
+	defer cancelContext()
 
 	conn, err := ws.ConnectorSource(ctx, target, ws.SQLVariables)
 	if err != nil {
@@ -43,13 +60,20 @@ func (ws *SQLStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 
 	db := sql.OpenDB(conn)
 
+LOOP:
 	for {
-		_, err := db.ExecContext(ctx, "SELECT 1")
-		if err != nil {
-			time.Sleep(500 * time.Millisecond)
-			continue
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			_, err := db.ExecContext(ctx, "SELECT 1")
+			if err != nil {
+				time.Sleep(ws.PollInterval)
+				continue
+			}
+			break LOOP
 		}
-		break
+
 	}
 
 	return nil
