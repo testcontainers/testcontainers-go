@@ -3,11 +3,14 @@ package testcontainers
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -32,6 +35,7 @@ type LocalDockerCompose struct {
 	Identifier          string
 	Cmd                 []string
 	Env                 map[string]string
+	Services            map[string]interface{}
 }
 
 // NewLocalDockerCompose returns an instance of the local Docker Compose, using an
@@ -56,6 +60,8 @@ func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCo
 		abs, _ := filepath.Abs(cfp)
 		dc.absComposeFilePaths[i] = abs
 	}
+
+	dc.validate()
 
 	dc.Identifier = strings.ToLower(identifier)
 
@@ -96,6 +102,31 @@ func (dc *LocalDockerCompose) WithCommand(cmd []string) DockerCompose {
 func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
 	dc.Env = env
 	return dc
+}
+
+// validate checks if the files to be run in the compose are valid YAML files, setting up
+// references to all services in them
+func (dc *LocalDockerCompose) validate() error {
+	type compose struct {
+		Services map[string]interface{}
+	}
+
+	for _, abs := range dc.absComposeFilePaths {
+		c := compose{}
+
+		yamlFile, err := ioutil.ReadFile(abs)
+		if err != nil {
+			return err
+		}
+		err = yaml.Unmarshal(yamlFile, &c)
+		if err != nil {
+			return err
+		}
+
+		dc.Services = c.Services
+	}
+
+	return nil
 }
 
 // ExecError is super struct that holds any information about an execution error, so the client code

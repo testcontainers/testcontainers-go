@@ -33,7 +33,8 @@ require (
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/grpc v1.17.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gotest.tools v0.0.0-20181223230014-1083505acf35
+	gopkg.in/yaml.v2 v2.2.1
+	gotest.tools v0.0.0-20181223230014-1083505acf35 // indirect
 )
 
 replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1

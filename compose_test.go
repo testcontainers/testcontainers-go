@@ -127,6 +127,10 @@ func TestLocalDockerComposeComplex(t *testing.T) {
 		WithCommand([]string{"up", "-d"}).
 		Invoke()
 	checkIfError(t, err)
+
+	assert.Equal(t, 2, len(compose.Services))
+	assert.Contains(t, compose.Services, "portal")
+	assert.Contains(t, compose.Services, "mysql")
 }
 
 func TestLocalDockerComposeWithEnvironment(t *testing.T) {
@@ -148,6 +152,9 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 		}).
 		Invoke()
 	checkIfError(t, err)
+
+	assert.Equal(t, 1, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
 
 	present := map[string]string{
 		"bar": "BAR",
@@ -179,6 +186,10 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 		}).
 		Invoke()
 	checkIfError(t, err)
+
+	assert.Equal(t, 2, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "mysql")
 
 	present := map[string]string{
 		"bar": "BAR",
