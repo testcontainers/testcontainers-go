@@ -18,6 +18,7 @@ type LogStrategy struct {
 	// additional properties
 	Log          string
 	PollInterval time.Duration
+	Occurrence   int
 }
 
 // NewLogStrategy constructs a HTTP strategy waiting on port 80 and status code 200
@@ -26,6 +27,7 @@ func NewLogStrategy(log string) *LogStrategy {
 		startupTimeout: defaultStartupTimeout(),
 		Log:            log,
 		PollInterval:   100 * time.Millisecond,
+		Occurrence:     1,
 	}
 
 }
@@ -46,6 +48,15 @@ func (ws *LogStrategy) WithPollInterval(pollInterval time.Duration) *LogStrategy
 	return ws
 }
 
+func (ws *LogStrategy) WithOccurrence(o int) *LogStrategy {
+	// the number of occurence needs to be positive
+	if o <= 0 {
+		o = 1
+	}
+	ws.Occurrence = o
+	return ws
+}
+
 // ForLog is the default construction for the fluid interface.
 //
 // For Example:
@@ -61,6 +72,7 @@ func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 	// limit context to startupTimeout
 	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
 	defer cancelContext()
+	currentOccurence := 0
 
 LOOP:
 	for {
@@ -77,7 +89,10 @@ LOOP:
 			b, err := ioutil.ReadAll(reader)
 			logs := string(b)
 			if strings.Contains(logs, ws.Log) {
-				break LOOP
+				currentOccurence++
+				if ws.Occurrence == 0 || currentOccurence >= ws.Occurrence-1 {
+					break LOOP
+				}
 			} else {
 				time.Sleep(ws.PollInterval)
 				continue
