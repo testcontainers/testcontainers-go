@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	defaultUser     = ""
-	defaultPassword = ""
+	defaultUser     = "user"
+	defaultPassword = "password"
 	defaultDatabase = "database"
 	defaultImage    = "mongo"
 	defaultTag      = "4.2.0"
