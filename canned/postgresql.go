@@ -35,6 +35,8 @@ type postgresqlContainer struct {
 	req       PostgreSQLContainerRequest
 }
 
+// GetDriver returns a sql.DB connecting to the previously started Postgres DB.
+// All the parameters are taken from the previous PostgreSQLContainerRequest
 func (c *postgresqlContainer) GetDriver(ctx context.Context) (*sql.DB, error) {
 
 	host, err := c.Container.Host(ctx)
@@ -62,6 +64,9 @@ func (c *postgresqlContainer) GetDriver(ctx context.Context) (*sql.DB, error) {
 	return db, nil
 }
 
+// PostgreSQLContainer creates and (optionally) starts a Postgres database.
+// If autostarted, the function returns only after a successful execution of a query
+// (confirming that the database is ready)
 func PostgreSQLContainer(ctx context.Context, req PostgreSQLContainerRequest) (*postgresqlContainer, error) {
 
 	provider, err := req.ProviderType.GetProvider()
