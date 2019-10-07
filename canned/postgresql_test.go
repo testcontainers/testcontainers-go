@@ -72,7 +72,7 @@ func ExamplePostgreSQLContainer() {
 	defer c.Container.Terminate(ctx)
 }
 
-func Example_GetDriver_postgresqlContainer() {
+func ExampleGetDriver_postgresqlContainer() {
 	ctx := context.Background()
 
 	c, _ := PostgreSQLContainer(ctx, PostgreSQLContainerRequest{
