@@ -47,12 +47,14 @@ func ExamplePostgreSQLContainerRequest() {
 
 	// Database, User, and Password are optional,
 	// the driver will use default ones if not provided
-	var _ = PostgreSQLContainerRequest{
+	postgreSQLContainerRequest := PostgreSQLContainerRequest{
 		Database:                "mycustomdatabase",
 		User:                    "anyuser",
 		Password:                "yoursecurepassword",
 		GenericContainerRequest: genericContainerRequest,
 	}
+
+	postgreSQLContainerRequest.Validate()
 }
 
 func ExamplePostgreSQLContainer() {
