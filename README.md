@@ -69,7 +69,7 @@ Testcontainers-go gives you the ability to build and image and run a container f
 
 You can do so by specifiying a `Context` and optionally a `Dockerfile` (defaults to "Dockerfile") like so:
 
-```
+```go
 req := ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context: "/path/to/build/context",
