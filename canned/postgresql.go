@@ -14,12 +14,12 @@ import (
 )
 
 const (
-	user       = "user"
-	password   = "password"
-	database   = "database"
-	image      = "postgres"
-	defaultTag = "11.5"
-	port       = "5432/tcp"
+	postgresUser       = "user"
+	postgresPassword   = "password"
+	postgresDatabase   = "database"
+	postgresImage      = "postgres"
+	postgresDefaultTag = "11.5"
+	postgresPort       = "5432/tcp"
 )
 
 type PostgreSQLContainerRequest struct {
@@ -44,7 +44,7 @@ func (c *postgresqlContainer) GetDriver(ctx context.Context) (*sql.DB, error) {
 		return nil, err
 	}
 
-	mappedPort, err := c.Container.MappedPort(ctx, port)
+	mappedPort, err := c.Container.MappedPort(ctx, postgresPort)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func PostgreSQLContainer(ctx context.Context, req PostgreSQLContainerRequest) (*
 	}
 
 	// With the current logic it's not really possible to allow other ports...
-	req.ExposedPorts = []string{port}
+	req.ExposedPorts = []string{postgresPort}
 
 	if req.Env == nil {
 		req.Env = map[string]string{}
@@ -83,19 +83,19 @@ func PostgreSQLContainer(ctx context.Context, req PostgreSQLContainerRequest) (*
 
 	// Set the default values if none were provided in the request
 	if req.Image == "" {
-		req.Image = fmt.Sprintf("%s:%s", image, defaultTag)
+		req.Image = fmt.Sprintf("%s:%s", postgresImage, postgresDefaultTag)
 	}
 
 	if req.User == "" {
-		req.User = user
+		req.User = postgresUser
 	}
 
 	if req.Password == "" {
-		req.Password = password
+		req.Password = postgresPassword
 	}
 
 	if req.Database == "" {
-		req.Database = database
+		req.Database = postgresDatabase
 	}
 
 	req.Env["POSTGRES_USER"] = req.User
@@ -103,7 +103,7 @@ func PostgreSQLContainer(ctx context.Context, req PostgreSQLContainerRequest) (*
 	req.Env["POSTGRES_DB"] = req.Database
 
 	connectorVars := map[string]interface{}{
-		"port":     port,
+		"port":     postgresPort,
 		"user":     req.User,
 		"password": req.Password,
 		"database": req.Database,
