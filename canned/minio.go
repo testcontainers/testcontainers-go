@@ -71,7 +71,7 @@ func MinioContainer(ctx context.Context, req MinioContainerRequest) (*minioConta
 	}
 
 	// Set the default values if none were provided in the request
-	if req.Image == "" {
+	if req.Image == "" && req.FromDockerfile.Context == "" {
 		req.Image = fmt.Sprintf("%s:%s", minioImage, minioDefaultTag)
 	}
 
