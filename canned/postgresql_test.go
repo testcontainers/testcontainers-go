@@ -11,7 +11,7 @@ func TestWriteIntoAPostgreSQLContainerViaDriver(t *testing.T) {
 
 	ctx := context.Background()
 
-	c, err := PostgreSQLContainer(ctx, PostgreSQLContainerRequest{
+	c, err := NewPostgreSQLContainer(ctx, PostgreSQLContainerRequest{
 		Database: "hello",
 		GenericContainerRequest: testcontainers.GenericContainerRequest{
 			Started: true,
@@ -57,13 +57,13 @@ func ExamplePostgreSQLContainerRequest() {
 	postgreSQLContainerRequest.Validate()
 }
 
-func ExamplePostgreSQLContainer() {
+func ExampleNewPostgreSQLContainer() {
 	ctx := context.Background()
 
 	// Create your PostgreSQL database,
 	// by setting Started this function will not return
 	// until a test connection has been established
-	c, _ := PostgreSQLContainer(ctx, PostgreSQLContainerRequest{
+	c, _ := NewPostgreSQLContainer(ctx, PostgreSQLContainerRequest{
 		Database: "hello",
 		GenericContainerRequest: testcontainers.GenericContainerRequest{
 			Started: true,
@@ -72,10 +72,10 @@ func ExamplePostgreSQLContainer() {
 	defer c.Container.Terminate(ctx)
 }
 
-func ExamplepostgresqlContainer_GetDriver() {
+func ExamplePostgreSQLContainer_GetDriver() {
 	ctx := context.Background()
 
-	c, _ := PostgreSQLContainer(ctx, PostgreSQLContainerRequest{
+	c, _ := NewPostgreSQLContainer(ctx, PostgreSQLContainerRequest{
 		Database: "hello",
 		GenericContainerRequest: testcontainers.GenericContainerRequest{
 			Started: true,

@@ -22,6 +22,8 @@ const (
 	postgresPort       = "5432/tcp"
 )
 
+// PostgreSQLContainerRequest completes GenericContainerRequest
+// with PostgreSQL specific parameters
 type PostgreSQLContainerRequest struct {
 	testcontainers.GenericContainerRequest
 	User     string
@@ -29,7 +31,8 @@ type PostgreSQLContainerRequest struct {
 	Database string
 }
 
-type postgresqlContainer struct {
+// PostgreSQLContainer should always be created via NewPostgreSQLContainer
+type PostgreSQLContainer struct {
 	Container testcontainers.Container
 	db        *sql.DB
 	req       PostgreSQLContainerRequest
@@ -37,7 +40,7 @@ type postgresqlContainer struct {
 
 // GetDriver returns a sql.DB connecting to the previously started Postgres DB.
 // All the parameters are taken from the previous PostgreSQLContainerRequest
-func (c *postgresqlContainer) GetDriver(ctx context.Context) (*sql.DB, error) {
+func (c *PostgreSQLContainer) GetDriver(ctx context.Context) (*sql.DB, error) {
 
 	host, err := c.Container.Host(ctx)
 	if err != nil {
@@ -64,10 +67,10 @@ func (c *postgresqlContainer) GetDriver(ctx context.Context) (*sql.DB, error) {
 	return db, nil
 }
 
-// PostgreSQLContainer creates and (optionally) starts a Postgres database.
+// NewPostgreSQLContainer creates and (optionally) starts a Postgres database.
 // If autostarted, the function returns only after a successful execution of a query
 // (confirming that the database is ready)
-func PostgreSQLContainer(ctx context.Context, req PostgreSQLContainerRequest) (*postgresqlContainer, error) {
+func NewPostgreSQLContainer(ctx context.Context, req PostgreSQLContainerRequest) (*PostgreSQLContainer, error) {
 
 	provider, err := req.ProviderType.GetProvider()
 	if err != nil {
@@ -116,7 +119,7 @@ func PostgreSQLContainer(ctx context.Context, req PostgreSQLContainerRequest) (*
 		return nil, errors.Wrap(err, "failed to create container")
 	}
 
-	postgresC := &postgresqlContainer{
+	postgresC := &PostgreSQLContainer{
 		Container: c,
 		req:       req,
 	}
