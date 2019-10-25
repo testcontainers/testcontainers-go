@@ -12,6 +12,16 @@ import (
 	testcontainers "github.com/testcontainers/testcontainers-go"
 )
 
+const (
+	mysqlRootPassword = "root_password"
+	mysqlUser         = "user"
+	mysqlPassword     = "password"
+	mysqlDatabase     = "database"
+	mysqlImage        = "mysql"
+	mysqlDefaultTag   = "8.0"
+	mysqlPort         = "3306/tcp"
+)
+
 type MySQLContainerRequest struct {
 	testcontainers.GenericContainerRequest
 	RootPassword string
@@ -20,58 +30,77 @@ type MySQLContainerRequest struct {
 	Database     string
 }
 
-type mysqlContainer struct {
+type MySQLContainer struct {
 	Container testcontainers.Container
 	db        *sql.DB
 	req       MySQLContainerRequest
-	ctx       context.Context
 }
 
-func (c *mysqlContainer) GetDriver(username, password, database string) (*sql.DB, error) {
-	ip, err := c.Container.Host(c.ctx)
+func (c *MySQLContainer) GetDriver(ctx context.Context) (*sql.DB, error) {
+
+	host, err := c.Container.Host(ctx)
 	if err != nil {
 		return nil, err
 	}
-	port, err := c.Container.MappedPort(c.ctx, "3306/tcp")
+
+	mappedPort, err := c.Container.MappedPort(ctx, "3306/tcp")
 	if err != nil {
 		return nil, err
 	}
 	db, err := sql.Open("mysql", fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s",
-		username,
-		password,
-		ip,
-		port.Port(),
-		database,
+		"%s:%s@tcp(%s:%d)/%s",
+		c.req.Username,
+		c.req.Password,
+		host,
+		mappedPort.Int(),
+		c.req.Database,
 	))
 	if err != nil {
 		return nil, err
 	}
+
 	return db, nil
 }
 
-func MySQLContainer(ctx context.Context, req MySQLContainerRequest) (*mysqlContainer, error) {
+func NewMySQLContainer(ctx context.Context, req MySQLContainerRequest) (*MySQLContainer, error) {
+
 	provider, err := req.ProviderType.GetProvider()
 	if err != nil {
 		return nil, err
 	}
 
-	req.Image = "mysql:8.0"
-	req.ExposedPorts = []string{"3306/tcp"}
-	req.Env = map[string]string{}
-	req.Started = true
-	if req.RootPassword != "" {
-		req.Env["MYSQL_ROOT_PASSWORD"] = req.RootPassword
+	// With the current logic it's not really possible to allow other ports...
+	req.ExposedPorts = []string{mysqlPort}
+
+	if req.Env == nil {
+		req.Env = map[string]string{}
 	}
-	if req.Username != "" {
-		req.Env["MYSQL_USERNAME"] = req.Username
+
+	// Set the default values if none were provided in the request
+	if req.Image == "" && req.FromDockerfile.Context == "" {
+		req.Image = fmt.Sprintf("%s:%s", mysqlImage, mysqlDefaultTag)
 	}
-	if req.Password != "" {
-		req.Env["MYSQL_PASSWORD"] = req.Password
+
+	if req.RootPassword == "" {
+		req.RootPassword = mysqlRootPassword
 	}
-	if req.Database != "" {
-		req.Env["MYSQL_DATABASE"] = req.Database
+
+	if req.Username == "" {
+		req.Username = mysqlUser
 	}
+
+	if req.Password == "" {
+		req.Password = mysqlPassword
+	}
+
+	if req.Database == "" {
+		req.Database = mysqlDatabase
+	}
+
+	req.Env["MYSQL_ROOT_PASSWORD"] = req.RootPassword
+	req.Env["MYSQL_USERNAME"] = req.Username
+	req.Env["MYSQL_PASSWORD"] = req.Password
+	req.Env["MYSQL_DATABASE"] = req.Database
 
 	req.WaitingFor = wait.ForLog("port: 3306  MySQL Community Server - GPL")
 
@@ -79,11 +108,11 @@ func MySQLContainer(ctx context.Context, req MySQLContainerRequest) (*mysqlConta
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create container")
 	}
-	mysqlC := &mysqlContainer{
+
+	mysqlC := &MySQLContainer{
 		Container: c,
+		req:       req,
 	}
-	mysqlC.req = req
-	mysqlC.ctx = ctx
 
 	if req.Started {
 		if err := c.Start(ctx); err != nil {
