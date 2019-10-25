@@ -5,8 +5,10 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
+	netUrl "net/url"
 	"os"
 	"strconv"
 	"syscall"
@@ -141,6 +143,14 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 					}
 				}
 			}
+
+			if v, ok := err.(*netUrl.Error); ok {
+				if v.Err == io.EOF {
+					time.Sleep(100 * time.Millisecond)
+					continue
+				}
+			}
+
 			return err
 		}
 
