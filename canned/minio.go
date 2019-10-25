@@ -19,19 +19,24 @@ const (
 	minioPort       = "9000/tcp"
 )
 
+// MinioContainerRequest adds some Minio specific parameters
+// to GenericContainerRequest
 type MinioContainerRequest struct {
 	testcontainers.GenericContainerRequest
 	AccessKey string
 	SecretKey string
 }
 
-type minioContainer struct {
+// MinioContainer should always be created via NewMinioContainer
+type MinioContainer struct {
 	Container testcontainers.Container
 	client    *minio.Client
 	req       MinioContainerRequest
 }
 
-func (c *minioContainer) GetClient(ctx context.Context) (*minio.Client, error) {
+// GetClient provides a Minio Go client as described here
+// https://docs.min.io/docs/golang-client-api-reference.html
+func (c *MinioContainer) GetClient(ctx context.Context) (*minio.Client, error) {
 
 	host, err := c.Container.Host(ctx)
 	if err != nil {
@@ -56,7 +61,10 @@ func (c *minioContainer) GetClient(ctx context.Context) (*minio.Client, error) {
 	return client, nil
 }
 
-func MinioContainer(ctx context.Context, req MinioContainerRequest) (*minioContainer, error) {
+// NewMinioContainer creates and (optionally) starts a Minio (S3-compatible object storage) container.
+// If autostarted, the function waits for port 9000/tcp to be listening,
+// and the log to have shown the web access endpoints.
+func NewMinioContainer(ctx context.Context, req MinioContainerRequest) (*MinioContainer, error) {
 
 	provider, err := req.ProviderType.GetProvider()
 	if err != nil {
@@ -98,7 +106,7 @@ func MinioContainer(ctx context.Context, req MinioContainerRequest) (*minioConta
 		return nil, errors.Wrap(err, "failed to create container")
 	}
 
-	minioC := &minioContainer{
+	minioC := &MinioContainer{
 		Container: c,
 		req:       req,
 	}
