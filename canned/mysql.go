@@ -22,6 +22,7 @@ const (
 	mysqlPort         = "3306/tcp"
 )
 
+// MySQLContainerRequest represents some MySQL specific initialisation parameters
 type MySQLContainerRequest struct {
 	testcontainers.GenericContainerRequest
 	RootPassword string
@@ -30,12 +31,14 @@ type MySQLContainerRequest struct {
 	Database     string
 }
 
+// MySQLContainer should always be created via NewMySQLContainer
 type MySQLContainer struct {
 	Container testcontainers.Container
 	db        *sql.DB
 	req       MySQLContainerRequest
 }
 
+// GetDriver returns an handle to the MySQL DB
 func (c *MySQLContainer) GetDriver(ctx context.Context) (*sql.DB, error) {
 
 	host, err := c.Container.Host(ctx)
@@ -62,6 +65,7 @@ func (c *MySQLContainer) GetDriver(ctx context.Context) (*sql.DB, error) {
 	return db, nil
 }
 
+// NewMySQLContainer creates a MySQL in a container and optionally starts it
 func NewMySQLContainer(ctx context.Context, req MySQLContainerRequest) (*MySQLContainer, error) {
 
 	provider, err := req.ProviderType.GetProvider()
