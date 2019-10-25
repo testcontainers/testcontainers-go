@@ -14,6 +14,9 @@ func TestWriteIntoAMySQLContainerViaDriver(t *testing.T) {
 	c, err := NewMySQLContainer(ctx, MySQLContainerRequest{
 		RootPassword: "root",
 		Database:     "hello",
+		GenericContainerRequest: testcontainers.GenericContainerRequest{
+			Started: true,
+		},
 	})
 	if err != nil {
 		t.Fatal(err.Error())
