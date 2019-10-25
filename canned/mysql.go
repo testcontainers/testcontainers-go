@@ -43,7 +43,7 @@ func (c *MySQLContainer) GetDriver(ctx context.Context) (*sql.DB, error) {
 		return nil, err
 	}
 
-	mappedPort, err := c.Container.MappedPort(ctx, "3306/tcp")
+	mappedPort, err := c.Container.MappedPort(ctx, mysqlPort)
 	if err != nil {
 		return nil, err
 	}
