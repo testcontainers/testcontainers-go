@@ -25,7 +25,7 @@ const (
 type MySQLContainerRequest struct {
 	testcontainers.GenericContainerRequest
 	RootPassword string
-	Username     string
+	User         string
 	Password     string
 	Database     string
 }
@@ -49,7 +49,7 @@ func (c *MySQLContainer) GetDriver(ctx context.Context) (*sql.DB, error) {
 	}
 	db, err := sql.Open("mysql", fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s",
-		c.req.Username,
+		c.req.User,
 		c.req.Password,
 		host,
 		mappedPort.Int(),
@@ -85,8 +85,8 @@ func NewMySQLContainer(ctx context.Context, req MySQLContainerRequest) (*MySQLCo
 		req.RootPassword = mysqlRootPassword
 	}
 
-	if req.Username == "" {
-		req.Username = mysqlUser
+	if req.User == "" {
+		req.User = mysqlUser
 	}
 
 	if req.Password == "" {
@@ -98,7 +98,7 @@ func NewMySQLContainer(ctx context.Context, req MySQLContainerRequest) (*MySQLCo
 	}
 
 	req.Env["MYSQL_ROOT_PASSWORD"] = req.RootPassword
-	req.Env["MYSQL_USERNAME"] = req.Username
+	req.Env["MYSQL_USER"] = req.User
 	req.Env["MYSQL_PASSWORD"] = req.Password
 	req.Env["MYSQL_DATABASE"] = req.Database
 

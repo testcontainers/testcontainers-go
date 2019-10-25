@@ -46,11 +46,11 @@ func ExampleMySQLContainerRequest() {
 		ContainerRequest: containerRequest,
 	}
 
-	// RootPassword, Database, Username, and Password are optional,
+	// RootPassword, Database, User, and Password are optional,
 	// the driver will use default ones if not provided
 	mysqlContainerRequest := MySQLContainerRequest{
 		RootPassword:            "rootpassword",
-		Username:                "anyuser",
+		User:                    "anyuser",
 		Password:                "yoursecurepassword",
 		Database:                "mycustomdatabase",
 		GenericContainerRequest: genericContainerRequest,
