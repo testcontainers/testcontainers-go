@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -10,10 +11,13 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/cenkalti/backoff"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/pkg/errors"
@@ -36,6 +40,7 @@ type DockerContainer struct {
 	provider          *DockerProvider
 	sessionID         uuid.UUID
 	terminationSignal chan bool
+	skipReaper        bool
 }
 
 func (c *DockerContainer) GetContainerID() string {
@@ -143,11 +148,18 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 }
 
 // Terminate is used to kill the container. It is usally triggered by as defer function.
-func (c *DockerContainer) Terminate(_ context.Context) error {
-	if c.terminationSignal != nil {
-		c.terminationSignal <- true
+func (c *DockerContainer) Terminate(ctx context.Context) error {
+	err := c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
+		RemoveVolumes: true,
+		Force:         true,
+	})
+
+	if err == nil {
+		c.sessionID = uuid.UUID{}
+		c.raw = nil
 	}
-	return nil
+
+	return err
 }
 
 func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.ContainerJSON, error) {
@@ -173,6 +185,68 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	return c.provider.client.ContainerLogs(ctx, c.ID, options)
 }
 
+// Name gets the name of the container.
+func (c *DockerContainer) Name(ctx context.Context) (string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return "", err
+	}
+	return inspect.Name, nil
+}
+
+// Networks gets the names of the networks the container is attached to.
+func (c *DockerContainer) Networks(ctx context.Context) ([]string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return []string{}, err
+	}
+
+	networks := inspect.NetworkSettings.Networks
+
+	n := []string{}
+
+	for k := range networks {
+		n = append(n, k)
+	}
+
+	return n, nil
+}
+
+// NetworkAliases gets the aliases of the container for the networks it is attached to.
+func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return map[string][]string{}, err
+	}
+
+	networks := inspect.NetworkSettings.Networks
+
+	a := map[string][]string{}
+
+	for k := range networks {
+		a[k] = networks[k].Aliases
+	}
+
+	return a, nil
+}
+
+// DockerNetwork represents a network started using Docker
+type DockerNetwork struct {
+	ID                string // Network ID from Docker
+	Driver            string
+	Name              string
+	provider          *DockerProvider
+	terminationSignal chan bool
+}
+
+// Remove is used to remove the network. It is usually triggered by as defer function.
+func (n *DockerNetwork) Remove(_ context.Context) error {
+	if n.terminationSignal != nil {
+		n.terminationSignal <- true
+	}
+	return nil
+}
+
 // DockerProvider implements the ContainerProvider interface
 type DockerProvider struct {
 	client    *client.Client
@@ -187,10 +261,47 @@ func NewDockerProvider() (*DockerProvider, error) {
 	if err != nil {
 		return nil, err
 	}
+	client.NegotiateAPIVersion(context.Background())
 	p := &DockerProvider{
 		client: client,
 	}
 	return p, nil
+}
+
+// BuildImage will build and image from context and Dockerfile, then return the tag
+func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
+	repo := uuid.NewV4()
+	tag := uuid.NewV4()
+
+	repoTag := fmt.Sprintf("%s:%s", repo, tag)
+
+	buildContext, err := archive.TarWithOptions(img.GetContext(), &archive.TarOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	buildOptions := types.ImageBuildOptions{
+		Dockerfile: img.GetDockerfile(),
+		Context:    buildContext,
+		Tags:       []string{repoTag},
+	}
+
+	resp, err := p.client.ImageBuild(ctx, buildContext, buildOptions)
+	if err != nil {
+		return "", err
+	}
+
+	// need to read the response from Docker, I think otherwise the image
+	// might not finish building before continuing to execute here
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	resp.Body.Close()
+
+	return repoTag, nil
 }
 
 // CreateContainer fulfills a request for a container without starting it
@@ -212,7 +323,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	sessionID := uuid.NewV4()
 
 	var termSignal chan bool
-	if !req.isReaper {
+	if !req.SkipReaper {
 		r, err := NewReaper(ctx, sessionID.String(), p)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating reaper failed")
@@ -228,38 +339,53 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
+	if err = req.Validate(); err != nil {
+		return nil, err
+	}
+
+	var tag string
+	if req.FromDockerfile.Context != "" {
+		tag, err = p.BuildImage(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		tag = req.Image
+		_, _, err = p.client.ImageInspectWithRaw(ctx, tag)
+		if err != nil {
+			if client.IsErrNotFound(err) {
+				pullOpt := types.ImagePullOptions{}
+				if req.RegistryCred != "" {
+					pullOpt.RegistryAuth = req.RegistryCred
+				}
+				var pull io.ReadCloser
+				err := backoff.Retry(func() error {
+					var err error
+					pull, err = p.client.ImagePull(ctx, tag, pullOpt)
+					return err
+				}, backoff.NewExponentialBackOff())
+				if err != nil {
+					return nil, err
+				}
+				defer pull.Close()
+
+				// download of docker image finishes at EOF of the pull request
+				_, err = ioutil.ReadAll(pull)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, err
+			}
+		}
+	}
+
 	dockerInput := &container.Config{
-		Image:        req.Image,
+		Image:        tag,
 		Env:          env,
 		ExposedPorts: exposedPortSet,
 		Labels:       req.Labels,
-	}
-
-	if req.Cmd != "" {
-		dockerInput.Cmd = strings.Split(req.Cmd, " ")
-	}
-
-	_, _, err = p.client.ImageInspectWithRaw(ctx, req.Image)
-	if err != nil {
-		if client.IsErrNotFound(err) {
-			pullOpt := types.ImagePullOptions{}
-			if req.RegistryCred != "" {
-				pullOpt.RegistryAuth = req.RegistryCred
-			}
-			pull, err := p.client.ImagePull(ctx, req.Image, pullOpt)
-			if err != nil {
-				return nil, err
-			}
-			defer pull.Close()
-
-			// download of docker image finishes at EOF of the pull request
-			_, err = ioutil.ReadAll(pull)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
+		Cmd:          req.Cmd,
 	}
 
 	// prepare mounts
@@ -276,9 +402,27 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		PortBindings: exposedPortMap,
 		Mounts:       bindMounts,
 		AutoRemove:   true,
+		Privileged:   req.Privileged,
 	}
 
-	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, nil, "")
+	endpointConfigs := map[string]*network.EndpointSettings{}
+	for _, n := range req.Networks {
+		nw, err := p.GetNetwork(ctx, NetworkRequest{
+			Name: n,
+		})
+		if err == nil {
+			endpointSetting := network.EndpointSettings{
+				Aliases:   req.NetworkAliases[n],
+				NetworkID: nw.ID,
+			}
+			endpointConfigs[n] = &endpointSetting
+		}
+	}
+	networkingConfig := network.NetworkingConfig{
+		EndpointsConfig: endpointConfigs,
+	}
+
+	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, req.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -289,6 +433,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		sessionID:         sessionID,
 		provider:          p,
 		terminationSignal: termSignal,
+		skipReaper:        req.SkipReaper,
 	}
 
 	return c, nil
@@ -346,6 +491,67 @@ func (p *DockerProvider) daemonHost() (string, error) {
 	}
 
 	return p.hostCache, nil
+}
+
+// CreateNetwork returns the object representing a new network identified by its name
+func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) (Network, error) {
+	if req.Labels == nil {
+		req.Labels = make(map[string]string)
+	}
+
+	nc := types.NetworkCreate{
+		Driver:         req.Driver,
+		CheckDuplicate: req.CheckDuplicate,
+		Internal:       req.Internal,
+		EnableIPv6:     req.EnableIPv6,
+		Attachable:     req.Attachable,
+		Labels:         req.Labels,
+	}
+
+	sessionID := uuid.NewV4()
+
+	var termSignal chan bool
+	if !req.SkipReaper {
+		r, err := NewReaper(ctx, sessionID.String(), p)
+		if err != nil {
+			return nil, errors.Wrap(err, "creating network reaper failed")
+		}
+		termSignal, err = r.Connect()
+		if err != nil {
+			return nil, errors.Wrap(err, "connecting to network reaper failed")
+		}
+		for k, v := range r.Labels() {
+			if _, ok := req.Labels[k]; !ok {
+				req.Labels[k] = v
+			}
+		}
+	}
+
+	response, err := p.client.NetworkCreate(ctx, req.Name, nc)
+	if err != nil {
+		return &DockerNetwork{}, err
+	}
+
+	n := &DockerNetwork{
+		ID:                response.ID,
+		Driver:            req.Driver,
+		Name:              req.Name,
+		terminationSignal: termSignal,
+	}
+
+	return n, nil
+}
+
+// GetNetwork returns the object representing the network identified by its name
+func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (types.NetworkResource, error) {
+	networkResource, err := p.client.NetworkInspect(ctx, req.Name, types.NetworkInspectOptions{
+		Verbose: true,
+	})
+	if err != nil {
+		return types.NetworkResource{}, err
+	}
+
+	return networkResource, err
 }
 
 func inAContainer() bool {

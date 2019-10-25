@@ -21,7 +21,8 @@ import (
 	"net/http"
 	"testing"
 
-	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestNginxLatestReturn(t *testing.T) {
@@ -29,6 +30,7 @@ func TestNginxLatestReturn(t *testing.T) {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForHTTP("/"),
 	}
 	nginxC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -60,48 +62,32 @@ To clean your environment you can defer the container termination `defer
 nginxC.Terminate(ctx, t)`. `t` is `*testing.T` and it is used to notify is the
 `defer` failed marking the test as failed.
 
-You can build more complex flow using envvar to configure the containers. Let's
-suppose you are testing an application that requites redis:
 
-```go
-func TestRedisPing(t *testing.T) {
-	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "redis",
-		ExposedPorts: []string{"6379/tcp"},
-	}
-	redisC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	if err != nil {
-		t.Error(err)
-	}
-	defer redisC.Terminate(ctx)
-	ip, err := redisC.Host(ctx)
-	if err != nil {
-		t.Error(err)
-	}
-	redisPort, err := redisC.MappedPort(ctx, "6479/tcp")
-	if err != nil {
-		t.Error(err)
-	}
+## Build from Dockerfile
 
-	appReq := testcontainers.ContainerRequest{
-		ExposedPorts: []string{"8081/tcp"},
-		Env: map[string]string{
-			"REDIS_HOST": fmt.Sprintf("http://%s:%s", ip, redisPort.Port()),
+Testcontainers-go gives you the ability to build and image and run a container from a Dockerfile.
+
+You can do so by specifiying a `Context` and optionally a `Dockerfile` (defaults to "Dockerfile") like so:
+
+```
+req := ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context: "/path/to/build/context",
+			Dockerfile: "CustomDockerfile",
 		},
 	}
-	appC, err := testcontainers.RunContainer(ctx, "your/app", testcontainers.GenericContainerRequest{
-		ContainerRequest: appReq,
-		Started:          true,
-	})
-	if err != nil {
-		t.Error(err)
-	}
-	defer appC.Terminate(ctx)
+```
 
-	// your assertions
+## Sending a CMD to a Container
+
+If you would like to send a CMD (command) to a container, you can pass it in to the container request via the `Cmd` field...
+
+```go
+req := ContainerRequest{
+	Image: "alpine",
+	WaitingFor: wait.ForAll(
+		wait.ForLog("command override!"),
+	),
+	Cmd: []string{"echo", "command override!"},
 }
 ```

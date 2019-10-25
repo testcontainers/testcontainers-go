@@ -33,3 +33,9 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 
 	return c, nil
 }
+
+// GenericProvider represents an abstraction for container and network providers
+type GenericProvider interface {
+	ContainerProvider
+	NetworkProvider
+}

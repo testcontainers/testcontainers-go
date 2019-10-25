@@ -15,6 +15,7 @@ import (
 const (
 	TestcontainerLabel          = "org.testcontainers.golang"
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
+	TestcontainerLabelIsReaper  = TestcontainerLabel + ".reaper"
 	ReaperDefaultImage          = "quay.io/testcontainers/ryuk:0.2.2"
 )
 
@@ -44,13 +45,13 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 		Image:        ReaperDefaultImage,
 		ExposedPorts: []string{"8080"},
 		Labels: map[string]string{
-			TestcontainerLabel:             "true",
-			TestcontainerLabel + ".reaper": "true",
+			TestcontainerLabel:         "true",
+			TestcontainerLabelIsReaper: "true",
 		},
+		SkipReaper: true,
 		BindMounts: map[string]string{
 			"/var/run/docker.sock": "/var/run/docker.sock",
 		},
-		isReaper: true,
 	}
 
 	c, err := provider.RunContainer(ctx, req)
