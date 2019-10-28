@@ -31,3 +31,29 @@ func TestSetInRedis(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func ExampleNewRedisContainer() {
+	ctx := context.Background()
+
+	c, _ := NewRedisContainer(ctx, RedisContainerRequest{
+		GenericContainerRequest: testcontainers.GenericContainerRequest{
+			Started: true,
+		},
+	})
+
+	defer c.Container.Terminate(ctx)
+}
+
+func ExampleRedisContainer_GetClient() {
+	ctx := context.Background()
+
+	c, _ := NewRedisContainer(ctx, RedisContainerRequest{
+		GenericContainerRequest: testcontainers.GenericContainerRequest{
+			Started: true,
+		},
+	})
+
+	redisClient, _ := c.GetClient(ctx)
+
+	redisClient.Ping()
+}
