@@ -26,7 +26,7 @@ func TestSetInRedis(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = redisClient.Set("key", "value", 0)
+	err = redisClient.Set("key", "value", 0).Err()
 	if err != nil {
 		t.Fatal(err)
 	}
