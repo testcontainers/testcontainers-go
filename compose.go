@@ -2,7 +2,6 @@ package testcontainers
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -106,10 +105,6 @@ func execute(
 	dirContext string, environment map[string]string, binary string, args []string) ExecError {
 
 	var errStdout, errStderr error
-
-	fmt.Printf(
-		"Executing %s at %s with environment: %s, and arguments: %s", binary, dirContext,
-		environment, args)
 
 	cmd := exec.Command(binary, args...)
 	cmd.Dir = dirContext
