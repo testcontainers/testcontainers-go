@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/docker/go-connections/nat"
@@ -129,26 +127,20 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 
 	req = req.WithContext(ctx)
 
+	Retry:
 	for {
-		resp, err := client.Do(req)
-
-		if err != nil {
-			if v, ok := err.(*net.OpError); ok {
-				if v2, ok := (v.Err).(*os.SyscallError); ok {
-					if v2.Err == syscall.ECONNREFUSED {
-						time.Sleep(100 * time.Millisecond)
-						continue
-					}
-				}
+		select {
+		case <-ctx.Done():
+			break Retry
+		default:
+			resp, err := client.Do(req)
+			if err != nil || !ws.StatusCodeMatcher(resp.StatusCode) {
+				time.Sleep(100 * time.Millisecond)
+				continue
 			}
-			return err
-		}
 
-		if !ws.StatusCodeMatcher(resp.StatusCode) {
-			continue
+			break Retry
 		}
-
-		break
 	}
 
 	return nil
