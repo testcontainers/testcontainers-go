@@ -243,6 +243,16 @@ func (c *DockerContainer) Networks(ctx context.Context) ([]string, error) {
 	return n, nil
 }
 
+// ContainerIP gets the IP address of the primary network within the container.
+func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return inspect.NetworkSettings.IPAddress, nil
+}
+
 // NetworkAliases gets the aliases of the container for the networks it is attached to.
 func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]string, error) {
 	inspect, err := c.inspectContainer(ctx)
