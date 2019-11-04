@@ -38,6 +38,7 @@ type Container interface {
 	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
 	Name(context.Context) (string, error)                           // get container name
 	Networks(context.Context) ([]string, error)                     // get container networks
+	ContainerIP(context.Context) (string, error)                    // get container ip
 	NetworkAliases(context.Context) (map[string][]string, error)    // get container network aliases for a network
 }
 
