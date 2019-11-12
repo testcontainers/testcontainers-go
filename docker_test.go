@@ -826,3 +826,64 @@ func TestCMD(t *testing.T) {
 	// defer not needed, but keeping it in for consistency
 	defer c.Terminate(ctx)
 }
+
+func ExampleDockerProvider_CreateContainer() {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "nginx",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForHTTP("/"),
+	}
+	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	defer nginxC.Terminate(ctx)
+}
+
+func ExampleContainer_Host() {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "nginx",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForHTTP("/"),
+	}
+	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	defer nginxC.Terminate(ctx)
+	ip, _ := nginxC.Host(ctx)
+	println(ip)
+}
+
+func ExampleContainer_Start() {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "nginx",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForHTTP("/"),
+	}
+	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+	})
+	defer nginxC.Terminate(ctx)
+	nginxC.Start(ctx)
+}
+
+func ExampleContainer_MappedPort() {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "nginx",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForHTTP("/"),
+	}
+	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	defer nginxC.Terminate(ctx)
+	ip, _ := nginxC.Host(ctx)
+	port, _ := nginxC.MappedPort(ctx, "80")
+	http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
+}
