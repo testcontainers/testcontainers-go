@@ -17,7 +17,6 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/pkg/errors"
@@ -275,7 +274,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 
 	repoTag := fmt.Sprintf("%s:%s", repo, tag)
 
-	buildContext, err := archive.TarWithOptions(img.GetContext(), &archive.TarOptions{})
+	buildContext, err := img.GetContext()
 	if err != nil {
 		return "", err
 	}
@@ -344,7 +343,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	var tag string
-	if req.FromDockerfile.Context != "" {
+	if req.ShouldBuildImage() {
 		tag, err = p.BuildImage(ctx, &req)
 		if err != nil {
 			return nil, err
