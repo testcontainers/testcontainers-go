@@ -10,7 +10,7 @@ import (
 )
 
 func TestLocalDockerCompose(t *testing.T) {
-	path := "./testresources/docker-compose.yml"
+	path := "./testresources/docker-compose-simple.yml"
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -35,7 +35,7 @@ func TestLocalDockerCompose(t *testing.T) {
 }
 
 func TestLocalDockerComposeWithEnvironment(t *testing.T) {
-	path := "./testresources/docker-compose.yml"
+	path := "./testresources/docker-compose-simple.yml"
 
 	identifier := strings.ToLower(uuid.New().String())
 
