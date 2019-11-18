@@ -82,7 +82,7 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 
 func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 	composeFiles := []string{
-		"testresources/docker-compose.yml",
+		"testresources/docker-compose-simple.yml",
 		"testresources/docker-compose-override.yml",
 	}
 
