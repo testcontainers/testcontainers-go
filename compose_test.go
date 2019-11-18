@@ -5,13 +5,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestLocalDockerCompose(t *testing.T) {
 	path := "./testresources/docker-compose.yml"
 
-	identifier := strings.ToLower(RandomString(6))
+	identifier := strings.ToLower(uuid.New().String())
 
 	compose := NewLocalDockerCompose([]string{path}, identifier)
 
@@ -36,7 +37,7 @@ func TestLocalDockerCompose(t *testing.T) {
 func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 	path := "./testresources/docker-compose.yml"
 
-	identifier := strings.ToLower(RandomString(6))
+	identifier := strings.ToLower(uuid.New().String())
 
 	compose := NewLocalDockerCompose([]string{path}, identifier)
 	destroyFn := func() {
@@ -66,7 +67,7 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 		"testresources/docker-compose-override.yml",
 	}
 
-	identifier := strings.ToLower(RandomString(6))
+	identifier := strings.ToLower(uuid.New().String())
 
 	compose := NewLocalDockerCompose(composeFiles, identifier)
 	destroyFn := func() {
