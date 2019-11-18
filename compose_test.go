@@ -34,6 +34,25 @@ func TestLocalDockerCompose(t *testing.T) {
 	defer destroyFn()
 }
 
+func TestLocalDockerComposeComplex(t *testing.T) {
+	path := "./testresources/docker-compose-complex.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		Invoke()
+	checkIfError(t, err)
+
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+}
+
 func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
