@@ -27,6 +27,10 @@ func (st noopStrategyTarget) Logs(ctx context.Context) (io.ReadCloser, error) {
 	return st.ioReaderCloser, nil
 }
 
+func (st noopStrategyTarget) Exec(ctx context.Context, cmd []string) (int, error) {
+	return 0, nil
+}
+
 func TestWaitForLog(t *testing.T) {
 	target := noopStrategyTarget{
 		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("dude"))),
