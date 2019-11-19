@@ -2,6 +2,8 @@ package wait
 
 import (
 	"context"
+	"fmt"
+	"github.com/pkg/errors"
 	"net"
 	"os"
 	"strconv"
@@ -63,8 +65,8 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	portNumber := port.Int()
 	portString := strconv.Itoa(portNumber)
 
+	//external check
 	dialer := net.Dialer{}
-
 	address := net.JoinHostPort(ipAddress, portString)
 	for {
 		conn, err := dialer.DialContext(ctx, proto, address)
@@ -83,5 +85,28 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		break
 	}
 
+	//internal check
+	command := buildInternalCheckCommand(hp.Port.Int())
+	for {
+		exitCode, err := target.Exec(ctx, []string{"/bin/bash", "-c", command})
+		if err != nil {
+			return errors.Wrapf(err, "host port waiting failed")
+		}
+
+		if exitCode == 0 {
+			break
+		}
+	}
+
 	return nil
+}
+
+func buildInternalCheckCommand(internalPort int) string {
+	command := `(
+					cat /proc/net/tcp{,6} | awk '{print $2}' | grep -i :%x ||
+					nc -vz -w 1 localhost %d ||
+					/bin/bash -c '</dev/tcp/localhost/%d'
+				)
+				`
+	return "true && " + fmt.Sprintf(command, internalPort, internalPort, internalPort)
 }

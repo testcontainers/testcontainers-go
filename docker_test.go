@@ -473,7 +473,6 @@ func TestContainerCreationWithName(t *testing.T) {
 }
 
 func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
-	t.Skip("Wait needs to be fixed")
 	ctx := context.Background()
 
 	nginxPort := "80/tcp"

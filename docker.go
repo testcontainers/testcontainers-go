@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/cenkalti/backoff"
 	"github.com/docker/docker/api/types"
@@ -228,6 +229,41 @@ func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]stri
 	}
 
 	return a, nil
+}
+
+func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error) {
+	cli := c.provider.client
+	response, err := cli.ContainerExecCreate(ctx, c.ID, types.ExecConfig{
+		Cmd:    cmd,
+		Detach: false,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	err = cli.ContainerExecStart(ctx, response.ID, types.ExecStartCheck{
+		Detach: false,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	var exitCode int
+	for {
+		execResp, err := cli.ContainerExecInspect(ctx, response.ID)
+		if err != nil {
+			return 0, err
+		}
+
+		if !execResp.Running {
+			exitCode = execResp.ExitCode
+			break
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	return exitCode, nil
 }
 
 // DockerNetwork represents a network started using Docker
