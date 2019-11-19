@@ -95,9 +95,10 @@ func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
 // ExecError is super struct that holds any information about an execution error, so the client code
 // can handle the result
 type ExecError struct {
-	Error  error
-	Stdout error
-	Stderr error
+	Command []string
+	Error   error
+	Stdout  error
+	Stderr  error
 }
 
 // execute executes a program with arguments and environment variables inside a specific directory
@@ -123,9 +124,11 @@ func execute(
 	err := cmd.Start()
 	if err != nil {
 		return ExecError{
-			Error:  err,
-			Stderr: errStderr,
-			Stdout: errStdout,
+			// add information about the CMD and arguments used
+			Command: append([]string{dirContext, binary}, args...),
+			Error:   err,
+			Stderr:  errStderr,
+			Stdout:  errStdout,
 		}
 	}
 
@@ -140,9 +143,10 @@ func execute(
 	err = cmd.Wait()
 
 	return ExecError{
-		Error:  err,
-		Stderr: errStderr,
-		Stdout: errStdout,
+		Command: append([]string{dirContext, binary}, args...),
+		Error:   err,
+		Stderr:  errStderr,
+		Stdout:  errStdout,
 	}
 }
 
