@@ -10,10 +10,13 @@ services:
 env:
   - GO111MODULE=on
 
+before_script:
+  - go get gotest.tools/gotestsum
+
 script:
   - go mod verify
   - go mod tidy
   - go fmt ./...
   - go vet ./...
-  - go test ./...
+  - gotestsum --format short-verbose ./...
 
