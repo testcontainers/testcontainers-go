@@ -15,6 +15,11 @@ func TestLocalDockerCompose(t *testing.T) {
 	identifier := strings.ToLower(uuid.New().String())
 
 	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
@@ -26,12 +31,6 @@ func TestLocalDockerCompose(t *testing.T) {
 	}
 	absent := map[string]string{}
 	assertContainerEnvironmentVariables(t, compose.Identifier+"_nginx_1", present, absent)
-
-	destroyFn := func() {
-		err := compose.Down()
-		checkIfError(t, err)
-	}
-	defer destroyFn()
 }
 
 func TestLocalDockerComposeComplex(t *testing.T) {
@@ -40,17 +39,16 @@ func TestLocalDockerComposeComplex(t *testing.T) {
 	identifier := strings.ToLower(uuid.New().String())
 
 	compose := NewLocalDockerCompose([]string{path}, identifier)
-
-	err := compose.
-		WithCommand([]string{"up", "-d"}).
-		Invoke()
-	checkIfError(t, err)
-
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
 	}
 	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		Invoke()
+	checkIfError(t, err)
 }
 
 func TestLocalDockerComposeWithEnvironment(t *testing.T) {
