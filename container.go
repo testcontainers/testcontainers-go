@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -44,15 +45,17 @@ type Container interface {
 
 // ImageBuildInfo defines what is needed to build an image
 type ImageBuildInfo interface {
-	GetContext() string    // the path to the build context
-	GetDockerfile() string // the relative path to the Dockerfile, including the fileitself
+	GetContext() (io.Reader, error) // the path to the build context
+	GetDockerfile() string          // the relative path to the Dockerfile, including the fileitself
+	ShouldBuildImage() bool         // return true if the image needs to be built
 }
 
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
 // rather than using a pre-built one
 type FromDockerfile struct {
-	Context    string // the path to the context of of the docker build
-	Dockerfile string // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
+	Context        string    // the path to the context of of the docker build
+	ContextArchive io.Reader // the tar archive file to send to docker that contains the build context
+	Dockerfile     string    // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
 }
 
 // ContainerRequest represents the parameters used to get a running container
@@ -100,6 +103,7 @@ func (c *ContainerRequest) Validate() error {
 
 	validationMethods := []func() error{
 		c.validateContextAndImage,
+		c.validateContexOrImageIsSpecified,
 	}
 
 	var err error
@@ -114,8 +118,17 @@ func (c *ContainerRequest) Validate() error {
 }
 
 // GetContext retrieve the build context for the request
-func (c *ContainerRequest) GetContext() string {
-	return c.FromDockerfile.Context
+func (c *ContainerRequest) GetContext() (io.Reader, error) {
+	if c.ContextArchive != nil {
+		return c.ContextArchive, nil
+	}
+
+	buildContext, err := archive.TarWithOptions(c.Context, &archive.TarOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return buildContext, nil
 }
 
 // GetDockerfile returns the Dockerfile from the ContainerRequest, defaults to "Dockerfile"
@@ -128,9 +141,21 @@ func (c *ContainerRequest) GetDockerfile() string {
 	return f
 }
 
+func (c *ContainerRequest) ShouldBuildImage() bool {
+	return c.FromDockerfile.Context != "" || c.FromDockerfile.ContextArchive != nil
+}
+
 func (c *ContainerRequest) validateContextAndImage() error {
 	if c.FromDockerfile.Context != "" && c.Image != "" {
 		return errors.New("you cannot specify both an Image and Context in a ContainerRequest")
+	}
+
+	return nil
+}
+
+func (c *ContainerRequest) validateContexOrImageIsSpecified() error {
+	if c.FromDockerfile.Context == "" && c.FromDockerfile.ContextArchive == nil && c.Image == "" {
+		return errors.New("you must specify either a build context or an image")
 	}
 
 	return nil
