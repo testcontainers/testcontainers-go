@@ -7,9 +7,12 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	testcontainers "github.com/testcontainers/testcontainers-go"
+)
+
+const (
+	DefaultImageVersion = "mysql:8.0"
 )
 
 type MySQLContainerRequest struct {
@@ -28,6 +31,18 @@ type mysqlContainer struct {
 }
 
 func (c *mysqlContainer) GetDriver(username, password, database string) (*sql.DB, error) {
+	if username == "" {
+		username = c.req.Username
+	}
+
+	if password == "" {
+		password = c.req.Password
+	}
+
+	if database == "" {
+		database = c.req.Database
+	}
+
 	ip, err := c.Container.Host(c.ctx)
 	if err != nil {
 		return nil, err
@@ -56,7 +71,10 @@ func MySQLContainer(ctx context.Context, req MySQLContainerRequest) (*mysqlConta
 		return nil, err
 	}
 
-	req.Image = "mysql:8.0"
+	if req.Image == "" {
+		req.Image = DefaultImageVersion
+	}
+	req.ExposedPorts
 	req.ExposedPorts = []string{"3306/tcp"}
 	req.Env = map[string]string{}
 	req.Started = true
