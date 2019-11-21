@@ -32,16 +32,16 @@ type Container struct {
 	req       ContainerRequest
 }
 
-func (cont Container) ConnectURL(ctx context.Context) (string, error) {
+func (c Container) ConnectURL(ctx context.Context) (string, error) {
 	template := "postgres://%s:%s@localhost:%s/%s"
 
-	mappedPort, err := cont.Container.MappedPort(ctx, port)
+	mappedPort, err := c.Container.MappedPort(ctx, port)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get mapper port for %s", port.Port())
 	}
 
-	return fmt.Sprintf(template, cont.req.User, cont.req.Password,
-		mappedPort.Port(), cont.req.Database), nil
+	return fmt.Sprintf(template, c.req.User, c.req.Password,
+		mappedPort.Port(), c.req.Database), nil
 }
 
 func NewContainer(ctx context.Context, req ContainerRequest) (*Container, error) {
