@@ -3,7 +3,9 @@ package testcontainers
 import (
 	"context"
 	"fmt"
+	"github.com/docker/docker/api/types/volume"
 	"net/http"
+	"path/filepath"
 	"testing"
 	"time"
 
