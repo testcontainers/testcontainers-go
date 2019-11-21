@@ -97,7 +97,7 @@ func (t ProviderType) GetProvider() (GenericProvider, error) {
 	return nil, errors.New("unknown provider")
 }
 
-// Validate ensures that the ContainerRequest does not have invalid paramters configured to it
+// Validate ensures that the ContainerRequest does not have invalid parameters configured to it
 // ex. make sure you are not specifying both an image as well as a context
 func (c *ContainerRequest) Validate() error {
 
