@@ -43,7 +43,7 @@ func TestWriteIntoAPostgreSQLContainerViaDriver(t *testing.T) {
 	}
 }
 
-func ExamplePostgreSQLContainerRequest() {
+func ExampleContainerRequest() {
 
 	// Optional
 	containerRequest := testcontainers.ContainerRequest{
@@ -67,7 +67,7 @@ func ExamplePostgreSQLContainerRequest() {
 	pgContainerRequest.Validate()
 }
 
-func ExampleNewPostgreSQLContainer() {
+func ExampleNewContainer() {
 	ctx := context.Background()
 
 	// Create your PostgreSQL database,
