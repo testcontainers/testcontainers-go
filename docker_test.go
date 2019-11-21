@@ -886,3 +886,56 @@ func ExampleContainer_MappedPort() {
 	port, _ := nginxC.MappedPort(ctx, "80")
 	http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
 }
+
+func TestContainerCreationWithBindAndVolume(t *testing.T) {
+	absPath, err := filepath.Abs("./testresources/hello.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cnl()
+	// Create a Docker client.
+	dockerCli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dockerCli.NegotiateAPIVersion(ctx)
+	// Create the volume.
+	vol, err := dockerCli.VolumeCreate(ctx, volume.VolumeCreateBody{
+		Driver: "local",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	volumeName := vol.Name
+	defer func() {
+		ctx, cnl := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cnl()
+		err := dockerCli.VolumeRemove(ctx, volumeName, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	// Create the container that writes into the mounted volume.
+	bashC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:        "bash",
+			BindMounts:   map[string]string{absPath: "/hello.sh"},
+			VolumeMounts: map[string]string{volumeName: "/data"},
+			Cmd:          []string{"bash", "/hello.sh"},
+			WaitingFor: wait.ForLog("done"),
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		ctx, cnl := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cnl()
+		err := bashC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+}
