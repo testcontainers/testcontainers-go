@@ -34,7 +34,13 @@ type LocalDockerCompose struct {
 	Env                 map[string]string
 }
 
-// NewLocalDockerCompose returns an instance of the local Docker Compose
+// NewLocalDockerCompose returns an instance of the local Docker Compose, using an
+// array of Docker Compose file paths and an identifier for the Compose execution.
+//
+// It will iterate through the array adding '-f compose-file-path' flags to the local
+// Docker Compose execution. The identifier represents the name of the execution,
+// which will define the name of the underlying Docker network and the name of the
+// running Compose services.
 func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCompose {
 	dc := &LocalDockerCompose{}
 
