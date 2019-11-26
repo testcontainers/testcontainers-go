@@ -217,8 +217,16 @@ func assertContainerEnvironmentVariables(t *testing.T, identifier string, presen
 }
 
 func checkIfError(t *testing.T, err ExecError) {
-	if err.Error != nil || err.Stdout != nil || err.Stderr != nil {
-		t.Fatal(err)
+	if err.Error != nil {
+		t.Fatalf("Failed when running %v: %v", err.Command, err.Error)
+	}
+
+	if err.Stdout != nil {
+		t.Fatalf("An error in Stdout happened when running %v: %v", err.Command, err.Stdout)
+	}
+
+	if err.Stderr != nil {
+		t.Fatalf("An error in Stderr happened when running %v: %v", err.Command, err.Stderr)
 	}
 }
 
