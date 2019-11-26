@@ -160,9 +160,12 @@ func execute(
 
 	err := cmd.Start()
 	if err != nil {
+		execCmd := []string{dirContext, binary}
+		execCmd = append(execCmd, args...)
+
 		return ExecError{
 			// add information about the CMD and arguments used
-			Command: append([]string{dirContext, binary}, args...),
+			Command: execCmd,
 			Error:   err,
 			Stderr:  errStderr,
 			Stdout:  errStdout,
@@ -179,8 +182,11 @@ func execute(
 
 	err = cmd.Wait()
 
+	execCmd := []string{dirContext, binary}
+	execCmd = append(execCmd, args...)
+
 	return ExecError{
-		Command: append([]string{dirContext, binary}, args...),
+		Command: execCmd,
 		Error:   err,
 		Stderr:  errStderr,
 		Stdout:  errStdout,
