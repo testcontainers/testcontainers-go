@@ -16,7 +16,8 @@ const (
 	TestcontainerLabel          = "org.testcontainers.golang"
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
 	TestcontainerLabelIsReaper  = TestcontainerLabel + ".reaper"
-	ReaperDefaultImage          = "quay.io/testcontainers/ryuk:0.2.2"
+	ReaperImageName             = "testcontainers/ryuk:0.2.2"
+	ReaperDefaultImage          = "quay.io/" + ReaperImageName
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
@@ -33,7 +34,7 @@ type Reaper struct {
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
-func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
+func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperRegistry string) (*Reaper, error) {
 	r := &Reaper{
 		Provider:  provider,
 		SessionID: sessionID,
@@ -42,7 +43,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 	// TODO: reuse reaper if there already is one
 
 	req := ContainerRequest{
-		Image:        ReaperDefaultImage,
+		Image:        reaperImage(reaperRegistry),
 		ExposedPorts: []string{"8080"},
 		Labels: map[string]string{
 			TestcontainerLabel:         "true",
@@ -66,6 +67,14 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 	r.Endpoint = endpoint
 
 	return r, nil
+}
+
+func reaperImage(registry string) string {
+	if registry == "" {
+		return ReaperDefaultImage
+	} else {
+		return registry + "/" + ReaperImageName
+	}
 }
 
 // Connect runs a goroutine which can be terminated by sending true into the returned channel
