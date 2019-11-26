@@ -5,3 +5,5 @@ services:
     environment:
       bar: ${bar}
       foo: ${foo}
+    ports:
+     - "9080:80"
