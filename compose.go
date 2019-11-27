@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"gopkg.in/yaml.v2"
 )
@@ -172,13 +173,16 @@ func execute(
 		}
 	}
 
-	go func() {
-		_, errStdout = io.Copy(stdout, stdoutIn)
-	}()
+	var wg sync.WaitGroup
+	wg.Add(1)
 
 	go func() {
-		_, errStderr = io.Copy(stderr, stderrIn)
+		_, errStdout = io.Copy(stdout, stdoutIn)
+		wg.Done()
 	}()
+
+	_, errStderr = io.Copy(stderr, stderrIn)
+	wg.Wait()
 
 	err = cmd.Wait()
 
