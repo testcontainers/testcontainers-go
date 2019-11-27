@@ -103,12 +103,6 @@ func TestLocalDockerCompose(t *testing.T) {
 		WithCommand([]string{"up", "-d"}).
 		Invoke()
 	checkIfError(t, err)
-
-	present := map[string]string{
-		"bar": "",
-	}
-	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, compose.Identifier+"_nginx_1", present, absent)
 }
 
 func TestLocalDockerComposeComplex(t *testing.T) {
