@@ -31,7 +31,7 @@ require (
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/grpc v1.17.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gotest.tools v0.0.0-20181223230014-1083505acf35 // indirect
+	gotest.tools v0.0.0-20181223230014-1083505acf35
 )
 
 go 1.13

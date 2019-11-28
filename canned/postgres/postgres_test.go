@@ -14,10 +14,8 @@ func TestWriteIntoAPostgreSQLContainerViaDriver(t *testing.T) {
 	ctx := context.Background()
 
 	c, err := NewContainer(ctx, ContainerRequest{
+		Version:  "9.6.15-alpine",
 		Database: "hello",
-		GenericContainerRequest: testcontainers.GenericContainerRequest{
-			Started: true,
-		},
 	})
 	if err != nil {
 		t.Fatal(err.Error())

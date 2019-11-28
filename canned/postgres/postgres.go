@@ -21,6 +21,7 @@ const (
 
 type ContainerRequest struct {
 	testcontainers.GenericContainerRequest
+	Version  string
 	User     string
 	Password string
 	Database string
@@ -33,19 +34,28 @@ type Container struct {
 }
 
 func (c Container) ConnectURL(ctx context.Context) (string, error) {
-	template := "postgres://%s:%s@localhost:%s/%s"
+	template := "postgres://%s:%s@%s:%d/%s"
+
+	host, err := c.Container.Host(ctx)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get host")
+	}
 
 	mappedPort, err := c.Container.MappedPort(ctx, port)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get mapper port for %s", port.Port())
+		return "", errors.Wrapf(err, "failed to get mapped port for %s", port.Port())
 	}
 
-	return fmt.Sprintf(template, c.req.User, c.req.Password,
-		mappedPort.Port(), c.req.Database), nil
+	return fmt.Sprintf(template, c.req.User, c.req.Password, host,
+		mappedPort.Int(), c.req.Database), nil
 }
 
 func NewContainer(ctx context.Context, req ContainerRequest) (*Container, error) {
 	req.ExposedPorts = []string{string(port)}
+
+	if req.Version != "" && req.FromDockerfile.Context == "" {
+		req.Image = fmt.Sprintf("%s:%s", image, req.Version)
+	}
 
 	// Set the default values if none were provided in the request
 	if req.Image == "" && req.FromDockerfile.Context == "" {
@@ -97,10 +107,8 @@ func NewContainer(ctx context.Context, req ContainerRequest) (*Container, error)
 		req:       req,
 	}
 
-	if req.Started {
-		if err := c.Start(ctx); err != nil {
-			return res, errors.Wrap(err, "failed to start container")
-		}
+	if err := c.Start(ctx); err != nil {
+		return res, errors.Wrap(err, "failed to start container")
 	}
 
 	return res, nil
