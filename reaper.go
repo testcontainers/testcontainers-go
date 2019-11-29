@@ -11,13 +11,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-// TestcontainerLabel is used as a base for docker labels
 const (
 	TestcontainerLabel          = "org.testcontainers.golang"
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
 	TestcontainerLabelIsReaper  = TestcontainerLabel + ".reaper"
-	ReaperImageName             = "testcontainers/ryuk:0.2.2"
-	ReaperDefaultImage          = "quay.io/" + ReaperImageName
+
+	ReaperDefaultImage = "quay.io/testcontainers/ryuk:0.2.2"
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
@@ -34,7 +33,7 @@ type Reaper struct {
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
-func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperRegistry string) (*Reaper, error) {
+func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
 	r := &Reaper{
 		Provider:  provider,
 		SessionID: sessionID,
@@ -43,7 +42,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 	// TODO: reuse reaper if there already is one
 
 	req := ContainerRequest{
-		Image:        reaperImage(reaperRegistry),
+		Image:        reaperImage(reaperImageName),
 		ExposedPorts: []string{"8080"},
 		Labels: map[string]string{
 			TestcontainerLabel:         "true",
@@ -69,11 +68,11 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 	return r, nil
 }
 
-func reaperImage(registry string) string {
-	if registry == "" {
+func reaperImage(reaperImageName string) string {
+	if reaperImageName == "" {
 		return ReaperDefaultImage
 	} else {
-		return registry + "/" + ReaperImageName
+		return reaperImageName
 	}
 }
 
