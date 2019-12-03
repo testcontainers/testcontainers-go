@@ -27,5 +27,6 @@ type NetworkRequest struct {
 	Labels         map[string]string
 	Attachable     bool
 
-	SkipReaper bool // indicates whether we skip setting up a reaper for this
+	SkipReaper  bool   // indicates whether we skip setting up a reaper for this
+	ReaperImage string //alternative reaper registry
 }
