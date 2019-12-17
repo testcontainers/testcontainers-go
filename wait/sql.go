@@ -44,12 +44,12 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 
 	port, err := target.MappedPort(ctx, w.Port)
 	if err != nil {
-		return fmt.Errorf("target.MappedPort: %w", err)
+		return fmt.Errorf("target.MappedPort: %v", err)
 	}
 
 	db, err := sql.Open(w.Driver, w.URL(port))
 	if err != nil {
-		return fmt.Errorf("sql.Open: %w", err)
+		return fmt.Errorf("sql.Open: %v", err)
 	}
 	for {
 		select {
