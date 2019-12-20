@@ -65,9 +65,9 @@ nginxC.Terminate(ctx, t)`. `t` is `*testing.T` and it is used to notify is the
 
 ## Build from Dockerfile
 
-Testcontainers-go gives you the ability to build and image and run a container from a Dockerfile.
+Testcontainers-go gives you the ability to build an image and run a container from a Dockerfile.
 
-You can do so by specifiying a `Context` (the filepath to the build context on your local filesystem) 
+You can do so by specifying a `Context` (the filepath to the build context on your local filesystem) 
 and optionally a `Dockerfile` (defaults to "Dockerfile") like so:
 
 ```go
