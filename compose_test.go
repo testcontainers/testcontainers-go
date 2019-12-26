@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const containerNameNginx = "nginx-simple"
+
 func ExampleNewLocalDockerCompose() {
 	path := "/path/to/docker-compose.yml"
 
@@ -154,7 +156,7 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 		"bar": "BAR",
 	}
 	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, compose.Identifier+"_nginx_1", present, absent)
+	assertContainerEnvironmentVariables(t, containerNameNginx, present, absent)
 }
 
 func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
@@ -190,11 +192,11 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 		"foo": "FOO",
 	}
 	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, compose.Identifier+"_nginx_1", present, absent)
+	assertContainerEnvironmentVariables(t, containerNameNginx, present, absent)
 }
 
-func assertContainerEnvironmentVariables(t *testing.T, identifier string, present map[string]string, absent map[string]string) {
-	args := []string{"exec", identifier, "env"}
+func assertContainerEnvironmentVariables(t *testing.T, containerName string, present map[string]string, absent map[string]string) {
+	args := []string{"exec", containerName, "env"}
 
 	output, err := executeAndGetOutput("docker", args)
 	checkIfError(t, err)
