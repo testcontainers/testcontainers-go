@@ -925,7 +925,7 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 			BindMounts:   map[string]string{absPath: "/hello.sh"},
 			VolumeMounts: map[string]string{volumeName: "/data"},
 			Cmd:          []string{"bash", "/hello.sh"},
-			WaitingFor: wait.ForLog("done"),
+			WaitingFor:   wait.ForLog("done"),
 		},
 		Started: true,
 	})
