@@ -28,13 +28,12 @@ require (
 	github.com/opencontainers/runc v0.1.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.2.0 // indirect
-	github.com/stretchr/testify v1.2.2
-	golang.org/x/sys v0.0.0-20181228144115-9a3f9b0469bb // indirect
+	github.com/stretchr/testify v1.4.0
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/grpc v1.17.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gopkg.in/yaml.v2 v2.2.1
-	gotest.tools v0.0.0-20181223230014-1083505acf35 // indirect
+	gopkg.in/yaml.v2 v2.2.8
+	gotest.tools v0.0.0-20181223230014-1083505acf35
 )
 
 replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
