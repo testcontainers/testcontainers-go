@@ -127,7 +127,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 
 	req = req.WithContext(ctx)
 
-	Retry:
+Retry:
 	for {
 		select {
 		case <-ctx.Done():

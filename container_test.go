@@ -128,7 +128,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 					Contents string
 				}{
 					{
-						Name:     "Dockerfile",
+						Name: "Dockerfile",
 						Contents: `FROM alpine
 						CMD ["echo", "this is from the archive"]`,
 					},
@@ -172,11 +172,11 @@ func Test_BuildImageWithContexts(t *testing.T) {
 					Contents string
 				}{
 					{
-						Name: "say_hi.sh",
+						Name:     "say_hi.sh",
 						Contents: `echo hi this is from the say_hi.sh file!`,
 					},
 					{
-						Name:     "Dockerfile",
+						Name: "Dockerfile",
 						Contents: `FROM alpine
 						WORKDIR /app
 						COPY . .
