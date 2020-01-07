@@ -88,7 +88,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	//internal check
 	command := buildInternalCheckCommand(hp.Port.Int())
 	for {
-		exitCode, err := target.Exec(ctx, []string{"/bin/bash", "-c", command})
+		exitCode, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
 		if err != nil {
 			return errors.Wrapf(err, "host port waiting failed")
 		}
@@ -96,7 +96,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		if exitCode == 0 {
 			break
 		} else if exitCode == 126 {
-			return errors.New("/bin/bash command not executable")
+			return errors.New("/bin/sh command not executable")
 		}
 	}
 
@@ -107,7 +107,7 @@ func buildInternalCheckCommand(internalPort int) string {
 	command := `(
 					cat /proc/net/tcp{,6} | awk '{print $2}' | grep -i :%x ||
 					nc -vz -w 1 localhost %d ||
-					/bin/bash -c '</dev/tcp/localhost/%d'
+					/bin/sh -c '</dev/tcp/localhost/%d'
 				)
 				`
 	return "true && " + fmt.Sprintf(command, internalPort, internalPort, internalPort)
