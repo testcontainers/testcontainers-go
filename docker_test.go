@@ -746,6 +746,24 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 
 }
 
+func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "nginx:1.17.6-alpine",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+	}
+	_, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	if err == nil {
+		t.Fatal(err)
+	}
+
+}
+
 func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{

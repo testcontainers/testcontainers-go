@@ -95,6 +95,8 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 
 		if exitCode == 0 {
 			break
+		} else if exitCode == 126 {
+			return errors.New("/bin/bash command not executable")
 		}
 	}
 
