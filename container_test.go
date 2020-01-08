@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"io/ioutil"
+	"strings"
 	"testing"
 	"time"
 
@@ -263,5 +265,41 @@ func Test_BuildImageWithContexts(t *testing.T) {
 
 		})
 
+	}
+}
+
+func Test_GetLogsFromFailedContainer(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:      "alpine",
+		Cmd:        []string{"echo", "-n", "I was not expecting this"},
+		WaitingFor: wait.ForLog("I was expecting this").WithStartupTimeout(5 * time.Second),
+	}
+
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	if err != nil && err.Error() != "failed to start container: context deadline exceeded" {
+		t.Fatal(err)
+	} else if err == nil {
+		c.Terminate(ctx)
+		t.Fatal("was expecting error starting container")
+	}
+
+	logs, logErr := c.Logs(ctx)
+	if logErr != nil {
+		t.Fatal(logErr)
+	}
+
+	b, err := ioutil.ReadAll(logs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	log := string(b)
+	if strings.Contains(log, "I was not expecting this") == false {
+		t.Fatalf("could not find expected log in %s", log)
 	}
 }
