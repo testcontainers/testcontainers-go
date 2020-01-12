@@ -3,11 +3,12 @@ package testcontainers
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types/volume"
 	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/api/types/volume"
 
 	"database/sql"
 	// Import mysql into the scope of this package (required)
@@ -936,6 +937,35 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 		ctx, cnl := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cnl()
 		err := bashC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+}
+
+func TestContainerWithTmpFs(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "mysql:8.0.18",
+		ExposedPorts: []string{"3306"},
+		Env: map[string]string{
+			"MYSQL_ROOT_PASSWORD": "password",
+			"MYSQL_DATABASE":      "database",
+		},
+		Tmpfs:      map[string]string{"/var/lib/mysql": "rw"},
+		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
+	}
+
+	mysql, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		t.Log("terminating container")
+		err := mysql.Terminate(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
