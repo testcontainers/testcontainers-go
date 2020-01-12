@@ -946,17 +946,12 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 func TestContainerWithTmpFs(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "mysql:8.0.18",
-		ExposedPorts: []string{"3306"},
-		Env: map[string]string{
-			"MYSQL_ROOT_PASSWORD": "password",
-			"MYSQL_DATABASE":      "database",
-		},
-		Tmpfs:      map[string]string{"/var/lib/mysql": "rw"},
-		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
+		Image: "busybox",
+		Cmd:   []string{"sleep", "10"},
+		Tmpfs: map[string]string{"/testtmpfs": "rw"},
 	}
 
-	mysql, err := GenericContainer(ctx, GenericContainerRequest{
+	container, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -965,9 +960,35 @@ func TestContainerWithTmpFs(t *testing.T) {
 	}
 	defer func() {
 		t.Log("terminating container")
-		err := mysql.Terminate(ctx)
+		err := container.Terminate(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}()
+
+	var path = "/testtmpfs/test.file"
+
+	c, err := container.Exec(ctx, []string{"ls", path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 1 {
+		t.Fatalf("File %s should not have existed, expected return code 1, got %v", path, c)
+	}
+
+	c, err = container.Exec(ctx, []string{"touch", path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 0 {
+		t.Fatalf("File %s should have been created successfully, expected return code 0, got %v", path, c)
+	}
+
+	c, err = container.Exec(ctx, []string{"ls", path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 0 {
+		t.Fatalf("File %s should exist, expected return code 0, got %v", path, c)
+	}
 }
