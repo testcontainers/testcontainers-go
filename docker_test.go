@@ -753,11 +753,17 @@ func TestContainerCreationWaitingForHostPort(t *testing.T) {
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForListeningPort("80/tcp"),
 	}
-	_, err := GenericContainer(ctx, GenericContainerRequest{
+	nginx, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-
+	defer func() {
+		err := nginx.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log("terminated nginx container")
+	}()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -770,11 +776,17 @@ func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForListeningPort("80/tcp"),
 	}
-	_, err := GenericContainer(ctx, GenericContainerRequest{
+	nginx, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-
+	defer func() {
+		err := nginx.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log("terminated nginx container")
+	}()
 	if err != nil {
 		t.Fatal(err)
 	}
