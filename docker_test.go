@@ -101,7 +101,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 
 	nginxC, err := GenericContainer(ctx, gcr)
 	if err != nil {
-		fmt.Errorf("Error %s", err)
+		t.Fatal(err)
 	}
 
 	defer nginxC.Terminate(ctx)
