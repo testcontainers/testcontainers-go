@@ -104,6 +104,8 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 		fmt.Errorf("Error %s", err)
 	}
 
+	defer nginxC.Terminate(ctx)
+
 	host, err := nginxC.Host(ctx)
 	if err != nil {
 		t.Errorf("Expected host %s. Got '%d'.", host, err)
