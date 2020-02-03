@@ -69,6 +69,7 @@ type ContainerRequest struct {
 	Labels         map[string]string
 	BindMounts     map[string]string
 	VolumeMounts   map[string]string
+	Tmpfs          map[string]string
 	RegistryCred   string
 	WaitingFor     wait.Strategy
 	Name           string              // for specifying container name

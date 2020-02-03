@@ -3,11 +3,12 @@ package testcontainers
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types/volume"
 	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/api/types/volume"
 
 	"database/sql"
 	// Import mysql into the scope of this package (required)
@@ -986,4 +987,54 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
+}
+
+func TestContainerWithTmpFs(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image: "busybox",
+		Cmd:   []string{"sleep", "10"},
+		Tmpfs: map[string]string{"/testtmpfs": "rw"},
+	}
+
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		t.Log("terminating container")
+		err := container.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	var path = "/testtmpfs/test.file"
+
+	c, err := container.Exec(ctx, []string{"ls", path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 1 {
+		t.Fatalf("File %s should not have existed, expected return code 1, got %v", path, c)
+	}
+
+	c, err = container.Exec(ctx, []string{"touch", path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 0 {
+		t.Fatalf("File %s should have been created successfully, expected return code 0, got %v", path, c)
+	}
+
+	c, err = container.Exec(ctx, []string{"ls", path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 0 {
+		t.Fatalf("File %s should exist, expected return code 0, got %v", path, c)
+	}
 }
