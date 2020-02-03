@@ -117,6 +117,36 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	}
 }
 
+func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
+	ctx := context.Background()
+	gcr := GenericContainerRequest{ContainerRequest: ContainerRequest{
+		Image:       "nginx",
+		SkipReaper:  true,
+		NetworkMode: "host",
+		Networks:    []string{"new-network"},
+	},
+		Started: true,
+	}
+
+	nginxC, err := GenericContainer(ctx, gcr)
+	if err != nil {
+		// Error when NetworkMode = host and Network = []string{"bridge"}
+		t.Errorf("Can't use Network and NetworkMode together, %s", err)
+	}
+
+	defer nginxC.Terminate(ctx)
+
+	host, err := nginxC.Host(ctx)
+	if err != nil {
+		t.Errorf("Expected host %s. Got '%d'.", host, err)
+	}
+
+	_, err = http.Get("http://" + host + ":80")
+	if err != nil {
+		t.Errorf("Expected OK response. Got '%d'.", err)
+	}
+}
+
 func TestContainerReturnItsContainerID(t *testing.T) {
 	ctx := context.Background()
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
