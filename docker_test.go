@@ -532,7 +532,7 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 			ExposedPorts: []string{
 				nginxPort,
 			},
-			WaitingFor: wait.ForListeningPort("80").WithStartupTimeout(120 * time.Second),
+			WaitingFor: wait.ForListeningPort("80"), // default startupTimeout is 60s
 		},
 		Started: true,
 	})
@@ -798,7 +798,7 @@ func TestContainerCreationWaitingForHostPort(t *testing.T) {
 	req := ContainerRequest{
 		Image:        "nginx:1.17.6",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForListeningPort("80/tcp").WithStartupTimeout(120 * time.Second),
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
 	}
 	nginx, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -850,7 +850,7 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 		},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("port: 3306  MySQL Community Server - GPL"),
-			wait.ForListeningPort("3306/tcp").WithStartupTimeout(120*time.Second),
+			wait.ForListeningPort("3306/tcp"),
 		),
 	}
 
