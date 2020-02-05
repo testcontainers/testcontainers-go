@@ -3,12 +3,13 @@ package wait
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"net"
 	"os"
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/docker/go-connections/nat"
 )
@@ -70,6 +71,9 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	address := net.JoinHostPort(ipAddress, portString)
 	for {
 		conn, err := dialer.DialContext(ctx, proto, address)
+		if err != nil {
+			return err
+		}
 		defer conn.Close()
 		if err != nil {
 			if v, ok := err.(*net.OpError); ok {
