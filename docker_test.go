@@ -3,11 +3,12 @@ package testcontainers
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types/volume"
 	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/api/types/volume"
 
 	"database/sql"
 	// Import mysql into the scope of this package (required)
@@ -86,6 +87,52 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 		t.Errorf(
 			"Expected network aliases '%s', '%s' and '%s'. Got '%s', '%s' and '%s'.",
 			"alias1", "alias2", "alias3", networkAlias[0], networkAlias[1], networkAlias[2])
+	}
+}
+
+func TestContainerWithHostNetworkOptions(t *testing.T) {
+	ctx := context.Background()
+	gcr := GenericContainerRequest{ContainerRequest: ContainerRequest{
+		Image:       "nginx",
+		SkipReaper:  true,
+		NetworkMode: "host",
+	},
+		Started: true,
+	}
+
+	nginxC, err := GenericContainer(ctx, gcr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer nginxC.Terminate(ctx)
+
+	host, err := nginxC.Host(ctx)
+	if err != nil {
+		t.Errorf("Expected host %s. Got '%d'.", host, err)
+	}
+
+	_, err = http.Get("http://" + host + ":80")
+	if err != nil {
+		t.Errorf("Expected OK response. Got '%d'.", err)
+	}
+}
+
+func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
+	ctx := context.Background()
+	gcr := GenericContainerRequest{ContainerRequest: ContainerRequest{
+		Image:       "nginx",
+		SkipReaper:  true,
+		NetworkMode: "host",
+		Networks:    []string{"new-network"},
+	},
+		Started: true,
+	}
+
+	_, err := GenericContainer(ctx, gcr)
+	if err != nil {
+		// Error when NetworkMode = host and Network = []string{"bridge"}
+		t.Logf("Can't use Network and NetworkMode together, %s", err)
 	}
 }
 
@@ -986,4 +1033,54 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
+}
+
+func TestContainerWithTmpFs(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image: "busybox",
+		Cmd:   []string{"sleep", "10"},
+		Tmpfs: map[string]string{"/testtmpfs": "rw"},
+	}
+
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		t.Log("terminating container")
+		err := container.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	var path = "/testtmpfs/test.file"
+
+	c, err := container.Exec(ctx, []string{"ls", path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 1 {
+		t.Fatalf("File %s should not have existed, expected return code 1, got %v", path, c)
+	}
+
+	c, err = container.Exec(ctx, []string{"touch", path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 0 {
+		t.Fatalf("File %s should have been created successfully, expected return code 0, got %v", path, c)
+	}
+
+	c, err = container.Exec(ctx, []string{"ls", path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 0 {
+		t.Fatalf("File %s should exist, expected return code 0, got %v", path, c)
+	}
 }

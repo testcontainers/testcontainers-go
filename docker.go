@@ -443,8 +443,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	hostConfig := &container.HostConfig{
 		PortBindings: exposedPortMap,
 		Mounts:       mounts,
-		AutoRemove:   true,
+		Tmpfs:        req.Tmpfs,
+		AutoRemove:   req.AutoRemove,
 		Privileged:   req.Privileged,
+		NetworkMode:  req.NetworkMode,
 	}
 
 	endpointConfigs := map[string]*network.EndpointSettings{}

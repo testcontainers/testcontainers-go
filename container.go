@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"github.com/docker/docker/api/types/container"
 	"io"
 
 	"github.com/docker/docker/pkg/archive"
@@ -68,6 +69,7 @@ type ContainerRequest struct {
 	Labels         map[string]string
 	BindMounts     map[string]string
 	VolumeMounts   map[string]string
+	Tmpfs          map[string]string
 	RegistryCred   string
 	WaitingFor     wait.Strategy
 	Name           string              // for specifying container name
@@ -76,6 +78,8 @@ type ContainerRequest struct {
 	NetworkAliases map[string][]string // for specifying network aliases
 	SkipReaper     bool                // indicates whether we skip setting up a reaper for this
 	ReaperImage    string              // alternative reaper image
+	AutoRemove     bool                // if set to true, the container will be removed from the host when stopped
+	NetworkMode    container.NetworkMode
 }
 
 // ProviderType is an enum for the possible providers
