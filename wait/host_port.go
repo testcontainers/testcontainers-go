@@ -69,12 +69,8 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	//external check
 	dialer := net.Dialer{}
 	address := net.JoinHostPort(ipAddress, portString)
-	for {
+	for ctx.Err() == nil {
 		conn, err := dialer.DialContext(ctx, proto, address)
-		if err != nil {
-			return err
-		}
-		defer conn.Close()
 		if err != nil {
 			if v, ok := err.(*net.OpError); ok {
 				if v2, ok := (v.Err).(*os.SyscallError); ok {
@@ -85,8 +81,10 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 				}
 			}
 			return err
+		} else {
+			conn.Close()
+			break
 		}
-		break
 	}
 
 	//internal check
