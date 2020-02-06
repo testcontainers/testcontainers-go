@@ -109,7 +109,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 
 func buildInternalCheckCommand(internalPort int) string {
 	command := `(
-					cat /proc/net/tcp{,6} | awk '{print $2}' | grep -i :%04x ||
+					cat /proc/net/tcp* | awk '{print $2}' | grep -i :%04x ||
 					nc -vz -w 1 localhost %d ||
 					/bin/sh -c '</dev/tcp/localhost/%d'
 				)
