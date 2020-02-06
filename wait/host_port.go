@@ -69,9 +69,12 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	//external check
 	dialer := net.Dialer{}
 	address := net.JoinHostPort(ipAddress, portString)
-	for ctx.Err() == nil {
+	for {
 		conn, err := dialer.DialContext(ctx, proto, address)
 		if err != nil {
+			if ctx.Err() != nil {
+				return errors.New("timed out waiting for container ready state")
+			}
 			if v, ok := err.(*net.OpError); ok {
 				if v2, ok := (v.Err).(*os.SyscallError); ok {
 					if v2.Err == syscall.ECONNREFUSED {
