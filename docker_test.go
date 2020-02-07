@@ -793,6 +793,52 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 
 }
 
+func TestContainerCreationWaitingForHostPort(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "nginx:1.17.6",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+	}
+	nginx, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	defer func() {
+		err := nginx.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log("terminated nginx container")
+	}()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "nginx:1.17.6-alpine",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+	}
+	nginx, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	defer func() {
+		err := nginx.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log("terminated nginx container")
+	}()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
