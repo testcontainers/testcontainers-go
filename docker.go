@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -34,8 +35,9 @@ type DockerContainer struct {
 	// Container ID from Docker
 	ID         string
 	WaitingFor wait.Strategy
+	Image      string
 
-	// Cache to retrieve container infromation without re-fetching them from dockerd
+	// Cache to retrieve container information without re-fetching them from dockerd
 	raw               *types.ContainerJSON
 	provider          *DockerProvider
 	sessionID         uuid.UUID
@@ -133,21 +135,26 @@ func (c *DockerContainer) SessionID() string {
 
 // Start will start an already created container
 func (c *DockerContainer) Start(ctx context.Context) error {
+	shortID := c.ID[:12]
+	log.Printf("Starting container id: %s image: %s", shortID, c.Image)
+
 	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
 
 	// if a Wait Strategy has been specified, wait before returning
 	if c.WaitingFor != nil {
+		log.Printf("Waiting for container id %s image: %s", shortID, c.Image)
 		if err := c.WaitingFor.WaitUntilReady(ctx, c); err != nil {
 			return err
 		}
 	}
+	log.Printf("Container is ready id: %s image: %s", shortID, c.Image)
 
 	return nil
 }
 
-// Terminate is used to kill the container. It is usally triggered by as defer function.
+// Terminate is used to kill the container. It is usually triggered by as defer function.
 func (c *DockerContainer) Terminate(ctx context.Context) error {
 	err := c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
 		RemoveVolumes: true,
@@ -474,6 +481,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	c := &DockerContainer{
 		ID:                resp.ID,
 		WaitingFor:        req.WaitingFor,
+		Image:             tag,
 		sessionID:         sessionID,
 		provider:          p,
 		terminationSignal: termSignal,
