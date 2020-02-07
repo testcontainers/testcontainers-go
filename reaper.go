@@ -16,7 +16,7 @@ const (
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
 	TestcontainerLabelIsReaper  = TestcontainerLabel + ".reaper"
 
-	ReaperDefaultImage = "quay.io/testcontainers/ryuk:0.2.2"
+	ReaperDefaultImage = "quay.io/testcontainers/ryuk:0.2.3"
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
