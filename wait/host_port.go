@@ -72,21 +72,19 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	for {
 		conn, err := dialer.DialContext(ctx, proto, address)
 		if err != nil {
-			return err
-		}
-		defer conn.Close()
-		if err != nil {
 			if v, ok := err.(*net.OpError); ok {
 				if v2, ok := (v.Err).(*os.SyscallError); ok {
-					if v2.Err == syscall.ECONNREFUSED {
+					if v2.Err == syscall.ECONNREFUSED && ctx.Err() == nil {
 						time.Sleep(100 * time.Millisecond)
 						continue
 					}
 				}
 			}
 			return err
+		} else {
+			conn.Close()
+			break
 		}
-		break
 	}
 
 	//internal check
