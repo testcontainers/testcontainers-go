@@ -136,6 +136,35 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	}
 }
 
+func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
+	ctx := context.Background()
+	gcr := GenericContainerRequest{ContainerRequest: ContainerRequest{
+		Image:       "nginx",
+		SkipReaper:  true,
+		NetworkMode: "host",
+		WaitingFor:  wait.ForListeningPort("80/tcp"),
+	},
+		Started: true,
+	}
+
+	nginxC, err := GenericContainer(ctx, gcr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer nginxC.Terminate(ctx)
+
+	host, err := nginxC.Host(ctx)
+	if err != nil {
+		t.Errorf("Expected host %s. Got '%d'.", host, err)
+	}
+
+	_, err = http.Get("http://" + host + ":80")
+	if err != nil {
+		t.Errorf("Expected OK response. Got '%d'.", err)
+	}
+}
+
 func TestContainerReturnItsContainerID(t *testing.T) {
 	ctx := context.Background()
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
