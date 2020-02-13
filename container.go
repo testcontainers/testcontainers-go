@@ -38,9 +38,12 @@ type Container interface {
 	Start(context.Context) error                                    // start the container
 	Terminate(context.Context) error                                // terminate the container
 	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
-	Name(context.Context) (string, error)                           // get container name
-	Networks(context.Context) ([]string, error)                     // get container networks
-	NetworkAliases(context.Context) (map[string][]string, error)    // get container network aliases for a network
+	FollowOutput(LogConsumer)
+	StartLogProducer(context.Context) error
+	StopLogProducer() error
+	Name(context.Context) (string, error)                        // get container name
+	Networks(context.Context) ([]string, error)                  // get container networks
+	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string) (int, error)
 }
 

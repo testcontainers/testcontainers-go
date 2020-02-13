@@ -165,6 +165,68 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 	}
 }
 
+func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
+	nginxPort := "80/tcp"
+	ctx := context.Background()
+	gcr := GenericContainerRequest{ContainerRequest: ContainerRequest{
+		Image:       "nginx",
+		SkipReaper:  true,
+		NetworkMode: "host",
+		WaitingFor:  wait.ForListeningPort(nat.Port(nginxPort)),
+	},
+		Started: true,
+	}
+
+	nginxC, err := GenericContainer(ctx, gcr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer nginxC.Terminate(ctx)
+
+	hostN, err := nginxC.Endpoint(ctx, "")
+	if err != nil {
+		t.Errorf("Expected host %s. Got '%d'.", hostN, err)
+	}
+	t.Log(hostN)
+
+	_, err = http.Get("http://" + hostN)
+	if err != nil {
+		t.Errorf("Expected OK response. Got '%d'.", err)
+	}
+}
+
+func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
+	nginxPort := "80/tcp"
+	ctx := context.Background()
+	gcr := GenericContainerRequest{ContainerRequest: ContainerRequest{
+		Image:       "nginx",
+		SkipReaper:  true,
+		NetworkMode: "host",
+		WaitingFor:  wait.ForListeningPort(nat.Port(nginxPort)),
+	},
+		Started: true,
+	}
+
+	nginxC, err := GenericContainer(ctx, gcr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer nginxC.Terminate(ctx)
+
+	origin, err := nginxC.PortEndpoint(ctx, nat.Port(nginxPort), "http")
+	if err != nil {
+		t.Errorf("Expected host %s. Got '%d'.", origin, err)
+	}
+	t.Log(origin)
+
+	_, err = http.Get(origin)
+	if err != nil {
+		t.Errorf("Expected OK response. Got '%d'.", err)
+	}
+}
+
 func TestContainerReturnItsContainerID(t *testing.T) {
 	ctx := context.Background()
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
