@@ -92,11 +92,12 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 
 func TestContainerWithHostNetworkOptions(t *testing.T) {
 	ctx := context.Background()
-	gcr := GenericContainerRequest{ContainerRequest: ContainerRequest{
-		Image:       "nginx",
-		SkipReaper:  true,
-		NetworkMode: "host",
-	},
+	gcr := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:       "nginx",
+			SkipReaper:  true,
+			NetworkMode: "host",
+		},
 		Started: true,
 	}
 
@@ -120,12 +121,13 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 
 func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	ctx := context.Background()
-	gcr := GenericContainerRequest{ContainerRequest: ContainerRequest{
-		Image:       "nginx",
-		SkipReaper:  true,
-		NetworkMode: "host",
-		Networks:    []string{"new-network"},
-	},
+	gcr := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:       "nginx",
+			SkipReaper:  true,
+			NetworkMode: "host",
+			Networks:    []string{"new-network"},
+		},
 		Started: true,
 	}
 
@@ -138,12 +140,13 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 
 func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 	ctx := context.Background()
-	gcr := GenericContainerRequest{ContainerRequest: ContainerRequest{
-		Image:       "nginx",
-		SkipReaper:  true,
-		NetworkMode: "host",
-		WaitingFor:  wait.ForListeningPort("80/tcp"),
-	},
+	gcr := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:       "nginx",
+			SkipReaper:  true,
+			NetworkMode: "host",
+			WaitingFor:  wait.ForListeningPort("80/tcp"),
+		},
 		Started: true,
 	}
 
@@ -168,12 +171,13 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
 	nginxPort := "80/tcp"
 	ctx := context.Background()
-	gcr := GenericContainerRequest{ContainerRequest: ContainerRequest{
-		Image:       "nginx",
-		SkipReaper:  true,
-		NetworkMode: "host",
-		WaitingFor:  wait.ForListeningPort(nat.Port(nginxPort)),
-	},
+	gcr := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:       "nginx",
+			SkipReaper:  true,
+			NetworkMode: "host",
+			WaitingFor:  wait.ForListeningPort(nat.Port(nginxPort)),
+		},
 		Started: true,
 	}
 
@@ -199,12 +203,13 @@ func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
 func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
 	nginxPort := "80/tcp"
 	ctx := context.Background()
-	gcr := GenericContainerRequest{ContainerRequest: ContainerRequest{
-		Image:       "nginx",
-		SkipReaper:  true,
-		NetworkMode: "host",
-		WaitingFor:  wait.ForListeningPort(nat.Port(nginxPort)),
-	},
+	gcr := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:       "nginx",
+			SkipReaper:  true,
+			NetworkMode: "host",
+			WaitingFor:  wait.ForListeningPort(nat.Port(nginxPort)),
+		},
 		Started: true,
 	}
 
