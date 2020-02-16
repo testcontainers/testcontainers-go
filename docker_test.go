@@ -2,7 +2,9 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/docker/docker/errdefs"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -1179,4 +1181,35 @@ func TestContainerWithTmpFs(t *testing.T) {
 	if c != 0 {
 		t.Fatalf("File %s should exist, expected return code 0, got %v", path, c)
 	}
+}
+
+func TestContainerNonExistentImage(t *testing.T) {
+	t.Run("if the image not found don't propagate the error", func(t *testing.T) {
+		_, err := GenericContainer(context.Background(), GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				Image: "postgres:nonexistent-version",
+			},
+			Started: true,
+		})
+
+		var nf errdefs.ErrNotFound
+		if !errors.As(err, &nf) {
+			t.Fatalf("the error should have bee an errdefs.ErrNotFound: %v", err)
+		}
+	})
+
+	t.Run("the context cancellation is propagated to container creation", func(t *testing.T) {
+		ctx, _ := context.WithTimeout(context.Background(), time.Millisecond*100)
+		_, err := GenericContainer(ctx, GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				Image:      "postgres:latest",
+				WaitingFor: wait.ForLog("log"),
+			},
+			Started: true,
+		})
+		if !errors.Is(err, ctx.Err()) {
+			t.Fatalf("err should be a ctx cancelled error %v", err)
+		}
+	})
+
 }
