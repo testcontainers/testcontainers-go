@@ -3,12 +3,13 @@ package wait
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"net"
 	"os"
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/docker/go-connections/nat"
 )
@@ -70,31 +71,34 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	address := net.JoinHostPort(ipAddress, portString)
 	for {
 		conn, err := dialer.DialContext(ctx, proto, address)
-		defer conn.Close()
 		if err != nil {
 			if v, ok := err.(*net.OpError); ok {
 				if v2, ok := (v.Err).(*os.SyscallError); ok {
-					if v2.Err == syscall.ECONNREFUSED {
+					if v2.Err == syscall.ECONNREFUSED && ctx.Err() == nil {
 						time.Sleep(100 * time.Millisecond)
 						continue
 					}
 				}
 			}
 			return err
+		} else {
+			conn.Close()
+			break
 		}
-		break
 	}
 
 	//internal check
 	command := buildInternalCheckCommand(hp.Port.Int())
 	for {
-		exitCode, err := target.Exec(ctx, []string{"/bin/bash", "-c", command})
+		exitCode, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
 		if err != nil {
 			return errors.Wrapf(err, "host port waiting failed")
 		}
 
 		if exitCode == 0 {
 			break
+		} else if exitCode == 126 {
+			return errors.New("/bin/sh command not executable")
 		}
 	}
 
@@ -103,9 +107,9 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 
 func buildInternalCheckCommand(internalPort int) string {
 	command := `(
-					cat /proc/net/tcp{,6} | awk '{print $2}' | grep -i :%x ||
+					cat /proc/net/tcp* | awk '{print $2}' | grep -i :%04x ||
 					nc -vz -w 1 localhost %d ||
-					/bin/bash -c '</dev/tcp/localhost/%d'
+					/bin/sh -c '</dev/tcp/localhost/%d'
 				)
 				`
 	return "true && " + fmt.Sprintf(command, internalPort, internalPort, internalPort)

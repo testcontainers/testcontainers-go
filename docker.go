@@ -3,9 +3,11 @@ package testcontainers
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -34,13 +36,16 @@ type DockerContainer struct {
 	// Container ID from Docker
 	ID         string
 	WaitingFor wait.Strategy
+	Image      string
 
-	// Cache to retrieve container infromation without re-fetching them from dockerd
+	// Cache to retrieve container information without re-fetching them from dockerd
 	raw               *types.ContainerJSON
 	provider          *DockerProvider
 	sessionID         uuid.UUID
 	terminationSignal chan bool
 	skipReaper        bool
+	consumers         []LogConsumer
+	stopProducer      chan bool
 }
 
 func (c *DockerContainer) GetContainerID() string {
@@ -133,21 +138,26 @@ func (c *DockerContainer) SessionID() string {
 
 // Start will start an already created container
 func (c *DockerContainer) Start(ctx context.Context) error {
+	shortID := c.ID[:12]
+	log.Printf("Starting container id: %s image: %s", shortID, c.Image)
+
 	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
 
 	// if a Wait Strategy has been specified, wait before returning
 	if c.WaitingFor != nil {
+		log.Printf("Waiting for container id %s image: %s", shortID, c.Image)
 		if err := c.WaitingFor.WaitUntilReady(ctx, c); err != nil {
 			return err
 		}
 	}
+	log.Printf("Container is ready id: %s image: %s", shortID, c.Image)
 
 	return nil
 }
 
-// Terminate is used to kill the container. It is usally triggered by as defer function.
+// Terminate is used to kill the container. It is usually triggered by as defer function.
 func (c *DockerContainer) Terminate(ctx context.Context) error {
 	err := c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
 		RemoveVolumes: true,
@@ -183,6 +193,18 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 		ShowStderr: true,
 	}
 	return c.provider.client.ContainerLogs(ctx, c.ID, options)
+}
+
+// FollowOutput adds a LogConsumer to be sent logs from the container's
+// STDOUT and STDERR
+func (c *DockerContainer) FollowOutput(consumer LogConsumer) {
+	if c.consumers == nil {
+		c.consumers = []LogConsumer{
+			consumer,
+		}
+	} else {
+		c.consumers = append(c.consumers, consumer)
+	}
 }
 
 // Name gets the name of the container.
@@ -263,6 +285,84 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error) {
 	}
 
 	return exitCode, nil
+}
+
+// StartLogProducer will start a concurrent process that will continuously read logs
+// from the container and will send them to each added LogConsumer
+func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
+	go func() {
+		options := types.ContainerLogsOptions{
+			ShowStdout: true,
+			ShowStderr: true,
+			Follow:     true,
+		}
+
+		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
+
+		r, err := c.provider.client.ContainerLogs(ctx, c.GetContainerID(), options)
+		if err != nil {
+			// if we can't get the logs, panic, we can't return an error to anything
+			// from within this goroutine
+			panic(err)
+		}
+
+		for {
+			select {
+			case <-c.stopProducer:
+				err := r.Close()
+				if err != nil {
+					// we can't close the read closer, this should never happen
+					panic(err)
+				}
+				return
+			default:
+				h := make([]byte, 8)
+				_, err := r.Read(h)
+				if err != nil {
+					// this explicitly ignores errors
+					// because we want to keep procesing even if one of our reads fails
+					continue
+				}
+
+				count := binary.BigEndian.Uint32(h[4:])
+				if count == 0 {
+					continue
+				}
+				logType := h[0]
+				if logType > 2 {
+					panic(fmt.Sprintf("received inavlid log type: %d", logType))
+				}
+
+				// a map of the log type --> int representation in the header, notice the first is blank, this is stdin, but the go docker client doesn't allow following that in logs
+				logTypes := []string{"", StdoutLog, StderrLog}
+
+				b := make([]byte, count)
+				_, err = r.Read(b)
+				if err != nil {
+					// TODO: add-logger: use logger to log out this error
+					fmt.Fprintf(os.Stderr, "error occurred reading log with known length %s", err.Error())
+					continue
+				}
+				for _, c := range c.consumers {
+					c.Accept(Log{
+						LogType: logTypes[logType],
+						Content: b,
+					})
+				}
+			}
+
+		}
+	}()
+
+	return nil
+}
+
+// StopLogProducer will stop the concurrent process that is reading logs
+// and sending them to each added LogConsumer
+func (c *DockerContainer) StopLogProducer() error {
+	c.stopProducer <- true
+	return nil
 }
 
 // DockerNetwork represents a network started using Docker
@@ -424,20 +524,29 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	// prepare mounts
-	bindMounts := []mount.Mount{}
+	mounts := []mount.Mount{}
 	for hostPath, innerPath := range req.BindMounts {
-		bindMounts = append(bindMounts, mount.Mount{
+		mounts = append(mounts, mount.Mount{
 			Type:   mount.TypeBind,
 			Source: hostPath,
+			Target: innerPath,
+		})
+	}
+	for volumeName, innerPath := range req.VolumeMounts {
+		mounts = append(mounts, mount.Mount{
+			Type:   mount.TypeVolume,
+			Source: volumeName,
 			Target: innerPath,
 		})
 	}
 
 	hostConfig := &container.HostConfig{
 		PortBindings: exposedPortMap,
-		Mounts:       bindMounts,
-		AutoRemove:   true,
+		Mounts:       mounts,
+		Tmpfs:        req.Tmpfs,
+		AutoRemove:   req.AutoRemove,
 		Privileged:   req.Privileged,
+		NetworkMode:  req.NetworkMode,
 	}
 
 	endpointConfigs := map[string]*network.EndpointSettings{}
@@ -465,10 +574,12 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	c := &DockerContainer{
 		ID:                resp.ID,
 		WaitingFor:        req.WaitingFor,
+		Image:             tag,
 		sessionID:         sessionID,
 		provider:          p,
 		terminationSignal: termSignal,
 		skipReaper:        req.SkipReaper,
+		stopProducer:      make(chan bool),
 	}
 
 	return c, nil

@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"github.com/docker/docker/api/types/container"
 	"io"
 
 	"github.com/docker/docker/pkg/archive"
@@ -37,9 +38,12 @@ type Container interface {
 	Start(context.Context) error                                    // start the container
 	Terminate(context.Context) error                                // terminate the container
 	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
-	Name(context.Context) (string, error)                           // get container name
-	Networks(context.Context) ([]string, error)                     // get container networks
-	NetworkAliases(context.Context) (map[string][]string, error)    // get container network aliases for a network
+	FollowOutput(LogConsumer)
+	StartLogProducer(context.Context) error
+	StopLogProducer() error
+	Name(context.Context) (string, error)                        // get container name
+	Networks(context.Context) ([]string, error)                  // get container networks
+	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string) (int, error)
 }
 
@@ -67,6 +71,8 @@ type ContainerRequest struct {
 	Cmd            []string
 	Labels         map[string]string
 	BindMounts     map[string]string
+	VolumeMounts   map[string]string
+	Tmpfs          map[string]string
 	RegistryCred   string
 	WaitingFor     wait.Strategy
 	Name           string              // for specifying container name
@@ -75,6 +81,8 @@ type ContainerRequest struct {
 	NetworkAliases map[string][]string // for specifying network aliases
 	SkipReaper     bool                // indicates whether we skip setting up a reaper for this
 	ReaperImage    string              // alternative reaper image
+	AutoRemove     bool                // if set to true, the container will be removed from the host when stopped
+	NetworkMode    container.NetworkMode
 }
 
 // ProviderType is an enum for the possible providers

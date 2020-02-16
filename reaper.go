@@ -16,7 +16,7 @@ const (
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
 	TestcontainerLabelIsReaper  = TestcontainerLabel + ".reaper"
 
-	ReaperDefaultImage = "quay.io/testcontainers/ryuk:0.2.2"
+	ReaperDefaultImage = "quay.io/testcontainers/ryuk:0.2.3"
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
@@ -52,6 +52,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		BindMounts: map[string]string{
 			"/var/run/docker.sock": "/var/run/docker.sock",
 		},
+		AutoRemove: true,
 	}
 
 	c, err := provider.RunContainer(ctx, req)
