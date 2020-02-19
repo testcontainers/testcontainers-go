@@ -104,6 +104,13 @@ func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 
 // MappedPort gets externally mapped port for a container port
 func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return "", err
+	}
+	if inspect.ContainerJSONBase.HostConfig.NetworkMode == "host" {
+		return port, nil
+	}
 	ports, err := c.Ports(ctx)
 	if err != nil {
 		return "", err
