@@ -1,0 +1,26 @@
+on: [push, pull_request]
+name: Test
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.13.x]
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go-version }}
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: modVerify
+      run: go mod verify
+    - name: modTidy
+      run: go mod tidy
+    - name: check
+      run: ./scripts/checks.sh
+    - name: vet
+      run: go vet ./...
+    - name: gotest
+      run: go test -v ./...
