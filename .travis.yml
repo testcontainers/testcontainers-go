@@ -1,6 +1,10 @@
 language: go
 go:
   - 1.11.4
+os:
+  - osx
+  - linux
+  - windows
 
 install: true
 
