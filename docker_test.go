@@ -2,11 +2,14 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/errdefs"
 
 	"github.com/docker/docker/api/types/volume"
 
@@ -36,7 +39,7 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 				networkName,
 			},
 			NetworkAliases: map[string][]string{
-				networkName: []string{
+				networkName: {
 					"alias1", "alias2", "alias3",
 				},
 			},
@@ -1179,4 +1182,38 @@ func TestContainerWithTmpFs(t *testing.T) {
 	if c != 0 {
 		t.Fatalf("File %s should exist, expected return code 0, got %v", path, c)
 	}
+}
+
+func TestContainerNonExistentImage(t *testing.T) {
+	t.Run("if the image not found don't propagate the error", func(t *testing.T) {
+		_, err := GenericContainer(context.Background(), GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				Image:      "postgres:nonexistent-version",
+				SkipReaper: true,
+			},
+			Started: true,
+		})
+
+		var nf errdefs.ErrNotFound
+		if !errors.As(err, &nf) {
+			t.Fatalf("the error should have bee an errdefs.ErrNotFound: %v", err)
+		}
+	})
+
+	t.Run("the context cancellation is propagated to container creation", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		_, err := GenericContainer(ctx, GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				Image:      "postgres:latest",
+				WaitingFor: wait.ForLog("log"),
+				SkipReaper: true,
+			},
+			Started: true,
+		})
+		if !errors.Is(err, ctx.Err()) {
+			t.Fatalf("err should be a ctx cancelled error %v", err)
+		}
+	})
+
 }
