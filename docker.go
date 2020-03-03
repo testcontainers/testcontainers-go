@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"github.com/cenkalti/backoff"
+	"github.com/docker/docker/errdefs"
 	"io"
 	"io/ioutil"
 	"log"
@@ -14,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -500,22 +501,11 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				if req.RegistryCred != "" {
 					pullOpt.RegistryAuth = req.RegistryCred
 				}
-				var pull io.ReadCloser
-				err := backoff.Retry(func() error {
-					var err error
-					pull, err = p.client.ImagePull(ctx, tag, pullOpt)
-					return err
-				}, backoff.NewExponentialBackOff())
-				if err != nil {
-					return nil, err
-				}
-				defer pull.Close()
 
-				// download of docker image finishes at EOF of the pull request
-				_, err = ioutil.ReadAll(pull)
-				if err != nil {
+				if err := p.attemptToPullImage(ctx, tag, pullOpt); err != nil {
 					return nil, err
 				}
+
 			} else {
 				return nil, err
 			}
@@ -590,6 +580,30 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	return c, nil
+}
+
+//attemptToPullImage tries to pull the image while respecting the ctx cancellations.
+// Besides, if the image cannot be pulled due to ErrorNotFound then no need to retry but terminate immediately.
+func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt types.ImagePullOptions) error {
+	var (
+		err  error
+		pull io.ReadCloser
+	)
+	err = backoff.Retry(func() error {
+		pull, err = p.client.ImagePull(ctx, tag, pullOpt)
+		if _, ok := err.(errdefs.ErrNotFound); ok {
+			return backoff.Permanent(err)
+		}
+		return err
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+	if err != nil {
+		return err
+	}
+	defer pull.Close()
+
+	// download of docker image finishes at EOF of the pull request
+	_, err = ioutil.ReadAll(pull)
+	return err
 }
 
 // RunContainer takes a RequestContainer as input and it runs a container via the docker sdk
