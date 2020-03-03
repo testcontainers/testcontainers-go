@@ -6,7 +6,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
@@ -74,7 +73,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		if err != nil {
 			if v, ok := err.(*net.OpError); ok {
 				if v2, ok := (v.Err).(*os.SyscallError); ok {
-					if v2.Err == syscall.ECONNREFUSED && ctx.Err() == nil {
+					if isConnRefusedErr(v2.Err) {
 						time.Sleep(100 * time.Millisecond)
 						continue
 					}
@@ -90,6 +89,9 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	//internal check
 	command := buildInternalCheckCommand(hp.Port.Int())
 	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		exitCode, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
 		if err != nil {
 			return errors.Wrapf(err, "host port waiting failed")
