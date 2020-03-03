@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/docker/go-connections/nat"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"net"
 	"strings"
 	"time"
@@ -39,11 +41,12 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		SessionID: sessionID,
 	}
 
-	// TODO: reuse reaper if there already is one
+	listeningPort := nat.Port("8080/tcp")
 
+	// TODO: reuse reaper if there already is one
 	req := ContainerRequest{
 		Image:        reaperImage(reaperImageName),
-		ExposedPorts: []string{"8080"},
+		ExposedPorts: []string{string(listeningPort)},
 		Labels: map[string]string{
 			TestcontainerLabel:         "true",
 			TestcontainerLabelIsReaper: "true",
@@ -53,6 +56,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 			"/var/run/docker.sock": "/var/run/docker.sock",
 		},
 		AutoRemove: true,
+		WaitingFor: wait.ForListeningPort(listeningPort),
 	}
 
 	c, err := provider.RunContainer(ctx, req)
