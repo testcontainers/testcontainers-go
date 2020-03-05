@@ -386,8 +386,10 @@ type DockerNetwork struct {
 func (n *DockerNetwork) Remove(_ context.Context) error {
 	if n.terminationSignal != nil {
 		n.terminationSignal <- true
+		return nil
+	} else {
+		return n.provider.client.NetworkRemove(context.Background(), n.ID)
 	}
-	return nil
 }
 
 // DockerProvider implements the ContainerProvider interface
@@ -703,6 +705,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		ID:                response.ID,
 		Driver:            req.Driver,
 		Name:              req.Name,
+		provider:          p,
 		terminationSignal: termSignal,
 	}
 
