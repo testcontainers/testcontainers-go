@@ -8,8 +8,10 @@ import (
 	"time"
 )
 
+type URL func(string, nat.Port) string
+
 //ForSQL constructs a new waitForSql strategy for the given driver
-func ForSQL(port nat.Port, driver string, url func(nat.Port) string) *waitForSql {
+func ForSQL(port nat.Port, driver string, url URL) *waitForSql {
 	return &waitForSql{
 		Port:   port,
 		URL:    url,
@@ -18,7 +20,7 @@ func ForSQL(port nat.Port, driver string, url func(nat.Port) string) *waitForSql
 }
 
 type waitForSql struct {
-	URL            func(port nat.Port) string
+	URL            URL
 	Driver         string
 	Port           nat.Port
 	startupTimeout time.Duration
@@ -47,7 +49,12 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 		return fmt.Errorf("target.MappedPort: %v", err)
 	}
 
-	db, err := sql.Open(w.Driver, w.URL(port))
+	host, err := target.Host(ctx)
+	if err != nil {
+		return fmt.Errorf("target.Host: %v", err)
+	}
+
+	db, err := sql.Open(w.Driver, w.URL(host, port))
 	if err != nil {
 		return fmt.Errorf("sql.Open: %v", err)
 	}
@@ -56,7 +63,6 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-
 			if _, err := db.ExecContext(ctx, "SELECT 1"); err != nil {
 				continue
 			}
