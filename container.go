@@ -65,24 +65,25 @@ type FromDockerfile struct {
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
 	FromDockerfile
-	Image          string
-	Env            map[string]string
-	ExposedPorts   []string // allow specifying protocol info
-	Cmd            []string
-	Labels         map[string]string
-	BindMounts     map[string]string
-	VolumeMounts   map[string]string
-	Tmpfs          map[string]string
-	RegistryCred   string
-	WaitingFor     wait.Strategy
-	Name           string              // for specifying container name
-	Privileged     bool                // for starting privileged container
-	Networks       []string            // for specifying network names
-	NetworkAliases map[string][]string // for specifying network aliases
-	SkipReaper     bool                // indicates whether we skip setting up a reaper for this
-	ReaperImage    string              // alternative reaper image
-	AutoRemove     bool                // if set to true, the container will be removed from the host when stopped
-	NetworkMode    container.NetworkMode
+	Image           string
+	Env             map[string]string
+	ExposedPorts    []string // allow specifying protocol info
+	Cmd             []string
+	Labels          map[string]string
+	BindMounts      map[string]string
+	VolumeMounts    map[string]string
+	Tmpfs           map[string]string
+	RegistryCred    string
+	WaitingFor      wait.Strategy
+	Name            string              // for specifying container name
+	Privileged      bool                // for starting privileged container
+	Networks        []string            // for specifying network names
+	NetworkAliases  map[string][]string // for specifying network aliases
+	SkipReaper      bool                // indicates whether we skip setting up a reaper for this
+	ReaperImage     string              // alternative reaper image
+	AutoRemove      bool                // if set to true, the container will be removed from the host when stopped
+	NetworkMode     container.NetworkMode
+	AlwaysPullImage bool // Always pull image
 }
 
 // ProviderType is an enum for the possible providers
