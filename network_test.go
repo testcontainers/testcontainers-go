@@ -12,7 +12,15 @@ import (
 func ExampleNetworkProvider_CreateNetwork() {
 	ctx := context.Background()
 	networkName := "new-network"
-	gcr := GenericContainerRequest{
+	net, _ := GenericNetwork(ctx, GenericNetworkRequest{
+		NetworkRequest: NetworkRequest{
+			Name:           networkName,
+			CheckDuplicate: true,
+		},
+	})
+	defer net.Remove(ctx)
+
+	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			Image: "nginx",
 			ExposedPorts: []string{
@@ -22,15 +30,7 @@ func ExampleNetworkProvider_CreateNetwork() {
 				networkName,
 			},
 		},
-	}
-	provider, _ := gcr.ProviderType.GetProvider()
-	net, _ := provider.CreateNetwork(ctx, NetworkRequest{
-		Name:           networkName,
-		CheckDuplicate: true,
 	})
-	defer net.Remove(ctx)
-
-	nginxC, _ := GenericContainer(ctx, gcr)
 	defer nginxC.Terminate(ctx)
 	nginxC.GetContainerID()
 }
@@ -57,24 +57,20 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 		Networks:     []string{networkName},
 	}
 
-	gcr := GenericContainerRequest{
-		ContainerRequest: dbContainerRequest,
-		Started:          true,
-	}
+	net, err := GenericNetwork(ctx, GenericNetworkRequest{
+		NetworkRequest: networkRequest,
+	})
 
-	provider, err := gcr.ProviderType.GetProvider()
-	if err != nil {
-		t.Fatal("cannot get provider")
-	}
-
-	net, err := provider.CreateNetwork(ctx, networkRequest)
 	if err != nil {
 		t.Fatal("cannot create network")
 	}
 
 	defer net.Remove(ctx)
 
-	postgres, err := GenericContainer(ctx, gcr)
+	postgres, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: dbContainerRequest,
+		Started:          true,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
