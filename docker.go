@@ -494,19 +494,28 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	} else {
 		tag = req.Image
-		_, _, err = p.client.ImageInspectWithRaw(ctx, tag)
-		if err != nil {
-			if client.IsErrNotFound(err) {
-				pullOpt := types.ImagePullOptions{}
-				if req.RegistryCred != "" {
-					pullOpt.RegistryAuth = req.RegistryCred
-				}
+		var shouldPullImage bool
 
-				if err := p.attemptToPullImage(ctx, tag, pullOpt); err != nil {
+		if req.AlwaysPullImage {
+			shouldPullImage = true // If requested always attempt to pull image
+		} else {
+			_, _, err = p.client.ImageInspectWithRaw(ctx, tag)
+			if err != nil {
+				if client.IsErrNotFound(err) {
+					shouldPullImage = true
+				} else {
 					return nil, err
 				}
+			}
+		}
 
-			} else {
+		if shouldPullImage {
+			pullOpt := types.ImagePullOptions{}
+			if req.RegistryCred != "" {
+				pullOpt.RegistryAuth = req.RegistryCred
+			}
+
+			if err := p.attemptToPullImage(ctx, tag, pullOpt); err != nil {
 				return nil, err
 			}
 		}
