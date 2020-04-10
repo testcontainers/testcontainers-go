@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go
 
-replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
+go 1.13
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
@@ -34,4 +34,6 @@ require (
 	gotest.tools v0.0.0-20181223230014-1083505acf35
 )
 
-go 1.13
+replace github.com/gofrs/uuid => github.com/google/uuid v1.1.1
+
+replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
