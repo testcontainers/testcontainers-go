@@ -16,6 +16,7 @@ require (
 	github.com/go-redis/redis v6.15.7+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gogo/protobuf v1.2.0 // indirect
+	github.com/google/uuid v1.1.1
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
@@ -26,14 +27,11 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v0.1.1 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.2.0 // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/grpc v1.17.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gotest.tools v0.0.0-20181223230014-1083505acf35
 )
-
-replace github.com/gofrs/uuid => github.com/google/uuid v1.1.1
 
 replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1

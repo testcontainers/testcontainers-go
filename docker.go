@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"github.com/cenkalti/backoff"
-	"github.com/docker/docker/errdefs"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,6 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff"
+	"github.com/docker/docker/errdefs"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -23,8 +24,8 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -413,8 +414,8 @@ func NewDockerProvider() (*DockerProvider, error) {
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
-	repo := uuid.NewV4()
-	tag := uuid.NewV4()
+	repo := uuid.New()
+	tag := uuid.New()
 
 	repoTag := fmt.Sprintf("%s:%s", repo, tag)
 
@@ -463,7 +464,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		req.Labels = make(map[string]string)
 	}
 
-	sessionID := uuid.NewV4()
+	sessionID := uuid.New()
 
 	var termSignal chan bool
 	if !req.SkipReaper {
@@ -684,7 +685,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		Labels:         req.Labels,
 	}
 
-	sessionID := uuid.NewV4()
+	sessionID := uuid.New()
 
 	var termSignal chan bool
 	if !req.SkipReaper {
