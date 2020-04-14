@@ -546,6 +546,13 @@ func TestContainerCreation(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
+	networkIP, err := nginxC.ContainerIP(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(networkIP) == 0 {
+		t.Errorf("Expected an IP address, got %v", networkIP)
+	}
 	networkAliases, err := nginxC.NetworkAliases(ctx)
 	if err != nil {
 		t.Fatal(err)

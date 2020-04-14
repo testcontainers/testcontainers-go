@@ -2,8 +2,9 @@ package testcontainers
 
 import (
 	"context"
-	"github.com/docker/docker/api/types/container"
 	"io"
+
+	"github.com/docker/docker/api/types/container"
 
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
@@ -45,6 +46,7 @@ type Container interface {
 	Networks(context.Context) ([]string, error)                  // get container networks
 	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string) (int, error)
+	ContainerIP(context.Context) (string, error) // get container ip
 }
 
 // ImageBuildInfo defines what is needed to build an image
