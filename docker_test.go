@@ -46,12 +46,13 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 		},
 	}
 
-	provider, err := gcr.ProviderType.GetProvider()
-
-	newNetwork, err := provider.CreateNetwork(ctx, NetworkRequest{
-		Name:           networkName,
-		CheckDuplicate: true,
+	newNetwork, err := GenericNetwork(ctx, GenericNetworkRequest{
+		NetworkRequest: NetworkRequest{
+			Name:           networkName,
+			CheckDuplicate: true,
+		},
 	})
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,8 +99,12 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			Image:       "nginx",
+			Privileged:  true,
 			SkipReaper:  true,
 			NetworkMode: "host",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
 		},
 		Started: true,
 	}
@@ -111,12 +116,17 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 
 	defer nginxC.Terminate(ctx)
 
-	host, err := nginxC.Host(ctx)
+	//host, err := nginxC.Host(ctx)
+	//if err != nil {
+	//	t.Errorf("Expected host %s. Got '%d'.", host, err)
+	//}
+	//
+	endpoint, err := nginxC.Endpoint(ctx, "http")
 	if err != nil {
-		t.Errorf("Expected host %s. Got '%d'.", host, err)
+		t.Errorf("Expected server endpoint. Got '%v'.", err)
 	}
 
-	_, err = http.Get("http://" + host + ":80")
+	_, err = http.Get(endpoint)
 	if err != nil {
 		t.Errorf("Expected OK response. Got '%d'.", err)
 	}

@@ -13,6 +13,26 @@ type GenericContainerRequest struct {
 	ProviderType     ProviderType // which provider to use, Docker if empty
 }
 
+// GenericNetworkRequest represents parameters to a generic network
+type GenericNetworkRequest struct {
+	NetworkRequest              // embedded request for provider
+	ProviderType   ProviderType // which provider to use, Docker if empty
+}
+
+// GenericNetwork creates a generic network with parameters
+func GenericNetwork(ctx context.Context, req GenericNetworkRequest) (Network, error) {
+	provider, err := req.ProviderType.GetProvider()
+	if err != nil {
+		return nil, err
+	}
+	network, err := provider.CreateNetwork(ctx, req.NetworkRequest)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create network")
+	}
+
+	return network, nil
+}
+
 // GenericContainer creates a generic container with parameters
 func GenericContainer(ctx context.Context, req GenericContainerRequest) (Container, error) {
 	provider, err := req.ProviderType.GetProvider()

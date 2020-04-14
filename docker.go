@@ -394,11 +394,9 @@ type DockerNetwork struct {
 }
 
 // Remove is used to remove the network. It is usually triggered by as defer function.
-func (n *DockerNetwork) Remove(_ context.Context) error {
-	if n.terminationSignal != nil {
-		n.terminationSignal <- true
-	}
-	return nil
+func (n *DockerNetwork) Remove(ctx context.Context) error {
+
+	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
 // DockerProvider implements the ContainerProvider interface
@@ -724,6 +722,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		Driver:            req.Driver,
 		Name:              req.Name,
 		terminationSignal: termSignal,
+		provider:          p,
 	}
 
 	return n, nil
