@@ -27,7 +27,6 @@ import (
 
 func TestContainerAttachedToNewNetwork(t *testing.T) {
 	networkName := "new-network"
-
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
