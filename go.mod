@@ -2,6 +2,8 @@ module github.com/testcontainers/testcontainers-go
 
 go 1.13
 
+replace github.com/Microsoft/hcsshim v0.8.6 => github.com/Microsoft/hcsshim v0.8.7
+
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Microsoft/go-winio v0.4.11 // indirect
