@@ -158,3 +158,71 @@ if err != nil {
 	// do something with err
 }
 ```
+
+## Using Docker Compose
+
+Similar to generic containers support, it's also possible to run a bespoke set of services specified in a docker-compose.yml file.
+
+This is intended to be useful on projects where Docker Compose is already used in dev or other environments to define services that an application may be dependent upon.
+
+You can override Testcontainers' default behaviour and make it use a docker-compose binary installed on the local machine. This will generally yield an experience that is closer to running docker-compose locally, with the caveat that Docker Compose needs to be present on dev and CI machines.
+
+### Examples
+
+```go
+composeFilePaths := "testresources/docker-compose.yml"
+identifier := strings.ToLower(uuid.New().String())
+
+compose := tc.NewLocalDockerCompose(composeFilePaths, identifier)
+execError := compose.
+	WithCommand([]string{"up", "-d"}).
+	WithEnv(map[string]string {
+		"key1": "value1",
+		"key2": "value2",
+	}).
+	Invoke()
+err := execError.Error
+if err != nil {
+	return fmt.Errorf("Could not run compose file: %v - %v", composeFilePaths, err)
+}
+return nil
+```
+
+Note that the environment variables in the `env` map will be applied, if possible, to the existing variables declared in the docker compose file.
+
+In the following example, we demonstrate how to stop a Docker compose using the convenient `Down` method.
+
+```go
+composeFilePaths := "testresources/docker-compose.yml"
+
+compose := tc.NewLocalDockerCompose(composeFilePaths, identifierFromExistingRunningCompose)
+execError := compose.Down()
+err := execError.Error
+if err != nil {
+	return fmt.Errorf("Could not run compose file: %v - %v", composeFilePaths, err)
+}
+return nil
+```
+
+## Troubleshooting Travis
+
+If you want to reproduce a Travis build locally, please follow this instructions to spin up a Travis build agent locally:
+```shell
+export BUILDID="build-testcontainers"
+export INSTANCE="travisci/ci-sardonyx:packer-1564753982-0c06deb6"
+docker run --name $BUILDID -w /root/go/src/github.com/testcontainers/testcontainers-go -v /Users/mdelapenya/sourcecode/src/github.com/mdelapenya/testcontainers-go:/root/go/src/github.com/testcontainers/testcontainers-go -v /var/run/docker.sock:/var/run/docker.sock -dit $INSTANCE /sbin/init
+```
+
+Once the container has been created, enter it (`docker exec -ti $BUILDID bash`) and reproduce Travis steps:
+
+```shell
+eval "$(gimme 1.11.4)"
+export GO111MODULE=on
+export GOPATH="/root/go"
+export PATH="$GOPATH/bin:$PATH"
+go get gotest.tools/gotestsum
+go mod tidy
+go fmt ./...
+go vet ./...
+gotestsum --format short-verbose ./...
+```
