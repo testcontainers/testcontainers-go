@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -199,7 +200,10 @@ func execute(
 
 func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 	if which(dc.Executable) != nil {
-		panic("Local Docker Compose not found. Is " + dc.Executable + " on the PATH?")
+		return ExecError{
+			Command: []string{dc.Executable},
+			Error:   fmt.Errorf("Local Docker Compose not found. Is %s on the PATH?", dc.Executable),
+		}
 	}
 
 	environment := dc.getDockerComposeEnvironment()
@@ -224,9 +228,10 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 	err := execErr.Error
 	if err != nil {
 		args := strings.Join(dc.Cmd, " ")
-		panic(
-			"Local Docker compose exited abnormally whilst running " +
-				dc.Executable + ": [" + args + "]. " + err.Error())
+		return ExecError{
+			Command: []string{dc.Executable},
+			Error:   fmt.Errorf("Local Docker compose exited abnormally whilst running %s: [%v]. %s", dc.Executable, args, err.Error()),
+		}
 	}
 
 	return execErr
