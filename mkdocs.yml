@@ -1,0 +1,30 @@
+site_name: Testcontainers
+plugins:
+    - search
+    - codeinclude
+    - markdownextradata
+theme:
+    name: 'material'
+    palette:
+        primary: 'blue'
+        accent: 'teal'
+    font: false
+    logo: 'logo.svg'
+    favicon: 'favicon.ico'
+extra_css:
+    - 'css/extra.css'
+repo_name: 'testcontainers-go'
+repo_url: 'https://github.com/testcontainers/testcontainers-go'
+markdown_extensions:
+    - admonition
+    - codehilite:
+          linenums: False
+    - pymdownx.superfences
+    - pymdownx.snippets
+nav:
+    - Home: index.md
+    - Contributing:
+          - contributing.md
+          - contributing_docs.md
+extra:
+    latest_version: 1.14.1
