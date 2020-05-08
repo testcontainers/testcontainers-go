@@ -1,7 +1,6 @@
 site_name: Testcontainers
 plugins:
     - search
-    - codeinclude
     - markdownextradata
 theme:
     name: 'material'
