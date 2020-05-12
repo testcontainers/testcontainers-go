@@ -5,13 +5,9 @@ We use the [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) t
 
 In addition we use a [custom plugin](https://github.com/rnorth/mkdocs-codeinclude-plugin) for inclusion of code snippets.
 
-We publish our documentation using Netlify. 
+We publish our documentation using Netlify.
 
 ## Previewing rendered content
-
-### Using Docker locally
-
-The root of the project contains a `docker-compose.yml` file. Simply run `docker-compose up` and then access the docs at [http://localhost:8000](http://localhost:8000).
 
 ### Using Python locally
 

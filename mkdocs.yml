@@ -22,8 +22,14 @@ markdown_extensions:
     - pymdownx.snippets
 nav:
     - Home: index.md
+    - Quickstart:
+          - quickstart/gotest.md
+    - Features:
+          - features/creating_container.md
+          - features/garbage_collector.md
     - Contributing:
           - contributing.md
           - contributing_docs.md
+    - Getting help: getting_help.md
 extra:
     latest_version: 1.14.1
