@@ -1,0 +1,99 @@
+TestContainers plays well with the native `go test` framework.
+
+The ideal use case is for integration or end to end tests. It helps you to spin
+up and manage the dependencies life cycle via Docker.
+
+This is way Docker has to be available for this library to work.
+
+## 1. Install
+
+We use [gomod](https://blog.golang.org/using-go-modules) and you can get it installed via:
+
+```
+go get github.com/testcontainers/testcontainers-go
+```
+
+## 2. Spin up Redis
+
+```go
+func TestWithRedis(t *testing.T) {
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "redis:latest",
+		ExposedPorts: []string{"6379/tcp"},
+		WaitingFor:   wait.ForLog("Ready to accept connections"),
+	}
+	redisC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	defer redisC.Terminate(ctx)
+}
+```
+
+The `testcontainers.ContainerRequest` describes how the Docker container will
+look like. As you ca see it recalls to a lot of concepts related to it.
+
+* `Image` is the docker image the container starts from.
+* `ExposedPorts` lists the port that has to be exposed from the container
+* `WaitingFor` is a field you can use to validate when a container is ready. It
+  is important to get this set because it helps to know when the container is
+  ready to reach any traffic. In this case we checks for the logs we know coming
+  from Redis, telling us that it is ready to accept requests.
+
+When you use `ExposedPorts` you have to image yourself using `docker run -p
+<port>`.  When you do so dockerd maps the selected `<port>` from inside the
+container to a random one available on your host.
+
+In the previous example we expose `6379` for `tcp` traffic to the outside. This
+allows Redis to be reachable from your code that runs outside the container but
+it also makes parallelization possible because if you add `t.Parallel` to you
+test and each of them starts a Redis container all of them will be exposed on a
+different random port.
+
+`testcontainers.GenericContainer` creates the container. In this example we are
+using `Started: true`. It means that the container function will wait for the
+container to be up and running. If you set the `Start` value to `false` it won'
+start. Leaving to you the decision about when to start it.
+
+All the container has to be removed at some point, otherwise they will run until
+the host will overloaded. One of the way we have to clean after ourself is
+defering the terminated function: `defer redisC.Terminate(ctx)`.
+
+!!!tip
+    Lock at [features/garbage_collector.md] to know the other way we have to
+    clean after ourself.
+
+## 3. Make your code to talk with the container
+
+This is just an example but usually Go applications that relay on redis are
+using the [redis-go](https://github.com/go-redis/redis) client. This code gets the endpoint from the container we
+just started and it configures the client.
+
+```go
+endpoint, err := redisC.Endpoint(ctx, "")
+if err != nil {
+    t.Error(err)
+}
+
+client := redis.NewClient(&redis.Options{
+    Addr: endpoint,
+})
+
+_ = client
+```
+
+We expose only one port, so the `Endpoint` does not need a second argument set.
+
+!!!tip
+    if you expose more than one port you an specify the one you need as second
+    argument
+
+In this case it returns: `localhost:<mappedportfor-6379>`.
+
+## 3. Run the test
+
+You can run the test via `go test ./...`
