@@ -25,6 +25,7 @@ type DeprecatedContainer interface {
 type ContainerProvider interface {
 	CreateContainer(context.Context, ContainerRequest) (Container, error) // create a container without starting it
 	RunContainer(context.Context, ContainerRequest) (Container, error)    // create a container and start it
+	Health(context.Context) error
 }
 
 // Container allows getting info about and controlling a single container instance

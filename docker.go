@@ -624,6 +624,13 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	return err
 }
 
+// Helth measure the healthiness of the provider. Right now we leverage the
+// docker-client ping endpoint to see if the daemon is reachable.
+func (p *DockerProvider) Health(ctx context.Context) (err error) {
+	_, err = p.client.Ping(ctx)
+	return
+}
+
 // RunContainer takes a RequestContainer as input and it runs a container via the docker sdk
 func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	c, err := p.CreateContainer(ctx, req)
