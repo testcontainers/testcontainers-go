@@ -33,7 +33,7 @@ func (w *waitForSql) Timeout(duration time.Duration) *waitForSql {
 }
 
 //WaitUntilReady repeatedly tries to run "SELECT 1" query on the given port using sql and driver.
-// If the it doesn't succeed until the timeout value which defaults to 10 seconds, it will return an error
+// If the it doesn't succeed until the timeout value which defaults to 60 seconds, it will return an error
 func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, w.startupTimeout)
 	defer cancel()
