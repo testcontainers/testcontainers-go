@@ -4,16 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/docker/go-connections/nat"
 	"time"
+
+	"github.com/docker/go-connections/nat"
 )
 
 //ForSQL constructs a new waitForSql strategy for the given driver
 func ForSQL(port nat.Port, driver string, url func(nat.Port) string) *waitForSql {
 	return &waitForSql{
-		Port:   port,
-		URL:    url,
-		Driver: driver,
+		Port:           port,
+		URL:            url,
+		Driver:         driver,
+		startupTimeout: defaultStartupTimeout(),
 	}
 }
 
@@ -31,11 +33,8 @@ func (w *waitForSql) Timeout(duration time.Duration) *waitForSql {
 }
 
 //WaitUntilReady repeatedly tries to run "SELECT 1" query on the given port using sql and driver.
-// If the it doesn't succeed until the timeout value which defaults to 10 seconds, it will return an error
+// If the it doesn't succeed until the timeout value which defaults to 60 seconds, it will return an error
 func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	if w.startupTimeout == 0 {
-		w.startupTimeout = time.Second * 10
-	}
 	ctx, cancel := context.WithTimeout(ctx, w.startupTimeout)
 	defer cancel()
 
