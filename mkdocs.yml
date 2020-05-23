@@ -27,6 +27,10 @@ nav:
     - Features:
           - features/creating_container.md
           - features/garbage_collector.md
+          - features/build_from_dockerfile.md
+          - features/docker_compose.md
+          - features/follow_logs.md
+          - features/override_container_command.md
     - Contributing:
           - contributing.md
           - contributing_docs.md

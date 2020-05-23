@@ -10,6 +10,12 @@ is the Go implementation.
 The project is opensource and you can have a look at the code on
 [GitHub](httsp://github.com/testcontainers/testcontainers-go),
 
+## GoDoc
+
+Inline documentation and docs where the code live is crucial for us. Go has a
+nice support for them and we use Examples as well. Check it out
+[pkg.go.dev/github.com/testcontainers/testcontainers-go](https://pkg.go.dev/github.com/testcontainers/testcontainers-go?tab=doc).
+
 ## License
 
 See [LICENSE](https://github.com/testcontainers/testcontainers-go/blob/master/LICENSE).
