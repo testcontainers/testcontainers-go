@@ -1,4 +1,4 @@
-# Testcontainers
+# Testcontainers-Go
 
 ![Testcontainers logo](./logo.png)
 
