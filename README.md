@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/testcontainers/testcontainers-go.svg?branch=master)](https://travis-ci.org/testcontainers/testcontainers-go)
 
 When I was working on a Zipkin PR I discovered a nice Java library called
-[testcontainers](https://www.testcontainers.org/).
+[Testcontainers](https://www.testcontainers.org/).
 
 It provides an easy and clean API over the go docker sdk to run, terminate and
 connect to containers in your tests.
@@ -63,5 +63,5 @@ nginxC.Terminate(ctx, t)`. `t` is `*testing.T` and it is used to notify is the
 
 ## Documentation
 
-The documentation lives in [./docs](./docs) and it will be soon rendered at
-go.testcontainers.org.
+The documentation lives in [./docs](./docs) and it is rendered at
+[golang.testcontainers.org](https://golang.testcontainers.org).
