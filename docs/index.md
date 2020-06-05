@@ -4,7 +4,7 @@
 
 ## About
 
-TestContainers is popular in Java, but there are other langauges as well. This
+TestContainers is popular in Java, but there are other languages as well. This
 is the Go implementation.
 
 The project is opensource and you can have a look at the code on
