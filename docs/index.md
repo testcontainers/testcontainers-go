@@ -24,4 +24,4 @@ See [LICENSE](https://github.com/testcontainers/testcontainers-go/blob/master/LI
 
 Copyright (c) 2018-2020 Gianluca Arbezzano and other authors.
 Checkout our [lovely
-contributors](https://github.com/testcontainers/testcontainers-java/graphs/contributors)
+contributors](https://github.com/testcontainers/testcontainers-go/graphs/contributors)
