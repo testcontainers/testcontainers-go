@@ -531,6 +531,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	dockerInput := &container.Config{
+		Entrypoint:   req.Entrypoint,
 		Image:        tag,
 		Env:          env,
 		ExposedPorts: exposedPortSet,
@@ -600,7 +601,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	return c, nil
 }
 
-//attemptToPullImage tries to pull the image while respecting the ctx cancellations.
+// attemptToPullImage tries to pull the image while respecting the ctx cancellations.
 // Besides, if the image cannot be pulled due to ErrorNotFound then no need to retry but terminate immediately.
 func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt types.ImagePullOptions) error {
 	var (

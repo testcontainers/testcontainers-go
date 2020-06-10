@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -69,6 +70,7 @@ type FromDockerfile struct {
 type ContainerRequest struct {
 	FromDockerfile
 	Image           string
+	Entrypoint      []string
 	Env             map[string]string
 	ExposedPorts    []string // allow specifying protocol info
 	Cmd             []string
