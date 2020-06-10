@@ -1036,6 +1036,36 @@ func TestCMD(t *testing.T) {
 	defer c.Terminate(ctx)
 }
 
+func TestEntrypoint(t *testing.T) {
+	/*
+		echo a unique statement to ensure that we
+		can pass in an entrypoint to the ContainerRequest
+		and it will be run when we run the container
+	*/
+
+	ctx := context.Background()
+
+	req := ContainerRequest{
+		Image: "alpine",
+		WaitingFor: wait.ForAll(
+			wait.ForLog("entrypoint override!"),
+		),
+		Entrypoint: []string{"echo", "entrypoint override!"},
+	}
+
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// defer not needed, but keeping it in for consistency
+	defer c.Terminate(ctx)
+}
+
 func ExampleDockerProvider_CreateContainer() {
 	ctx := context.Background()
 	req := ContainerRequest{
