@@ -3,7 +3,7 @@ TestContainers plays well with the native `go test` framework.
 The ideal use case is for integration or end to end tests. It helps you to spin
 up and manage the dependencies life cycle via Docker.
 
-This is way Docker has to be available for this library to work.
+Docker has to be available for this library to work.
 
 ## 1. Install
 
@@ -35,43 +35,44 @@ func TestWithRedis(t *testing.T) {
 ```
 
 The `testcontainers.ContainerRequest` describes how the Docker container will
-look like. As you ca see it recalls to a lot of concepts related to it.
+look.
 
 * `Image` is the docker image the container starts from.
-* `ExposedPorts` lists the port that has to be exposed from the container
+* `ExposedPorts` lists the ports to be exposed from the container
 * `WaitingFor` is a field you can use to validate when a container is ready. It
   is important to get this set because it helps to know when the container is
-  ready to reach any traffic. In this case we checks for the logs we know coming
+  ready to receive any traffic. In this, case we check for the logs we know come
   from Redis, telling us that it is ready to accept requests.
 
 When you use `ExposedPorts` you have to image yourself using `docker run -p
-<port>`.  When you do so dockerd maps the selected `<port>` from inside the
+<port>`.  When you do so, `dockerd` maps the selected `<port>` from inside the
 container to a random one available on your host.
 
-In the previous example we expose `6379` for `tcp` traffic to the outside. This
+In the previous example, we expose `6379` for `tcp` traffic to the outside. This
 allows Redis to be reachable from your code that runs outside the container but
-it also makes parallelization possible because if you add `t.Parallel` to you
-test and each of them starts a Redis container all of them will be exposed on a
+it also makes parallelization possible because if you add `t.Parallel` to your
+tests, and each of them starts a Redis container each of them will be exposed on a
 different random port.
 
 `testcontainers.GenericContainer` creates the container. In this example we are
 using `Started: true`. It means that the container function will wait for the
-container to be up and running. If you set the `Start` value to `false` it won'
-start. Leaving to you the decision about when to start it.
+container to be up and running. If you set the `Start` value to `false` it won't
+start, leaving to you the decision about when to start it.
 
-All the container has to be removed at some point, otherwise they will run until
-the host will overloaded. One of the way we have to clean after ourself is
-defering the terminated function: `defer redisC.Terminate(ctx)`.
+All the containers must be removed at some point, otherwise they will run until
+the host is overloaded. One of the ways we have to clean up is by deferring the
+terminated function: `defer redisC.Terminate(ctx)`.
 
 !!!tip
-    Lock at [features/garbage_collector.md] to know the other way we have to
-    clean after ourself.
+
+    Look at [features/garbage_collector.md] to know the another way you have to
+    clean up.
 
 ## 3. Make your code to talk with the container
 
-This is just an example but usually Go applications that relay on redis are
-using the [redis-go](https://github.com/go-redis/redis) client. This code gets the endpoint from the container we
-just started and it configures the client.
+This is just an example, but usually Go applications that relay on Redis are
+using the [redis-go](https://github.com/go-redis/redis) client. This code gets
+the endpoint from the container we just started, and it configures the client.
 
 ```go
 endpoint, err := redisC.Endpoint(ctx, "")
@@ -89,8 +90,9 @@ _ = client
 We expose only one port, so the `Endpoint` does not need a second argument set.
 
 !!!tip
-    if you expose more than one port you an specify the one you need as second
-    argument
+
+    If you expose more than one port you can specify the one you need as a second
+    argument.
 
 In this case it returns: `localhost:<mappedportfor-6379>`.
 
