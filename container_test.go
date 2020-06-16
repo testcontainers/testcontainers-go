@@ -319,12 +319,9 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 
 func createTestContainer(t *testing.T, ctx context.Context) int {
 	req := ContainerRequest{
-		Image:        "localstack/localstack:latest",
-		ExposedPorts: []string{"4584/tcp", "8080/tcp"},
-		Env: map[string]string{
-			"SERVICES": "secretsmanager",
-		},
-		WaitingFor: wait.ForListeningPort("4584/tcp"),
+		Image:        "nginx",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForHTTP("/"),
 	}
 	container, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -333,7 +330,7 @@ func createTestContainer(t *testing.T, ctx context.Context) int {
 	if err != nil {
 		t.Fatalf("could not start container: %v", err)
 	}
-	port, err := container.MappedPort(ctx, "4584")
+	port, err := container.MappedPort(ctx, "80")
 	if err != nil {
 		t.Fatalf("could not get mapped port: %v", err)
 	}
