@@ -104,6 +104,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 			ExposedPorts: []string{
 				"80/tcp",
 			},
+			WaitingFor: wait.ForListeningPort("80/tcp"),
 		},
 		Started: true,
 	}
@@ -471,6 +472,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 			ExposedPorts: []string{
 				"80/tcp",
 			},
+			WaitingFor: wait.ForListeningPort("80/tcp"),
 		},
 		Started: true,
 	})
@@ -528,6 +530,7 @@ func TestContainerCreation(t *testing.T) {
 			ExposedPorts: []string{
 				nginxPort,
 			},
+			WaitingFor: wait.ForListeningPort("80/tcp"),
 		},
 		Started: true,
 	})
@@ -587,8 +590,9 @@ func TestContainerCreationWithName(t *testing.T) {
 			ExposedPorts: []string{
 				nginxPort,
 			},
-			Name:     creationName,
-			Networks: []string{"bridge"},
+			WaitingFor: wait.ForListeningPort("80/tcp"),
+			Name:       creationName,
+			Networks:   []string{"bridge"},
 		},
 		Started: true,
 	})
