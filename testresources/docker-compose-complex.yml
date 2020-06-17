@@ -1,23 +1,13 @@
 version: '3'
 services:
-  portal:
-    image: liferay/portal:7.2.1-ga2
-    depends_on:
-     - mysql
-    environment:
-      - LIFERAY_JDBC_PERIOD_DEFAULT_PERIOD_DRIVER_UPPERCASEC_LASS_UPPERCASEN_AME=com.mysql.cj.jdbc.Driver
-      - LIFERAY_JDBC_PERIOD_DEFAULT_PERIOD_PASSWORD=my-secret-pw
-      - LIFERAY_JDBC_PERIOD_DEFAULT_PERIOD_URL=jdbc:mysql://mysql:13306/lportal?characterEncoding=UTF-8&dontTrackOpenResources=true&holdResultsOpenOverStatementClose=true&serverTimezone=GMT&useFastDateParsing=false&useUnicode=true
-      - LIFERAY_JDBC_PERIOD_DEFAULT_PERIOD_USERNAME=root
-      - LIFERAY_RETRY_PERIOD_JDBC_PERIOD_ON_PERIOD_STARTUP_PERIOD_MAX_PERIOD_RETRIES=5
-      - LIFERAY_RETRY_PERIOD_JDBC_PERIOD_ON_PERIOD_STARTUP_PERIOD_DELAY=5
+  nginx:
+    image: nginx:stable-alpine
     ports:
-     - "8080:8080"
-     - "11311:11311"
+     - "9080:80"
   mysql:
-    image: mdelapenya/mysql-utf8:5.7
+    image: mysql:5.7
     environment:
-      - MYSQL_DATABASE=lportal
+      - MYSQL_DATABASE=db
       - MYSQL_ROOT_PASSWORD=my-secret-pw
     ports:
      - "13306:3306"

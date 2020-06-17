@@ -125,7 +125,7 @@ func TestLocalDockerComposeComplex(t *testing.T) {
 	checkIfError(t, err)
 
 	assert.Equal(t, 2, len(compose.Services))
-	assert.Contains(t, compose.Services, "portal")
+	assert.Contains(t, compose.Services, "nginx")
 	assert.Contains(t, compose.Services, "mysql")
 }
 
