@@ -50,6 +50,7 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 	if err != nil {
 		return fmt.Errorf("sql.Open: %v", err)
 	}
+	defer db.Close()
 	for {
 		select {
 		case <-ctx.Done():
