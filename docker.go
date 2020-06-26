@@ -154,6 +154,7 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 		return err
 	}
 
+	fmt.Printf("##### BEFORE docker.Start() WaitingFor: %v\n", c.WaitingFor)
 	// if a Wait Strategy has been specified, wait before returning
 	if c.WaitingFor != nil {
 		log.Printf("Waiting for container id %s image: %s", shortID, c.Image)
@@ -641,7 +642,9 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 		return nil, err
 	}
 
-	fmt.Printf("##### AFTER docker.RunContainer()- CreateContainer: container=%v,err=%v\n", c, err)
+	fmt.Printf("##### AFTER docker.RunContainer()- CreateContainer: container=%v,sessionId=%s,err=%v\n", c, c.SessionID(), err)
+
+	fmt.Printf("##### BEFORE docker.RunContainer()- Start\n")
 
 	if err := c.Start(ctx); err != nil {
 		return c, errors.Wrap(err, "could not start container")
