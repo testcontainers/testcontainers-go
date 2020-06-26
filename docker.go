@@ -634,10 +634,14 @@ func (p *DockerProvider) Health(ctx context.Context) (err error) {
 
 // RunContainer takes a RequestContainer as input and it runs a container via the docker sdk
 func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest) (Container, error) {
+	fmt.Printf("##### BEFORE docker.RunContainer()- CreateContainer: req=%v,ctx=%v\n", req, ctx)
+	req.Privileged = true
 	c, err := p.CreateContainer(ctx, req)
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("##### AFTER docker.RunContainer()- CreateContainer: container=%v,err=%v\n", c, err)
 
 	if err := c.Start(ctx); err != nil {
 		return c, errors.Wrap(err, "could not start container")
