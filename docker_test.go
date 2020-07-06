@@ -2,9 +2,12 @@ package testcontainers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -1265,5 +1268,53 @@ func TestContainerNonExistentImage(t *testing.T) {
 			t.Fatalf("err should be a ctx cancelled error %v", err)
 		}
 	})
+}
 
+func TestContainerWithCustomHostname(t *testing.T) {
+	ctx := context.Background()
+	name := fmt.Sprintf("some-rabbit-%s-%d", t.Name(), rand.Int())
+	hostname := fmt.Sprintf("my-rabbit-%s-%d", t.Name(), rand.Int())
+	req := ContainerRequest{
+		Name:     name,
+		Image:    "rabbitmq",
+		Hostname: hostname,
+	}
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		t.Log("terminating container")
+		err := container.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	if actualHostname := readHostname(t, container.GetContainerID()); actualHostname != hostname {
+		t.Fatalf("expected hostname %s, got %s", hostname, actualHostname)
+	}
+}
+
+// TODO: replace with proper API call
+func readHostname(t *testing.T, containerId string) string {
+	command := exec.Command("curl",
+		"--silent",
+		"--unix-socket",
+		"/var/run/docker.sock",
+		fmt.Sprintf("http://localhost/containers/%s/json", containerId))
+
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var data map[string]interface{}
+	err = json.Unmarshal(output, &data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	config := data["Config"].(map[string]interface{})
+	return config["Hostname"].(string)
 }

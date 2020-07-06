@@ -89,6 +89,7 @@ type ContainerRequest struct {
 	AutoRemove      bool                // if set to true, the container will be removed from the host when stopped
 	NetworkMode     container.NetworkMode
 	AlwaysPullImage bool // Always pull image
+	Hostname        string
 }
 
 // ProviderType is an enum for the possible providers

@@ -537,6 +537,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		ExposedPorts: exposedPortSet,
 		Labels:       req.Labels,
 		Cmd:          req.Cmd,
+		Hostname:     req.Hostname,
 	}
 
 	// prepare mounts
