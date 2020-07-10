@@ -50,7 +50,7 @@ type Container interface {
 	Exec(ctx context.Context, cmd []string) (int, error)
 	ContainerIP(context.Context) (string, error) // get container ip
 	CopyToContainer(ctx context.Context, containerPath string, content io.Reader) error
-	CopyFileToContainer(ctx context.Context, containerPath string, fileName string, fileContent string, fileMode int64) error
+	CopyFileToContainer(ctx context.Context, containerPath string, fileName string, fileContent []byte, fileMode int64) error
 }
 
 // ImageBuildInfo defines what is needed to build an image

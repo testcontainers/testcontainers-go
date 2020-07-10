@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -1266,4 +1267,32 @@ func TestContainerNonExistentImage(t *testing.T) {
 		}
 	})
 
+}
+
+func TestDockerContainerCopyFileToContainer(t *testing.T) {
+	ctx := context.Background()
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:        "nginx:1.17.6",
+			ExposedPorts: []string{"80/tcp"},
+			WaitingFor:   wait.ForListeningPort("80/tcp"),
+		},
+		Started: true,
+	})
+	defer nginxC.Terminate(ctx)
+
+	fileContent, err := ioutil.ReadFile("./testresources/hello.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	copiedFilePath := "hello_copy.sh"
+	nginxC.CopyFileToContainer(ctx,"/", copiedFilePath, fileContent, 700)
+	c, err := nginxC.Exec(ctx, []string{"bash", copiedFilePath})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 0 {
+		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFilePath, c)
+	}
 }

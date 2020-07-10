@@ -311,7 +311,7 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, containerPath str
 	return c.provider.client.CopyToContainer(ctx, c.ID, containerPath, content, types.CopyToContainerOptions{})
 }
 
-func (c *DockerContainer) CopyFileToContainer(ctx context.Context, containerPath string, fileName string, fileContent string, fileMode int64) error {
+func (c *DockerContainer) CopyFileToContainer(ctx context.Context, containerPath string, fileName string, fileContent []byte, fileMode int64) error {
 	buffer := &bytes.Buffer{}
 
 	tw := tar.NewWriter(buffer)
@@ -325,7 +325,7 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, containerPath
 	if err := tw.WriteHeader(hdr); err != nil {
 		return err
 	}
-	if _, err := tw.Write([]byte(fileContent)); err != nil {
+	if _, err := tw.Write(fileContent); err != nil {
 		return err
 	}
 
