@@ -322,7 +322,7 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, containerPath
 		Mode: fileMode,
 		Size: int64(len(fileContent)),
 	}
-	if err := tw.WriteHeader(hdr); err !=nil {
+	if err := tw.WriteHeader(hdr); err != nil {
 		return err
 	}
 	if _, err := tw.Write([]byte(fileContent)); err != nil {
