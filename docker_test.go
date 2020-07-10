@@ -1287,7 +1287,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 	copiedFilePath := "hello_copy.sh"
-	nginxC.CopyFileToContainer(ctx,"/", copiedFilePath, fileContent, 700)
+	nginxC.CopyFileToContainer(ctx, "/", copiedFilePath, fileContent, 700)
 	c, err := nginxC.Exec(ctx, []string{"bash", copiedFilePath})
 	if err != nil {
 		t.Fatal(err)
