@@ -1272,11 +1272,11 @@ func TestContainerNonExistentImage(t *testing.T) {
 
 func TestContainerWithCustomHostname(t *testing.T) {
 	ctx := context.Background()
-	name := fmt.Sprintf("some-rabbit-%s-%d", t.Name(), rand.Int())
-	hostname := fmt.Sprintf("my-rabbit-%s-%d", t.Name(), rand.Int())
+	name := fmt.Sprintf("some-nginx-%s-%d", t.Name(), rand.Int())
+	hostname := fmt.Sprintf("my-nginx-%s-%d", t.Name(), rand.Int())
 	req := ContainerRequest{
 		Name:     name,
-		Image:    "rabbitmq",
+		Image:    "nginx",
 		Hostname: hostname,
 	}
 	container, err := GenericContainer(ctx, GenericContainerRequest{
