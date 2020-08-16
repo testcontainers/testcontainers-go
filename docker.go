@@ -307,10 +307,6 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error) {
 	return exitCode, nil
 }
 
-func (c *DockerContainer) CopyToContainer(ctx context.Context, containerPath string, content io.Reader) error {
-	return c.provider.client.CopyToContainer(ctx, c.ID, containerPath, content, types.CopyToContainerOptions{})
-}
-
 func (c *DockerContainer) CopyFileToContainer(ctx context.Context, containerPath string, fileName string, fileContent []byte, fileMode int64) error {
 	buffer := &bytes.Buffer{}
 
@@ -329,7 +325,7 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, containerPath
 		return err
 	}
 
-	return c.CopyToContainer(ctx, containerPath, buffer)
+	return c.provider.client.CopyToContainer(ctx, c.ID, containerPath, buffer, types.CopyToContainerOptions{})
 }
 
 // StartLogProducer will start a concurrent process that will continuously read logs
