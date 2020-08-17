@@ -80,7 +80,8 @@ type ContainerRequest struct {
 	Tmpfs           map[string]string
 	RegistryCred    string
 	WaitingFor      wait.Strategy
-	Name            string              // for specifying container name
+	Name            string // for specifying container name
+	Hostname        string
 	Privileged      bool                // for starting privileged container
 	Networks        []string            // for specifying network names
 	NetworkAliases  map[string][]string // for specifying network aliases
