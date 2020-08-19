@@ -119,9 +119,9 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	}
 
 	switch ws.Method {
-	case http.MethodGet, http.MethodHead, http.MethodPost:
-	case http.MethodPut, http.MethodPatch, http.MethodDelete:
-	case http.MethodConnect, http.MethodOptions, http.MethodTrace:
+	case http.MethodGet, http.MethodHead, http.MethodPost,
+		http.MethodPut, http.MethodPatch, http.MethodDelete,
+		http.MethodConnect, http.MethodOptions, http.MethodTrace:
 	default:
 		if ws.Method != "" {
 			return fmt.Errorf("invalid http method %q", ws.Method)
