@@ -61,7 +61,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	dockerReq := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    workdir + "/testdata",
-			Dockerfile: workdir + "/testdata/Dockerfile",
+			Dockerfile: "Dockerfile",
 		},
 		ExposedPorts: []string{"6443/tcp"},
 		WaitingFor: wait.NewHTTPStrategy("/").
