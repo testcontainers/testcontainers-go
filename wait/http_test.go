@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -58,26 +59,58 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 		return
 	}
 
+	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
 	dockerReq := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    workdir + "/testdata",
-			Dockerfile: "Dockerfile",
+			Context: workdir + "/testdata",
 		},
 		ExposedPorts: []string{"6443/tcp"},
-		WaitingFor: wait.NewHTTPStrategy("/").
-			WithTLS(true, &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}).
+		WaitingFor: wait.NewHTTPStrategy("/").WithTLS(true, tlsconfig).
 			WithStartupTimeout(time.Second * 10).WithPort("6443/tcp").
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-	container, err := testcontainers.GenericContainer(ctx,
+	t.Log("creating container")
+	container, err := testcontainers.GenericContainer(context.Background(),
 		testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
-
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	_ = container.Terminate(context.Background())
+	defer container.Terminate(context.Background()) // nolint: errcheck
+
+	t.Log("requesting")
+	host, err := container.Host(context.Background())
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	port, err := container.MappedPort(context.Background(), "6443/tcp")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: tlsconfig}}
+	resp, err := client.Get(fmt.Sprintf("https://%s:%s/ping", host, port.Port()))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer resp.Body.Close()
+
+	t.Log("verify http status code")
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status code isn't ok: %s", resp.Status)
+		return
+	}
+
+	t.Log("verify response data")
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if string(data) != "pong" {
+		t.Errorf("should returns 'pong'")
+	}
 }
