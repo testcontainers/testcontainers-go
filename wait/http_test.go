@@ -73,7 +73,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	container, err := testcontainers.GenericContainer(ctx,
-		testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: false})
+		testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
 
 	if err != nil {
 		t.Error(err)
