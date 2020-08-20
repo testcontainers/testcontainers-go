@@ -7,8 +7,10 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -78,7 +80,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	}
 	defer container.Terminate(context.Background()) // nolint: errcheck
 
-	host, err := container.Host(context.Background())
+	ipAddress, err := container.Host(context.Background())
 	if err != nil {
 		t.Error(err)
 		return
@@ -88,8 +90,23 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	client := http.Client{Transport: &http.Transport{TLSClientConfig: tlsconfig}}
-	resp, err := client.Get(fmt.Sprintf("https://%s:%s/ping", host, port.Port()))
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsconfig,
+			Proxy:           http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	}
+	resp, err := client.Get(fmt.Sprintf("https://%s/ping", net.JoinHostPort(ipAddress, strconv.Itoa(port.Int()))))
 	if err != nil {
 		t.Error(err)
 		return
