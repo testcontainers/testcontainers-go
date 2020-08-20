@@ -6,11 +6,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 	"testing"
 	"time"
 
@@ -36,7 +36,7 @@ func ExampleHTTPStrategy() {
 		panic(err)
 	}
 
-	defer gogs.Terminate(ctx)
+	defer gogs.Terminate(ctx) // nolint: errcheck
 	// Here you have a running container
 
 }
@@ -67,8 +67,12 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 			Context: workdir + "/testdata",
 		},
 		ExposedPorts: []string{"6443/tcp"},
-		WaitingFor: wait.NewHTTPStrategy("/").WithTLS(true, tlsconfig).
+		WaitingFor: wait.NewHTTPStrategy("/ping").WithTLS(true, tlsconfig).
 			WithStartupTimeout(time.Second * 10).WithPort("6443/tcp").
+			WithResponseMatcher(func(body io.Reader) bool {
+				data, _ := ioutil.ReadAll(body)
+				return bytes.Equal(data, []byte("pong"))
+			}).
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
 	}
 
@@ -80,7 +84,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	}
 	defer container.Terminate(context.Background()) // nolint: errcheck
 
-	ipAddress, err := container.Host(context.Background())
+	host, err := container.Host(context.Background())
 	if err != nil {
 		t.Error(err)
 		return
@@ -106,7 +110,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
-	resp, err := client.Get(fmt.Sprintf("https://%s/ping", net.JoinHostPort(ipAddress, strconv.Itoa(port.Int()))))
+	resp, err := client.Get(fmt.Sprintf("https://%s:%s", host, port.Port()))
 	if err != nil {
 		t.Error(err)
 		return

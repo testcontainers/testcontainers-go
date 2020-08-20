@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -17,8 +19,13 @@ func main() {
 	})
 
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, req *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("pong"))
+		data, _ := ioutil.ReadAll(req.Body)
+		if bytes.Equal(data, []byte("ping")) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("pong"))
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 	})
 
 	server := http.Server{Addr: ":6443", Handler: mux}

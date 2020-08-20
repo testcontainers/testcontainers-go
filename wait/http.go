@@ -25,6 +25,7 @@ type HTTPStrategy struct {
 	Port              nat.Port
 	Path              string
 	StatusCodeMatcher func(status int) bool
+	ResponseMatcher   func(body io.Reader) bool
 	UseTLS            bool
 	AllowInsecure     bool
 	TLSConfig         *tls.Config // TLS config for HTTPS
@@ -39,6 +40,7 @@ func NewHTTPStrategy(path string) *HTTPStrategy {
 		Port:              "80/tcp",
 		Path:              path,
 		StatusCodeMatcher: defaultStatusCodeMatcher,
+		ResponseMatcher:   func(body io.Reader) bool { return true },
 		UseTLS:            false,
 		TLSConfig:         nil,
 		Method:            http.MethodGet,
@@ -66,6 +68,11 @@ func (ws *HTTPStrategy) WithPort(port nat.Port) *HTTPStrategy {
 
 func (ws *HTTPStrategy) WithStatusCodeMatcher(statusCodeMatcher func(status int) bool) *HTTPStrategy {
 	ws.StatusCodeMatcher = statusCodeMatcher
+	return ws
+}
+
+func (ws *HTTPStrategy) WithResponseMatcher(matcher func(body io.Reader) bool) *HTTPStrategy {
+	ws.ResponseMatcher = matcher
 	return ws
 }
 
@@ -175,8 +182,13 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 			if err != nil {
 				continue
 			}
-			_ = resp.Body.Close()
-			if !ws.StatusCodeMatcher(resp.StatusCode) {
+			if ws.StatusCodeMatcher != nil && !ws.StatusCodeMatcher(resp.StatusCode) {
+				continue
+			}
+			if ws.ResponseMatcher != nil && !ws.ResponseMatcher(resp.Body) {
+				continue
+			}
+			if err := resp.Body.Close(); err != nil {
 				continue
 			}
 			return nil
