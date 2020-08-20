@@ -34,9 +34,9 @@ func ExampleHTTPStrategy() {
 		panic(err)
 	}
 
+	defer gogs.Terminate(ctx)
 	// Here you have a running container
 
-	_ = gogs.Terminate(ctx)
 }
 
 func TestHTTPStrategyWaitUntilReady(t *testing.T) {
@@ -70,7 +70,6 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
 	}
 
-	t.Log("creating container")
 	container, err := testcontainers.GenericContainer(context.Background(),
 		testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
 	if err != nil {
@@ -79,7 +78,6 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	}
 	defer container.Terminate(context.Background()) // nolint: errcheck
 
-	t.Log("requesting")
 	host, err := container.Host(context.Background())
 	if err != nil {
 		t.Error(err)
@@ -97,20 +95,8 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 		return
 	}
 	defer resp.Body.Close()
-
-	t.Log("verify http status code")
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("status code isn't ok: %s", resp.Status)
 		return
-	}
-
-	t.Log("verify response data")
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	if string(data) != "pong" {
-		t.Errorf("should returns 'pong'")
 	}
 }

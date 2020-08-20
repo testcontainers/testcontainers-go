@@ -14,10 +14,14 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok"))
 	})
 
-	server := http.Server{Addr: "0.0.0.0:6443", Handler: mux}
+	mux.HandleFunc("/ping", func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("pong"))
+	})
+
+	server := http.Server{Addr: ":6443", Handler: mux}
 	go func() {
 		log.Println("serving...")
 		if err := server.ListenAndServeTLS("tls.pem", "tls-key.pem"); err != nil && err != http.ErrServerClosed {
