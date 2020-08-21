@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -307,14 +308,19 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error) {
 	return exitCode, nil
 }
 
-func (c *DockerContainer) CopyFileToContainer(ctx context.Context, containerPath string, fileName string, fileContent []byte, fileMode int64) error {
+func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
+	fileContent, err := ioutil.ReadFile(hostFilePath)
+	if err != nil {
+		return err
+	}
+
 	buffer := &bytes.Buffer{}
 
 	tw := tar.NewWriter(buffer)
 	defer tw.Close()
 
 	hdr := &tar.Header{
-		Name: fileName,
+		Name: filepath.Base(containerFilePath),
 		Mode: fileMode,
 		Size: int64(len(fileContent)),
 	}
@@ -325,7 +331,7 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, containerPath
 		return err
 	}
 
-	return c.provider.client.CopyToContainer(ctx, c.ID, containerPath, buffer, types.CopyToContainerOptions{})
+	return c.provider.client.CopyToContainer(ctx, c.ID, filepath.Dir(containerFilePath), buffer, types.CopyToContainerOptions{})
 }
 
 // StartLogProducer will start a concurrent process that will continuously read logs

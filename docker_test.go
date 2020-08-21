@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -1282,17 +1281,13 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	})
 	defer nginxC.Terminate(ctx)
 
-	fileContent, err := ioutil.ReadFile("./testresources/hello.sh")
-	if err != nil {
-		t.Fatal(err)
-	}
-	copiedFilePath := "hello_copy.sh"
-	nginxC.CopyFileToContainer(ctx, "/", copiedFilePath, fileContent, 700)
-	c, err := nginxC.Exec(ctx, []string{"bash", copiedFilePath})
+	copiedFileName := "hello_copy.sh"
+	nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/" + copiedFileName, 700)
+	c, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFilePath, c)
+		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
 	}
 }
