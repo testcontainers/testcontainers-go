@@ -14,10 +14,6 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		Started: true,
 	})
 
-fileContent, err := ioutil.ReadFile("./testresources/hello.sh")
-	if err != nil {
-		t.Fatal(err)
-	}
-nginxC.CopyFileToContainer(ctx, "/", "hello_copy.sh", fileContent, 700)
+nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/hello_copy.sh", fileContent, 700)
 ```
 
