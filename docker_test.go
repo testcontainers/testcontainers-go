@@ -1318,3 +1318,27 @@ func readHostname(t *testing.T, containerId string) string {
 	config := data["Config"].(map[string]interface{})
 	return config["Hostname"].(string)
 }
+
+func TestDockerContainerCopyFileToContainer(t *testing.T) {
+	ctx := context.Background()
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:        "nginx:1.17.6",
+			ExposedPorts: []string{"80/tcp"},
+			WaitingFor:   wait.ForListeningPort("80/tcp"),
+		},
+		Started: true,
+	})
+	defer nginxC.Terminate(ctx)
+
+	copiedFileName := "hello_copy.sh"
+	nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
+	c, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 0 {
+		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
+	}
+}

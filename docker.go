@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"encoding/binary"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -304,6 +306,32 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error) {
 	}
 
 	return exitCode, nil
+}
+
+func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
+	fileContent, err := ioutil.ReadFile(hostFilePath)
+	if err != nil {
+		return err
+	}
+
+	buffer := &bytes.Buffer{}
+
+	tw := tar.NewWriter(buffer)
+	defer tw.Close()
+
+	hdr := &tar.Header{
+		Name: filepath.Base(containerFilePath),
+		Mode: fileMode,
+		Size: int64(len(fileContent)),
+	}
+	if err := tw.WriteHeader(hdr); err != nil {
+		return err
+	}
+	if _, err := tw.Write(fileContent); err != nil {
+		return err
+	}
+
+	return c.provider.client.CopyToContainer(ctx, c.ID, filepath.Dir(containerFilePath), buffer, types.CopyToContainerOptions{})
 }
 
 // StartLogProducer will start a concurrent process that will continuously read logs
