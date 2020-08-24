@@ -28,8 +28,7 @@ before_install:
   - |
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
       choco install docker-compose ;
-      cd "C:\Program Files\Docker\Docker"
-      ./DockerCli.exe -SwitchDaemon
+      [Environment]::SetEnvironmentVariable("DOCKER_CLI_EXPERIMENTAL", "true", [EnvironmentVariableTarget]::Machine)
     fi
 
 before_script:
