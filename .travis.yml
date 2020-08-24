@@ -20,6 +20,7 @@ env:
 
 before_install:
   - go get gotest.tools/gotestsum
+  - go get -u github.com/magefile/mage
 
 before_script:
   - go mod verify
