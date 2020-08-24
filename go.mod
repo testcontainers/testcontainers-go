@@ -37,4 +37,7 @@ require (
 	gotest.tools v0.0.0-20181223230014-1083505acf35
 )
 
-replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
+replace (
+	github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
+	golang.org/x/sys => golang.org/x/sys v0.0.0-20190830141801-acfa387b8d69
+)
