@@ -24,6 +24,8 @@ before_install:
   - |
     if [ "$TRAVIS_OS_NAME" = "osx" ]; then
       brew cask install docker
+      open --background -a Docker && \
+        while ! docker system info > /dev/null 2>&1; do sleep 1; done
     fi
   - |
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
