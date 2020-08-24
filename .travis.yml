@@ -30,7 +30,7 @@ before_install:
   - |
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
       choco install docker-compose ;
-      [Environment]::SetEnvironmentVariable("DOCKER_CLI_EXPERIMENTAL", "true", [EnvironmentVariableTarget]::Machine)
+      set DOCKER_CLI_EXPERIMENTAL="true"
     fi
 
 before_script:
