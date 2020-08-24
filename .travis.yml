@@ -18,13 +18,15 @@ services:
 env:
   - GO111MODULE=on
 
-before_script:
+before_install:
   - go get gotest.tools/gotestsum
 
-script:
+before_script:
   - go mod verify
   - go mod tidy
   - scripts/checks.sh
   - go vet ./...
+
+script:
   - gotestsum --format short-verbose ./...
 
