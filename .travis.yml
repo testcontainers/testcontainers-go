@@ -1,3 +1,8 @@
+os:
+  - linux
+  - osx
+  - windows
+
 language: go
 go:
   - stable
