@@ -21,7 +21,11 @@ env:
 before_install:
   - go get gotest.tools/gotestsum
   - go get -u github.com/magefile/mage
-  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then choco install docker-compose ; fi
+  - |
+    if [ "$TRAVIS_OS_NAME" = "windows" ]; then
+      SET DOCKER_CLI_EXPERIMENTAL="enabled"
+      choco install docker-compose ;
+    fi
 
 before_script:
   - go mod verify
