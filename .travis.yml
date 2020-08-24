@@ -22,6 +22,10 @@ before_install:
   - go get gotest.tools/gotestsum
   - go get -u github.com/magefile/mage
   - |
+    if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+      brew cask install docker
+    fi
+  - |
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then
       choco install docker-compose ;
       cd "C:\Program Files\Docker\Docker"
