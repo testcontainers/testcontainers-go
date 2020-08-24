@@ -24,7 +24,7 @@ before_install:
 before_script:
   - go mod verify
   - go mod tidy
-  - ./.ci/scripts/checks.sh
+  - mage -v format
   - go vet ./...
 
 script:
