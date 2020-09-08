@@ -99,7 +99,7 @@ func (c *DockerContainer) PortEndpoint(ctx context.Context, port nat.Port, proto
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
 // You can use the "TC_HOST" env variable to set this yourself
 func (c *DockerContainer) Host(ctx context.Context) (string, error) {
-	host, err := c.provider.daemonHost()
+	host, err := c.provider.daemonHost(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -678,7 +678,7 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 // daemonHost gets the host or ip of the Docker daemon where ports are exposed on
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
 // You can use the "TC_HOST" env variable to set this yourself
-func (p *DockerProvider) daemonHost() (string, error) {
+func (p *DockerProvider) daemonHost(ctx context.Context) (string, error) {
 	if p.hostCache != "" {
 		return p.hostCache, nil
 	}
@@ -700,9 +700,13 @@ func (p *DockerProvider) daemonHost() (string, error) {
 		p.hostCache = url.Hostname()
 	case "unix", "npipe":
 		if inAContainer() {
-			ip, err := getGatewayIp()
+			ip, err := p.GetGatewayIP(ctx)
 			if err != nil {
-				return "", err
+				// fallback to getDefaultGatewayIP
+				ip, err = getDefaultGatewayIP()
+				if err != nil {
+					ip = "localhost"
+				}
 			}
 			p.hostCache = ip
 		} else {
@@ -777,6 +781,26 @@ func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (ty
 	return networkResource, err
 }
 
+func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
+	nw, err := p.GetNetwork(ctx, NetworkRequest{Name: "bridge"})
+	if err != nil {
+		return "", err
+	}
+
+	var ip string
+	for _, config := range nw.IPAM.Config {
+		if config.Gateway != "" {
+			ip = config.Gateway
+			break
+		}
+	}
+	if ip == "" {
+		return "", errors.New("Failed to get gateway IP from network settings")
+	}
+
+	return ip, nil
+}
+
 func inAContainer() bool {
 	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L15
 	if _, err := os.Stat("/.dockerenv"); err == nil {
@@ -785,7 +809,9 @@ func inAContainer() bool {
 	return false
 }
 
-func getGatewayIp() (string, error) {
+// deprecated
+// see https://github.com/testcontainers/testcontainers-java/blob/master/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L46
+func getDefaultGatewayIP() (string, error) {
 	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L27
 	cmd := exec.Command("sh", "-c", "ip route|awk '/default/ { print $3 }'")
 	stdout, err := cmd.Output()
