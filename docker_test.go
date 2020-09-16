@@ -1342,3 +1342,32 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
 	}
 }
+
+func TestContainerWithReaperNetwork(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "nginx",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort("80/tcp"),
+			wait.ForLog("Configuration complete; ready for start up"),
+		),
+	}
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		t.Log("terminating container")
+		err := nginxC.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+}
