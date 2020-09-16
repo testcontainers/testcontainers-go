@@ -1,7 +1,5 @@
 module github.com/testcontainers/testcontainers-go
 
-replace golang.org/x/sys => golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a
-
 go 1.13
 
 require (
@@ -40,3 +38,4 @@ require (
 )
 
 replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
+replace golang.org/x/sys => golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a
