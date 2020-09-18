@@ -16,7 +16,7 @@ func ForSQL(port nat.Port, driver string, url func(nat.Port) string) *waitForSql
 		URL:            url,
 		Driver:         driver,
 		startupTimeout: defaultStartupTimeout(),
-		PollInterval:   100 * time.Millisecond,
+		PollInterval:   defaultPollInterval(),
 	}
 }
 

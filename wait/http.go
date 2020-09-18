@@ -46,7 +46,7 @@ func NewHTTPStrategy(path string) *HTTPStrategy {
 		TLSConfig:         nil,
 		Method:            http.MethodGet,
 		Body:              nil,
-		PollInterval:      time.Second / 10,
+		PollInterval:      defaultPollInterval(),
 	}
 }
 
