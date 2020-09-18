@@ -22,3 +22,7 @@ type StrategyTarget interface {
 func defaultStartupTimeout() time.Duration {
 	return 60 * time.Second
 }
+
+func defaultPollInterval() time.Duration {
+	return 100 * time.Millisecond
+}

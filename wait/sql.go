@@ -16,6 +16,7 @@ func ForSQL(port nat.Port, driver string, url func(nat.Port) string) *waitForSql
 		URL:            url,
 		Driver:         driver,
 		startupTimeout: defaultStartupTimeout(),
+		PollInterval:   defaultPollInterval(),
 	}
 }
 
@@ -24,11 +25,18 @@ type waitForSql struct {
 	Driver         string
 	Port           nat.Port
 	startupTimeout time.Duration
+	PollInterval   time.Duration
 }
 
 //Timeout sets the maximum waiting time for the strategy after which it'll give up and return an error
 func (w *waitForSql) Timeout(duration time.Duration) *waitForSql {
 	w.startupTimeout = duration
+	return w
+}
+
+//WithPollInterval can be used to override the default polling interval of 100 milliseconds
+func (w *waitForSql) WithPollInterval(pollInterval time.Duration) *waitForSql {
+	w.PollInterval = pollInterval
 	return w
 }
 
@@ -38,7 +46,7 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 	ctx, cancel := context.WithTimeout(ctx, w.startupTimeout)
 	defer cancel()
 
-	ticker := time.NewTicker(time.Millisecond * 100)
+	ticker := time.NewTicker(w.PollInterval)
 	defer ticker.Stop()
 
 	port, err := target.MappedPort(ctx, w.Port)

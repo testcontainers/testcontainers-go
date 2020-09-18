@@ -31,6 +31,7 @@ type HTTPStrategy struct {
 	TLSConfig         *tls.Config // TLS config for HTTPS
 	Method            string      // http method
 	Body              io.Reader   // http request body
+	PollInterval      time.Duration
 }
 
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
@@ -45,6 +46,7 @@ func NewHTTPStrategy(path string) *HTTPStrategy {
 		TLSConfig:         nil,
 		Method:            http.MethodGet,
 		Body:              nil,
+		PollInterval:      defaultPollInterval(),
 	}
 }
 
@@ -96,6 +98,12 @@ func (ws *HTTPStrategy) WithMethod(method string) *HTTPStrategy {
 
 func (ws *HTTPStrategy) WithBody(reqdata io.Reader) *HTTPStrategy {
 	ws.Body = reqdata
+	return ws
+}
+
+// WithPollInterval can be used to override the default polling interval of 100 milliseconds
+func (ws *HTTPStrategy) WithPollInterval(pollInterval time.Duration) *HTTPStrategy {
+	ws.PollInterval = pollInterval
 	return ws
 }
 
@@ -173,7 +181,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(time.Second / 10):
+		case <-time.After(ws.PollInterval):
 			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint, ws.Body)
 			if err != nil {
 				return err
