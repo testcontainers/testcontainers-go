@@ -46,7 +46,7 @@ func NewHTTPStrategy(path string) *HTTPStrategy {
 		TLSConfig:         nil,
 		Method:            http.MethodGet,
 		Body:              nil,
-		PollInterval:      100 * time.Second,
+		PollInterval:      time.Second / 10,
 	}
 }
 
@@ -90,7 +90,6 @@ func (ws *HTTPStrategy) WithAllowInsecure(allowInsecure bool) *HTTPStrategy {
 	ws.AllowInsecure = allowInsecure
 	return ws
 }
-
 
 func (ws *HTTPStrategy) WithMethod(method string) *HTTPStrategy {
 	ws.Method = method
