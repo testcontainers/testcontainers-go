@@ -17,8 +17,8 @@ type LogStrategy struct {
 
 	// additional properties
 	Log          string
-	PollInterval time.Duration
 	Occurrence   int
+	PollInterval time.Duration
 }
 
 // NewLogStrategy constructs a HTTP strategy waiting on port 80 and status code 200
@@ -26,8 +26,8 @@ func NewLogStrategy(log string) *LogStrategy {
 	return &LogStrategy{
 		startupTimeout: defaultStartupTimeout(),
 		Log:            log,
-		PollInterval:   100 * time.Millisecond,
 		Occurrence:     1,
+		PollInterval:   defaultPollInterval(),
 	}
 
 }

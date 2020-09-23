@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strconv"
@@ -24,8 +25,13 @@ type HTTPStrategy struct {
 	Port              nat.Port
 	Path              string
 	StatusCodeMatcher func(status int) bool
+	ResponseMatcher   func(body io.Reader) bool
 	UseTLS            bool
 	AllowInsecure     bool
+	TLSConfig         *tls.Config // TLS config for HTTPS
+	Method            string      // http method
+	Body              io.Reader   // http request body
+	PollInterval      time.Duration
 }
 
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
@@ -35,9 +41,13 @@ func NewHTTPStrategy(path string) *HTTPStrategy {
 		Port:              "80/tcp",
 		Path:              path,
 		StatusCodeMatcher: defaultStatusCodeMatcher,
+		ResponseMatcher:   func(body io.Reader) bool { return true },
 		UseTLS:            false,
+		TLSConfig:         nil,
+		Method:            http.MethodGet,
+		Body:              nil,
+		PollInterval:      defaultPollInterval(),
 	}
-
 }
 
 func defaultStatusCodeMatcher(status int) bool {
@@ -63,13 +73,37 @@ func (ws *HTTPStrategy) WithStatusCodeMatcher(statusCodeMatcher func(status int)
 	return ws
 }
 
-func (ws *HTTPStrategy) WithTLS(useTLS bool) *HTTPStrategy {
+func (ws *HTTPStrategy) WithResponseMatcher(matcher func(body io.Reader) bool) *HTTPStrategy {
+	ws.ResponseMatcher = matcher
+	return ws
+}
+
+func (ws *HTTPStrategy) WithTLS(useTLS bool, tlsconf ...*tls.Config) *HTTPStrategy {
 	ws.UseTLS = useTLS
+	if useTLS && len(tlsconf) > 0 {
+		ws.TLSConfig = tlsconf[0]
+	}
 	return ws
 }
 
 func (ws *HTTPStrategy) WithAllowInsecure(allowInsecure bool) *HTTPStrategy {
 	ws.AllowInsecure = allowInsecure
+	return ws
+}
+
+func (ws *HTTPStrategy) WithMethod(method string) *HTTPStrategy {
+	ws.Method = method
+	return ws
+}
+
+func (ws *HTTPStrategy) WithBody(reqdata io.Reader) *HTTPStrategy {
+	ws.Body = reqdata
+	return ws
+}
+
+// WithPollInterval can be used to override the default polling interval of 100 milliseconds
+func (ws *HTTPStrategy) WithPollInterval(pollInterval time.Duration) *HTTPStrategy {
+	ws.PollInterval = pollInterval
 	return ws
 }
 
@@ -99,49 +133,73 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		return errors.New("Cannot use HTTP client on non-TCP ports")
 	}
 
-	portNumber := port.Int()
-	portString := strconv.Itoa(portNumber)
+	switch ws.Method {
+	case http.MethodGet, http.MethodHead, http.MethodPost,
+		http.MethodPut, http.MethodPatch, http.MethodDelete,
+		http.MethodConnect, http.MethodOptions, http.MethodTrace:
+	default:
+		if ws.Method != "" {
+			return fmt.Errorf("invalid http method %q", ws.Method)
+		}
+		ws.Method = http.MethodGet
+	}
 
-	address := net.JoinHostPort(ipAddress, portString)
+	tripper := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		TLSClientConfig:       ws.TLSConfig,
+	}
 
 	var proto string
 	if ws.UseTLS {
 		proto = "https"
+		if ws.AllowInsecure {
+			if ws.TLSConfig == nil {
+				tripper.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			} else {
+				ws.TLSConfig.InsecureSkipVerify = true
+			}
+		}
 	} else {
 		proto = "http"
 	}
 
-	url := fmt.Sprintf("%s://%s%s", proto, address, ws.Path)
+	client := http.Client{Transport: tripper, Timeout: time.Second}
+	address := net.JoinHostPort(ipAddress, strconv.Itoa(port.Int()))
+	endpoint := fmt.Sprintf("%s://%s%s", proto, address, ws.Path)
 
-	tripper := http.DefaultTransport
-
-	if ws.AllowInsecure {
-		tripper.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	}
-
-	client := http.Client{Timeout: ws.startupTimeout, Transport: tripper}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-
-	req = req.WithContext(ctx)
-
-Retry:
 	for {
 		select {
 		case <-ctx.Done():
-			break Retry
-		default:
+			return ctx.Err()
+		case <-time.After(ws.PollInterval):
+			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint, ws.Body)
+			if err != nil {
+				return err
+			}
 			resp, err := client.Do(req)
-			if err != nil || !ws.StatusCodeMatcher(resp.StatusCode) {
-				time.Sleep(100 * time.Millisecond)
+			if err != nil {
 				continue
 			}
-
-			break Retry
+			if ws.StatusCodeMatcher != nil && !ws.StatusCodeMatcher(resp.StatusCode) {
+				continue
+			}
+			if ws.ResponseMatcher != nil && !ws.ResponseMatcher(resp.Body) {
+				continue
+			}
+			if err := resp.Body.Close(); err != nil {
+				continue
+			}
+			return nil
 		}
 	}
-
-	return nil
 }
