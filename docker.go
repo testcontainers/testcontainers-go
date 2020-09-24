@@ -626,18 +626,25 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	endpointConfigs := map[string]*network.EndpointSettings{}
-	for _, n := range req.Networks {
+
+	// #248: Docker allows only one network to be specified during container creation
+	// If there is more than one network specified in the request container should be attached to them
+	// once it is created. We will take a first network if any specified in the request and use it to create container
+	if len(req.Networks) > 0 {
+		attachContainerTo := req.Networks[0]
+
 		nw, err := p.GetNetwork(ctx, NetworkRequest{
-			Name: n,
+			Name: attachContainerTo,
 		})
 		if err == nil {
 			endpointSetting := network.EndpointSettings{
-				Aliases:   req.NetworkAliases[n],
+				Aliases:   req.NetworkAliases[attachContainerTo],
 				NetworkID: nw.ID,
 			}
-			endpointConfigs[n] = &endpointSetting
+			endpointConfigs[attachContainerTo] = &endpointSetting
 		}
 	}
+
 	networkingConfig := network.NetworkingConfig{
 		EndpointsConfig: endpointConfigs,
 	}
@@ -645,6 +652,24 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, req.Name)
 	if err != nil {
 		return nil, err
+	}
+
+	// #248: If there is more than one network specified in the request attach newly created container to them one by one
+	if len(req.Networks) > 1 {
+		for _, n := range req.Networks[1:] {
+			nw, err := p.GetNetwork(ctx, NetworkRequest{
+				Name: n,
+			})
+			if err == nil {
+				endpointSetting := network.EndpointSettings{
+					Aliases: req.NetworkAliases[n],
+				}
+				err = p.client.NetworkConnect(ctx, nw.ID, resp.ID, &endpointSetting)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
 	}
 
 	c := &DockerContainer{
