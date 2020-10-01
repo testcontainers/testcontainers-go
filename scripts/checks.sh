@@ -14,7 +14,7 @@ go_fmt() {
 }
 
 main() {
-    cd ${BASEDIR}/..
+    cd "${BASEDIR}"/.. || return
 
     go_fmt
 }
