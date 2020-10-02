@@ -24,7 +24,7 @@ func Test_ContainerValidation(t *testing.T) {
 	}
 
 	testTable := []ContainerValidationTestCase{
-		ContainerValidationTestCase{
+		{
 			Name:          "cannot set both context and image",
 			ExpectedError: errors.New("you cannot specify both an Image and Context in a ContainerRequest"),
 			ContainerRequest: ContainerRequest{
@@ -34,14 +34,14 @@ func Test_ContainerValidation(t *testing.T) {
 				Image: "redis:latest",
 			},
 		},
-		ContainerValidationTestCase{
+		{
 			Name:          "can set image without context",
 			ExpectedError: nil,
 			ContainerRequest: ContainerRequest{
 				Image: "redis:latest",
 			},
 		},
-		ContainerValidationTestCase{
+		{
 			Name:          "can set context without image",
 			ExpectedError: nil,
 			ContainerRequest: ContainerRequest{
@@ -77,19 +77,19 @@ func Test_GetDockerfile(t *testing.T) {
 	}
 
 	testTable := []TestCase{
-		TestCase{
+		{
 			name:                   "defaults to \"Dockerfile\" 1",
 			ExpectedDockerfileName: "Dockerfile",
 			ContainerRequest:       ContainerRequest{},
 		},
-		TestCase{
+		{
 			name:                   "defaults to \"Dockerfile\" 2",
 			ExpectedDockerfileName: "Dockerfile",
 			ContainerRequest: ContainerRequest{
 				FromDockerfile: FromDockerfile{},
 			},
 		},
-		TestCase{
+		{
 			name:                   "will override name",
 			ExpectedDockerfileName: "CustomDockerfile",
 			ContainerRequest: ContainerRequest{
@@ -121,7 +121,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 	}
 
 	testCases := []TestCase{
-		TestCase{
+		{
 			Name: "test build from context archive",
 			ContextArchive: func() (io.Reader, error) {
 				var buf bytes.Buffer
@@ -165,7 +165,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			},
 			ExpectedEchoOutput: "this is from the archive",
 		},
-		TestCase{
+		{
 			Name: "test build from context archive and be able to use files in it",
 			ContextArchive: func() (io.Reader, error) {
 				var buf bytes.Buffer
@@ -215,7 +215,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			},
 			ExpectedEchoOutput: "hi this is from the say_hi.sh file!",
 		},
-		TestCase{
+		{
 			Name:               "test buildling from a context on the filesystem",
 			ContextPath:        "./testresources",
 			Dockerfile:         "echo.Dockerfile",
@@ -224,7 +224,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				return nil, nil
 			},
 		},
-		TestCase{
+		{
 			Name:        "it should error if neither a context nor a context archive are specified",
 			ContextPath: "",
 			ContextArchive: func() (io.Reader, error) {

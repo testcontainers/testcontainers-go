@@ -49,7 +49,7 @@ func (ws *LogStrategy) WithPollInterval(pollInterval time.Duration) *LogStrategy
 }
 
 func (ws *LogStrategy) WithOccurrence(o int) *LogStrategy {
-	// the number of occurence needs to be positive
+	// the number of occurrence needs to be positive
 	if o <= 0 {
 		o = 1
 	}
