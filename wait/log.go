@@ -21,7 +21,7 @@ type LogStrategy struct {
 	PollInterval time.Duration
 }
 
-// NewLogStrategy constructs with polling interval of 100 milliseconds and startup timeout of 60 milliseconds by default
+// NewLogStrategy constructs with polling interval of 100 milliseconds and startup timeout of 60 seconds by default
 func NewLogStrategy(log string) *LogStrategy {
 	return &LogStrategy{
 		startupTimeout: defaultStartupTimeout(),
