@@ -1,9 +1,9 @@
-name: Go
+name: Main pipeline
 
 on: [push, pull_request]
 
 jobs:
-  shellcheck:
+  static-analysis:
     runs-on: [ubuntu-latest]
     steps:
 
@@ -48,6 +48,3 @@ jobs:
 
       - name: gotestsum
         run: gotestsum --format short-verbose ./...
-
-      - name: Test
-        run: go test -v ./...
