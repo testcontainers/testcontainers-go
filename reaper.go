@@ -77,11 +77,13 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 
 	c, err := provider.RunContainer(ctx, req)
 	if err != nil {
+		reaper = nil
 		return nil, err
 	}
 
 	endpoint, err := c.PortEndpoint(ctx, "8080", "")
 	if err != nil {
+		reaper = nil
 		return nil, err
 	}
 	reaper.Endpoint = endpoint
