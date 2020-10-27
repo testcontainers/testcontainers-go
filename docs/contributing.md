@@ -15,7 +15,7 @@ docker run --name $BUILDID -w /root/go/src/github.com/testcontainers/testcontain
 Once the container has been created, enter it (`docker exec -ti $BUILDID bash`) and reproduce Travis steps:
 
 ```shell
-eval "$(gimme 1.11.4)"
+eval "$(gimme 1.14.7)"
 export GO111MODULE=on
 export GOPATH="/root/go"
 export PATH="$GOPATH/bin:$PATH"
