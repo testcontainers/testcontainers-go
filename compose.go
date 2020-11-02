@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +13,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"gopkg.in/yaml.v2"
 )
 
@@ -26,18 +29,21 @@ type DockerCompose interface {
 	Invoke() ExecError
 	WithCommand([]string) DockerCompose
 	WithEnv(map[string]string) DockerCompose
+	WithExposedService(map[string]interface{}) DockerCompose
 }
 
 // LocalDockerCompose represents a Docker Compose execution using local binary
 // docker-compose or docker-compose.exe, depending on the underlying platform
 type LocalDockerCompose struct {
-	Executable          string
-	ComposeFilePaths    []string
-	absComposeFilePaths []string
-	Identifier          string
-	Cmd                 []string
-	Env                 map[string]string
-	Services            map[string]interface{}
+	Executable           string
+	ComposeFilePaths     []string
+	absComposeFilePaths  []string
+	Identifier           string
+	Cmd                  []string
+	Env                  map[string]string
+	Services             map[string]interface{}
+	WaitStrategySupplied bool
+	WaitStrategyMap      map[string]interface{}
 }
 
 // NewLocalDockerCompose returns an instance of the local Docker Compose, using an
@@ -66,6 +72,8 @@ func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCo
 	dc.validate()
 
 	dc.Identifier = strings.ToLower(identifier)
+	dc.WaitStrategySupplied = false
+	dc.WaitStrategyMap = make(map[string]interface{})
 
 	return dc
 }
@@ -89,8 +97,44 @@ func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
 	return environment
 }
 
+func (dc *LocalDockerCompose) applyStrategyToRunningContainer() {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		panic(err)
+	}
+
+	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
+	if err != nil {
+		panic(err)
+	}
+
+	// Docker compose appends "_1" to every started service by default. Printing the services to verify that the right services have a wait strategy
+	keys := make([]string, 0, len(dc.WaitStrategyMap))
+	for k := range dc.WaitStrategyMap {
+		keys = append(keys, strings.TrimSuffix(k, "_1"))
+	}
+	fmt.Printf("List of Containers with Wait Strategy supplied:  %v\n ", keys)
+
+	// Iterate over all the wait strategies supplied, and apply them one by one
+	for _, container := range containers {
+		for _, key := range keys {
+			if strings.Contains(container.Image, key) {
+				fmt.Printf("Running containers to apply wait strategy: %v\n", container.Image)
+				// Retrieve the strategy for each container
+				// strategy := dc.WaitStrategyMap[key+"_1"]
+				// strategy.waitUntilReady(context.Background(), waitStrategyTarget) - This is where I'm slightly confused
+				// Do I need a new target like https://github.com/testcontainers/testcontainers-go/blob/master/wait/http_test.go#L70 or https://github.com/testcontainers/testcontainers-go/blob/master/wait/sql.go#L45
+			}
+		}
+	}
+}
+
 // Invoke invokes the docker compose
 func (dc *LocalDockerCompose) Invoke() ExecError {
+	if dc.WaitStrategySupplied {
+		fmt.Println("Wait Strategy(ies) supplied")
+		return executeCompose(dc, dc.Cmd)
+	}
 	return executeCompose(dc, dc.Cmd)
 }
 
@@ -103,6 +147,16 @@ func (dc *LocalDockerCompose) WithCommand(cmd []string) DockerCompose {
 // WithEnv assigns the environment
 func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
 	dc.Env = env
+	return dc
+}
+
+// WithExposedService sets the strategy for the service that is to be waited on. If multiple strategies
+// are given for a single service, the latest one will be applied
+func (dc *LocalDockerCompose) WithExposedService(waitstrategymap map[string]interface{}) DockerCompose {
+	dc.WaitStrategySupplied = true
+	for k, v := range waitstrategymap {
+		dc.WaitStrategyMap[k] = v
+	}
 	return dc
 }
 
@@ -232,6 +286,10 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 			Command: []string{dc.Executable},
 			Error:   fmt.Errorf("Local Docker compose exited abnormally whilst running %s: [%v]. %s", dc.Executable, args, err.Error()),
 		}
+	}
+
+	if dc.WaitStrategySupplied {
+		dc.applyStrategyToRunningContainer()
 	}
 
 	return execErr
