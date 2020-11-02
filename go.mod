@@ -13,9 +13,11 @@ require (
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200916142827-bd33bbf0497b+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.3.3 // indirect
+	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/gin-gonic/gin v1.6.3
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gogo/protobuf v1.2.0 // indirect
+	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/golang/protobuf v1.3.3 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/context v1.1.1 // indirect
@@ -30,7 +32,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
-	golang.org/x/sys v0.0.0-20200116001909-b77594299b42
+	golang.org/x/net v0.0.0-20190311183353-d8887717615a // indirect
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
+	golang.org/x/sys v0.0.0-20201009025420-dfb3f7c4e634
 	golang.org/x/text v0.3.2 // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/grpc v1.17.0 // indirect
