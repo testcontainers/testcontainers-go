@@ -5,9 +5,11 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const containerNameNginx = "nginx-simple"
@@ -106,6 +108,48 @@ func TestLocalDockerCompose(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 }
+
+func TestDockerComposeWithWaitStrategy(t *testing.T) {
+	path := "./testresources/docker-compose-complex.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithExposedService(map[string]interface{}{"mysql_1": wait.NewLogStrategy("started").WithStartupTimeout(100 * time.Microsecond)}).
+		Invoke()
+	checkIfError(t, err)
+}
+
+func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
+	path := "./testresources/docker-compose-complex.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithExposedService(map[string]interface{}{"mysql_1": wait.NewLogStrategy("started").WithStartupTimeout(100 * time.Microsecond)}).
+		WithExposedService(map[string]interface{}{"nginx_1": wait.ForHTTP("/").WithPort("9080/tcp")}).
+		Invoke()
+	checkIfError(t, err)
+}
+
+// Add negative test case with Dockerfile that never starts up and a timeout period of 10-20 seconds
+// Add test case for multiple wait strategies
 
 func TestLocalDockerComposeComplex(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"
