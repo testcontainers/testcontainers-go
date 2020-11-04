@@ -15,6 +15,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"gopkg.in/yaml.v2"
 )
 
@@ -29,7 +30,7 @@ type DockerCompose interface {
 	Invoke() ExecError
 	WithCommand([]string) DockerCompose
 	WithEnv(map[string]string) DockerCompose
-	WithExposedService(map[string]interface{}) DockerCompose
+	WithExposedService(string, wait.Strategy) DockerCompose
 }
 
 // LocalDockerCompose represents a Docker Compose execution using local binary
@@ -43,7 +44,7 @@ type LocalDockerCompose struct {
 	Env                  map[string]string
 	Services             map[string]interface{}
 	WaitStrategySupplied bool
-	WaitStrategyMap      map[string]interface{}
+	WaitStrategyMap      map[string]wait.Strategy
 }
 
 // NewLocalDockerCompose returns an instance of the local Docker Compose, using an
@@ -73,7 +74,7 @@ func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCo
 
 	dc.Identifier = strings.ToLower(identifier)
 	dc.WaitStrategySupplied = false
-	dc.WaitStrategyMap = make(map[string]interface{})
+	dc.WaitStrategyMap = make(map[string]wait.Strategy)
 
 	return dc
 }
@@ -103,6 +104,8 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() {
 		panic(err)
 	}
 
+	failedStrategies := make(map[string]wait.Strategy)
+
 	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {
 		panic(err)
@@ -121,11 +124,20 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() {
 			if strings.Contains(container.Image, key) {
 				fmt.Printf("Running containers to apply wait strategy: %v\n", container.Image)
 				// Retrieve the strategy for each container
-				// strategy := dc.WaitStrategyMap[key+"_1"]
-				// strategy.waitUntilReady(context.Background(), waitStrategyTarget) - This is where I'm slightly confused
-				// Do I need a new target like https://github.com/testcontainers/testcontainers-go/blob/master/wait/http_test.go#L70 or https://github.com/testcontainers/testcontainers-go/blob/master/wait/sql.go#L45
+				strategy := dc.WaitStrategyMap[key+"_1"]
+				fmt.Printf("Strategy (%+v) to be applied to container: %v\n", strategy, key)
+				dockerProvider, _ := NewDockerProvider()
+				dockercontainer := &DockerContainer{ID: container.ID, WaitingFor: strategy, provider: dockerProvider}
+				err := strategy.WaitUntilReady(context.Background(), dockercontainer)
+				if err != nil {
+					failedStrategies[key] = strategy
+					fmt.Printf("Error trace: %s\n", err)
+				}
 			}
 		}
+	}
+	if len(failedStrategies) > 0 {
+		fmt.Printf("List of wait strategies that were unsuccessful: (%v)", failedStrategies)
 	}
 }
 
@@ -152,11 +164,9 @@ func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
 
 // WithExposedService sets the strategy for the service that is to be waited on. If multiple strategies
 // are given for a single service, the latest one will be applied
-func (dc *LocalDockerCompose) WithExposedService(waitstrategymap map[string]interface{}) DockerCompose {
+func (dc *LocalDockerCompose) WithExposedService(service string, strategy wait.Strategy) DockerCompose {
 	dc.WaitStrategySupplied = true
-	for k, v := range waitstrategymap {
-		dc.WaitStrategyMap[k] = v
-	}
+	dc.WaitStrategyMap[service] = strategy
 	return dc
 }
 
