@@ -142,7 +142,7 @@ func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
-		WithExposedService("nginx_1", wait.NewHTTPStrategy("/").WithPort("9080/tcp").WithStartupTimeout(40*time.Second)).
+		WithExposedService("nginx_1", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 }
@@ -162,7 +162,7 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		WithExposedService("mysql_1", wait.NewLogStrategy("started").WithStartupTimeout(80*time.Second)).
-		WithExposedService("nginx_1", wait.NewHTTPStrategy("/").WithPort("9080/tcp").WithStartupTimeout(40*time.Second)).
+		WithExposedService("nginx_1", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 }
