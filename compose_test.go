@@ -109,7 +109,7 @@ func TestLocalDockerCompose(t *testing.T) {
 	checkIfError(t, err)
 }
 
-func TestDockerComposeWithWaitStrategy(t *testing.T) {
+func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -123,7 +123,26 @@ func TestDockerComposeWithWaitStrategy(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
-		WithExposedService(map[string]interface{}{"mysql_1": wait.NewLogStrategy("started").WithStartupTimeout(100 * time.Microsecond)}).
+		WithExposedService("mysql_1", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		Invoke()
+	checkIfError(t, err)
+}
+
+func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
+	path := "./testresources/docker-compose-complex.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithExposedService("nginx_1", wait.NewHTTPStrategy("/").WithPort("9080/tcp").WithStartupTimeout(40*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 }
@@ -142,8 +161,8 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
-		WithExposedService(map[string]interface{}{"mysql_1": wait.NewLogStrategy("started").WithStartupTimeout(100 * time.Microsecond)}).
-		WithExposedService(map[string]interface{}{"nginx_1": wait.ForHTTP("/").WithPort("9080/tcp")}).
+		WithExposedService("mysql_1", wait.NewLogStrategy("started").WithStartupTimeout(80*time.Second)).
+		WithExposedService("nginx_1", wait.NewHTTPStrategy("/").WithPort("9080/tcp").WithStartupTimeout(40*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 }
