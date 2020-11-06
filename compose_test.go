@@ -123,13 +123,18 @@ func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
+		// Appending with _1 as given in the Java Test-Containers Example
 		WithExposedService("mysql_1", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Invoke()
 	checkIfError(t, err)
+
+	assert.Equal(t, 2, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "mysql")
 }
 
 func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
-	path := "./testresources/docker-compose-complex.yml"
+	path := "./testresources/docker-compose-simple.yml"
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -142,9 +147,15 @@ func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
+		WithEnv(map[string]string{
+			"bar": "BAR",
+		}).
 		WithExposedService("nginx_1", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
+
+	assert.Equal(t, 1, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
 }
 
 func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
@@ -161,14 +172,42 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
-		WithExposedService("mysql_1", wait.NewLogStrategy("started").WithStartupTimeout(80*time.Second)).
+		WithExposedService("mysql_1", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
 		WithExposedService("nginx_1", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
+
+	assert.Equal(t, 2, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "mysql")
 }
 
-// Add negative test case with Dockerfile that never starts up and a timeout period of 10-20 seconds
-// Add test case for multiple wait strategies
+func TestDockerComposeWithFailedStrategy(t *testing.T) {
+	path := "./testresources/docker-compose-simple.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithEnv(map[string]string{
+			"bar": "BAR",
+		}).
+		WithExposedService("nginx_1", wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
+		Invoke()
+	// Verify that an error is thrown and not nil
+	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
+	assert.NotEqual(t, err.Error, nil, "Expected error to be thrown because of a wrong suplied wait strategy")
+
+	assert.Equal(t, 1, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+}
 
 func TestLocalDockerComposeComplex(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"

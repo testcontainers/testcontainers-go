@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"gopkg.in/yaml.v2"
@@ -43,7 +44,7 @@ type LocalDockerCompose struct {
 	Cmd                  []string
 	Env                  map[string]string
 	Services             map[string]interface{}
-	WaitStrategySupplied bool
+	waitStrategySupplied bool
 	WaitStrategyMap      map[string]wait.Strategy
 }
 
@@ -73,7 +74,7 @@ func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCo
 	dc.validate()
 
 	dc.Identifier = strings.ToLower(identifier)
-	dc.WaitStrategySupplied = false
+	dc.waitStrategySupplied = false
 	dc.WaitStrategyMap = make(map[string]wait.Strategy)
 
 	return dc
@@ -98,53 +99,51 @@ func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
 	return environment
 }
 
-func (dc *LocalDockerCompose) applyStrategyToRunningContainer() {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		panic(err)
-	}
+func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 
 	failedStrategies := make(map[string]wait.Strategy)
 
-	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
+	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	// Docker compose appends "_1" to every started service by default. Printing the services to verify that the right services have a wait strategy
-	keys := make([]string, 0, len(dc.WaitStrategyMap))
 	for k := range dc.WaitStrategyMap {
-		keys = append(keys, strings.TrimSuffix(k, "_1"))
-	}
-	fmt.Printf("List of Containers with Wait Strategy supplied:  %v\n ", keys)
-
-	// Iterate over all the wait strategies supplied, and apply them one by one
-	for _, container := range containers {
-		for _, key := range keys {
-			if strings.Contains(container.Image, key) {
-				fmt.Printf("Running containers to apply wait strategy: %v\n", container.Image)
-				// Retrieve the strategy for each container
-				strategy := dc.WaitStrategyMap[key+"_1"]
-				fmt.Printf("Strategy (%+v) to be applied to container: %v\n", strategy, key)
-				dockerProvider, _ := NewDockerProvider()
-				dockercontainer := &DockerContainer{ID: container.ID, WaitingFor: strategy, provider: dockerProvider}
-				err := strategy.WaitUntilReady(context.Background(), dockercontainer)
-				if err != nil {
-					failedStrategies[key] = strategy
-					fmt.Printf("Error trace: %s\n", err)
-				}
+		// Docker compose appends "_1" to every started service by default. Trimming to match running docker container
+		f := filters.NewArgs(filters.Arg("name", strings.TrimSuffix(k, "_1")))
+		containerListOptions := types.ContainerListOptions{Filters: f}
+		containers, cErr := cli.ContainerList(context.Background(), containerListOptions)
+		if cErr != nil {
+			return cErr
+		}
+		if len(containers) > 0 {
+			// The length will always be a list of 1, since we are matching one service name at a time
+			container := containers[0]
+			strategy := dc.WaitStrategyMap[k]
+			dockerProvider, dpErr := NewDockerProvider()
+			if dpErr != nil {
+				fmt.Printf("Unable to create new Docker Provider")
+				return dpErr
+			}
+			dockercontainer := &DockerContainer{ID: container.ID, WaitingFor: strategy, provider: dockerProvider}
+			err := strategy.WaitUntilReady(context.Background(), dockercontainer)
+			if err != nil {
+				failedStrategies[container.Image] = strategy
+				fmt.Printf("Error trace: %s\n", err)
 			}
 		}
 	}
+
 	if len(failedStrategies) > 0 {
-		fmt.Printf("List of wait strategies that were unsuccessful: (%v)", failedStrategies)
+		err := fmt.Errorf("List of wait strategies that were unsuccessful: (%v)", failedStrategies)
+		return err
 	}
+	return nil
 }
 
 // Invoke invokes the docker compose
 func (dc *LocalDockerCompose) Invoke() ExecError {
-	if dc.WaitStrategySupplied {
-		fmt.Println("Wait Strategy(ies) supplied")
+	if dc.waitStrategySupplied {
 		return executeCompose(dc, dc.Cmd)
 	}
 	return executeCompose(dc, dc.Cmd)
@@ -165,7 +164,7 @@ func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
 // WithExposedService sets the strategy for the service that is to be waited on. If multiple strategies
 // are given for a single service, the latest one will be applied
 func (dc *LocalDockerCompose) WithExposedService(service string, strategy wait.Strategy) DockerCompose {
-	dc.WaitStrategySupplied = true
+	dc.waitStrategySupplied = true
 	dc.WaitStrategyMap[service] = strategy
 	return dc
 }
@@ -298,8 +297,13 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 		}
 	}
 
-	if dc.WaitStrategySupplied {
-		dc.applyStrategyToRunningContainer()
+	if dc.waitStrategySupplied {
+		err := dc.applyStrategyToRunningContainer()
+		if err != nil {
+			return ExecError{
+				Error: fmt.Errorf("One or more wait strategies could not be applied to the running containers: %v", err),
+			}
+		}
 	}
 
 	return execErr
