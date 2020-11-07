@@ -108,6 +108,28 @@ func TestLocalDockerCompose(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 }
+func TestDockerComposeStrategyForInvalidService(t *testing.T) {
+	path := "./testresources/docker-compose-simple.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		// Appending with _1 as given in the Java Test-Containers Example
+		WithExposedService("mysql_1", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		Invoke()
+	assert.NotEqual(t, err.Error, nil, "Expected error to be thrown because service with wait strategy is not running")
+
+	assert.Equal(t, 1, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+}
 
 func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"
