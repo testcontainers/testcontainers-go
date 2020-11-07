@@ -112,40 +112,43 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 		// Docker compose appends "_1" to every started service by default. Trimming to match running docker container
 		f := filters.NewArgs(filters.Arg("name", strings.TrimSuffix(k, "_1")))
 		containerListOptions := types.ContainerListOptions{Filters: f}
-		containers, cErr := cli.ContainerList(context.Background(), containerListOptions)
-		if cErr != nil {
-			return cErr
+		containers, err := cli.ContainerList(context.Background(), containerListOptions)
+		if err != nil {
+			return fmt.Errorf("there was an issue filtering the service %s by name", k)
 		}
-		if len(containers) > 0 {
-			// The length will always be a list of 1, since we are matching one service name at a time
-			container := containers[0]
-			strategy := dc.WaitStrategyMap[k]
-			dockerProvider, dpErr := NewDockerProvider()
-			if dpErr != nil {
-				fmt.Printf("Unable to create new Docker Provider")
-				return dpErr
-			}
-			dockercontainer := &DockerContainer{ID: container.ID, WaitingFor: strategy, provider: dockerProvider}
-			err := strategy.WaitUntilReady(context.Background(), dockercontainer)
-			if err != nil {
-				failedStrategies[container.Image] = strategy
-				fmt.Printf("Error trace: %s\n", err)
-			}
+
+		if len(containers) == 0 {
+			return fmt.Errorf("service with name %s not found in list of running containers", k)
+		}
+
+		// The length should always be a list of 1, since we are matching one service name at a time
+		if l := len(containers); l > 1 {
+			return fmt.Errorf("expecting only one running container for %s but got %d", k, l)
+		}
+		container := containers[0]
+		strategy := dc.WaitStrategyMap[k]
+		dockerProvider, err := NewDockerProvider()
+		if err != nil {
+			return fmt.Errorf("unable to create new Docker Provider: %w", err)
+		}
+		dockercontainer := &DockerContainer{ID: container.ID, WaitingFor: strategy, provider: dockerProvider}
+		err = strategy.WaitUntilReady(context.Background(), dockercontainer)
+		if err != nil {
+			failedStrategies[container.Image] = strategy
+			// TODO: Revisit after chat with Michael
+			fmt.Printf("error trace: %s", err)
 		}
 	}
 
 	if len(failedStrategies) > 0 {
-		err := fmt.Errorf("List of wait strategies that were unsuccessful: (%v)", failedStrategies)
-		return err
+		return fmt.Errorf("list of wait strategies that were unsuccessful: (%v)", failedStrategies)
 	}
+
 	return nil
 }
 
 // Invoke invokes the docker compose
 func (dc *LocalDockerCompose) Invoke() ExecError {
-	if dc.waitStrategySupplied {
-		return executeCompose(dc, dc.Cmd)
-	}
 	return executeCompose(dc, dc.Cmd)
 }
 
@@ -298,10 +301,11 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 	}
 
 	if dc.waitStrategySupplied {
-		err := dc.applyStrategyToRunningContainer()
-		if err != nil {
+		// If the wait strategy has been executed once for all services during startup , disable it so that it is not invoked while tearing down
+		dc.waitStrategySupplied = false
+		if err := dc.applyStrategyToRunningContainer(); err != nil {
 			return ExecError{
-				Error: fmt.Errorf("One or more wait strategies could not be applied to the running containers: %v", err),
+				Error: fmt.Errorf("one or more wait strategies could not be applied to the running containers: %w", err),
 			}
 		}
 	}
