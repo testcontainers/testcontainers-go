@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -31,7 +32,12 @@ type DockerCompose interface {
 	Invoke() ExecError
 	WithCommand([]string) DockerCompose
 	WithEnv(map[string]string) DockerCompose
-	WithExposedService(string, wait.Strategy) DockerCompose
+	WithExposedService(string, int, wait.Strategy) DockerCompose
+}
+
+type waitService struct {
+	service       string
+	publishedPort int
 }
 
 // LocalDockerCompose represents a Docker Compose execution using local binary
@@ -45,7 +51,7 @@ type LocalDockerCompose struct {
 	Env                  map[string]string
 	Services             map[string]interface{}
 	waitStrategySupplied bool
-	WaitStrategyMap      map[string]wait.Strategy
+	WaitStrategyMap      map[waitService]wait.Strategy
 }
 
 // NewLocalDockerCompose returns an instance of the local Docker Compose, using an
@@ -75,7 +81,7 @@ func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCo
 
 	dc.Identifier = strings.ToLower(identifier)
 	dc.waitStrategySupplied = false
-	dc.WaitStrategyMap = make(map[string]wait.Strategy)
+	dc.WaitStrategyMap = make(map[waitService]wait.Strategy)
 
 	return dc
 }
@@ -108,20 +114,21 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 
 	for k := range dc.WaitStrategyMap {
 		// Docker compose appends "_1" to every started service by default. Trimming to match running docker container
-		f := filters.NewArgs(filters.Arg("name", strings.TrimSuffix(k, "_1")))
+		f := filters.NewArgs(filters.Arg("name", strings.TrimSuffix(k.service, "_1")),
+			filters.Arg("publish", strconv.Itoa(k.publishedPort)))
 		containerListOptions := types.ContainerListOptions{Filters: f}
 		containers, err := cli.ContainerList(context.Background(), containerListOptions)
 		if err != nil {
-			return fmt.Errorf("there was an issue filtering the service %s by name", k)
+			return fmt.Errorf("there was an issue filtering the service %s: %d by name and published port", k.service, k.publishedPort)
 		}
 
 		if len(containers) == 0 {
-			return fmt.Errorf("service with name %s not found in list of running containers", k)
+			return fmt.Errorf("service with name %s not found in list of running containers", k.service)
 		}
 
 		// The length should always be a list of 1, since we are matching one service name at a time
 		if l := len(containers); l > 1 {
-			return fmt.Errorf("expecting only one running container for %s but got %d", k, l)
+			return fmt.Errorf("expecting only one running container for %s but got %d", k.service, l)
 		}
 		container := containers[0]
 		strategy := dc.WaitStrategyMap[k]
@@ -156,10 +163,10 @@ func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
 }
 
 // WithExposedService sets the strategy for the service that is to be waited on. If multiple strategies
-// are given for a single service, the latest one will be applied
-func (dc *LocalDockerCompose) WithExposedService(service string, strategy wait.Strategy) DockerCompose {
+// are given for a single service running on different ports, both strategies will be applied on the same container
+func (dc *LocalDockerCompose) WithExposedService(service string, port int, strategy wait.Strategy) DockerCompose {
 	dc.waitStrategySupplied = true
-	dc.WaitStrategyMap[service] = strategy
+	dc.WaitStrategyMap[waitService{service: service, publishedPort: port}] = strategy
 	return dc
 }
 
