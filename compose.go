@@ -101,8 +101,6 @@ func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
 
 func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 
-	failedStrategies := make(map[string]wait.Strategy)
-
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return err
@@ -134,16 +132,9 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 		dockercontainer := &DockerContainer{ID: container.ID, WaitingFor: strategy, provider: dockerProvider}
 		err = strategy.WaitUntilReady(context.Background(), dockercontainer)
 		if err != nil {
-			failedStrategies[container.Image] = strategy
-			// TODO: Revisit after chat with Michael
-			fmt.Printf("error trace: %s", err)
+			return fmt.Errorf("Unable to apply wait strategy %v to service %s due to %w", strategy, container.Image, err)
 		}
 	}
-
-	if len(failedStrategies) > 0 {
-		return fmt.Errorf("list of wait strategies that were unsuccessful: (%v)", failedStrategies)
-	}
-
 	return nil
 }
 
