@@ -12,6 +12,7 @@ services:
 
 env:
   - GO111MODULE=on
+  - DOCKER_API_VERSION=1.39
 
 before_script:
   - go get gotest.tools/gotestsum
