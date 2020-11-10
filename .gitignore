@@ -9,4 +9,4 @@ src/mkdocs-codeinclude-plugin
 src/pip-delete-this-directory.txt
 .idea/
 
-cover.out
+cover.txt

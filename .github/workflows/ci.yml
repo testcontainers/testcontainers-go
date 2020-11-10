@@ -47,10 +47,10 @@ jobs:
         run: go vet ./...
 
       - name: gotestsum
-        run: gotestsum --format short-verbose -- -coverprofile=cover.out ./...
+        run: gotestsum --format short-verbose -- -coverprofile=cover.txt ./...
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v1.0.2
         with:
-          file: ./cover.out
+          file: ./cover.txt
           name: testcontainers-go-${{ matrix.go-version }}
