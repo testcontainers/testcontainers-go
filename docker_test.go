@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"net/http"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -1341,4 +1343,68 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	if c != 0 {
 		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
 	}
+}
+
+func TestContainerWithReaperNetwork(t *testing.T) {
+	ctx := context.Background()
+	networks := []string{
+		"test_network_" + randomString(),
+		"test_network_" + randomString(),
+	}
+
+	for _, nw := range networks {
+		nr := NetworkRequest{
+			Name:       nw,
+			Attachable: true,
+		}
+		_, err := GenericNetwork(ctx, GenericNetworkRequest{
+			NetworkRequest: nr,
+		})
+		assert.Nil(t, err)
+	}
+
+	req := ContainerRequest{
+		Image:        "nginx",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort("80/tcp"),
+			wait.ForLog("Configuration complete; ready for start up"),
+		),
+		Networks: networks,
+	}
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	defer func() {
+		t.Log("terminating container")
+		err := nginxC.Terminate(ctx)
+		assert.Nil(t, err)
+	}()
+
+	assert.Nil(t, err)
+	containerId := nginxC.GetContainerID()
+
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	assert.Nil(t, err)
+	cnt, err := cli.ContainerInspect(ctx, containerId)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(cnt.NetworkSettings.Networks))
+	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[0]])
+	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[1]])
+}
+
+func randomString() string {
+	rand.Seed(time.Now().UnixNano())
+	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+		"abcdefghijklmnopqrstuvwxyz" +
+		"0123456789")
+	length := 8
+	var b strings.Builder
+	for i := 0; i < length; i++ {
+		b.WriteRune(chars[rand.Intn(len(chars))])
+	}
+	return b.String()
 }
