@@ -9,11 +9,9 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      - name: Install mage
+      - name: Install dependencies
         run: |
-          go get -u -d github.com/magefile/mage
-          cd $GOPATH/src/github.com/magefile/mage
-          go run bootstrap.go
+          go get -v -t -d ./...
  
       - name: Run gofmt
         run: |
