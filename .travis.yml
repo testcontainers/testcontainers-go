@@ -41,5 +41,3 @@ before_script:
 
 script:
   - gotestsum --format short-verbose ./...
-  - shellcheck scripts/*.sh
-
