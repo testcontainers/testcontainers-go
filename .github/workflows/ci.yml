@@ -8,18 +8,15 @@ jobs:
     steps:
 
       - uses: actions/checkout@v2
-      - name: Run ShellCheck
-        run: |
-          shellcheck scripts/*.sh
 
       - name: Run gofmt
         run: |
-          ./scripts/checks.sh
+          mage -v format
   test:
     strategy:
       matrix:
         go-version: [1.14.x, 1.15.x, 1.x]
-        platform: [ubuntu-latest]
+        platform: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
 
