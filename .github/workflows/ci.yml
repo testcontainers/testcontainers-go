@@ -9,6 +9,12 @@ jobs:
 
       - uses: actions/checkout@v2
 
+      - name: Install mage
+        run: |
+          go get -u -d github.com/magefile/mage
+          cd $GOPATH/src/github.com/magefile/mage
+          go run bootstrap.go
+ 
       - name: Run gofmt
         run: |
           mage -v format
