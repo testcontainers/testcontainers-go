@@ -39,3 +39,5 @@ require (
 	gopkg.in/yaml.v2 v2.3.0
 	gotest.tools v0.0.0-20181223230014-1083505acf35
 )
+
+replace golang.org/x/sys => golang.org/x/sys v0.0.0-20190830141801-acfa387b8d69
