@@ -36,7 +36,10 @@ before_install:
 before_script:
   - go mod verify
   - go mod tidy
-  - mage -v format
+  - |
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+      mage -v format
+    fi
   - go vet ./...
 
 script:
