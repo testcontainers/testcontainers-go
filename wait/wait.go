@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
 )
 
@@ -17,6 +18,7 @@ type StrategyTarget interface {
 	MappedPort(context.Context, nat.Port) (nat.Port, error)
 	Logs(context.Context) (io.ReadCloser, error)
 	Exec(ctx context.Context, cmd []string) (int, error)
+	State(context.Context) (*types.ContainerState, error)
 }
 
 func defaultStartupTimeout() time.Duration {

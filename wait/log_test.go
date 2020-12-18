@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
 )
 
@@ -29,6 +30,9 @@ func (st noopStrategyTarget) Logs(ctx context.Context) (io.ReadCloser, error) {
 
 func (st noopStrategyTarget) Exec(ctx context.Context, cmd []string) (int, error) {
 	return 0, nil
+}
+func (st noopStrategyTarget) State(ctx context.Context) (*types.ContainerState, error) {
+	return nil, nil
 }
 
 func TestWaitForLog(t *testing.T) {
