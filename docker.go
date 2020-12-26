@@ -17,15 +17,13 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
-	"github.com/docker/docker/errdefs"
-
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
-
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -422,7 +420,6 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 					})
 				}
 			}
-
 		}
 	}()
 
@@ -447,7 +444,6 @@ type DockerNetwork struct {
 
 // Remove is used to remove the network. It is usually triggered by as defer function.
 func (n *DockerNetwork) Remove(ctx context.Context) error {
-
 	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
@@ -714,10 +710,14 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	)
 	err = backoff.Retry(func() error {
 		pull, err = p.client.ImagePull(ctx, tag, pullOpt)
-		if _, ok := err.(errdefs.ErrNotFound); ok {
-			return backoff.Permanent(err)
+		if err != nil {
+			if _, ok := err.(errdefs.ErrNotFound); ok {
+				return backoff.Permanent(err)
+			}
+			log.Printf("Failed to pull image: %s, will retry", err)
+			return err
 		}
-		return err
+		return nil
 	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 	if err != nil {
 		return err
