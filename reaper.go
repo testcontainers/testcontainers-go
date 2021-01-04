@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/docker/go-connections/nat"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"net"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/docker/go-connections/nat"
+	"github.com/opencontainers/selinux/go-selinux"
+	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/pkg/errors"
 )
@@ -68,6 +70,10 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		},
 		AutoRemove: true,
 		WaitingFor: wait.ForListeningPort(listeningPort),
+	}
+
+	if selinux.EnforceMode() == selinux.Enforcing {
+		req.Privileged = true
 	}
 
 	// Attach reaper container to a requested network if it is specified
