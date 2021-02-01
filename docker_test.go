@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os/exec"
@@ -1343,6 +1344,33 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	if c != 0 {
 		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
 	}
+}
+
+func TestDockerContainerCopyFileFromContainer(t *testing.T) {
+	ctx := context.Background()
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:        "nginx:1.17.6",
+			ExposedPorts: []string{"80/tcp"},
+			WaitingFor:   wait.ForListeningPort("80/tcp"),
+		},
+		Started: true,
+	})
+	defer nginxC.Terminate(ctx)
+
+	// Some non-existent file
+	_, err = nginxC.CopyFileFromContainer(ctx, "/some/invalid/file.ref")
+	assert.Error(t, err)
+
+	// A valid file
+	fileStream, err := nginxC.CopyFileFromContainer(ctx, "/etc/issue")
+	assert.NoError(t, err)
+
+	fileContent, err := ioutil.ReadAll(fileStream)
+	assert.NoError(t, err)
+
+	assert.Contains(t, string(fileContent), "Debian GNU/Linux 10")
 }
 
 func TestContainerWithReaperNetwork(t *testing.T) {

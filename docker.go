@@ -337,6 +337,29 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 	return c.provider.client.CopyToContainer(ctx, c.ID, filepath.Dir(containerFilePath), buffer, types.CopyToContainerOptions{})
 }
 
+func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, containerFilePath string) (io.Reader, error) {
+	r, _, err := c.provider.client.CopyFromContainer(ctx, c.ID, containerFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := &bytes.Buffer{}
+	tr := tar.NewReader(r)
+	for {
+		_, err := tr.Next()
+		// End of archive
+		if err == io.EOF {
+			return buf, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		if _, err := io.Copy(buf, tr); err != nil {
+			return nil, err
+		}
+	}
+}
+
 // StartLogProducer will start a concurrent process that will continuously read logs
 // from the container and will send them to each added LogConsumer
 func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
