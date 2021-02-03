@@ -342,6 +342,7 @@ func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, containerFi
 	if err != nil {
 		return nil, err
 	}
+	defer r.Close()
 
 	buf := &bytes.Buffer{}
 	tr := tar.NewReader(r)
