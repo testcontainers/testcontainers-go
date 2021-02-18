@@ -120,7 +120,7 @@ func (c *ContainerRequest) Validate() error {
 
 	validationMethods := []func() error{
 		c.validateContextAndImage,
-		c.validateContexOrImageIsSpecified,
+		c.validateContextOrImageIsSpecified,
 	}
 
 	var err error
@@ -170,7 +170,7 @@ func (c *ContainerRequest) validateContextAndImage() error {
 	return nil
 }
 
-func (c *ContainerRequest) validateContexOrImageIsSpecified() error {
+func (c *ContainerRequest) validateContextOrImageIsSpecified() error {
 	if c.FromDockerfile.Context == "" && c.FromDockerfile.ContextArchive == nil && c.Image == "" {
 		return errors.New("you must specify either a build context or an image")
 	}
