@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.14.x, 1.15.x, 1.x]
-        platform: [ubuntu-latest]
+        platform: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
 
@@ -46,5 +46,15 @@ jobs:
       - name: vet
         run: go vet ./...
 
+      - name: ensure compilation
+        env:
+          GOOS: linux
+        run: go build
+
       - name: gotestsum
+        # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
+        # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
+        # we can't put Windows Server in "Linux Mode" in Github actions
+        # another, host mode is only available on Linux, and we have tests around that, do we skip them?
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: gotestsum --format short-verbose ./...

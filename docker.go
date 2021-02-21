@@ -664,7 +664,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		EndpointsConfig: endpointConfigs,
 	}
 
-	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, req.Name)
+	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, nil, req.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -729,7 +729,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	return err
 }
 
-// Helth measure the healthiness of the provider. Right now we leverage the
+// Health measure the healthiness of the provider. Right now we leverage the
 // docker-client ping endpoint to see if the daemon is reachable.
 func (p *DockerProvider) Health(ctx context.Context) (err error) {
 	_, err = p.client.Ping(ctx)
