@@ -17,15 +17,13 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
-	"github.com/docker/docker/errdefs"
-
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
-
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -403,7 +401,6 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 					})
 				}
 			}
-
 		}
 	}()
 
@@ -428,7 +425,6 @@ type DockerNetwork struct {
 
 // Remove is used to remove the network. It is usually triggered by as defer function.
 func (n *DockerNetwork) Remove(ctx context.Context) error {
-
 	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
@@ -649,7 +645,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		EndpointsConfig: endpointConfigs,
 	}
 
-	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, req.Name)
+	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, nil, req.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -695,10 +691,14 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	)
 	err = backoff.Retry(func() error {
 		pull, err = p.client.ImagePull(ctx, tag, pullOpt)
-		if _, ok := err.(errdefs.ErrNotFound); ok {
-			return backoff.Permanent(err)
+		if err != nil {
+			if _, ok := err.(errdefs.ErrNotFound); ok {
+				return backoff.Permanent(err)
+			}
+			log.Printf("Failed to pull image: %s, will retry", err)
+			return err
 		}
-		return err
+		return nil
 	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 	if err != nil {
 		return err
@@ -710,7 +710,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	return err
 }
 
-// Helth measure the healthiness of the provider. Right now we leverage the
+// Health measure the healthiness of the provider. Right now we leverage the
 // docker-client ping endpoint to see if the daemon is reachable.
 func (p *DockerProvider) Health(ctx context.Context) (err error) {
 	_, err = p.client.Ping(ctx)

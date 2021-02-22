@@ -49,7 +49,7 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 	env := make(map[string]string)
 	env["POSTGRES_PASSWORD"] = "Password1"
 	dbContainerRequest := ContainerRequest{
-		Image:        "postgres:12.2",
+		Image:        "postgres:12",
 		ExposedPorts: []string{"5432/tcp"},
 		AutoRemove:   true,
 		Env:          env,

@@ -15,7 +15,7 @@ that Docker Compose needs to be present on dev and CI machines.
 ## Examples
 
 ```go
-composeFilePaths := "testresources/docker-compose.yml"
+composeFilePaths := []string {"testresources/docker-compose.yml"}
 identifier := strings.ToLower(uuid.New().String())
 
 compose := tc.NewLocalDockerCompose(composeFilePaths, identifier)
@@ -40,7 +40,7 @@ In the following example, we demonstrate how to stop a Docker compose using the
 convenient `Down` method.
 
 ```go
-composeFilePaths := "testresources/docker-compose.yml"
+composeFilePaths := []string{"testresources/docker-compose.yml"}
 
 compose := tc.NewLocalDockerCompose(composeFilePaths, identifierFromExistingRunningCompose)
 execError := compose.Down()
