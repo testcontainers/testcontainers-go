@@ -13,13 +13,12 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/google/uuid v1.1.4
-	github.com/gorilla/context v1.1.1 // indirect
-	github.com/gorilla/mux v1.6.2 // indirect
 	github.com/gogo/protobuf v1.2.0 // indirect
 	github.com/golang/protobuf v1.3.3 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/context v1.1.1 // indirect
+	github.com/gorilla/context v1.1.1 // indirect
+	github.com/gorilla/mux v1.6.2 // indirect
 	github.com/gorilla/mux v1.6.2 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/moby/sys/mount v0.2.0 // indirect
