@@ -67,3 +67,16 @@ func TestWaitWithMaxOccurrenceButItWillNeverHappen(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+
+func TestWaitShouldFailWithExactNumberOfOccurrences(t *testing.T) {
+	target := noopStrategyTarget{
+		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("hello\r\ndude"))),
+	}
+	wg := NewLogStrategy("dude").
+		WithStartupTimeout(100 * time.Microsecond).
+		WithOccurrence(2)
+	err := wg.WaitUntilReady(context.Background(), target)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
