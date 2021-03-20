@@ -42,7 +42,7 @@ func TestWaitForLog(t *testing.T) {
 	}
 }
 
-func TestWaitWithMaxOccurrence(t *testing.T) {
+func TestWaitWithExactNumberOfOccurrences(t *testing.T) {
 	target := noopStrategyTarget{
 		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("hello\r\ndude\n\rdude"))),
 	}
@@ -55,7 +55,7 @@ func TestWaitWithMaxOccurrence(t *testing.T) {
 	}
 }
 
-func TestWaitWithMaxOccurrenceButItWillNeverHappen(t *testing.T) {
+func TestWaitWithExactNumberOfOccurrencesButItWillNeverHappen(t *testing.T) {
 	target := noopStrategyTarget{
 		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("hello\r\ndude"))),
 	}
