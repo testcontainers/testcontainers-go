@@ -719,6 +719,12 @@ func (p *DockerProvider) Health(ctx context.Context) (err error) {
 
 // RunContainer takes a RequestContainer as input and it runs a container via the docker sdk
 func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest) (Container, error) {
+	// starting the ryuk container in privileged mode in order to be able to run it inside a docker container (e.g. drone ci)
+	if strings.Contains(req.Image, "testcontainers/ryuk") {
+		log.Printf("starting the ryuk container in privileged mode in order to be able to run it inside a docker container (image=%s)\n", req.Image)
+		req.Privileged = true
+	}
+
 	c, err := p.CreateContainer(ctx, req)
 	if err != nil {
 		return nil, err
