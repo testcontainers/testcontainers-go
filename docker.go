@@ -860,33 +860,24 @@ func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (ty
 }
 
 func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
+	// Use a default network as defined in the DockerProvider
+	nw, err := p.GetNetwork(ctx, NetworkRequest{Name: p.defaultNetwork})
+	if err != nil {
+		return "", err
+	}
 
-	// getDefaultGatewayIP this is the old way to obtain the IP address of the docker gateway.
-	// We have to use it since the new variant does not work on our CI system for some reason.
-	// There the new way deduces a docker gw IP of 172.17.0.1 but on our CI it has to be 10.128.10.1
-	fmt.Printf("Determine the gateway IP using the old way that relies on the tool 'ip' being installed.")
-	return getDefaultGatewayIP()
-
-	/*
-		// Use a default network as defined in the DockerProvider
-		nw, err := p.GetNetwork(ctx, NetworkRequest{Name: p.defaultNetwork})
-		if err != nil {
-			return "", err
+	var ip string
+	for _, config := range nw.IPAM.Config {
+		if config.Gateway != "" {
+			ip = config.Gateway
+			break
 		}
+	}
+	if ip == "" {
+		return "", errors.New("Failed to get gateway IP from network settings")
+	}
 
-		var ip string
-		for _, config := range nw.IPAM.Config {
-			if config.Gateway != "" {
-				ip = config.Gateway
-				break
-			}
-		}
-		if ip == "" {
-			return "", errors.New("Failed to get gateway IP from network settings")
-		}
-
-		return ip, nil
-	*/
+	return ip, nil
 }
 
 func inAContainer() bool {
