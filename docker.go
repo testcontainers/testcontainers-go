@@ -762,15 +762,25 @@ func (p *DockerProvider) daemonHost(ctx context.Context) (string, error) {
 		p.hostCache = url.Hostname()
 	case "unix", "npipe":
 		if inAContainer() {
-			ip, err := p.GetGatewayIP(ctx)
+			//ip, err := p.GetGatewayIP(ctx)
+			//if err != nil {
+			//	// fallback to getDefaultGatewayIP
+			//	ip, err = getDefaultGatewayIP()
+			//	if err != nil {
+			//		ip = "localhost"
+			//	}
+			//}
+
+			// getDefaultGatewayIP this is the old way to obtain the IP address of the docker gateway.
+			// We have to use it since the new variant (p.GetGatewayIP(ctx)) does not work on our CI system for some reason.
+			// There the new way deduces a docker gw IP of 172.17.0.1 but on our CI it has to be 10.128.10.1
+			fmt.Printf("Determine the gateway IP using the old way that relies on the tool 'ip' being installed.\n")
+			ip, err := getDefaultGatewayIP()
 			if err != nil {
-				// fallback to getDefaultGatewayIP
-				ip, err = getDefaultGatewayIP()
-				if err != nil {
-					ip = "localhost"
-				}
+				ip = "localhost"
 			}
 			p.hostCache = ip
+			fmt.Printf("Determined gateway IP is %s\n", ip)
 		} else {
 			p.hostCache = "localhost"
 		}
