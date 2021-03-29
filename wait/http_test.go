@@ -68,11 +68,12 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 		},
 		ExposedPorts: []string{"6443/tcp"},
 		WaitingFor: wait.NewHTTPStrategy("/ping").WithTLS(true, tlsconfig).
-			WithStartupTimeout(time.Second * 10).WithPort("6443/tcp").
+			WithStartupTimeout(time.Second*10).WithPort("6443/tcp").
 			WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := ioutil.ReadAll(body)
 				return bytes.Equal(data, []byte("pong"))
 			}).
+			WithBasicAuth("admin", "admin").
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
 	}
 
