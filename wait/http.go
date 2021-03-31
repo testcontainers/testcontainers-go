@@ -124,9 +124,16 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		return
 	}
 
-	port, err := target.MappedPort(ctx, ws.Port)
-	if err != nil {
-		return
+	var port nat.Port
+	port, err = target.MappedPort(ctx, ws.Port)
+
+	for port == "" {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("%s:%w", ctx.Err(), err)
+		case <-time.After(ws.PollInterval):
+			port, err = target.MappedPort(ctx, ws.Port)
+		}
 	}
 
 	if port.Proto() != "tcp" {

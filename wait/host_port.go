@@ -56,9 +56,24 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		return
 	}
 
-	port, err := target.MappedPort(ctx, hp.Port)
-	if err != nil {
-		return
+	var waitInterval = 100 * time.Millisecond
+
+	var port nat.Port
+	port, err = target.MappedPort(ctx, hp.Port)
+	var i = 0
+
+	for port == "" {
+		i++
+
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("%s:%w", ctx.Err(), err)
+		case <-time.After(waitInterval):
+			port, err = target.MappedPort(ctx, hp.Port)
+			if err != nil {
+				fmt.Printf("(%d) [%s] %s\n", i, port, err)
+			}
+		}
 	}
 
 	proto := port.Proto()
@@ -74,7 +89,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			if v, ok := err.(*net.OpError); ok {
 				if v2, ok := (v.Err).(*os.SyscallError); ok {
 					if isConnRefusedErr(v2.Err) {
-						time.Sleep(100 * time.Millisecond)
+						time.Sleep(waitInterval)
 						continue
 					}
 				}
