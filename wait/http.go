@@ -127,7 +127,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	var port nat.Port
 	port, err = target.MappedPort(ctx, ws.Port)
 
-	for port == ""{
+	for port == "" {
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("%s:%w", ctx.Err(), err)

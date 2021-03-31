@@ -62,7 +62,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	port, err = target.MappedPort(ctx, hp.Port)
 	var i = 0
 
-	for port == ""{
+	for port == "" {
 		i++
 
 		select {

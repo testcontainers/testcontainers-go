@@ -52,7 +52,7 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 	var port nat.Port
 	port, err = target.MappedPort(ctx, w.Port)
 
-	for port == ""{
+	for port == "" {
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("%s:%w", ctx.Err(), err)

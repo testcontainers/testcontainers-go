@@ -44,7 +44,7 @@ type DockerContainer struct {
 	ID         string
 	WaitingFor wait.Strategy
 	Image      string
-	
+
 	provider          *DockerProvider
 	sessionID         uuid.UUID
 	terminationSignal chan bool
