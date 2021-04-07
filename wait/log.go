@@ -72,7 +72,6 @@ func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 	// limit context to startupTimeout
 	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
 	defer cancelContext()
-	currentOccurence := 0
 
 LOOP:
 	for {
@@ -88,11 +87,8 @@ LOOP:
 			}
 			b, err := ioutil.ReadAll(reader)
 			logs := string(b)
-			if strings.Contains(logs, ws.Log) {
-				currentOccurence++
-				if ws.Occurrence == 0 || currentOccurence >= ws.Occurrence-1 {
-					break LOOP
-				}
+			if strings.Count(logs, ws.Log) >= ws.Occurrence {
+				break LOOP
 			} else {
 				time.Sleep(ws.PollInterval)
 				continue

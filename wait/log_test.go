@@ -33,20 +33,20 @@ func (st noopStrategyTarget) Exec(ctx context.Context, cmd []string) (int, error
 
 func TestWaitForLog(t *testing.T) {
 	target := noopStrategyTarget{
-		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("dude"))),
+		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("docker"))),
 	}
-	wg := NewLogStrategy("dude").WithStartupTimeout(100 * time.Microsecond)
+	wg := NewLogStrategy("docker").WithStartupTimeout(100 * time.Microsecond)
 	err := wg.WaitUntilReady(context.Background(), target)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestWaitWithMaxOccurrence(t *testing.T) {
+func TestWaitWithExactNumberOfOccurrences(t *testing.T) {
 	target := noopStrategyTarget{
-		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("hello\r\ndude\n\rdude"))),
+		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker\n\rdocker"))),
 	}
-	wg := NewLogStrategy("dude").
+	wg := NewLogStrategy("docker").
 		WithStartupTimeout(100 * time.Microsecond).
 		WithOccurrence(2)
 	err := wg.WaitUntilReady(context.Background(), target)
@@ -55,11 +55,24 @@ func TestWaitWithMaxOccurrence(t *testing.T) {
 	}
 }
 
-func TestWaitWithMaxOccurrenceButItWillNeverHappen(t *testing.T) {
+func TestWaitWithExactNumberOfOccurrencesButItWillNeverHappen(t *testing.T) {
 	target := noopStrategyTarget{
-		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("hello\r\ndude"))),
+		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker"))),
 	}
-	wg := NewLogStrategy("blaaa").
+	wg := NewLogStrategy("containerd").
+		WithStartupTimeout(100 * time.Microsecond).
+		WithOccurrence(2)
+	err := wg.WaitUntilReady(context.Background(), target)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestWaitShouldFailWithExactNumberOfOccurrences(t *testing.T) {
+	target := noopStrategyTarget{
+		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker"))),
+	}
+	wg := NewLogStrategy("docker").
 		WithStartupTimeout(100 * time.Microsecond).
 		WithOccurrence(2)
 	err := wg.WaitUntilReady(context.Background(), target)
