@@ -66,6 +66,7 @@ type FromDockerfile struct {
 	Context        string    // the path to the context of of the docker build
 	ContextArchive io.Reader // the tar archive file to send to docker that contains the build context
 	Dockerfile     string    // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
+	BuildArgs      map[string]*string //
 }
 
 // ContainerRequest represents the parameters used to get a running container
@@ -92,7 +93,6 @@ type ContainerRequest struct {
 	AutoRemove      bool                // if set to true, the container will be removed from the host when stopped
 	NetworkMode     container.NetworkMode
 	AlwaysPullImage bool // Always pull image
-	BuildArgs       map[string]*string
 }
 
 // ProviderType is an enum for the possible providers
@@ -152,7 +152,7 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 
 // GetBuildArgs returns the env args to be used when creating from Dockerfile
 func (c *ContainerRequest) GetBuildArgs() map[string]*string {
-	return c.BuildArgs
+	return c.FromDockerfile.BuildArgs
 }
 
 // GetDockerfile returns the Dockerfile from the ContainerRequest, defaults to "Dockerfile"

@@ -904,9 +904,9 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 		FromDockerfile: FromDockerfile{
 			Context:    "./testresources",
 			Dockerfile: "args.Dockerfile",
-		},
-		BuildArgs: map[string]*string{
-			"FOO": &ba,
+			BuildArgs: map[string]*string{
+				"FOO": &ba,
+			},
 		},
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
