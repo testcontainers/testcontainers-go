@@ -54,9 +54,10 @@ type Container interface {
 
 // ImageBuildInfo defines what is needed to build an image
 type ImageBuildInfo interface {
-	GetContext() (io.Reader, error) // the path to the build context
-	GetDockerfile() string          // the relative path to the Dockerfile, including the fileitself
-	ShouldBuildImage() bool         // return true if the image needs to be built
+	GetContext() (io.Reader, error)   // the path to the build context
+	GetDockerfile() string            // the relative path to the Dockerfile, including the fileitself
+	ShouldBuildImage() bool           // return true if the image needs to be built
+	GetBuildArgs() map[string]*string // return the environment args used to build the from Dockerfile
 }
 
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
@@ -90,7 +91,8 @@ type ContainerRequest struct {
 	ReaperImage     string              // alternative reaper image
 	AutoRemove      bool                // if set to true, the container will be removed from the host when stopped
 	NetworkMode     container.NetworkMode
-	AlwaysPullImage bool // Always pull image
+	AlwaysPullImage bool               // Always pull image
+	BuildArgs       map[string]*string // for specifying network aliases
 }
 
 // ProviderType is an enum for the possible providers
@@ -146,6 +148,11 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	}
 
 	return buildContext, nil
+}
+
+// GetBuildArgs returns the env args to be used when creating from Dockerfile
+func (c *ContainerRequest) GetBuildArgs() map[string]*string {
+	return c.BuildArgs
 }
 
 // GetDockerfile returns the Dockerfile from the ContainerRequest, defaults to "Dockerfile"

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os/exec"
@@ -890,6 +891,66 @@ func Test_BuildContainerFromDockerfile(t *testing.T) {
 	if pong != "PONG" {
 		t.Fatalf("received unexpected response from redis: %s", pong)
 	}
+}
+
+func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
+	t.Log("getting ctx")
+	ctx := context.Background()
+
+	ba := "build args value"
+
+	t.Log("got ctx, creating container request")
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:    "./testresources",
+			Dockerfile: "args.Dockerfile",
+		},
+		BuildArgs: map[string]*string{
+			"FOO": &ba,
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		WaitingFor:   wait.ForLog("ready"),
+	}
+
+	genContainerReq := GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	c, err := GenericContainer(ctx, genContainerReq)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ep, err := c.Endpoint(ctx, "http")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := http.Get(ep + "/env")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, 200, resp.StatusCode)
+	assert.Equal(t, ba, string(body))
+
+	defer func() {
+		t.Log("terminating container")
+		err := c.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log("terminated container")
+	}()
 }
 
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
