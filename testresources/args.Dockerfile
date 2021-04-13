@@ -6,6 +6,6 @@ ENV FOO=$FOO
 
 WORKDIR /app
 
-COPY argsserver.go .
+COPY echoserver.go .
 
-CMD go run argsserver.go
+CMD go run echoserver.go
