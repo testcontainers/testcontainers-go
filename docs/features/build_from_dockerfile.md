@@ -16,6 +16,27 @@ req := ContainerRequest{
 	}
 ```
 
+If your Dockerfile expects build args: 
+
+```Dockerfile
+FROM alpine
+
+ARG FOO
+
+```
+You can specify them like:
+
+```go
+req := ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context: "/path/to/build/context",
+			Dockerfile: "CustomDockerfile",
+			BuildArgs: map[string]*string {
+				"FOO": "BAR",
+			},
+		},
+	}
+```
 ## Dynamic Build Context
 
 If you would like to send a build context that you created in code (maybe you have a dynamic Dockerfile), you can
