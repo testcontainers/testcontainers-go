@@ -23,8 +23,10 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
+	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
+	"github.com/moby/term"
 	"github.com/pkg/errors"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -468,6 +470,14 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	resp, err := p.client.ImageBuild(ctx, buildContext, buildOptions)
 	if err != nil {
 		return "", err
+	}
+
+	if img.ShouldPrintBuildLog() {
+		termFd, isTerm := term.GetFdInfo(os.Stderr)
+		err = jsonmessage.DisplayJSONMessagesStream(resp.Body, os.Stderr, termFd, isTerm, nil)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// need to read the response from Docker, I think otherwise the image

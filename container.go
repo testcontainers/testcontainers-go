@@ -56,6 +56,7 @@ type Container interface {
 type ImageBuildInfo interface {
 	GetContext() (io.Reader, error)   // the path to the build context
 	GetDockerfile() string            // the relative path to the Dockerfile, including the fileitself
+	ShouldPrintBuildLog() bool        // allow build log to be printed to stdout
 	ShouldBuildImage() bool           // return true if the image needs to be built
 	GetBuildArgs() map[string]*string // return the environment args used to build the from Dockerfile
 }
@@ -66,7 +67,8 @@ type FromDockerfile struct {
 	Context        string             // the path to the context of of the docker build
 	ContextArchive io.Reader          // the tar archive file to send to docker that contains the build context
 	Dockerfile     string             // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
-	BuildArgs      map[string]*string //
+	BuildArgs      map[string]*string // enable user to pass build args to docker daemon
+	PrintBuildLog  bool               // enable user to print build log
 }
 
 // ContainerRequest represents the parameters used to get a running container
@@ -167,6 +169,10 @@ func (c *ContainerRequest) GetDockerfile() string {
 
 func (c *ContainerRequest) ShouldBuildImage() bool {
 	return c.FromDockerfile.Context != "" || c.FromDockerfile.ContextArchive != nil
+}
+
+func (c *ContainerRequest) ShouldPrintBuildLog() bool {
+	return c.FromDockerfile.PrintBuildLog
 }
 
 func (c *ContainerRequest) validateContextAndImage() error {
