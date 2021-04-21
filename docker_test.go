@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -951,6 +952,54 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 		}
 		t.Log("terminated container")
 	}()
+}
+
+func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
+	rescueStdout := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+
+	t.Log("getting ctx")
+	ctx := context.Background()
+	t.Log("got ctx, creating container request")
+
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:       "./testresources",
+			Dockerfile:    "buildlog.Dockerfile",
+			PrintBuildLog: true,
+		},
+	}
+
+	genContainerReq := GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	c, err := GenericContainer(ctx, genContainerReq)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		t.Log("terminating container")
+		err := c.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log("terminated container")
+	}()
+
+	w.Close()
+	out, _ := ioutil.ReadAll(r)
+	os.Stdout = rescueStdout
+	temp := strings.Split(string(out), "\n")
+
+	if temp[0] != "Step 1/1 : FROM alpine" {
+		t.Errorf("Expected stout firstline to be %s. Got '%s'.", "Step 1/2 : FROM alpine", temp[0])
+	}
+
 }
 
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
