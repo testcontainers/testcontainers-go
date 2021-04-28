@@ -12,8 +12,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const containerNameNginx = "nginx-simple"
-
 func ExampleNewLocalDockerCompose() {
 	path := "/path/to/docker-compose.yml"
 
@@ -276,6 +274,8 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 	assert.Equal(t, 1, len(compose.Services))
 	assert.Contains(t, compose.Services, "nginx")
 
+	containerNameNginx := compose.Identifier + "_nginx_1"
+
 	present := map[string]string{
 		"bar": "BAR",
 	}
@@ -310,6 +310,8 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 	assert.Equal(t, 2, len(compose.Services))
 	assert.Contains(t, compose.Services, "nginx")
 	assert.Contains(t, compose.Services, "mysql")
+
+	containerNameNginx := compose.Identifier + "_nginx_1"
 
 	present := map[string]string{
 		"bar": "BAR",
