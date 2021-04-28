@@ -5,12 +5,12 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
-
-const containerNameNginx = "nginx-simple"
 
 func ExampleNewLocalDockerCompose() {
 	path := "/path/to/docker-compose.yml"
@@ -106,6 +106,128 @@ func TestLocalDockerCompose(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 }
+func TestDockerComposeStrategyForInvalidService(t *testing.T) {
+	path := "./testresources/docker-compose-simple.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		// Appending with _1 as given in the Java Test-Containers Example
+		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		Invoke()
+	assert.NotEqual(t, err.Error, nil, "Expected error to be thrown because service with wait strategy is not running")
+
+	assert.Equal(t, 1, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+}
+
+func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
+	path := "./testresources/docker-compose-complex.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		// Appending with _1 as given in the Java Test-Containers Example
+		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		Invoke()
+	checkIfError(t, err)
+
+	assert.Equal(t, 2, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "mysql")
+}
+
+func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
+	path := "./testresources/docker-compose-simple.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithEnv(map[string]string{
+			"bar": "BAR",
+		}).
+		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		Invoke()
+	checkIfError(t, err)
+
+	assert.Equal(t, 1, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+}
+
+func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
+	path := "./testresources/docker-compose-complex.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
+		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		Invoke()
+	checkIfError(t, err)
+
+	assert.Equal(t, 2, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "mysql")
+}
+
+func TestDockerComposeWithFailedStrategy(t *testing.T) {
+	path := "./testresources/docker-compose-simple.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithEnv(map[string]string{
+			"bar": "BAR",
+		}).
+		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
+		Invoke()
+	// Verify that an error is thrown and not nil
+	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
+	assert.NotEqual(t, err.Error, nil, "Expected error to be thrown because of a wrong suplied wait strategy")
+
+	assert.Equal(t, 1, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+}
 
 func TestLocalDockerComposeComplex(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"
@@ -152,6 +274,8 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 	assert.Equal(t, 1, len(compose.Services))
 	assert.Contains(t, compose.Services, "nginx")
 
+	containerNameNginx := compose.Identifier + "_nginx_1"
+
 	present := map[string]string{
 		"bar": "BAR",
 	}
@@ -186,6 +310,8 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 	assert.Equal(t, 2, len(compose.Services))
 	assert.Contains(t, compose.Services, "nginx")
 	assert.Contains(t, compose.Services, "mysql")
+
+	containerNameNginx := compose.Identifier + "_nginx_1"
 
 	present := map[string]string{
 		"bar": "BAR",

@@ -2,7 +2,6 @@ version: '3'
 services:
   nginx:
     image: nginx:stable-alpine
-    container_name: nginx-simple
     environment:
       bar: ${bar}
     ports:
