@@ -113,9 +113,9 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 	}
 
 	for k := range dc.WaitStrategyMap {
+		containerName := dc.Identifier + "_" + k.service
 		// Docker compose appends "_1" to every started service by default. Trimming to match running docker container
-		f := filters.NewArgs(filters.Arg("name", strings.TrimSuffix(k.service, "_1")),
-			filters.Arg("publish", strconv.Itoa(k.publishedPort)))
+		f := filters.NewArgs(filters.Arg("name", containerName), filters.Arg("publish", strconv.Itoa(k.publishedPort)))
 		containerListOptions := types.ContainerListOptions{Filters: f}
 		containers, err := cli.ContainerList(context.Background(), containerListOptions)
 		if err != nil {
