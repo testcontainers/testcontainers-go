@@ -49,9 +49,16 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 	ticker := time.NewTicker(w.PollInterval)
 	defer ticker.Stop()
 
-	port, err := target.MappedPort(ctx, w.Port)
-	if err != nil {
-		return fmt.Errorf("target.MappedPort: %v", err)
+	var port nat.Port
+	port, err = target.MappedPort(ctx, w.Port)
+
+	for port == "" {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("%s:%w", ctx.Err(), err)
+		case <-ticker.C:
+			port, err = target.MappedPort(ctx, w.Port)
+		}
 	}
 
 	db, err := sql.Open(w.Driver, w.URL(port))
