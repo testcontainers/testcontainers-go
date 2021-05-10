@@ -426,6 +426,11 @@ type DockerNetwork struct {
 
 // Remove is used to remove the network. It is usually triggered by as defer function.
 func (n *DockerNetwork) Remove(ctx context.Context) error {
+	select {
+	// close reaper if it was created
+	case n.terminationSignal <- true:
+	default:
+	}
 	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
