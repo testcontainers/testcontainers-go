@@ -1,4 +1,4 @@
-package wait_test
+package integration_tests
 
 import (
 	"bytes"

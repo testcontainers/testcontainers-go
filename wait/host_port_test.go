@@ -9,7 +9,7 @@ import (
 )
 
 func TestWaitHostPort_TimeoutAccessors(t *testing.T) {
-	strategy := ForListeningPort(nat.Port(8080))
+	strategy := ForListeningPort(nat.Port("8080"))
 
 	strategy.timeout = time.Second * 2
 	assert.Equal(t, time.Second*2, strategy.timeout)

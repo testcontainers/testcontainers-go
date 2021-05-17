@@ -9,7 +9,7 @@ import (
 )
 
 func TestWaitSql_TimeoutAccessors(t *testing.T) {
-	strategy := ForSQL(nat.Port(8080), "", func(p nat.Port) string {
+	strategy := ForSQL(nat.Port("8080"), "", func(p nat.Port) string {
 		return p.Port()
 	})
 
