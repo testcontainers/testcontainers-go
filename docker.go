@@ -174,6 +174,11 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 
 // Terminate is used to kill the container. It is usually triggered by as defer function.
 func (c *DockerContainer) Terminate(ctx context.Context) error {
+	select {
+	// close reaper if it was created
+	case c.terminationSignal <- true:
+	default:
+	}
 	err := c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
 		RemoveVolumes: true,
 		Force:         true,
@@ -421,6 +426,11 @@ type DockerNetwork struct {
 
 // Remove is used to remove the network. It is usually triggered by as defer function.
 func (n *DockerNetwork) Remove(ctx context.Context) error {
+	select {
+	// close reaper if it was created
+	case n.terminationSignal <- true:
+	default:
+	}
 	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
