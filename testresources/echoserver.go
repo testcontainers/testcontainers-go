@@ -8,6 +8,15 @@ import (
 	"os"
 )
 
+func envHandler() http.HandlerFunc {
+	return func(rw http.ResponseWriter, req *http.Request) {
+
+		rw.Write([]byte(os.Getenv("FOO")))
+
+		rw.WriteHeader(http.StatusAccepted)
+	}
+}
+
 func echoHandler(destination *os.File) http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		echo := req.URL.Query()["echo"][0]
@@ -26,6 +35,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/stdout", echoHandler(os.Stdout))
 	mux.HandleFunc("/stderr", echoHandler(os.Stderr))
+	mux.HandleFunc("/env", envHandler())
 
 	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {
