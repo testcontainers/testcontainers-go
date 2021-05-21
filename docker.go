@@ -337,10 +337,14 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 // from the container and will send them to each added LogConsumer
 func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 	go func() {
+		since := ""
+		// if the socket is closed we will make additional logs request with updated Since timestamp
+	BEGIN:
 		options := types.ContainerLogsOptions{
 			ShowStdout: true,
 			ShowStderr: true,
 			Follow:     true,
+			Since:      since,
 		}
 
 		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
@@ -366,6 +370,12 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				h := make([]byte, 8)
 				_, err := r.Read(h)
 				if err != nil {
+					// proper type matching requires https://go-review.googlesource.com/c/go/+/250357/ (go 1.16)
+					if strings.Contains(err.Error(), "use of closed connection") {
+						now := time.Now()
+						since = fmt.Sprintf("%d.%09d", now.Unix(), int64(now.Nanosecond()))
+						goto BEGIN
+					}
 					// this explicitly ignores errors
 					// because we want to keep procesing even if one of our reads fails
 					continue
@@ -377,7 +387,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 				logType := h[0]
 				if logType > 2 {
-					panic(fmt.Sprintf("received inavlid log type: %d", logType))
+					panic(fmt.Sprintf("received invalid log type: %d", logType))
 				}
 
 				// a map of the log type --> int representation in the header, notice the first is blank, this is stdin, but the go docker client doesn't allow following that in logs
