@@ -44,7 +44,7 @@ look.
   ready to receive any traffic. In this, case we check for the logs we know come
   from Redis, telling us that it is ready to accept requests.
 
-When you use `ExposedPorts` you have to image yourself using `docker run -p
+When you use `ExposedPorts` you have to imagine yourself using `docker run -p
 <port>`.  When you do so, `dockerd` maps the selected `<port>` from inside the
 container to a random one available on your host.
 
