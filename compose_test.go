@@ -178,6 +178,28 @@ func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 	assert.Contains(t, compose.Services, "nginx")
 }
 
+func TestDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
+	path := "./testresources/docker-compose-no-exposed-ports.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithExposedService("nginx_1", 9080, wait.ForLog("Configuration complete; ready for start up")).
+		Invoke()
+	checkIfError(t, err)
+
+	assert.Equal(t, 1, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+}
+
 func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"
 
