@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 	"gotest.tools/assert"
@@ -81,12 +82,18 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	time.Sleep(10 * time.Second)
+
 	_, err = http.Get(ep + fmt.Sprintf("/stdout?echo=%s", lastMessage))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	<-g.Ack
+	select {
+	case <-g.Ack:
+	case <-time.After(5 * time.Second):
+		t.Fatal("never received final log message")
+	}
 	c.StopLogProducer()
 
 	// get rid of the server "ready" log
