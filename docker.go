@@ -187,7 +187,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 }
 
 // update container raw info
-func (c *DockerContainer) inspectContainerFresh(ctx context.Context) (*types.ContainerJSON, error) {
+func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.ContainerJSON, error) {
 	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
 	if err != nil {
 		return nil, err
@@ -238,7 +238,7 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 
 // State returns container's running state
 func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
-	inspect, err := c.inspectContainerFresh(ctx)
+	inspect, err := c.inspectRawContainer(ctx)
 	if err != nil {
 		return c.raw.State, err
 	}
