@@ -106,6 +106,7 @@ func TestLocalDockerCompose(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 }
+
 func TestDockerComposeStrategyForInvalidService(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
@@ -121,7 +122,9 @@ func TestDockerComposeStrategyForInvalidService(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		// Appending with _1 as given in the Java Test-Containers Example
-		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").
+			WithTimeout(10*time.Second).
+			WithOccurrence(1)).
 		Invoke()
 	assert.NotEqual(t, err.Error, nil, "Expected error to be thrown because service with wait strategy is not running")
 
@@ -144,7 +147,9 @@ func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		// Appending with _1 as given in the Java Test-Containers Example
-		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").
+			WithTimeout(10*time.Second).
+			WithOccurrence(1)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -170,7 +175,9 @@ func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").
+			WithPort("80/tcp").
+			WithTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -214,8 +221,11 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
-		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
-		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").
+			WithTimeout(10*time.Second)).
+		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").
+			WithPort("80/tcp").
+			WithTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -241,7 +251,9 @@ func TestDockerComposeWithFailedStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
+		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").
+			WithPort("8080/tcp").
+			WithTimeout(5*time.Second)).
 		Invoke()
 	// Verify that an error is thrown and not nil
 	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test

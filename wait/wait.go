@@ -21,7 +21,7 @@ type StrategyTarget interface {
 	State(context.Context) (*types.ContainerState, error)
 }
 
-func defaultStartupTimeout() time.Duration {
+func defaultTimeout() time.Duration {
 	return 60 * time.Second
 }
 

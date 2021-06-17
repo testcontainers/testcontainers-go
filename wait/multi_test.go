@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWaitHTTP_TimeoutAccessors(t *testing.T) {
-	strategy := ForHTTP("/test")
+func TestWaitMulti_TimeoutAccessors(t *testing.T) {
+	strategy := ForAll()
 
 	strategy.timeout = time.Second * 2
 	assert.Equal(t, time.Second*2, strategy.timeout)

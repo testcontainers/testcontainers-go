@@ -2,10 +2,10 @@ package testcontainers
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -16,19 +16,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/errdefs"
-
-	"github.com/docker/docker/api/types/volume"
-
-	"database/sql"
 	// Import mysql into the scope of this package (required)
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
 	"github.com/go-redis/redis"
+	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -58,7 +56,6 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 			CheckDuplicate: true,
 		},
 	})
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -694,7 +691,8 @@ func TestContainerCreationTimesOut(t *testing.T) {
 			ExposedPorts: []string{
 				"80/tcp",
 			},
-			WaitingFor: wait.ForListeningPort("80").WithStartupTimeout(1 * time.Second),
+			WaitingFor: wait.ForListeningPort("80").
+				WithTimeout(1 * time.Second),
 		},
 		Started: true,
 	})
@@ -756,7 +754,8 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 			ExposedPorts: []string{
 				"80/tcp",
 			},
-			WaitingFor: wait.ForHTTP("/").WithStartupTimeout(1 * time.Second),
+			WaitingFor: wait.ForHTTP("/").
+				WithTimeout(1 * time.Second),
 		},
 		Started: true,
 	})
@@ -781,7 +780,8 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 			"MYSQL_ROOT_PASSWORD": "password",
 			"MYSQL_DATABASE":      "database",
 		},
-		WaitingFor: wait.ForLog("test context timeout").WithStartupTimeout(1 * time.Second),
+		WaitingFor: wait.ForLog("test context timeout").
+			WithTimeout(1 * time.Second),
 	}
 	_, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -1024,7 +1024,6 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected timeout")
 	}
-
 }
 
 func TestContainerCreationWaitingForHostPort(t *testing.T) {
@@ -1092,7 +1091,6 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1112,7 +1110,6 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 		"root", "password", host, port, "database")
 
 	db, err := sql.Open("mysql", connectionString)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1122,7 +1119,6 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 	if err = db.Ping(); err != nil {
 		t.Errorf("error pinging db: %+v\n", err)
 	}
-
 }
 
 func TestCMD(t *testing.T) {
@@ -1146,7 +1142,6 @@ func TestCMD(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1176,7 +1171,6 @@ func TestEntrypoint(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1322,7 +1316,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 		}
 	}()
 
-	var path = "/testtmpfs/test.file"
+	path := "/testtmpfs/test.file"
 
 	c, err := container.Exec(ctx, []string{"ls", path})
 	if err != nil {

@@ -12,8 +12,8 @@ var _ Strategy = (*LogStrategy)(nil)
 
 // LogStrategy will wait until a given log entry shows up in the docker logs
 type LogStrategy struct {
-	// all Strategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
+	// all Strategies should have a timeout to avoid waiting infinitely
+	timeout time.Duration
 
 	// additional properties
 	Log          string
@@ -24,21 +24,27 @@ type LogStrategy struct {
 // NewLogStrategy constructs with polling interval of 100 milliseconds and startup timeout of 60 seconds by default
 func NewLogStrategy(log string) *LogStrategy {
 	return &LogStrategy{
-		startupTimeout: defaultStartupTimeout(),
-		Log:            log,
-		Occurrence:     1,
-		PollInterval:   defaultPollInterval(),
+		timeout:      defaultTimeout(),
+		Log:          log,
+		Occurrence:   1,
+		PollInterval: defaultPollInterval(),
 	}
-
 }
 
 // fluent builders for each property
 // since go has neither covariance nor generics, the return type must be the type of the concrete implementation
-// this is true for all properties, even the "shared" ones like startupTimeout
+// this is true for all properties, even the "shared" ones like timeout
 
 // WithStartupTimeout can be used to change the default startup timeout
-func (ws *LogStrategy) WithStartupTimeout(startupTimeout time.Duration) *LogStrategy {
-	ws.startupTimeout = startupTimeout
+//
+// Deprecated: use WithTimeout instead
+func (s *LogStrategy) WithStartupTimeout(timeout time.Duration) *LogStrategy {
+	return s.WithTimeout(timeout)
+}
+
+// WithTimeout can be used to change the default startup timeout
+func (ws *LogStrategy) WithTimeout(timeout time.Duration) *LogStrategy {
+	ws.timeout = timeout
 	return ws
 }
 
@@ -69,8 +75,8 @@ func ForLog(log string) *LogStrategy {
 
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	// limit context to startupTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
+	// limit context to timeout
+	ctx, cancelContext := context.WithTimeout(ctx, ws.timeout)
 	defer cancelContext()
 
 LOOP:
@@ -80,7 +86,6 @@ LOOP:
 			return ctx.Err()
 		default:
 			reader, err := target.Logs(ctx)
-
 			if err != nil {
 				time.Sleep(ws.PollInterval)
 				continue

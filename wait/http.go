@@ -18,8 +18,8 @@ import (
 var _ Strategy = (*HTTPStrategy)(nil)
 
 type HTTPStrategy struct {
-	// all Strategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
+	// all Strategies should have a timeout to avoid waiting infinitely
+	timeout time.Duration
 
 	// additional properties
 	Port              nat.Port
@@ -37,7 +37,7 @@ type HTTPStrategy struct {
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
 func NewHTTPStrategy(path string) *HTTPStrategy {
 	return &HTTPStrategy{
-		startupTimeout:    defaultStartupTimeout(),
+		timeout:           defaultTimeout(),
 		Port:              "80/tcp",
 		Path:              path,
 		StatusCodeMatcher: defaultStatusCodeMatcher,
@@ -56,11 +56,19 @@ func defaultStatusCodeMatcher(status int) bool {
 
 // fluent builders for each property
 // since go has neither covariance nor generics, the return type must be the type of the concrete implementation
-// this is true for all properties, even the "shared" ones like startupTimeout
+// this is true for all properties, even the "shared" ones like timeout
 
-func (ws *HTTPStrategy) WithStartupTimeout(startupTimeout time.Duration) *HTTPStrategy {
-	ws.startupTimeout = startupTimeout
-	return ws
+// WithStartupTimeout can be used to change the default startup timeout
+//
+// Deprecated: use WithTimeout instead
+func (s *HTTPStrategy) WithStartupTimeout(timeout time.Duration) *HTTPStrategy {
+	return s.WithTimeout(timeout)
+}
+
+// WithTimeout can be used to change the default startup timeout
+func (s *HTTPStrategy) WithTimeout(timeout time.Duration) *HTTPStrategy {
+	s.timeout = timeout
+	return s
 }
 
 func (ws *HTTPStrategy) WithPort(port nat.Port) *HTTPStrategy {
@@ -115,8 +123,8 @@ func ForHTTP(path string) *HTTPStrategy {
 
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	// limit context to startupTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
+	// limit context to timeout
+	ctx, cancelContext := context.WithTimeout(ctx, ws.timeout)
 	defer cancelContext()
 
 	ipAddress, err := target.Host(ctx)

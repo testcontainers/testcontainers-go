@@ -3,9 +3,10 @@ package testcontainers
 import (
 	"context"
 	"fmt"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"testing"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // Create a network using a provider. By default it is Docker.
@@ -60,7 +61,6 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 	net, err := GenericNetwork(ctx, GenericNetworkRequest{
 		NetworkRequest: networkRequest,
 	})
-
 	if err != nil {
 		t.Fatal("cannot create network")
 	}
@@ -82,7 +82,7 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 	env["RABBITMQ_DEFAULT_USER"] = "admin"
 	env["RABBITMQ_DEFAULT_PASS"] = "Password1"
 	hp := wait.ForListeningPort("5672/tcp")
-	hp.WithStartupTimeout(3 * time.Minute)
+	hp.WithTimeout(3 * time.Minute)
 	amqpRequest := ContainerRequest{
 		Image:        "rabbitmq:management-alpine",
 		ExposedPorts: []string{"15672/tcp", "5672/tcp"},

@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWaitHTTP_TimeoutAccessors(t *testing.T) {
-	strategy := ForHTTP("/test")
+func TestWaitHostPort_TimeoutAccessors(t *testing.T) {
+	strategy := ForListeningPort(nat.Port(8080))
 
 	strategy.timeout = time.Second * 2
 	assert.Equal(t, time.Second*2, strategy.timeout)

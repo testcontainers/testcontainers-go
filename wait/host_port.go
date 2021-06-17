@@ -18,21 +18,21 @@ var _ Strategy = (*HostPortStrategy)(nil)
 
 type HostPortStrategy struct {
 	Port nat.Port
-	// all WaitStrategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
+	// all WaitStrategies should have a timeout to avoid waiting infinitely
+	timeout time.Duration
 }
 
 // NewHostPortStrategy constructs a default host port strategy
 func NewHostPortStrategy(port nat.Port) *HostPortStrategy {
 	return &HostPortStrategy{
-		Port:           port,
-		startupTimeout: defaultStartupTimeout(),
+		Port:    port,
+		timeout: defaultTimeout(),
 	}
 }
 
 // fluent builders for each property
 // since go has neither covariance nor generics, the return type must be the type of the concrete implementation
-// this is true for all properties, even the "shared" ones like startupTimeout
+// this is true for all properties, even the "shared" ones like timeout
 
 // ForListeningPort is a helper similar to those in Wait.java
 // https://github.com/testcontainers/testcontainers-java/blob/1d85a3834bd937f80aad3a4cec249c027f31aeb4/core/src/main/java/org/testcontainers/containers/wait/strategy/Wait.java
@@ -40,15 +40,23 @@ func ForListeningPort(port nat.Port) *HostPortStrategy {
 	return NewHostPortStrategy(port)
 }
 
-func (hp *HostPortStrategy) WithStartupTimeout(startupTimeout time.Duration) *HostPortStrategy {
-	hp.startupTimeout = startupTimeout
-	return hp
+// WithStartupTimeout can be used to change the default startup timeout
+//
+// Deprecated: use WithTimeout instead
+func (s *HostPortStrategy) WithStartupTimeout(timeout time.Duration) *HostPortStrategy {
+	return s.WithTimeout(timeout)
+}
+
+// WithTimeout can be used to change the default startup timeout
+func (s *HostPortStrategy) WithTimeout(timeout time.Duration) *HostPortStrategy {
+	s.timeout = timeout
+	return s
 }
 
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	// limit context to startupTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, hp.startupTimeout)
+	// limit context to timeout
+	ctx, cancelContext := context.WithTimeout(ctx, hp.timeout)
 	defer cancelContext()
 
 	ipAddress, err := target.Host(ctx)
@@ -56,11 +64,11 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		return
 	}
 
-	var waitInterval = 100 * time.Millisecond
+	waitInterval := 100 * time.Millisecond
 
 	var port nat.Port
 	port, err = target.MappedPort(ctx, hp.Port)
-	var i = 0
+	i := 0
 
 	for port == "" {
 		i++
@@ -80,7 +88,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	portNumber := port.Int()
 	portString := strconv.Itoa(portNumber)
 
-	//external check
+	// external check
 	dialer := net.Dialer{}
 	address := net.JoinHostPort(ipAddress, portString)
 	for {
@@ -101,7 +109,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		}
 	}
 
-	//internal check
+	// internal check
 	command := buildInternalCheckCommand(hp.Port.Int())
 	for {
 		if ctx.Err() != nil {

@@ -16,7 +16,6 @@ import (
 )
 
 func Test_ContainerValidation(t *testing.T) {
-
 	type ContainerValidationTestCase struct {
 		Name             string
 		ExpectedError    error
@@ -66,7 +65,6 @@ func Test_ContainerValidation(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func Test_GetDockerfile(t *testing.T) {
@@ -247,7 +245,8 @@ func Test_BuildImageWithContexts(t *testing.T) {
 					Context:        testCase.ContextPath,
 					Dockerfile:     testCase.Dockerfile,
 				},
-				WaitingFor: wait.ForLog(testCase.ExpectedEchoOutput).WithStartupTimeout(1 * time.Minute),
+				WaitingFor: wait.ForLog(testCase.ExpectedEchoOutput).
+					WithTimeout(1 * time.Minute),
 			}
 
 			c, err := GenericContainer(ctx, GenericContainerRequest{
@@ -263,18 +262,17 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			} else {
 				c.Terminate(ctx)
 			}
-
 		})
-
 	}
 }
 
 func Test_GetLogsFromFailedContainer(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:      "alpine",
-		Cmd:        []string{"echo", "-n", "I was not expecting this"},
-		WaitingFor: wait.ForLog("I was expecting this").WithStartupTimeout(5 * time.Second),
+		Image: "alpine",
+		Cmd:   []string{"echo", "-n", "I was not expecting this"},
+		WaitingFor: wait.ForLog("I was expecting this").
+			WithTimeout(5 * time.Second),
 	}
 
 	c, err := GenericContainer(ctx, GenericContainerRequest{

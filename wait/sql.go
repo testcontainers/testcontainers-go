@@ -9,41 +9,48 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-//ForSQL constructs a new waitForSql strategy for the given driver
+// ForSQL constructs a new waitForSql strategy for the given driver
 func ForSQL(port nat.Port, driver string, url func(nat.Port) string) *waitForSql {
 	return &waitForSql{
-		Port:           port,
-		URL:            url,
-		Driver:         driver,
-		startupTimeout: defaultStartupTimeout(),
-		PollInterval:   defaultPollInterval(),
+		Port:         port,
+		URL:          url,
+		Driver:       driver,
+		timeout:      defaultTimeout(),
+		PollInterval: defaultPollInterval(),
 	}
 }
 
 type waitForSql struct {
-	URL            func(port nat.Port) string
-	Driver         string
-	Port           nat.Port
-	startupTimeout time.Duration
-	PollInterval   time.Duration
+	URL          func(port nat.Port) string
+	Driver       string
+	Port         nat.Port
+	timeout      time.Duration
+	PollInterval time.Duration
 }
 
-//Timeout sets the maximum waiting time for the strategy after which it'll give up and return an error
-func (w *waitForSql) Timeout(duration time.Duration) *waitForSql {
-	w.startupTimeout = duration
-	return w
+// Timeout sets the maximum waiting time for the strategy after which it'll give up and return an error
+//
+// Deprecated: use WithTimeout instead
+func (s *waitForSql) Timeout(timeout time.Duration) *waitForSql {
+	return s.WithTimeout(timeout)
 }
 
-//WithPollInterval can be used to override the default polling interval of 100 milliseconds
+// WithTimeout sets the maximum waiting time for the strategy after which it'll give up and return an error
+func (s *waitForSql) WithTimeout(duration time.Duration) *waitForSql {
+	s.timeout = duration
+	return s
+}
+
+// WithPollInterval can be used to override the default polling interval of 100 milliseconds
 func (w *waitForSql) WithPollInterval(pollInterval time.Duration) *waitForSql {
 	w.PollInterval = pollInterval
 	return w
 }
 
-//WaitUntilReady repeatedly tries to run "SELECT 1" query on the given port using sql and driver.
+// WaitUntilReady repeatedly tries to run "SELECT 1" query on the given port using sql and driver.
 // If the it doesn't succeed until the timeout value which defaults to 60 seconds, it will return an error
 func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	ctx, cancel := context.WithTimeout(ctx, w.startupTimeout)
+	ctx, cancel := context.WithTimeout(ctx, w.timeout)
 	defer cancel()
 
 	ticker := time.NewTicker(w.PollInterval)

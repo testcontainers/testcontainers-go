@@ -4,11 +4,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWaitHTTP_TimeoutAccessors(t *testing.T) {
-	strategy := ForHTTP("/test")
+func TestWaitSql_TimeoutAccessors(t *testing.T) {
+	strategy := ForSQL(nat.Port(8080), "", func(p nat.Port) string {
+		return p.Port()
+	})
 
 	strategy.timeout = time.Second * 2
 	assert.Equal(t, time.Second*2, strategy.timeout)
@@ -17,6 +20,6 @@ func TestWaitHTTP_TimeoutAccessors(t *testing.T) {
 	assert.Equal(t, time.Second*3, strategy.timeout)
 
 	// Deprecated
-	strategy.WithStartupTimeout(time.Second * 4)
+	strategy.Timeout(time.Second * 4)
 	assert.Equal(t, time.Second*4, strategy.timeout)
 }

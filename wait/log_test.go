@@ -10,6 +10,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/assert"
 )
 
 type noopStrategyTarget struct {
@@ -39,7 +40,8 @@ func TestWaitForLog(t *testing.T) {
 	target := noopStrategyTarget{
 		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("docker"))),
 	}
-	wg := NewLogStrategy("docker").WithStartupTimeout(100 * time.Microsecond)
+	wg := NewLogStrategy("docker").
+		WithTimeout(100 * time.Microsecond)
 	err := wg.WaitUntilReady(context.Background(), target)
 	if err != nil {
 		t.Fatal(err)
@@ -51,7 +53,7 @@ func TestWaitWithExactNumberOfOccurrences(t *testing.T) {
 		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker\n\rdocker"))),
 	}
 	wg := NewLogStrategy("docker").
-		WithStartupTimeout(100 * time.Microsecond).
+		WithTimeout(100 * time.Microsecond).
 		WithOccurrence(2)
 	err := wg.WaitUntilReady(context.Background(), target)
 	if err != nil {
@@ -64,7 +66,7 @@ func TestWaitWithExactNumberOfOccurrencesButItWillNeverHappen(t *testing.T) {
 		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker"))),
 	}
 	wg := NewLogStrategy("containerd").
-		WithStartupTimeout(100 * time.Microsecond).
+		WithTimeout(100 * time.Microsecond).
 		WithOccurrence(2)
 	err := wg.WaitUntilReady(context.Background(), target)
 	if err == nil {
@@ -77,10 +79,24 @@ func TestWaitShouldFailWithExactNumberOfOccurrences(t *testing.T) {
 		ioReaderCloser: ioutil.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker"))),
 	}
 	wg := NewLogStrategy("docker").
-		WithStartupTimeout(100 * time.Microsecond).
+		WithTimeout(100 * time.Microsecond).
 		WithOccurrence(2)
 	err := wg.WaitUntilReady(context.Background(), target)
 	if err == nil {
 		t.Fatal("expected error")
 	}
+}
+
+func TestWaitLog_TimeoutAccessors(t *testing.T) {
+	strategy := ForLog("")
+
+	strategy.timeout = time.Second * 2
+	assert.Equal(t, time.Second*2, strategy.timeout)
+
+	strategy.WithTimeout(time.Second * 3)
+	assert.Equal(t, time.Second*3, strategy.timeout)
+
+	// Deprecated
+	strategy.WithStartupTimeout(time.Second * 4)
+	assert.Equal(t, time.Second*4, strategy.timeout)
 }
