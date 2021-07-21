@@ -193,6 +193,16 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 	return err
 }
 
+// update container raw info
+func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.ContainerJSON, error) {
+	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
+	if err != nil {
+		return nil, err
+	}
+	c.raw = &inspect
+	return c.raw, nil
+}
+
 func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.ContainerJSON, error) {
 	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
 	if err != nil {
@@ -231,6 +241,15 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return inspect.Name, nil
+}
+
+// State returns container's running state
+func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
+	inspect, err := c.inspectRawContainer(ctx)
+	if err != nil {
+		return c.raw.State, err
+	}
+	return inspect.State, nil
 }
 
 // Networks gets the names of the networks the container is attached to.

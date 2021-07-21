@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 
 	"github.com/docker/docker/pkg/archive"
@@ -45,6 +46,7 @@ type Container interface {
 	StartLogProducer(context.Context) error
 	StopLogProducer() error
 	Name(context.Context) (string, error)                        // get container name
+	State(context.Context) (*types.ContainerState, error)        //returns container's running state
 	Networks(context.Context) ([]string, error)                  // get container networks
 	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string) (int, error)
