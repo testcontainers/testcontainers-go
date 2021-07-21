@@ -52,6 +52,7 @@ type DockerContainer struct {
 	terminationSignal chan bool
 	skipReaper        bool
 	consumers         []LogConsumer
+	raw               *types.ContainerJSON
 	stopProducer      chan bool
 }
 
