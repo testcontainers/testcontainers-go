@@ -39,20 +39,20 @@ func TestNginxLatestReturn(t *testing.T) {
 		Started:          true,
 	})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer nginxC.Terminate(ctx)
 	ip, err := nginxC.Host(ctx)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	port, err := nginxC.MappedPort(ctx, "80")
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
 	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+		t.Fatalf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 }
 ```
