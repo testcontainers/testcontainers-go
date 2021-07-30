@@ -10,8 +10,8 @@ var _ Strategy = (*HealthStrategy)(nil)
 
 // HealthStrategy will wait until the container becomes healthy
 type HealthStrategy struct {
-	// all Strategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
+	// all Strategies should have a timeout to avoid waiting infinitely
+	timeout time.Duration
 
 	// additional properties
 	PollInterval time.Duration
@@ -20,10 +20,9 @@ type HealthStrategy struct {
 // NewHealthStrategy constructs with polling interval of 100 milliseconds and startup timeout of 60 seconds by default
 func NewHealthStrategy() *HealthStrategy {
 	return &HealthStrategy{
-		startupTimeout: defaultStartupTimeout(),
-		PollInterval:   defaultPollInterval(),
+		timeout:      defaultTimeout(),
+		PollInterval: defaultPollInterval(),
 	}
-
 }
 
 // fluent builders for each property
@@ -31,8 +30,15 @@ func NewHealthStrategy() *HealthStrategy {
 // this is true for all properties, even the "shared" ones like startupTimeout
 
 // WithStartupTimeout can be used to change the default startup timeout
-func (ws *HealthStrategy) WithStartupTimeout(startupTimeout time.Duration) *HealthStrategy {
-	ws.startupTimeout = startupTimeout
+//
+// Deprecated: use WithTimeout instead
+func (ws *HealthStrategy) WithStartupTimeout(timeout time.Duration) *HealthStrategy {
+	return ws.WithTimeout(timeout)
+}
+
+// WithTimeout can be used to change the default startup timeout
+func (ws *HealthStrategy) WithTimeout(timeout time.Duration) *HealthStrategy {
+	ws.timeout = timeout
 	return ws
 }
 
@@ -55,7 +61,7 @@ func ForHealthCheck() *HealthStrategy {
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (ws *HealthStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
 	// limit context to exitTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
+	ctx, cancelContext := context.WithTimeout(ctx, ws.timeout)
 	defer cancelContext()
 
 	for {
