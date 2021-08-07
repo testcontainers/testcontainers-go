@@ -622,6 +622,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 		if shouldPullImage {
 			pullOpt := types.ImagePullOptions{}
+
+			if len(req.ImagePlatform) != 0 {
+				pullOpt.Platform = req.ImagePlatform
+			}
 			if req.RegistryCred != "" {
 				pullOpt.RegistryAuth = req.RegistryCred
 			}

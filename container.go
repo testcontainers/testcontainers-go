@@ -96,7 +96,8 @@ type ContainerRequest struct {
 	ReaperImage     string              // alternative reaper image
 	AutoRemove      bool                // if set to true, the container will be removed from the host when stopped
 	NetworkMode     container.NetworkMode
-	AlwaysPullImage bool // Always pull image
+	AlwaysPullImage bool   // Always pull image
+	ImagePlatform   string // specify a different platform for the image
 }
 
 // ProviderType is an enum for the possible providers
