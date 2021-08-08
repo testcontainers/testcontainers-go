@@ -30,6 +30,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 // Implement interfaces
@@ -598,6 +600,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	var tag string
+	customPlatform := req.ImagePlatform
+	var customOS, customArch string
 	if req.ShouldBuildImage() {
 		tag, err = p.BuildImage(ctx, &req)
 		if err != nil {
@@ -605,12 +609,17 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	} else {
 		tag = req.Image
+
+		if len(customPlatform) != 0 {
+			customOS = strings.Split(customPlatform, "/")[0]
+			customArch = strings.Split(customPlatform, "/")[1]
+		}
 		var shouldPullImage bool
 
 		if req.AlwaysPullImage {
 			shouldPullImage = true // If requested always attempt to pull image
 		} else {
-			_, _, err = p.client.ImageInspectWithRaw(ctx, tag)
+			image, _, err := p.client.ImageInspectWithRaw(ctx, tag)
 			if err != nil {
 				if client.IsErrNotFound(err) {
 					shouldPullImage = true
@@ -618,18 +627,19 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 					return nil, err
 				}
 			}
+			if image.Architecture != customArch || image.Os != customOS {
+				shouldPullImage = true
+			}
 		}
-
 		if shouldPullImage {
 			pullOpt := types.ImagePullOptions{}
 
-			if len(req.ImagePlatform) != 0 {
-				pullOpt.Platform = req.ImagePlatform
+			if len(customPlatform) != 0 {
+				pullOpt.Platform = customPlatform
 			}
 			if req.RegistryCred != "" {
 				pullOpt.RegistryAuth = req.RegistryCred
 			}
-
 			if err := p.attemptToPullImage(ctx, tag, pullOpt); err != nil {
 				return nil, err
 			}
@@ -696,7 +706,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		EndpointsConfig: endpointConfigs,
 	}
 
-	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, nil, req.Name)
+	platSpec := specs.Platform{}
+	if len(customPlatform) != 0 {
+		platSpec.Architecture = customArch
+		platSpec.OS = customOS
+	}
+
+	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, &platSpec, req.Name)
 	if err != nil {
 		return nil, err
 	}

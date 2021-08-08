@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/docker/docker/errdefs"
 
@@ -1380,6 +1381,26 @@ func TestContainerNonExistentImage(t *testing.T) {
 			t.Fatalf("err should be a ctx cancelled error %v", err)
 		}
 	})
+}
+
+func TestContainerCustomPlatformImage(t *testing.T) {
+	t.Run("Use a custom image platform", func(t *testing.T) {
+		c, err := GenericContainer(context.Background(), GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				Image:         "redis:latest",
+				SkipReaper:    true,
+				ImagePlatform: "windows/arm12",
+			},
+			Started: false,
+		})
+		if c != nil {
+			defer c.Terminate(context.Background())
+		}
+		if err == nil {
+			t.Fatalf("Expected non-nil error")
+		}
+	})
+
 }
 
 func TestContainerWithCustomHostname(t *testing.T) {
