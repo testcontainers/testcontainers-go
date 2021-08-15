@@ -600,7 +600,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	var tag string
-	customPlatform := req.ImagePlatform
+
 	var customOS, customArch string
 	if req.ShouldBuildImage() {
 		tag, err = p.BuildImage(ctx, &req)
@@ -610,9 +610,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	} else {
 		tag = req.Image
 
-		if len(customPlatform) != 0 {
-			customOS = strings.Split(customPlatform, "/")[0]
-			customArch = strings.Split(customPlatform, "/")[1]
+		if len(req.ImagePlatform) != 0 {
+			customOS = strings.Split(req.ImagePlatform, "/")[0]
+			customArch = strings.Split(req.ImagePlatform, "/")[1]
 		}
 		var shouldPullImage bool
 
@@ -634,8 +634,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if shouldPullImage {
 			pullOpt := types.ImagePullOptions{}
 
-			if len(customPlatform) != 0 {
-				pullOpt.Platform = customPlatform
+			if len(req.ImagePlatform) != 0 {
+				pullOpt.Platform = req.ImagePlatform
 			}
 			if req.RegistryCred != "" {
 				pullOpt.RegistryAuth = req.RegistryCred
@@ -706,13 +706,18 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		EndpointsConfig: endpointConfigs,
 	}
 
-	platSpec := specs.Platform{}
-	if len(customPlatform) != 0 {
-		platSpec.Architecture = customArch
-		platSpec.OS = customOS
+	var platSpec *specs.Platform
+	if len(req.ImagePlatform) != 0 {
+		platSpec = &specs.Platform{
+			Architecture: customArch,
+			OS:           customOS,
+		}
+	} else {
+		platSpec = nil
 	}
 
-	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, &platSpec, req.Name)
+	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, platSpec, req.Name)
+
 	if err != nil {
 		return nil, err
 	}
