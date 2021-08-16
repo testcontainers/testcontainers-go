@@ -35,7 +35,7 @@ tests requires running, there is another one called `ryuk`. We refer to it as
 `Reaper` as well in this library.
 
 Based on container labels it removes resources created from testcontainers that
-are running for more than 10 minutes.
+are running for more than 10 seconds.
 
 !!!tip
 
