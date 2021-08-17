@@ -29,6 +29,7 @@ const (
 type DockerCompose interface {
 	Down() ExecError
 	Invoke() ExecError
+	WaitForService(string, wait.Strategy) DockerCompose
 	WithCommand([]string) DockerCompose
 	WithEnv(map[string]string) DockerCompose
 	WithExposedService(string, int, wait.Strategy) DockerCompose
@@ -149,6 +150,13 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 // Invoke invokes the docker compose
 func (dc *LocalDockerCompose) Invoke() ExecError {
 	return executeCompose(dc, dc.Cmd)
+}
+
+// WaitForService sets the strategy for the service that is to be waited on
+func (dc *LocalDockerCompose) WaitForService(service string, strategy wait.Strategy) DockerCompose {
+	dc.waitStrategySupplied = true
+	dc.WaitStrategyMap[waitService{service: service}] = strategy
+	return dc
 }
 
 // WithCommand assigns the command
