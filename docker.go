@@ -334,6 +334,30 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error) {
 	return exitCode, nil
 }
 
+func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, filePath string) ([]byte, error) {
+	r, _, err := c.provider.client.CopyFromContainer(ctx, c.ID, filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+
+	tr := tar.NewReader(r)
+	for {
+		_, err := tr.Next()
+		if err == io.EOF {
+			// end of tar archive
+			return []byte{}, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(tr)
+
+		return buf.Bytes(), nil
+	}
+}
+
 func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
 	fileContent, err := ioutil.ReadFile(hostFilePath)
 	if err != nil {
