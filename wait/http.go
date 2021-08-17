@@ -1,11 +1,13 @@
 package wait
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -184,12 +186,21 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	address := net.JoinHostPort(ipAddress, strconv.Itoa(port.Int()))
 	endpoint := fmt.Sprintf("%s://%s%s", proto, address, ws.Path)
 
+	// cache the body into a byte-slice so that it can be iterated over multiple times
+	var body []byte
+	if ws.Body != nil {
+		body, err = ioutil.ReadAll(ws.Body)
+		if err != nil {
+			return
+		}
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(ws.PollInterval):
-			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint, ws.Body)
+			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint, bytes.NewReader(body))
 			if err != nil {
 				return err
 			}

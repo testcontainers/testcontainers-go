@@ -84,7 +84,7 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 	hp := wait.ForListeningPort("5672/tcp")
 	hp.WithStartupTimeout(3 * time.Minute)
 	amqpRequest := ContainerRequest{
-		Image:        "rabbitmq:management-alpine",
+		Image:        "rabbitmq:3.8.19-management-alpine",
 		ExposedPorts: []string{"15672/tcp", "5672/tcp"},
 		Env:          env,
 		AutoRemove:   true,
