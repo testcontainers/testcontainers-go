@@ -1384,20 +1384,25 @@ func TestContainerNonExistentImage(t *testing.T) {
 }
 
 func TestContainerCustomPlatformImage(t *testing.T) {
-	t.Run("Use a custom image platform", func(t *testing.T) {
+	t.Run("Use a non-existent custom image platform", func(t *testing.T) {
+		nonExistentPlatform := "windows/arm12"
 		c, err := GenericContainer(context.Background(), GenericContainerRequest{
 			ContainerRequest: ContainerRequest{
 				Image:         "redis:latest",
 				SkipReaper:    true,
-				ImagePlatform: "windows/arm12",
+				ImagePlatform: nonExistentPlatform,
 			},
-			Started: false,
+			Started: true,
 		})
 		if c != nil {
 			defer c.Terminate(context.Background())
 		}
 		if err == nil {
-			t.Fatalf("Expected non-nil error")
+			t.Fatalf("Expected an error containing failed to create container: Error response from daemon")
+		}
+		expectedErrorMsgSubstring := "image with reference redis:latest was found but does not match the specified platform"
+		if !strings.Contains(err.Error(), expectedErrorMsgSubstring) {
+			t.Fatalf("Expected error to contain :%s, Got: %s", expectedErrorMsgSubstring, err.Error())
 		}
 	})
 
