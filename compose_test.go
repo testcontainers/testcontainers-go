@@ -153,6 +153,31 @@ func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 	assert.Contains(t, compose.Services, "mysql")
 }
 
+func TestDockerComposeWithWaitForService(t *testing.T) {
+	path := "./testresources/docker-compose-simple.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithEnv(map[string]string{
+			"bar": "BAR",
+		}).
+		WaitForService("nginx_1", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		Invoke()
+	checkIfError(t, err)
+
+	assert.Equal(t, 1, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+}
+
 func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
