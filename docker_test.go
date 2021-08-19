@@ -1400,12 +1400,10 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		if err == nil {
 			t.Fatalf("Expected an error containing failed to create container: Error response from daemon")
 		}
-		expectedErrorMsgSubstring := "image with reference redis:latest was found but does not match the specified platform"
-		if !strings.Contains(err.Error(), expectedErrorMsgSubstring) {
-			t.Fatalf("Expected error to contain :%s, Got: %s", expectedErrorMsgSubstring, err.Error())
+		if err == nil {
+			t.Fatalf("Expected non-nil error with a non-existent platform: %s", nonExistentPlatform)
 		}
 	})
-
 }
 
 func TestContainerWithCustomHostname(t *testing.T) {
