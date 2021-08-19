@@ -1398,9 +1398,6 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 			defer c.Terminate(context.Background())
 		}
 		if err == nil {
-			t.Fatalf("Expected an error containing failed to create container: Error response from daemon")
-		}
-		if err == nil {
 			t.Fatalf("Expected non-nil error with a non-existent platform: %s", nonExistentPlatform)
 		}
 	})
