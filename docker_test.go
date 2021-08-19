@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gotest.tools/v3/env"
 	"gotest.tools/v3/fs"
 
@@ -1491,6 +1492,63 @@ func TestContainerNonExistentImage(t *testing.T) {
 		if !errors.Is(err, ctx.Err()) {
 			t.Fatalf("err should be a ctx cancelled error %v", err)
 		}
+	})
+}
+
+func TestContainerCustomPlatformImage(t *testing.T) {
+	t.Run("error with a non-existent platform", func(t *testing.T) {
+		nonExistentPlatform := "windows/arm12"
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+		c, err := GenericContainer(ctx, GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				Image:         "redis:latest",
+				SkipReaper:    true,
+				ImagePlatform: nonExistentPlatform,
+			},
+			Started: false,
+		})
+
+		t.Cleanup(func() {
+			if c != nil {
+				c.Terminate(ctx)
+			}
+		})
+
+		assert.Error(t, err)
+	})
+
+	t.Run("specific platform should be propagated", func(t *testing.T) {
+		ctx := context.Background()
+
+		c, err := GenericContainer(ctx, GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				Image:         "mysql:5.7",
+				SkipReaper:    true,
+				ImagePlatform: "linux/amd64",
+			},
+			Started: false,
+		})
+
+		t.Cleanup(func() {
+			if c != nil {
+				c.Terminate(ctx)
+			}
+		})
+
+		assert.NoError(t, err)
+
+		dockerCli, err := client.NewEnvClient()
+		require.NoError(t, err)
+
+		dockerCli.NegotiateAPIVersion(ctx)
+		ctr, err := dockerCli.ContainerInspect(ctx, c.GetContainerID())
+		assert.NoError(t, err)
+
+		img, _, err := dockerCli.ImageInspectWithRaw(ctx, ctr.Image)
+		assert.NoError(t, err)
+		assert.Equal(t, "linux", img.Os)
+		assert.Equal(t, "amd64", img.Architecture)
 	})
 }
 
