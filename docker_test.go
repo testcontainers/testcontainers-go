@@ -1513,8 +1513,12 @@ func TestGetGatewayIP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := provider.GetGatewayIP(context.Background()); err != nil {
+	ip, err := provider.GetGatewayIP(context.Background())
+	if err != nil {
 		t.Fatal(err)
+	}
+	if ip == "" {
+		t.Fatal("could not get gateway ip")
 	}
 }
 
