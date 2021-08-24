@@ -1506,6 +1506,22 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[1]])
 }
 
+func TestGetGatewayIP(t *testing.T) {
+	// When using docker-compose with DinD mode, and using host port or http wait strategy
+	// It's need to invoke GetGatewayIP for get the host
+	provider, err := NewDockerProvider()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ip, err := provider.GetGatewayIP(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ip == "" {
+		t.Fatal("could not get gateway ip")
+	}
+}
+
 func randomString() string {
 	rand.Seed(time.Now().UnixNano())
 	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
