@@ -1482,11 +1482,51 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
 	}
 
-	fileContentFromContainer, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
+	reader, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fileContentFromContainer, err := ioutil.ReadAll(reader)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, fileContent, fileContentFromContainer)
+}
+
+func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
+	ctx := context.Background()
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:        "nginx:1.17.6",
+			ExposedPorts: []string{"80/tcp"},
+			WaitingFor:   wait.ForListeningPort("80/tcp"),
+		},
+		Started: true,
+	})
+	defer nginxC.Terminate(ctx)
+
+	copiedFileName := "hello_copy.sh"
+	nginxC.CopyFileToContainer(ctx, "./testresources/empty.sh", "/"+copiedFileName, 700)
+	c, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 0 {
+		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
+	}
+
+	reader, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fileContentFromContainer, err := ioutil.ReadAll(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Empty(t, fileContentFromContainer)
 }
 
 func TestContainerWithReaperNetwork(t *testing.T) {

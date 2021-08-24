@@ -334,28 +334,39 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error) {
 	return exitCode, nil
 }
 
-func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, filePath string) ([]byte, error) {
+type FileFromContainer struct {
+	underlying *io.ReadCloser
+	tarreader *tar.Reader
+}
+
+func (fc *FileFromContainer) Read(b []byte) (int, error) {
+	return (*fc.tarreader).Read(b)
+}
+
+func (fc *FileFromContainer) Close() error {
+	return (*fc.underlying).Close()
+}
+
+func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error) {
 	r, _, err := c.provider.client.CopyFromContainer(ctx, c.ID, filePath)
 	if err != nil {
 		return nil, err
 	}
-	defer r.Close()
+	tarReader := tar.NewReader(r)
 
-	tr := tar.NewReader(r)
-	for {
-		_, err := tr.Next()
-		if err == io.EOF {
-			// end of tar archive
-			return []byte{}, nil
-		}
-		if err != nil {
-			return nil, err
-		}
-		buf := new(bytes.Buffer)
-		buf.ReadFrom(tr)
-
-		return buf.Bytes(), nil
+	//if we got here we have exactly one file in the TAR-stream
+	//so we advance the index by one so the next call to Read will start reading it
+	_, err = tarReader.Next()
+	if err != nil {
+		return nil, err
 	}
+
+	ret := &FileFromContainer{
+		underlying: &r,
+		tarreader:  tarReader,
+	}
+
+	return ret, nil
 }
 
 func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
