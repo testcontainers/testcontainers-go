@@ -414,7 +414,9 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 				logType := h[0]
 				if logType > 2 {
-					panic(fmt.Sprintf("received invalid log type: %d", logType))
+					fmt.Fprintf(os.Stderr, fmt.Sprintf("received invalid log type: %d", logType))
+					// sometimes docker returns logType = 3 which is an undocumented log type, so treat it as stdout
+					logType = 1
 				}
 
 				// a map of the log type --> int representation in the header, notice the first is blank, this is stdin, but the go docker client doesn't allow following that in logs
