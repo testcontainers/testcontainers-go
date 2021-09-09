@@ -336,7 +336,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error) {
 
 type FileFromContainer struct {
 	underlying *io.ReadCloser
-	tarreader *tar.Reader
+	tarreader  *tar.Reader
 }
 
 func (fc *FileFromContainer) Read(b []byte) (int, error) {
