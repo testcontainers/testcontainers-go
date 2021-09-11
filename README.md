@@ -82,5 +82,5 @@ Cleaning up your environment after test completion should be accomplished by def
 
 ## Documentation
 
-More information about TestContainers-Go can be found in [./docs](./docs), which rendered at
+More information about TestContainers-Go can be found in [./docs](./docs), which is rendered at
 [golang.testcontainers.org](https://golang.testcontainers.org).
