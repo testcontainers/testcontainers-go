@@ -1,4 +1,4 @@
-# CockroachDB Container Example
+# CockroachDB
 
 ```go
 package main

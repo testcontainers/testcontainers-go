@@ -1,4 +1,4 @@
-# Redis Container Example
+# Redis
 
 ```go
 package main

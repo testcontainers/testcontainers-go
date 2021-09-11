@@ -1,4 +1,4 @@
-# NGINX Container Example
+# NGINX
 
 ```go
 package main
