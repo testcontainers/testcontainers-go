@@ -9,12 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-
-	"github.com/go-redis/redis/v8"
 )
 
 type redisContainer struct {
@@ -69,8 +68,8 @@ func TestIntegrationSetGet(t *testing.T) {
 	defer redisContainer.Terminate(ctx)
 
 	// You will likely want to wrap your Redis package of choice in an
-    // interface to aid in unit testing and limit lock-in throughtout your
-    // codebase but that's out of scope for this example
+	// interface to aid in unit testing and limit lock-in throughtout your
+	// codebase but that's out of scope for this example
 	options, err := redis.ParseURL(redisContainer.URI)
 	if err != nil {
 		t.Fatal(err)
