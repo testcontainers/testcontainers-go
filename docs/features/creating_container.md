@@ -1,54 +1,83 @@
 # How to create a container
 
-When I have to describe TestContainer I say: "it is a wrapper around the docker
-daemon designed for tests."
-
-This libraries demands all the complexity of creating and managing container to
-Docker to stay focused on usability in a testing environment.
-
-You can use this library to run everything you can run with docker:
-
-* NoSQL databases or other data stores (e.g. redis, elasticsearch, mongo)
-* Web servers/proxies (e.g. nginx, apache)
-* Log services (e.g. logstash, kibana)
+Testcontainers are a wrapper around the Docker daemon designed for tests. Anything you can run in Docker, you can spin
+up with Testcontainers and integrate into your tests:
+* NoSQL databases or other data stores (e.g. Redis, ElasticSearch, MongoDB)
+* Web servers/proxies (e.g. NGINX, Apache)
+* Log services (e.g. Logstash, Kibana)
 * Other services developed by your team/organization which are already dockerized
 
 ## GenericContainer
 
-`testcontainers.GenericContainer` identifies the ability to spin up a single
-container, you can look at it as a different way to create a `docker run`
-command.
+`testcontainers.GenericContainer` defines the container that should be run, similar to the `docker run` command.
+
+The following test creates an NGINX container and validates that it returns 200 for the status code:
 
 ```go
-func TestNginxLatestReturn(t *testing.T) {
-	ctx := context.Background()
+package main
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"testing"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+)
+
+type nginxContainer struct {
+	testcontainers.Container
+	URI string
+}
+
+func setupNginx(ctx context.Context) (*nginxContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
-	nginxC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
 	if err != nil {
-		t.Error(err)
+		return nil, err
 	}
+
+	ip, err := container.Host(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	mappedPort, err := container.MappedPort(ctx, "80")
+	if err != nil {
+		return nil, err
+	}
+
+	uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+
+	return &nginxContainer{Container: container, URI: uri}, nil
+}
+
+func TestIntegrationNginxLatestReturn(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	nginxC, err := setupNginx(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Clean up the container after the test is complete
 	defer nginxC.Terminate(ctx)
-	ip, err := nginxC.Host(ctx)
-	if err != nil {
-		t.Error(err)
-	}
-	port, err := nginxC.MappedPort(ctx, "80")
-	if err != nil {
-		t.Error(err)
-	}
-	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
+
+	resp, err := http.Get(nginxC.URI)
 	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+		t.Fatalf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 }
 ```
-
-This test creates an Nginx container and it validates that it returns a 200 as
-StatusCode.
