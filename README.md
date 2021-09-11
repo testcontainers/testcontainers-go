@@ -22,11 +22,11 @@ import (
 )
 
 type nginxContainer struct {
-	testcontainer.Container
+	testcontainers.Container
 	URI string
 }
 
-func setupNginx(ctx context.Context) {
+func setupNginx(ctx context.Context) (*nginxContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
@@ -55,11 +55,15 @@ func setupNginx(ctx context.Context) {
 	return &nginxContainer{Container: container, URI: uri}, nil
 }
 
-func TestNginxLatestReturn(t *testing.T) {
+func TestIntegrationNginxLatestReturn(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	ctx := context.Background()
 
 	nginxC, err := setupNginx(ctx)
-	if (err != nil) {
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -74,7 +78,7 @@ func TestNginxLatestReturn(t *testing.T) {
 ```
 
 Cleaning up your environment after test completion should be accomplished by deferring the container termination, e.g
-`defer nginxC.Terminate(ctx)`. Ryuk (Reaper) is also enabled by default to help clean up.
+`defer nginxC.Terminate(ctx)`. Reaper (Ryuk) is also enabled by default to help clean up.
 
 ## Documentation
 
