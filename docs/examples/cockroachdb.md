@@ -17,8 +17,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Task represents a unit of work to complete. We're going to be using this in our example as a way to organize data
-// that is being manipulated in the database.
+// Task represents a unit of work to complete. We're going to be using this in
+// our example as a way to organize data that is being manipulated in
+// the database.
 type task struct {
 	ID          string     `json:"id"`
 	Description string     `json:"description"`
@@ -63,7 +64,7 @@ func setupCockroachDB(ctx context.Context) (*cockroachDBContainer, error) {
 }
 
 func initCockroachDB(ctx context.Context, db sql.DB) error {
-	// Actual SQL for initializing the database should probably live elsewhere; this is just an example
+	// Actual SQL for initializing the database should probably live elsewhere
 	const query = `CREATE DATABASE projectmanagement;
 		CREATE TABLE projectmanagement.task(
 			id uuid primary key not null,
