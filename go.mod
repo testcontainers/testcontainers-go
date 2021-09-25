@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/Microsoft/hcsshim v0.8.16 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/confluentinc/confluent-kafka-go v1.7.0 // indirect
 	github.com/docker/docker v20.10.8+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/go-redis/redis v6.15.9+incompatible
@@ -16,6 +17,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/sys v0.0.0-20210324051608-47abb6519492
+	gopkg.in/confluentinc/confluent-kafka-go.v1 v1.7.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 )
