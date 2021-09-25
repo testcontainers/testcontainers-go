@@ -10,6 +10,7 @@ modules](https://blog.golang.org/using-go-modules).
 * [Canned postgres #98](https://github.com/testcontainers/testcontainers-go/pull/98)
 * [Canned minio #105](https://github.com/testcontainers/testcontainers-go/pull/105)
 * [Canned MongoDB #102](https://github.com/testcontainers/testcontainers-go/pull/102)
+* [Canned Kafka #356](https://github.com/testcontainers/testcontainers-go/pull/356)
 
 Submodules in Go are not easy to maintain today and I want to keep
 testcontainers dependencies under control and the project light. If we start
