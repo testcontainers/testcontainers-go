@@ -16,6 +16,9 @@ Inline documentation and docs where the code live is crucial for us. Go has a
 nice support for them and we use Examples as well. Check it out
 [pkg.go.dev/github.com/testcontainers/testcontainers-go](https://pkg.go.dev/github.com/testcontainers/testcontainers-go?tab=doc).
 
+## Who is using Testcontainers Go?
+* [Elastic](https://www.elastic.co) - Testing of the APM Server, and E2E testing for Beats
+
 ## License
 
 See [LICENSE](https://github.com/testcontainers/testcontainers-go/blob/master/LICENSE).
