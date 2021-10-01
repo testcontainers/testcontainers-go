@@ -188,6 +188,9 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 	})
 
 	if err == nil {
+		if err := c.provider.client.Close(); err != nil {
+			return err
+		}
 		c.sessionID = uuid.UUID{}
 	}
 
