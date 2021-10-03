@@ -28,7 +28,7 @@ on test completion.
 [https://github.com/testcontainers/moby-ryuk](Ryuk) (also referred to as
 `Reaper` in this package) removes containers/networks/volumes created by
 Testcontainers-Go after a specified delay. It is a project developed by the
-TestContainers organization and is used across the board for for many of the
+TestContainers organization and is used across the board for many of the
 different language implementations.
 
 When you run one test, you will see an additional container called `ryuk`

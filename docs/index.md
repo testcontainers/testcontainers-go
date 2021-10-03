@@ -23,5 +23,5 @@ See [LICENSE](https://github.com/testcontainers/testcontainers-go/blob/master/LI
 
 ## Copyright
 
-Copyright (c) 2018-2021 Gianluca Arbezzano and other authors. Check out our
+Copyright (c) 2018-present Gianluca Arbezzano and other authors. Check out our
 [lovely contributors](https://github.com/testcontainers/testcontainers-go/graphs/contributors).
