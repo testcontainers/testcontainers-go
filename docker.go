@@ -675,6 +675,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		Labels:       req.Labels,
 		Cmd:          req.Cmd,
 		Hostname:     req.Hostname,
+		User:         req.User,
 	}
 
 	// prepare mounts
