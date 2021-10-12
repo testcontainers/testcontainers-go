@@ -177,6 +177,7 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 
 // Terminate is used to kill the container. It is usually triggered by as defer function.
 func (c *DockerContainer) Terminate(ctx context.Context) error {
+	c.StopLogProducer()
 	select {
 	// close reaper if it was created
 	case c.terminationSignal <- true:
@@ -226,13 +227,7 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 // FollowOutput adds a LogConsumer to be sent logs from the container's
 // STDOUT and STDERR
 func (c *DockerContainer) FollowOutput(consumer LogConsumer) {
-	if c.consumers == nil {
-		c.consumers = []LogConsumer{
-			consumer,
-		}
-	} else {
-		c.consumers = append(c.consumers, consumer)
-	}
+	c.consumers = append(c.consumers, consumer)
 }
 
 // Name gets the name of the container.
@@ -398,7 +393,13 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 // StartLogProducer will start a concurrent process that will continuously read logs
 // from the container and will send them to each added LogConsumer
 func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
-	go func() {
+	if c.stopProducer != nil {
+		return errors.New("log producer already started")
+	}
+
+	c.stopProducer = make(chan bool)
+
+	go func(stop <-chan bool) {
 		since := ""
 		// if the socket is closed we will make additional logs request with updated Since timestamp
 	BEGIN:
@@ -421,7 +422,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 
 		for {
 			select {
-			case <-c.stopProducer:
+			case <-stop:
 				err := r.Close()
 				if err != nil {
 					// we can't close the read closer, this should never happen
@@ -470,7 +471,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 			}
 		}
-	}()
+	}(c.stopProducer)
 
 	return nil
 }
@@ -478,7 +479,10 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 // StopLogProducer will stop the concurrent process that is reading logs
 // and sending them to each added LogConsumer
 func (c *DockerContainer) StopLogProducer() error {
-	c.stopProducer <- true
+	if c.stopProducer != nil {
+		c.stopProducer <- true
+		c.stopProducer = nil
+	}
 	return nil
 }
 
@@ -758,7 +762,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		provider:          p,
 		terminationSignal: termSignal,
 		skipReaper:        req.SkipReaper,
-		stopProducer:      make(chan bool),
+		stopProducer:      nil,
 	}
 
 	return c, nil
