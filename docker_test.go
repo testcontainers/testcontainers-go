@@ -5,16 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/docker/docker/errdefs"
 
@@ -1578,6 +1580,65 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	assert.Equal(t, 2, len(cnt.NetworkSettings.Networks))
 	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[0]])
 	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[1]])
+}
+
+func TestContainerWithUserID(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:      "alpine:latest",
+		User:       "60125",
+		Cmd:        []string{"sh", "-c", "id -u"},
+		WaitingFor: wait.ForExit(),
+	}
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer container.Terminate(ctx)
+
+	r, err := container.Logs(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual := regexp.MustCompile(`\D+`).ReplaceAllString(string(b), "")
+	assert.Equal(t, req.User, actual)
+}
+
+func TestContainerWithNoUserID(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:      "alpine:latest",
+		Cmd:        []string{"sh", "-c", "id -u"},
+		WaitingFor: wait.ForExit(),
+	}
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer container.Terminate(ctx)
+
+	r, err := container.Logs(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual := regexp.MustCompile(`\D+`).ReplaceAllString(string(b), "")
+	assert.Equal(t, "0", actual)
 }
 
 func TestGetGatewayIP(t *testing.T) {

@@ -93,6 +93,7 @@ type ContainerRequest struct {
 	Privileged      bool                // for starting privileged container
 	Networks        []string            // for specifying network names
 	NetworkAliases  map[string][]string // for specifying network aliases
+	User            string              // for specifying uid:gid
 	SkipReaper      bool                // indicates whether we skip setting up a reaper for this
 	ReaperImage     string              // alternative reaper image
 	AutoRemove      bool                // if set to true, the container will be removed from the host when stopped
