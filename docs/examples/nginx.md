@@ -1,17 +1,4 @@
-# How to create a container
-
-Testcontainers are a wrapper around the Docker daemon designed for tests. Anything you can run in Docker, you can spin
-up with Testcontainers and integrate into your tests:
-* NoSQL databases or other data stores (e.g. Redis, ElasticSearch, MongoDB)
-* Web servers/proxies (e.g. NGINX, Apache)
-* Log services (e.g. Logstash, Kibana)
-* Other services developed by your team/organization which are already dockerized
-
-## GenericContainer
-
-`testcontainers.GenericContainer` defines the container that should be run, similar to the `docker run` command.
-
-The following test creates an NGINX container and validates that it returns 200 for the status code:
+# NGINX
 
 ```go
 package main

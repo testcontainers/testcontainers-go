@@ -1,8 +1,8 @@
 # Garbage Collector
 
-Usually, one test creates at least one container. At the end it means a lot of
-containers running. We need to have a way to keep the CI servers reliable
-removing unused containers.
+Typically, an integration test creates one or more containers. This can mean a
+lot of containers running by the time everything is done. We need to have a way
+to clean up after ourselves to keep our machines running smoothly.
 
 Containers can be unused because:
 
@@ -13,8 +13,9 @@ Containers can be unused because:
 ## Terminate function
 
 As we saw previously there are at least two ways to remove unused containers.
-The first one is to use the `Terminate(context.Conext)` function available when a
-container is created. You can call it in your test or you use `defer` .
+The primary method is to use the `Terminate(context.Conext)` function that is
+available when a container is created. Use `defer` to ensure that it is called
+on test completion.
 
 !!!tip
 
@@ -24,22 +25,21 @@ container is created. You can call it in your test or you use `defer` .
 
 ## Ryuk
 
-[https://github.com/testcontainers/moby-ryuk](ryuk) helps you to remove
-containers/networks/volumes by given filter after specified delay.
+[https://github.com/testcontainers/moby-ryuk](Ryuk) (also referred to as
+`Reaper` in this package) removes containers/networks/volumes created by
+Testcontainers-Go after a specified delay. It is a project developed by the
+TestContainers organization and is used across the board for many of the
+different language implementations.
 
-It is a project developed by TestContainers, and it is used across the board for
-Java, Go and any more.
-
-When you run one test, you will see that there is not only the containers your
-tests requires running, there is another one called `ryuk`. We refer to it as
-`Reaper` as well in this library.
-
-Based on container labels it removes resources created from testcontainers that
-are running for more than 10 seconds.
+When you run one test, you will see an additional container called `ryuk`
+alongside all of the containers that were specified in your test. It relies on
+container labels to determine which resources were created by the package
+to determine the entities that are safe to remove. If a container is running
+for more than 10 seconds, it will be killed.
 
 !!!tip
 
     This feature can be disabled when creating a container
 
-In this way even if you do not call Terminate, something will keep your
-environment clean. It will also clean itself when there is nothing left to do.
+Even if you do not call Terminate, Ryuk ensures that the environment will be
+kept clean and even cleans itself when there is nothing left to do.

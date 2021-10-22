@@ -4,19 +4,21 @@
 
 ## About
 
-TestContainers is popular in Java, but there are other languages as well. This
-is the Go implementation.
+Testcontainers-Go is a Go package that makes it simple to create and clean up container-based dependencies for
+automated integration/smoke tests. The clean, easy-to-use API enables developers to programmatically define containers
+that should be run as part of a test and clean up those resources when the test is done.
 
-The project is opensource and you can have a look at the code on
+This project is opensource and you can have a look at the code on
 [GitHub](https://github.com/testcontainers/testcontainers-go).
 
 ## GoDoc
 
-Inline documentation and docs where the code live is crucial for us. Go has a
-nice support for them and we use Examples as well. Check it out
-[pkg.go.dev/github.com/testcontainers/testcontainers-go](https://pkg.go.dev/github.com/testcontainers/testcontainers-go?tab=doc).
+Inline documentation and docs where the code live is crucial for us. Go has nice support for them and we provide
+examples as well. Check it out at
+[pkg.go.dev/github.com/testcontainers/testcontainers-go](https://pkg.go.dev/github.com/testcontainers/testcontainers-go).
 
 ## Who is using Testcontainers Go?
+
 * [Elastic](https://www.elastic.co) - Testing of the APM Server, and E2E testing for Beats
 
 ## License
@@ -25,6 +27,5 @@ See [LICENSE](https://github.com/testcontainers/testcontainers-go/blob/master/LI
 
 ## Copyright
 
-Copyright (c) 2018-2020 Gianluca Arbezzano and other authors.
-Checkout our [lovely
-contributors](https://github.com/testcontainers/testcontainers-go/graphs/contributors).
+Copyright (c) 2018-present Gianluca Arbezzano and other authors. Check out our
+[lovely contributors](https://github.com/testcontainers/testcontainers-go/graphs/contributors).
