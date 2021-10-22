@@ -3,6 +3,8 @@ package testcontainers
 import (
 	"context"
 	"io"
+	"log"
+	"os"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -13,6 +15,9 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+// Logger is the default log instance
+var Logger = log.New(os.Stderr, "", log.LstdFlags)
 
 // DeprecatedContainer shows methods that were supported before, but are now deprecated
 // Deprecated: Use Container

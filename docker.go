@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -157,7 +156,7 @@ func (c *DockerContainer) SessionID() string {
 // Start will start an already created container
 func (c *DockerContainer) Start(ctx context.Context) error {
 	shortID := c.ID[:12]
-	log.Printf("Starting container id: %s image: %s", shortID, c.Image)
+	Logger.Printf("Starting container id: %s image: %s", shortID, c.Image)
 
 	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
@@ -165,12 +164,12 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 
 	// if a Wait Strategy has been specified, wait before returning
 	if c.WaitingFor != nil {
-		log.Printf("Waiting for container id %s image: %s", shortID, c.Image)
+		Logger.Printf("Waiting for container id %s image: %s", shortID, c.Image)
 		if err := c.WaitingFor.WaitUntilReady(ctx, c); err != nil {
 			return err
 		}
 	}
-	log.Printf("Container is ready id: %s image: %s", shortID, c.Image)
+	Logger.Printf("Container is ready id: %s image: %s", shortID, c.Image)
 
 	return nil
 }
@@ -778,7 +777,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 			if _, ok := err.(errdefs.ErrNotFound); ok {
 				return backoff.Permanent(err)
 			}
-			log.Printf("Failed to pull image: %s, will retry", err)
+			Logger.Printf("Failed to pull image: %s, will retry", err)
 			return err
 		}
 		return nil
