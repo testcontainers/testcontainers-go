@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/client"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"gotest.tools/assert"
 )
@@ -180,4 +181,104 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	}, g.LogTypes)
 	c.Terminate(ctx)
 
+}
+
+func TestContainerLogWithErrClosed(t *testing.T) {
+	// First spin up a docker-in-docker container, then spin up an inner container within that dind container
+	// Logs are being read from the inner container via the dind container's tcp port, which can be briefly
+	// closed to test behaviour in connection-closed situations.
+	ctx := context.Background()
+
+	dind, err := GenericContainer(ctx, GenericContainerRequest{
+		Started: true,
+		ContainerRequest: ContainerRequest{
+			Image:        "docker:dind",
+			ExposedPorts: []string{"2375/tcp"},
+			Env:          map[string]string{"DOCKER_TLS_CERTDIR": ""},
+			WaitingFor:   wait.ForListeningPort("2375/tcp"),
+			Privileged:   true,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dind.Terminate(ctx)
+
+	remoteDocker, err := dind.Endpoint(ctx, "tcp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client, err := client.NewClientWithOpts(client.WithHost(remoteDocker))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	client.NegotiateAPIVersion(ctx)
+	provider := &DockerProvider{client: client}
+
+	nginx, err := provider.CreateContainer(ctx, ContainerRequest{Image: "nginx", ExposedPorts: []string{"80/tcp"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := nginx.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer nginx.Terminate(ctx)
+
+	port, err := nginx.MappedPort(ctx, "80/tcp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var consumer TestLogConsumer
+	if err = nginx.StartLogProducer(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer nginx.StopLogProducer()
+	nginx.FollowOutput(&consumer)
+
+	// Gather the initial container logs
+	time.Sleep(time.Second * 1)
+	existingLogs := len(consumer.Msgs)
+
+	hitNginx := func() {
+		i, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + port.Port()})
+		if err != nil || i > 0 {
+			t.Fatalf("Can't make request to nginx container from dind container")
+		}
+	}
+
+	hitNginx()
+	time.Sleep(time.Second * 1)
+	if len(consumer.Msgs)-existingLogs != 1 {
+		t.Fatalf("logConsumer should have 1 new log message, instead has: %v", consumer.Msgs[existingLogs:])
+	}
+	existingLogs = len(consumer.Msgs)
+
+	iptableArgs := []string{
+		"INPUT", "-p", "tcp", "--dport", "2375",
+		"-j", "REJECT", "--reject-with", "tcp-reset",
+	}
+	// Simulate a transient closed connection to the docker daemon
+	i, err := dind.Exec(ctx, append([]string{"iptables", "-A"}, iptableArgs...))
+	if err != nil || i > 0 {
+		t.Fatalf("Failed to close connection to dind daemon")
+	}
+	i, err = dind.Exec(ctx, append([]string{"iptables", "-D"}, iptableArgs...))
+	if err != nil || i > 0 {
+		t.Fatalf("Failed to re-open connection to dind daemon")
+	}
+	time.Sleep(time.Second * 3)
+
+	hitNginx()
+	hitNginx()
+	time.Sleep(time.Second * 1)
+	if len(consumer.Msgs)-existingLogs != 2 {
+		t.Fatalf(
+			"LogConsumer should have 2 new log messages after detecting closed connection and"+
+				" re-requesting logs. Instead has:\n%s", consumer.Msgs[existingLogs:],
+		)
+	}
 }
