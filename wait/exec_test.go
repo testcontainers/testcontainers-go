@@ -72,7 +72,17 @@ func (st mockExecTarget) State(_ context.Context) (*types.ContainerState, error)
 
 func TestExecStrategyWaitUntilReady(t *testing.T) {
 	target := mockExecTarget{}
-	wg := wait.NewExecStrategy([]string{"true"})
+	wg := wait.NewExecStrategy([]string{"true"}).
+		WithStartupTimeout(30 * time.Second)
+	err := wg.WaitUntilReady(context.Background(), target)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestExecStrategyWaitUntilReadyForExec(t *testing.T) {
+	target := mockExecTarget{}
+	wg := wait.ForExec([]string{"true"})
 	err := wg.WaitUntilReady(context.Background(), target)
 	if err != nil {
 		t.Fatal(err)
