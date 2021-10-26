@@ -408,3 +408,22 @@ func executeAndGetOutput(command string, args []string) (string, ExecError) {
 
 	return string(out), ExecError{Error: nil}
 }
+
+func TestLocalDockerCompose_fullContainerName(t *testing.T) {
+	expectedNames := []string{
+		"project_service",
+		"project_service",
+		"project-service",
+		"project-service",
+	}
+	for version, expectedName := range expectedNames {
+		t.Run(fmt.Sprintf("version %d", version), func(t *testing.T) {
+			c := LocalDockerCompose{ComposeVersion: version, Identifier: "project"}
+			fullName := c.fullContainerName(waitService{"service", 0})
+			if fullName != expectedName {
+				t.Errorf("expected %s but got %s", expectedName, fullName)
+			}
+		},
+		)
+	}
+}
