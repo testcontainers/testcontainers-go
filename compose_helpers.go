@@ -3,7 +3,12 @@ package testcontainers
 import (
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strconv"
+)
+
+var (
+	majorVersionRe = regexp.MustCompile(`\d+`)
 )
 
 func fetchComposeMajorVersion(executable string) (int, error) {
@@ -12,6 +17,10 @@ func fetchComposeMajorVersion(executable string) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("%w", err)
 	}
+	return parseComposeVersion(output)
+}
+
+func parseComposeVersion(output []byte) (int, error) {
 	maybeVersion := majorVersionRe.Find(output)
 	majorVersion, err := strconv.Atoi(string(maybeVersion))
 	if err != nil {

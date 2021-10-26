@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -24,10 +23,6 @@ import (
 const (
 	envProjectName = "COMPOSE_PROJECT_NAME"
 	envComposeFile = "COMPOSE_FILE"
-)
-
-var (
-	majorVersionRe = regexp.MustCompile(`\d+`)
 )
 
 // DockerCompose defines the contract for running Docker Compose
