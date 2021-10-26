@@ -211,7 +211,11 @@ func (dc *LocalDockerCompose) validate() error {
 		dc.Services = c.Services
 	}
 
-	dc.composeVersion, _ = fetchComposeMajorVersion(dc.Executable)
+	composeVersion, err := fetchComposeMajorVersion(dc.Executable)
+	dc.composeVersion = composeVersion // Would be zero in case of error
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
 
 	return nil
 }
