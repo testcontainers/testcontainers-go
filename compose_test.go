@@ -418,7 +418,7 @@ func TestLocalDockerCompose_fullContainerName(t *testing.T) {
 	}
 	for version, expectedName := range expectedNames {
 		t.Run(fmt.Sprintf("version %d", version), func(t *testing.T) {
-			c := LocalDockerCompose{ComposeVersion: version, Identifier: "project"}
+			c := LocalDockerCompose{composeVersion: version, Identifier: "project"}
 			fullName := c.fullContainerName(waitService{"service", 0})
 			if fullName != expectedName {
 				t.Errorf("expected %s but got %s", expectedName, fullName)

@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -51,7 +50,7 @@ type waitService struct {
 type LocalDockerCompose struct {
 	Executable           string
 	ComposeFilePaths     []string
-	ComposeVersion       int
+	composeVersion       int
 	absComposeFilePaths  []string
 	Identifier           string
 	Cmd                  []string
@@ -85,7 +84,6 @@ func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCo
 	}
 
 	dc.validate()
-	dc.fetchComposeMajorVersion()
 
 	dc.Identifier = strings.ToLower(identifier)
 	dc.waitStrategySupplied = false
@@ -154,7 +152,7 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 
 func (dc *LocalDockerCompose) fullContainerName(k waitService) string {
 	separator := "_"
-	if dc.ComposeVersion >= 2 {
+	if dc.composeVersion >= 2 {
 		separator = "-"
 	}
 	// TODO: if the compose file includes a container_name, this won't work,
@@ -218,21 +216,8 @@ func (dc *LocalDockerCompose) validate() error {
 		dc.Services = c.Services
 	}
 
-	return nil
-}
+	dc.composeVersion, _ = fetchComposeMajorVersion(dc.Executable)
 
-func (dc *LocalDockerCompose) fetchComposeMajorVersion() error {
-	cmd := exec.Command(dc.Executable, "version", "--short")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-	maybeVersion := majorVersionRe.Find(output)
-	majorVersion, err := strconv.Atoi(string(maybeVersion))
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-	dc.ComposeVersion = majorVersion
 	return nil
 }
 
