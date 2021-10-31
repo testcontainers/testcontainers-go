@@ -11,7 +11,9 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -516,7 +518,15 @@ var _ ContainerProvider = (*DockerProvider)(nil)
 
 // NewDockerProvider creates a Docker provider with the EnvClient
 func NewDockerProvider() (*DockerProvider, error) {
-	client, err := client.NewEnvClient()
+	content := readTCPropsFile()
+	host := grepDockerhost(content)
+
+	opts := []client.Opt{client.FromEnv}
+	if host != "" {
+		opts = append(opts, client.WithHost(host))
+	}
+
+	client, err := client.NewClientWithOpts(opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -525,6 +535,30 @@ func NewDockerProvider() (*DockerProvider, error) {
 		client: client,
 	}
 	return p, nil
+}
+
+// readTCPropsFile reads from testcontainers properties file, if it exists
+func readTCPropsFile() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	tcProp := path.Join(home, ".testcontainers.properties")
+	content, err := os.ReadFile(tcProp)
+	if err != nil {
+		return ""
+	}
+	return string(content)
+}
+
+func grepDockerhost(content string) string {
+	regex := regexp.MustCompile(`(?m)^[^#]?\s*docker\.host\s*=\s*(\S*)\s*$`)
+	matches := regex.FindStringSubmatch(content)
+	if len(matches) < 2 {
+		return ""
+	}
+
+	return matches[1]
 }
 
 // BuildImage will build and image from context and Dockerfile, then return the tag

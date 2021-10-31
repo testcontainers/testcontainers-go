@@ -1187,6 +1187,69 @@ func TestEntrypoint(t *testing.T) {
 	defer c.Terminate(ctx)
 }
 
+func TestGrepDockerhost(t *testing.T) {
+	tests := []struct {
+		content  string
+		expected string
+	}{
+		{
+			"docker.host = tcp://127.0.0.1:33293",
+			"tcp://127.0.0.1:33293",
+		},
+		{
+			"docker.host = tcp://127.0.0.1:33293",
+			"tcp://127.0.0.1:33293",
+		},
+		{
+			`docker.host = tcp://127.0.0.1:33293
+docker.host = tcp://127.0.0.1:4711
+`,
+			"tcp://127.0.0.1:33293",
+		},
+		{`docker.host = tcp://127.0.0.1:33293
+docker.host = tcp://127.0.0.1:4711
+docker.host = tcp://127.0.0.1:1234
+`,
+			"tcp://127.0.0.1:33293",
+		},
+		{
+			"",
+			"",
+		},
+		{
+			`foo = bar
+docker.host = tcp://127.0.0.1:1234
+		`,
+			"tcp://127.0.0.1:1234",
+		},
+		{
+			"docker.host=tcp://127.0.0.1:33293",
+			"tcp://127.0.0.1:33293",
+		},
+		{
+			`#docker.host=tcp://127.0.0.1:33293`,
+			"",
+		},
+		{
+			`#docker.host = tcp://127.0.0.1:33293
+docker.host = tcp://127.0.0.1:4711
+docker.host = tcp://127.0.0.1:1234`,
+			"tcp://127.0.0.1:4711",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.expected, func(t *testing.T) {
+			host := grepDockerhost(tt.content)
+
+			if host != tt.expected {
+				t.Errorf("'%s' is not equal '%s'", host, tt.expected)
+			}
+		})
+	}
+
+}
+
 func ExampleDockerProvider_CreateContainer() {
 	ctx := context.Background()
 	req := ContainerRequest{
