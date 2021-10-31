@@ -526,13 +526,27 @@ func NewDockerProvider() (*DockerProvider, error) {
 		opts = append(opts, client.WithHost(host))
 	}
 
-	client, err := client.NewClientWithOpts(opts...)
+	c, err := client.NewClientWithOpts(opts...)
 	if err != nil {
 		return nil, err
 	}
-	client.NegotiateAPIVersion(context.Background())
+
+	_, err = c.Ping(context.TODO())
+	if err != nil {
+		if host != "" {
+			// fallback to environment
+			c, err = client.NewClientWithOpts(client.FromEnv)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+
+	c.NegotiateAPIVersion(context.Background())
 	p := &DockerProvider{
-		client: client,
+		client: c,
 	}
 	return p, nil
 }
