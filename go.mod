@@ -3,6 +3,7 @@ module github.com/testcontainers/testcontainers-go
 go 1.13
 
 require (
+	github.com/Flaque/filet v0.0.0-20201012163910-45f684403088 // indirect
 	github.com/Microsoft/hcsshim v0.8.16 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/docker/docker v20.10.9+incompatible

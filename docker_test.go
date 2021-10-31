@@ -10,12 +10,14 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/Flaque/filet"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/docker/docker/errdefs"
@@ -1248,6 +1250,42 @@ docker.host = tcp://127.0.0.1:1234`,
 		})
 	}
 
+}
+
+func TestReadTCPropsFile(t *testing.T) {
+	t.Run("HOME does not contain TC props file", func(t *testing.T) {
+		oldHome := os.Getenv("HOME")
+		tmpDir := filet.TmpDir(t, "")
+		os.Setenv("HOME", tmpDir)
+		defer func() {
+			os.Setenv("HOME", oldHome)
+			filet.CleanUp(t)
+		}()
+
+		content := readTCPropsFile()
+
+		assert.Empty(t, content, "TC props file should not exist")
+	})
+
+	t.Run("HOME contains TC properties file", func(t *testing.T) {
+		oldHome := os.Getenv("HOME")
+		tmpDir := filet.TmpDir(t, "")
+		os.Setenv("HOME", tmpDir)
+
+		properties := `#docker.host = tcp://127.0.0.1:33293
+		docker.host = tcp://127.0.0.1:4711
+		docker.host = tcp://127.0.0.1:1234`
+		_ = filet.File(t, path.Join(tmpDir, ".testcontainers.properties"), properties)
+
+		defer func() {
+			os.Setenv("HOME", oldHome)
+			filet.CleanUp(t)
+		}()
+
+		content := readTCPropsFile()
+
+		assert.Equal(t, content, properties, "TC props file should exist with content")
+	})
 }
 
 func ExampleDockerProvider_CreateContainer() {
