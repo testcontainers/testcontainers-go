@@ -558,7 +558,7 @@ func readTCPropsFile() string {
 		return ""
 	}
 	tcProp := path.Join(home, ".testcontainers.properties")
-	content, err := os.ReadFile(tcProp)
+	content, err := ioutil.ReadFile(tcProp)
 	if err != nil {
 		return ""
 	}
