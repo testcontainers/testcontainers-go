@@ -1189,69 +1189,6 @@ func TestEntrypoint(t *testing.T) {
 	defer c.Terminate(ctx)
 }
 
-func TestGrepDockerhost(t *testing.T) {
-	tests := []struct {
-		content  string
-		expected string
-	}{
-		{
-			"docker.host = tcp://127.0.0.1:33293",
-			"tcp://127.0.0.1:33293",
-		},
-		{
-			"docker.host = tcp://127.0.0.1:33293",
-			"tcp://127.0.0.1:33293",
-		},
-		{
-			`docker.host = tcp://127.0.0.1:33293
-docker.host = tcp://127.0.0.1:4711
-`,
-			"tcp://127.0.0.1:33293",
-		},
-		{`docker.host = tcp://127.0.0.1:33293
-docker.host = tcp://127.0.0.1:4711
-docker.host = tcp://127.0.0.1:1234
-`,
-			"tcp://127.0.0.1:33293",
-		},
-		{
-			"",
-			"",
-		},
-		{
-			`foo = bar
-docker.host = tcp://127.0.0.1:1234
-		`,
-			"tcp://127.0.0.1:1234",
-		},
-		{
-			"docker.host=tcp://127.0.0.1:33293",
-			"tcp://127.0.0.1:33293",
-		},
-		{
-			`#docker.host=tcp://127.0.0.1:33293`,
-			"",
-		},
-		{
-			`#docker.host = tcp://127.0.0.1:33293
-docker.host = tcp://127.0.0.1:4711
-docker.host = tcp://127.0.0.1:1234`,
-			"tcp://127.0.0.1:4711",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.expected, func(t *testing.T) {
-			host := grepDockerhost(tt.content)
-
-			if host != tt.expected {
-				t.Errorf("'%s' is not equal '%s'", host, tt.expected)
-			}
-		})
-	}
-
-}
-
 func TestReadTCPropsFile(t *testing.T) {
 	t.Run("HOME does not contain TC props file", func(t *testing.T) {
 		oldHome := os.Getenv("HOME")
@@ -1262,29 +1199,102 @@ func TestReadTCPropsFile(t *testing.T) {
 			filet.CleanUp(t)
 		}()
 
-		content := readTCPropsFile()
+		config := readTCPropsFile()
 
-		assert.Empty(t, content, "TC props file should not exist")
+		assert.Empty(t, config, "TC props file should not exist")
 	})
 
 	t.Run("HOME contains TC properties file", func(t *testing.T) {
 		oldHome := os.Getenv("HOME")
-		tmpDir := filet.TmpDir(t, "")
-		os.Setenv("HOME", tmpDir)
 
-		properties := `#docker.host = tcp://127.0.0.1:33293
-		docker.host = tcp://127.0.0.1:4711
-		docker.host = tcp://127.0.0.1:1234`
-		_ = filet.File(t, path.Join(tmpDir, ".testcontainers.properties"), properties)
+		tests := []struct {
+			content           string
+			expectedHost      string
+			expectedTLSVerify int
+			expectedCertPath  string
+		}{
+			{
+				"docker.host = tcp://127.0.0.1:33293",
+				"tcp://127.0.0.1:33293",
+				0,
+				"",
+			},
+			{
+				"docker.host = tcp://127.0.0.1:33293",
+				"tcp://127.0.0.1:33293",
+				0,
+				"",
+			},
+			{
+				`docker.host = tcp://127.0.0.1:33293
+	docker.host = tcp://127.0.0.1:4711
+	`,
+				"tcp://127.0.0.1:4711",
+				0,
+				"",
+			},
+			{`docker.host = tcp://127.0.0.1:33293
+	docker.host = tcp://127.0.0.1:4711
+	docker.host = tcp://127.0.0.1:1234
+	docker.tls.verify = 1
+	`,
+				"tcp://127.0.0.1:1234",
+				1,
+				"",
+			},
+			{
+				"",
+				"",
+				0,
+				"",
+			},
+			{
+				`foo = bar
+	docker.host = tcp://127.0.0.1:1234
+			`,
+				"tcp://127.0.0.1:1234",
+				0,
+				"",
+			},
+			{
+				"docker.host=tcp://127.0.0.1:33293",
+				"tcp://127.0.0.1:33293",
+				0,
+				"",
+			},
+			{
+				`#docker.host=tcp://127.0.0.1:33293`,
+				"",
+				0,
+				"",
+			},
+			{
+				`#docker.host = tcp://127.0.0.1:33293
+	docker.host = tcp://127.0.0.1:4711
+	docker.host = tcp://127.0.0.1:1234
+	docker.cert.path=/tmp/certs`,
+				"tcp://127.0.0.1:1234",
+				0,
+				"/tmp/certs",
+			},
+		}
+		for _, tt := range tests {
+			tmpDir := filet.TmpDir(t, "")
+			os.Setenv("HOME", tmpDir)
 
-		defer func() {
-			os.Setenv("HOME", oldHome)
-			filet.CleanUp(t)
-		}()
+			defer func() {
+				os.Setenv("HOME", oldHome)
+				filet.CleanUp(t)
+			}()
 
-		content := readTCPropsFile()
+			_ = filet.File(t, path.Join(tmpDir, ".testcontainers.properties"), tt.content)
 
-		assert.Equal(t, content, properties, "TC props file should exist with content")
+			config := readTCPropsFile()
+
+			assert.Equal(t, tt.expectedHost, config.Host, "Hosts do not match")
+			assert.Equal(t, tt.expectedTLSVerify, config.TLSVerify, "TLS verifies do not match")
+			assert.Equal(t, tt.expectedCertPath, config.CertPath, "Cert paths do not match")
+		}
 	})
 }
 

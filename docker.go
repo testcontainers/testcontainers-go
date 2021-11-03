@@ -13,7 +13,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -27,6 +26,7 @@ import (
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
+	"github.com/magiconair/properties"
 	"github.com/moby/term"
 	"github.com/pkg/errors"
 
@@ -516,10 +516,17 @@ type DockerProvider struct {
 
 var _ ContainerProvider = (*DockerProvider)(nil)
 
+// or through Decode
+type TestContainersConfig struct {
+	Host      string `properties:"docker.host"`
+	TLSVerify int    `properties:"docker.tls.verify,default=0"`
+	CertPath  string `properties:"docker.cert.path,default="`
+}
+
 // NewDockerProvider creates a Docker provider with the EnvClient
 func NewDockerProvider() (*DockerProvider, error) {
-	content := readTCPropsFile()
-	host := grepDockerhost(content)
+	tcConfig := readTCPropsFile()
+	host := tcConfig.Host
 
 	opts := []client.Opt{client.FromEnv}
 	if host != "" {
@@ -552,27 +559,26 @@ func NewDockerProvider() (*DockerProvider, error) {
 }
 
 // readTCPropsFile reads from testcontainers properties file, if it exists
-func readTCPropsFile() string {
+func readTCPropsFile() TestContainersConfig {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return ""
+		return TestContainersConfig{}
 	}
+
 	tcProp := path.Join(home, ".testcontainers.properties")
-	content, err := ioutil.ReadFile(tcProp)
+	// init from a file
+	properties, err := properties.LoadFile(tcProp, properties.UTF8)
 	if err != nil {
-		return ""
-	}
-	return string(content)
-}
-
-func grepDockerhost(content string) string {
-	regex := regexp.MustCompile(`(?m)^[^#]?\s*docker\.host\s*=\s*(\S*)\s*$`)
-	matches := regex.FindStringSubmatch(content)
-	if len(matches) < 2 {
-		return ""
+		return TestContainersConfig{}
 	}
 
-	return matches[1]
+	var cfg TestContainersConfig
+	if err := properties.Decode(&cfg); err != nil {
+		fmt.Printf("invalid testcontainers properties file: %v", err)
+		return TestContainersConfig{}
+	}
+
+	return cfg
 }
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
