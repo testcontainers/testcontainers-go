@@ -549,13 +549,9 @@ func NewDockerProvider() (*DockerProvider, error) {
 
 	_, err = c.Ping(context.TODO())
 	if err != nil {
-		if host != "" {
-			// fallback to environment
-			c, err = client.NewClientWithOpts(client.FromEnv)
-			if err != nil {
-				return nil, err
-			}
-		} else {
+		// fallback to environment
+		c, err = client.NewClientWithOpts(client.FromEnv)
+		if err != nil {
 			return nil, err
 		}
 	}
