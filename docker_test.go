@@ -1190,6 +1190,18 @@ func TestEntrypoint(t *testing.T) {
 }
 
 func TestReadTCPropsFile(t *testing.T) {
+	t.Run("HOME is not set", func(t *testing.T) {
+		oldHome := os.Getenv("HOME")
+		os.Unsetenv("HOME")
+		defer func() {
+			os.Setenv("HOME", oldHome)
+		}()
+
+		config := readTCPropsFile()
+
+		assert.Empty(t, config, "TC props file should not exist")
+	})
+
 	t.Run("HOME does not contain TC props file", func(t *testing.T) {
 		oldHome := os.Getenv("HOME")
 		tmpDir := filet.TmpDir(t, "")
