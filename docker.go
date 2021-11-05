@@ -579,7 +579,7 @@ func readTCPropsFile() TestContainersConfig {
 
 	var cfg TestContainersConfig
 	if err := properties.Decode(&cfg); err != nil {
-		fmt.Printf("invalid testcontainers properties file: %v\n", err)
+		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
 		return TestContainersConfig{}
 	}
 
