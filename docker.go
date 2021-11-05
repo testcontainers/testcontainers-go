@@ -518,7 +518,7 @@ var _ ContainerProvider = (*DockerProvider)(nil)
 
 // or through Decode
 type TestContainersConfig struct {
-	Host      string `properties:"docker.host"`
+	Host      string `properties:"docker.host,default="`
 	TLSVerify int    `properties:"docker.tls.verify,default=0"`
 	CertPath  string `properties:"docker.cert.path,default="`
 }
