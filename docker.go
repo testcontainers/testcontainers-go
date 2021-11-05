@@ -531,15 +531,15 @@ func NewDockerProvider() (*DockerProvider, error) {
 	opts := []client.Opt{client.FromEnv}
 	if host != "" {
 		opts = append(opts, client.WithHost(host))
-	}
 
-	// for further informacion, read https://docs.docker.com/engine/security/protect-access/
-	if tcConfig.TLSVerify == 1 {
-		cacertPath := path.Join(tcConfig.CertPath, "ca.pem")
-		certPath := path.Join(tcConfig.CertPath, "cert.pem")
-		keyPath := path.Join(tcConfig.CertPath, "key.pem")
+		// for further informacion, read https://docs.docker.com/engine/security/protect-access/
+		if tcConfig.TLSVerify == 1 {
+			cacertPath := path.Join(tcConfig.CertPath, "ca.pem")
+			certPath := path.Join(tcConfig.CertPath, "cert.pem")
+			keyPath := path.Join(tcConfig.CertPath, "key.pem")
 
-		opts = append(opts, client.WithTLSClientConfig(cacertPath, certPath, keyPath))
+			opts = append(opts, client.WithTLSClientConfig(cacertPath, certPath, keyPath))
+		}
 	}
 
 	c, err := client.NewClientWithOpts(opts...)
