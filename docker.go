@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
+	"github.com/magiconair/properties"
 	"github.com/moby/term"
 	"github.com/pkg/errors"
 
@@ -514,17 +516,74 @@ type DockerProvider struct {
 
 var _ ContainerProvider = (*DockerProvider)(nil)
 
+// or through Decode
+type TestContainersConfig struct {
+	Host      string `properties:"docker.host,default="`
+	TLSVerify int    `properties:"docker.tls.verify,default=0"`
+	CertPath  string `properties:"docker.cert.path,default="`
+}
+
 // NewDockerProvider creates a Docker provider with the EnvClient
 func NewDockerProvider() (*DockerProvider, error) {
-	client, err := client.NewEnvClient()
+	tcConfig := readTCPropsFile()
+	host := tcConfig.Host
+
+	opts := []client.Opt{client.FromEnv}
+	if host != "" {
+		opts = append(opts, client.WithHost(host))
+
+		// for further informacion, read https://docs.docker.com/engine/security/protect-access/
+		if tcConfig.TLSVerify == 1 {
+			cacertPath := path.Join(tcConfig.CertPath, "ca.pem")
+			certPath := path.Join(tcConfig.CertPath, "cert.pem")
+			keyPath := path.Join(tcConfig.CertPath, "key.pem")
+
+			opts = append(opts, client.WithTLSClientConfig(cacertPath, certPath, keyPath))
+		}
+	}
+
+	c, err := client.NewClientWithOpts(opts...)
 	if err != nil {
 		return nil, err
 	}
-	client.NegotiateAPIVersion(context.Background())
+
+	_, err = c.Ping(context.TODO())
+	if err != nil {
+		// fallback to environment
+		c, err = client.NewClientWithOpts(client.FromEnv)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	c.NegotiateAPIVersion(context.Background())
 	p := &DockerProvider{
-		client: client,
+		client: c,
 	}
 	return p, nil
+}
+
+// readTCPropsFile reads from testcontainers properties file, if it exists
+func readTCPropsFile() TestContainersConfig {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return TestContainersConfig{}
+	}
+
+	tcProp := path.Join(home, ".testcontainers.properties")
+	// init from a file
+	properties, err := properties.LoadFile(tcProp, properties.UTF8)
+	if err != nil {
+		return TestContainersConfig{}
+	}
+
+	var cfg TestContainersConfig
+	if err := properties.Decode(&cfg); err != nil {
+		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
+		return TestContainersConfig{}
+	}
+
+	return cfg
 }
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
