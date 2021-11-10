@@ -19,7 +19,7 @@ const (
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
 	TestcontainerLabelIsReaper  = TestcontainerLabel + ".reaper"
 
-	ReaperDefaultImage = "quay.io/testcontainers/ryuk:0.2.3"
+	ReaperDefaultImage = "testcontainers/ryuk:0.3.3"
 )
 
 var reaper *Reaper // We would like to create reaper only once
