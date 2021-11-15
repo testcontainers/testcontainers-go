@@ -51,3 +51,10 @@ if err != nil {
 return nil
 ```
 
+If your compose stack creates volumes you may need to remove them with the `--volumes` option to prevent dangling volumes accumulating on test runners.
+
+```go
+execError := compose.
+	WithCommand([]string{"down", "--volumes"}).
+	Invoke()
+```
