@@ -88,7 +88,7 @@ func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCo
 
 // Down executes docker-compose down
 func (dc *LocalDockerCompose) Down() ExecError {
-	return executeCompose(dc, []string{"down", "--remove-orphans"})
+	return executeCompose(dc, []string{"down", "--remove-orphans", "--volumes"})
 }
 
 func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {

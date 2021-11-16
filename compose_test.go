@@ -368,6 +368,34 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 	assertContainerEnvironmentVariables(t, containerNameNginx, present, absent)
 }
 
+func TestLocalDockerComposeWithVolume(t *testing.T) {
+	path := "./testresources/docker-compose-volume.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+		assertVolumeDoesNotExist(t, fmt.Sprintf("%s_mydata", identifier))
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		Invoke()
+	checkIfError(t, err)
+}
+
+func assertVolumeDoesNotExist(t *testing.T, volume string) {
+	args := []string{"volume", "inspect", volume}
+
+	output, _ := executeAndGetOutput("docker", args)
+	if !strings.Contains(output, "No such volume") {
+		t.Fatalf("Expected volume %q to not exist", volume)
+	}
+}
+
 func assertContainerEnvironmentVariables(t *testing.T, containerName string, present map[string]string, absent map[string]string) {
 	args := []string{"exec", containerName, "env"}
 
@@ -403,7 +431,7 @@ func executeAndGetOutput(command string, args []string) (string, ExecError) {
 	cmd := exec.Command(command, args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", ExecError{Error: err}
+		return string(out), ExecError{Error: err}
 	}
 
 	return string(out), ExecError{Error: nil}
