@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -1421,6 +1422,58 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+	}()
+}
+
+func TestContainerCreationWithReadonlyBindAndVolume(t *testing.T) {
+	absPath, err := filepath.Abs("./testresources/")
+	require.NoError(t, err)
+	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cnl()
+	// Create a Docker client.
+	dockerCli, err := client.NewClientWithOpts(client.FromEnv)
+	require.NoError(t, err)
+	dockerCli.NegotiateAPIVersion(ctx)
+	// Create the volume.
+	vol, err := dockerCli.VolumeCreate(ctx, volume.VolumeCreateBody{
+		Driver: "local",
+	})
+	require.NoError(t, err)
+	volumeName := vol.Name
+	defer func() {
+		ctx, cnl := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cnl()
+		err := dockerCli.VolumeRemove(ctx, volumeName, true)
+		require.NoError(t, err)
+	}()
+	// Create the container that writes into the mounted volume.
+	bashC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "bash",
+			BindMounts: []Mount{{
+				Source:   absPath,
+				Target:   "/bind",
+				ReadOnly: true,
+			}},
+			VolumeMounts: []Mount{{
+				Source:   volumeName,
+				Target:   "/volume",
+				ReadOnly: true,
+			}},
+			Cmd: []string{"touch", "/bind/aFile", "&&", "touch", "/volume/anotherFile"},
+			WaitingFor: wait.ForAll(
+				wait.ForLog("/bind/aFile: Read-only file system"),
+				wait.ForLog("/volume/anotherFile: Read-only file system"),
+			),
+		},
+		Started: true,
+	})
+	require.NoError(t, err)
+	defer func() {
+		ctx, cnl := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cnl()
+		err := bashC.Terminate(ctx)
+		require.NoError(t, err)
 	}()
 }
 

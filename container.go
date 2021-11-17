@@ -88,8 +88,8 @@ type ContainerRequest struct {
 	ExposedPorts    []string // allow specifying protocol info
 	Cmd             []string
 	Labels          map[string]string
-	BindMounts      map[string]string
-	VolumeMounts    map[string]string
+	BindMounts      []Mount
+	VolumeMounts    []Mount
 	Tmpfs           map[string]string
 	RegistryCred    string
 	WaitingFor      wait.Strategy
@@ -104,6 +104,15 @@ type ContainerRequest struct {
 	AutoRemove      bool                // if set to true, the container will be removed from the host when stopped
 	NetworkMode     container.NetworkMode
 	AlwaysPullImage bool // Always pull image
+}
+
+// Mount represents a bind or volume mount.
+type Mount struct {
+	// Source should be a volume name if desired mount is volume and host path if it is bind.
+	Source string
+	// Target specifies a path where the Source will be mounted at inside the container
+	Target   string
+	ReadOnly bool
 }
 
 // ProviderType is an enum for the possible providers

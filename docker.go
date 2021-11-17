@@ -742,7 +742,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	// prepare mounts
-	mounts := []mount.Mount{}
+	mounts := make([]mount.Mount, 0, len(req.BindMounts)+len(req.VolumeMounts))
 	for innerPath, hostPath := range req.BindMounts {
 		mounts = append(mounts, mount.Mount{
 			Type:   mount.TypeBind,
@@ -752,9 +752,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 	for innerPath, volumeName := range req.VolumeMounts {
 		mounts = append(mounts, mount.Mount{
-			Type:   mount.TypeVolume,
-			Source: volumeName,
-			Target: innerPath,
+			Type:     mount.TypeVolume,
+			Source:   volume.Source,
+			Target:   volume.Target,
+			ReadOnly: volume.ReadOnly,
 		})
 	}
 
