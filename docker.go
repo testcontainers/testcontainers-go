@@ -744,19 +744,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// prepare mounts
 	mounts := make([]mount.Mount, 0, len(req.BindMounts)+len(req.VolumeMounts))
 	for innerPath, hostPath := range req.BindMounts {
-		mounts = append(mounts, mount.Mount{
-			Type:   mount.TypeBind,
-			Source: hostPath,
-			Target: innerPath,
-		})
+		mounts = append(mounts, createMount(hostPath, innerPath, mount.TypeBind))
 	}
 	for innerPath, volumeName := range req.VolumeMounts {
-		mounts = append(mounts, mount.Mount{
-			Type:     mount.TypeVolume,
-			Source:   volume.Source,
-			Target:   volume.Target,
-			ReadOnly: volume.ReadOnly,
-		})
+		mounts = append(mounts, createMount(volumeName, innerPath, mount.TypeVolume))
 	}
 
 	hostConfig := &container.HostConfig{
@@ -1079,4 +1070,21 @@ func getDefaultNetwork(ctx context.Context, cli *client.Client) (string, error) 
 	}
 
 	return reaperNetwork, nil
+}
+
+// createMount prepares a new mount. If target ends with ":ro" that part will be truncated and mount will be readonly.
+func createMount(source string, target string, mountType mount.Type) mount.Mount {
+	readOnly := false
+	if strings.HasSuffix(target, ":ro") {
+		readOnly = true
+		target = target[:len(target)-3]
+	} else if strings.HasSuffix(target, ":rw") {
+		target = target[:len(target)-3]
+	}
+	return mount.Mount{
+		Type:     mountType,
+		Source:   source,
+		Target:   target,
+		ReadOnly: readOnly,
+	}
 }

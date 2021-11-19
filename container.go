@@ -82,14 +82,20 @@ type FromDockerfile struct {
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
 	FromDockerfile
-	Image           string
-	Entrypoint      []string
-	Env             map[string]string
-	ExposedPorts    []string // allow specifying protocol info
-	Cmd             []string
-	Labels          map[string]string
-	BindMounts      []Mount
-	VolumeMounts    []Mount
+	Image        string
+	Entrypoint   []string
+	Env          map[string]string
+	ExposedPorts []string // allow specifying protocol info
+	Cmd          []string
+	Labels       map[string]string
+	// BindMounts specifies a mount where key is dir in container and value is host dir.
+	// If key ends with :ro directory will be mounted as ReadOnly.
+	// If key ends with :rw directory will be mounted as ReadWrite. It's also the default mode.
+	BindMounts map[string]string
+	// VolumeMounts specifies a mount where key is dir in container and value is the name of the volume.
+	// If key ends with :ro directory will be mounted as ReadOnly.
+	// If key ends with :rw directory will be mounted as ReadWrite. It's also the default mode.
+	VolumeMounts    map[string]string
 	Tmpfs           map[string]string
 	RegistryCred    string
 	WaitingFor      wait.Strategy
@@ -104,15 +110,6 @@ type ContainerRequest struct {
 	AutoRemove      bool                // if set to true, the container will be removed from the host when stopped
 	NetworkMode     container.NetworkMode
 	AlwaysPullImage bool // Always pull image
-}
-
-// Mount represents a bind or volume mount.
-type Mount struct {
-	// Source should be a volume name if desired mount is volume and host path if it is bind.
-	Source string
-	// Target specifies a path where the Source will be mounted at inside the container
-	Target   string
-	ReadOnly bool
 }
 
 // ProviderType is an enum for the possible providers
