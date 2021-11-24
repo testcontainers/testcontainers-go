@@ -10,7 +10,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 
@@ -89,8 +88,7 @@ type ContainerRequest struct {
 	ExposedPorts    []string // allow specifying protocol info
 	Cmd             []string
 	Labels          map[string]string
-	BindMounts      map[string]string
-	VolumeMounts    map[string]string
+	Mounts          ContainerMounts
 	Tmpfs           map[string]string
 	RegistryCred    string
 	WaitingFor      wait.Strategy
@@ -135,6 +133,7 @@ func (c *ContainerRequest) Validate() error {
 	validationMethods := []func() error{
 		c.validateContextAndImage,
 		c.validateContextOrImageIsSpecified,
+		c.validateMounts,
 	}
 
 	var err error
@@ -198,5 +197,20 @@ func (c *ContainerRequest) validateContextOrImageIsSpecified() error {
 		return errors.New("you must specify either a build context or an image")
 	}
 
+	return nil
+}
+
+func (c *ContainerRequest) validateMounts() error {
+	targets := make(map[string]bool, len(c.Mounts))
+
+	for idx := range c.Mounts {
+		m := c.Mounts[idx]
+		targetPath := m.Target.String()
+		if targets[targetPath] {
+			return fmt.Errorf("%w: %s", ErrDuplicateMountTarget, targetPath)
+		} else {
+			targets[targetPath] = true
+		}
+	}
 	return nil
 }
