@@ -205,7 +205,7 @@ func (c *ContainerRequest) validateMounts() error {
 
 	for idx := range c.Mounts {
 		m := c.Mounts[idx]
-		targetPath := m.Target.String()
+		targetPath := m.Target.Target()
 		if targets[targetPath] {
 			return fmt.Errorf("%w: %s", ErrDuplicateMountTarget, targetPath)
 		} else {
