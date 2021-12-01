@@ -2,8 +2,7 @@ package testcontainers
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 )
 
 // GenericContainerRequest represents parameters to a generic container
@@ -27,7 +26,7 @@ func GenericNetwork(ctx context.Context, req GenericNetworkRequest) (Network, er
 	}
 	network, err := provider.CreateNetwork(ctx, req.NetworkRequest)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create network")
+		return nil, fmt.Errorf("%w: failed to create network", err)
 	}
 
 	return network, nil
@@ -42,12 +41,12 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 
 	c, err := provider.CreateContainer(ctx, req.ContainerRequest)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create container")
+		return nil, fmt.Errorf("%w: failed to create container", err)
 	}
 
 	if req.Started {
 		if err := c.Start(ctx); err != nil {
-			return c, errors.Wrap(err, "failed to start container")
+			return c, fmt.Errorf("%w: failed to start container", err)
 		}
 	}
 

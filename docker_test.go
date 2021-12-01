@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,21 +11,20 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/Flaque/filet"
 	"github.com/stretchr/testify/assert"
+	"gotest.tools/v3/env"
+	"gotest.tools/v3/fs"
 
 	"github.com/docker/docker/errdefs"
 
 	"github.com/docker/docker/api/types/volume"
 
-	"database/sql"
 	// Import mysql into the scope of this package (required)
 	_ "github.com/go-sql-driver/mysql"
 
@@ -33,6 +33,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/go-redis/redis"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -288,7 +289,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 			Image: "nginx",
 			ExposedPorts: []string{
 				"80/tcp",
-			},
+				"gotest.tools/assert"},
 			SkipReaper: true,
 		},
 		Started: true,
@@ -995,7 +996,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 		t.Log("terminated container")
 	}()
 
-	w.Close()
+	_ = w.Close()
 	out, _ := ioutil.ReadAll(r)
 	os.Stdout = rescueStdout
 	temp := strings.Split(string(out), "\n")
@@ -1191,11 +1192,8 @@ func TestEntrypoint(t *testing.T) {
 
 func TestReadTCPropsFile(t *testing.T) {
 	t.Run("HOME is not set", func(t *testing.T) {
-		oldHome := os.Getenv("HOME")
-		os.Unsetenv("HOME")
-		defer func() {
-			os.Setenv("HOME", oldHome)
-		}()
+		tmpDir := fs.NewDir(t, os.TempDir())
+		env.Patch(t, "HOME", tmpDir.Path())
 
 		config := readTCPropsFile()
 
@@ -1203,13 +1201,8 @@ func TestReadTCPropsFile(t *testing.T) {
 	})
 
 	t.Run("HOME does not contain TC props file", func(t *testing.T) {
-		oldHome := os.Getenv("HOME")
-		tmpDir := filet.TmpDir(t, "")
-		os.Setenv("HOME", tmpDir)
-		defer func() {
-			os.Setenv("HOME", oldHome)
-			filet.CleanUp(t)
-		}()
+		tmpDir := fs.NewDir(t, os.TempDir())
+		env.Patch(t, "HOME", tmpDir.Path())
 
 		config := readTCPropsFile()
 
@@ -1217,8 +1210,6 @@ func TestReadTCPropsFile(t *testing.T) {
 	})
 
 	t.Run("HOME contains TC properties file", func(t *testing.T) {
-		oldHome := os.Getenv("HOME")
-
 		tests := []struct {
 			content           string
 			expectedHost      string
@@ -1291,15 +1282,12 @@ func TestReadTCPropsFile(t *testing.T) {
 			},
 		}
 		for _, tt := range tests {
-			tmpDir := filet.TmpDir(t, "")
-			os.Setenv("HOME", tmpDir)
-
-			defer func() {
-				os.Setenv("HOME", oldHome)
-				filet.CleanUp(t)
-			}()
-
-			_ = filet.File(t, path.Join(tmpDir, ".testcontainers.properties"), tt.content)
+			tmpDir := fs.NewDir(t, os.TempDir())
+			env.Patch(t, "HOME", tmpDir.Path())
+			if err := ioutil.WriteFile(tmpDir.Join(".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
+				t.Errorf("Failed to create the file: %v", err)
+				return
+			}
 
 			config := readTCPropsFile()
 
@@ -1351,7 +1339,7 @@ func ExampleContainer_Start() {
 		ContainerRequest: req,
 	})
 	defer nginxC.Terminate(ctx)
-	nginxC.Start(ctx)
+	_ = nginxC.Start(ctx)
 }
 
 func ExampleContainer_MappedPort() {
@@ -1368,7 +1356,7 @@ func ExampleContainer_MappedPort() {
 	defer nginxC.Terminate(ctx)
 	ip, _ := nginxC.Host(ctx)
 	port, _ := nginxC.MappedPort(ctx, "80")
-	http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
+	_, _ = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
 }
 
 func TestContainerCreationWithBindAndVolume(t *testing.T) {
@@ -1570,7 +1558,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	defer nginxC.Terminate(ctx)
 
 	copiedFileName := "hello_copy.sh"
-	nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
+	_ = nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
 	c, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
@@ -1598,7 +1586,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	defer nginxC.Terminate(ctx)
 
 	copiedFileName := "hello_copy.sh"
-	nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
+	_ = nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
 	c, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
@@ -1633,7 +1621,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 	defer nginxC.Terminate(ctx)
 
 	copiedFileName := "hello_copy.sh"
-	nginxC.CopyFileToContainer(ctx, "./testresources/empty.sh", "/"+copiedFileName, 700)
+	_ = nginxC.CopyFileToContainer(ctx, "./testresources/empty.sh", "/"+copiedFileName, 700)
 	c, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)

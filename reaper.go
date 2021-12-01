@@ -4,14 +4,14 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/docker/go-connections/nat"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"net"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/docker/go-connections/nat"
+
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
 	TestcontainerLabelIsReaper  = TestcontainerLabel + ".reaper"
 
-	ReaperDefaultImage = "testcontainers/ryuk:0.3.3"
+	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.3.3"
 )
 
 var reaper *Reaper // We would like to create reaper only once
@@ -101,7 +101,7 @@ func reaperImage(reaperImageName string) string {
 func (r *Reaper) Connect() (chan bool, error) {
 	conn, err := net.DialTimeout("tcp", r.Endpoint, 10*time.Second)
 	if err != nil {
-		return nil, errors.Wrap(err, "Connecting to Ryuk on "+r.Endpoint+" failed")
+		return nil, fmt.Errorf("%w: Connecting to Ryuk on %s failed", err, r.Endpoint)
 	}
 
 	terminationSignal := make(chan bool)
