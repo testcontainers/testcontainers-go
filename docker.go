@@ -437,7 +437,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				_, err := r.Read(h)
 				if err != nil {
 					// proper type matching requires https://go-review.googlesource.com/c/go/+/250357/ (go 1.16)
-					if strings.Contains(err.Error(), "use of closed connection") {
+					if strings.Contains(err.Error(), "use of closed network connection") {
 						now := time.Now()
 						since = fmt.Sprintf("%d.%09d", now.Unix(), int64(now.Nanosecond()))
 						goto BEGIN
