@@ -372,12 +372,12 @@ func TestBindMount(t *testing.T) {
 		{
 			name: "/var/run/docker.sock:/var/run/docker.sock",
 			args: args{hostPath: "/var/run/docker.sock", mountTarget: "/var/run/docker.sock"},
-			want: ContainerMount{Source: BindMountSource{HostPath: "/var/run/docker.sock"}, Target: "/var/run/docker.sock"},
+			want: ContainerMount{Source: GenericBindMountSource{HostPath: "/var/run/docker.sock"}, Target: "/var/run/docker.sock"},
 		},
 		{
 			name: "/var/lib/app/data:/data",
 			args: args{hostPath: "/var/lib/app/data", mountTarget: "/data"},
-			want: ContainerMount{Source: BindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data"},
+			want: ContainerMount{Source: GenericBindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data"},
 		},
 	}
 	for _, tt := range tests {
@@ -400,12 +400,12 @@ func TestVolumeMount(t *testing.T) {
 		{
 			name: "sample-data:/data",
 			args: args{volumeName: "sample-data", mountTarget: "/data"},
-			want: ContainerMount{Source: VolumeMountSource{Name: "sample-data"}, Target: "/data"},
+			want: ContainerMount{Source: GenericVolumeMountSource{Name: "sample-data"}, Target: "/data"},
 		},
 		{
 			name: "web:/var/nginx/html",
 			args: args{volumeName: "web", mountTarget: "/var/nginx/html"},
-			want: ContainerMount{Source: VolumeMountSource{Name: "web"}, Target: "/var/nginx/html"},
+			want: ContainerMount{Source: GenericVolumeMountSource{Name: "web"}, Target: "/var/nginx/html"},
 		},
 	}
 	for _, tt := range tests {

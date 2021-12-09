@@ -744,7 +744,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	// prepare mounts
-	mounts := req.Mounts.PrepareMounts()
+	mounts := mapToDockerMounts(req.Mounts)
 
 	hostConfig := &container.HostConfig{
 		PortBindings: exposedPortMap,

@@ -21,7 +21,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		},
 		{
 			name:   "Single bind mount",
-			mounts: ContainerMounts{{Source: BindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data"}},
+			mounts: ContainerMounts{{Source: GenericBindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data"}},
 			want: []mount.Mount{
 				{
 					Type:   mount.TypeBind,
@@ -32,7 +32,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		},
 		{
 			name:   "Single bind mount - read-only",
-			mounts: ContainerMounts{{Source: BindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data", ReadOnly: true}},
+			mounts: ContainerMounts{{Source: GenericBindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data", ReadOnly: true}},
 			want: []mount.Mount{
 				{
 					Type:     mount.TypeBind,
@@ -46,7 +46,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			name: "Single bind mount - with options",
 			mounts: ContainerMounts{
 				{
-					Source: BindMountSource{
+					Source: DockerBindMountSource{
 						HostPath: "/var/lib/app/data",
 						BindOptions: &mount.BindOptions{
 							Propagation: mount.PropagationPrivate,
@@ -68,7 +68,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		},
 		{
 			name:   "Single volume mount",
-			mounts: ContainerMounts{{Source: VolumeMountSource{Name: "app-data"}, Target: "/data"}},
+			mounts: ContainerMounts{{Source: GenericVolumeMountSource{Name: "app-data"}, Target: "/data"}},
 			want: []mount.Mount{
 				{
 					Type:   mount.TypeVolume,
@@ -79,7 +79,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		},
 		{
 			name:   "Single volume mount - read-only",
-			mounts: ContainerMounts{{Source: VolumeMountSource{Name: "app-data"}, Target: "/data", ReadOnly: true}},
+			mounts: ContainerMounts{{Source: GenericVolumeMountSource{Name: "app-data"}, Target: "/data", ReadOnly: true}},
 			want: []mount.Mount{
 				{
 					Type:     mount.TypeVolume,
@@ -93,7 +93,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			name: "Single volume mount - with options",
 			mounts: ContainerMounts{
 				{
-					Source: VolumeMountSource{
+					Source: DockerVolumeMountSource{
 						Name: "app-data",
 						VolumeOptions: &mount.VolumeOptions{
 							NoCopy: true,
@@ -122,7 +122,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 
 		{
 			name:   "Single tmpfs mount",
-			mounts: ContainerMounts{{Source: TmpfsMountSource{}, Target: "/data"}},
+			mounts: ContainerMounts{{Source: GenericTmpfsMountSource{}, Target: "/data"}},
 			want: []mount.Mount{
 				{
 					Type:   mount.TypeTmpfs,
@@ -132,7 +132,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		},
 		{
 			name:   "Single volume mount - read-only",
-			mounts: ContainerMounts{{Source: TmpfsMountSource{}, Target: "/data", ReadOnly: true}},
+			mounts: ContainerMounts{{Source: GenericTmpfsMountSource{}, Target: "/data", ReadOnly: true}},
 			want: []mount.Mount{
 				{
 					Type:     mount.TypeTmpfs,
@@ -145,7 +145,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			name: "Single volume mount - with options",
 			mounts: ContainerMounts{
 				{
-					Source: TmpfsMountSource{
+					Source: DockerTmpfsMountSource{
 						TmpfsOptions: &mount.TmpfsOptions{
 							SizeBytes: 50 * 1024 * 1024,
 							Mode:      0o644,
@@ -170,7 +170,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equalf(t, tt.want, tt.mounts.PrepareMounts(), "PrepareMounts()")
+			assert.Equalf(t, tt.want, mapToDockerMounts(tt.mounts), "PrepareMounts()")
 		})
 	}
 }
