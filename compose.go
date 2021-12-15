@@ -198,7 +198,13 @@ func (dc *LocalDockerCompose) validate() error {
 			return err
 		}
 
-		dc.Services = c.Services
+		if dc.Services == nil {
+			dc.Services = c.Services
+		} else {
+			for k, v := range c.Services {
+				dc.Services[k] = v
+			}
+		}
 	}
 
 	return nil

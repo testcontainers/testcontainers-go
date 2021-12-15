@@ -333,6 +333,7 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 	composeFiles := []string{
 		"testresources/docker-compose-simple.yml",
+		"testresources/docker-compose-postgres.yml",
 		"testresources/docker-compose-override.yml",
 	}
 
@@ -354,9 +355,10 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Equal(t, 2, len(compose.Services))
+	assert.Equal(t, 3, len(compose.Services))
 	assert.Contains(t, compose.Services, "nginx")
 	assert.Contains(t, compose.Services, "mysql")
+	assert.Contains(t, compose.Services, "postgres")
 
 	containerNameNginx := compose.Identifier + "_nginx_1"
 
