@@ -247,7 +247,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			ContextArchive: func() (io.Reader, error) {
 				return nil, nil
 			},
-			ExpectedError: errors.New("failed to create container: you must specify either a build context or an image"),
+			ExpectedError: errors.New("you must specify either a build context or an image: failed to create container"),
 		},
 	}
 
@@ -299,7 +299,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		Started:          true,
 	})
 
-	if err != nil && err.Error() != "failed to start container: context deadline exceeded" {
+	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal(err)
 	} else if err == nil {
 		c.Terminate(ctx)
