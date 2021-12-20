@@ -7,9 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"gotest.tools/v3/assert"
+
 	"github.com/docker/docker/client"
+
 	"github.com/testcontainers/testcontainers-go/wait"
-	"gotest.tools/assert"
 )
 
 const lastMessage = "DONE"
@@ -96,13 +98,13 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("never received final log message")
 	}
-	c.StopLogProducer()
+	_ = c.StopLogProducer()
 
 	// get rid of the server "ready" log
 	g.Msgs = g.Msgs[1:]
 
 	assert.DeepEqual(t, []string{"echo hello\n", "echo there\n"}, g.Msgs)
-	c.Terminate(ctx)
+	_ = c.Terminate(ctx)
 }
 
 type TestLogTypeConsumer struct {
@@ -173,14 +175,13 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	}
 
 	<-g.Ack
-	c.StopLogProducer()
+	_ = c.StopLogProducer()
 
 	assert.DeepEqual(t, map[string]string{
 		StdoutLog: "echo this-is-stdout\n",
 		StderrLog: "echo this-is-stderr\n",
 	}, g.LogTypes)
-	c.Terminate(ctx)
-
+	_ = c.Terminate(ctx)
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {

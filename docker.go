@@ -5,18 +5,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -28,7 +28,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/magiconair/properties"
 	"github.com/moby/term"
-	"github.com/pkg/errors"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -453,7 +452,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 				logType := h[0]
 				if logType > 2 {
-					fmt.Fprintf(os.Stderr, fmt.Sprintf("received invalid log type: %d", logType))
+					_, _ = fmt.Fprintf(os.Stderr, "received invalid log type: %d", logType)
 					// sometimes docker returns logType = 3 which is an undocumented log type, so treat it as stdout
 					logType = 1
 				}
@@ -465,7 +464,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				_, err = r.Read(b)
 				if err != nil {
 					// TODO: add-logger: use logger to log out this error
-					fmt.Fprintf(os.Stderr, "error occurred reading log with known length %s", err.Error())
+					_, _ = fmt.Fprintf(os.Stderr, "error occurred reading log with known length %s", err.Error())
 					continue
 				}
 				for _, c := range c.consumers {
@@ -534,9 +533,9 @@ func NewDockerProvider() (*DockerProvider, error) {
 
 		// for further informacion, read https://docs.docker.com/engine/security/protect-access/
 		if tcConfig.TLSVerify == 1 {
-			cacertPath := path.Join(tcConfig.CertPath, "ca.pem")
-			certPath := path.Join(tcConfig.CertPath, "cert.pem")
-			keyPath := path.Join(tcConfig.CertPath, "key.pem")
+			cacertPath := filepath.Join(tcConfig.CertPath, "ca.pem")
+			certPath := filepath.Join(tcConfig.CertPath, "cert.pem")
+			keyPath := filepath.Join(tcConfig.CertPath, "key.pem")
 
 			opts = append(opts, client.WithTLSClientConfig(cacertPath, certPath, keyPath))
 		}
@@ -570,7 +569,7 @@ func readTCPropsFile() TestContainersConfig {
 		return TestContainersConfig{}
 	}
 
-	tcProp := path.Join(home, ".testcontainers.properties")
+	tcProp := filepath.Join(home, ".testcontainers.properties")
 	// init from a file
 	properties, err := properties.LoadFile(tcProp, properties.UTF8)
 	if err != nil {
@@ -626,7 +625,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		return "", err
 	}
 
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	return repoTag, nil
 }
@@ -678,11 +677,11 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	if !req.SkipReaper {
 		r, err := NewReaper(ctx, sessionID.String(), p, req.ReaperImage)
 		if err != nil {
-			return nil, errors.Wrap(err, "creating reaper failed")
+			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
 		termSignal, err = r.Connect()
 		if err != nil {
-			return nil, errors.Wrap(err, "connecting to reaper failed")
+			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
 		}
 		for k, v := range r.Labels() {
 			if _, ok := req.Labels[k]; !ok {
@@ -871,7 +870,7 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 	}
 
 	if err := c.Start(ctx); err != nil {
-		return c, errors.Wrap(err, "could not start container")
+		return c, fmt.Errorf("%w: could not start container", err)
 	}
 
 	return c, nil
@@ -948,11 +947,11 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	if !req.SkipReaper {
 		r, err := NewReaper(ctx, sessionID.String(), p, req.ReaperImage)
 		if err != nil {
-			return nil, errors.Wrap(err, "creating network reaper failed")
+			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}
 		termSignal, err = r.Connect()
 		if err != nil {
-			return nil, errors.Wrap(err, "connecting to network reaper failed")
+			return nil, fmt.Errorf("%w: connecting to network reaper failed", err)
 		}
 		for k, v := range r.Labels() {
 			if _, ok := req.Labels[k]; !ok {

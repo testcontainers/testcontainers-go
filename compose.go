@@ -16,8 +16,9 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"gopkg.in/yaml.v3"
+
 	"github.com/testcontainers/testcontainers-go/wait"
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -77,7 +78,7 @@ func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCo
 		dc.absComposeFilePaths[i] = abs
 	}
 
-	dc.validate()
+	_ = dc.validate()
 
 	dc.Identifier = strings.ToLower(identifier)
 	dc.waitStrategySupplied = false
@@ -106,7 +107,6 @@ func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
 }
 
 func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
-
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return err

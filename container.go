@@ -2,6 +2,8 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -11,7 +13,6 @@ import (
 
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
-	"github.com/pkg/errors"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -120,7 +121,7 @@ func (t ProviderType) GetProvider() (GenericProvider, error) {
 	case ProviderDocker:
 		provider, err := NewDockerProvider()
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to create Docker provider")
+			return nil, fmt.Errorf("%w, failed to create Docker provider", err)
 		}
 		return provider, nil
 	}
