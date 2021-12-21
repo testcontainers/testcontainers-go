@@ -19,7 +19,6 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -32,8 +31,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Implement interfaces
-var _ Container = (*DockerContainer)(nil)
+var (
+	// Implement interfaces
+	_ Container = (*DockerContainer)(nil)
+
+	ErrDuplicateMountTarget = errors.New("duplicate mount target detected")
+)
 
 const (
 	Bridge        = "bridge"         // Bridge network name (as well as driver)
@@ -741,21 +744,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	// prepare mounts
-	mounts := []mount.Mount{}
-	for innerPath, hostPath := range req.BindMounts {
-		mounts = append(mounts, mount.Mount{
-			Type:   mount.TypeBind,
-			Source: hostPath,
-			Target: innerPath,
-		})
-	}
-	for innerPath, volumeName := range req.VolumeMounts {
-		mounts = append(mounts, mount.Mount{
-			Type:   mount.TypeVolume,
-			Source: volumeName,
-			Target: innerPath,
-		})
-	}
+	mounts := mapToDockerMounts(req.Mounts)
 
 	hostConfig := &container.HostConfig{
 		PortBindings: exposedPortMap,

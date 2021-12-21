@@ -1391,11 +1391,10 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 	// Create the container that writes into the mounted volume.
 	bashC, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:        "bash",
-			BindMounts:   map[string]string{"/hello.sh": absPath},
-			VolumeMounts: map[string]string{"/data": volumeName},
-			Cmd:          []string{"bash", "/hello.sh"},
-			WaitingFor:   wait.ForLog("done"),
+			Image:      "bash",
+			Mounts:     Mounts(BindMount(absPath, "/hello.sh"), VolumeMount(volumeName, "/data")),
+			Cmd:        []string{"bash", "/hello.sh"},
+			WaitingFor: wait.ForLog("done"),
 		},
 		Started: true,
 	})
