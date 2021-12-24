@@ -95,7 +95,7 @@ func TestLocalDockerCompose(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -112,7 +112,7 @@ func TestDockerComposeStrategyForInvalidService(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -135,7 +135,7 @@ func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -159,7 +159,7 @@ func TestDockerComposeWithWaitForService(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -184,7 +184,7 @@ func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -209,7 +209,7 @@ func TestDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -231,7 +231,7 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -255,7 +255,7 @@ func TestDockerComposeWithFailedStrategy(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -282,7 +282,7 @@ func TestLocalDockerComposeComplex(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -304,7 +304,7 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -340,7 +340,7 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose(composeFiles, identifier)
+	compose := NewLocalDockerCompose(composeFiles, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -376,7 +376,7 @@ func TestLocalDockerComposeWithVolume(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)

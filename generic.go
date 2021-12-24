@@ -10,6 +10,7 @@ type GenericContainerRequest struct {
 	ContainerRequest              // embedded request for provider
 	Started          bool         // whether to auto-start the container
 	ProviderType     ProviderType // which provider to use, Docker if empty
+	Logger           Logging      // provide a container specific Logging - use default global logger if empty
 }
 
 // GenericNetworkRequest represents parameters to a generic network
@@ -34,7 +35,11 @@ func GenericNetwork(ctx context.Context, req GenericNetworkRequest) (Network, er
 
 // GenericContainer creates a generic container with parameters
 func GenericContainer(ctx context.Context, req GenericContainerRequest) (Container, error) {
-	provider, err := req.ProviderType.GetProvider()
+	logging := req.Logger
+	if logging == nil {
+		logging = Logger
+	}
+	provider, err := req.ProviderType.GetProvider(WithLogger(logging))
 	if err != nil {
 		return nil, err
 	}

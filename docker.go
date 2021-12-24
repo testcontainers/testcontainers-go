@@ -57,6 +57,7 @@ type DockerContainer struct {
 	consumers         []LogConsumer
 	raw               *types.ContainerJSON
 	stopProducer      chan bool
+	logger            Logging
 }
 
 func (c *DockerContainer) GetContainerID() string {
@@ -160,7 +161,7 @@ func (c *DockerContainer) SessionID() string {
 // Start will start an already created container
 func (c *DockerContainer) Start(ctx context.Context) error {
 	shortID := c.ID[:12]
-	Logger.Printf("Starting container id: %s image: %s", shortID, c.Image)
+	c.logger.Printf("Starting container id: %s image: %s", shortID, c.Image)
 
 	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
@@ -168,12 +169,12 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 
 	// if a Wait Strategy has been specified, wait before returning
 	if c.WaitingFor != nil {
-		Logger.Printf("Waiting for container id %s image: %s", shortID, c.Image)
+		c.logger.Printf("Waiting for container id %s image: %s", shortID, c.Image)
 		if err := c.WaitingFor.WaitUntilReady(ctx, c); err != nil {
 			return err
 		}
 	}
-	Logger.Printf("Container is ready id: %s image: %s", shortID, c.Image)
+	c.logger.Printf("Container is ready id: %s image: %s", shortID, c.Image)
 
 	return nil
 }
@@ -511,6 +512,7 @@ func (n *DockerNetwork) Remove(ctx context.Context) error {
 
 // DockerProvider implements the ContainerProvider interface
 type DockerProvider struct {
+	*DockerProviderOptions
 	client         *client.Client
 	hostCache      string
 	defaultNetwork string // default container network
@@ -525,10 +527,56 @@ type TestContainersConfig struct {
 	CertPath  string `properties:"docker.cert.path,default="`
 }
 
+type (
+	// DockerProviderOptions defines options applicable to DockerProvider
+	DockerProviderOptions struct {
+		*GenericProviderOptions
+	}
+
+	// DockerProviderOption defines a common interface to modify DockerProviderOptions
+	// These can be passed to NewDockerProvider in a variadic way to customize the returned DockerProvider instance
+	DockerProviderOption interface {
+		ApplyDockerTo(opts *DockerProviderOptions)
+	}
+
+	// DockerProviderOptionFunc is a shorthand to implement the DockerProviderOption interface
+	DockerProviderOptionFunc func(opts *DockerProviderOptions)
+)
+
+func (f DockerProviderOptionFunc) ApplyDockerTo(opts *DockerProviderOptions) {
+	f(opts)
+}
+
+func Generic2DockerOptions(opts ...GenericProviderOption) []DockerProviderOption {
+	converted := make([]DockerProviderOption, 0, len(opts))
+	for _, o := range opts {
+		switch c := o.(type) {
+		case DockerProviderOption:
+			converted = append(converted, c)
+		default:
+			converted = append(converted, DockerProviderOptionFunc(func(opts *DockerProviderOptions) {
+				o.ApplyGenericTo(opts.GenericProviderOptions)
+			}))
+		}
+	}
+
+	return converted
+}
+
 // NewDockerProvider creates a Docker provider with the EnvClient
-func NewDockerProvider() (*DockerProvider, error) {
+func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error) {
 	tcConfig := readTCPropsFile()
 	host := tcConfig.Host
+
+	o := &DockerProviderOptions{
+		GenericProviderOptions: &GenericProviderOptions{
+			Logger: Logger,
+		},
+	}
+
+	for idx := range provOpts {
+		provOpts[idx].ApplyDockerTo(o)
+	}
 
 	opts := []client.Opt{client.FromEnv}
 	if host != "" {
@@ -560,8 +608,10 @@ func NewDockerProvider() (*DockerProvider, error) {
 
 	c.NegotiateAPIVersion(context.Background())
 	p := &DockerProvider{
-		client: c,
+		DockerProviderOptions: o,
+		client:                c,
 	}
+
 	return p, nil
 }
 
@@ -811,6 +861,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		terminationSignal: termSignal,
 		skipReaper:        req.SkipReaper,
 		stopProducer:      make(chan bool),
+		logger:            p.Logger,
 	}
 
 	return c, nil

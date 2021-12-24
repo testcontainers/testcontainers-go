@@ -205,7 +205,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	}
 	defer dind.Terminate(ctx)
 
-	remoteDocker, err := dind.Endpoint(ctx, "tcp")
+	remoteDocker, err := dind.Endpoint(ctx, "2375/tcp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +217,8 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	defer client.Close()
 
 	client.NegotiateAPIVersion(ctx)
-	provider := &DockerProvider{client: client}
+
+	provider := &DockerProvider{client: client, DockerProviderOptions: &DockerProviderOptions{GenericProviderOptions: &GenericProviderOptions{Logger: TestLogger(t)}}}
 
 	nginx, err := provider.CreateContainer(ctx, ContainerRequest{Image: "nginx", ExposedPorts: []string{"80/tcp"}})
 	if err != nil {
