@@ -1048,6 +1048,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		EnableIPv6:     req.EnableIPv6,
 		Attachable:     req.Attachable,
 		Labels:         req.Labels,
+		IPAM:           req.IPAM,
 	}
 
 	sessionID := uuid.New()
