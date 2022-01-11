@@ -284,7 +284,18 @@ func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	return inspect.NetworkSettings.IPAddress, nil
+	ip := inspect.NetworkSettings.IPAddress
+	if ip != "" {
+		return ip, nil
+	}
+
+	for _, network := range inspect.NetworkSettings.Networks {
+		if network.IPAddress != "" {
+			return network.IPAddress, nil
+		}
+	}
+
+	return "", errors.New("IP address not found")
 }
 
 // NetworkAliases gets the aliases of the container for the networks it is attached to.
