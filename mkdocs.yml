@@ -32,6 +32,8 @@ nav:
           - features/follow_logs.md
           - features/override_container_command.md
           - features/custom_configuration.md
+    - System Requirements:
+          - system_requirements/index.md
     - Examples:
           - examples/cockroachdb.md
           - examples/nginx.md
