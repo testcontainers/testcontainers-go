@@ -279,7 +279,7 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	t.Skip("need to use the sessionID")
 	ctx := context.Background()
-	client, err := client.NewEnvClient()
+	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,7 +315,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewEnvClient()
+	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -350,7 +350,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 
 func TestContainerTerminationResetsState(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewEnvClient()
+	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -384,7 +384,7 @@ func TestContainerTerminationResetsState(t *testing.T) {
 
 func TestContainerTerminationWithReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewEnvClient()
+	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -421,7 +421,7 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewEnvClient()
+	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1754,7 +1754,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 func TestGetGatewayIP(t *testing.T) {
 	// When using docker-compose with DinD mode, and using host port or http wait strategy
 	// It's need to invoke GetGatewayIP for get the host
-	provider, err := NewDockerProvider()
+	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
 	if err != nil {
 		t.Fatal(err)
 	}

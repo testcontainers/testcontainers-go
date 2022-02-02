@@ -44,6 +44,7 @@ type waitService struct {
 // LocalDockerCompose represents a Docker Compose execution using local binary
 // docker-compose or docker-compose.exe, depending on the underlying platform
 type LocalDockerCompose struct {
+	*LocalDockerComposeOptions
 	Executable           string
 	ComposeFilePaths     []string
 	absComposeFilePaths  []string
@@ -55,6 +56,26 @@ type LocalDockerCompose struct {
 	WaitStrategyMap      map[waitService]wait.Strategy
 }
 
+type (
+	// LocalDockerComposeOptions defines options applicable to LocalDockerCompose
+	LocalDockerComposeOptions struct {
+		Logger Logging
+	}
+
+	// LocalDockerComposeOption defines a common interface to modify LocalDockerComposeOptions
+	// These options can be passed to NewLocalDockerCompose in a variadic way to customize the returned LocalDockerCompose instance
+	LocalDockerComposeOption interface {
+		ApplyToLocalCompose(opts *LocalDockerComposeOptions)
+	}
+
+	// LocalDockerComposeOptionsFunc is a shorthand to implement the LocalDockerComposeOption interface
+	LocalDockerComposeOptionsFunc func(opts *LocalDockerComposeOptions)
+)
+
+func (f LocalDockerComposeOptionsFunc) ApplyToLocalCompose(opts *LocalDockerComposeOptions) {
+	f(opts)
+}
+
 // NewLocalDockerCompose returns an instance of the local Docker Compose, using an
 // array of Docker Compose file paths and an identifier for the Compose execution.
 //
@@ -62,8 +83,16 @@ type LocalDockerCompose struct {
 // Docker Compose execution. The identifier represents the name of the execution,
 // which will define the name of the underlying Docker network and the name of the
 // running Compose services.
-func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCompose {
-	dc := &LocalDockerCompose{}
+func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
+	dc := &LocalDockerCompose{
+		LocalDockerComposeOptions: &LocalDockerComposeOptions{
+			Logger: Logger,
+		},
+	}
+
+	for idx := range opts {
+		opts[idx].ApplyToLocalCompose(dc.LocalDockerComposeOptions)
+	}
 
 	dc.Executable = "docker-compose"
 	if runtime.GOOS == "windows" {
@@ -134,11 +163,11 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 		}
 		container := containers[0]
 		strategy := dc.WaitStrategyMap[k]
-		dockerProvider, err := NewDockerProvider()
+		dockerProvider, err := NewDockerProvider(WithLogger(dc.Logger))
 		if err != nil {
 			return fmt.Errorf("unable to create new Docker Provider: %w", err)
 		}
-		dockercontainer := &DockerContainer{ID: container.ID, WaitingFor: strategy, provider: dockerProvider}
+		dockercontainer := &DockerContainer{ID: container.ID, WaitingFor: strategy, provider: dockerProvider, logger: dc.Logger}
 		err = strategy.WaitUntilReady(context.Background(), dockercontainer)
 		if err != nil {
 			return fmt.Errorf("Unable to apply wait strategy %v to service %s due to %w", strategy, k.service, err)

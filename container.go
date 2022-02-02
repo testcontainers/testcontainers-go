@@ -100,8 +100,28 @@ type ContainerRequest struct {
 	AlwaysPullImage bool // Always pull image
 }
 
-// ProviderType is an enum for the possible providers
-type ProviderType int
+type (
+	// ProviderType is an enum for the possible providers
+	ProviderType int
+
+	// GenericProviderOptions defines options applicable to all providers
+	GenericProviderOptions struct {
+		Logger Logging
+	}
+
+	// GenericProviderOption defines a common interface to modify GenericProviderOptions
+	// These options can be passed to GetProvider in a variadic way to customize the returned GenericProvider instance
+	GenericProviderOption interface {
+		ApplyGenericTo(opts *GenericProviderOptions)
+	}
+
+	// GenericProviderOptionFunc is a shorthand to implement the GenericProviderOption interface
+	GenericProviderOptionFunc func(opts *GenericProviderOptions)
+)
+
+func (f GenericProviderOptionFunc) ApplyGenericTo(opts *GenericProviderOptions) {
+	f(opts)
+}
 
 // possible provider types
 const (
@@ -109,10 +129,18 @@ const (
 )
 
 // GetProvider provides the provider implementation for a certain type
-func (t ProviderType) GetProvider() (GenericProvider, error) {
+func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvider, error) {
+	opt := &GenericProviderOptions{
+		Logger: Logger,
+	}
+
+	for _, o := range opts {
+		o.ApplyGenericTo(opt)
+	}
+
 	switch t {
 	case ProviderDocker:
-		provider, err := NewDockerProvider()
+		provider, err := NewDockerProvider(Generic2DockerOptions(opts...)...)
 		if err != nil {
 			return nil, fmt.Errorf("%w, failed to create Docker provider", err)
 		}
@@ -124,7 +152,6 @@ func (t ProviderType) GetProvider() (GenericProvider, error) {
 // Validate ensures that the ContainerRequest does not have invalid parameters configured to it
 // ex. make sure you are not specifying both an image as well as a context
 func (c *ContainerRequest) Validate() error {
-
 	validationMethods := []func() error{
 		c.validateContextAndImage,
 		c.validateContextOrImageIsSpecified,
