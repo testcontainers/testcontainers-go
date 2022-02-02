@@ -46,7 +46,7 @@ type Container interface {
 	StartLogProducer(context.Context) error
 	StopLogProducer() error
 	Name(context.Context) (string, error)                        // get container name
-	State(context.Context) (*types.ContainerState, error)        //returns container's running state
+	State(context.Context) (*types.ContainerState, error)        // returns container's running state
 	Networks(context.Context) ([]string, error)                  // get container networks
 	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string) (int, error)
@@ -92,11 +92,12 @@ type ContainerRequest struct {
 	Privileged      bool                // for starting privileged container
 	Networks        []string            // for specifying network names
 	NetworkAliases  map[string][]string // for specifying network aliases
-	User            string              // for specifying uid:gid
-	SkipReaper      bool                // indicates whether we skip setting up a reaper for this
-	ReaperImage     string              // alternative reaper image
-	AutoRemove      bool                // if set to true, the container will be removed from the host when stopped
 	NetworkMode     container.NetworkMode
+	Resources       container.Resources
+	User            string // for specifying uid:gid
+	SkipReaper      bool   // indicates whether we skip setting up a reaper for this
+	ReaperImage     string // alternative reaper image
+	AutoRemove      bool   // if set to true, the container will be removed from the host when stopped
 	AlwaysPullImage bool   // Always pull image
 	ImagePlatform   string // ImagePlatform describes the platform which the image runs on.
 }

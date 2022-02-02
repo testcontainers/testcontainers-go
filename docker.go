@@ -28,8 +28,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/magiconair/properties"
 	"github.com/moby/term"
-
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -363,8 +363,8 @@ func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, filePath st
 	}
 	tarReader := tar.NewReader(r)
 
-	//if we got here we have exactly one file in the TAR-stream
-	//so we advance the index by one so the next call to Read will start reading it
+	// if we got here we have exactly one file in the TAR-stream
+	// so we advance the index by one so the next call to Read will start reading it
 	_, err = tarReader.Next()
 	if err != nil {
 		return nil, err
@@ -822,6 +822,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		AutoRemove:   req.AutoRemove,
 		Privileged:   req.Privileged,
 		NetworkMode:  req.NetworkMode,
+		Resources:    req.Resources,
 	}
 
 	endpointConfigs := map[string]*network.EndpointSettings{}
