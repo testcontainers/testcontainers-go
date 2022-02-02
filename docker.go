@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/containerd/containerd/platforms"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -28,6 +29,7 @@ import (
 	"github.com/magiconair/properties"
 	"github.com/moby/term"
 
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -748,6 +750,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	var tag string
+	var platform *specs.Platform
+
 	if req.ShouldBuildImage() {
 		tag, err = p.BuildImage(ctx, &req)
 		if err != nil {
@@ -755,12 +759,21 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	} else {
 		tag = req.Image
+
+		if req.ImagePlatform != "" {
+			p, err := platforms.Parse(req.ImagePlatform)
+			if err != nil {
+				return nil, fmt.Errorf("invalid platform %s: %w", req.ImagePlatform, err)
+			}
+			platform = &p
+		}
+
 		var shouldPullImage bool
 
 		if req.AlwaysPullImage {
 			shouldPullImage = true // If requested always attempt to pull image
 		} else {
-			_, _, err = p.client.ImageInspectWithRaw(ctx, tag)
+			image, _, err := p.client.ImageInspectWithRaw(ctx, tag)
 			if err != nil {
 				if client.IsErrNotFound(err) {
 					shouldPullImage = true
@@ -768,10 +781,16 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 					return nil, err
 				}
 			}
+			if platform != nil && (image.Architecture != platform.Architecture || image.Os != platform.OS) {
+				shouldPullImage = true
+			}
 		}
 
 		if shouldPullImage {
-			pullOpt := types.ImagePullOptions{}
+			pullOpt := types.ImagePullOptions{
+				Platform: req.ImagePlatform, // may be empty
+			}
+
 			if req.RegistryCred != "" {
 				pullOpt.RegistryAuth = req.RegistryCred
 			}
@@ -829,7 +848,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		EndpointsConfig: endpointConfigs,
 	}
 
-	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, nil, req.Name)
+	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, platform, req.Name)
 	if err != nil {
 		return nil, err
 	}
