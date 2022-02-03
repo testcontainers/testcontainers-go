@@ -17,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/go-units"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gotest.tools/v3/env"
@@ -129,10 +131,10 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 
 	defer nginxC.Terminate(ctx)
 
-	//host, err := nginxC.Host(ctx)
-	//if err != nil {
+	// host, err := nginxC.Host(ctx)
+	// if err != nil {
 	//	t.Errorf("Expected host %s. Got '%d'.", host, err)
-	//}
+	// }
 	//
 	endpoint, err := nginxC.Endpoint(ctx, "http")
 	if err != nil {
@@ -1697,6 +1699,49 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Empty(t, fileContentFromContainer)
+}
+
+func TestDockerContainerResources(t *testing.T) {
+	ctx := context.Background()
+
+	expected := []*units.Ulimit{
+		{
+			Name: "memlock",
+			Hard: -1,
+			Soft: -1,
+		},
+		{
+			Name: "nofile",
+			Hard: 65536,
+			Soft: 65536,
+		},
+	}
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:        "nginx",
+			ExposedPorts: []string{"80/tcp"},
+			WaitingFor:   wait.ForListeningPort("80/tcp"),
+			Resources: container.Resources{
+				Ulimits: expected,
+			},
+		},
+		Started: true,
+	})
+	require.NoError(t, err)
+
+	defer nginxC.Terminate(ctx)
+
+	c, err := client.NewClientWithOpts(client.FromEnv)
+	require.NoError(t, err)
+
+	c.NegotiateAPIVersion(ctx)
+	containerID := nginxC.GetContainerID()
+
+	resp, err := c.ContainerInspect(ctx, containerID)
+	require.NoError(t, err)
+
+	assert.Equal(t, expected, resp.HostConfig.Ulimits)
 }
 
 func TestContainerWithReaperNetwork(t *testing.T) {
