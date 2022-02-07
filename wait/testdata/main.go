@@ -20,7 +20,7 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	mux.HandleFunc("/ping", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/auth-ping", func(w http.ResponseWriter, req *http.Request) {
 		auth := req.Header.Get("Authorization")
 		if strings.HasPrefix(auth, "Basic ") {
 			up, err := base64.StdEncoding.DecodeString(auth[6:])
@@ -43,6 +43,16 @@ func main() {
 			}
 		}
 		w.WriteHeader(http.StatusUnauthorized)
+	})
+
+	mux.HandleFunc("/ping", func(w http.ResponseWriter, req *http.Request) {
+		data, _ := ioutil.ReadAll(req.Body)
+		if bytes.Equal(data, []byte("ping")) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("pong"))
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 	})
 
 	server := http.Server{Addr: ":6443", Handler: mux}
