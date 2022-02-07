@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,7 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -50,6 +52,22 @@ func Test_ContainerValidation(t *testing.T) {
 				},
 			},
 		},
+		ContainerValidationTestCase{
+			Name:          "Can mount same source to multiple targets",
+			ExpectedError: nil,
+			ContainerRequest: ContainerRequest{
+				Image:  "redis:latest",
+				Mounts: Mounts(BindMount("/data", "/srv"), BindMount("/data", "/data")),
+			},
+		},
+		ContainerValidationTestCase{
+			Name:          "Cannot mount multiple sources to same target",
+			ExpectedError: errors.New("duplicate mount target detected: /data"),
+			ContainerRequest: ContainerRequest{
+				Image:  "redis:latest",
+				Mounts: Mounts(BindMount("/srv", "/data"), BindMount("/data", "/data")),
+			},
+		},
 	}
 
 	for _, testCase := range testTable {
@@ -66,7 +84,6 @@ func Test_ContainerValidation(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func Test_GetDockerfile(t *testing.T) {
@@ -230,7 +247,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			ContextArchive: func() (io.Reader, error) {
 				return nil, nil
 			},
-			ExpectedError: errors.New("failed to create container: you must specify either a build context or an image"),
+			ExpectedError: errors.New("you must specify either a build context or an image: failed to create container"),
 		},
 	}
 
@@ -282,7 +299,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		Started:          true,
 	})
 
-	if err != nil && err.Error() != "failed to start container: context deadline exceeded" {
+	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal(err)
 	} else if err == nil {
 		c.Terminate(ctx)
@@ -340,4 +357,60 @@ func createTestContainer(t *testing.T, ctx context.Context) int {
 	})
 
 	return port.Int()
+}
+
+func TestBindMount(t *testing.T) {
+	type args struct {
+		hostPath    string
+		mountTarget ContainerMountTarget
+	}
+	tests := []struct {
+		name string
+		args args
+		want ContainerMount
+	}{
+		{
+			name: "/var/run/docker.sock:/var/run/docker.sock",
+			args: args{hostPath: "/var/run/docker.sock", mountTarget: "/var/run/docker.sock"},
+			want: ContainerMount{Source: GenericBindMountSource{HostPath: "/var/run/docker.sock"}, Target: "/var/run/docker.sock"},
+		},
+		{
+			name: "/var/lib/app/data:/data",
+			args: args{hostPath: "/var/lib/app/data", mountTarget: "/data"},
+			want: ContainerMount{Source: GenericBindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, BindMount(tt.args.hostPath, tt.args.mountTarget), "BindMount(%v, %v)", tt.args.hostPath, tt.args.mountTarget)
+		})
+	}
+}
+
+func TestVolumeMount(t *testing.T) {
+	type args struct {
+		volumeName  string
+		mountTarget ContainerMountTarget
+	}
+	tests := []struct {
+		name string
+		args args
+		want ContainerMount
+	}{
+		{
+			name: "sample-data:/data",
+			args: args{volumeName: "sample-data", mountTarget: "/data"},
+			want: ContainerMount{Source: GenericVolumeMountSource{Name: "sample-data"}, Target: "/data"},
+		},
+		{
+			name: "web:/var/nginx/html",
+			args: args{volumeName: "web", mountTarget: "/var/nginx/html"},
+			want: ContainerMount{Source: GenericVolumeMountSource{Name: "web"}, Target: "/var/nginx/html"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, VolumeMount(tt.args.volumeName, tt.args.mountTarget), "VolumeMount(%v, %v)", tt.args.volumeName, tt.args.mountTarget)
+		})
+	}
 }

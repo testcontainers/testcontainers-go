@@ -31,7 +31,10 @@ nav:
           - features/docker_compose.md
           - features/follow_logs.md
           - features/override_container_command.md
-    - Modules: modules.md
+    - Examples:
+          - examples/cockroachdb.md
+          - examples/nginx.md
+          - examples/redis.md
     - Contributing:
           - contributing.md
           - contributing_docs.md

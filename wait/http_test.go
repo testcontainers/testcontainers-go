@@ -62,6 +62,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	}
 
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
+	var i int
 	dockerReq := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context: workdir + "/testdata",
@@ -154,6 +155,10 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 			WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := ioutil.ReadAll(body)
 				return bytes.Equal(data, []byte("pong"))
+			}).
+			WithStatusCodeMatcher(func(status int) bool {
+				i++ // always fail the first try in order to force the polling loop to be re-run
+				return i > 1 && status == 200
 			}).
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
 	}

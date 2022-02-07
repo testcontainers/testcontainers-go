@@ -2,7 +2,5 @@ version: '3'
 services:
   nginx:
     image: nginx:stable-alpine
-    environment:
-      bar: ${bar}
     ports:
-     - "9080:80"
+     - "80"

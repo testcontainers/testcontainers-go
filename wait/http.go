@@ -1,11 +1,13 @@
 package wait
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -132,9 +134,16 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		return
 	}
 
-	port, err := target.MappedPort(ctx, ws.Port)
-	if err != nil {
-		return
+	var port nat.Port
+	port, err = target.MappedPort(ctx, ws.Port)
+
+	for port == "" {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("%s:%w", ctx.Err(), err)
+		case <-time.After(ws.PollInterval):
+			port, err = target.MappedPort(ctx, ws.Port)
+		}
 	}
 
 	if port.Proto() != "tcp" {
@@ -194,12 +203,21 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		endpoint.User = ws.UserInfo
 	}
 
+	// cache the body into a byte-slice so that it can be iterated over multiple times
+	var body []byte
+	if ws.Body != nil {
+		body, err = ioutil.ReadAll(ws.Body)
+		if err != nil {
+			return
+		}
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(ws.PollInterval):
-			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint.String(), ws.Body)
+			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint.String(), bytes.NewReader(body))
 			if err != nil {
 				return err
 			}
