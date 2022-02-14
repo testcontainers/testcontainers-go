@@ -460,7 +460,7 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 	}
 }
 
-func TestContainerTerminationRemovesDockerfileDockerImage(t *testing.T) {
+func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	t.Run("if not built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
 		client, err := client.NewClientWithOpts(client.FromEnv)
