@@ -66,7 +66,6 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 			CheckDuplicate: true,
 		},
 	})
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,7 +291,8 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 			Image: "nginx",
 			ExposedPorts: []string{
 				"80/tcp",
-				"gotest.tools/assert"},
+				"gotest.tools/assert",
+			},
 			SkipReaper: true,
 		},
 		Started: true,
@@ -458,6 +458,76 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error from container inspect.")
 	}
+}
+
+func TestContainerTerminationRemovesDockerfileDockerImage(t *testing.T) {
+	t.Run("if not built from Dockerfile", func(t *testing.T) {
+		ctx := context.Background()
+		client, err := client.NewClientWithOpts(client.FromEnv)
+		if err != nil {
+			t.Fatal(err)
+		}
+		client.NegotiateAPIVersion(ctx)
+		container, err := GenericContainer(ctx, GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				Image: "nginx",
+				ExposedPorts: []string{
+					"80/tcp",
+				},
+				SkipReaper: true,
+			},
+			Started: true,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = container.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, err = client.ImageInspectWithRaw(ctx, "nginx")
+		if err != nil {
+			t.Fatal("nginx image should not have been removed")
+		}
+	})
+
+	t.Run("if built from Dockerfile", func(t *testing.T) {
+		ctx := context.Background()
+		client, err := client.NewClientWithOpts(client.FromEnv)
+		if err != nil {
+			t.Fatal(err)
+		}
+		client.NegotiateAPIVersion(ctx)
+		req := ContainerRequest{
+			FromDockerfile: FromDockerfile{
+				Context: "./testresources",
+			},
+			ExposedPorts: []string{"6379/tcp"},
+			WaitingFor:   wait.ForLog("Ready to accept connections"),
+		}
+		container, err := GenericContainer(ctx, GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		containerID := container.GetContainerID()
+		resp, err := client.ContainerInspect(ctx, containerID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		imageID := resp.Config.Image
+
+		err = container.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, err = client.ImageInspectWithRaw(ctx, imageID)
+		if err == nil {
+			t.Fatal("custom built image should have been removed")
+		}
+	})
 }
 
 func TestTwoContainersExposingTheSamePort(t *testing.T) {
@@ -927,7 +997,6 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, genContainerReq)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -938,13 +1007,11 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	}
 
 	resp, err := http.Get(ep + "/env")
-
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -985,7 +1052,6 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, genContainerReq)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1007,7 +1073,6 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	if temp[0] != "Step 1/1 : FROM alpine" {
 		t.Errorf("Expected stout firstline to be %s. Got '%s'.", "Step 1/2 : FROM alpine", temp[0])
 	}
-
 }
 
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
@@ -1032,7 +1097,6 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected timeout")
 	}
-
 }
 
 func TestContainerCreationWaitingForHostPort(t *testing.T) {
@@ -1100,7 +1164,6 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1120,7 +1183,6 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 		"root", "password", host, port, "database")
 
 	db, err := sql.Open("mysql", connectionString)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1130,7 +1192,6 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 	if err = db.Ping(); err != nil {
 		t.Errorf("error pinging db: %+v\n", err)
 	}
-
 }
 
 func TestCMD(t *testing.T) {
@@ -1154,7 +1215,6 @@ func TestCMD(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1184,7 +1244,6 @@ func TestEntrypoint(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1239,7 +1298,8 @@ func TestReadTCPropsFile(t *testing.T) {
 				0,
 				"",
 			},
-			{`docker.host = tcp://127.0.0.1:33293
+			{
+				`docker.host = tcp://127.0.0.1:33293
 	docker.host = tcp://127.0.0.1:4711
 	docker.host = tcp://127.0.0.1:1234
 	docker.tls.verify = 1
@@ -1437,7 +1497,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 		}
 	}()
 
-	var path = "/testtmpfs/test.file"
+	path := "/testtmpfs/test.file"
 
 	c, err := container.Exec(ctx, []string{"ls", path})
 	if err != nil {

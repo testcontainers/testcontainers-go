@@ -52,6 +52,7 @@ type DockerContainer struct {
 	WaitingFor wait.Strategy
 	Image      string
 
+	imageWasBuilt     bool
 	provider          *DockerProvider
 	sessionID         uuid.UUID
 	terminationSignal chan bool
@@ -192,15 +193,26 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		RemoveVolumes: true,
 		Force:         true,
 	})
-
-	if err == nil {
-		if err := c.provider.client.Close(); err != nil {
-			return err
-		}
-		c.sessionID = uuid.UUID{}
+	if err != nil {
+		return err
 	}
 
-	return err
+	if c.imageWasBuilt {
+		_, err := c.provider.client.ImageRemove(ctx, c.Image, types.ImageRemoveOptions{
+			Force:         true,
+			PruneChildren: true,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := c.provider.client.Close(); err != nil {
+		return err
+	}
+
+	c.sessionID = uuid.UUID{}
+	return nil
 }
 
 // update container raw info
@@ -876,6 +888,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		ID:                resp.ID,
 		WaitingFor:        req.WaitingFor,
 		Image:             tag,
+		imageWasBuilt:     req.ShouldBuildImage(),
 		sessionID:         sessionID,
 		provider:          p,
 		terminationSignal: termSignal,
