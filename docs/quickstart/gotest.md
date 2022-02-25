@@ -16,6 +16,11 @@ go get github.com/testcontainers/testcontainers-go
 ## 2. Spin up Redis
 
 ```go
+import (
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+)
+
 func TestWithRedis(t *testing.T) {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
