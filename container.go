@@ -114,7 +114,8 @@ type (
 
 	// GenericProviderOptions defines options applicable to all providers
 	GenericProviderOptions struct {
-		Logger Logging
+		Logger         Logging
+		DefaultNetwork string
 	}
 
 	// GenericProviderOption defines a common interface to modify GenericProviderOptions

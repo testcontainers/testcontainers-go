@@ -41,6 +41,7 @@ import (
 )
 
 func TestContainerAttachedToNewNetwork(t *testing.T) {
+	t.Parallel()
 	networkName := "new-network"
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
@@ -108,6 +109,7 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 }
 
 func TestContainerWithHostNetworkOptions(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -147,6 +149,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 }
 
 func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -167,6 +170,7 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 }
 
 func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -197,6 +201,7 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 }
 
 func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
+	t.Parallel()
 	nginxPort := "80/tcp"
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
@@ -229,6 +234,7 @@ func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
 }
 
 func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
+	t.Parallel()
 	nginxPort := "80/tcp"
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
@@ -261,6 +267,7 @@ func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
 }
 
 func TestContainerReturnItsContainerID(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -280,19 +287,19 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 }
 
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
-	t.Skip("need to use the sessionID")
+	t.Parallel()
 	ctx := context.Background()
 	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		t.Fatal(err)
 	}
 	client.NegotiateAPIVersion(ctx)
-	_, err = GenericContainer(ctx, GenericContainerRequest{
+	var container Container
+	container, err = GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			Image: "nginx",
 			ExposedPorts: []string{
 				"80/tcp",
-				"gotest.tools/assert",
 			},
 			SkipReaper: true,
 		},
@@ -301,13 +308,9 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	filtersJSON := fmt.Sprintf(`{"label":{"%s":true}}`, TestcontainerLabelIsReaper)
-	f, err := filters.FromJSON(filtersJSON)
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	resp, err := client.ContainerList(ctx, types.ContainerListOptions{
-		Filters: f,
+		Filters: filters.NewArgs(filters.Arg("label", fmt.Sprintf("%s=%s", TestcontainerLabelSessionID, container.SessionID()))),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -318,6 +321,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 }
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -353,6 +357,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 }
 
 func TestContainerTerminationResetsState(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -434,6 +439,7 @@ func TestContainerStopWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithReaper(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -471,6 +477,7 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -509,7 +516,9 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 }
 
 func TestContainerTerminationRemovesDockerImage(t *testing.T) {
+	t.Parallel()
 	t.Run("if not built from Dockerfile", func(t *testing.T) {
+		t.Parallel()
 		ctx := context.Background()
 		client, err := client.NewClientWithOpts(client.FromEnv)
 		if err != nil {
@@ -540,6 +549,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	})
 
 	t.Run("if built from Dockerfile", func(t *testing.T) {
+		t.Parallel()
 		ctx := context.Background()
 		client, err := client.NewClientWithOpts(client.FromEnv)
 		if err != nil {
@@ -579,6 +589,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 }
 
 func TestTwoContainersExposingTheSamePort(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -654,6 +665,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 }
 
 func TestContainerCreation(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	nginxPort := "80/tcp"
@@ -712,6 +724,7 @@ func TestContainerCreation(t *testing.T) {
 }
 
 func TestContainerCreationWithName(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	creationName := fmt.Sprintf("%s_%d", "test_container", time.Now().Unix())
@@ -774,6 +787,7 @@ func TestContainerCreationWithName(t *testing.T) {
 }
 
 func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	nginxPort := "80/tcp"
@@ -811,7 +825,7 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 }
 
 func TestContainerCreationTimesOut(t *testing.T) {
-	t.Skip("Wait needs to be fixed")
+	t.Parallel()
 	ctx := context.Background()
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
@@ -834,7 +848,7 @@ func TestContainerCreationTimesOut(t *testing.T) {
 }
 
 func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
-	t.Skip("Wait needs to be fixed")
+	t.Parallel()
 	ctx := context.Background()
 
 	nginxPort := "80/tcp"
@@ -873,7 +887,7 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 }
 
 func TestContainerCreationTimesOutWithHttp(t *testing.T) {
-	t.Skip("Wait needs to be fixed")
+	t.Parallel()
 	ctx := context.Background()
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
@@ -899,6 +913,7 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 }
 
 func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        "mysql:latest",
@@ -920,6 +935,7 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 }
 
 func TestContainerCreationWaitsForLog(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        "mysql:latest",
@@ -965,6 +981,7 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 }
 
 func Test_BuildContainerFromDockerfile(t *testing.T) {
+	t.Parallel()
 	t.Log("getting context")
 	context := context.Background()
 	t.Log("got context, creating container request")
@@ -1021,6 +1038,7 @@ func Test_BuildContainerFromDockerfile(t *testing.T) {
 }
 
 func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
+	t.Parallel()
 	t.Log("getting ctx")
 	ctx := context.Background()
 
@@ -1078,6 +1096,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 }
 
 func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
+	t.Parallel()
 	rescueStdout := os.Stderr
 	r, w, _ := os.Pipe()
 	os.Stderr = w
@@ -1124,6 +1143,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 }
 
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        "mysql:latest",
@@ -1148,6 +1168,7 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 }
 
 func TestContainerCreationWaitingForHostPort(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        "nginx:1.17.6",
@@ -1171,6 +1192,7 @@ func TestContainerCreationWaitingForHostPort(t *testing.T) {
 }
 
 func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        "nginx:1.17.6-alpine",
@@ -1194,6 +1216,7 @@ func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.
 }
 
 func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        "mysql:latest",
@@ -1249,6 +1272,7 @@ func TestCMD(t *testing.T) {
 		and it will be run when we run the container
 	*/
 
+	t.Parallel()
 	ctx := context.Background()
 
 	req := ContainerRequest{
@@ -1278,6 +1302,7 @@ func TestEntrypoint(t *testing.T) {
 		and it will be run when we run the container
 	*/
 
+	t.Parallel()
 	ctx := context.Background()
 
 	req := ContainerRequest{
@@ -1486,6 +1511,7 @@ func ExampleContainer_MappedPort() {
 }
 
 func TestContainerCreationWithBindAndVolume(t *testing.T) {
+	t.Parallel()
 	absPath, err := filepath.Abs("./testresources/hello.sh")
 	if err != nil {
 		t.Fatal(err)
@@ -1538,6 +1564,7 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 }
 
 func TestContainerWithTmpFs(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image: "busybox",
@@ -1588,7 +1615,9 @@ func TestContainerWithTmpFs(t *testing.T) {
 }
 
 func TestContainerNonExistentImage(t *testing.T) {
+	t.Parallel()
 	t.Run("if the image not found don't propagate the error", func(t *testing.T) {
+		t.Parallel()
 		_, err := GenericContainer(context.Background(), GenericContainerRequest{
 			ContainerRequest: ContainerRequest{
 				Image:      "postgres:nonexistent-version",
@@ -1604,6 +1633,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 	})
 
 	t.Run("the context cancellation is propagated to container creation", func(t *testing.T) {
+		t.Parallel()
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		_, err := GenericContainer(ctx, GenericContainerRequest{
@@ -1621,7 +1651,9 @@ func TestContainerNonExistentImage(t *testing.T) {
 }
 
 func TestContainerCustomPlatformImage(t *testing.T) {
+	t.Parallel()
 	t.Run("error with a non-existent platform", func(t *testing.T) {
+		t.Parallel()
 		nonExistentPlatform := "windows/arm12"
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
@@ -1644,6 +1676,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 	})
 
 	t.Run("specific platform should be propagated", func(t *testing.T) {
+		t.Parallel()
 		ctx := context.Background()
 
 		c, err := GenericContainer(ctx, GenericContainerRequest{
@@ -1678,6 +1711,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 }
 
 func TestContainerWithCustomHostname(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	name := fmt.Sprintf("some-nginx-%s-%d", t.Name(), rand.Int())
 	hostname := fmt.Sprintf("my-nginx-%s-%d", t.Name(), rand.Int())
@@ -1727,6 +1761,7 @@ func readHostname(t *testing.T, containerId string) string {
 }
 
 func TestDockerContainerCopyFileToContainer(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
@@ -1780,6 +1815,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 }
 
 func TestDockerContainerCopyFileFromContainer(t *testing.T) {
+	t.Parallel()
 	fileContent, err := ioutil.ReadFile("./testresources/hello.sh")
 	if err != nil {
 		t.Fatal(err)
@@ -1819,6 +1855,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 }
 
 func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
@@ -1854,6 +1891,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 }
 
 func TestDockerContainerResources(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	expected := []*units.Ulimit{
@@ -1897,6 +1935,7 @@ func TestDockerContainerResources(t *testing.T) {
 }
 
 func TestContainerWithReaperNetwork(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	networks := []string{
 		"test_network_" + randomString(),
@@ -1973,6 +2012,7 @@ func TestContainerRunningCheckingStatusCode(t *testing.T) {
 }
 
 func TestContainerWithUserID(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:      "alpine:latest",
@@ -2003,6 +2043,7 @@ func TestContainerWithUserID(t *testing.T) {
 }
 
 func TestContainerWithNoUserID(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:      "alpine:latest",
@@ -2034,6 +2075,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 func TestGetGatewayIP(t *testing.T) {
 	// When using docker-compose with DinD mode, and using host port or http wait strategy
 	// It's need to invoke GetGatewayIP for get the host
+	t.Parallel()
 	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
 	if err != nil {
 		t.Fatal(err)
