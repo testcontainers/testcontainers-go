@@ -1687,6 +1687,35 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	}
 }
 
+func TestDockerContainerCopyToContainer(t *testing.T) {
+	ctx := context.Background()
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:        "nginx:1.17.6",
+			ExposedPorts: []string{"80/tcp"},
+			WaitingFor:   wait.ForListeningPort("80/tcp"),
+		},
+		Started: true,
+	})
+	defer nginxC.Terminate(ctx)
+
+	copiedFileName := "hello_copy.sh"
+
+	fileContent, err := ioutil.ReadFile("./testresources/hello.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = nginxC.CopyToContainer(ctx, fileContent, "/"+copiedFileName, 700)
+	c, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c != 0 {
+		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
+	}
+}
+
 func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	fileContent, err := ioutil.ReadFile("./testresources/hello.sh")
 	if err != nil {

@@ -395,7 +395,11 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 	if err != nil {
 		return err
 	}
+	return c.CopyToContainer(ctx, fileContent, containerFilePath, fileMode)
+}
 
+// CopyToContainer copies fileContent data to a file in container
+func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error {
 	buffer := &bytes.Buffer{}
 
 	tw := tar.NewWriter(buffer)
