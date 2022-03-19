@@ -182,6 +182,28 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 	return nil
 }
 
+// Stop will stop an already started container
+//
+// In case the container fails to stop
+// gracefully within a time frame specified by the timeout argument,
+// it is forcefully terminated (killed).
+//
+// If the timeout is nil, the container's StopTimeout value is used, if set,
+// otherwise the engine default. A negative timeout value can be specified,
+// meaning no timeout, i.e. no forceful termination is performed.
+func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) error {
+	shortID := c.ID[:12]
+	c.logger.Printf("Stopping container id: %s image: %s", shortID, c.Image)
+
+	if err := c.provider.client.ContainerStop(ctx, c.ID, timeout); err != nil {
+		return err
+	}
+
+	c.logger.Printf("Container is stopped id: %s image: %s", shortID, c.Image)
+
+	return nil
+}
+
 // Terminate is used to kill the container. It is usually triggered by as defer function.
 func (c *DockerContainer) Terminate(ctx context.Context) error {
 	select {

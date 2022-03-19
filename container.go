@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -40,6 +41,7 @@ type Container interface {
 	Ports(context.Context) (nat.PortMap, error)                     // get all exposed ports
 	SessionID() string                                              // get session id
 	Start(context.Context) error                                    // start the container
+	Stop(context.Context, *time.Duration) error                     // stop the container
 	Terminate(context.Context) error                                // terminate the container
 	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
 	FollowOutput(LogConsumer)

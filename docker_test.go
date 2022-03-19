@@ -385,6 +385,53 @@ func TestContainerTerminationResetsState(t *testing.T) {
 	}
 }
 
+func TestContainerStopWithReaper(t *testing.T) {
+	ctx := context.Background()
+	client, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.NegotiateAPIVersion(ctx)
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = nginxA.Terminate(ctx)
+	}()
+	containerID := nginxA.GetContainerID()
+	resp, err := client.ContainerInspect(ctx, containerID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.State.Running != true {
+		t.Fatal("The container shoud be in running state")
+	}
+	stopTimeout := 10 * time.Second
+	err = nginxA.Stop(ctx, &stopTimeout)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err = client.ContainerInspect(ctx, containerID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.State.Running != false {
+		t.Fatal("The container shoud not be running")
+	}
+	if resp.State.Status != "exited" {
+		t.Fatal("The container shoud be in exited state")
+	}
+}
+
 func TestContainerTerminationWithReaper(t *testing.T) {
 	ctx := context.Background()
 	client, err := client.NewClientWithOpts(client.FromEnv)
@@ -1403,6 +1450,21 @@ func ExampleContainer_Start() {
 	})
 	defer nginxC.Terminate(ctx)
 	_ = nginxC.Start(ctx)
+}
+
+func ExampleContainer_Stop() {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "nginx",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForHTTP("/"),
+	}
+	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+	})
+	defer nginxC.Terminate(ctx)
+	timeout := 10 * time.Second
+	_ = nginxC.Stop(ctx, &timeout)
 }
 
 func ExampleContainer_MappedPort() {
