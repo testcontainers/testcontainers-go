@@ -23,7 +23,7 @@ examples as well. Check it out at
 
 ## License
 
-See [LICENSE](https://github.com/testcontainers/testcontainers-go/blob/master/LICENSE).
+See [LICENSE](https://github.com/testcontainers/testcontainers-go/blob/main/LICENSE).
 
 ## Copyright
 
