@@ -461,9 +461,10 @@ func checkIfError(t *testing.T, err ExecError) {
 func executeAndGetOutput(command string, args []string) (string, ExecError) {
 	cmd := exec.Command(command, args...)
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return string(out), ExecError{Error: err}
-	}
 
-	return string(out), ExecError{Error: nil}
+	return string(out), ExecError{
+		Error:        err,
+		StderrOutput: out,
+		StdoutOutput: out,
+	}
 }
