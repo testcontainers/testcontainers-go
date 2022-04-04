@@ -52,7 +52,7 @@ jobs:
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
         if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: gotestsum --format short-verbose -- -coverprofile=cover.txt ./...
+        run: go run gotest.tools/gotestsum --format short-verbose -- -coverprofile=cover.txt ./...
 
         # only report code coverage on linux
       - name: Upload coverage report
