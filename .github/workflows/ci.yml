@@ -32,16 +32,6 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
 
-      - name: Get dependencies
-        if: ${{ matrix.go-version != '1.x' }}
-        run: |
-          go get gotest.tools/gotestsum
-
-      - name: Get dependencies for 1.18
-        if: ${{ matrix.go-version == '1.x' }}
-        run: |
-          go install gotest.tools/gotestsum
-
       - name: modVerify
         run: go mod verify
 
