@@ -1126,7 +1126,7 @@ func inAContainer() bool {
 }
 
 // deprecated
-// see https://github.com/testcontainers/testcontainers-java/blob/master/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L46
+// see https://github.com/testcontainers/testcontainers-java/blob/main/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L46
 func getDefaultGatewayIP() (string, error) {
 	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L27
 	cmd := exec.Command("sh", "-c", "ip route|awk '/default/ { print $3 }'")
