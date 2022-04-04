@@ -35,13 +35,11 @@ jobs:
       - name: Get dependencies
         if: ${{ matrix.go-version != '1.x' }}
         run: |
-          go get -v -t -d ./...
           go get gotest.tools/gotestsum
 
       - name: Get dependencies for 1.18
         if: ${{ matrix.go-version == '1.x' }}
         run: |
-          go install -v -t -d ./...
           go install gotest.tools/gotestsum
 
       - name: modVerify
