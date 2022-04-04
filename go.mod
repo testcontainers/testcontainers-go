@@ -7,6 +7,7 @@ require (
 	github.com/containerd/containerd v1.5.9
 	github.com/docker/docker v20.10.11+incompatible
 	github.com/docker/go-connections v0.4.0
+	github.com/docker/go-units v0.4.0
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -21,5 +22,6 @@ require (
 	golang.org/x/net v0.0.0-20211108170745-6635138e15ea // indirect
 	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	gotest.tools/gotestsum v1.7.0
 	gotest.tools/v3 v3.0.3
 )

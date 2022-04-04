@@ -18,7 +18,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.14.x, 1.15.x, 1.x]
+        go-version: [1.14.x, 1.15.x, 1.16.x, 1.17.x, 1.x]
         platform: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -31,11 +31,6 @@ jobs:
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
-
-      - name: Get dependencies
-        run: |
-          go get -v -t -d ./...
-          go get gotest.tools/gotestsum
 
       - name: modVerify
         run: go mod verify
@@ -57,7 +52,7 @@ jobs:
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
         if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: gotestsum --format short-verbose -- -coverprofile=cover.txt ./...
+        run: go run gotest.tools/gotestsum --format short-verbose -- -coverprofile=cover.txt ./...
 
         # only report code coverage on linux
       - name: Upload coverage report
