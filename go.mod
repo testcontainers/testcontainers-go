@@ -23,5 +23,5 @@ require (
 	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	gotest.tools/gotestsum v1.7.0
-	gotest.tools/v3 v3.0.3
+	gotest.tools/v3 v3.1.0
 )
