@@ -143,7 +143,7 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 
 	for k := range dc.WaitStrategyMap {
 		containerName := dc.Identifier + "_" + k.service
-		composeV2ContainerName := strings.ReplaceAll(containerName, "_", "-")
+		composeV2ContainerName := dc.Identifier + "-" + k.service
 		f := filters.NewArgs(
 			filters.Arg("name", containerName),
 			filters.Arg("name", composeV2ContainerName),
