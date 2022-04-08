@@ -1,28 +1,14 @@
-name: Main pipeline
+name: Podman pipeline
 
 on: [push, pull_request]
 
 jobs:
-  static-analysis:
-    runs-on: ubuntu-latest
-    steps:
-
-      - uses: actions/checkout@v3
-      - name: Run ShellCheck
-        run: |
-          shellcheck scripts/*.sh
-
-      - name: Run gofmt
-        run: |
-          ./scripts/checks.sh
-  test:
+  build:
     strategy:
       matrix:
         go-version: [1.14.x, 1.15.x, 1.16.x, 1.17.x, 1.x]
-        platform: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
     steps:
-
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
@@ -38,31 +24,46 @@ jobs:
       - name: modTidy
         run: go mod tidy
 
-      - name: vet
-        run: go vet ./...
-
       - name: ensure compilation
         env:
           GOOS: linux
         run: go build
+
+      - name: Enable systemd user process
+        run: |
+          loginctl enable-linger $(whoami)
+          sleep 1
+
+      - name: Set XDG_RUNTIME_DIR
+        run: echo "XDG_RUNTIME_DIR=/run/user/$UID" >> $GITHUB_ENV
+
+      - name: Install Podman
+        run: |
+          set -x
+          sudo apt-get remove -y podman docker-ce docker docker-engine docker.io containerd runc ||:
+          curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_$( lsb_release -rs )/Release.key | sudo apt-key add -
+          echo  "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_$( lsb_release -rs )/ /" | sudo tee /etc/apt/sources.list.d/podman.list /dev/null
+          sudo apt-get update
+          sudo apt-get install -y podman
+          sudo systemctl start podman
+          systemctl --user enable --now podman.socket
+          systemctl --user status podman.socket
+          podman info
+
+      - name: Set DOCKER_HOST
+        run: echo "DOCKER_HOST=unix:///$XDG_RUNTIME_DIR/podman/podman.sock" >> $GITHUB_ENV
 
       - name: gotestsum
         # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
         # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: go run gotest.tools/gotestsum --format short-verbose -- -coverprofile=cover.txt ./...
+        continue-on-error: true
 
         # only report code coverage on linux
       - name: Upload coverage report
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
         uses: codecov/codecov-action@v2
         with:
           files: ./cover.txt
-          name: testcontainers-go-${{ matrix.go-version }}
-
-      - name: Run checker
-        run: |
-          ./scripts/check_environment.sh
-
+          name: testcontainers-podman-go-${{ matrix.go-version }}
