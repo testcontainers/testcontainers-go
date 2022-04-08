@@ -360,13 +360,6 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, io.Reade
 		return 0, nil, err
 	}
 
-	err = cli.ContainerExecStart(ctx, response.ID, types.ExecStartCheck{
-		Detach: false,
-	})
-	if err != nil {
-		return 0, nil, err
-	}
-
 	var exitCode int
 	for {
 		execResp, err := cli.ContainerExecInspect(ctx, response.ID)
@@ -618,20 +611,9 @@ func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
 	})
 }
 
-// NewDockerProvider creates a Docker provider with the EnvClient
-func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error) {
+func NewDockerClient() (cli *client.Client, host string, err error) {
 	tcConfig := readTCPropsFile()
-	host := tcConfig.Host
-
-	o := &DockerProviderOptions{
-		GenericProviderOptions: &GenericProviderOptions{
-			Logger: Logger,
-		},
-	}
-
-	for idx := range provOpts {
-		provOpts[idx].ApplyDockerTo(o)
-	}
+	host = tcConfig.Host
 
 	opts := []client.Opt{client.FromEnv}
 	if host != "" {
@@ -651,7 +633,30 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		host = "unix:///var/run/docker.sock"
 	}
 
-	c, err := client.NewClientWithOpts(opts...)
+	cli, err = client.NewClientWithOpts(opts...)
+
+	if err != nil {
+		return nil, "", err
+	}
+
+	cli.NegotiateAPIVersion(context.Background())
+
+	return cli, host, nil
+}
+
+// NewDockerProvider creates a Docker provider with the EnvClient
+func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error) {
+	o := &DockerProviderOptions{
+		GenericProviderOptions: &GenericProviderOptions{
+			Logger: Logger,
+		},
+	}
+
+	for idx := range provOpts {
+		provOpts[idx].ApplyDockerTo(o)
+	}
+
+	c, host, err := NewDockerClient()
 	if err != nil {
 		return nil, err
 	}

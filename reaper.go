@@ -28,8 +28,8 @@ type reaperContextKey string
 
 var (
 	dockerHostContextKey = reaperContextKey("docker_host")
-	reaper *Reaper // We would like to create reaper only once
-	mutex  sync.Mutex
+	reaper               *Reaper // We would like to create reaper only once
+	mutex                sync.Mutex
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with

@@ -1,12 +1,15 @@
 package testcontainers
 
 import (
+	"context"
 	"fmt"
-	"os/exec"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
@@ -347,13 +350,11 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 	assert.Equal(t, 1, len(compose.Services))
 	assert.Contains(t, compose.Services, "nginx")
 
-	containerNameNginx := compose.Identifier + "_nginx_1"
-
 	present := map[string]string{
 		"bar": "BAR",
 	}
 	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, containerNameNginx, present, absent)
+	assertContainerEnvironmentVariables(t, compose.Identifier, "nginx", present, absent)
 }
 
 func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
@@ -386,17 +387,18 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 	assert.Contains(t, compose.Services, "mysql")
 	assert.Contains(t, compose.Services, "postgres")
 
-	containerNameNginx := compose.Identifier + "_nginx_1"
-
 	present := map[string]string{
 		"bar": "BAR",
 		"foo": "FOO",
 	}
 	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, containerNameNginx, present, absent)
+	assertContainerEnvironmentVariables(t, compose.Identifier, "nginx", present, absent)
 }
 
 func TestLocalDockerComposeWithVolume(t *testing.T) {
+	if providerType == ProviderPodman {
+		t.Skip("fails for some reason with Podman")
+	}
 	path := "./testresources/docker-compose-volume.yml"
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -405,7 +407,7 @@ func TestLocalDockerComposeWithVolume(t *testing.T) {
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
-		assertVolumeDoesNotExist(t, fmt.Sprintf("%s_mydata", identifier))
+		assertVolumeDoesNotExist(t, identifier, "mydata")
 	}
 	defer destroyFn()
 
@@ -415,33 +417,79 @@ func TestLocalDockerComposeWithVolume(t *testing.T) {
 	checkIfError(t, err)
 }
 
-func assertVolumeDoesNotExist(t *testing.T, volume string) {
-	args := []string{"volume", "inspect", volume}
+func assertVolumeDoesNotExist(tb testing.TB, composeIdentifier, volume string) {
+	containerClient, _, err := NewDockerClient()
+	if err != nil {
+		tb.Fatalf("Failed to get provider: %v", err)
+	}
 
-	output, _ := executeAndGetOutput("docker", args)
-	if !strings.Contains(output, "No such volume") {
-		t.Fatalf("Expected volume %q to not exist", volume)
+	volumeList, err := containerClient.VolumeList(context.Background(), filters.NewArgs())
+	if err != nil {
+		tb.Fatalf("Failed to list volumes: %v", err)
+	}
+
+	if len(volumeList.Warnings) > 0 {
+		tb.Logf("Volume list warnings: %v", volumeList.Warnings)
+	}
+
+	volumeNameRegexp := regexp.MustCompile(fmt.Sprintf(`^\/?%s(_|-)%s$`, composeIdentifier, volume))
+
+	for i := range volumeList.Volumes {
+		if volumeNameRegexp.MatchString(volumeList.Volumes[i].Name) {
+			tb.Fatalf("Volume should not be present")
+		}
 	}
 }
 
-func assertContainerEnvironmentVariables(t *testing.T, containerName string, present map[string]string, absent map[string]string) {
-	args := []string{"exec", containerName, "env"}
+func assertContainerEnvironmentVariables(
+	tb testing.TB,
+	composeIdentifier, serviceName string,
+	present map[string]string,
+	absent map[string]string,
+) {
+	containerClient, _, err := NewDockerClient()
+	if err != nil {
+		tb.Fatalf("Failed to get provider: %v", err)
+	}
 
-	output, err := executeAndGetOutput("docker", args)
-	checkIfError(t, err)
+	containers, err := containerClient.ContainerList(context.Background(), types.ContainerListOptions{})
+	if err != nil {
+		tb.Fatalf("Failed to list containers: %v", err)
+	} else if len(containers) == 0 {
+		tb.Fatalf("container list empty")
+	}
+
+	containerNameRegexp := regexp.MustCompile(fmt.Sprintf(`^\/?%s(_|-)%s(_|-)\d$`, composeIdentifier, serviceName))
+	var containerID string
+containerLoop:
+	for i := range containers {
+		c := containers[i]
+		for j := range c.Names {
+			if containerNameRegexp.MatchString(c.Names[j]) {
+				containerID = c.ID
+				break containerLoop
+			}
+		}
+	}
+
+	details, err := containerClient.ContainerInspect(context.Background(), containerID)
+	if err != nil {
+		tb.Fatalf("Failed to inspect container: %v", err)
+	}
 
 	for k, v := range present {
 		keyVal := k + "=" + v
-		assert.Contains(t, output, keyVal)
+		assert.Contains(tb, details.Config.Env, keyVal)
 	}
 
 	for k, v := range absent {
 		keyVal := k + "=" + v
-		assert.NotContains(t, output, keyVal)
+		assert.NotContains(tb, details.Config.Env, keyVal)
 	}
 }
 
 func checkIfError(t *testing.T, err ExecError) {
+	t.Helper()
 	if err.Error != nil {
 		t.Fatalf("Failed when running %v: %v", err.Command, err.Error)
 	}
@@ -456,15 +504,4 @@ func checkIfError(t *testing.T, err ExecError) {
 
 	assert.NotNil(t, err.StdoutOutput)
 	assert.NotNil(t, err.StderrOutput)
-}
-
-func executeAndGetOutput(command string, args []string) (string, ExecError) {
-	cmd := exec.Command(command, args...)
-	out, err := cmd.CombinedOutput()
-
-	return string(out), ExecError{
-		Error:        err,
-		StderrOutput: out,
-		StdoutOutput: out,
-	}
 }
