@@ -40,13 +40,27 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const (
+	nginxImage       = "docker.io/nginx"
+	nginxAlpineImage = "docker.io/nginx:alpine"
+)
+
+var providerType = ProviderDocker
+
+func init() {
+	if strings.Contains(os.Getenv("DOCKER_HOST"), "podman.sock") {
+		providerType = ProviderPodman
+	}
+}
+
 func TestContainerAttachedToNewNetwork(t *testing.T) {
 	t.Parallel()
 	networkName := "new-network"
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -62,6 +76,7 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 	}
 
 	newNetwork, err := GenericNetwork(ctx, GenericNetworkRequest{
+		ProviderType: providerType,
 		NetworkRequest: NetworkRequest{
 			Name:           networkName,
 			CheckDuplicate: true,
@@ -112,8 +127,9 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       "nginx",
+			Image:       nginxImage,
 			Privileged:  true,
 			SkipReaper:  true,
 			NetworkMode: "host",
@@ -152,8 +168,9 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       "nginx",
+			Image:       nginxImage,
 			SkipReaper:  true,
 			NetworkMode: "host",
 			Networks:    []string{"new-network"},
@@ -172,9 +189,11 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
+
 	gcr := GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       "nginx",
+			Image:       nginxImage,
 			SkipReaper:  true,
 			NetworkMode: "host",
 			WaitingFor:  wait.ForListeningPort("80/tcp"),
@@ -205,8 +224,9 @@ func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
 	nginxPort := "80/tcp"
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       "nginx",
+			Image:       nginxImage,
 			SkipReaper:  true,
 			NetworkMode: "host",
 			WaitingFor:  wait.ForListeningPort(nat.Port(nginxPort)),
@@ -238,8 +258,9 @@ func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
 	nginxPort := "80/tcp"
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       "nginx",
+			Image:       nginxImage,
 			SkipReaper:  true,
 			NetworkMode: "host",
 			WaitingFor:  wait.ForListeningPort(nat.Port(nginxPort)),
@@ -270,8 +291,9 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -296,8 +318,9 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	client.NegotiateAPIVersion(ctx)
 	var container Container
 	container, err = GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -329,8 +352,9 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	}
 	client.NegotiateAPIVersion(ctx)
 	_, err = GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -365,8 +389,9 @@ func TestContainerTerminationResetsState(t *testing.T) {
 	}
 	client.NegotiateAPIVersion(ctx)
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -399,8 +424,9 @@ func TestContainerStopWithReaper(t *testing.T) {
 	}
 	client.NegotiateAPIVersion(ctx)
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -447,8 +473,9 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 	}
 	client.NegotiateAPIVersion(ctx)
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -485,8 +512,9 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 	}
 	client.NegotiateAPIVersion(ctx)
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -526,8 +554,9 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		}
 		client.NegotiateAPIVersion(ctx)
 		container, err := GenericContainer(ctx, GenericContainerRequest{
+			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
-				Image: "nginx",
+				Image: nginxImage,
 				ExposedPorts: []string{
 					"80/tcp",
 				},
@@ -564,6 +593,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 			WaitingFor:   wait.ForLog("Ready to accept connections"),
 		}
 		container, err := GenericContainer(ctx, GenericContainerRequest{
+			ProviderType:     providerType,
 			ContainerRequest: req,
 			Started:          true,
 		})
@@ -592,8 +622,9 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -611,8 +642,9 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	}()
 
 	nginxB, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -670,8 +702,9 @@ func TestContainerCreation(t *testing.T) {
 
 	nginxPort := "80/tcp"
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				nginxPort,
 			},
@@ -731,8 +764,9 @@ func TestContainerCreationWithName(t *testing.T) {
 	expectedName := "/" + creationName // inspect adds '/' in the beginning
 	nginxPort := "80/tcp"
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				nginxPort,
 			},
@@ -793,8 +827,9 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 	nginxPort := "80/tcp"
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "menedev/delayed-nginx:1.15.2",
+			Image: "docker.io/menedev/delayed-nginx:1.15.2",
 			ExposedPorts: []string{
 				nginxPort,
 			},
@@ -829,8 +864,9 @@ func TestContainerCreationTimesOut(t *testing.T) {
 	ctx := context.Background()
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "menedev/delayed-nginx:1.15.2",
+			Image: "docker.io/menedev/delayed-nginx:1.15.2",
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -854,8 +890,9 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 	nginxPort := "80/tcp"
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: nginxImage,
 			ExposedPorts: []string{
 				nginxPort,
 			},
@@ -891,8 +928,9 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 	ctx := context.Background()
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "menedev/delayed-nginx:1.15.2",
+			Image: "docker.io/menedev/delayed-nginx:1.15.2",
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -916,7 +954,7 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "mysql:latest",
+		Image:        "docker.io/mysql:latest",
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "password",
@@ -925,6 +963,7 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 		WaitingFor: wait.ForLog("test context timeout").WithStartupTimeout(1 * time.Second),
 	}
 	_, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -938,7 +977,7 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "mysql:latest",
+		Image:        "docker.io/mysql:latest",
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "password",
@@ -947,6 +986,7 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
 	}
 	mysqlC, _ := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -996,6 +1036,7 @@ func Test_BuildContainerFromDockerfile(t *testing.T) {
 	t.Log("creating generic container request from container request")
 
 	genContainerReq := GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	}
@@ -1058,6 +1099,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	}
 
 	genContainerReq := GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	}
@@ -1114,6 +1156,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	}
 
 	genContainerReq := GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	}
@@ -1146,7 +1189,7 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "mysql:latest",
+		Image:        "docker.io/mysql:latest",
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "password",
@@ -1158,6 +1201,7 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 		),
 	}
 	_, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -1171,11 +1215,12 @@ func TestContainerCreationWaitingForHostPort(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "nginx:1.17.6",
+		Image:        nginxImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForListeningPort("80/tcp"),
 	}
 	nginx, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -1195,11 +1240,12 @@ func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.
 	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "nginx:1.17.6-alpine",
+		Image:        nginxAlpineImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForListeningPort("80/tcp"),
 	}
 	nginx, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -1219,7 +1265,7 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "mysql:latest",
+		Image:        "docker.io/mysql:latest",
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "password",
@@ -1232,6 +1278,7 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 	}
 
 	mysqlC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -1276,7 +1323,7 @@ func TestCMD(t *testing.T) {
 	ctx := context.Background()
 
 	req := ContainerRequest{
-		Image: "alpine",
+		Image: "docker.io/alpine",
 		WaitingFor: wait.ForAll(
 			wait.ForLog("command override!"),
 		),
@@ -1284,6 +1331,7 @@ func TestCMD(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -1306,7 +1354,7 @@ func TestEntrypoint(t *testing.T) {
 	ctx := context.Background()
 
 	req := ContainerRequest{
-		Image: "alpine",
+		Image: "docker.io/alpine",
 		WaitingFor: wait.ForAll(
 			wait.ForLog("entrypoint override!"),
 		),
@@ -1314,6 +1362,7 @@ func TestEntrypoint(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -1437,7 +1486,7 @@ func TestReadTCPropsFile(t *testing.T) {
 func ExampleDockerProvider_CreateContainer() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "nginx",
+		Image:        nginxImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
@@ -1451,7 +1500,7 @@ func ExampleDockerProvider_CreateContainer() {
 func ExampleContainer_Host() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "nginx",
+		Image:        nginxImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
@@ -1467,7 +1516,7 @@ func ExampleContainer_Host() {
 func ExampleContainer_Start() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "nginx",
+		Image:        nginxImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
@@ -1481,7 +1530,7 @@ func ExampleContainer_Start() {
 func ExampleContainer_Stop() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "nginx",
+		Image:        nginxImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
@@ -1496,7 +1545,7 @@ func ExampleContainer_Stop() {
 func ExampleContainer_MappedPort() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "nginx",
+		Image:        nginxImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
@@ -1542,8 +1591,9 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 	}()
 	// Create the container that writes into the mounted volume.
 	bashC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:      "bash",
+			Image:      "docker.io/bash",
 			Mounts:     Mounts(BindMount(absPath, "/hello.sh"), VolumeMount(volumeName, "/data")),
 			Cmd:        []string{"bash", "/hello.sh"},
 			WaitingFor: wait.ForLog("done"),
@@ -1567,12 +1617,13 @@ func TestContainerWithTmpFs(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image: "busybox",
+		Image: "docker.io/busybox",
 		Cmd:   []string{"sleep", "10"},
 		Tmpfs: map[string]string{"/testtmpfs": "rw"},
 	}
 
 	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -1637,8 +1688,9 @@ func TestContainerNonExistentImage(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		_, err := GenericContainer(ctx, GenericContainerRequest{
+			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
-				Image:      "postgres:12",
+				Image:      "docker.io/postgres:12",
 				WaitingFor: wait.ForLog("log"),
 				SkipReaper: true,
 			},
@@ -1658,8 +1710,9 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 		c, err := GenericContainer(ctx, GenericContainerRequest{
+			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
-				Image:         "redis:latest",
+				Image:         "docker.io/redis:latest",
 				SkipReaper:    true,
 				ImagePlatform: nonExistentPlatform,
 			},
@@ -1680,8 +1733,9 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		ctx := context.Background()
 
 		c, err := GenericContainer(ctx, GenericContainerRequest{
+			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
-				Image:         "mysql:5.7",
+				Image:         "docker.io/mysql:5.7",
 				SkipReaper:    true,
 				ImagePlatform: "linux/amd64",
 			},
@@ -1717,10 +1771,11 @@ func TestContainerWithCustomHostname(t *testing.T) {
 	hostname := fmt.Sprintf("my-nginx-%s-%d", t.Name(), rand.Int())
 	req := ContainerRequest{
 		Name:     name,
-		Image:    "nginx",
+		Image:    nginxImage,
 		Hostname: hostname,
 	}
 	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -1765,8 +1820,9 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	ctx := context.Background()
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:        "nginx:1.17.6",
+			Image:        nginxImage,
 			ExposedPorts: []string{"80/tcp"},
 			WaitingFor:   wait.ForListeningPort("80/tcp"),
 		},
@@ -1789,8 +1845,9 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 	ctx := context.Background()
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:        "nginx:1.17.6",
+			Image:        nginxImage,
 			ExposedPorts: []string{"80/tcp"},
 			WaitingFor:   wait.ForListeningPort("80/tcp"),
 		},
@@ -1823,8 +1880,9 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	ctx := context.Background()
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:        "nginx:1.17.6",
+			Image:        nginxImage,
 			ExposedPorts: []string{"80/tcp"},
 			WaitingFor:   wait.ForListeningPort("80/tcp"),
 		},
@@ -1859,8 +1917,9 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 	ctx := context.Background()
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:        "nginx:1.17.6",
+			Image:        nginxImage,
 			ExposedPorts: []string{"80/tcp"},
 			WaitingFor:   wait.ForListeningPort("80/tcp"),
 		},
@@ -1908,6 +1967,7 @@ func TestDockerContainerResources(t *testing.T) {
 	}
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:        "nginx",
 			ExposedPorts: []string{"80/tcp"},
@@ -1948,13 +2008,14 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 			Attachable: true,
 		}
 		_, err := GenericNetwork(ctx, GenericNetworkRequest{
+			ProviderType:   providerType,
 			NetworkRequest: nr,
 		})
 		assert.Nil(t, err)
 	}
 
 	req := ContainerRequest{
-		Image:        "nginx",
+		Image:        nginxImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("80/tcp"),
@@ -1964,6 +2025,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	}
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -2015,12 +2077,13 @@ func TestContainerWithUserID(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:      "alpine:latest",
+		Image:      "docker.io/alpine:latest",
 		User:       "60125",
 		Cmd:        []string{"sh", "-c", "id -u"},
 		WaitingFor: wait.ForExit(),
 	}
 	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -2046,11 +2109,12 @@ func TestContainerWithNoUserID(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:      "alpine:latest",
+		Image:      "docker.io/alpine:latest",
 		Cmd:        []string{"sh", "-c", "id -u"},
 		WaitingFor: wait.ForExit(),
 	}
 	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})

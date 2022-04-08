@@ -135,6 +135,7 @@ func (f GenericProviderOptionFunc) ApplyGenericTo(opts *GenericProviderOptions) 
 // possible provider types
 const (
 	ProviderDocker ProviderType = iota // Docker is default = 0
+	ProviderPodman
 )
 
 // GetProvider provides the provider implementation for a certain type
@@ -149,7 +150,15 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 
 	switch t {
 	case ProviderDocker:
-		provider, err := NewDockerProvider(Generic2DockerOptions(opts...)...)
+		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Bridge))
+		provider, err := NewDockerProvider(providerOptions...)
+		if err != nil {
+			return nil, fmt.Errorf("%w, failed to create Docker provider", err)
+		}
+		return provider, nil
+	case ProviderPodman:
+		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Podman))
+		provider, err := NewDockerProvider(providerOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w, failed to create Docker provider", err)
 		}
