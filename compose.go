@@ -135,6 +135,10 @@ func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
 	return environment
 }
 
+func (dc *LocalDockerCompose) containerNameFromServiceName(service, separator string) string {
+	return dc.Identifier + separator + service
+}
+
 func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -142,8 +146,8 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 	}
 
 	for k := range dc.WaitStrategyMap {
-		containerName := dc.Identifier + "_" + k.service
-		composeV2ContainerName := strings.ReplaceAll(containerName, "_", "-")
+		containerName := dc.containerNameFromServiceName(k.service, "_")
+		composeV2ContainerName := dc.containerNameFromServiceName(k.service, "-")
 		f := filters.NewArgs(
 			filters.Arg("name", containerName),
 			filters.Arg("name", composeV2ContainerName),
