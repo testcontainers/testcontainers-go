@@ -1,11 +1,13 @@
 site_name: Testcontainers-Go
 plugins:
     - search
+    - codeinclude
     - markdownextradata
 theme:
     name: 'material'
+    custom_dir: 'docs/theme'
     palette:
-        scheme: 'testcontainers'
+        scheme: testcontainers
     font:
         text: Roboto
         code: Roboto Mono
@@ -20,6 +22,8 @@ markdown_extensions:
     - codehilite:
           linenums: False
     - pymdownx.superfences
+    - pymdownx.tabbed:
+        alternate_style: true
     - pymdownx.snippets
 nav:
     - Home: index.md
