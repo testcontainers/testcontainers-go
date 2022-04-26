@@ -6,8 +6,8 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-jinja2 = "3.0.0"
 mkdocs = "*"
+mkdocs-codeinclude-plugin = "*"
 mkdocs-material = "*"
 mkdocs-markdownextradata-plugin = "*"
 
