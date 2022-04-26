@@ -5,7 +5,6 @@ plugins:
     - markdownextradata
 theme:
     name: 'material'
-    custom_dir: 'docs/theme'
     palette:
         scheme: testcontainers
     font:
