@@ -145,6 +145,8 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 		return err
 	}
 
+	cli.NegotiateAPIVersion(context.Background())
+
 	for k := range dc.WaitStrategyMap {
 		containerName := dc.containerNameFromServiceName(k.service, "_")
 		composeV2ContainerName := dc.containerNameFromServiceName(k.service, "-")
