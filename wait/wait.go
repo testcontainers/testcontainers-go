@@ -17,7 +17,7 @@ type StrategyTarget interface {
 	Host(context.Context) (string, error)
 	MappedPort(context.Context, nat.Port) (nat.Port, error)
 	Logs(context.Context) (io.ReadCloser, error)
-	Exec(ctx context.Context, cmd []string) (int, error)
+	Exec(ctx context.Context, cmd []string) (int, io.Reader, error)
 	State(context.Context) (*types.ContainerState, error)
 }
 
