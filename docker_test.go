@@ -1561,7 +1561,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 
 	path := "/testtmpfs/test.file"
 
-	c, err := container.Exec(ctx, []string{"ls", path})
+	c, _, err := container.Exec(ctx, []string{"ls", path})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1569,7 +1569,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 		t.Fatalf("File %s should not have existed, expected return code 1, got %v", path, c)
 	}
 
-	c, err = container.Exec(ctx, []string{"touch", path})
+	c, _, err = container.Exec(ctx, []string{"touch", path})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1577,7 +1577,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 		t.Fatalf("File %s should have been created successfully, expected return code 0, got %v", path, c)
 	}
 
-	c, err = container.Exec(ctx, []string{"ls", path})
+	c, _, err = container.Exec(ctx, []string{"ls", path})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1740,7 +1740,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 
 	copiedFileName := "hello_copy.sh"
 	_ = nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
-	c, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
+	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1769,7 +1769,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = nginxC.CopyToContainer(ctx, fileContent, "/"+copiedFileName, 700)
-	c, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
+	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1797,7 +1797,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 
 	copiedFileName := "hello_copy.sh"
 	_ = nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
-	c, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
+	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1832,7 +1832,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 
 	copiedFileName := "hello_copy.sh"
 	_ = nginxC.CopyFileToContainer(ctx, "./testresources/empty.sh", "/"+copiedFileName, 700)
-	c, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
+	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
 	}

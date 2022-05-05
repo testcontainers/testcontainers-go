@@ -28,8 +28,8 @@ func (st noopStrategyTarget) Logs(ctx context.Context) (io.ReadCloser, error) {
 	return st.ioReaderCloser, nil
 }
 
-func (st noopStrategyTarget) Exec(ctx context.Context, cmd []string) (int, error) {
-	return 0, nil
+func (st noopStrategyTarget) Exec(ctx context.Context, cmd []string) (int, io.Reader, error) {
+	return 0, nil, nil
 }
 func (st noopStrategyTarget) State(ctx context.Context) (*types.ContainerState, error) {
 	return nil, nil

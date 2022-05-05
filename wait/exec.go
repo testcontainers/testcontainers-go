@@ -63,7 +63,7 @@ func (ws ExecStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(ws.PollInterval):
-			exitCode, err := target.Exec(ctx, ws.cmd)
+			exitCode, _, err := target.Exec(ctx, ws.cmd)
 			if err != nil {
 				return err
 			}

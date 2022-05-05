@@ -106,7 +106,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		exitCode, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
+		exitCode, _, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
 		if err != nil {
 			return fmt.Errorf("%w, host port waiting failed", err)
 		}

@@ -246,7 +246,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	existingLogs := len(consumer.Msgs)
 
 	hitNginx := func() {
-		i, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + port.Port()})
+		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + port.Port()})
 		if err != nil || i > 0 {
 			t.Fatalf("Can't make request to nginx container from dind container")
 		}
@@ -264,11 +264,11 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		"-j", "REJECT", "--reject-with", "tcp-reset",
 	}
 	// Simulate a transient closed connection to the docker daemon
-	i, err := dind.Exec(ctx, append([]string{"iptables", "-A"}, iptableArgs...))
+	i, _, err := dind.Exec(ctx, append([]string{"iptables", "-A"}, iptableArgs...))
 	if err != nil || i > 0 {
 		t.Fatalf("Failed to close connection to dind daemon")
 	}
-	i, err = dind.Exec(ctx, append([]string{"iptables", "-D"}, iptableArgs...))
+	i, _, err = dind.Exec(ctx, append([]string{"iptables", "-D"}, iptableArgs...))
 	if err != nil || i > 0 {
 		t.Fatalf("Failed to re-open connection to dind daemon")
 	}
