@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2
 	github.com/containerd/containerd v1.5.9
-	github.com/docker/docker v20.10.11+incompatible
+	github.com/docker/docker v20.10.15+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0
 	github.com/go-redis/redis v6.15.9+incompatible
