@@ -249,10 +249,12 @@ func (dc *LocalDockerCompose) validate() error {
 // ExecError is super struct that holds any information about an execution error, so the client code
 // can handle the result
 type ExecError struct {
-	Command []string
-	Error   error
-	Stdout  error
-	Stderr  error
+	Command      []string
+	StdoutOutput []byte
+	StderrOutput []byte
+	Error        error
+	Stdout       error
+	Stderr       error
 }
 
 // execute executes a program with arguments and environment variables inside a specific directory
@@ -282,10 +284,12 @@ func execute(
 
 		return ExecError{
 			// add information about the CMD and arguments used
-			Command: execCmd,
-			Error:   err,
-			Stderr:  errStderr,
-			Stdout:  errStdout,
+			Command:      execCmd,
+			StdoutOutput: stdout.Bytes(),
+			StderrOutput: stderr.Bytes(),
+			Error:        err,
+			Stderr:       errStderr,
+			Stdout:       errStdout,
 		}
 	}
 
@@ -306,10 +310,12 @@ func execute(
 	execCmd = append(execCmd, args...)
 
 	return ExecError{
-		Command: execCmd,
-		Error:   err,
-		Stderr:  errStderr,
-		Stdout:  errStdout,
+		Command:      execCmd,
+		StdoutOutput: stdout.Bytes(),
+		StderrOutput: stderr.Bytes(),
+		Error:        err,
+		Stderr:       errStderr,
+		Stdout:       errStdout,
 	}
 }
 
@@ -383,7 +389,11 @@ func (w *capturingPassThroughWriter) Write(d []byte) (int, error) {
 
 // Bytes returns bytes written to the writer
 func (w *capturingPassThroughWriter) Bytes() []byte {
-	return w.buf.Bytes()
+	b := w.buf.Bytes()
+	if b == nil {
+		b = []byte{}
+	}
+	return b
 }
 
 // Which checks if a binary is present in PATH

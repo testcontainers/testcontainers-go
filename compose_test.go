@@ -453,14 +453,18 @@ func checkIfError(t *testing.T, err ExecError) {
 	if err.Stderr != nil {
 		t.Fatalf("An error in Stderr happened when running %v: %v", err.Command, err.Stderr)
 	}
+
+	assert.NotNil(t, err.StdoutOutput)
+	assert.NotNil(t, err.StderrOutput)
 }
 
 func executeAndGetOutput(command string, args []string) (string, ExecError) {
 	cmd := exec.Command(command, args...)
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return string(out), ExecError{Error: err}
-	}
 
-	return string(out), ExecError{Error: nil}
+	return string(out), ExecError{
+		Error:        err,
+		StderrOutput: out,
+		StdoutOutput: out,
+	}
 }
