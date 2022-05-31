@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -22,8 +23,10 @@ const (
 	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.3.3"
 )
 
-var reaper *Reaper // We would like to create reaper only once
-var mutex sync.Mutex
+var (
+	reaper *Reaper // We would like to create reaper only once
+	mutex  sync.Mutex
+)
 
 // ReaperProvider represents a provider for the reaper to run itself with
 // The ContainerProvider interface should usually satisfy this as well, so it is pluggable
@@ -63,7 +66,10 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 			TestcontainerLabelIsReaper: "true",
 		},
 		SkipReaper: true,
-		Mounts:     Mounts(BindMount("/var/run/docker.sock", "/var/run/docker.sock")),
+		Mounts: Mounts(BindMount(
+			coalesce(os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"), "/var/run/docker.sock"),
+			"/var/run/docker.sock",
+		)),
 		AutoRemove: true,
 		WaitingFor: wait.ForListeningPort(listeningPort),
 	}
@@ -142,4 +148,11 @@ func (r *Reaper) Labels() map[string]string {
 		TestcontainerLabel:          "true",
 		TestcontainerLabelSessionID: r.SessionID,
 	}
+}
+
+func coalesce(text, fallback string) string {
+	if text == "" {
+		return fallback
+	}
+	return text
 }
