@@ -20,6 +20,7 @@ examples as well. Check it out at
 ## Who is using Testcontainers Go?
 
 * [Elastic](https://www.elastic.co) - Testing of the APM Server, and E2E testing for Beats
+* [Telegraf](https://www.influxdata.com/time-series-platform/telegraf/) - Integration testing the plugin-driven server agent for collecting & reporting metrics
 
 ## License
 
