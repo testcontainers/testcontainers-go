@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2
-	github.com/containerd/containerd v1.5.9
+	github.com/containerd/containerd v1.5.13
 	github.com/docker/docker v20.10.11+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0
@@ -20,7 +20,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.2
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/net v0.0.0-20211108170745-6635138e15ea // indirect
-	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	gotest.tools/gotestsum v1.7.0
 	gotest.tools/v3 v3.0.3
