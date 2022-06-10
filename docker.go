@@ -606,15 +606,17 @@ type DockerProvider struct {
 	client    *client.Client
 	host      string
 	hostCache string
+	config    TestContainersConfig
 }
 
 var _ ContainerProvider = (*DockerProvider)(nil)
 
 // or through Decode
 type TestContainersConfig struct {
-	Host      string `properties:"docker.host,default="`
-	TLSVerify int    `properties:"docker.tls.verify,default=0"`
-	CertPath  string `properties:"docker.cert.path,default="`
+	Host           string `properties:"docker.host,default="`
+	TLSVerify      int    `properties:"docker.tls.verify,default=0"`
+	CertPath       string `properties:"docker.cert.path,default="`
+	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
 }
 
 type (
@@ -660,8 +662,8 @@ func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
 	})
 }
 
-func NewDockerClient() (cli *client.Client, host string, err error) {
-	tcConfig := readTCPropsFile()
+func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainersConfig, err error) {
+	tcConfig = readTCPropsFile()
 	host = tcConfig.Host
 
 	opts := []client.Opt{client.FromEnv}
@@ -685,12 +687,12 @@ func NewDockerClient() (cli *client.Client, host string, err error) {
 	cli, err = client.NewClientWithOpts(opts...)
 
 	if err != nil {
-		return nil, "", err
+		return nil, "", TestContainersConfig{}, err
 	}
 
 	cli.NegotiateAPIVersion(context.Background())
 
-	return cli, host, nil
+	return cli, host, tcConfig, nil
 }
 
 // NewDockerProvider creates a Docker provider with the EnvClient
@@ -705,7 +707,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		provOpts[idx].ApplyDockerTo(o)
 	}
 
-	c, host, err := NewDockerClient()
+	c, host, tcConfig, err := NewDockerClient()
 	if err != nil {
 		return nil, err
 	}
@@ -724,6 +726,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		DockerProviderOptions: o,
 		host:                  host,
 		client:                c,
+		config:                tcConfig,
 	}
 
 	return p, nil
@@ -1055,6 +1058,12 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 	}
 
 	return c, nil
+}
+
+// Config provides the TestContainersConfig read from $HOME/.testcontainers.properties or
+// the environment variables
+func (p *DockerProvider) Config() TestContainersConfig {
+	return p.config
 }
 
 // daemonHost gets the host or ip of the Docker daemon where ports are exposed on
