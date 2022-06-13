@@ -7,4 +7,4 @@ if [ "$containers" -eq "0" ]; then
    exit 0
 fi
 echo "environment is not clean"
-exit -1;
+exit 255;
