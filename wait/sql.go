@@ -9,6 +9,8 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+const defaultForSqlQuery = "SELECT 1"
+
 //ForSQL constructs a new waitForSql strategy for the given driver
 func ForSQL(port nat.Port, driver string, url func(nat.Port) string) *waitForSql {
 	return &waitForSql{
@@ -17,7 +19,7 @@ func ForSQL(port nat.Port, driver string, url func(nat.Port) string) *waitForSql
 		Driver:         driver,
 		startupTimeout: defaultStartupTimeout(),
 		PollInterval:   defaultPollInterval(),
-		query:          defaultQuery(),
+		query:          defaultForSqlQuery,
 	}
 }
 

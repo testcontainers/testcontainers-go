@@ -28,7 +28,3 @@ func defaultStartupTimeout() time.Duration {
 func defaultPollInterval() time.Duration {
 	return 100 * time.Millisecond
 }
-
-func defaultQuery() string {
-	return "SELECT 1"
-}
