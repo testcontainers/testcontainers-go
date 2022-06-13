@@ -61,3 +61,13 @@ jobs:
         with:
           file: ./cover.txt
           name: testcontainers-go-${{ matrix.go-version }}
+
+  check-environment:
+    runs-on: [ ubuntu-latest ]
+    steps:
+
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Run checker
+        run: |
+          ./scripts/check_environment.sh
