@@ -61,10 +61,16 @@ type DockerContainer struct {
 	raw               *types.ContainerJSON
 	stopProducer      chan bool
 	logger            Logging
+	tty               bool
 }
 
 func (c *DockerContainer) GetContainerID() string {
 	return c.ID
+}
+
+// Tty get tty is enabled
+func (c *DockerContainer) Tty() bool {
+	return c.tty
 }
 
 // Endpoint gets proto://host:port string for the first exposed port
@@ -859,6 +865,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		User:         req.User,
 	}
 
+	if req.Tty {
+		dockerInput.Tty = true
+	}
+
 	// prepare mounts
 	mounts := mapToDockerMounts(req.Mounts)
 
@@ -931,6 +941,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		skipReaper:        req.SkipReaper,
 		stopProducer:      make(chan bool),
 		logger:            p.Logger,
+		tty:               req.Tty,
 	}
 
 	return c, nil

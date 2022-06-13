@@ -2021,6 +2021,42 @@ func TestGetGatewayIP(t *testing.T) {
 	}
 }
 
+func TestContainerEnableTty(t *testing.T) {
+	ctx := context.Background()
+	gcr := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+			WaitingFor: wait.ForListeningPort("80/tcp"),
+			Tty:        true,
+		},
+		Started: true,
+	}
+
+	nginxC, err := GenericContainer(ctx, gcr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer nginxC.Terminate(ctx)
+
+	endpoint, err := nginxC.Endpoint(ctx, "http")
+	if err != nil {
+		t.Errorf("Expected server endpoint. Got '%v'.", err)
+	}
+
+	_, err = http.Get(endpoint)
+	if err != nil {
+		t.Errorf("Expected OK response. Got '%d'.", err)
+	}
+
+	if !nginxC.Tty() {
+		t.Error("Expected tty disabled")
+	}
+}
+
 func randomString() string {
 	rand.Seed(time.Now().UnixNano())
 	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +

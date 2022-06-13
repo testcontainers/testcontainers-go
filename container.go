@@ -56,6 +56,7 @@ type Container interface {
 	CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
 	CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error)
+	Tty() bool
 }
 
 // ImageBuildInfo defines what is needed to build an image
@@ -104,6 +105,7 @@ type ContainerRequest struct {
 	AutoRemove      bool   // if set to true, the container will be removed from the host when stopped
 	AlwaysPullImage bool   // Always pull image
 	ImagePlatform   string // ImagePlatform describes the platform which the image runs on.
+	Tty             bool   // if set true enable tty
 }
 
 type (
