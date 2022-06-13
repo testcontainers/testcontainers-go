@@ -54,6 +54,7 @@ type LocalDockerCompose struct {
 	Services             map[string]interface{}
 	waitStrategySupplied bool
 	WaitStrategyMap      map[waitService]wait.Strategy
+	tmpFileName          string
 }
 
 type (
@@ -103,8 +104,16 @@ func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalD
 
 	dc.absComposeFilePaths = make([]string, len(filePaths))
 	for i, cfp := range dc.ComposeFilePaths {
-		abs, _ := filepath.Abs(cfp)
-		dc.absComposeFilePaths[i] = abs
+		if cfp == "-" {
+			if err := dc.makeTmpFile(); err != nil {
+				continue
+			}
+			abs, _ := filepath.Abs(dc.tmpFileName)
+			dc.absComposeFilePaths[i] = abs
+		} else {
+			abs, _ := filepath.Abs(cfp)
+			dc.absComposeFilePaths[i] = abs
+		}
 	}
 
 	_ = dc.validate()
@@ -118,6 +127,11 @@ func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalD
 
 // Down executes docker-compose down
 func (dc *LocalDockerCompose) Down() ExecError {
+	defer func() {
+		if dc.tmpFileName != "" {
+			_ = os.Remove(dc.tmpFileName)
+		}
+	}()
 	return executeCompose(dc, []string{"down", "--remove-orphans", "--volumes"})
 }
 
@@ -401,4 +415,30 @@ func which(binary string) error {
 	_, err := exec.LookPath(binary)
 
 	return err
+}
+
+func readSTDIN() ([]byte, error) {
+	return ioutil.ReadAll(os.Stdin)
+}
+
+func (dc *LocalDockerCompose) makeTmpFile() error {
+	data, err := readSTDIN()
+	if err != nil {
+		return err
+	}
+
+	file, err := ioutil.TempFile("/Users/aleksamalyshev/", "__tmp_")
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	if _, err = file.Write(data); err != nil {
+		return err
+	}
+
+	dc.tmpFileName = file.Name()
+
+	return file.Sync()
 }

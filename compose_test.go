@@ -2,6 +2,8 @@ package testcontainers
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -467,4 +469,52 @@ func executeAndGetOutput(command string, args []string) (string, ExecError) {
 		StderrOutput: out,
 		StdoutOutput: out,
 	}
+}
+
+func TestLocalDockerCompose_STDIN(t *testing.T) {
+	// mocks stdin
+	oldStdin := os.Stdin
+	data, err := ioutil.ReadFile("./testresources/docker-compose-simple.yml")
+	if err != nil {
+		t.Fatalf("Failed when reading ./testresources/docker-compose-simple.yml: %v", err)
+	}
+	file := mockStdin(t, data)
+	defer func() {
+		os.Stdin = oldStdin
+		file.Close()
+		os.Remove(file.Name())
+	}()
+	// --
+
+	path := "-"
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	defer func() {
+		checkIfError(t, compose.Down())
+	}()
+
+	exErr := compose.
+		WithCommand([]string{"up", "-d"}).
+		Invoke()
+	checkIfError(t, exErr)
+}
+
+func mockStdin(t *testing.T, content []byte) *os.File {
+	tmpfile, err := ioutil.TempFile("/Users/aleksamalyshev/", "_test_tmp_")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := tmpfile.Write(content); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := tmpfile.Seek(0, 0); err != nil {
+		t.Fatal(err)
+	}
+
+	os.Stdin = tmpfile
+
+	return tmpfile
 }
