@@ -16,8 +16,7 @@ type ContainerisedDockerComposeOptions struct {
 
 type ContainerisedDockerCompose struct {
 	ContainerisedDockerComposeOptions
-	Env     map[string]string
-	Context context.Context
+	Env map[string]string
 	// Pwd is a path to the directory where compose files located.
 	Pwd string
 	// ContainerPwd is a path to the directory in the container where Pwd mounted.
@@ -35,7 +34,8 @@ func (c *ContainerisedDockerCompose) Invoke() ExecError {
 			),
 			BindMount(c.Pwd, ContainerMountTarget(c.ContainerPwd)),
 		),
-		Cmd: []string{"docker-compose"},
+		Cmd:        []string{"docker-compose", "up"},
+		SkipReaper: true,
 	}
 
 	container, err := c.Provider.RunContainer(c.Context, req)
@@ -67,7 +67,7 @@ func (c *ContainerisedDockerCompose) Invoke() ExecError {
 	}
 }
 
-func NewContainerisedDockerCompose(filePaths []string, identifier string, options ContainerisedDockerComposeOptions) *ContainerisedDockerCompose {
+func NewContainerisedDockerCompose(filePaths []string, identifier string, options ContainerisedDockerComposeOptions) (ret *ContainerisedDockerCompose) {
 	containerPwd := "/app"
 	pwd, err := filepath.Abs(filepath.Dir(filePaths[0]))
 
@@ -90,7 +90,7 @@ func NewContainerisedDockerCompose(filePaths []string, identifier string, option
 		composeFiles = append(composeFiles, containerPwd+"/"+filepath.ToSlash(absPath[len(pwd)+1:]))
 	}
 
-	return &ContainerisedDockerCompose{
+	ret = &ContainerisedDockerCompose{
 		Pwd:                               pwd,
 		ContainerPwd:                      containerPwd,
 		ContainerisedDockerComposeOptions: options,
@@ -99,4 +99,6 @@ func NewContainerisedDockerCompose(filePaths []string, identifier string, option
 			"COMPOSE_FILE":         strings.Join(composeFiles, ":"),
 		},
 	}
+
+	return
 }

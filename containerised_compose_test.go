@@ -133,21 +133,25 @@ func Test_NewContainerisedDockerCompose_UsingFakeContainer(t *testing.T) {
 	res := compose.Invoke()
 
 	if res.Error != nil {
-		t.Fatal()
+		t.Fatal(res.Error)
 	}
 }
 
 func Test_NewContainerisedDockerCompose_UsingDockerContainer(t *testing.T) {
 	ctx := context.Background()
 
-	compose := NewContainerisedDockerCompose([]string{"docker-compose.yml"}, "test", ContainerisedDockerComposeOptions{
-		Provider: &DockerProvider{},
+	provider, err := NewDockerProvider()
+	if err != nil {
+		t.Fatal(err)
+	}
+	compose := NewContainerisedDockerCompose([]string{"containerised_compose_test.yml"}, "test", ContainerisedDockerComposeOptions{
+		Provider: provider,
 		Context:  ctx,
 	})
 
 	res := compose.Invoke()
 
 	if res.Error != nil {
-		t.Fatal()
+		t.Fatal(res.Error)
 	}
 }
