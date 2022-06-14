@@ -122,11 +122,26 @@ func (p *FakeContainerProvider) RunContainer(context.Context, ContainerRequest) 
 	return FakeContainer{}, nil
 }
 
-func Test_NewContainerisedDockerCompose(t *testing.T) {
+func Test_NewContainerisedDockerCompose_UsingFakeContainer(t *testing.T) {
 	ctx := context.Background()
 
 	compose := NewContainerisedDockerCompose([]string{"docker-compose.yml"}, "test", ContainerisedDockerComposeOptions{
 		Provider: &FakeContainerProvider{},
+		Context:  ctx,
+	})
+
+	res := compose.Invoke()
+
+	if res.Error != nil {
+		t.Fatal()
+	}
+}
+
+func Test_NewContainerisedDockerCompose_UsingDockerContainer(t *testing.T) {
+	ctx := context.Background()
+
+	compose := NewContainerisedDockerCompose([]string{"docker-compose.yml"}, "test", ContainerisedDockerComposeOptions{
+		Provider: &DockerProvider{},
 		Context:  ctx,
 	})
 
