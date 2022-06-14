@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-docker_out="/tmp/dout.txt"
 containers=$(docker ps --format "{{.ID}}" | wc -l)
 
 if [ "$containers" -eq "0" ]; then
