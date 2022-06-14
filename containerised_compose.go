@@ -48,16 +48,12 @@ func (c *ContainerisedDockerCompose) Invoke() ExecError {
 
 	state, err := container.State(c.Context)
 
-	for err == nil && state.FinishedAt == "" {
+	for err == nil && state.Running {
 		time.Sleep(60000)
 		state, err = container.State(c.Context)
 	}
 
-	if state.Status == "died" {
-		err = fmt.Errorf(state.Error)
-	}
-
-	if state.Status == "exited" && state.ExitCode != 0 {
+	if state.Error != "" {
 		err = fmt.Errorf(state.Error)
 	}
 
