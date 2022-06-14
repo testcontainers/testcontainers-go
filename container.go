@@ -249,9 +249,3 @@ func (c *ContainerRequest) validateMounts() error {
 	}
 	return nil
 }
-
-// WithFile set the file to be copied before starting a created container
-func (c ContainerRequest) WithFile(f ContainerFile) ContainerRequest {
-	c.Files = append(c.Files, f)
-	return c
-}
