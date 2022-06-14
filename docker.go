@@ -865,6 +865,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	hostConfig := &container.HostConfig{
 		ExtraHosts:   req.ExtraHosts,
 		PortBindings: exposedPortMap,
+		Binds:        req.Binds,
 		Mounts:       mounts,
 		Tmpfs:        req.Tmpfs,
 		AutoRemove:   req.AutoRemove,
