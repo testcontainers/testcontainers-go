@@ -91,12 +91,12 @@ func ExampleLocalDockerCompose_WithEnv() {
 
 func enumDockerComposes(filePaths []string, identifier string, executor func(compose *LocalDockerCompose), t *testing.T) {
 	composes := []*LocalDockerCompose{
-		//NewLocalDockerCompose(filePaths, identifier, WithLogger(TestLogger(t))),
+		NewLocalDockerCompose(filePaths, identifier, WithLogger(TestLogger(t))),
 		NewContainerizedDockerCompose(filePaths, identifier, WithLogger(TestLogger(t))),
 	}
 
 	titles := []string{
-		//"NewLocalDockerCompose",
+		"NewLocalDockerCompose",
 		"NewContainerizedDockerCompose",
 	}
 
@@ -130,8 +130,8 @@ func TestDockerComposeStrategyForInvalidService(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
+	//compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	enumDockerComposes([]string{path}, identifier, func(compose *LocalDockerCompose) {
-		//compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 		destroyFn := func() {
 			err := compose.Down()
 			checkIfError(t, err)
@@ -155,23 +155,25 @@ func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
-	destroyFn := func() {
-		err := compose.Down()
+	//compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	enumDockerComposes([]string{path}, identifier, func(compose *LocalDockerCompose) {
+		destroyFn := func() {
+			err := compose.Down()
+			checkIfError(t, err)
+		}
+		defer destroyFn()
+
+		err := compose.
+			WithCommand([]string{"up", "-d"}).
+			// Appending with _1 as given in the Java Test-Containers Example
+			WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+			Invoke()
 		checkIfError(t, err)
-	}
-	defer destroyFn()
 
-	err := compose.
-		WithCommand([]string{"up", "-d"}).
-		// Appending with _1 as given in the Java Test-Containers Example
-		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
-		Invoke()
-	checkIfError(t, err)
-
-	assert.Equal(t, 2, len(compose.Services))
-	assert.Contains(t, compose.Services, "nginx")
-	assert.Contains(t, compose.Services, "mysql")
+		assert.Equal(t, 2, len(compose.Services))
+		assert.Contains(t, compose.Services, "nginx")
+		assert.Contains(t, compose.Services, "mysql")
+	}, t)
 }
 
 func TestDockerComposeWithWaitForService(t *testing.T) {
