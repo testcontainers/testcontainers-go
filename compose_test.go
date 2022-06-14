@@ -501,7 +501,7 @@ func TestLocalDockerCompose_STDIN(t *testing.T) {
 }
 
 func mockStdin(t *testing.T, content []byte) *os.File {
-	tmpfile, err := ioutil.TempFile("/Users/aleksamalyshev/", "_test_tmp_")
+	tmpfile, err := ioutil.TempFile("", "_test_tmp_")
 	if err != nil {
 		t.Fatal(err)
 	}

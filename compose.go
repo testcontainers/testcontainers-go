@@ -427,7 +427,7 @@ func (dc *LocalDockerCompose) makeTmpFile() error {
 		return err
 	}
 
-	file, err := ioutil.TempFile("/Users/aleksamalyshev/", "__tmp_")
+	file, err := ioutil.TempFile("", "__tmp_")
 	if err != nil {
 		return err
 	}
