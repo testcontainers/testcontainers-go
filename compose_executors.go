@@ -23,7 +23,43 @@ type ComposeExecutorOptions struct {
 
 type ComposeExecutor func(options ComposeExecutorOptions) ExecError
 
+type memoryLogConsumer struct {
+	lines []string
+}
+
+func (g *memoryLogConsumer) Accept(l Log) {
+	line := string(l.Content)
+	fmt.Printf(line)
+	g.lines = append(g.lines, line)
+}
+
 func ContainerizedDockerComposeExecutor(options ComposeExecutorOptions) ExecError {
+	provider, err := ProviderDocker.GetProvider()
+	if err != nil {
+		return ExecError{
+			Error: err,
+		}
+	}
+
+	var cmds []string
+
+	for _, p := range options.ComposeFiles {
+		pwd := filepath.Clean(options.Pwd)
+		if !strings.HasPrefix(p, pwd+string(filepath.Separator)) {
+			return ExecError{
+				Error: fmt.Errorf("one of the compose files out of pwd directory"),
+			}
+		}
+
+		cmds = append(cmds, "-f", "/app/"+filepath.ToSlash(p[len(pwd)+1:]))
+	}
+
+	if len(cmds) == 0 {
+		cmds = append(cmds, "-f", "/app/docker-compose.yml")
+	}
+
+	args := append(cmds, options.Args...)
+
 	req := ContainerRequest{
 		Image: "docker/compose:1.29.2",
 		Env:   options.Env,
@@ -34,29 +70,9 @@ func ContainerizedDockerComposeExecutor(options ComposeExecutorOptions) ExecErro
 			),
 			BindMount(options.Pwd, "/app"),
 		),
-		Cmd:        append([]string{"docker-compose"}, options.Args...),
+		Cmd:        append([]string{"docker-compose"}, args...),
 		SkipReaper: true,
 	}
-
-	provider, err := ProviderDocker.GetProvider()
-	if err != nil {
-		return ExecError{
-			Error: err,
-		}
-	}
-
-	var composeFiles []string
-
-	for _, p := range options.ComposeFiles {
-		if !strings.HasPrefix(p, filepath.Clean(options.Pwd)+string(filepath.Separator)) {
-			return ExecError{
-				Error: fmt.Errorf("one of the compose files out of pwd directory"),
-			}
-		}
-
-		composeFiles = append(composeFiles, "/app/"+filepath.ToSlash(p[len(options.Pwd)+1:]))
-	}
-
 	container, err := provider.RunContainer(options.Context, req)
 	if err != nil {
 		return ExecError{
@@ -69,9 +85,8 @@ func ContainerizedDockerComposeExecutor(options ComposeExecutorOptions) ExecErro
 
 	defer container.StopLogProducer()
 	_ = container.StartLogProducer(options.Context)
-	//if dc.Logger != nil {
-	//	container.FollowOutput(&loggerLogConsumer{Logger: dc.Logger})
-	//}
+	logger := memoryLogConsumer{}
+	container.FollowOutput(&logger)
 
 	for err == nil && state.Running {
 		time.Sleep(10 * time.Second)
@@ -83,8 +98,10 @@ func ContainerizedDockerComposeExecutor(options ComposeExecutorOptions) ExecErro
 	}
 
 	return ExecError{
-		Command: req.Cmd,
-		Error:   err,
+		Command:      req.Cmd,
+		Error:        err,
+		StdoutOutput: []byte(strings.Join(logger.lines, "\n")),
+		StderrOutput: []byte(""),
 	}
 }
 
