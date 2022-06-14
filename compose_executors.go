@@ -81,21 +81,25 @@ func ContainerizedDockerComposeExecutor(options ComposeExecutorOptions) ExecErro
 		}
 	}
 
-	state, err := container.State(options.Context)
-
 	defer container.StopLogProducer()
 	_ = container.StartLogProducer(options.Context)
 	logger := memoryLogConsumer{}
 	container.FollowOutput(&logger)
+
+	state, err := container.State(options.Context)
 
 	for err == nil && state.Running {
 		time.Sleep(10 * time.Second)
 		state, err = container.State(options.Context)
 	}
 
-	if state.Error != "" {
+	if err == nil && state.Error != "" {
 		err = fmt.Errorf(state.Error)
 	}
+
+	_ = container.Terminate(options.Context)
+
+	// TODO: consider to use flag AutoRemove and checking of error "Error: No such container: "
 
 	return ExecError{
 		Command:      req.Cmd,

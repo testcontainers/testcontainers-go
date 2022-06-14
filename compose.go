@@ -17,7 +17,6 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"gopkg.in/yaml.v3"
-
 )
 
 const (
@@ -95,11 +94,6 @@ func NewDockerCompose(
 		opts[idx].ApplyToLocalCompose(dc.LocalDockerComposeOptions)
 	}
 
-	//dc.Executable = "docker-compose"
-	//if runtime.GOOS == "windows" {
-	//	dc.Executable = "docker-compose.exe"
-	//}
-
 	dc.ComposeFilePaths = filePaths
 
 	dc.absComposeFilePaths = make([]string, len(filePaths))
@@ -126,6 +120,10 @@ func NewDockerCompose(
 // running Compose services.
 func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
 	return NewDockerCompose(filePaths, identifier, LocalDockerComposeExecutor, nil, opts...)
+}
+
+func NewContainerizedDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
+	return NewDockerCompose(filePaths, identifier, ContainerizedDockerComposeExecutor, context.Background(), opts...)
 }
 
 // Down executes docker-compose down
@@ -357,7 +355,6 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 		Context:      dc.Context,
 	})
 
-	//execErr := execute(pwd, environment, dc.Executable, cmds)
 	err = execErr.Error
 	if err != nil {
 		args := strings.Join(dc.Cmd, " ")
