@@ -9,16 +9,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"gopkg.in/yaml.v3"
 
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -45,7 +44,6 @@ type waitService struct {
 // docker-compose or docker-compose.exe, depending on the underlying platform
 type LocalDockerCompose struct {
 	*LocalDockerComposeOptions
-	Executable           string
 	ComposeFilePaths     []string
 	absComposeFilePaths  []string
 	Identifier           string
@@ -54,6 +52,8 @@ type LocalDockerCompose struct {
 	Services             map[string]interface{}
 	waitStrategySupplied bool
 	WaitStrategyMap      map[waitService]wait.Strategy
+	Executor             ComposeExecutor
+	Context              context.Context
 }
 
 type (
@@ -76,28 +76,29 @@ func (f LocalDockerComposeOptionsFunc) ApplyToLocalCompose(opts *LocalDockerComp
 	f(opts)
 }
 
-// NewLocalDockerCompose returns an instance of the local Docker Compose, using an
-// array of Docker Compose file paths and an identifier for the Compose execution.
-//
-// It will iterate through the array adding '-f compose-file-path' flags to the local
-// Docker Compose execution. The identifier represents the name of the execution,
-// which will define the name of the underlying Docker network and the name of the
-// running Compose services.
-func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
+func NewDockerCompose(
+	filePaths []string,
+	identifier string,
+	executor ComposeExecutor,
+	ctx context.Context,
+	opts ...LocalDockerComposeOption) *LocalDockerCompose {
+
 	dc := &LocalDockerCompose{
 		LocalDockerComposeOptions: &LocalDockerComposeOptions{
 			Logger: Logger,
 		},
+		Executor: executor,
+		Context:  ctx,
 	}
 
 	for idx := range opts {
 		opts[idx].ApplyToLocalCompose(dc.LocalDockerComposeOptions)
 	}
 
-	dc.Executable = "docker-compose"
-	if runtime.GOOS == "windows" {
-		dc.Executable = "docker-compose.exe"
-	}
+	//dc.Executable = "docker-compose"
+	//if runtime.GOOS == "windows" {
+	//	dc.Executable = "docker-compose.exe"
+	//}
 
 	dc.ComposeFilePaths = filePaths
 
@@ -114,6 +115,17 @@ func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalD
 	dc.WaitStrategyMap = make(map[waitService]wait.Strategy)
 
 	return dc
+}
+
+// NewLocalDockerCompose returns an instance of the local Docker Compose, using an
+// array of Docker Compose file paths and an identifier for the Compose execution.
+//
+// It will iterate through the array adding '-f compose-file-path' flags to the local
+// Docker Compose execution. The identifier represents the name of the execution,
+// which will define the name of the underlying Docker network and the name of the
+// running Compose services.
+func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
+	return NewDockerCompose(filePaths, identifier, LocalDockerComposeExecutor, nil, opts...)
 }
 
 // Down executes docker-compose down
@@ -320,38 +332,38 @@ func execute(
 }
 
 func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
-	if which(dc.Executable) != nil {
-		return ExecError{
-			Command: []string{dc.Executable},
-			Error:   fmt.Errorf("Local Docker Compose not found. Is %s on the PATH?", dc.Executable),
-		}
-	}
-
 	environment := dc.getDockerComposeEnvironment()
 	for k, v := range dc.Env {
 		environment[k] = v
 	}
 
-	cmds := []string{}
-	pwd := "."
+	pwd, err := filepath.Abs(".")
+	if err != nil {
+		return ExecError{
+			Command: []string{},
+			Error:   err,
+		}
+	}
+
 	if len(dc.absComposeFilePaths) > 0 {
 		pwd, _ = filepath.Split(dc.absComposeFilePaths[0])
-
-		for _, abs := range dc.absComposeFilePaths {
-			cmds = append(cmds, "-f", abs)
-		}
-	} else {
-		cmds = append(cmds, "-f", "docker-compose.yml")
 	}
-	cmds = append(cmds, args...)
 
-	execErr := execute(pwd, environment, dc.Executable, cmds)
-	err := execErr.Error
+	execErr := dc.Executor(ComposeExecutorOptions{
+		Env:          environment,
+		Pwd:          pwd,
+		Args:         args,
+		ComposeFiles: dc.absComposeFilePaths,
+		Context:      dc.Context,
+	})
+
+	//execErr := execute(pwd, environment, dc.Executable, cmds)
+	err = execErr.Error
 	if err != nil {
 		args := strings.Join(dc.Cmd, " ")
 		return ExecError{
-			Command: []string{dc.Executable},
-			Error:   fmt.Errorf("Local Docker compose exited abnormally whilst running %s: [%v]. %s", dc.Executable, args, err.Error()),
+			Command: []string{},
+			Error:   fmt.Errorf("Local Docker compose exited abnormally whilst running: [%v]. %s", args, err.Error()),
 		}
 	}
 

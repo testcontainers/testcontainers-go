@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -21,7 +22,6 @@ func ExampleNewLocalDockerCompose() {
 
 func ExampleLocalDockerCompose() {
 	_ = LocalDockerCompose{
-		Executable: "docker-compose",
 		ComposeFilePaths: []string{
 			"/path/to/docker-compose.yml",
 			"/path/to/docker-compose-1.yml",
@@ -94,8 +94,8 @@ func TestLocalDockerCompose(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
 	identifier := strings.ToLower(uuid.New().String())
-
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewDockerCompose([]string{path}, identifier, ContainerizedDockerComposeExecutor, context.Background(), WithLogger(TestLogger(t)))
+	//compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
