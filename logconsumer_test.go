@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -201,13 +202,29 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("create generic container:", err)
 	}
 	defer dind.Terminate(ctx)
 
-	remoteDocker, err := dind.Endpoint(ctx, "2375/tcp")
+	var remoteDocker string
+
+	ctxEndpoint, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	// todo: remove this temporary fix (test is flaky).
+	for {
+		remoteDocker, err = dind.Endpoint(ctxEndpoint, "2375/tcp")
+		if err == nil {
+			break
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			break
+		}
+		time.Sleep(100 * time.Microsecond)
+		t.Log("retrying get endpoint")
+	}
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("get endpoint:", err)
 	}
 
 	client, err := client.NewClientWithOpts(client.WithHost(remoteDocker))
