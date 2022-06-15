@@ -16,6 +16,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -54,6 +55,7 @@ type LocalDockerCompose struct {
 	Services             map[string]interface{}
 	waitStrategySupplied bool
 	WaitStrategyMap      map[waitService]wait.Strategy
+	reaper               *Reaper
 }
 
 type (
@@ -83,7 +85,7 @@ func (f LocalDockerComposeOptionsFunc) ApplyToLocalCompose(opts *LocalDockerComp
 // Docker Compose execution. The identifier represents the name of the execution,
 // which will define the name of the underlying Docker network and the name of the
 // running Compose services.
-func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
+func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) (*LocalDockerCompose, error) {
 	dc := &LocalDockerCompose{
 		LocalDockerComposeOptions: &LocalDockerComposeOptions{
 			Logger: Logger,
@@ -113,7 +115,27 @@ func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalD
 	dc.waitStrategySupplied = false
 	dc.WaitStrategyMap = make(map[waitService]wait.Strategy)
 
-	return dc
+	reaperProvider, err := NewDockerProvider(WithLogger(dc.Logger))
+	if err != nil {
+		return nil, fmt.Errorf("%w: creating reaper provider failed", err)
+	}
+
+	sessionID := uuid.New()
+	dc.reaper, err = NewReaper(
+		context.Background(),
+		sessionID.String(),
+		reaperProvider,
+		withCustomLabels(
+			map[string]string{
+				"com.docker.compose.project": dc.Identifier,
+			},
+		),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%w: creating reaper failed", err)
+	}
+
+	return dc, nil
 }
 
 // Down executes docker-compose down
@@ -185,7 +207,13 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 
 // Invoke invokes the docker compose
 func (dc *LocalDockerCompose) Invoke() ExecError {
-	return executeCompose(dc, dc.Cmd)
+	execErr := executeCompose(dc, dc.Cmd)
+	err := dc.connectToReaper()
+	if err != nil && execErr.Error == nil {
+		execErr.Error = err
+	}
+
+	return execErr
 }
 
 // WaitForService sets the strategy for the service that is to be waited on
@@ -243,6 +271,16 @@ func (dc *LocalDockerCompose) validate() error {
 		}
 	}
 
+	return nil
+}
+
+func (dc *LocalDockerCompose) connectToReaper() error {
+	terminationSignal, err := dc.reaper.Connect()
+	if err != nil {
+		return fmt.Errorf("%w: connecting to reaper failed", err)
+	}
+
+	close(terminationSignal)
 	return nil
 }
 

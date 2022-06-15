@@ -36,17 +36,50 @@ type ReaperProvider interface {
 
 // Reaper is used to start a sidecar container that cleans up resources
 type Reaper struct {
+	ReaperOptions
 	Provider  ReaperProvider
 	SessionID string
 	Endpoint  string
 }
 
+// ReaperOptions defines options applicable to Reaper
+type ReaperOptions struct {
+	CustomLabels          map[string]string
+	CustomReaperImageName string
+}
+
+// ReaperOption defines a function to modify ReaperOptions
+// These options can be passed to NewReaper in a variadic way to customize the returned Reaper instance
+type ReaperOption func(opts *ReaperOptions)
+
+func withCustomReaperImageName(imageName string) ReaperOption {
+	return func(opts *ReaperOptions) {
+		opts.CustomReaperImageName = imageName
+	}
+}
+
+func withCustomLabels(labels map[string]string) ReaperOption {
+	return func(opts *ReaperOptions) {
+		if opts.CustomLabels == nil {
+			opts.CustomLabels = labels
+		} else {
+			for k, v := range labels {
+				opts.CustomLabels[k] = v
+			}
+		}
+	}
+}
+
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
-func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
+func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ReaperOption) (*Reaper, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	// If reaper already exists re-use it
 	if reaper != nil {
+		for idx := range opts {
+			opts[idx](&reaper.ReaperOptions)
+		}
+
 		return reaper, nil
 	}
 
@@ -56,10 +89,14 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		SessionID: sessionID,
 	}
 
+	for idx := range opts {
+		opts[idx](&reaper.ReaperOptions)
+	}
+
 	listeningPort := nat.Port("8080/tcp")
 
 	req := ContainerRequest{
-		Image:        reaperImage(reaperImageName),
+		Image:        reaper.imageName(),
 		ExposedPorts: []string{string(listeningPort)},
 		Labels: map[string]string{
 			TestcontainerLabel:         "true",
@@ -93,12 +130,12 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 	return reaper, nil
 }
 
-func reaperImage(reaperImageName string) string {
-	if reaperImageName == "" {
+func (r *Reaper) imageName() string {
+	if r.CustomReaperImageName == "" {
 		return ReaperDefaultImage
-	} else {
-		return reaperImageName
 	}
+
+	return r.CustomReaperImageName
 }
 
 // Connect runs a goroutine which can be terminated by sending true into the returned channel
@@ -144,6 +181,17 @@ func (r *Reaper) Connect() (chan bool, error) {
 
 // Labels returns the container labels to use so that this Reaper cleans them up
 func (r *Reaper) Labels() map[string]string {
+	if r.CustomLabels != nil {
+		mutex.Lock()
+		defer mutex.Unlock()
+
+		labels := make(map[string]string, len(r.CustomLabels))
+		for k, v := range r.CustomLabels {
+			labels[k] = v
+		}
+		return labels
+	}
+
 	return map[string]string{
 		TestcontainerLabel:          "true",
 		TestcontainerLabelSessionID: r.SessionID,

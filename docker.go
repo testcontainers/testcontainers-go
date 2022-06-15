@@ -777,7 +777,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := NewReaper(ctx, sessionID.String(), p, req.ReaperImage)
+		r, err := NewReaper(ctx, sessionID.String(), p, withCustomReaperImageName(req.ReaperImage))
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1056,7 +1056,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := NewReaper(ctx, sessionID.String(), p, req.ReaperImage)
+		r, err := NewReaper(ctx, sessionID.String(), p, withCustomReaperImageName(req.ReaperImage))
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}
