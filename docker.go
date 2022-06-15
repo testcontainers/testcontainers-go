@@ -52,6 +52,7 @@ type DockerContainer struct {
 	WaitingFor wait.Strategy
 	Image      string
 
+	isRunning         bool
 	imageWasBuilt     bool
 	provider          *DockerProvider
 	sessionID         uuid.UUID
@@ -65,6 +66,10 @@ type DockerContainer struct {
 
 func (c *DockerContainer) GetContainerID() string {
 	return c.ID
+}
+
+func (c *DockerContainer) IsRunning() bool {
+	return c.isRunning
 }
 
 // Endpoint gets proto://host:port string for the first exposed port
@@ -935,6 +940,62 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	return c, nil
+}
+
+func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (*types.Container, error) {
+	if name == "" {
+		return nil, nil
+	}
+	containers, err := p.client.ContainerList(ctx, types.ContainerListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range containers {
+		for _, n := range c.Names {
+			if n[1:] == name {
+				return &c, nil
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
+	c, err := p.findContainerByName(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	if c == nil {
+		return p.CreateContainer(ctx, req)
+	}
+
+	sessionID := uuid.New()
+	var termSignal chan bool
+	if !req.SkipReaper {
+		r, err := NewReaper(ctx, sessionID.String(), p, req.ReaperImage)
+		if err != nil {
+			return nil, fmt.Errorf("%w: creating reaper failed", err)
+		}
+		termSignal, err = r.Connect()
+		if err != nil {
+			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
+		}
+	}
+	dc := &DockerContainer{
+		ID:                c.ID,
+		WaitingFor:        req.WaitingFor,
+		Image:             c.Image,
+		sessionID:         sessionID,
+		provider:          p,
+		terminationSignal: termSignal,
+		skipReaper:        req.SkipReaper,
+		stopProducer:      make(chan bool),
+		logger:            p.Logger,
+		isRunning:         c.State == "running",
+	}
+	return dc, nil
+
 }
 
 // attemptToPullImage tries to pull the image while respecting the ctx cancellations.

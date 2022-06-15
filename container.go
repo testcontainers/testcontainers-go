@@ -26,8 +26,9 @@ type DeprecatedContainer interface {
 
 // ContainerProvider allows the creation of containers on an arbitrary system
 type ContainerProvider interface {
-	CreateContainer(context.Context, ContainerRequest) (Container, error) // create a container without starting it
-	RunContainer(context.Context, ContainerRequest) (Container, error)    // create a container and start it
+	CreateContainer(context.Context, ContainerRequest) (Container, error)        // create a container without starting it
+	ReuseOrCreateContainer(context.Context, ContainerRequest) (Container, error) // reuse a container if it exists or create a container without starting
+	RunContainer(context.Context, ContainerRequest) (Container, error)           // create a container and start it
 	Health(context.Context) error
 }
 
@@ -40,10 +41,11 @@ type Container interface {
 	MappedPort(context.Context, nat.Port) (nat.Port, error)         // get externally mapped port for a container port
 	Ports(context.Context) (nat.PortMap, error)                     // get all exposed ports
 	SessionID() string                                              // get session id
-	Start(context.Context) error                                    // start the container
-	Stop(context.Context, *time.Duration) error                     // stop the container
-	Terminate(context.Context) error                                // terminate the container
-	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
+	IsRunning() bool
+	Start(context.Context) error                 // start the container
+	Stop(context.Context, *time.Duration) error  // stop the container
+	Terminate(context.Context) error             // terminate the container
+	Logs(context.Context) (io.ReadCloser, error) // Get logs of the container
 	FollowOutput(LogConsumer)
 	StartLogProducer(context.Context) error
 	StopLogProducer() error

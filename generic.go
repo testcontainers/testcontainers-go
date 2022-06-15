@@ -58,6 +58,32 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 	return c, nil
 }
 
+// GenericReusableContainer reuses a container if it exists or creates a generic container with parameters
+// Reusing will be work only if you pass an existing container name via 'req.Name' field
+// If name is empty or name is not in a list of existing containers, function will create a new generic container
+func GenericReusableContainer(ctx context.Context, req GenericContainerRequest) (Container, error) {
+	logging := req.Logger
+	if logging == nil {
+		logging = Logger
+	}
+	provider, err := req.ProviderType.GetProvider(WithLogger(logging))
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := provider.ReuseOrCreateContainer(ctx, req.ContainerRequest)
+	if err != nil {
+		return nil, fmt.Errorf("%w: failed to create container", err)
+	}
+
+	if req.Started && !c.IsRunning() {
+		if err := c.Start(ctx); err != nil {
+			return c, fmt.Errorf("%w: failed to start container", err)
+		}
+	}
+	return c, nil
+}
+
 // GenericProvider represents an abstraction for container and network providers
 type GenericProvider interface {
 	ContainerProvider
