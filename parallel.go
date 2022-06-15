@@ -50,7 +50,7 @@ func genericContainerRunner(
 	wg.Done()
 }
 
-// GenericParallelContainers creates a generic containers with parameters in parallel mode
+// GenericParallelContainers creates a generic containers with parameters and run it in parallel mode
 func GenericParallelContainers(ctx context.Context, reqs []GenericContainerRequest, opt GenericParallelOptions) ([]Container, error) {
 	if opt.WorkersCount == 0 {
 		opt.WorkersCount = defaultWorkersCount

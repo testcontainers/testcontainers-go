@@ -112,7 +112,7 @@ requests := []GenericContainerRequest{
     },
 }
 
-res, err := GenericParallelContainers(ctx, requests)
+res, err := GenericParallelContainers(ctx, requests, GenericParallelOptions{})
 
 if err != nil {
     e, ok := err.(GenericParallelErrors)
