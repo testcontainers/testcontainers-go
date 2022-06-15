@@ -14,7 +14,7 @@ const (
 func TestGenericReusableContainer(t *testing.T) {
 	ctx := context.Background()
 
-	n1, err := GenericReusableContainer(ctx, GenericContainerRequest{
+	n1, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			Image:        "nginx:1.17.6",
 			ExposedPorts: []string{"80/tcp"},

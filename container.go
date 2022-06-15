@@ -27,7 +27,7 @@ type DeprecatedContainer interface {
 // ContainerProvider allows the creation of containers on an arbitrary system
 type ContainerProvider interface {
 	CreateContainer(context.Context, ContainerRequest) (Container, error)        // create a container without starting it
-	ReuseOrCreateContainer(context.Context, ContainerRequest) (Container, error) // reuse a container if it exists or create a container without starting
+	ReuseOrCreateContainer(context.Context, ContainerRequest) (Container, error) // reuses a container if it exists or creates a container without starting
 	RunContainer(context.Context, ContainerRequest) (Container, error)           // create a container and start it
 	Health(context.Context) error
 }

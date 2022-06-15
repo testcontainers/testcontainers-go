@@ -58,9 +58,10 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 	return c, nil
 }
 
-// GenericReusableContainer reuses a container if it exists or creates a generic container with parameters
-// Reusing will be work only if you pass an existing container name via 'req.Name' field
-// If name is empty or name is not in a list of existing containers, function will create a new generic container
+// GenericReusableContainer reuses a container if it exists or creates a new one with parameters
+// Reusing will work only if you pass an existing container's name via 'req.Name' field
+// If the name is empty or it is not in a list of existing containers, the function will create a new generic container
+
 func GenericReusableContainer(ctx context.Context, req GenericContainerRequest) (Container, error) {
 	logging := req.Logger
 	if logging == nil {
