@@ -415,6 +415,127 @@ func TestLocalDockerComposeWithVolume(t *testing.T) {
 	checkIfError(t, err)
 }
 
+func TestContainerisedDockerComposeComplex(t *testing.T) {
+	path := "./testresources/docker-compose-complex.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	composeL := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewContainerisedDockerCompose(*composeL, "", "", "")
+
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		Invoke()
+	checkIfError(t, err)
+
+	assert.Equal(t, 2, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "mysql")
+}
+
+func TestContainerisedDockerComposeWithEnvironment(t *testing.T) {
+	path := "./testresources/docker-compose-simple.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	composeL := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewContainerisedDockerCompose(*composeL, "", "", "")
+
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithEnv(map[string]string{
+			"bar": "BAR",
+		}).
+		Invoke()
+	checkIfError(t, err)
+
+	assert.Equal(t, 1, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+
+	containerNameNginx := compose.Identifier + "_nginx_1"
+
+	present := map[string]string{
+		"bar": "BAR",
+	}
+	absent := map[string]string{}
+	assertContainerEnvironmentVariables(t, containerNameNginx, present, absent)
+}
+
+func TestContainerisedDockerComposeWithMultipleComposeFiles(t *testing.T) {
+	composeFiles := []string{
+		"testresources/docker-compose-simple.yml",
+		"testresources/docker-compose-postgres.yml",
+		"testresources/docker-compose-override.yml",
+	}
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	composeL := NewLocalDockerCompose(composeFiles, identifier, WithLogger(TestLogger(t)))
+	compose := NewContainerisedDockerCompose(*composeL, "", "", "")
+
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithEnv(map[string]string{
+			"bar": "BAR",
+			"foo": "FOO",
+		}).
+		Invoke()
+	checkIfError(t, err)
+
+	assert.Equal(t, 3, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "mysql")
+	assert.Contains(t, compose.Services, "postgres")
+
+	containerNameNginx := compose.Identifier + "_nginx_1"
+
+	present := map[string]string{
+		"bar": "BAR",
+		"foo": "FOO",
+	}
+	absent := map[string]string{}
+	assertContainerEnvironmentVariables(t, containerNameNginx, present, absent)
+}
+
+func TestContainerisedDockerComposeWithVolume(t *testing.T) {
+	path := "./testresources/docker-compose-volume.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	composeL := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewContainerisedDockerCompose(*composeL, "", "", "")
+
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+		assertVolumeDoesNotExist(t, fmt.Sprintf("%s_mydata", identifier))
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		Invoke()
+	checkIfError(t, err)
+}
+
 func assertVolumeDoesNotExist(t *testing.T, volume string) {
 	args := []string{"volume", "inspect", volume}
 

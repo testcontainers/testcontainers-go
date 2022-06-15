@@ -402,3 +402,192 @@ func which(binary string) error {
 
 	return err
 }
+
+const (
+	DefaultDockerComposeImage = "docker/compose:1.29.2"
+
+	DefaultContainerMountPath = "/usr/local/bin"
+
+	DefaultDockerSocket = "/var/run/docker.sock"
+)
+
+type ContainerisedDockerCompose struct {
+	LocalDockerCompose
+
+	// Executable stores image name
+	Executable         string
+	image              string
+	containerMountPath string
+	dockerSocketPath   string
+}
+
+func NewContainerisedDockerCompose(localDockerCompose LocalDockerCompose, image string, containerMountPath string, dockerSocketPath string) *ContainerisedDockerCompose {
+	if image == "" {
+		image = DefaultDockerComposeImage
+	}
+	if containerMountPath == "" {
+		containerMountPath = DefaultContainerMountPath
+	}
+	if dockerSocketPath == "" {
+		dockerSocketPath = DefaultDockerSocket
+	}
+	return &ContainerisedDockerCompose{LocalDockerCompose: localDockerCompose, Executable: image, image: image, containerMountPath: containerMountPath, dockerSocketPath: dockerSocketPath}
+}
+
+func (dc *ContainerisedDockerCompose) Invoke() ExecError {
+	return executeComposeInContainer(dc, dc.Cmd)
+}
+
+func (dc *ContainerisedDockerCompose) Down() ExecError {
+	return executeComposeInContainer(dc, []string{"down", "--remove-orphans", "--volumes"})
+}
+
+func executeInContainer(
+	image string, environment map[string]string, filePaths map[string]string, args []string) ExecError {
+
+	//var errStdout, errStderr error
+
+	mounts := make([]ContainerMount, len(filePaths))
+	i := 0
+	for k, v := range filePaths {
+		mounts[i] = BindMount(k, ContainerMountTarget(v))
+		i++
+	}
+
+	upReq := ContainerRequest{
+		Env:        environment,
+		Image:      image,
+		Mounts:     mounts,
+		Entrypoint: args,
+		WaitingFor: wait.ForExit(),
+	}
+
+	ctx := context.Background()
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: upReq,
+	})
+
+	if err != nil {
+		return ExecError{
+			Command: []string{"Creating container"},
+			Error:   err,
+		}
+	}
+
+	stdout := newCapturingPassThroughWriter(os.Stdout)
+	stderr := newCapturingPassThroughWriter(os.Stderr)
+
+	g := MyLogConsumer{stdout: *stdout, stderr: *stderr}
+
+	if err != nil {
+		return ExecError{
+			Command: []string{"Starting log producer"},
+			Error:   err,
+		}
+	}
+
+	err = container.Start(ctx)
+	err = container.StartLogProducer(ctx)
+	container.FollowOutput(&g)
+
+	if err != nil {
+		return ExecError{
+			Command: []string{"Starting container"},
+			Error:   err,
+		}
+	}
+
+	return ExecError{
+		Command: []string{"Reading std"},
+	}
+}
+
+func (dc *ContainerisedDockerCompose) WithCommand(cmd []string) DockerCompose {
+	dc.Cmd = cmd
+	return dc
+}
+
+func (dc *ContainerisedDockerCompose) WithEnv(env map[string]string) DockerCompose {
+	dc.Env = env
+	return dc
+}
+
+// WaitForService sets the strategy for the service that is to be waited on
+func (dc *ContainerisedDockerCompose) WaitForService(service string, strategy wait.Strategy) DockerCompose {
+	dc.waitStrategySupplied = true
+	dc.WaitStrategyMap[waitService{service: service}] = strategy
+	return dc
+}
+
+func (dc *ContainerisedDockerCompose) WithExposedService(service string, port int, strategy wait.Strategy) DockerCompose {
+	dc.waitStrategySupplied = true
+	dc.WaitStrategyMap[waitService{service: service, publishedPort: port}] = strategy
+	return dc
+}
+
+func executeComposeInContainer(dc *ContainerisedDockerCompose, args []string) ExecError {
+
+	// instead of which() maybe check that image is in registry
+
+	environment := dc.getDockerComposeEnvironment()
+	for k, v := range dc.Env {
+		environment[k] = v
+	}
+
+	mounts := make(map[string]string, len(dc.absComposeFilePaths)+1)
+	mounts[dc.dockerSocketPath] = DefaultDockerSocket
+
+	cmds := []string{"docker-compose"}
+
+	if len(dc.absComposeFilePaths) > 0 {
+		//pwd, _ = filepath.Split(dc.absComposeFilePaths[0])
+
+		for _, abs := range dc.absComposeFilePaths {
+			cmds = append(cmds, "-f", dc.containerMountPath+abs)
+			mounts[abs] = dc.containerMountPath + abs
+		}
+	} else {
+		cmds = append(cmds, "-f", dc.containerMountPath+"docker-compose.yml")
+		mounts["docker-compose.yml"] = dc.containerMountPath + "docker-compose.yml"
+	}
+
+	cmds = append(cmds, args...)
+
+	execErr := executeInContainer(dc.image, environment, mounts, cmds)
+	err := execErr.Error
+	if err != nil {
+		args := strings.Join(dc.Cmd, " ")
+		return ExecError{
+			Command: []string{dc.Executable},
+			Error:   fmt.Errorf("Local Docker compose exited abnormally whilst running %s: [%v]. %s", dc.Executable, args, err.Error()),
+		}
+	}
+
+	if dc.waitStrategySupplied {
+		// If the wait strategy has been executed once for all services during startup , disable it so that it is not invoked while tearing down
+		dc.waitStrategySupplied = false
+		if err := dc.applyStrategyToRunningContainer(); err != nil {
+			return ExecError{
+				Error: fmt.Errorf("one or more wait strategies could not be applied to the running containers: %w", err),
+			}
+		}
+	}
+
+	return execErr
+}
+
+type MyLogConsumer struct {
+	stdout capturingPassThroughWriter
+	stderr capturingPassThroughWriter
+}
+
+func (g *MyLogConsumer) Accept(l Log) {
+	_, err := g.stdout.Write([]byte(l.LogType + " : "))
+	if err != nil {
+		g.stderr.Write([]byte(err.Error()))
+	}
+	_, err = g.stdout.Write(l.Content)
+	if err != nil {
+		g.stderr.Write([]byte(err.Error()))
+	}
+}
