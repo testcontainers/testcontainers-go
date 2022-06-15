@@ -69,7 +69,7 @@ func TestGenericParallelContainers(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := GenericParallelContainers(context.Background(), tc.reqs)
+			res, err := GenericParallelContainers(context.Background(), tc.reqs, GenericParallelOptions{})
 
 			if err != nil && tc.expErrors > 0 {
 				e, _ := err.(GenericParallelErrors)

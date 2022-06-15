@@ -7,8 +7,20 @@ import (
 )
 
 const (
-	MaxGenericWorkers = 8
+	defaultWorkersCount = 8
 )
+
+// GenericParallelOptions represents additional options for running
+// * WorkersCount - count of parallel workers. if field empty(zero), default value will be 'defaultWorkersCount'
+type GenericParallelOptions struct {
+	WorkersCount int
+}
+
+// GenericContainerRequestError represents error from parallel request
+type GenericContainerRequestError struct {
+	Request GenericContainerRequest
+	Error   error
+}
 
 type GenericParallelErrors struct {
 	Errors []GenericContainerRequestError
@@ -16,12 +28,6 @@ type GenericParallelErrors struct {
 
 func (gpe GenericParallelErrors) Error() string {
 	return fmt.Sprintf("%v", gpe.Errors)
-}
-
-// GenericContainerRequestError represents error from parallel request
-type GenericContainerRequestError struct {
-	Request GenericContainerRequest
-	Error   error
 }
 
 func genericContainerRunner(
@@ -45,8 +51,12 @@ func genericContainerRunner(
 }
 
 // GenericParallelContainers creates a generic containers with parameters in parallel mode
-func GenericParallelContainers(ctx context.Context, reqs []GenericContainerRequest) ([]Container, error) {
-	tasksChanSize := MaxGenericWorkers
+func GenericParallelContainers(ctx context.Context, reqs []GenericContainerRequest, opt GenericParallelOptions) ([]Container, error) {
+	if opt.WorkersCount == 0 {
+		opt.WorkersCount = defaultWorkersCount
+	}
+
+	tasksChanSize := opt.WorkersCount
 	if tasksChanSize > len(reqs) {
 		tasksChanSize = len(reqs)
 	}
