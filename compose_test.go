@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 	"testing"
@@ -408,6 +409,48 @@ func TestLocalDockerComposeWithVolume(t *testing.T) {
 		assertVolumeDoesNotExist(t, fmt.Sprintf("%s_mydata", identifier))
 	}
 	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		Invoke()
+	checkIfError(t, err)
+}
+
+func TestLocalDockerComposeFromReader(t *testing.T) {
+	identifier := strings.ToLower(uuid.New().String())
+
+	var (
+		specOne = strings.NewReader(`
+version: "3"
+services:
+  nginx:
+    image: nginx:1.22.0-alpine
+`)
+		specTwo = strings.NewReader(`
+version: "3"
+services:
+  php:
+    image: php:8.1.7-alpine3.15
+`)
+		specTree = strings.NewReader(`
+version: "3"
+services:
+  redis:
+    image: redis:alpine3.15
+`)
+	)
+	compose := NewLocalDockerComposeFromReader(
+		[]io.Reader{specOne, specTwo, specTree},
+		identifier,
+		WithLogger(TestLogger(t)),
+	)
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	assert.Equal(t, 3, len(compose.absComposeFilePaths))
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).

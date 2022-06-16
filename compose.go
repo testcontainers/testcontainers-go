@@ -116,6 +116,44 @@ func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalD
 	return dc
 }
 
+// NewLocalDockerComposeFromReader returns an instance of the local Docker Compose, using an
+// array of reader's slice and an identifier for the Compose execution.
+func NewLocalDockerComposeFromReader(
+	readers []io.Reader,
+	identifier string,
+	opts ...LocalDockerComposeOption,
+) *LocalDockerCompose {
+	filePaths := make([]string, 0, len(readers))
+
+	getwd, err := os.Getwd()
+	if err != nil {
+		getwd = "__testcontainers_go"
+	}
+	projectName := filepath.Base(getwd)
+	tmpDir := filepath.Join(os.TempDir(), projectName)
+	if err := os.RemoveAll(tmpDir); err != nil {
+		panic(err)
+	}
+	if err := os.MkdirAll(tmpDir, os.ModePerm); err != nil {
+		panic(err)
+	}
+
+	for idx, src := range readers {
+		content, err := ioutil.ReadAll(src)
+		if err != nil {
+			continue
+		}
+		name := fmt.Sprintf("docker-compose-%d.yaml", idx)
+		filename := filepath.Join(tmpDir, name)
+		if err := ioutil.WriteFile(filename, content, os.ModePerm); err != nil {
+			continue
+		}
+		filePaths = append(filePaths, filename)
+	}
+
+	return NewLocalDockerCompose(filePaths, identifier, opts...)
+}
+
 // Down executes docker-compose down
 func (dc *LocalDockerCompose) Down() ExecError {
 	return executeCompose(dc, []string{"down", "--remove-orphans", "--volumes"})
