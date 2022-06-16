@@ -10,36 +10,36 @@ const (
 	defaultWorkersCount = 8
 )
 
-// GenericParallelOptions represents additional options for running
+// ParallelContainersOptions represents additional options for parallel running
 // * WorkersCount - count of parallel workers. if field empty(zero), default value will be 'defaultWorkersCount'
-type GenericParallelOptions struct {
+type ParallelContainersOptions struct {
 	WorkersCount int
 }
 
-// GenericContainerRequestError represents error from parallel request
-type GenericContainerRequestError struct {
+// ParallelContainersRequestError represents error from parallel request
+type ParallelContainersRequestError struct {
 	Request GenericContainerRequest
 	Error   error
 }
 
-type GenericParallelErrors struct {
-	Errors []GenericContainerRequestError
+type ParallelContainersError struct {
+	Errors []ParallelContainersRequestError
 }
 
-func (gpe GenericParallelErrors) Error() string {
+func (gpe ParallelContainersError) Error() string {
 	return fmt.Sprintf("%v", gpe.Errors)
 }
 
-func genericContainerRunner(
+func parallelContainersRunner(
 	ctx context.Context,
 	requests <-chan GenericContainerRequest,
-	errors chan<- GenericContainerRequestError,
+	errors chan<- ParallelContainersRequestError,
 	containers chan<- Container,
 	wg *sync.WaitGroup) {
 	for req := range requests {
 		c, err := GenericContainer(ctx, req)
 		if err != nil {
-			errors <- GenericContainerRequestError{
+			errors <- ParallelContainersRequestError{
 				Request: req,
 				Error:   err,
 			}
@@ -50,8 +50,8 @@ func genericContainerRunner(
 	wg.Done()
 }
 
-// GenericParallelContainers creates a generic containers with parameters and run it in parallel mode
-func GenericParallelContainers(ctx context.Context, reqs []GenericContainerRequest, opt GenericParallelOptions) ([]Container, error) {
+// ParallelContainers creates a generic containers with parameters and run it in parallel mode
+func ParallelContainers(ctx context.Context, reqs []GenericContainerRequest, opt ParallelContainersOptions) ([]Container, error) {
 	if opt.WorkersCount == 0 {
 		opt.WorkersCount = defaultWorkersCount
 	}
@@ -62,19 +62,19 @@ func GenericParallelContainers(ctx context.Context, reqs []GenericContainerReque
 	}
 
 	tasksChan := make(chan GenericContainerRequest, tasksChanSize)
-	errsChan := make(chan GenericContainerRequestError)
+	errsChan := make(chan ParallelContainersRequestError)
 	resChan := make(chan Container)
 	waitRes := make(chan struct{})
 
 	containers := make([]Container, 0)
-	errors := make([]GenericContainerRequestError, 0)
+	errors := make([]ParallelContainersRequestError, 0)
 
 	wg := sync.WaitGroup{}
 	wg.Add(tasksChanSize)
 
 	// run workers
 	for i := 0; i < tasksChanSize; i++ {
-		go genericContainerRunner(ctx, tasksChan, errsChan, resChan, &wg)
+		go parallelContainersRunner(ctx, tasksChan, errsChan, resChan, &wg)
 	}
 
 	go func() {
@@ -113,9 +113,8 @@ func GenericParallelContainers(ctx context.Context, reqs []GenericContainerReque
 	<-waitRes
 
 	if len(errors) == 0 {
-		return containers, GenericParallelErrors{Errors: errors}
+		return containers, ParallelContainersError{Errors: errors}
 	}
 
 	return containers, nil
-
 }

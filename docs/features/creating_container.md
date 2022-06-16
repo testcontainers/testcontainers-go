@@ -84,7 +84,7 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 
 # Parallel running
 
-`testcontainers.GenericParallelContainers` - defines the containers that should be run in parallel mode.
+`testcontainers.ParallelContainers` - defines the containers that should be run in parallel mode.
 
 ```go
 ctx := context.Background()
@@ -112,10 +112,10 @@ requests := []GenericContainerRequest{
     },
 }
 
-res, err := GenericParallelContainers(ctx, requests, GenericParallelOptions{})
+res, err := ParallelContainers(ctx, requests, ParallelContainersOptions{})
 
 if err != nil {
-    e, ok := err.(GenericParallelErrors)
+    e, ok := err.(ParallelContainersError)
 	if !ok {
 	    log.Fatalf("unknown error: %v", err)	
     }

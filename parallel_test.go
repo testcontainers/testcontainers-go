@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGenericParallelContainers(t *testing.T) {
+func TestParallelContainers(t *testing.T) {
 	tests := []struct {
 		name      string
 		reqs      []GenericContainerRequest
@@ -69,10 +69,10 @@ func TestGenericParallelContainers(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := GenericParallelContainers(context.Background(), tc.reqs, GenericParallelOptions{})
+			res, err := ParallelContainers(context.Background(), tc.reqs, ParallelContainersOptions{})
 
 			if err != nil && tc.expErrors > 0 {
-				e, _ := err.(GenericParallelErrors)
+				e, _ := err.(ParallelContainersError)
 
 				if len(e.Errors) != tc.expErrors {
 					t.Fatalf("expected erorrs: %d, got: %d\n", tc.expErrors, len(e.Errors))
