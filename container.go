@@ -105,6 +105,7 @@ type ContainerRequest struct {
 	AlwaysPullImage bool   // Always pull image
 	ImagePlatform   string // ImagePlatform describes the platform which the image runs on.
 	Binds           []string
+	ShmSize         int64 // Amount of memory shared with the host (in bytes)
 }
 
 type (
