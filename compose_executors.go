@@ -21,10 +21,16 @@ type ComposeExecutorOptions struct {
 	Context      context.Context
 }
 
-type ComposeExecutor func(options ComposeExecutorOptions) ExecError
+type ComposeExecutor interface {
+	Exec(options ComposeExecutorOptions) ExecError
+}
 
 type memoryLogConsumer struct {
 	lines []string
+}
+
+type ContainerizedDockerComposeExecutor struct {
+	ComposeVersion string
 }
 
 func (g *memoryLogConsumer) Accept(l Log) {
@@ -33,7 +39,7 @@ func (g *memoryLogConsumer) Accept(l Log) {
 	g.lines = append(g.lines, line)
 }
 
-func ContainerizedDockerComposeExecutor(options ComposeExecutorOptions) ExecError {
+func (e *ContainerizedDockerComposeExecutor) Exec(options ComposeExecutorOptions) ExecError {
 	provider, err := ProviderDocker.GetProvider()
 	if err != nil {
 		return ExecError{
@@ -60,8 +66,14 @@ func ContainerizedDockerComposeExecutor(options ComposeExecutorOptions) ExecErro
 
 	args := append(cmds, options.Args...)
 
+	version := "1.29.2"
+
+	if e.ComposeVersion != "" {
+		version = e.ComposeVersion
+	}
+
 	req := ContainerRequest{
-		Image: "docker/compose:1.29.2",
+		Image: "docker/compose:" + version,
 		Env:   options.Env,
 		Mounts: Mounts(
 			BindMount(
@@ -109,8 +121,10 @@ func ContainerizedDockerComposeExecutor(options ComposeExecutorOptions) ExecErro
 	}
 }
 
-// LocalDockerComposeExecutor executes a program with arguments and environment variables inside a specific directory
-func LocalDockerComposeExecutor(options ComposeExecutorOptions) ExecError {
+type LocalDockerComposeExecutor struct{}
+
+// Exec executes a program with arguments and environment variables inside a specific directory
+func (e LocalDockerComposeExecutor) Exec(options ComposeExecutorOptions) ExecError {
 
 	dirContext := options.Pwd
 	environment := options.Env

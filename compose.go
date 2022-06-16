@@ -119,11 +119,11 @@ func NewDockerCompose(
 // which will define the name of the underlying Docker network and the name of the
 // running Compose services.
 func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
-	return NewDockerCompose(filePaths, identifier, LocalDockerComposeExecutor, nil, opts...)
+	return NewDockerCompose(filePaths, identifier, &LocalDockerComposeExecutor{}, nil, opts...)
 }
 
 func NewContainerizedDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
-	return NewDockerCompose(filePaths, identifier, ContainerizedDockerComposeExecutor, context.Background(), opts...)
+	return NewDockerCompose(filePaths, identifier, &ContainerizedDockerComposeExecutor{}, context.Background(), opts...)
 }
 
 // Down executes docker-compose down
@@ -347,7 +347,7 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 		pwd, _ = filepath.Split(dc.absComposeFilePaths[0])
 	}
 
-	execErr := dc.Executor(ComposeExecutorOptions{
+	execErr := dc.Executor.Exec(ComposeExecutorOptions{
 		Env:          environment,
 		Pwd:          pwd,
 		Args:         args,
