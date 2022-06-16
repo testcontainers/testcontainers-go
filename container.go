@@ -104,6 +104,8 @@ type ContainerRequest struct {
 	AutoRemove      bool   // if set to true, the container will be removed from the host when stopped
 	AlwaysPullImage bool   // Always pull image
 	ImagePlatform   string // ImagePlatform describes the platform which the image runs on.
+	Binds           []string
+	ShmSize         int64 // Amount of memory shared with the host (in bytes)
 }
 
 type (
