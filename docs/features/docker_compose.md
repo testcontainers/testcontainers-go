@@ -7,10 +7,11 @@ This is intended to be useful on projects where Docker Compose is already used
 in dev or other environments to define services that an application may be
 dependent upon.
 
-You can override Testcontainers' default behaviour and make it use a
-docker-compose binary installed on the local machine. This will generally yield
-an experience that is closer to running docker-compose locally, with the caveat
-that Docker Compose needs to be present on dev and CI machines.
+You can override Testcontainers' default behaviour and make it use a docker-compose.
+You can use either the docker-compose binary installed on the local machine or the containerised docker-compose.
+
+This will generally yield an experience that is closer to running docker-compose locally. 
+If you want to use docker-compose binary that Docker Compose needs to be present on dev and CI machines.
 
 ## Examples
 
@@ -18,7 +19,8 @@ that Docker Compose needs to be present on dev and CI machines.
 composeFilePaths := []string {"testresources/docker-compose.yml"}
 identifier := strings.ToLower(uuid.New().String())
 
-compose := tc.NewLocalDockerCompose(composeFilePaths, identifier)
+compose := tc.NewLocalDockerCompose(composeFilePaths, identifier) // using docker-compose binary 
+
 execError := compose.
 	WithCommand([]string{"up", "-d"}).
 	WithEnv(map[string]string {
@@ -33,6 +35,13 @@ if err != nil {
 return nil
 ```
 
+Or instantiate `compose` by `NewContainerizedDockerCompose` function to use containerized docker-compose:
+
+```go
+...
+compose := tc.NewContainerizedDockerCompose(composeFilePaths, identifier) // using containerised docker-compose
+...
+```
 Note that the environment variables in the `env` map will be applied, if
 possible, to the existing variables declared in the docker compose file.
 
