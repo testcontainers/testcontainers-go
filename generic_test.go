@@ -26,6 +26,9 @@ func TestGenericReusableContainer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !n1.IsRunning() {
+		t.Fatal("isRunning must return true")
+	}
 	defer n1.Terminate(ctx)
 
 	copiedFileName := "hello_copy.sh"

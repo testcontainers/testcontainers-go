@@ -183,7 +183,7 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 		}
 	}
 	c.logger.Printf("Container is ready id: %s image: %s", shortID, c.Image)
-
+	c.isRunning = true
 	return nil
 }
 

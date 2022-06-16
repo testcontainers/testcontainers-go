@@ -88,7 +88,7 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 Reusing will work only if you pass an existing container's name via 'req.Name' field.
 If the name is empty, or it is not in a list of existing containers, the function will create a new generic container
 
-The following test creates an NGINX container, add a file into it and then reuse the container again for checking the file:
+The following test creates an NGINX container, adds a file into it and then reuses the container again for checking the file:
 ```go
 
 const (
