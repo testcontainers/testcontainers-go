@@ -57,8 +57,23 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 
 	var waitInterval = 100 * time.Millisecond
 
+	internalPort := hp.Port
+	if internalPort == "" {
+		var ports nat.PortMap
+		ports, err = target.Ports(ctx)
+		if err != nil {
+			return
+		}
+		if len(ports) > 0 {
+			for p := range ports {
+				internalPort = p
+				break
+			}
+		}
+	}
+
 	var port nat.Port
-	port, err = target.MappedPort(ctx, hp.Port)
+	port, err = target.MappedPort(ctx, internalPort)
 	var i = 0
 
 	for port == "" {
@@ -68,7 +83,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		case <-ctx.Done():
 			return fmt.Errorf("%s:%w", ctx.Err(), err)
 		case <-time.After(waitInterval):
-			port, err = target.MappedPort(ctx, hp.Port)
+			port, err = target.MappedPort(ctx, internalPort)
 			if err != nil {
 				fmt.Printf("(%d) [%s] %s\n", i, port, err)
 			}
@@ -101,7 +116,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	}
 
 	//internal check
-	command := buildInternalCheckCommand(hp.Port.Int())
+	command := buildInternalCheckCommand(internalPort.Int())
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
