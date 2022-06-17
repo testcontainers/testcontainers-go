@@ -52,9 +52,7 @@ jobs:
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
         if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: |
-          go run gotest.tools/gotestsum --format short-verbose -- -coverprofile=cover.txt ./...
-          cd ./e2e && make test
+        run: go run gotest.tools/gotestsum --format short-verbose -- -coverprofile=cover.txt ./...
 
         # only report code coverage on linux
       - name: Upload coverage report
@@ -63,3 +61,7 @@ jobs:
         with:
           file: ./cover.txt
           name: testcontainers-go-${{ matrix.go-version }}
+
+      - name: Run e2e tests
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: cd ./e2e && make test
