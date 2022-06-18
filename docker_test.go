@@ -1946,6 +1946,31 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[1]])
 }
 
+func TestContainerRunningCheckingStatusCode(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "influxdb:1.8.3",
+		ExposedPorts: []string{"8086/tcp"},
+		WaitingFor: wait.ForAll(
+			wait.ForHTTP("/ping").WithPort("8086/tcp").WithStatusCodeMatcher(
+				func(status int) bool {
+					return status == http.StatusNoContent
+				},
+			),
+		),
+	}
+
+	influx, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer influx.Terminate(ctx)
+}
+
 func TestContainerWithUserID(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
