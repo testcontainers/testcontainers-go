@@ -1,7 +1,6 @@
 package testcontainers
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -11,7 +10,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
@@ -34,6 +32,8 @@ type DockerCompose interface {
 	WithCommand([]string) DockerCompose
 	WithEnv(map[string]string) DockerCompose
 	WithExposedService(string, int, wait.Strategy) DockerCompose
+	WithStdoutPipe(io.Writer) DockerCompose
+	WithStderrPipe(io.Writer) DockerCompose
 }
 
 type waitService struct {
@@ -54,6 +54,8 @@ type LocalDockerCompose struct {
 	Services             map[string]interface{}
 	waitStrategySupplied bool
 	WaitStrategyMap      map[waitService]wait.Strategy
+	cmdStdout            io.Writer
+	cmdStderr            io.Writer
 }
 
 type (
@@ -113,6 +115,8 @@ func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalD
 	dc.waitStrategySupplied = false
 	dc.WaitStrategyMap = make(map[waitService]wait.Strategy)
 
+	dc.cmdStdout = os.Stdout
+	dc.cmdStderr = os.Stderr
 	return dc
 }
 
@@ -215,6 +219,18 @@ func (dc *LocalDockerCompose) WithExposedService(service string, port int, strat
 	return dc
 }
 
+// WithStdoutPipe redirects standard output of the command to the specified writer
+func (dc *LocalDockerCompose) WithStdoutPipe(w io.Writer) DockerCompose {
+	dc.cmdStdout = w
+	return dc
+}
+
+// WithStderrPipe redirects standard error of the command to the specified writer
+func (dc *LocalDockerCompose) WithStderrPipe(w io.Writer) DockerCompose {
+	dc.cmdStderr = w
+	return dc
+}
+
 // validate checks if the files to be run in the compose are valid YAML files, setting up
 // references to all services in them
 func (dc *LocalDockerCompose) validate() error {
@@ -249,19 +265,15 @@ func (dc *LocalDockerCompose) validate() error {
 // ExecError is super struct that holds any information about an execution error, so the client code
 // can handle the result
 type ExecError struct {
-	Command      []string
-	StdoutOutput []byte
-	StderrOutput []byte
-	Error        error
-	Stdout       error
-	Stderr       error
+	Command []string
+	Error   error
+	Stdout  error
+	Stderr  error
 }
 
 // execute executes a program with arguments and environment variables inside a specific directory
 func execute(
-	dirContext string, environment map[string]string, binary string, args []string) ExecError {
-
-	var errStdout, errStderr error
+	dirContext string, environment map[string]string, binary string, args []string, cmdStdout, cmdStderr io.Writer) ExecError {
 
 	cmd := exec.Command(binary, args...)
 	cmd.Dir = dirContext
@@ -271,11 +283,8 @@ func execute(
 		cmd.Env = append(cmd.Env, key+"="+value)
 	}
 
-	stdoutIn, _ := cmd.StdoutPipe()
-	stderrIn, _ := cmd.StderrPipe()
-
-	stdout := newCapturingPassThroughWriter(os.Stdout)
-	stderr := newCapturingPassThroughWriter(os.Stderr)
+	cmd.Stdout = cmdStdout
+	cmd.Stderr = cmdStderr
 
 	err := cmd.Start()
 	if err != nil {
@@ -284,25 +293,10 @@ func execute(
 
 		return ExecError{
 			// add information about the CMD and arguments used
-			Command:      execCmd,
-			StdoutOutput: stdout.Bytes(),
-			StderrOutput: stderr.Bytes(),
-			Error:        err,
-			Stderr:       errStderr,
-			Stdout:       errStdout,
+			Command: execCmd,
+			Error:   err,
 		}
 	}
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	go func() {
-		_, errStdout = io.Copy(stdout, stdoutIn)
-		wg.Done()
-	}()
-
-	_, errStderr = io.Copy(stderr, stderrIn)
-	wg.Wait()
 
 	err = cmd.Wait()
 
@@ -310,12 +304,8 @@ func execute(
 	execCmd = append(execCmd, args...)
 
 	return ExecError{
-		Command:      execCmd,
-		StdoutOutput: stdout.Bytes(),
-		StderrOutput: stderr.Bytes(),
-		Error:        err,
-		Stderr:       errStderr,
-		Stdout:       errStdout,
+		Command: execCmd,
+		Error:   err,
 	}
 }
 
@@ -345,7 +335,7 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 	}
 	cmds = append(cmds, args...)
 
-	execErr := execute(pwd, environment, dc.Executable, cmds)
+	execErr := execute(pwd, environment, dc.Executable, cmds, dc.cmdStdout, dc.cmdStderr)
 	err := execErr.Error
 	if err != nil {
 		args := strings.Join(dc.Cmd, " ")
@@ -366,34 +356,6 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 	}
 
 	return execErr
-}
-
-// capturingPassThroughWriter is a writer that remembers
-// data written to it and passes it to w
-type capturingPassThroughWriter struct {
-	buf bytes.Buffer
-	w   io.Writer
-}
-
-// newCapturingPassThroughWriter creates new capturingPassThroughWriter
-func newCapturingPassThroughWriter(w io.Writer) *capturingPassThroughWriter {
-	return &capturingPassThroughWriter{
-		w: w,
-	}
-}
-
-func (w *capturingPassThroughWriter) Write(d []byte) (int, error) {
-	w.buf.Write(d)
-	return w.w.Write(d)
-}
-
-// Bytes returns bytes written to the writer
-func (w *capturingPassThroughWriter) Bytes() []byte {
-	b := w.buf.Bytes()
-	if b == nil {
-		b = []byte{}
-	}
-	return b
 }
 
 // Which checks if a binary is present in PATH
