@@ -87,42 +87,58 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 `testcontainers.ParallelContainers` - defines the containers that should be run in parallel mode.
 
 ```go
-ctx := context.Background()
+package main
 
-requests := []GenericContainerRequest{
-    {
-        ContainerRequest: ContainerRequest{
+import (
+	"context"
+	"fmt"
+	"log"
 
-            Image: "nginx",
-            ExposedPorts: []string{
-                "10080/tcp",
-            },
-        },
-        Started: true,
-    },
-    {
-        ContainerRequest: ContainerRequest{
+	"github.com/testcontainers/testcontainers-go"
+)
 
-            Image: "nginx",
-            ExposedPorts: []string{
-                "10081/tcp",
-            },
-        },
-        Started: true,
-    },
-}
+func main() {
+	ctx := context.Background()
 
-res, err := ParallelContainers(ctx, requests, ParallelContainersOptions{})
+	requests := testcontainers.ParallelContainerRequest{
+		{
+			ContainerRequest: testcontainers.ContainerRequest{
 
-if err != nil {
-    e, ok := err.(ParallelContainersError)
-	if !ok {
-	    log.Fatalf("unknown error: %v", err)	
-    }
-	...
-}
+				Image: "nginx",
+				ExposedPorts: []string{
+					"10080/tcp",
+				},
+			},
+			Started: true,
+		},
+		{
+			ContainerRequest: testcontainers.ContainerRequest{
 
-for _, c := range res {
-    defer c.Terminate(ctx)
+				Image: "nginx",
+				ExposedPorts: []string{
+					"10081/tcp",
+				},
+			},
+			Started: true,
+		},
+	}
+
+	res, err := testcontainers.ParallelContainers(ctx, requests, testcontainers.ParallelContainersOptions{})
+
+	if err != nil {
+		e, ok := err.(testcontainers.ParallelContainersError)
+		if !ok {
+			log.Fatalf("unknown error: %v", err)
+		}
+
+		for _, pe := range e.Errors {
+			fmt.Println(pe.Request, pe.Error)
+		}
+		return
+	}
+
+	for _, c := range res {
+		defer c.Terminate(ctx)
+	}
 }
 ```

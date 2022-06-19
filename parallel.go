@@ -10,10 +10,11 @@ const (
 	defaultWorkersCount = 8
 )
 
+type ParallelContainerRequest []GenericContainerRequest
+
 // ParallelContainersOptions represents additional options for parallel running
-// * WorkersCount - count of parallel workers. if field empty(zero), default value will be 'defaultWorkersCount'
 type ParallelContainersOptions struct {
-	WorkersCount int
+	WorkersCount int // count of parallel workers. If field empty(zero), default value will be 'defaultWorkersCount'
 }
 
 // ParallelContainersRequestError represents error from parallel request
@@ -51,7 +52,7 @@ func parallelContainersRunner(
 }
 
 // ParallelContainers creates a generic containers with parameters and run it in parallel mode
-func ParallelContainers(ctx context.Context, reqs []GenericContainerRequest, opt ParallelContainersOptions) ([]Container, error) {
+func ParallelContainers(ctx context.Context, reqs ParallelContainerRequest, opt ParallelContainersOptions) ([]Container, error) {
 	if opt.WorkersCount == 0 {
 		opt.WorkersCount = defaultWorkersCount
 	}

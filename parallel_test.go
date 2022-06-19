@@ -8,13 +8,13 @@ import (
 func TestParallelContainers(t *testing.T) {
 	tests := []struct {
 		name      string
-		reqs      []GenericContainerRequest
+		reqs      ParallelContainerRequest
 		resLen    int
 		expErrors int
 	}{
 		{
 			name: "running two containers (success)",
-			reqs: []GenericContainerRequest{
+			reqs: ParallelContainerRequest{
 				{
 					ContainerRequest: ContainerRequest{
 
@@ -40,7 +40,7 @@ func TestParallelContainers(t *testing.T) {
 		},
 		{
 			name: "running two containers (one error)",
-			reqs: []GenericContainerRequest{
+			reqs: ParallelContainerRequest{
 				{
 					ContainerRequest: ContainerRequest{
 
