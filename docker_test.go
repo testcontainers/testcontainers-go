@@ -1949,7 +1949,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 func TestContainerRunningCheckingStatusCode(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "influxdb:1.8.3",
+		Image:        "influxdb:1.8.10-alpine",
 		ExposedPorts: []string{"8086/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForHTTP("/ping").WithPort("8086/tcp").WithStatusCodeMatcher(
