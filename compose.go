@@ -105,7 +105,7 @@ func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalD
 	dc.absComposeFilePaths = make([]string, len(filePaths))
 	for i, cfp := range dc.ComposeFilePaths {
 		if cfp == "-" {
-			if err := dc.makeTmpFile(); err != nil {
+			if err := dc.makeTmpFile(identifier); err != nil {
 				continue
 			}
 			abs, _ := filepath.Abs(dc.tmpFileName)
@@ -417,13 +417,13 @@ func which(binary string) error {
 	return err
 }
 
-func (dc *LocalDockerCompose) makeTmpFile() error {
+func (dc *LocalDockerCompose) makeTmpFile(identifier string) error {
 	data, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		return err
 	}
 
-	file, err := ioutil.TempFile("", "__tmp_")
+	file, err := ioutil.TempFile("", identifier)
 	if err != nil {
 		return err
 	}
