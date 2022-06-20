@@ -417,12 +417,8 @@ func which(binary string) error {
 	return err
 }
 
-func readSTDIN() ([]byte, error) {
-	return ioutil.ReadAll(os.Stdin)
-}
-
 func (dc *LocalDockerCompose) makeTmpFile() error {
-	data, err := readSTDIN()
+	data, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		return err
 	}
