@@ -61,3 +61,8 @@ jobs:
         with:
           file: ./cover.txt
           name: testcontainers-go-${{ matrix.go-version }}
+
+      - name: Run checker
+        run: |
+          ./scripts/check_environment.sh
+
