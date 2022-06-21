@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -25,6 +26,29 @@ const (
 	envProjectName = "COMPOSE_PROJECT_NAME"
 	envComposeFile = "COMPOSE_FILE"
 )
+
+var (
+	_ ComposeVersion = (*composeVersion1)(nil)
+	_ ComposeVersion = (*composeVersion2)(nil)
+)
+
+type ComposeVersion interface {
+	Format(parts ...string) string
+}
+
+type composeVersion1 struct {
+}
+
+func (c composeVersion1) Format(parts ...string) string {
+	return strings.Join(parts, "_")
+}
+
+type composeVersion2 struct {
+}
+
+func (c composeVersion2) Format(parts ...string) string {
+	return strings.Join(parts, "-")
+}
 
 // DockerCompose defines the contract for running Docker Compose
 type DockerCompose interface {
@@ -44,6 +68,7 @@ type waitService struct {
 // LocalDockerCompose represents a Docker Compose execution using local binary
 // docker-compose or docker-compose.exe, depending on the underlying platform
 type LocalDockerCompose struct {
+	ComposeVersion
 	*LocalDockerComposeOptions
 	Executable           string
 	ComposeFilePaths     []string
@@ -107,6 +132,7 @@ func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalD
 		dc.absComposeFilePaths[i] = abs
 	}
 
+	_ = dc.determineVersion()
 	_ = dc.validate()
 
 	dc.Identifier = strings.ToLower(identifier)
@@ -213,6 +239,37 @@ func (dc *LocalDockerCompose) WithExposedService(service string, port int, strat
 	dc.waitStrategySupplied = true
 	dc.WaitStrategyMap[waitService{service: service, publishedPort: port}] = strategy
 	return dc
+}
+
+// determineVersion checks which version of docker-compose is installed
+// depending on the version services names are composed in a different way
+func (dc *LocalDockerCompose) determineVersion() error {
+	execErr := executeCompose(dc, []string{"version", "--short"})
+
+	if err := execErr.Error; err != nil {
+		return err
+	}
+
+	components := bytes.Split(execErr.StdoutOutput, []byte("."))
+	if componentsLen := len(components); componentsLen != 3 {
+		return fmt.Errorf("expected 3 version components in %s", execErr.StdoutOutput)
+	}
+
+	majorVersion, err := strconv.ParseInt(string(components[0]), 10, 8)
+	if err != nil {
+		return err
+	}
+
+	switch majorVersion {
+	case 1:
+		dc.ComposeVersion = composeVersion1{}
+	case 2:
+		dc.ComposeVersion = composeVersion2{}
+	default:
+		return fmt.Errorf("unexpected compose version %d", majorVersion)
+	}
+
+	return nil
 }
 
 // validate checks if the files to be run in the compose are valid YAML files, setting up
@@ -332,7 +389,7 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 		environment[k] = v
 	}
 
-	cmds := []string{}
+	var cmds []string
 	pwd := "."
 	if len(dc.absComposeFilePaths) > 0 {
 		pwd, _ = filepath.Split(dc.absComposeFilePaths[0])

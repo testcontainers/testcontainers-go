@@ -125,7 +125,7 @@ func TestDockerComposeStrategyForInvalidService(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		// Appending with _1 as given in the Java Test-Containers Example
-		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		WithExposedService(compose.Format("mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Invoke()
 	assert.NotEqual(t, err.Error, nil, "Expected error to be thrown because service with wait strategy is not running")
 
@@ -148,7 +148,7 @@ func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		// Appending with _1 as given in the Java Test-Containers Example
-		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		WithExposedService(compose.Format("mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -174,7 +174,7 @@ func TestDockerComposeWithWaitForService(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("nginx_1", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService(compose.Format("nginx", "1"), wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -199,7 +199,7 @@ func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -246,7 +246,7 @@ func TestDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
-		WithExposedService("nginx_1", 9080, wait.ForLog("Configuration complete; ready for start up")).
+		WithExposedService(compose.Format("nginx", "1"), 9080, wait.ForLog("Configuration complete; ready for start up")).
 		Invoke()
 	checkIfError(t, err)
 
@@ -268,8 +268,8 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
-		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
-		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -407,7 +407,7 @@ func TestLocalDockerComposeWithVolume(t *testing.T) {
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
-		assertVolumeDoesNotExist(t, identifier, "mydata")
+		assertVolumeDoesNotExist(t, compose.Format(identifier, "mydata"))
 	}
 	defer destroyFn()
 
@@ -417,13 +417,13 @@ func TestLocalDockerComposeWithVolume(t *testing.T) {
 	checkIfError(t, err)
 }
 
-func assertVolumeDoesNotExist(tb testing.TB, composeIdentifier, volume string) {
+func assertVolumeDoesNotExist(tb testing.TB, volumeName string) {
 	containerClient, _, err := NewDockerClient()
 	if err != nil {
 		tb.Fatalf("Failed to get provider: %v", err)
 	}
 
-	volumeList, err := containerClient.VolumeList(context.Background(), filters.NewArgs())
+	volumeList, err := containerClient.VolumeList(context.Background(), filters.NewArgs(filters.Arg("name", volumeName)))
 	if err != nil {
 		tb.Fatalf("Failed to list volumes: %v", err)
 	}
@@ -432,12 +432,8 @@ func assertVolumeDoesNotExist(tb testing.TB, composeIdentifier, volume string) {
 		tb.Logf("Volume list warnings: %v", volumeList.Warnings)
 	}
 
-	volumeNameRegexp := regexp.MustCompile(fmt.Sprintf(`^\/?%s(_|-)%s$`, composeIdentifier, volume))
-
-	for i := range volumeList.Volumes {
-		if volumeNameRegexp.MatchString(volumeList.Volumes[i].Name) {
-			tb.Fatalf("Volume should not be present")
-		}
+	if len(volumeList.Volumes) > 0 {
+		tb.Fatalf("Volume list is not empty")
 	}
 }
 

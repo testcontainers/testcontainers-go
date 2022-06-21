@@ -128,7 +128,6 @@ func Test_GetDockerfile(t *testing.T) {
 }
 
 func Test_BuildImageWithContexts(t *testing.T) {
-	t.Parallel()
 	type TestCase struct {
 		Name               string
 		ContextPath        string
@@ -288,7 +287,6 @@ func Test_BuildImageWithContexts(t *testing.T) {
 }
 
 func Test_GetLogsFromFailedContainer(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:      "docker.io/alpine",
@@ -325,7 +323,6 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 }
 
 func TestShouldStartContainersInParallel(t *testing.T) {
-	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	t.Cleanup(cancel)
 

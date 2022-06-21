@@ -164,7 +164,6 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 }
 
 func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
@@ -463,7 +462,6 @@ func TestContainerStopWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithReaper(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -502,7 +500,6 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -667,7 +664,6 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 }
 
 func TestContainerCreation(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
@@ -716,7 +712,6 @@ func TestContainerCreation(t *testing.T) {
 }
 
 func TestContainerCreationWithName(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 
 	creationName := fmt.Sprintf("%s_%d", "test_container", time.Now().Unix())
@@ -778,7 +773,6 @@ func TestContainerCreationWithName(t *testing.T) {
 }
 
 func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 
 	// delayed-nginx will wait 2s before opening port
@@ -811,7 +805,6 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 }
 
 func TestContainerCreationTimesOut(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
@@ -867,7 +860,6 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 }
 
 func TestContainerCreationTimesOutWithHttp(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
@@ -889,7 +881,6 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 }
 
 func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        "docker.io/mysql:latest",
@@ -912,7 +903,6 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 }
 
 func TestContainerCreationWaitsForLog(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        "docker.io/mysql:latest",
@@ -955,7 +945,6 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 }
 
 func Test_BuildContainerFromDockerfile(t *testing.T) {
-	t.Parallel()
 	t.Log("getting context")
 	ctx := context.Background()
 	t.Log("got context, creating container request")
@@ -1007,7 +996,6 @@ func Test_BuildContainerFromDockerfile(t *testing.T) {
 }
 
 func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
-	t.Parallel()
 	t.Log("getting ctx")
 	ctx := context.Background()
 
@@ -1095,7 +1083,6 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 }
 
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        "docker.io/mysql:latest",
@@ -1121,7 +1108,6 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 }
 
 func TestContainerCreationWaitingForHostPort(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        nginxAlpineImage,
@@ -1139,7 +1125,6 @@ func TestContainerCreationWaitingForHostPort(t *testing.T) {
 }
 
 func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        nginxAlpineImage,
@@ -1157,7 +1142,6 @@ func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.
 }
 
 func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        "docker.io/mysql:latest",
@@ -1206,7 +1190,6 @@ func TestCMD(t *testing.T) {
 		and it will be run when we run the container
 	*/
 
-	t.Parallel()
 	ctx := context.Background()
 
 	req := ContainerRequest{
@@ -1234,7 +1217,6 @@ func TestEntrypoint(t *testing.T) {
 		and it will be run when we run the container
 	*/
 
-	t.Parallel()
 	ctx := context.Background()
 
 	req := ContainerRequest{
@@ -1441,7 +1423,6 @@ func ExampleContainer_MappedPort() {
 }
 
 func TestContainerCreationWithBindAndVolume(t *testing.T) {
-	t.Parallel()
 	absPath, err := filepath.Abs("./testresources/hello.sh")
 	if err != nil {
 		t.Fatal(err)
@@ -1487,7 +1468,6 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 }
 
 func TestContainerWithTmpFs(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image: "docker.io/busybox",
@@ -1569,7 +1549,6 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 	if providerType == ProviderPodman {
 		t.Skip("Incompatible Docker API version for Podman")
 	}
-	t.Parallel()
 	t.Run("error with a non-existent platform", func(t *testing.T) {
 		t.Parallel()
 		nonExistentPlatform := "windows/arm12"
@@ -1626,7 +1605,6 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 }
 
 func TestContainerWithCustomHostname(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	name := fmt.Sprintf("some-nginx-%s-%d", t.Name(), rand.Int())
 	hostname := fmt.Sprintf("my-nginx-%s-%d", t.Name(), rand.Int())
@@ -1664,7 +1642,6 @@ func readHostname(tb testing.TB, containerId string) string {
 }
 
 func TestDockerContainerCopyFileToContainer(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
@@ -1724,7 +1701,6 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 }
 
 func TestDockerContainerCopyFileFromContainer(t *testing.T) {
-	t.Parallel()
 	fileContent, err := ioutil.ReadFile("./testresources/hello.sh")
 	if err != nil {
 		t.Fatal(err)
@@ -1809,7 +1785,6 @@ func TestDockerContainerResources(t *testing.T) {
 		t.Skip("Rootless Podman does not support setting rlimit")
 	}
 
-	t.Parallel()
 	ctx := context.Background()
 
 	expected := []*units.Ulimit{
@@ -1854,7 +1829,6 @@ func TestDockerContainerResources(t *testing.T) {
 }
 
 func TestContainerWithReaperNetwork(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	networks := []string{
 		"test_network_" + randomString(),
@@ -1929,7 +1903,6 @@ func TestContainerRunningCheckingStatusCode(t *testing.T) {
 }
 
 func TestContainerWithUserID(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:      "docker.io/alpine:latest",
@@ -1960,7 +1933,6 @@ func TestContainerWithUserID(t *testing.T) {
 }
 
 func TestContainerWithNoUserID(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:      "docker.io/alpine:latest",
@@ -1992,7 +1964,6 @@ func TestContainerWithNoUserID(t *testing.T) {
 func TestGetGatewayIP(t *testing.T) {
 	// When using docker-compose with DinD mode, and using host port or http wait strategy
 	// It's need to invoke GetGatewayIP for get the host
-	t.Parallel()
 	provider, err := providerType.GetProvider(WithLogger(TestLogger(t)))
 	if err != nil {
 		t.Fatal(err)
