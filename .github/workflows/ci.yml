@@ -65,3 +65,7 @@ jobs:
       - name: Run e2e tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: cd ./e2e && make test
+
+      - name: Run checker
+        run: |
+          ./scripts/check_environment.sh

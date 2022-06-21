@@ -158,11 +158,12 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 		Started: true,
 	}
 
-	_, err := GenericContainer(ctx, gcr)
+	nginx, err := GenericContainer(ctx, gcr)
 	if err != nil {
 		// Error when NetworkMode = host and Network = []string{"bridge"}
 		t.Logf("Can't use Network and NetworkMode together, %s", err)
 	}
+	defer nginx.Terminate(ctx)
 }
 
 func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
@@ -1944,6 +1945,31 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	assert.Equal(t, 2, len(cnt.NetworkSettings.Networks))
 	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[0]])
 	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[1]])
+}
+
+func TestContainerRunningCheckingStatusCode(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "influxdb:1.8.10-alpine",
+		ExposedPorts: []string{"8086/tcp"},
+		WaitingFor: wait.ForAll(
+			wait.ForHTTP("/ping").WithPort("8086/tcp").WithStatusCodeMatcher(
+				func(status int) bool {
+					return status == http.StatusNoContent
+				},
+			),
+		),
+	}
+
+	influx, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer influx.Terminate(ctx)
 }
 
 func TestContainerWithUserID(t *testing.T) {
