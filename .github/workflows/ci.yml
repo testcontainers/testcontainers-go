@@ -4,10 +4,10 @@ on: [push, pull_request]
 
 jobs:
   static-analysis:
-    runs-on: [ubuntu-latest]
+    runs-on: ubuntu-latest
     steps:
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Run ShellCheck
         run: |
           shellcheck scripts/*.sh
@@ -24,13 +24,13 @@ jobs:
     steps:
 
       - name: Set up Go 1.x
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
         id: go
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: modVerify
         run: go mod verify
@@ -52,14 +52,14 @@ jobs:
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
         if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: go run gotest.tools/gotestsum --format short-verbose -- -coverprofile=cover.txt ./...
+        run: go run gotest.tools/gotestsum --format short-verbose --rerun-fails=5 --packages="./..." -- -coverprofile=cover.txt
 
         # only report code coverage on linux
       - name: Upload coverage report
         if: ${{ matrix.platform == 'ubuntu-latest' }}
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v2
         with:
-          file: ./cover.txt
+          files: ./cover.txt
           name: testcontainers-go-${{ matrix.go-version }}
 
       - name: Run checker

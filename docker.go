@@ -41,7 +41,8 @@ var (
 )
 
 const (
-	Bridge        = "bridge"         // Bridge network name (as well as driver)
+	Bridge        = "bridge" // Bridge network name (as well as driver)
+	Podman        = "podman"
 	ReaperDefault = "reaper_default" // Default network name when bridge is not available
 )
 
@@ -359,13 +360,6 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, io.Reade
 		return 0, nil, err
 	}
 
-	err = cli.ContainerExecStart(ctx, response.ID, types.ExecStartCheck{
-		Detach: false,
-	})
-	if err != nil {
-		return 0, nil, err
-	}
-
 	var exitCode int
 	for {
 		execResp, err := cli.ContainerExecInspect(ctx, response.ID)
@@ -560,9 +554,9 @@ func (n *DockerNetwork) Remove(ctx context.Context) error {
 // DockerProvider implements the ContainerProvider interface
 type DockerProvider struct {
 	*DockerProviderOptions
-	client         *client.Client
-	hostCache      string
-	defaultNetwork string // default container network
+	client    *client.Client
+	host      string
+	hostCache string
 }
 
 var _ ContainerProvider = (*DockerProvider)(nil)
@@ -577,6 +571,7 @@ type TestContainersConfig struct {
 type (
 	// DockerProviderOptions defines options applicable to DockerProvider
 	DockerProviderOptions struct {
+		defaultBridgeNetworkName string
 		*GenericProviderOptions
 	}
 
@@ -610,20 +605,15 @@ func Generic2DockerOptions(opts ...GenericProviderOption) []DockerProviderOption
 	return converted
 }
 
-// NewDockerProvider creates a Docker provider with the EnvClient
-func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error) {
+func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
+	return DockerProviderOptionFunc(func(opts *DockerProviderOptions) {
+		opts.defaultBridgeNetworkName = bridgeNetworkName
+	})
+}
+
+func NewDockerClient() (cli *client.Client, host string, err error) {
 	tcConfig := readTCPropsFile()
-	host := tcConfig.Host
-
-	o := &DockerProviderOptions{
-		GenericProviderOptions: &GenericProviderOptions{
-			Logger: Logger,
-		},
-	}
-
-	for idx := range provOpts {
-		provOpts[idx].ApplyDockerTo(o)
-	}
+	host = tcConfig.Host
 
 	opts := []client.Opt{client.FromEnv}
 	if host != "" {
@@ -637,9 +627,36 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 
 			opts = append(opts, client.WithTLSClientConfig(cacertPath, certPath, keyPath))
 		}
+	} else if dockerHostEnv := os.Getenv("DOCKER_HOST"); dockerHostEnv != "" {
+		host = dockerHostEnv
+	} else {
+		host = "unix:///var/run/docker.sock"
 	}
 
-	c, err := client.NewClientWithOpts(opts...)
+	cli, err = client.NewClientWithOpts(opts...)
+
+	if err != nil {
+		return nil, "", err
+	}
+
+	cli.NegotiateAPIVersion(context.Background())
+
+	return cli, host, nil
+}
+
+// NewDockerProvider creates a Docker provider with the EnvClient
+func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error) {
+	o := &DockerProviderOptions{
+		GenericProviderOptions: &GenericProviderOptions{
+			Logger: Logger,
+		},
+	}
+
+	for idx := range provOpts {
+		provOpts[idx].ApplyDockerTo(o)
+	}
+
+	c, host, err := NewDockerClient()
 	if err != nil {
 		return nil, err
 	}
@@ -656,6 +673,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 	c.NegotiateAPIVersion(context.Background())
 	p := &DockerProvider{
 		DockerProviderOptions: o,
+		host:                  host,
 		client:                c,
 	}
 
@@ -738,24 +756,27 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	// Make sure that bridge network exists
 	// In case it is disabled we will create reaper_default network
-	p.defaultNetwork, err = getDefaultNetwork(ctx, p.client)
-	if err != nil {
-		return nil, err
+	if p.DefaultNetwork == "" {
+		p.DefaultNetwork, err = p.getDefaultNetwork(ctx, p.client)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// If default network is not bridge make sure it is attached to the request
 	// as container won't be attached to it automatically
-	if p.defaultNetwork != Bridge {
+	// in case of Podman the bridge network is called 'podman' as 'bridge' would conflict
+	if p.DefaultNetwork != p.defaultBridgeNetworkName {
 		isAttached := false
 		for _, net := range req.Networks {
-			if net == p.defaultNetwork {
+			if net == p.DefaultNetwork {
 				isAttached = true
 				break
 			}
 		}
 
 		if !isAttached {
-			req.Networks = append(req.Networks, p.defaultNetwork)
+			req.Networks = append(req.Networks, p.DefaultNetwork)
 		}
 	}
 
@@ -777,7 +798,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := NewReaper(ctx, sessionID.String(), p, req.ReaperImage)
+		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1037,7 +1058,11 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	// Make sure that bridge network exists
 	// In case it is disabled we will create reaper_default network
-	p.defaultNetwork, err = getDefaultNetwork(ctx, p.client)
+	if p.DefaultNetwork == "" {
+		if p.DefaultNetwork, err = p.getDefaultNetwork(ctx, p.client); err != nil {
+			return nil, err
+		}
+	}
 
 	if req.Labels == nil {
 		req.Labels = make(map[string]string)
@@ -1057,7 +1082,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := NewReaper(ctx, sessionID.String(), p, req.ReaperImage)
+		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}
@@ -1102,14 +1127,14 @@ func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (ty
 
 func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	// Use a default network as defined in the DockerProvider
-	if p.defaultNetwork == "" {
+	if p.DefaultNetwork == "" {
 		var err error
-		p.defaultNetwork, err = getDefaultNetwork(ctx, p.client)
+		p.DefaultNetwork, err = p.getDefaultNetwork(ctx, p.client)
 		if err != nil {
 			return "", err
 		}
 	}
-	nw, err := p.GetNetwork(ctx, NetworkRequest{Name: p.defaultNetwork})
+	nw, err := p.GetNetwork(ctx, NetworkRequest{Name: p.DefaultNetwork})
 	if err != nil {
 		return "", err
 	}
@@ -1149,10 +1174,10 @@ func getDefaultGatewayIP() (string, error) {
 	if len(ip) == 0 {
 		return "", errors.New("Failed to parse default gateway IP")
 	}
-	return string(ip), nil
+	return ip, nil
 }
 
-func getDefaultNetwork(ctx context.Context, cli *client.Client) (string, error) {
+func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli *client.Client) (string, error) {
 	// Get list of available networks
 	networkResources, err := cli.NetworkList(ctx, types.NetworkListOptions{})
 	if err != nil {
@@ -1164,8 +1189,8 @@ func getDefaultNetwork(ctx context.Context, cli *client.Client) (string, error) 
 	reaperNetworkExists := false
 
 	for _, net := range networkResources {
-		if net.Name == Bridge {
-			return Bridge, nil
+		if net.Name == p.defaultBridgeNetworkName {
+			return p.defaultBridgeNetworkName, nil
 		}
 
 		if net.Name == reaperNetwork {

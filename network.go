@@ -18,6 +18,16 @@ type Network interface {
 	Remove(context.Context) error // removes the network
 }
 
+type DefaultNetwork string
+
+func (n DefaultNetwork) ApplyGenericTo(opts *GenericProviderOptions) {
+	opts.DefaultNetwork = string(n)
+}
+
+func (n DefaultNetwork) ApplyDockerTo(opts *DockerProviderOptions) {
+	opts.DefaultNetwork = string(n)
+}
+
 // NetworkRequest represents the parameters used to get a network
 type NetworkRequest struct {
 	Driver         string
