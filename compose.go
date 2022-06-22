@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -126,6 +127,10 @@ func NewContainerizedDockerCompose(filePaths []string, identifier string, opts .
 	return NewDockerCompose(filePaths, identifier, &ContainerizedDockerComposeExecutor{}, context.Background(), opts...)
 }
 
+func NewNativeDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
+	return NewDockerCompose(filePaths, identifier, &NativeDockerComposeExecutor{}, context.Background(), opts...)
+}
+
 // Down executes docker-compose down
 func (dc *LocalDockerCompose) Down() ExecError {
 	return executeCompose(dc, []string{"down", "--remove-orphans", "--volumes"})
@@ -160,6 +165,8 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 	for k := range dc.WaitStrategyMap {
 		containerName := dc.containerNameFromServiceName(k.service, "_")
 		composeV2ContainerName := dc.containerNameFromServiceName(k.service, "-")
+		composeV2ContainerName = regexp.MustCompile(`_\d+$`).ReplaceAllString(composeV2ContainerName, "-$1")
+
 		f := filters.NewArgs(
 			filters.Arg("name", containerName),
 			filters.Arg("name", composeV2ContainerName),

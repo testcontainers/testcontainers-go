@@ -91,13 +91,15 @@ func ExampleLocalDockerCompose_WithEnv() {
 
 func enumDockerComposes(filePaths []string, identifier string, executor func(compose *LocalDockerCompose), t *testing.T) {
 	composes := []*LocalDockerCompose{
-		NewLocalDockerCompose(filePaths, identifier, WithLogger(TestLogger(t))),
-		NewContainerizedDockerCompose(filePaths, identifier, WithLogger(TestLogger(t))),
+		//NewLocalDockerCompose(filePaths, identifier, WithLogger(TestLogger(t))),
+		//NewContainerizedDockerCompose(filePaths, identifier, WithLogger(TestLogger(t))),
+		NewNativeDockerCompose(filePaths, identifier, WithLogger(TestLogger(t))),
 	}
 
 	titles := []string{
-		"NewLocalDockerCompose",
-		"NewContainerizedDockerCompose",
+		//"NewLocalDockerCompose",
+		//"NewContainerizedDockerCompose",
+		"NewNativeDockerComposer",
 	}
 
 	for i, c := range composes {
