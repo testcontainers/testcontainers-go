@@ -663,7 +663,7 @@ func (n *DockerNetwork) Remove(ctx context.Context) error {
 // DockerProvider implements the ContainerProvider interface
 type DockerProvider struct {
 	*DockerProviderOptions
-	client    *client.Client
+	client    client.APIClient
 	host      string
 	hostCache string
 	config    TestContainersConfig
@@ -1425,7 +1425,7 @@ func getDefaultGatewayIP() (string, error) {
 	return ip, nil
 }
 
-func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli *client.Client) (string, error) {
+func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APIClient) (string, error) {
 	// Get list of available networks
 	networkResources, err := cli.NetworkList(ctx, types.NetworkListOptions{})
 	if err != nil {
