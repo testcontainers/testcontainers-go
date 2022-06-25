@@ -2,11 +2,11 @@ package testcontainers
 
 import (
 	"context"
-	"strings"
+	"fmt"
+	"hash/fnv"
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -15,7 +15,7 @@ import (
 func TestDockerComposeApi(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
-	identifier := strings.ToLower(uuid.New().String())
+	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
 	assert.NoError(t, err, "NewDockerComposeApi()")
@@ -33,7 +33,7 @@ func TestDockerComposeApi(t *testing.T) {
 func TestDockerComposeApiStrategyForInvalidService(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
-	identifier := strings.ToLower(uuid.New().String())
+	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
 	assert.NoError(t, err, "NewDockerComposeApi()")
@@ -61,7 +61,7 @@ func TestDockerComposeApiStrategyForInvalidService(t *testing.T) {
 func TestDockerComposeApiWithWaitLogStrategy(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"
 
-	identifier := strings.ToLower(uuid.New().String())
+	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
 	assert.NoError(t, err, "NewDockerComposeApi()")
@@ -90,7 +90,7 @@ func TestDockerComposeApiWithWaitLogStrategy(t *testing.T) {
 func TestDockerComposeApiWithWaitForService(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
-	identifier := strings.ToLower(uuid.New().String())
+	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
 	assert.NoError(t, err, "NewDockerComposeApi()")
@@ -120,7 +120,7 @@ func TestDockerComposeApiWithWaitForService(t *testing.T) {
 func TestDockerComposeApiWithWaitHTTPStrategy(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
-	identifier := strings.ToLower(uuid.New().String())
+	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
 	assert.NoError(t, err, "NewDockerComposeApi()")
@@ -150,7 +150,7 @@ func TestDockerComposeApiWithWaitHTTPStrategy(t *testing.T) {
 func TestDockerComposeApiWithContainerName(t *testing.T) {
 	path := "./testresources/docker-compose-container-name.yml"
 
-	identifier := strings.ToLower(uuid.New().String())
+	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
 	assert.NoError(t, err, "NewDockerComposeApi()")
@@ -180,7 +180,7 @@ func TestDockerComposeApiWithContainerName(t *testing.T) {
 func TestDockerComposeApiWithWaitStrategy_NoExposedPorts(t *testing.T) {
 	path := "./testresources/docker-compose-no-exposed-ports.yml"
 
-	identifier := strings.ToLower(uuid.New().String())
+	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
 	assert.NoError(t, err, "NewDockerComposeApi()")
@@ -207,7 +207,7 @@ func TestDockerComposeApiWithWaitStrategy_NoExposedPorts(t *testing.T) {
 func TestDockerComposeApiWithMultipleWaitStrategies(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"
 
-	identifier := strings.ToLower(uuid.New().String())
+	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
 	assert.NoError(t, err, "NewDockerComposeApi()")
@@ -236,7 +236,7 @@ func TestDockerComposeApiWithMultipleWaitStrategies(t *testing.T) {
 func TestDockerComposeApiWithFailedStrategy(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
-	identifier := strings.ToLower(uuid.New().String())
+	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
 	assert.NoError(t, err, "NewDockerComposeApi()")
@@ -268,7 +268,7 @@ func TestDockerComposeApiWithFailedStrategy(t *testing.T) {
 func TestDockerComposeApiComplex(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"
 
-	identifier := strings.ToLower(uuid.New().String())
+	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
 	assert.NoError(t, err, "NewDockerComposeApi()")
@@ -280,10 +280,7 @@ func TestDockerComposeApiComplex(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	err = compose.
-		Up(ctx)
-
-	assert.NoError(t, err, "compose.Up()")
+	assert.NoError(t, compose.Up(ctx), "compose.Up()")
 
 	serviceNames := compose.ServiceNames()
 
@@ -295,7 +292,7 @@ func TestDockerComposeApiComplex(t *testing.T) {
 func TestDockerComposeApiWithEnvironment(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
-	identifier := strings.ToLower(uuid.New().String())
+	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
 	assert.NoError(t, err, "NewDockerComposeApi()")
@@ -325,4 +322,69 @@ func TestDockerComposeApiWithEnvironment(t *testing.T) {
 	}
 	absent := map[string]string{}
 	assertContainerEnvironmentVariables(t, identifier, "nginx", present, absent)
+}
+
+func TestDockerComposeApiWithMultipleComposeFiles(t *testing.T) {
+	composeFiles := []string{
+		"testresources/docker-compose-simple.yml",
+		"testresources/docker-compose-postgres.yml",
+		"testresources/docker-compose-override.yml",
+	}
+
+	identifier := testNameHash(t.Name())
+
+	compose, err := NewDockerComposeApi(composeFiles, identifier, WithLogger(TestLogger(t)))
+	assert.NoError(t, err, "NewDockerComposeApi()")
+
+	t.Cleanup(func() {
+		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		WithEnv(map[string]string{
+			"bar": "BAR",
+			"foo": "FOO",
+		}).
+		Up(ctx)
+	assert.NoError(t, err, "compose.Up()")
+
+	serviceNames := compose.ServiceNames()
+
+	assert.Equal(t, 3, len(serviceNames))
+	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "mysql")
+	assert.Contains(t, serviceNames, "postgres")
+
+	present := map[string]string{
+		"bar": "BAR",
+		"foo": "FOO",
+	}
+	absent := map[string]string{}
+	assertContainerEnvironmentVariables(t, identifier, "nginx", present, absent)
+}
+
+func TestDockerComposeApiWithVolume(t *testing.T) {
+	path := "./testresources/docker-compose-volume.yml"
+
+	identifier := testNameHash(t.Name())
+
+	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	assert.NoError(t, err, "NewDockerComposeApi()")
+
+	t.Cleanup(func() {
+		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.Up(ctx)
+	assert.NoError(t, err, "compose.Up()")
+}
+
+func testNameHash(name string) string {
+	return fmt.Sprintf("%x", fnv.New32a().Sum([]byte(name)))
 }

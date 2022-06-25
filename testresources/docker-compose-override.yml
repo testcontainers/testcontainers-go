@@ -9,5 +9,7 @@ services:
      - "9080:80"
   mysql:
     image: docker.io/mysql:5.6
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: Y
     ports:
      - "13306:3306"

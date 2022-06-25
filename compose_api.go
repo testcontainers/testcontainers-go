@@ -19,7 +19,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func NewDockerComposeApi(filePaths []string, identifier string, opts ...LocalDockerComposeOption) (*dockerComposeApi, error) {
+func NewDockerComposeApi(filePaths []string, identifier string, opts ...LocalDockerComposeOption) (*dockerComposeAPI, error) {
 	dockerCli, err := command.NewDockerCli()
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func NewDockerComposeApi(filePaths []string, identifier string, opts ...LocalDoc
 		return nil, err
 	}
 
-	composeApi := &dockerComposeApi{
+	composeAPI := &dockerComposeAPI{
 		name:            identifier,
 		configs:         filePaths,
 		composeService:  compose.NewComposeService(dockerCli),
@@ -39,10 +39,10 @@ func NewDockerComposeApi(filePaths []string, identifier string, opts ...LocalDoc
 		waitStrategyMap: make(map[waitService]wait.Strategy),
 	}
 
-	return composeApi, nil
+	return composeAPI, nil
 }
 
-type dockerComposeApi struct {
+type dockerComposeAPI struct {
 	name            string
 	configs         []string
 	waitStrategyMap map[waitService]wait.Strategy
@@ -52,19 +52,23 @@ type dockerComposeApi struct {
 	project         *types.Project
 }
 
-func (d *dockerComposeApi) ServiceNames() []string {
+func (d *dockerComposeAPI) ServiceNames() []string {
 	return d.project.ServiceNames()
 }
 
-func (d *dockerComposeApi) Services() types.Services {
+func (d *dockerComposeAPI) Services() types.Services {
 	return d.project.AllServices()
 }
 
-func (d *dockerComposeApi) Down(ctx context.Context) error {
-	return d.composeService.Down(ctx, d.name, api.DownOptions{})
+func (d *dockerComposeAPI) Down(ctx context.Context) error {
+	return d.composeService.Down(ctx, d.name, api.DownOptions{
+		RemoveOrphans: true,
+		Project:       d.project,
+		Images:        "",
+	})
 }
 
-func (d *dockerComposeApi) Up(ctx context.Context) error {
+func (d *dockerComposeAPI) Up(ctx context.Context) error {
 	projectOptions := make([]cli.ProjectOptionsFn, len(d.projectOptions), len(d.projectOptions)+2)
 	copy(projectOptions, d.projectOptions)
 	projectOptions = append(projectOptions, cli.WithName(d.name), cli.WithDefaultConfigPath)
@@ -118,22 +122,22 @@ func (d *dockerComposeApi) Up(ctx context.Context) error {
 	return grp.Wait()
 }
 
-func (d *dockerComposeApi) WaitForService(s string, strategy wait.Strategy) *dockerComposeApi {
+func (d *dockerComposeAPI) WaitForService(s string, strategy wait.Strategy) *dockerComposeAPI {
 	d.waitStrategyMap[waitService{service: s}] = strategy
 	return d
 }
 
-func (d *dockerComposeApi) WithEnv(m map[string]string) *dockerComposeApi {
+func (d *dockerComposeAPI) WithEnv(m map[string]string) *dockerComposeAPI {
 	d.projectOptions = append(d.projectOptions, withEnv(m))
 	return d
 }
 
-func (d *dockerComposeApi) WithExposedService(s string, i int, strategy wait.Strategy) *dockerComposeApi {
+func (d *dockerComposeAPI) WithExposedService(s string, i int, strategy wait.Strategy) *dockerComposeAPI {
 	d.waitStrategyMap[waitService{service: s, publishedPort: i}] = strategy
 	return d
 }
 
-func (d *dockerComposeApi) serviceContainer(ctx context.Context, svcName string) (*DockerContainer, error) {
+func (d *dockerComposeAPI) serviceContainer(ctx context.Context, svcName string) (*DockerContainer, error) {
 	listOptions := types2.ContainerListOptions{
 		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
