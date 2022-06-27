@@ -1,0 +1,52 @@
+name: Podman pipeline
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        go-version: [1.14.x, 1.15.x, 1.16.x, 1.17.x, 1.x]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go-version }}
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+
+      - name: Enable systemd user process
+        run: |
+          loginctl enable-linger $(whoami)
+          sleep 1
+
+      - name: Set XDG_RUNTIME_DIR
+        run: echo "XDG_RUNTIME_DIR=/run/user/$UID" >> $GITHUB_ENV
+
+      - name: Install Podman
+        run: |
+          set -x
+          sudo apt-get remove -y podman docker-ce docker docker-engine docker.io containerd runc ||:
+          sudo apt update
+          sudo apt install -y software-properties-common debian-archive-keyring dirmngr
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 0E98404D386FA1D9
+          sudo add-apt-repository -y "deb http://deb.debian.org/debian experimental main"
+          sudo apt update
+          sudo apt -y -t experimental install podman crun docker-compose
+          sudo systemctl daemon-reload
+          sleep 5
+          sudo systemctl start podman.socket
+          sudo podman info
+
+      - name: Set DOCKER_HOST
+        run: echo "DOCKER_HOST=unix:///run/podman/podman.sock" >> $GITHUB_ENV
+
+      - name: gotestsum
+        # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
+        # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
+        # we can't put Windows Server in "Linux Mode" in Github actions
+        # another, host mode is only available on Linux, and we have tests around that, do we skip them?
+        run: sudo go run gotest.tools/gotestsum --format short-verbose --rerun-fails=5 --packages="./..." -- -coverprofile=cover.txt

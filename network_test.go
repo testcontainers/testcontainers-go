@@ -3,11 +3,13 @@ package testcontainers
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types/network"
-	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/api/types/network"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // Create a network using a provider. By default it is Docker.
@@ -36,6 +38,7 @@ func ExampleNetworkProvider_CreateNetwork() {
 	defer nginxC.Terminate(ctx)
 	nginxC.GetContainerID()
 }
+
 func Test_NetworkWithIPAM(t *testing.T) {
 	ctx := context.Background()
 	networkName := "test-network-with-ipam"
@@ -45,8 +48,10 @@ func Test_NetworkWithIPAM(t *testing.T) {
 			{
 				Subnet:  "10.1.1.0/24",
 				Gateway: "10.1.1.254",
-				IPRange: "10.1.1.1/25",
 			},
+		},
+		Options: map[string]string{
+			"driver": "host-local",
 		},
 	}
 	net, err := GenericNetwork(ctx, GenericNetworkRequest{

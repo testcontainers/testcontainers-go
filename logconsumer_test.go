@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"gotest.tools/v3/assert"
 
 	"github.com/docker/docker/client"
@@ -186,6 +187,9 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {
+	if providerType == ProviderPodman {
+		t.Skip("Docker-in-Docker does not work with rootless Podman")
+	}
 	// First spin up a docker-in-docker container, then spin up an inner container within that dind container
 	// Logs are being read from the inner container via the dind container's tcp port, which can be briefly
 	// closed to test behaviour in connection-closed situations.
@@ -194,17 +198,16 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	dind, err := GenericContainer(ctx, GenericContainerRequest{
 		Started: true,
 		ContainerRequest: ContainerRequest{
-			Image:        "docker:dind",
+			Image:        "docker.io/docker:dind",
 			ExposedPorts: []string{"2375/tcp"},
 			Env:          map[string]string{"DOCKER_TLS_CERTDIR": ""},
 			WaitingFor:   wait.ForListeningPort("2375/tcp"),
 			Privileged:   true,
 		},
 	})
-	if err != nil {
-		t.Fatal("create generic container:", err)
-	}
-	defer dind.Terminate(ctx)
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, dind)
 
 	var remoteDocker string
 
