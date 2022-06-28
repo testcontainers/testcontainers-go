@@ -10,7 +10,7 @@ test-unit:
 .PHONY: test-e2e
 test-e2e:
 	@echo "Running end-to-end tests..."
-	cd ./e2e && make
+	make -C e2e test
 
 .PHONY: tools
 tools:
