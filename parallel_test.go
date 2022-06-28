@@ -99,7 +99,7 @@ func TestParallelContainers(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			res, err := ParallelContainers(context.Background(), tc.reqs, ParallelContainersOptions{})
 
-			if err != nil && tc.expErrors > 0 {
+			if err != nil {
 				e, _ := err.(ParallelContainersError)
 
 				if len(e.Errors) != tc.expErrors {
