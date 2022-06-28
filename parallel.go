@@ -37,6 +37,7 @@ func parallelContainersRunner(
 	errors chan<- ParallelContainersRequestError,
 	containers chan<- Container,
 	wg *sync.WaitGroup) {
+
 	for req := range requests {
 		c, err := GenericContainer(ctx, req)
 		if err != nil {
