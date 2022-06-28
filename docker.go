@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/binary"
@@ -260,11 +261,59 @@ func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.Containe
 // Logs will fetch both STDOUT and STDERR from the current container. Returns a
 // ReadCloser and leaves it up to the caller to extract what it wants.
 func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
+
+	const streamHeaderSize = 8
+
 	options := types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	}
-	return c.provider.client.ContainerLogs(ctx, c.ID, options)
+
+	rc, err := c.provider.client.ContainerLogs(ctx, c.ID, options)
+	if err != nil {
+		return nil, err
+	}
+
+	pr, pw := io.Pipe()
+	r := bufio.NewReader(rc)
+
+	go func() {
+		var (
+			isPrefix    = true
+			lineStarted = true
+			line        []byte
+		)
+		for err == nil {
+			line, isPrefix, err = r.ReadLine()
+
+			if lineStarted && len(line) >= streamHeaderSize {
+				line = line[streamHeaderSize:] // trim stream header
+				lineStarted = false
+			}
+			if !isPrefix {
+				lineStarted = true
+			}
+
+			_, errW := pw.Write(line)
+			if errW != nil {
+				return
+			}
+
+			if !isPrefix {
+				_, errW := pw.Write([]byte("\n"))
+				if errW != nil {
+					return
+				}
+			}
+
+			if err != nil {
+				_ = pw.CloseWithError(err)
+				return
+			}
+		}
+	}()
+
+	return pr, nil
 }
 
 // FollowOutput adds a LogConsumer to be sent logs from the container's
