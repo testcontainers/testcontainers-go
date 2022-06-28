@@ -86,6 +86,8 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 
 `testcontainers.ParallelContainers` - defines the containers that should be run in parallel mode.
 
+The following test creates two NGINX containers in parallel:
+
 ```go
 package main
 
