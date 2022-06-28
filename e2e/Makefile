@@ -1,7 +1,11 @@
 
 .PHONY: test
 test: tools
-	go test ./...
+	go run gotest.tools/gotestsum \
+		--format short-verbose \
+		--rerun-fails=5 \
+		--packages="./..." \
+
 
 .PHONY: tools
 tools:
