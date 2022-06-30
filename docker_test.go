@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -1778,7 +1777,7 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 	fd, err := nginxC.CopyFileFromContainer(ctx, copiedFileName)
 	require.NoError(t, err)
 	defer fd.Close()
-	containerFileData, err := io.ReadAll(fd)
+	containerFileData, err := ioutil.ReadAll(fd)
 	require.NoError(t, err)
 
 	require.Equal(t, hostFileData, containerFileData)
