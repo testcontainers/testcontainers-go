@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -1751,7 +1752,8 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 
 func TestDockerCreateContainerWithFiles(t *testing.T) {
 	ctx := context.Background()
-	copiedFileName := "hello_copy.sh"
+	hostFileName := "./testresources/hello.sh"
+	copiedFileName := "/hello_copy.sh"
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -1760,23 +1762,26 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 			WaitingFor:   wait.ForListeningPort("80/tcp"),
 			Files: []ContainerFile{
 				{
-					HostFilePath:      "./testresources/hello.sh",
-					ContainerFilePath: "/" + copiedFileName,
+					HostFilePath:      hostFileName,
+					ContainerFilePath: copiedFileName,
 					FileMode:          700,
 				},
 			},
 		},
-		Started: true,
+		Started: false,
 	})
-	defer nginxC.Terminate(ctx)
+	require.NoError(t, err)
 
-	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
-	}
+	hostFileData, err := ioutil.ReadFile(hostFileName)
+	require.NoError(t, err)
+
+	fd, err := nginxC.CopyFileFromContainer(ctx, copiedFileName)
+	require.NoError(t, err)
+	defer fd.Close()
+	containerFileData, err := io.ReadAll(fd)
+	require.NoError(t, err)
+
+	require.Equal(t, hostFileData, containerFileData)
 }
 
 func TestDockerContainerCopyToContainer(t *testing.T) {
