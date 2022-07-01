@@ -7,7 +7,7 @@ updates:
   open-pull-requests-limit: 3
   rebase-strategy: disabled
 - package-ecosystem: gomod
-  directory: "/e2e/"
+  directory: "/e2e"
   schedule:
     interval: daily
   open-pull-requests-limit: 3
