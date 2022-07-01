@@ -663,7 +663,8 @@ func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
 }
 
 func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainersConfig, err error) {
-	tcConfig = readTCPropsFile()
+	tcConfig = configureTC()
+
 	host = tcConfig.Host
 
 	opts := []client.Opt{client.FromEnv}
@@ -732,8 +733,9 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 	return p, nil
 }
 
-// readTCPropsFile reads from testcontainers properties file, if it exists
-func readTCPropsFile() TestContainersConfig {
+// configureTC reads from testcontainers properties file, if it exists
+// it is possible that certain values get overridden when set as environment variables
+func configureTC() TestContainersConfig {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return TestContainersConfig{}
@@ -750,6 +752,11 @@ func readTCPropsFile() TestContainersConfig {
 	if err := properties.Decode(&cfg); err != nil {
 		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
 		return TestContainersConfig{}
+	}
+
+	ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
+	if ryukPrivilegedEnv != "" {
+		cfg.RyukPrivileged = ryukPrivilegedEnv == "true"
 	}
 
 	return cfg
