@@ -29,6 +29,7 @@ type ContainerProvider interface {
 	CreateContainer(context.Context, ContainerRequest) (Container, error) // create a container without starting it
 	RunContainer(context.Context, ContainerRequest) (Container, error)    // create a container and start it
 	Health(context.Context) error
+	Config() TestContainersConfig
 }
 
 // Container allows getting info about and controlling a single container instance
@@ -104,13 +105,15 @@ type ContainerRequest struct {
 	NetworkAliases  map[string][]string // for specifying network aliases
 	NetworkMode     container.NetworkMode
 	Resources       container.Resources
+	Files           []ContainerFile // files which will be copied when container starts
 	User            string          // for specifying uid:gid
 	SkipReaper      bool            // indicates whether we skip setting up a reaper for this
 	ReaperImage     string          // alternative reaper image
 	AutoRemove      bool            // if set to true, the container will be removed from the host when stopped
 	AlwaysPullImage bool            // Always pull image
 	ImagePlatform   string          // ImagePlatform describes the platform which the image runs on.
-	Files           []ContainerFile // files which will be copied when container starts
+	Binds           []string
+	ShmSize         int64 // Amount of memory shared with the host (in bytes)
 }
 
 type (
@@ -119,7 +122,8 @@ type (
 
 	// GenericProviderOptions defines options applicable to all providers
 	GenericProviderOptions struct {
-		Logger Logging
+		Logger         Logging
+		DefaultNetwork string
 	}
 
 	// GenericProviderOption defines a common interface to modify GenericProviderOptions
@@ -139,6 +143,7 @@ func (f GenericProviderOptionFunc) ApplyGenericTo(opts *GenericProviderOptions) 
 // possible provider types
 const (
 	ProviderDocker ProviderType = iota // Docker is default = 0
+	ProviderPodman
 )
 
 // GetProvider provides the provider implementation for a certain type
@@ -153,7 +158,15 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 
 	switch t {
 	case ProviderDocker:
-		provider, err := NewDockerProvider(Generic2DockerOptions(opts...)...)
+		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Bridge))
+		provider, err := NewDockerProvider(providerOptions...)
+		if err != nil {
+			return nil, fmt.Errorf("%w, failed to create Docker provider", err)
+		}
+		return provider, nil
+	case ProviderPodman:
+		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Podman))
+		provider, err := NewDockerProvider(providerOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w, failed to create Docker provider", err)
 		}

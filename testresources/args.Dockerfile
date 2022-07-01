@@ -1,4 +1,4 @@
-FROM golang:1.13-alpine
+FROM docker.io/golang:1.13-alpine
 
 ARG FOO
 

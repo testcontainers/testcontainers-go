@@ -1,1 +1,1 @@
-FROM alpine
+FROM docker.io/alpine

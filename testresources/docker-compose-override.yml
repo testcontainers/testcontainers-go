@@ -1,13 +1,13 @@
 version: '3'
 services:
   nginx:
-    image: nginx:stable-alpine
+    image: docker.io/nginx:stable-alpine
     environment:
       bar: ${bar}
       foo: ${foo}
     ports:
      - "9080:80"
   mysql:
-    image: mysql:5.6
+    image: docker.io/mysql:5.6
     ports:
      - "13306:3306"
