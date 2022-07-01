@@ -17,17 +17,17 @@ func TestDockerComposeApi(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	assert.NoError(t, compose.Up(ctx), "compose.Up()")
+	assert.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
 }
 
 func TestDockerComposeApiStrategyForInvalidService(t *testing.T) {
@@ -35,11 +35,11 @@ func TestDockerComposeApiStrategyForInvalidService(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -47,12 +47,12 @@ func TestDockerComposeApiStrategyForInvalidService(t *testing.T) {
 
 	err = compose.
 		// Appending with _1 as given in the Java Test-Containers Example
-		WithExposedService("mysql-1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
-		Up(ctx)
+		WaitForService("mysql-1", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		Up(ctx, Wait(true))
 
 	assert.Error(t, err, "Expected error to be thrown because service with wait strategy is not running")
 
-	serviceNames := compose.ServiceNames()
+	serviceNames := compose.Services()
 
 	assert.Equal(t, 1, len(serviceNames))
 	assert.Contains(t, serviceNames, "nginx")
@@ -63,28 +63,57 @@ func TestDockerComposeApiWithWaitLogStrategy(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
 	err = compose.
-		// Appending with _1 as given in the Java Test-Containers Example
-		WithExposedService("mysql", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
-		Up(ctx)
+		WaitForService("mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		Up(ctx, Wait(true))
 
 	assert.NoError(t, err, "compose.Up()")
 
-	serviceNames := compose.ServiceNames()
+	serviceNames := compose.Services()
 
 	assert.Equal(t, 2, len(serviceNames))
 	assert.Contains(t, serviceNames, "nginx")
 	assert.Contains(t, serviceNames, "mysql")
+}
+
+func TestDockerComposeApiWithRunServices(t *testing.T) {
+	path := "./testresources/docker-compose-complex.yml"
+
+	identifier := testNameHash(t.Name())
+
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeApi()")
+
+	t.Cleanup(func() {
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		Up(ctx, Wait(true), RunServices("nginx"))
+
+	assert.NoError(t, err, "compose.Up()")
+
+	serviceNames := compose.Services()
+
+	_, err = compose.ServiceContainer(context.Background(), "mysql")
+	assert.Error(t, err, "Make sure there is no mysql container")
+
+	assert.Equal(t, 1, len(serviceNames))
+	assert.Contains(t, serviceNames, "nginx")
 }
 
 func TestDockerComposeApiWithWaitForService(t *testing.T) {
@@ -92,11 +121,11 @@ func TestDockerComposeApiWithWaitForService(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -107,11 +136,11 @@ func TestDockerComposeApiWithWaitForService(t *testing.T) {
 			"bar": "BAR",
 		}).
 		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
-		Up(ctx)
+		Up(ctx, Wait(true))
 
 	assert.NoError(t, err, "compose.Up()")
 
-	serviceNames := compose.ServiceNames()
+	serviceNames := compose.Services()
 
 	assert.Equal(t, 1, len(serviceNames))
 	assert.Contains(t, serviceNames, "nginx")
@@ -122,11 +151,11 @@ func TestDockerComposeApiWithWaitHTTPStrategy(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -136,12 +165,12 @@ func TestDockerComposeApiWithWaitHTTPStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("nginx", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
-		Up(ctx)
+		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		Up(ctx, Wait(true))
 
 	assert.NoError(t, err, "compose.Up()")
 
-	serviceNames := compose.ServiceNames()
+	serviceNames := compose.Services()
 
 	assert.Equal(t, 1, len(serviceNames))
 	assert.Contains(t, serviceNames, "nginx")
@@ -152,11 +181,11 @@ func TestDockerComposeApiWithContainerName(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -166,12 +195,12 @@ func TestDockerComposeApiWithContainerName(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("nginx", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
-		Up(ctx)
+		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		Up(ctx, Wait(true))
 
 	assert.NoError(t, err, "compose.Up()")
 
-	serviceNames := compose.ServiceNames()
+	serviceNames := compose.Services()
 
 	assert.Equal(t, 1, len(serviceNames))
 	assert.Contains(t, serviceNames, "nginx")
@@ -182,23 +211,23 @@ func TestDockerComposeApiWithWaitStrategy_NoExposedPorts(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
 	err = compose.
-		WithExposedService("nginx", 9080, wait.ForLog("Configuration complete; ready for start up")).
-		Up(ctx)
+		WaitForService("nginx", wait.ForLog("Configuration complete; ready for start up")).
+		Up(ctx, Wait(true))
 
 	assert.NoError(t, err, "compose.Up()")
 
-	serviceNames := compose.ServiceNames()
+	serviceNames := compose.Services()
 
 	assert.Equal(t, 1, len(serviceNames))
 	assert.Contains(t, serviceNames, "nginx")
@@ -209,24 +238,24 @@ func TestDockerComposeApiWithMultipleWaitStrategies(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
 	err = compose.
-		WithExposedService("mysql", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
-		WithExposedService("nginx", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
-		Up(ctx)
+		WaitForService("mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
+		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		Up(ctx, Wait(true))
 
 	assert.NoError(t, err, "compose.Up()")
 
-	serviceNames := compose.ServiceNames()
+	serviceNames := compose.Services()
 
 	assert.Equal(t, 2, len(serviceNames))
 	assert.Contains(t, serviceNames, "nginx")
@@ -238,11 +267,11 @@ func TestDockerComposeApiWithFailedStrategy(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -252,14 +281,14 @@ func TestDockerComposeApiWithFailedStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
-		Up(ctx)
+		WaitForService("nginx_1", wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
+		Up(ctx, Wait(true))
 
 	// Verify that an error is thrown and not nil
 	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
 	assert.Error(t, err, "Expected error to be thrown because of a wrong suplied wait strategy")
 
-	serviceNames := compose.ServiceNames()
+	serviceNames := compose.Services()
 
 	assert.Equal(t, 1, len(serviceNames))
 	assert.Contains(t, serviceNames, "nginx")
@@ -270,19 +299,19 @@ func TestDockerComposeApiComplex(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	assert.NoError(t, compose.Up(ctx), "compose.Up()")
+	assert.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
 
-	serviceNames := compose.ServiceNames()
+	serviceNames := compose.Services()
 
 	assert.Equal(t, 2, len(serviceNames))
 	assert.Contains(t, serviceNames, "nginx")
@@ -294,11 +323,11 @@ func TestDockerComposeApiWithEnvironment(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -308,11 +337,11 @@ func TestDockerComposeApiWithEnvironment(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		Up(ctx)
+		Up(ctx, Wait(true))
 
 	assert.NoError(t, err, "compose.Up()")
 
-	serviceNames := compose.ServiceNames()
+	serviceNames := compose.Services()
 
 	assert.Equal(t, 1, len(serviceNames))
 	assert.Contains(t, serviceNames, "nginx")
@@ -333,11 +362,11 @@ func TestDockerComposeApiWithMultipleComposeFiles(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi(composeFiles, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi(composeFiles, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -348,10 +377,10 @@ func TestDockerComposeApiWithMultipleComposeFiles(t *testing.T) {
 			"bar": "BAR",
 			"foo": "FOO",
 		}).
-		Up(ctx)
+		Up(ctx, Wait(true))
 	assert.NoError(t, err, "compose.Up()")
 
-	serviceNames := compose.ServiceNames()
+	serviceNames := compose.Services()
 
 	assert.Equal(t, 3, len(serviceNames))
 	assert.Contains(t, serviceNames, "nginx")
@@ -371,17 +400,39 @@ func TestDockerComposeApiWithVolume(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
 	assert.NoError(t, err, "NewDockerComposeApi()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	err = compose.Up(ctx)
+	err = compose.Up(ctx, Wait(true))
+	assert.NoError(t, err, "compose.Up()")
+}
+
+func TestDockerComposeApiWithBuild(t *testing.T) {
+	path := "./testresources/docker-compose-build.yml"
+
+	identifier := testNameHash(t.Name())
+
+	compose, err := NewDockerComposeApi([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeApi()")
+
+	t.Cleanup(func() {
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		WaitForService("echo", wait.ForHTTP("/env").WithPort("8080/tcp")).
+		Up(ctx, Wait(true))
+
 	assert.NoError(t, err, "compose.Up()")
 }
 

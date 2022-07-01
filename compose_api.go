@@ -3,14 +3,13 @@ package testcontainers
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
+	"sync"
 
 	"github.com/compose-spec/compose-go/cli"
 	"github.com/compose-spec/compose-go/types"
-	"github.com/docker/cli/cli/command"
-	"github.com/docker/cli/cli/flags"
 	"github.com/docker/compose/v2/pkg/api"
-	"github.com/docker/compose/v2/pkg/compose"
 	types2 "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
@@ -19,99 +18,152 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func NewDockerComposeApi(filePaths []string, identifier string, opts ...LocalDockerComposeOption) (*dockerComposeAPI, error) {
-	dockerCli, err := command.NewDockerCli()
-	if err != nil {
-		return nil, err
-	}
+type stackUpOptionFunc func(s *stackUpOptions)
 
-	if err = dockerCli.Initialize(&flags.ClientOptions{
-		Common: new(flags.CommonOptions),
-	}); err != nil {
-		return nil, err
-	}
-
-	composeAPI := &dockerComposeAPI{
-		name:            identifier,
-		configs:         filePaths,
-		composeService:  compose.NewComposeService(dockerCli),
-		dockerClient:    dockerCli.Client(),
-		waitStrategyMap: make(map[waitService]wait.Strategy),
-	}
-
-	return composeAPI, nil
+func (f stackUpOptionFunc) applyToStackUp(o *stackUpOptions) {
+	f(o)
 }
+
+type stackDownOptionFunc func(do *api.DownOptions)
+
+func (f stackDownOptionFunc) applyToStackDown(do *api.DownOptions) {
+	f(do)
+}
+
+// RunServices is comparable to 'docker-compose run' as it only creates a subset of containers
+// instead of all services defined by the project
+func RunServices(serviceNames ...string) StackUpOption {
+	return stackUpOptionFunc(func(o *stackUpOptions) {
+		o.Services = serviceNames
+	})
+}
+
+// IgnoreOrphans - Ignore legacy containers for services that are not defined in the project
+type IgnoreOrphans bool
+
+func (io IgnoreOrphans) applyToStackUp(co *api.CreateOptions, _ *api.StartOptions) {
+	co.IgnoreOrphans = bool(io)
+}
+
+// RemoveOrphans will cleanup containers that are not declared on the compose model but own the same labels
+type RemoveOrphans bool
+
+func (ro RemoveOrphans) applyToStackUp(o *stackUpOptions) {
+	o.RemoveOrphans = bool(ro)
+}
+
+func (ro RemoveOrphans) applyToStackDown(o *stackDownOptions) {
+	o.RemoveOrphans = bool(ro)
+}
+
+// Wait won't return until containers reached the running|healthy state
+type Wait bool
+
+func (w Wait) applyToStackUp(o *stackUpOptions) {
+	o.Wait = bool(w)
+}
+
+// RemoveImages used by services
+type RemoveImages uint8
+
+func (ri RemoveImages) applyToStackDown(o *stackDownOptions) {
+	switch ri {
+	case RemoveImagesAll:
+		o.Images = "all"
+	case RemoveImagesLocal:
+		o.Images = "local"
+	}
+}
+
+const (
+	// RemoveImagesAll - remove all images used by the stack
+	RemoveImagesAll RemoveImages = iota
+	// RemoveImagesLocal - remove only images that don't have a tag
+	RemoveImagesLocal
+)
 
 type dockerComposeAPI struct {
-	name            string
-	configs         []string
-	waitStrategyMap map[waitService]wait.Strategy
-	composeService  api.Service
-	dockerClient    client.APIClient
-	projectOptions  []cli.ProjectOptionsFn
-	project         *types.Project
+	lock           sync.RWMutex
+	name           string
+	configs        []string
+	waitStrategies map[string]wait.Strategy
+	containers     map[string]*DockerContainer
+	composeService api.Service
+	dockerClient   client.APIClient
+	projectOptions []cli.ProjectOptionsFn
+	project        *types.Project
 }
 
-func (d *dockerComposeAPI) ServiceNames() []string {
+func (d *dockerComposeAPI) Services() []string {
 	return d.project.ServiceNames()
 }
 
-func (d *dockerComposeAPI) Services() types.Services {
-	return d.project.AllServices()
+func (d *dockerComposeAPI) Down(ctx context.Context, opts ...StackDownOption) error {
+	options := stackDownOptions{
+		DownOptions: api.DownOptions{
+			Project: d.project,
+		},
+	}
+
+	for i := range opts {
+		opts[i].applyToStackDown(&options)
+	}
+
+	return d.composeService.Down(ctx, d.name, options.DownOptions)
 }
 
-func (d *dockerComposeAPI) Down(ctx context.Context) error {
-	return d.composeService.Down(ctx, d.name, api.DownOptions{
-		RemoveOrphans: true,
-		Project:       d.project,
-		Images:        "",
-	})
-}
-
-func (d *dockerComposeAPI) Up(ctx context.Context) error {
-	projectOptions := make([]cli.ProjectOptionsFn, len(d.projectOptions), len(d.projectOptions)+2)
-	copy(projectOptions, d.projectOptions)
-	projectOptions = append(projectOptions, cli.WithName(d.name), cli.WithDefaultConfigPath)
-
-	opts, err := cli.NewProjectOptions(d.configs, projectOptions...)
+func (d *dockerComposeAPI) Up(ctx context.Context, opts ...StackUpOption) (err error) {
+	d.project, err = d.compileProject()
 	if err != nil {
 		return err
 	}
 
-	d.project, err = cli.ProjectFromOptions(opts)
-	if err != nil {
-		return err
-	}
-
-	ensureDefaultValues(d.project, opts)
-
-	err = d.composeService.Up(ctx, d.project, api.UpOptions{
-		Create: api.CreateOptions{
+	upOptions := stackUpOptions{
+		CreateOptions: api.CreateOptions{
 			Services:             d.project.ServiceNames(),
-			RemoveOrphans:        true,
-			IgnoreOrphans:        false,
 			Recreate:             api.RecreateDiverged,
 			RecreateDependencies: api.RecreateDiverged,
 		},
-		Start: api.StartOptions{
-			Project:  d.project,
-			AttachTo: d.project.ServiceNames(),
-			Wait:     true,
+		StartOptions: api.StartOptions{
+			Project: d.project,
 		},
+	}
+
+	for i := range opts {
+		opts[i].applyToStackUp(&upOptions)
+	}
+
+	if len(upOptions.Services) != len(d.project.Services) {
+		sort.Strings(upOptions.Services)
+
+		filteredServices := make(types.Services, 0, len(d.project.Services))
+
+		for i := range d.project.Services {
+			if idx := sort.SearchStrings(upOptions.Services, d.project.Services[i].Name); idx < len(upOptions.Services) && upOptions.Services[idx] == d.project.Services[i].Name {
+				filteredServices = append(filteredServices, d.project.Services[i])
+			}
+		}
+
+		d.project.Services = filteredServices
+	}
+
+	err = d.composeService.Up(ctx, d.project, api.UpOptions{
+		Create: upOptions.CreateOptions,
+		Start:  upOptions.StartOptions,
 	})
 
-	if len(d.waitStrategyMap) == 0 || err != nil {
+	if len(d.waitStrategies) == 0 || err != nil {
 		return err
 	}
 
 	grp, grpCtx := errgroup.WithContext(ctx)
 
-	for svc, strategy := range d.waitStrategyMap { // pinning the variables
+	for svc, strategy := range d.waitStrategies { // pinning the variables
 		svc := svc
 		strategy := strategy
 
 		grp.Go(func() error {
-			target, err := d.serviceContainer(grpCtx, svc.service)
+			target, err := d.ServiceContainer(grpCtx, svc)
 			if err != nil {
 				return err
 			}
@@ -122,22 +174,24 @@ func (d *dockerComposeAPI) Up(ctx context.Context) error {
 	return grp.Wait()
 }
 
-func (d *dockerComposeAPI) WaitForService(s string, strategy wait.Strategy) *dockerComposeAPI {
-	d.waitStrategyMap[waitService{service: s}] = strategy
+func (d *dockerComposeAPI) WaitForService(s string, strategy wait.Strategy) ComposeStack {
+	d.waitStrategies[s] = strategy
 	return d
 }
 
-func (d *dockerComposeAPI) WithEnv(m map[string]string) *dockerComposeAPI {
+func (d *dockerComposeAPI) WithEnv(m map[string]string) ComposeStack {
 	d.projectOptions = append(d.projectOptions, withEnv(m))
 	return d
 }
 
-func (d *dockerComposeAPI) WithExposedService(s string, i int, strategy wait.Strategy) *dockerComposeAPI {
-	d.waitStrategyMap[waitService{service: s, publishedPort: i}] = strategy
-	return d
-}
+func (d *dockerComposeAPI) ServiceContainer(ctx context.Context, svcName string) (*DockerContainer, error) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
 
-func (d *dockerComposeAPI) serviceContainer(ctx context.Context, svcName string) (*DockerContainer, error) {
+	if container, ok := d.containers[svcName]; ok {
+		return container, nil
+	}
+
 	listOptions := types2.ContainerListOptions{
 		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
@@ -154,13 +208,50 @@ func (d *dockerComposeAPI) serviceContainer(ctx context.Context, svcName string)
 		return nil, fmt.Errorf("no container found for service name %s", svcName)
 	}
 
-	container := containers[0]
-	return &DockerContainer{
-		ID: container.ID,
+	containerInstance := containers[0]
+	container := &DockerContainer{
+		ID: containerInstance.ID,
 		provider: &DockerProvider{
 			client: d.dockerClient,
 		},
-	}, nil
+	}
+
+	d.containers[svcName] = container
+
+	return container, nil
+}
+
+func (d *dockerComposeAPI) compileProject() (*types.Project, error) {
+	projectOptions := make([]cli.ProjectOptionsFn, len(d.projectOptions), len(d.projectOptions)+2)
+	copy(projectOptions, d.projectOptions)
+	projectOptions = append(projectOptions, cli.WithName(d.name), cli.WithDefaultConfigPath)
+
+	compiledOptions, err := cli.NewProjectOptions(d.configs, projectOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	proj, err := cli.ProjectFromOptions(compiledOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, s := range proj.Services {
+		s.CustomLabels = map[string]string{
+			api.ProjectLabel:     proj.Name,
+			api.ServiceLabel:     s.Name,
+			api.VersionLabel:     api.ComposeVersion,
+			api.WorkingDirLabel:  proj.WorkingDir,
+			api.ConfigFilesLabel: strings.Join(proj.ComposeFiles, ","),
+			api.OneoffLabel:      "False", // default, will be overridden by `run` command
+		}
+		if compiledOptions.EnvFile != "" {
+			s.CustomLabels[api.EnvironmentFileLabel] = compiledOptions.EnvFile
+		}
+		proj.Services[i] = s
+	}
+
+	return proj, nil
 }
 
 func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
@@ -174,22 +265,5 @@ func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
 		}
 
 		return nil
-	}
-}
-
-func ensureDefaultValues(proj *types.Project, opts *cli.ProjectOptions) {
-	for i, s := range proj.Services {
-		s.CustomLabels = map[string]string{
-			api.ProjectLabel:     proj.Name,
-			api.ServiceLabel:     s.Name,
-			api.VersionLabel:     api.ComposeVersion,
-			api.WorkingDirLabel:  proj.WorkingDir,
-			api.ConfigFilesLabel: strings.Join(proj.ComposeFiles, ","),
-			api.OneoffLabel:      "False", // default, will be overridden by `run` command
-		}
-		if opts.EnvFile != "" {
-			s.CustomLabels[api.EnvironmentFileLabel] = opts.EnvFile
-		}
-		proj.Services[i] = s
 	}
 }
