@@ -2,7 +2,12 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
+)
+
+var (
+	ErrReuseEmptyName = errors.New("with reuse option a container name mustn't be empty")
 )
 
 // GenericContainerRequest represents parameters to a generic container
@@ -11,6 +16,7 @@ type GenericContainerRequest struct {
 	Started          bool         // whether to auto-start the container
 	ProviderType     ProviderType // which provider to use, Docker if empty
 	Logger           Logging      // provide a container specific Logging - use default global logger if empty
+	Reuse            bool         // reuse an existing container if it exists or create a new one. a container name mustn't be empty
 }
 
 // GenericNetworkRequest represents parameters to a generic network
@@ -35,6 +41,10 @@ func GenericNetwork(ctx context.Context, req GenericNetworkRequest) (Network, er
 
 // GenericContainer creates a generic container with parameters
 func GenericContainer(ctx context.Context, req GenericContainerRequest) (Container, error) {
+	if req.Reuse && req.Name == "" {
+		return nil, ErrReuseEmptyName
+	}
+
 	logging := req.Logger
 	if logging == nil {
 		logging = Logger
@@ -44,34 +54,12 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 		return nil, err
 	}
 
-	c, err := provider.CreateContainer(ctx, req.ContainerRequest)
-	if err != nil {
-		return nil, fmt.Errorf("%w: failed to create container", err)
+	var c Container
+	if req.Reuse {
+		c, err = provider.ReuseOrCreateContainer(ctx, req.ContainerRequest)
+	} else {
+		c, err = provider.CreateContainer(ctx, req.ContainerRequest)
 	}
-
-	if req.Started {
-		if err := c.Start(ctx); err != nil {
-			return c, fmt.Errorf("%w: failed to start container", err)
-		}
-	}
-
-	return c, nil
-}
-
-// GenericReusableContainer reuses a container if it exists or creates a new one with parameters
-// Reusing will work only if you pass an existing container's name via 'req.Name' field
-// If the name is empty or it is not in a list of existing containers, the function will create a new generic container
-func GenericReusableContainer(ctx context.Context, req GenericContainerRequest) (Container, error) {
-	logging := req.Logger
-	if logging == nil {
-		logging = Logger
-	}
-	provider, err := req.ProviderType.GetProvider(WithLogger(logging))
-	if err != nil {
-		return nil, err
-	}
-
-	c, err := provider.ReuseOrCreateContainer(ctx, req.ContainerRequest)
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to create container", err)
 	}

@@ -205,7 +205,7 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	}
 
 	c.logger.Printf("Container is stopped id: %s image: %s", shortID, c.Image)
-
+	c.isRunning = false
 	return nil
 }
 
@@ -239,6 +239,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 	}
 
 	c.sessionID = uuid.UUID{}
+	c.isRunning = false
 	return nil
 }
 

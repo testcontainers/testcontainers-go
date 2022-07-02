@@ -2,7 +2,10 @@ package testcontainers
 
 import (
 	"context"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -23,39 +26,59 @@ func TestGenericReusableContainer(t *testing.T) {
 		},
 		Started: true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !n1.IsRunning() {
-		t.Fatal("isRunning must return true")
-	}
+	require.NoError(t, err)
+	require.True(t, n1.IsRunning())
 	defer n1.Terminate(ctx)
 
 	copiedFileName := "hello_copy.sh"
 	err = n1.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
+	require.NoError(t, err)
 
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	n2, err := GenericReusableContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
-			Name:         reusableContainerName,
+	tests := []struct {
+		name          string
+		containerName string
+		errMsg        string
+		reuseOption   bool
+	}{
+		{
+			name:        "reuse option with empty name",
+			errMsg:      ErrReuseEmptyName.Error(),
+			reuseOption: true,
 		},
-		Started: true,
-	})
-	if err != nil {
-		t.Fatal(err)
+		{
+			name:          "container already exists (reuse=false)",
+			containerName: reusableContainerName,
+			errMsg:        "is already in use by container",
+			reuseOption:   false,
+		},
+		{
+			name:          "success reusing",
+			containerName: reusableContainerName,
+			reuseOption:   true,
+		},
 	}
 
-	c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
-	if err != nil {
-		t.Fatal(err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			n2, err := GenericContainer(ctx, GenericContainerRequest{
+				ContainerRequest: ContainerRequest{
+					Image:        "nginx:1.17.6",
+					ExposedPorts: []string{"80/tcp"},
+					WaitingFor:   wait.ForListeningPort("80/tcp"),
+					Name:         tc.containerName,
+				},
+				Started: true,
+				Reuse:   tc.reuseOption,
+			})
+			if tc.errMsg == "" {
+				c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
+				require.NoError(t, err)
+				require.Zero(t, c)
+			} else {
+				require.Error(t, err)
+				require.True(t, strings.Contains(err.Error(), tc.errMsg))
+			}
+		})
 	}
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
-	}
+
 }
