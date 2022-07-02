@@ -82,11 +82,11 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 }
 ```
 
-## GenericReusableContainer
+## Reusable container
 
-`testcontainers.GenericReusableContainer` reuses a container if it exists or creates a generic container with parameters.
-Reusing will work only if you pass an existing container's name via 'req.Name' field.
-If the name is empty, or it is not in a list of existing containers, the function will create a new generic container
+With `Reuse` option you can reuse an existing container. Reusing will work only if you pass an 
+existing container name via 'req.Name' field. If the name is not in a list of existing containers, 
+the function will create a new generic container. If `Reuse` is true and `Name` is empty, you will get error.
 
 The following test creates an NGINX container, adds a file into it and then reuses the container again for checking the file:
 ```go
@@ -118,7 +118,7 @@ if err != nil {
     log.Fatal(err)
 }
 
-n2, err := GenericReusableContainer(ctx, GenericContainerRequest{
+n2, err := GenericContainer(ctx, GenericContainerRequest{
     ContainerRequest: ContainerRequest{
         Image:        "nginx:1.17.6",
         ExposedPorts: []string{"80/tcp"},
@@ -126,6 +126,7 @@ n2, err := GenericReusableContainer(ctx, GenericContainerRequest{
         Name:         reusableContainerName,
     },
     Started: true,
+	Reuse: true,
 })
 if err != nil {
     log.Fatal(err)
