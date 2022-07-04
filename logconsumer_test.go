@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"gotest.tools/v3/assert"
 
 	"github.com/docker/docker/client"
@@ -142,6 +145,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer func() { _ = c.Terminate(ctx) }()
 
 	ep, err := c.Endpoint(ctx, "http")
 	if err != nil {
@@ -182,10 +186,12 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 		StdoutLog: "echo this-is-stdout\n",
 		StderrLog: "echo this-is-stderr\n",
 	}, g.LogTypes)
-	_ = c.Terminate(ctx)
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {
+	if providerType == ProviderPodman {
+		t.Skip("Docker-in-Docker does not work with rootless Podman")
+	}
 	// First spin up a docker-in-docker container, then spin up an inner container within that dind container
 	// Logs are being read from the inner container via the dind container's tcp port, which can be briefly
 	// closed to test behaviour in connection-closed situations.
@@ -194,17 +200,16 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	dind, err := GenericContainer(ctx, GenericContainerRequest{
 		Started: true,
 		ContainerRequest: ContainerRequest{
-			Image:        "docker:dind",
+			Image:        "docker.io/docker:dind",
 			ExposedPorts: []string{"2375/tcp"},
 			Env:          map[string]string{"DOCKER_TLS_CERTDIR": ""},
 			WaitingFor:   wait.ForListeningPort("2375/tcp"),
 			Privileged:   true,
 		},
 	})
-	if err != nil {
-		t.Fatal("create generic container:", err)
-	}
-	defer dind.Terminate(ctx)
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, dind)
 
 	var remoteDocker string
 
@@ -300,4 +305,31 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 				" re-requesting logs. Instead has:\n%s", consumer.Msgs[existingLogs:],
 		)
 	}
+}
+
+func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:      "alpine:latest",
+		Cmd:        []string{"sh", "-c", "id -u"},
+		WaitingFor: wait.ForExit(),
+	}
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer container.Terminate(ctx)
+	r, err := container.Logs(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, "0", strings.TrimSpace(string(b)))
 }

@@ -31,6 +31,7 @@ type nginxContainer struct {
 	URI string
 }
 
+
 func setupNginx(ctx context.Context) (*nginxContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx",
@@ -137,4 +138,67 @@ if err != nil {
     log.Fatal(err)
 }
 fmt.Println(c)
+````
+
+# Parallel running
+
+`testcontainers.ParallelContainers` - defines the containers that should be run in parallel mode.
+
+The following test creates two NGINX containers in parallel:
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/testcontainers/testcontainers-go"
+)
+
+func main() {
+	ctx := context.Background()
+
+	requests := testcontainers.ParallelContainerRequest{
+		{
+			ContainerRequest: testcontainers.ContainerRequest{
+
+				Image: "nginx",
+				ExposedPorts: []string{
+					"10080/tcp",
+				},
+			},
+			Started: true,
+		},
+		{
+			ContainerRequest: testcontainers.ContainerRequest{
+
+				Image: "nginx",
+				ExposedPorts: []string{
+					"10081/tcp",
+				},
+			},
+			Started: true,
+		},
+	}
+
+	res, err := testcontainers.ParallelContainers(ctx, requests, testcontainers.ParallelContainersOptions{})
+
+	if err != nil {
+		e, ok := err.(testcontainers.ParallelContainersError)
+		if !ok {
+			log.Fatalf("unknown error: %v", err)
+		}
+
+		for _, pe := range e.Errors {
+			fmt.Println(pe.Request, pe.Error)
+		}
+		return
+	}
+
+	for _, c := range res {
+		defer c.Terminate(ctx)
+	}
+}
 ```

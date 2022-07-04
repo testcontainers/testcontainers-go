@@ -9,6 +9,8 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+const defaultForSqlQuery = "SELECT 1"
+
 //ForSQL constructs a new waitForSql strategy for the given driver
 func ForSQL(port nat.Port, driver string, url func(nat.Port) string) *waitForSql {
 	return &waitForSql{
@@ -17,6 +19,7 @@ func ForSQL(port nat.Port, driver string, url func(nat.Port) string) *waitForSql
 		Driver:         driver,
 		startupTimeout: defaultStartupTimeout(),
 		PollInterval:   defaultPollInterval(),
+		query:          defaultForSqlQuery,
 	}
 }
 
@@ -26,6 +29,7 @@ type waitForSql struct {
 	Port           nat.Port
 	startupTimeout time.Duration
 	PollInterval   time.Duration
+	query          string
 }
 
 //Timeout sets the maximum waiting time for the strategy after which it'll give up and return an error
@@ -40,8 +44,15 @@ func (w *waitForSql) WithPollInterval(pollInterval time.Duration) *waitForSql {
 	return w
 }
 
-//WaitUntilReady repeatedly tries to run "SELECT 1" query on the given port using sql and driver.
-// If the it doesn't succeed until the timeout value which defaults to 60 seconds, it will return an error
+//WithQuery can be used to override the default query used in the strategy.
+func (w *waitForSql) WithQuery(query string) *waitForSql {
+	w.query = query
+	return w
+}
+
+//WaitUntilReady repeatedly tries to run "SELECT 1" or user defined query on the given port using sql and driver.
+//
+// If it doesn't succeed until the timeout value which defaults to 60 seconds, it will return an error.
 func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, w.startupTimeout)
 	defer cancel()
@@ -72,7 +83,7 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 			return ctx.Err()
 		case <-ticker.C:
 
-			if _, err := db.ExecContext(ctx, "SELECT 1"); err != nil {
+			if _, err := db.ExecContext(ctx, w.query); err != nil {
 				continue
 			}
 			return nil
