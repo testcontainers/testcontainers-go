@@ -1,0 +1,17 @@
+version: '3'
+services:
+  nginx:
+    image: docker.io/nginx:stable-alpine
+    volumes:
+      - type: volume
+        source: mydata
+        target: /data
+        volume:
+          nocopy: true
+    environment:
+      bar: ${bar}
+    ports:
+     - "9080:80"
+
+volumes:
+  mydata:

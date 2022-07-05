@@ -3,9 +3,13 @@ package testcontainers
 import (
 	"context"
 	"fmt"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/api/types/network"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // Create a network using a provider. By default it is Docker.
@@ -33,6 +37,60 @@ func ExampleNetworkProvider_CreateNetwork() {
 	})
 	defer nginxC.Terminate(ctx)
 	nginxC.GetContainerID()
+}
+
+func Test_NetworkWithIPAM(t *testing.T) {
+	ctx := context.Background()
+	networkName := "test-network-with-ipam"
+	ipamConfig := network.IPAM{
+		Driver: "default",
+		Config: []network.IPAMConfig{
+			{
+				Subnet:  "10.1.1.0/24",
+				Gateway: "10.1.1.254",
+			},
+		},
+		Options: map[string]string{
+			"driver": "host-local",
+		},
+	}
+	net, err := GenericNetwork(ctx, GenericNetworkRequest{
+		NetworkRequest: NetworkRequest{
+			Name:           networkName,
+			CheckDuplicate: true,
+			IPAM:           &ipamConfig,
+		},
+	})
+
+	if err != nil {
+		t.Fatal("cannot create network: ", err)
+	}
+
+	defer net.Remove(ctx)
+
+	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: "nginx",
+			ExposedPorts: []string{
+				"80/tcp",
+			},
+			Networks: []string{
+				networkName,
+			},
+		},
+	})
+	defer nginxC.Terminate(ctx)
+	nginxC.GetContainerID()
+
+	provider, err := ProviderDocker.GetProvider()
+	if err != nil {
+		t.Fatal("Cannot get Provider")
+	}
+	foundNetwork, err := provider.GetNetwork(ctx, NetworkRequest{Name: networkName})
+	if err != nil {
+		t.Fatal("Cannot get created network by name")
+	}
+	assert.Equal(t, ipamConfig, foundNetwork.IPAM)
 }
 
 func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
@@ -84,7 +142,7 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 	hp := wait.ForListeningPort("5672/tcp")
 	hp.WithStartupTimeout(3 * time.Minute)
 	amqpRequest := ContainerRequest{
-		Image:        "rabbitmq:management-alpine",
+		Image:        "rabbitmq:3.8.19-management-alpine",
 		ExposedPorts: []string{"15672/tcp", "5672/tcp"},
 		Env:          env,
 		AutoRemove:   true,

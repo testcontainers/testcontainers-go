@@ -2,13 +2,12 @@ package wait
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/docker/go-connections/nat"
 )
@@ -96,7 +95,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			}
 			return err
 		} else {
-			conn.Close()
+			_ = conn.Close()
 			break
 		}
 	}
@@ -107,9 +106,9 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		exitCode, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
+		exitCode, _, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
 		if err != nil {
-			return errors.Wrapf(err, "host port waiting failed")
+			return fmt.Errorf("%w, host port waiting failed", err)
 		}
 
 		if exitCode == 0 {

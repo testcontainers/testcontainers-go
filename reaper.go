@@ -4,14 +4,16 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/docker/go-connections/nat"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"net"
+	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/docker/go-connections/nat"
+
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -19,23 +21,22 @@ const (
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
 	TestcontainerLabelIsReaper  = TestcontainerLabel + ".reaper"
 
-	ReaperDefaultImage = "quay.io/testcontainers/ryuk:0.2.3"
+	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.3.3"
 )
 
-var reaper *Reaper // We would like to create reaper only once
-var mutex sync.Mutex
+type reaperContextKey string
+
+var (
+	dockerHostContextKey = reaperContextKey("docker_host")
+	reaper               *Reaper // We would like to create reaper only once
+	mutex                sync.Mutex
+)
 
 // ReaperProvider represents a provider for the reaper to run itself with
 // The ContainerProvider interface should usually satisfy this as well, so it is pluggable
 type ReaperProvider interface {
 	RunContainer(ctx context.Context, req ContainerRequest) (Container, error)
-}
-
-// Reaper is used to start a sidecar container that cleans up resources
-type Reaper struct {
-	Provider  ReaperProvider
-	SessionID string
-	Endpoint  string
+	Config() TestContainersConfig
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
@@ -46,6 +47,8 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 	if reaper != nil {
 		return reaper, nil
 	}
+
+	dockerHost := extractDockerHost(ctx)
 
 	// Otherwise create a new one
 	reaper = &Reaper{
@@ -58,21 +61,23 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 	req := ContainerRequest{
 		Image:        reaperImage(reaperImageName),
 		ExposedPorts: []string{string(listeningPort)},
+		NetworkMode:  Bridge,
 		Labels: map[string]string{
 			TestcontainerLabel:         "true",
 			TestcontainerLabelIsReaper: "true",
 		},
 		SkipReaper: true,
-		BindMounts: map[string]string{
-			"/var/run/docker.sock": "/var/run/docker.sock",
-		},
+		Mounts:     Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
 		AutoRemove: true,
 		WaitingFor: wait.ForListeningPort(listeningPort),
 	}
 
+	tcConfig := provider.Config()
+	req.Privileged = tcConfig.RyukPrivileged
+
 	// Attach reaper container to a requested network if it is specified
 	if p, ok := provider.(*DockerProvider); ok {
-		req.Networks = append(req.Networks, p.defaultNetwork)
+		req.Networks = append(req.Networks, p.DefaultNetwork)
 	}
 
 	c, err := provider.RunContainer(ctx, req)
@@ -89,19 +94,18 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 	return reaper, nil
 }
 
-func reaperImage(reaperImageName string) string {
-	if reaperImageName == "" {
-		return ReaperDefaultImage
-	} else {
-		return reaperImageName
-	}
+// Reaper is used to start a sidecar container that cleans up resources
+type Reaper struct {
+	Provider  ReaperProvider
+	SessionID string
+	Endpoint  string
 }
 
 // Connect runs a goroutine which can be terminated by sending true into the returned channel
 func (r *Reaper) Connect() (chan bool, error) {
 	conn, err := net.DialTimeout("tcp", r.Endpoint, 10*time.Second)
 	if err != nil {
-		return nil, errors.Wrap(err, "Connecting to Ryuk on "+r.Endpoint+" failed")
+		return nil, fmt.Errorf("%w: Connecting to Ryuk on %s failed", err, r.Endpoint)
 	}
 
 	terminationSignal := make(chan bool)
@@ -144,4 +148,39 @@ func (r *Reaper) Labels() map[string]string {
 		TestcontainerLabel:          "true",
 		TestcontainerLabelSessionID: r.SessionID,
 	}
+}
+
+func extractDockerHost(ctx context.Context) (dockerHostPath string) {
+	if dockerHostPath = os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"); dockerHostPath != "" {
+		return dockerHostPath
+	}
+
+	dockerHostPath = "/var/run/docker.sock"
+
+	var hostRawURL string
+	if h, ok := ctx.Value(dockerHostContextKey).(string); !ok || h == "" {
+		return dockerHostPath
+	} else {
+		hostRawURL = h
+	}
+	var hostURL *url.URL
+	if u, err := url.Parse(hostRawURL); err != nil {
+		return dockerHostPath
+	} else {
+		hostURL = u
+	}
+
+	switch hostURL.Scheme {
+	case "unix":
+		return hostURL.Path
+	default:
+		return dockerHostPath
+	}
+}
+
+func reaperImage(reaperImageName string) string {
+	if reaperImageName == "" {
+		return ReaperDefaultImage
+	}
+	return reaperImageName
 }
