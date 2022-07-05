@@ -736,30 +736,35 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 // configureTC reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
 func configureTC() TestContainersConfig {
+	config := TestContainersConfig{}
+
+	applyEnvironmentConfiguration := func(config TestContainersConfig) TestContainersConfig {
+		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
+		if ryukPrivilegedEnv != "" {
+			config.RyukPrivileged = ryukPrivilegedEnv == "true"
+		}
+
+		return config
+	}
+
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return TestContainersConfig{}
+		return applyEnvironmentConfiguration(config)
 	}
 
 	tcProp := filepath.Join(home, ".testcontainers.properties")
 	// init from a file
 	properties, err := properties.LoadFile(tcProp, properties.UTF8)
 	if err != nil {
-		return TestContainersConfig{}
+		return applyEnvironmentConfiguration(config)
 	}
 
-	var cfg TestContainersConfig
-	if err := properties.Decode(&cfg); err != nil {
+	if err := properties.Decode(&config); err != nil {
 		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
-		return TestContainersConfig{}
+		return applyEnvironmentConfiguration(config)
 	}
 
-	ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
-	if ryukPrivilegedEnv != "" {
-		cfg.RyukPrivileged = ryukPrivilegedEnv == "true"
-	}
-
-	return cfg
+	return applyEnvironmentConfiguration(config)
 }
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
