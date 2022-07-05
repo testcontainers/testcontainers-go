@@ -50,3 +50,7 @@ jobs:
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
         run: sudo go run gotest.tools/gotestsum --format short-verbose --rerun-fails=5 --packages="./..." -- -coverprofile=cover.txt
+
+      - name: Run checker
+        run: |
+          ./scripts/check_environment.sh
