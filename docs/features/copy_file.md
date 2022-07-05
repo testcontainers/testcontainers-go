@@ -27,13 +27,13 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 			Image:        "nginx:1.17.6",
 			ExposedPorts: []string{"80/tcp"},
 			WaitingFor:   wait.ForListeningPort("80/tcp"),
-            Files: []ContainerFile{
-                {
-                    HostFilePath:      "./testresources/hello.sh",
-                    ContainerFilePath: "/" + copiedFileName,
-                    FileMode:          700,
-                },
-            },
+			Files: []ContainerFile{
+				{
+					HostFilePath:      "./testresources/hello.sh",
+					ContainerFilePath: "/copies-hello.sh",
+					FileMode:          700,
+				},
+			},
 		},
 		Started: true,
 	})
