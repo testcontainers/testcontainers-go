@@ -58,10 +58,10 @@ jobs:
         run: make test-unit
 
       - name: modTidy e2e tests
-        run: make -C tools-tidy
+        run: sudo make -C tools-tidy
 
       - name: Run e2e tests
-        run: make test-e2e
+        run: sudo make test-e2e
 
       - name: Run checker
         run: |
