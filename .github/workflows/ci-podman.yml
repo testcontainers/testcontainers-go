@@ -57,6 +57,9 @@ jobs:
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
         run: make test-unit
 
+      - name: modTidy e2e tests
+        run: make -C tools-tidy
+
       - name: Run e2e tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-e2e
