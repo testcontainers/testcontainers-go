@@ -1816,6 +1816,78 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	}
 }
 
+func TestDockerCreateContainerWithFiles(t *testing.T) {
+	ctx := context.Background()
+	hostFileName := "./testresources/hello.sh"
+	copiedFileName := "/hello_copy.sh"
+	tests := []struct {
+		name   string
+		files  []ContainerFile
+		errMsg string
+	}{
+		{
+			name: "success copy",
+			files: []ContainerFile{
+				{
+					HostFilePath:      hostFileName,
+					ContainerFilePath: copiedFileName,
+					FileMode:          700,
+				},
+			},
+		},
+		{
+			name: "host file not found",
+			files: []ContainerFile{
+				{
+					HostFilePath:      hostFileName + "123",
+					ContainerFilePath: copiedFileName,
+					FileMode:          700,
+				},
+			},
+			errMsg: "can't copy " +
+				"./testresources/hello.sh123 to container: open " +
+				"./testresources/hello.sh123: no such file or directory: " +
+				"failed to create container",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+				ContainerRequest: ContainerRequest{
+					Image:        "nginx:1.17.6",
+					ExposedPorts: []string{"80/tcp"},
+					WaitingFor:   wait.ForListeningPort("80/tcp"),
+					Files:        tc.files,
+				},
+				Started: false,
+			})
+
+			if tc.errMsg == "" {
+				for _, f := range tc.files {
+					require.NoError(t, err)
+
+					hostFileData, err := ioutil.ReadFile(f.HostFilePath)
+					require.NoError(t, err)
+
+					fd, err := nginxC.CopyFileFromContainer(ctx, f.ContainerFilePath)
+					require.NoError(t, err)
+					defer fd.Close()
+					containerFileData, err := ioutil.ReadAll(fd)
+					require.NoError(t, err)
+
+					require.Equal(t, hostFileData, containerFileData)
+
+				}
+			} else {
+				require.Error(t, err)
+				require.Equal(t, tc.errMsg, err.Error())
+			}
+
+		})
+	}
+}
+
 func TestDockerContainerCopyToContainer(t *testing.T) {
 	ctx := context.Background()
 

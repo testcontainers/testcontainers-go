@@ -1020,6 +1020,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		logger:            p.Logger,
 	}
 
+	for _, f := range req.Files {
+		err := c.CopyFileToContainer(ctx, f.HostFilePath, f.ContainerFilePath, f.FileMode)
+		if err != nil {
+			return nil, fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
+		}
+	}
+
 	return c, nil
 }
 
