@@ -35,6 +35,7 @@ nav:
           - features/docker_compose.md
           - features/follow_logs.md
           - features/override_container_command.md
+          - features/copy_file.md
     - Examples:
           - examples/cockroachdb.md
           - examples/nginx.md
