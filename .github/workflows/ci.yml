@@ -64,7 +64,7 @@ jobs:
 
       - name: modTidy e2e tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make -C tools-tidy
+        run: make -C e2e tools-tidy
 
       - name: Run e2e tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}

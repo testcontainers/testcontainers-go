@@ -58,7 +58,7 @@ jobs:
         run: sudo make test-unit
 
       - name: modTidy e2e tests
-        run: make -C tools-tidy
+        run: make -C e2e tools-tidy
 
       - name: Run e2e tests
         run: sudo make test-e2e
