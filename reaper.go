@@ -36,6 +36,7 @@ var (
 // The ContainerProvider interface should usually satisfy this as well, so it is pluggable
 type ReaperProvider interface {
 	RunContainer(ctx context.Context, req ContainerRequest) (Container, error)
+	Config() TestContainersConfig
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
@@ -70,6 +71,9 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		AutoRemove: true,
 		WaitingFor: wait.ForListeningPort(listeningPort),
 	}
+
+	tcConfig := provider.Config()
+	req.Privileged = tcConfig.RyukPrivileged
 
 	// Attach reaper container to a requested network if it is specified
 	if p, ok := provider.(*DockerProvider); ok {

@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/binary"
@@ -260,11 +261,59 @@ func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.Containe
 // Logs will fetch both STDOUT and STDERR from the current container. Returns a
 // ReadCloser and leaves it up to the caller to extract what it wants.
 func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
+
+	const streamHeaderSize = 8
+
 	options := types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	}
-	return c.provider.client.ContainerLogs(ctx, c.ID, options)
+
+	rc, err := c.provider.client.ContainerLogs(ctx, c.ID, options)
+	if err != nil {
+		return nil, err
+	}
+
+	pr, pw := io.Pipe()
+	r := bufio.NewReader(rc)
+
+	go func() {
+		var (
+			isPrefix    = true
+			lineStarted = true
+			line        []byte
+		)
+		for err == nil {
+			line, isPrefix, err = r.ReadLine()
+
+			if lineStarted && len(line) >= streamHeaderSize {
+				line = line[streamHeaderSize:] // trim stream header
+				lineStarted = false
+			}
+			if !isPrefix {
+				lineStarted = true
+			}
+
+			_, errW := pw.Write(line)
+			if errW != nil {
+				return
+			}
+
+			if !isPrefix {
+				_, errW := pw.Write([]byte("\n"))
+				if errW != nil {
+					return
+				}
+			}
+
+			if err != nil {
+				_ = pw.CloseWithError(err)
+				return
+			}
+		}
+	}()
+
+	return pr, nil
 }
 
 // FollowOutput adds a LogConsumer to be sent logs from the container's
@@ -557,15 +606,17 @@ type DockerProvider struct {
 	client    *client.Client
 	host      string
 	hostCache string
+	config    TestContainersConfig
 }
 
 var _ ContainerProvider = (*DockerProvider)(nil)
 
 // or through Decode
 type TestContainersConfig struct {
-	Host      string `properties:"docker.host,default="`
-	TLSVerify int    `properties:"docker.tls.verify,default=0"`
-	CertPath  string `properties:"docker.cert.path,default="`
+	Host           string `properties:"docker.host,default="`
+	TLSVerify      int    `properties:"docker.tls.verify,default=0"`
+	CertPath       string `properties:"docker.cert.path,default="`
+	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
 }
 
 type (
@@ -611,8 +662,9 @@ func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
 	})
 }
 
-func NewDockerClient() (cli *client.Client, host string, err error) {
-	tcConfig := readTCPropsFile()
+func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainersConfig, err error) {
+	tcConfig = configureTC()
+
 	host = tcConfig.Host
 
 	opts := []client.Opt{client.FromEnv}
@@ -636,12 +688,12 @@ func NewDockerClient() (cli *client.Client, host string, err error) {
 	cli, err = client.NewClientWithOpts(opts...)
 
 	if err != nil {
-		return nil, "", err
+		return nil, "", TestContainersConfig{}, err
 	}
 
 	cli.NegotiateAPIVersion(context.Background())
 
-	return cli, host, nil
+	return cli, host, tcConfig, nil
 }
 
 // NewDockerProvider creates a Docker provider with the EnvClient
@@ -656,7 +708,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		provOpts[idx].ApplyDockerTo(o)
 	}
 
-	c, host, err := NewDockerClient()
+	c, host, tcConfig, err := NewDockerClient()
 	if err != nil {
 		return nil, err
 	}
@@ -675,13 +727,15 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		DockerProviderOptions: o,
 		host:                  host,
 		client:                c,
+		config:                tcConfig,
 	}
 
 	return p, nil
 }
 
-// readTCPropsFile reads from testcontainers properties file, if it exists
-func readTCPropsFile() TestContainersConfig {
+// configureTC reads from testcontainers properties file, if it exists
+// it is possible that certain values get overridden when set as environment variables
+func configureTC() TestContainersConfig {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return TestContainersConfig{}
@@ -698,6 +752,11 @@ func readTCPropsFile() TestContainersConfig {
 	if err := properties.Decode(&cfg); err != nil {
 		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
 		return TestContainersConfig{}
+	}
+
+	ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
+	if ryukPrivilegedEnv != "" {
+		cfg.RyukPrivileged = ryukPrivilegedEnv == "true"
 	}
 
 	return cfg
@@ -1006,6 +1065,12 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 	}
 
 	return c, nil
+}
+
+// Config provides the TestContainersConfig read from $HOME/.testcontainers.properties or
+// the environment variables
+func (p *DockerProvider) Config() TestContainersConfig {
+	return p.config
 }
 
 // daemonHost gets the host or ip of the Docker daemon where ports are exposed on
