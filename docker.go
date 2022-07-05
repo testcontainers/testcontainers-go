@@ -17,6 +17,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/docker/api/types/filters"
+
 	"github.com/cenkalti/backoff/v4"
 	"github.com/containerd/containerd/platforms"
 	"github.com/docker/docker/api/types"
@@ -1021,18 +1023,17 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 	if name == "" {
 		return nil, nil
 	}
-	containers, err := p.client.ContainerList(ctx, types.ContainerListOptions{})
+	filter := filters.NewArgs(filters.KeyValuePair{
+		Key:   "name",
+		Value: name,
+	})
+	containers, err := p.client.ContainerList(ctx, types.ContainerListOptions{Filters: filter})
 	if err != nil {
 		return nil, err
 	}
-	for _, c := range containers {
-		for _, n := range c.Names {
-			if n[1:] == name {
-				return &c, nil
-			}
-		}
+	if len(containers) > 0 {
+		return &containers[0], nil
 	}
-
 	return nil, nil
 }
 
