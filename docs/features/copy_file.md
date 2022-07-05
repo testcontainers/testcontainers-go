@@ -35,7 +35,7 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 				},
 			},
 		},
-		Started: true,
+		Started: false,
 	})
 ```
 
