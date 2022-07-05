@@ -61,7 +61,6 @@ jobs:
         run: make -C tools-tidy
 
       - name: Run e2e tests
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-e2e
 
       - name: Run checker
