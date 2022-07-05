@@ -1,6 +1,6 @@
 version: '3'
 services:
   postgres:
-    image: postgres:14
+    image: docker.io/postgres:14
     ports:
      - "15432:5432"

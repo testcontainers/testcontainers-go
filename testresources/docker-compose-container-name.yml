@@ -1,6 +1,7 @@
 version: '3'
 services:
   nginx:
+    container_name: nginxy
     image: docker.io/nginx:stable-alpine
     environment:
       bar: ${bar}

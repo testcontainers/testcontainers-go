@@ -16,6 +16,11 @@ go get github.com/testcontainers/testcontainers-go
 ## 2. Spin up Redis
 
 ```go
+import (
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+)
+
 func TestWithRedis(t *testing.T) {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
@@ -65,7 +70,7 @@ terminated function: `defer redisC.Terminate(ctx)`.
 
 !!!tip
 
-    Look at [features/garbage_collector.md] to know the another way you have to
+    Look at [features/garbage_collector](/features/garbage_collector/) to know the another way you have to
     clean up.
 
 ## 3. Make your code to talk with the container
