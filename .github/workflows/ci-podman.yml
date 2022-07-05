@@ -44,9 +44,25 @@ jobs:
       - name: Set DOCKER_HOST
         run: echo "DOCKER_HOST=unix:///run/podman/podman.sock" >> $GITHUB_ENV
 
+      - name: modVerify
+        run: go mod verify
+
+      - name: modTidy
+        run: go mod tidy
+
       - name: gotestsum
         # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
         # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
-        run: sudo go run gotest.tools/gotestsum --format short-verbose --rerun-fails=5 --packages="./..." -- -coverprofile=cover.txt
+        run: sudo make test-unit
+
+      - name: modTidy e2e tests
+        run: make -C e2e tools-tidy
+
+      - name: Run e2e tests
+        run: sudo make test-e2e
+
+      - name: Run checker
+        run: |
+          ./scripts/check_environment.sh

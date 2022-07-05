@@ -62,6 +62,10 @@ jobs:
           files: ./cover.txt
           name: testcontainers-go-${{ matrix.go-version }}
 
+      - name: modTidy e2e tests
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: make -C e2e tools-tidy
+
       - name: Run e2e tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-e2e
