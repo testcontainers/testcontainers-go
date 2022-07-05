@@ -1239,12 +1239,23 @@ func TestEntrypoint(t *testing.T) {
 
 func TestReadTCPropsFile(t *testing.T) {
 	t.Run("HOME is not set", func(t *testing.T) {
-		tmpDir := fs.NewDir(t, os.TempDir())
-		env.Patch(t, "HOME", tmpDir.Path())
+		env.Patch(t, "HOME", "")
 
 		config := configureTC()
 
 		assert.Empty(t, config, "TC props file should not exist")
+	})
+
+	t.Run("HOME is not set - TESTCONTAINERS_ env is set", func(t *testing.T) {
+		env.Patch(t, "HOME", "")
+		env.Patch(t, "TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
+
+		config := configureTC()
+
+		expected := TestContainersConfig{}
+		expected.RyukPrivileged = true
+
+		assert.Equal(t, expected, config)
 	})
 
 	t.Run("HOME does not contain TC props file", func(t *testing.T) {
@@ -1254,6 +1265,18 @@ func TestReadTCPropsFile(t *testing.T) {
 		config := configureTC()
 
 		assert.Empty(t, config, "TC props file should not exist")
+	})
+
+	t.Run("HOME does not contain TC props file - TESTCONTAINERS_ env is set", func(t *testing.T) {
+		tmpDir := fs.NewDir(t, os.TempDir())
+		env.Patch(t, "HOME", tmpDir.Path())
+		env.Patch(t, "TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
+
+		config := configureTC()
+		expected := TestContainersConfig{}
+		expected.RyukPrivileged = true
+
+		assert.Equal(t, expected, config)
 	})
 
 	t.Run("HOME contains TC properties file", func(t *testing.T) {
@@ -1424,21 +1447,49 @@ func TestReadTCPropsFile(t *testing.T) {
 					RyukPrivileged: false,
 				},
 			},
+			{
+				`ryuk.container.privileged=false
+				docker.tls.verify = ERROR`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
+				},
+				TestContainersConfig{
+					Host:           "",
+					TLSVerify:      0,
+					CertPath:       "",
+					RyukPrivileged: true,
+				},
+			},
+			{
+				`ryuk.container.privileged=false`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "foo",
+				},
+				TestContainersConfig{
+					Host:           "",
+					TLSVerify:      0,
+					CertPath:       "",
+					RyukPrivileged: false,
+				},
+			},
 		}
-		for _, tt := range tests {
-			tmpDir := fs.NewDir(t, os.TempDir())
-			env.Patch(t, "HOME", tmpDir.Path())
-			for k, v := range tt.env {
-				env.Patch(t, k, v)
-			}
-			if err := ioutil.WriteFile(tmpDir.Join(".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
-				t.Errorf("Failed to create the file: %v", err)
-				return
-			}
+		for i, tt := range tests {
+			t.Run(fmt.Sprintf("[%d]", i), func(t *testing.T) {
+				tmpDir := fs.NewDir(t, os.TempDir())
+				env.Patch(t, "HOME", tmpDir.Path())
+				for k, v := range tt.env {
+					env.Patch(t, k, v)
+				}
+				if err := ioutil.WriteFile(tmpDir.Join(".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
+					t.Errorf("Failed to create the file: %v", err)
+					return
+				}
 
-			config := configureTC()
+				config := configureTC()
 
-			assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
+				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
+
+			})
 		}
 	})
 }
