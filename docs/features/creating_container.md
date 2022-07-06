@@ -91,24 +91,33 @@ the function will create a new generic container. If `Reuse` is true and `Name` 
 
 The following test creates an NGINX container, adds a file into it and then reuses the container again for checking the file:
 ```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/testcontainers/testcontainers-go"
+)
 
 const (
-    reusableContainerName = "my_test_reusable_container"
+	reusableContainerName = "my_test_reusable_container"
 )
 
 ctx := context.Background()
 
 n1, err := GenericContainer(ctx, GenericContainerRequest{
-    ContainerRequest: ContainerRequest{
-        Image:        "nginx:1.17.6",
-        ExposedPorts: []string{"80/tcp"},
-        WaitingFor:   wait.ForListeningPort("80/tcp"),
-        Name:         reusableContainerName,
-    },
-    Started: true,
+	ContainerRequest: ContainerRequest{
+		Image:        "nginx:1.17.6",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		Name:         reusableContainerName,
+	},
+	Started: true,
 })
 if err != nil {
-    log.Fatal(err)
+	log.Fatal(err)
 }
 defer n1.Terminate(ctx)
 
@@ -116,31 +125,31 @@ copiedFileName := "hello_copy.sh"
 err = n1.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
 
 if err != nil {
-    log.Fatal(err)
+	log.Fatal(err)
 }
 
 n2, err := GenericContainer(ctx, GenericContainerRequest{
-    ContainerRequest: ContainerRequest{
-        Image:        "nginx:1.17.6",
-        ExposedPorts: []string{"80/tcp"},
-        WaitingFor:   wait.ForListeningPort("80/tcp"),
-        Name:         reusableContainerName,
+	ContainerRequest: ContainerRequest{
+		Image:        "nginx:1.17.6",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		Name:         reusableContainerName,
     },
-    Started: true,
+	Started: true,
 	Reuse: true,
 })
 if err != nil {
-    log.Fatal(err)
+	log.Fatal(err)
 }
 
 c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
 if err != nil {
-    log.Fatal(err)
+	log.Fatal(err)
 }
 fmt.Println(c)
-````
+```
 
-# Parallel running
+## Parallel running
 
 `testcontainers.ParallelContainers` - defines the containers that should be run in parallel mode.
 
