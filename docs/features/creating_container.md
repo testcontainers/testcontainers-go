@@ -138,9 +138,9 @@ if err != nil {
     log.Fatal(err)
 }
 fmt.Println(c)
-````
+```
 
-# Parallel running
+## Parallel running
 
 `testcontainers.ParallelContainers` - defines the containers that should be run in parallel mode.
 
