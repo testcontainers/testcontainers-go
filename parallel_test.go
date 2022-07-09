@@ -3,6 +3,8 @@ package testcontainers
 import (
 	"context"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestParallelContainers(t *testing.T) {
@@ -100,6 +102,7 @@ func TestParallelContainers(t *testing.T) {
 			res, err := ParallelContainers(context.Background(), tc.reqs, ParallelContainersOptions{})
 
 			if err != nil {
+				require.NotZero(t, tc.expErrors)
 				e, _ := err.(ParallelContainersError)
 
 				if len(e.Errors) != tc.expErrors {

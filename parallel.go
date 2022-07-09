@@ -114,7 +114,7 @@ func ParallelContainers(ctx context.Context, reqs ParallelContainerRequest, opt 
 
 	<-waitRes
 
-	if len(errors) == 0 {
+	if len(errors) != 0 {
 		return containers, ParallelContainersError{Errors: errors}
 	}
 
