@@ -72,6 +72,11 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		}
 	}
 
+	if internalPort == "" {
+		err = fmt.Errorf("no port to waiting")
+		return
+	}
+
 	var port nat.Port
 	port, err = target.MappedPort(ctx, internalPort)
 	var i = 0
