@@ -42,7 +42,7 @@ func ForListeningPort(port nat.Port) *HostPortStrategy {
 }
 
 // ForExposedPort constructs an exposed port strategy. Alias for `NewHostPortStrategy("")`.
-// This strategy waits port exposed in Docker container.
+// This strategy waits for the first port exposed in the Docker container.
 func ForExposedPort() *HostPortStrategy {
 	return NewHostPortStrategy("")
 }
