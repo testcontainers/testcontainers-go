@@ -31,6 +31,6 @@ require (
 	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1
-	gotest.tools/gotestsum v1.7.0
+	gotest.tools/gotestsum v1.8.1
 	gotest.tools/v3 v3.2.0
 )
