@@ -16,6 +16,8 @@ import (
 var _ Strategy = (*HostPortStrategy)(nil)
 
 type HostPortStrategy struct {
+	// Port is a string containing port number and protocol in the format "80/tcp"
+	// which
 	Port nat.Port
 	// all WaitStrategies should have a startupTimeout to avoid waiting infinitely
 	startupTimeout time.Duration
@@ -37,6 +39,12 @@ func NewHostPortStrategy(port nat.Port) *HostPortStrategy {
 // https://github.com/testcontainers/testcontainers-java/blob/1d85a3834bd937f80aad3a4cec249c027f31aeb4/core/src/main/java/org/testcontainers/containers/wait/strategy/Wait.java
 func ForListeningPort(port nat.Port) *HostPortStrategy {
 	return NewHostPortStrategy(port)
+}
+
+// ForExposedPort constructs an exposed port strategy. Alias for `NewHostPortStrategy("")`.
+// This strategy waits port exposed in Docker container.
+func ForExposedPort() *HostPortStrategy {
+	return NewHostPortStrategy("")
 }
 
 func (hp *HostPortStrategy) WithStartupTimeout(startupTimeout time.Duration) *HostPortStrategy {

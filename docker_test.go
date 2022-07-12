@@ -153,7 +153,7 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 			Image:      "nginx",
 			Privileged: true,
 			SkipReaper: true,
-			WaitingFor: wait.ForListeningPort(""),
+			WaitingFor: wait.ForExposedPort(),
 		},
 		Started: true,
 	}
