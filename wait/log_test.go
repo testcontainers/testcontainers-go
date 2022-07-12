@@ -23,6 +23,7 @@ func (st noopStrategyTarget) Host(ctx context.Context) (string, error) {
 func (st noopStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
 	return nil, nil
 }
+
 func (st noopStrategyTarget) MappedPort(ctx context.Context, n nat.Port) (nat.Port, error) {
 	return n, nil
 }
