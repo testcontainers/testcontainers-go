@@ -63,7 +63,7 @@ type waitService struct {
 	publishedPort int
 }
 
-func NewDockerComposeApi(filePaths []string, identifier string) (*dockerComposeAPI, error) {
+func NewDockerComposeAPI(filePaths []string, identifier string) (*dockerComposeAPI, error) {
 	dockerCli, err := command.NewDockerCli()
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func NewDockerComposeApi(filePaths []string, identifier string) (*dockerComposeA
 // running Compose services.
 //
 // Deprecated: NewLocalDockerCompose returns a DockerCompose compatible instance which is superseded
-// by ComposeStack use NewDockerComposeApi instead to get a ComposeStack compatible instance
+// by ComposeStack use NewDockerComposeAPI instead to get a ComposeStack compatible instance
 func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
 	dc := &LocalDockerCompose{
 		LocalDockerComposeOptions: &LocalDockerComposeOptions{

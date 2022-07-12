@@ -12,13 +12,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func TestDockerComposeApi(t *testing.T) {
+func TestDockerComposeAPI(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -30,13 +30,13 @@ func TestDockerComposeApi(t *testing.T) {
 	assert.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
 }
 
-func TestDockerComposeApiStrategyForInvalidService(t *testing.T) {
+func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -58,13 +58,13 @@ func TestDockerComposeApiStrategyForInvalidService(t *testing.T) {
 	assert.Contains(t, serviceNames, "nginx")
 }
 
-func TestDockerComposeApiWithWaitLogStrategy(t *testing.T) {
+func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -86,13 +86,13 @@ func TestDockerComposeApiWithWaitLogStrategy(t *testing.T) {
 	assert.Contains(t, serviceNames, "mysql")
 }
 
-func TestDockerComposeApiWithRunServices(t *testing.T) {
+func TestDockerComposeAPIWithRunServices(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -116,13 +116,13 @@ func TestDockerComposeApiWithRunServices(t *testing.T) {
 	assert.Contains(t, serviceNames, "nginx")
 }
 
-func TestDockerComposeApiWithWaitForService(t *testing.T) {
+func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -146,13 +146,13 @@ func TestDockerComposeApiWithWaitForService(t *testing.T) {
 	assert.Contains(t, serviceNames, "nginx")
 }
 
-func TestDockerComposeApiWithWaitHTTPStrategy(t *testing.T) {
+func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -176,13 +176,13 @@ func TestDockerComposeApiWithWaitHTTPStrategy(t *testing.T) {
 	assert.Contains(t, serviceNames, "nginx")
 }
 
-func TestDockerComposeApiWithContainerName(t *testing.T) {
+func TestDockerComposeAPIWithContainerName(t *testing.T) {
 	path := "./testresources/docker-compose-container-name.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -206,13 +206,13 @@ func TestDockerComposeApiWithContainerName(t *testing.T) {
 	assert.Contains(t, serviceNames, "nginx")
 }
 
-func TestDockerComposeApiWithWaitStrategy_NoExposedPorts(t *testing.T) {
+func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
 	path := "./testresources/docker-compose-no-exposed-ports.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -233,13 +233,13 @@ func TestDockerComposeApiWithWaitStrategy_NoExposedPorts(t *testing.T) {
 	assert.Contains(t, serviceNames, "nginx")
 }
 
-func TestDockerComposeApiWithMultipleWaitStrategies(t *testing.T) {
+func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -262,13 +262,13 @@ func TestDockerComposeApiWithMultipleWaitStrategies(t *testing.T) {
 	assert.Contains(t, serviceNames, "mysql")
 }
 
-func TestDockerComposeApiWithFailedStrategy(t *testing.T) {
+func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -294,13 +294,13 @@ func TestDockerComposeApiWithFailedStrategy(t *testing.T) {
 	assert.Contains(t, serviceNames, "nginx")
 }
 
-func TestDockerComposeApiComplex(t *testing.T) {
+func TestDockerComposeAPIComplex(t *testing.T) {
 	path := "./testresources/docker-compose-complex.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -318,13 +318,13 @@ func TestDockerComposeApiComplex(t *testing.T) {
 	assert.Contains(t, serviceNames, "mysql")
 }
 
-func TestDockerComposeApiWithEnvironment(t *testing.T) {
+func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -353,7 +353,7 @@ func TestDockerComposeApiWithEnvironment(t *testing.T) {
 	assertContainerEnvironmentVariables(t, identifier, "nginx", present, absent)
 }
 
-func TestDockerComposeApiWithMultipleComposeFiles(t *testing.T) {
+func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 	composeFiles := []string{
 		"testresources/docker-compose-simple.yml",
 		"testresources/docker-compose-postgres.yml",
@@ -362,8 +362,8 @@ func TestDockerComposeApiWithMultipleComposeFiles(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi(composeFiles, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI(composeFiles, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -395,13 +395,13 @@ func TestDockerComposeApiWithMultipleComposeFiles(t *testing.T) {
 	assertContainerEnvironmentVariables(t, identifier, "nginx", present, absent)
 }
 
-func TestDockerComposeApiWithVolume(t *testing.T) {
+func TestDockerComposeAPIWithVolume(t *testing.T) {
 	path := "./testresources/docker-compose-volume.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -414,13 +414,13 @@ func TestDockerComposeApiWithVolume(t *testing.T) {
 	assert.NoError(t, err, "compose.Up()")
 }
 
-func TestDockerComposeApiWithBuild(t *testing.T) {
+func TestDockerComposeAPIWithBuild(t *testing.T) {
 	path := "./testresources/docker-compose-build.yml"
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeApi([]string{path}, identifier)
-	assert.NoError(t, err, "NewDockerComposeApi()")
+	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")

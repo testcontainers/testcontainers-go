@@ -156,22 +156,22 @@ func (d *dockerComposeAPI) Up(ctx context.Context, opts ...StackUpOption) (err e
 		return err
 	}
 
-	grp, grpCtx := errgroup.WithContext(ctx)
+	errGrp, errGrpCtx := errgroup.WithContext(ctx)
 
 	for svc, strategy := range d.waitStrategies { // pinning the variables
 		svc := svc
 		strategy := strategy
 
-		grp.Go(func() error {
-			target, err := d.ServiceContainer(grpCtx, svc)
+		errGrp.Go(func() error {
+			target, err := d.ServiceContainer(errGrpCtx, svc)
 			if err != nil {
 				return err
 			}
-			return strategy.WaitUntilReady(grpCtx, target)
+			return strategy.WaitUntilReady(errGrpCtx, target)
 		})
 	}
 
-	return grp.Wait()
+	return errGrp.Wait()
 }
 
 func (d *dockerComposeAPI) WaitForService(s string, strategy wait.Strategy) ComposeStack {
@@ -198,8 +198,8 @@ func (d *dockerComposeAPI) ServiceContainer(ctx context.Context, svcName string)
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ServiceLabel, svcName)),
 		),
 	}
-	containers, err := d.dockerClient.ContainerList(ctx, listOptions)
 
+	containers, err := d.dockerClient.ContainerList(ctx, listOptions)
 	if err != nil {
 		return nil, err
 	}
