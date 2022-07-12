@@ -73,3 +73,9 @@ jobs:
       - name: Run checker
         run: |
           ./scripts/check_environment.sh
+
+      - name: Test Summary
+        uses: test-summary/action@v1
+        with:
+          paths: "**/TEST-*.xml"
+        if: always()
