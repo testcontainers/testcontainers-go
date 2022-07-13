@@ -852,11 +852,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
-	exposedPortSet, exposedPortMap, err := nat.ParsePortSpecs(req.ExposedPorts)
-	if err != nil {
-		return nil, err
-	}
-
 	env := []string{}
 	for envKey, envVar := range req.Env {
 		env = append(env, envKey+"="+envVar)
@@ -939,6 +934,22 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				return nil, err
 			}
 		}
+	}
+
+	exposedPorts := req.ExposedPorts
+	if len(exposedPorts) == 0 {
+		image, _, err := p.client.ImageInspectWithRaw(ctx, tag)
+		if err != nil {
+			return nil, err
+		}
+		for p, _ := range image.ContainerConfig.ExposedPorts {
+			exposedPorts = append(exposedPorts, string(p))
+		}
+	}
+
+	exposedPortSet, exposedPortMap, err := nat.ParsePortSpecs(exposedPorts)
+	if err != nil {
+		return nil, err
 	}
 
 	dockerInput := &container.Config{

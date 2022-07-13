@@ -163,6 +163,36 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	}
 }
 
+func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testing.T) {
+	ctx := context.Background()
+	gcr := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:      "nginx",
+			Privileged: true,
+			SkipReaper: true,
+			WaitingFor: wait.ForExposedPort(),
+		},
+		Started: true,
+	}
+
+	nginxC, err := GenericContainer(ctx, gcr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer nginxC.Terminate(ctx)
+
+	endpoint, err := nginxC.Endpoint(ctx, "http")
+	if err != nil {
+		t.Errorf("Expected server endpoint. Got '%v'.", err)
+	}
+
+	_, err = http.Get(endpoint)
+	if err != nil {
+		t.Errorf("Expected OK response. Got '%d'.", err)
+	}
+}
+
 func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
