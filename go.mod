@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/Microsoft/hcsshim v0.9.3 // indirect
-	github.com/cenkalti/backoff/v4 v4.1.2
+	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/containerd/cgroups v1.0.4 // indirect
 	github.com/containerd/containerd v1.5.13
 	github.com/containerd/continuity v0.3.0 // indirect
