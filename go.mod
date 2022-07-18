@@ -22,7 +22,7 @@ require (
 	github.com/onsi/gomega v1.15.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2
 	github.com/opencontainers/runc v1.1.3 // indirect
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.8.0
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9 // indirect
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
