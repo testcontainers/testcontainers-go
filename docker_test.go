@@ -70,6 +70,7 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 				networkName: aliases,
 			},
 		},
+		Started: true,
 	}
 
 	newNetwork, err := GenericNetwork(ctx, GenericNetworkRequest{
@@ -117,6 +118,14 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 
 	for _, alias := range aliases {
 		require.Contains(t, networkAlias, alias)
+	}
+
+	networkIP, err := nginx.ContainerIP(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(networkIP) == 0 {
+		t.Errorf("Expected an IP address, got %v", networkIP)
 	}
 }
 
