@@ -18,12 +18,12 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.14.x, 1.15.x, 1.16.x, 1.17.x, 1.x]
+        go-version: [1.16.x, 1.17.x, 1.x]
         platform: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
 
-      - name: Set up Go 1.x
+      - name: Set up Go
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
