@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/containerd/cgroups v1.0.4 // indirect
-	github.com/containerd/containerd v1.6.7
+	github.com/containerd/containerd v1.6.8
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.17+incompatible
