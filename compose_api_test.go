@@ -13,11 +13,7 @@ import (
 )
 
 func TestDockerComposeAPI(t *testing.T) {
-	path := "./testresources/docker-compose-simple.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-simple.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -31,11 +27,7 @@ func TestDockerComposeAPI(t *testing.T) {
 }
 
 func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
-	path := "./testresources/docker-compose-simple.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-simple.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -59,11 +51,7 @@ func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
-	path := "./testresources/docker-compose-complex.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-complex.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -87,11 +75,7 @@ func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithRunServices(t *testing.T) {
-	path := "./testresources/docker-compose-complex.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-complex.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -117,11 +101,7 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitForService(t *testing.T) {
-	path := "./testresources/docker-compose-simple.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-simple.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -147,11 +127,7 @@ func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
-	path := "./testresources/docker-compose-simple.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-simple.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -177,11 +153,7 @@ func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithContainerName(t *testing.T) {
-	path := "./testresources/docker-compose-container-name.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-container-name.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -207,11 +179,7 @@ func TestDockerComposeAPIWithContainerName(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
-	path := "./testresources/docker-compose-no-exposed-ports.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-no-exposed-ports.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -234,11 +202,7 @@ func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
-	path := "./testresources/docker-compose-complex.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-complex.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -263,11 +227,7 @@ func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
-	path := "./testresources/docker-compose-simple.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-simple.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -295,11 +255,7 @@ func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIComplex(t *testing.T) {
-	path := "./testresources/docker-compose-complex.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-complex.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -319,11 +275,9 @@ func TestDockerComposeAPIComplex(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithEnvironment(t *testing.T) {
-	path := "./testresources/docker-compose-simple.yml"
-
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPIWith(WithStackFiles("./testresources/docker-compose-simple.yml"), identifier)
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -350,11 +304,11 @@ func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 		"bar": "BAR",
 	}
 	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, identifier, "nginx", present, absent)
+	assertContainerEnvironmentVariables(t, identifier.String(), "nginx", present, absent)
 }
 
 func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
-	composeFiles := []string{
+	composeFiles := ComposeStackFiles{
 		"testresources/docker-compose-simple.yml",
 		"testresources/docker-compose-postgres.yml",
 		"testresources/docker-compose-override.yml",
@@ -362,7 +316,7 @@ func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeAPI(composeFiles, identifier)
+	compose, err := NewDockerComposeAPIWith(composeFiles, identifier)
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -392,15 +346,11 @@ func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 		"foo": "FOO",
 	}
 	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, identifier, "nginx", present, absent)
+	assertContainerEnvironmentVariables(t, identifier.String(), "nginx", present, absent)
 }
 
 func TestDockerComposeAPIWithVolume(t *testing.T) {
-	path := "./testresources/docker-compose-volume.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-volume.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -415,11 +365,7 @@ func TestDockerComposeAPIWithVolume(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithBuild(t *testing.T) {
-	path := "./testresources/docker-compose-build.yml"
-
-	identifier := testNameHash(t.Name())
-
-	compose, err := NewDockerComposeAPI([]string{path}, identifier)
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-build.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -436,6 +382,6 @@ func TestDockerComposeAPIWithBuild(t *testing.T) {
 	assert.NoError(t, err, "compose.Up()")
 }
 
-func testNameHash(name string) string {
-	return fmt.Sprintf("%x", fnv.New32a().Sum([]byte(name)))
+func testNameHash(name string) StackIdentifier {
+	return StackIdentifier(fmt.Sprintf("%x", fnv.New32a().Sum([]byte(name))))
 }

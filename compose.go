@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/docker/cli/cli/flags"
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/compose/v2/pkg/compose"
+	"github.com/google/uuid"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -18,6 +20,17 @@ const (
 	envProjectName = "COMPOSE_PROJECT_NAME"
 	envComposeFile = "COMPOSE_FILE"
 )
+
+var ErrNoStackConfigured = errors.New("no stack files configured")
+
+type composeStackOptions struct {
+	Identifier string
+	Paths      []string
+}
+
+type ComposeStackOption interface {
+	applyToComposeStack(o *composeStackOptions)
+}
 
 type stackUpOptions struct {
 	api.CreateOptions
@@ -43,6 +56,7 @@ type ComposeStack interface {
 	Services() []string
 	WaitForService(s string, strategy wait.Strategy) ComposeStack
 	WithEnv(m map[string]string) ComposeStack
+	WithOsEnv() ComposeStack
 	ServiceContainer(ctx context.Context, svcName string) (*DockerContainer, error)
 }
 
@@ -63,7 +77,27 @@ type waitService struct {
 	publishedPort int
 }
 
-func NewDockerComposeAPI(filePaths []string, identifier string) (*dockerComposeAPI, error) {
+func WithStackFiles(filePaths ...string) ComposeStackOption {
+	return ComposeStackFiles(filePaths)
+}
+
+func NewDockerComposeAPI(filePaths ...string) (*dockerComposeAPI, error) {
+	return NewDockerComposeAPIWith(WithStackFiles(filePaths...))
+}
+
+func NewDockerComposeAPIWith(opts ...ComposeStackOption) (*dockerComposeAPI, error) {
+	composeOptions := composeStackOptions{
+		Identifier: uuid.New().String(),
+	}
+
+	for i := range opts {
+		opts[i].applyToComposeStack(&composeOptions)
+	}
+
+	if len(composeOptions.Paths) < 1 {
+		return nil, ErrNoStackConfigured
+	}
+
 	dockerCli, err := command.NewDockerCli()
 	if err != nil {
 		return nil, err
@@ -76,8 +110,8 @@ func NewDockerComposeAPI(filePaths []string, identifier string) (*dockerComposeA
 	}
 
 	composeAPI := &dockerComposeAPI{
-		name:           identifier,
-		configs:        filePaths,
+		name:           composeOptions.Identifier,
+		configs:        composeOptions.Paths,
 		composeService: compose.NewComposeService(dockerCli),
 		dockerClient:   dockerCli.Client(),
 		waitStrategies: make(map[string]wait.Strategy),

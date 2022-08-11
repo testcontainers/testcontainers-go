@@ -75,6 +75,22 @@ func (ri RemoveImages) applyToStackDown(o *stackDownOptions) {
 	}
 }
 
+type ComposeStackFiles []string
+
+func (f ComposeStackFiles) applyToComposeStack(o *composeStackOptions) {
+	o.Paths = f
+}
+
+type StackIdentifier string
+
+func (f StackIdentifier) applyToComposeStack(o *composeStackOptions) {
+	o.Identifier = string(f)
+}
+
+func (f StackIdentifier) String() string {
+	return string(f)
+}
+
 const (
 	// RemoveImagesAll - remove all images used by the stack
 	RemoveImagesAll RemoveImages = iota
@@ -181,6 +197,11 @@ func (d *dockerComposeAPI) WaitForService(s string, strategy wait.Strategy) Comp
 
 func (d *dockerComposeAPI) WithEnv(m map[string]string) ComposeStack {
 	d.projectOptions = append(d.projectOptions, withEnv(m))
+	return d
+}
+
+func (d *dockerComposeAPI) WithOsEnv() ComposeStack {
+	d.projectOptions = append(d.projectOptions, cli.WithOsEnv)
 	return d
 }
 
