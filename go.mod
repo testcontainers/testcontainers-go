@@ -14,6 +14,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/google/uuid v1.3.0
+	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/magiconair/properties v1.8.6
 	github.com/moby/term v0.0.0-20220808134915-39b0c02b01ae
 	github.com/opencontainers/image-spec v1.0.3-0.20220303224323-02efb9a75ee1
@@ -74,7 +75,6 @@ require (
 	github.com/jinzhu/gorm v1.9.11 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
