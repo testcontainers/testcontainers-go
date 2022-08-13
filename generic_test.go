@@ -19,9 +19,9 @@ func TestGenericReusableContainer(t *testing.T) {
 
 	n1, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
+			Image:        nginxAlpineImage,
+			ExposedPorts: []string{nginxDefaultPort},
+			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
 			Name:         reusableContainerName,
 		},
 		Started: true,
@@ -48,7 +48,7 @@ func TestGenericReusableContainer(t *testing.T) {
 		{
 			name:          "container already exists (reuse=false)",
 			containerName: reusableContainerName,
-			errMsg:        "is already in use by container",
+			errMsg:        "is already in use by",
 			reuseOption:   false,
 		},
 		{
@@ -62,16 +62,16 @@ func TestGenericReusableContainer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			n2, err := GenericContainer(ctx, GenericContainerRequest{
 				ContainerRequest: ContainerRequest{
-					Image:        "nginx:1.17.6",
-					ExposedPorts: []string{"80/tcp"},
-					WaitingFor:   wait.ForListeningPort("80/tcp"),
+					Image:        nginxAlpineImage,
+					ExposedPorts: []string{nginxDefaultPort},
+					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
 					Name:         tc.containerName,
 				},
 				Started: true,
 				Reuse:   tc.reuseOption,
 			})
 			if tc.errMsg == "" {
-				c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
+				c, _, err := n2.Exec(ctx, []string{"sh", copiedFileName})
 				require.NoError(t, err)
 				require.Zero(t, c)
 			} else {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -263,4 +264,13 @@ func (c *ContainerRequest) validateMounts() error {
 		}
 	}
 	return nil
+}
+
+func RunningInContainer() bool {
+	return fileExists("/.dockerenv") || fileExists("/run/.containerenv")
+}
+
+func fileExists(fileName string) bool {
+	_, err := os.Stat(fileName)
+	return err == nil
 }

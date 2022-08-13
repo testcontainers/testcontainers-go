@@ -103,7 +103,7 @@ type Reaper struct {
 
 // Connect runs a goroutine which can be terminated by sending true into the returned channel
 func (r *Reaper) Connect() (chan bool, error) {
-	conn, err := net.DialTimeout("tcp", r.Endpoint, 10*time.Second)
+	conn, err := r.dialWithRetry(10, 1*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("%w: Connecting to Ryuk on %s failed", err, r.Endpoint)
 	}
@@ -113,7 +113,7 @@ func (r *Reaper) Connect() (chan bool, error) {
 		sock := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 		defer conn.Close()
 
-		labelFilters := []string{}
+		labelFilters := make([]string, 0, len(r.Labels()))
 		for l, v := range r.Labels() {
 			labelFilters = append(labelFilters, fmt.Sprintf("label=%s=%s", l, v))
 		}
@@ -183,4 +183,17 @@ func reaperImage(reaperImageName string) string {
 		return ReaperDefaultImage
 	}
 	return reaperImageName
+}
+
+func (r *Reaper) dialWithRetry(attempts uint, attemptTimeout time.Duration) (net.Conn, error) {
+	for i := uint(0); i < attempts; i++ {
+		conn, err := net.DialTimeout("tcp", r.Endpoint, attemptTimeout)
+		if err != nil {
+			continue
+		}
+
+		return conn, nil
+	}
+
+	return nil, fmt.Errorf("reached max amount of connect attempts: %d", attempts)
 }

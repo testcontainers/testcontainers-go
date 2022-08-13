@@ -12,17 +12,20 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/mount"
+	"github.com/moby/sys/mountinfo"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/containerd/containerd/platforms"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -41,6 +44,7 @@ var (
 	_ Container = (*DockerContainer)(nil)
 
 	ErrDuplicateMountTarget = errors.New("duplicate mount target detected")
+	containerIDRegexp       = regexp.MustCompile(`^([A-z0-9]{64})$`)
 )
 
 const (
@@ -621,11 +625,14 @@ func (n *DockerNetwork) Remove(ctx context.Context) error {
 
 // DockerProvider implements the ContainerProvider interface
 type DockerProvider struct {
+	initContainerEnvOnce sync.Once
 	*DockerProviderOptions
-	client    *client.Client
-	host      string
-	hostCache string
-	config    TestContainersConfig
+	runningInContainer bool
+	client             *client.Client
+	host               string
+	hostCache          string
+	config             TestContainersConfig
+	containerEnv       containerEnv
 }
 
 var _ ContainerProvider = (*DockerProvider)(nil)
@@ -636,6 +643,10 @@ type TestContainersConfig struct {
 	TLSVerify      int    `properties:"docker.tls.verify,default=0"`
 	CertPath       string `properties:"docker.cert.path,default="`
 	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
+}
+
+type containerEnv struct {
+	BindMounts []ContainerMount
 }
 
 type (
@@ -742,7 +753,9 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 	}
 
 	c.NegotiateAPIVersion(context.Background())
+
 	p := &DockerProvider{
+		runningInContainer:    RunningInContainer(),
 		DockerProviderOptions: o,
 		host:                  host,
 		client:                c,
@@ -863,9 +876,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
-	env := []string{}
+	env := make([]string, 0, len(req.Env))
 	for envKey, envVar := range req.Env {
-		env = append(env, envKey+"="+envVar)
+		env = append(env, fmt.Sprintf("%s=%s", envKey, envVar))
 	}
 
 	if req.Labels == nil {
@@ -953,7 +966,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if err != nil {
 			return nil, err
 		}
-		for p, _ := range image.ContainerConfig.ExposedPorts {
+		for p, _ := range image.Config.ExposedPorts {
 			exposedPorts = append(exposedPorts, string(p))
 		}
 	}
@@ -975,7 +988,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	// prepare mounts
-	mounts := mapToDockerMounts(req.Mounts)
+	mounts, err := p.mapToDockerMounts(ctx, req.Mounts)
+	if err != nil {
+		return nil, err
+	}
 
 	hostConfig := &container.HostConfig{
 		ExtraHosts:   req.ExtraHosts,
@@ -1194,16 +1210,12 @@ func (p *DockerProvider) daemonHost(ctx context.Context) (string, error) {
 	case "http", "https", "tcp":
 		p.hostCache = url.Hostname()
 	case "unix", "npipe":
-		if inAContainer() {
-			ip, err := p.GetGatewayIP(ctx)
+		if p.runningInContainer {
+			err := p.initContainerEnvInformation(ctx)
 			if err != nil {
-				// fallback to getDefaultGatewayIP
-				ip, err = getDefaultGatewayIP()
-				if err != nil {
-					ip = "localhost"
-				}
+				return "", err
 			}
-			p.hostCache = ip
+			return p.hostCache, nil
 		} else {
 			p.hostCache = "localhost"
 		}
@@ -1288,55 +1300,11 @@ func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (ty
 }
 
 func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
-	// Use a default network as defined in the DockerProvider
-	if p.DefaultNetwork == "" {
-		var err error
-		p.DefaultNetwork, err = p.getDefaultNetwork(ctx, p.client)
-		if err != nil {
-			return "", err
-		}
-	}
-	nw, err := p.GetNetwork(ctx, NetworkRequest{Name: p.DefaultNetwork})
-	if err != nil {
+	if err := p.initContainerEnvInformation(ctx); err != nil {
 		return "", err
 	}
 
-	var ip string
-	for _, config := range nw.IPAM.Config {
-		if config.Gateway != "" {
-			ip = config.Gateway
-			break
-		}
-	}
-	if ip == "" {
-		return "", errors.New("Failed to get gateway IP from network settings")
-	}
-
-	return ip, nil
-}
-
-func inAContainer() bool {
-	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L15
-	if _, err := os.Stat("/.dockerenv"); err == nil {
-		return true
-	}
-	return false
-}
-
-// deprecated
-// see https://github.com/testcontainers/testcontainers-java/blob/main/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L46
-func getDefaultGatewayIP() (string, error) {
-	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L27
-	cmd := exec.Command("sh", "-c", "ip route|awk '/default/ { print $3 }'")
-	stdout, err := cmd.Output()
-	if err != nil {
-		return "", errors.New("Failed to detect docker host")
-	}
-	ip := strings.TrimSpace(string(stdout))
-	if len(ip) == 0 {
-		return "", errors.New("Failed to parse default gateway IP")
-	}
-	return ip, nil
+	return p.hostCache, nil
 }
 
 func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli *client.Client) (string, error) {
@@ -1376,4 +1344,157 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli *client.Clie
 	}
 
 	return reaperNetwork, nil
+}
+
+func (p *DockerProvider) isConnectedToRemoteDaemon() (bool, error) {
+	daemonUrl, err := url.Parse(p.client.DaemonHost())
+	if err != nil {
+		return false, err
+	}
+
+	switch daemonUrl.Scheme {
+	case "unix", "npipe":
+		return false, nil
+	case "http", "https", "tcp":
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+// mapToDockerMounts maps the given []ContainerMount to the corresponding
+// []mount.Mount for further processing
+func (p *DockerProvider) mapToDockerMounts(ctx context.Context, containerMounts ContainerMounts) ([]mount.Mount, error) {
+	mounts := make([]mount.Mount, 0, len(containerMounts))
+
+	remoteDaemon, err := p.isConnectedToRemoteDaemon()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.runningInContainer {
+		if err := p.initContainerEnvInformation(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	for idx := range containerMounts {
+		m := containerMounts[idx]
+
+		if bindMount, ok := m.Source.(GenericBindMountSource); ok && p.runningInContainer && !remoteDaemon {
+			var remapped bool
+		BindMountMapping:
+			for i := range p.containerEnv.BindMounts {
+				hostBindMount := p.containerEnv.BindMounts[i]
+
+				// check if part of the bind source is part of a host-mount into this container
+				if strings.Contains(bindMount.HostPath, hostBindMount.Target.Target()) {
+					bindMount.HostPath = strings.Replace(bindMount.HostPath, hostBindMount.Target.Target(), hostBindMount.Source.Source(), 1)
+					m.Source = bindMount
+					remapped = true
+					break BindMountMapping
+				}
+			}
+			if !remapped {
+				return nil, fmt.Errorf("cannot bind mount %s in nested container because it's not mounted from host", bindMount.HostPath)
+			}
+		}
+
+		var mountType mount.Type
+		if mt, ok := mountTypeMapping[m.Source.Type()]; ok {
+			mountType = mt
+		} else {
+			continue
+		}
+
+		containerMount := mount.Mount{
+			Type:     mountType,
+			Source:   m.Source.Source(),
+			ReadOnly: m.ReadOnly,
+			Target:   m.Target.Target(),
+		}
+
+		switch typedMounter := m.Source.(type) {
+		case BindMounter:
+			containerMount.BindOptions = typedMounter.GetBindOptions()
+		case VolumeMounter:
+			containerMount.VolumeOptions = typedMounter.GetVolumeOptions()
+		case TmpfsMounter:
+			containerMount.TmpfsOptions = typedMounter.GetTmpfsOptions()
+		}
+
+		mounts = append(mounts, containerMount)
+	}
+
+	return mounts, nil
+}
+
+func (p *DockerProvider) initContainerEnvInformation(ctx context.Context) error {
+	var initErr error
+
+	p.initContainerEnvOnce.Do(func() {
+		remote, err := p.isConnectedToRemoteDaemon()
+		if err != nil {
+			initErr = err
+			return
+		} else if remote {
+			// if connected to remote daemon it doesn't make sense to gather information regarding gateway and mounts
+			return
+		}
+
+		mounts, err := mountinfo.GetMounts(mountinfo.SingleEntryFilter("/etc/hostname"))
+		if err != nil {
+			initErr = err
+			return
+		}
+
+		if len(mounts) < 1 {
+			initErr = errors.New("failed to detect hostname mount")
+			return
+		}
+
+		hostnameMount := mounts[0].Root
+		var containerID string
+
+		for path := hostnameMount; path != ""; path = filepath.Dir(path) {
+			currentDir := filepath.Base(path)
+			if containerIDRegexp.MatchString(currentDir) {
+				containerID = currentDir
+				break
+			}
+		}
+
+		if containerID == "" {
+			initErr = fmt.Errorf("failed to detect container ID from hostname mount: %s", hostnameMount)
+			return
+		}
+
+		info, err := p.client.ContainerInspect(ctx, containerID)
+		if err != nil {
+			initErr = err
+			return
+		}
+
+		for _, settings := range info.NetworkSettings.Networks {
+			if settings.Gateway != "" {
+				p.hostCache = settings.Gateway
+				break
+			}
+		}
+
+		for i := range info.Mounts {
+			mnt := info.Mounts[i]
+			if mnt.Type != mount.TypeBind {
+				continue
+			}
+
+			p.containerEnv.BindMounts = append(p.containerEnv.BindMounts, ContainerMount{
+				Source:   GenericBindMountSource{HostPath: mnt.Source},
+				Target:   ContainerMountTarget(mnt.Destination),
+				ReadOnly: !mnt.RW,
+			})
+		}
+	})
+
+	return initErr
 }

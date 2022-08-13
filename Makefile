@@ -1,6 +1,6 @@
 
 .PHONY: test-all
-test-all: tools test-unit test-e2e
+test-all: tools test-unit test-e2e test-nested-container
 
 .PHONY: test-unit
 test-unit:
@@ -11,6 +11,18 @@ test-unit:
 		--packages="./..." \
 		-- -coverprofile=cover.txt
 
+.PHONY: test-nested-container
+test-unit-nested:
+	docker network inspect testcontainers-custom > /dev/null || docker network create testcontainers-custom
+	docker build -t nested-sdk -f testresources/nested.dockerfile .
+	docker run --rm -i \
+		-v /var/run/docker.sock:/var/run/docker.sock:ro \
+		-v `pwd`:/work \
+		-w /work \
+		--network testcontainers-custom \
+		-e CGO_ENABLED=0  \
+		nested-sdk make test-unit
+
 .PHONY: test-e2e
 test-e2e:
 	@echo "Running end-to-end tests..."
@@ -19,3 +31,9 @@ test-e2e:
 .PHONY: tools
 tools:
 	go mod download
+
+.PHONY: verify
+verify:
+	go mod verify
+	go mod tidy
+	go vet ./...

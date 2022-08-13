@@ -18,7 +18,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.16.x, 1.17.x, 1.x]
+        go-version: [1.17.x, 1.18.x, 1.x]
         platform: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -32,19 +32,16 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
 
-      - name: modVerify
-        run: go mod verify
-
-      - name: modTidy
-        run: go mod tidy
-
-      - name: vet
-        run: go vet ./...
+      - name: verify
+        run: make verify
 
       - name: ensure compilation
         env:
           GOOS: linux
         run: go build
+
+      - name: test nested in container
+        run: make test-unit-nested
 
       - name: gotestsum
         # only run tests on linux, there are a number of things that won't allow the tests to run on anything else

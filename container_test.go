@@ -335,6 +335,7 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 }
 
 func createTestContainer(t *testing.T, ctx context.Context) int {
+	t.Helper()
 	req := ContainerRequest{
 		Image:        nginxAlpineImage,
 		ExposedPorts: []string{nginxDefaultPort},

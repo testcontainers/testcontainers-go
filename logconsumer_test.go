@@ -201,8 +201,8 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		Started: true,
 		ContainerRequest: ContainerRequest{
 			Image:        "docker.io/docker:dind",
+			Cmd:          []string{"dockerd", "--host=0.0.0.0:2375"},
 			ExposedPorts: []string{"2375/tcp"},
-			Env:          map[string]string{"DOCKER_TLS_CERTDIR": ""},
 			WaitingFor:   wait.ForListeningPort("2375/tcp"),
 			Privileged:   true,
 		},
@@ -213,18 +213,19 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	var remoteDocker string
 
-	ctxEndpoint, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctxEndpoint, cancel := context.WithTimeout(ctx, 1*time.Minute)
 	defer cancel()
 
 	// todo: remove this temporary fix (test is flaky).
 	for {
-		remoteDocker, err = dind.Endpoint(ctxEndpoint, "2375/tcp")
+		remoteDocker, err = dind.Endpoint(ctxEndpoint, "tcp")
 		if err == nil {
 			break
 		}
 		if errors.Is(err, context.DeadlineExceeded) {
 			break
 		}
+
 		time.Sleep(100 * time.Microsecond)
 		t.Log("retrying get endpoint")
 	}
@@ -242,7 +243,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	provider := &DockerProvider{client: client, DockerProviderOptions: &DockerProviderOptions{GenericProviderOptions: &GenericProviderOptions{Logger: TestLogger(t)}}}
 
-	nginx, err := provider.CreateContainer(ctx, ContainerRequest{Image: "nginx", ExposedPorts: []string{"80/tcp"}})
+	nginx, err := provider.CreateContainer(ctx, ContainerRequest{Image: nginxAlpineImage, ExposedPorts: []string{nginxDefaultPort}})
 	if err != nil {
 		t.Fatal(err)
 	}

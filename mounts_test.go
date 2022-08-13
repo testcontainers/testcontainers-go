@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"context"
 	"testing"
 
 	"github.com/docker/docker/api/types/mount"
@@ -8,6 +9,9 @@ import (
 )
 
 func TestContainerMounts_PrepareMounts(t *testing.T) {
+	if RunningInContainer() {
+		t.Skip("Re-mapping not supported for this level of tests")
+	}
 	t.Parallel()
 	tests := []struct {
 		name   string
@@ -170,7 +174,11 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equalf(t, tt.want, mapToDockerMounts(tt.mounts), "PrepareMounts()")
+			provider, err := NewDockerProvider()
+			assert.NoError(t, err, "NewDockerProvider()")
+			got, err := provider.mapToDockerMounts(context.Background(), tt.mounts)
+			assert.NoError(t, err, "PrepareMounts()")
+			assert.Equalf(t, tt.want, got, "PrepareMounts()")
 		})
 	}
 }

@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -18,7 +17,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-//
 // https://github.com/testcontainers/testcontainers-go/issues/183
 func ExampleHTTPStrategy() {
 	ctx := context.Background()
@@ -49,7 +47,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	}
 
 	capath := workdir + "/testdata/root.pem"
-	cafile, err := ioutil.ReadFile(capath)
+	cafile, err := os.ReadFile(capath)
 	if err != nil {
 		t.Errorf("can't load ca file: %v", err)
 		return
@@ -68,17 +66,22 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 			Context: workdir + "/testdata",
 		},
 		ExposedPorts: []string{"6443/tcp"},
-		WaitingFor: wait.NewHTTPStrategy("/ping").WithTLS(true, tlsconfig).
-			WithStartupTimeout(time.Second * 10).WithPort("6443/tcp").
+		WaitingFor: wait.
+			NewHTTPStrategy("/ping").
+			WithTLS(true, tlsconfig).
+			WithStartupTimeout(time.Second * 30).
+			WithPort("6443/tcp").
 			WithResponseMatcher(func(body io.Reader) bool {
-				data, _ := ioutil.ReadAll(body)
-				return bytes.Equal(data, []byte("pong"))
+				buf := bytes.NewBuffer(nil)
+				_, _ = io.Copy(buf, body)
+				return buf.String() == "pong"
 			}).
 			WithStatusCodeMatcher(func(status int) bool {
 				i++ // always fail the first try in order to force the polling loop to be re-run
 				return i > 1 && status == 200
 			}).
-			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
+			WithMethod(http.MethodPost).
+			WithBody(bytes.NewReader([]byte("ping"))),
 	}
 
 	container, err := testcontainers.GenericContainer(context.Background(),

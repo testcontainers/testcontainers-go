@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -176,7 +177,7 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:      "nginx",
+			Image:      nginxAlpineImage,
 			Privileged: true,
 			SkipReaper: true,
 			WaitingFor: wait.ForExposedPort(),
@@ -1112,7 +1113,8 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, c)
 
 	_ = w.Close()
-	out, _ := ioutil.ReadAll(r)
+
+	out, _ := io.ReadAll(r)
 	os.Stdout = rescueStdout
 	temp := strings.Split(string(out), "\n")
 
@@ -2221,6 +2223,9 @@ func TestContainerWithNoUserID(t *testing.T) {
 }
 
 func TestGetGatewayIP(t *testing.T) {
+	if !RunningInContainer() {
+		t.Skip("Gateway detection doesn't work when not running in a container")
+	}
 	// When using docker-compose with DinD mode, and using host port or http wait strategy
 	// It's need to invoke GetGatewayIP for get the host
 	provider, err := providerType.GetProvider(WithLogger(TestLogger(t)))
