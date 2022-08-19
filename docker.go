@@ -630,7 +630,7 @@ type DockerProvider struct {
 	runningInContainer bool
 	client             *client.Client
 	host               string
-	hostCache          string
+	endpointHostCache  string
 	config             TestContainersConfig
 	containerEnv       containerEnv
 }
@@ -1128,7 +1128,6 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		isRunning:         c.State == "running",
 	}
 	return dc, nil
-
 }
 
 // attemptToPullImage tries to pull the image while respecting the ctx cancellations.
@@ -1190,14 +1189,14 @@ func (p *DockerProvider) Config() TestContainersConfig {
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
 // You can use the "TC_HOST" env variable to set this yourself
 func (p *DockerProvider) daemonHost(ctx context.Context) (string, error) {
-	if p.hostCache != "" {
-		return p.hostCache, nil
+	if p.endpointHostCache != "" {
+		return p.endpointHostCache, nil
 	}
 
 	host, exists := os.LookupEnv("TC_HOST")
 	if exists {
-		p.hostCache = host
-		return p.hostCache, nil
+		p.endpointHostCache = host
+		return p.endpointHostCache, nil
 	}
 
 	// infer from Docker host
@@ -1208,22 +1207,22 @@ func (p *DockerProvider) daemonHost(ctx context.Context) (string, error) {
 
 	switch url.Scheme {
 	case "http", "https", "tcp":
-		p.hostCache = url.Hostname()
+		p.endpointHostCache = url.Hostname()
 	case "unix", "npipe":
 		if p.runningInContainer {
 			err := p.initContainerEnvInformation(ctx)
 			if err != nil {
 				return "", err
 			}
-			return p.hostCache, nil
+			return p.endpointHostCache, nil
 		} else {
-			p.hostCache = "localhost"
+			p.endpointHostCache = "localhost"
 		}
 	default:
 		return "", errors.New("Could not determine host through env or docker host")
 	}
 
-	return p.hostCache, nil
+	return p.endpointHostCache, nil
 }
 
 // CreateNetwork returns the object representing a new network identified by its name
@@ -1304,7 +1303,7 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	return p.hostCache, nil
+	return p.endpointHostCache, nil
 }
 
 func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli *client.Client) (string, error) {
@@ -1477,7 +1476,7 @@ func (p *DockerProvider) initContainerEnvInformation(ctx context.Context) error 
 
 		for _, settings := range info.NetworkSettings.Networks {
 			if settings.Gateway != "" {
-				p.hostCache = settings.Gateway
+				p.endpointHostCache = settings.Gateway
 				break
 			}
 		}
