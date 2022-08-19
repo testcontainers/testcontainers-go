@@ -16,14 +16,11 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-units"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gotest.tools/v3/env"
-	"gotest.tools/v3/fs"
-
-	"github.com/docker/docker/errdefs"
 
 	"github.com/docker/docker/api/types/volume"
 
@@ -1279,7 +1276,7 @@ func TestEntrypoint(t *testing.T) {
 
 func TestReadTCPropsFile(t *testing.T) {
 	t.Run("HOME is not set", func(t *testing.T) {
-		env.Patch(t, "HOME", "")
+		t.Setenv("HOME", "")
 
 		config := configureTC()
 
@@ -1287,8 +1284,8 @@ func TestReadTCPropsFile(t *testing.T) {
 	})
 
 	t.Run("HOME is not set - TESTCONTAINERS_ env is set", func(t *testing.T) {
-		env.Patch(t, "HOME", "")
-		env.Patch(t, "TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
+		t.Setenv("HOME", "")
+		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := configureTC()
 
@@ -1299,8 +1296,8 @@ func TestReadTCPropsFile(t *testing.T) {
 	})
 
 	t.Run("HOME does not contain TC props file", func(t *testing.T) {
-		tmpDir := fs.NewDir(t, os.TempDir())
-		env.Patch(t, "HOME", tmpDir.Path())
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
 
 		config := configureTC()
 
@@ -1308,9 +1305,9 @@ func TestReadTCPropsFile(t *testing.T) {
 	})
 
 	t.Run("HOME does not contain TC props file - TESTCONTAINERS_ env is set", func(t *testing.T) {
-		tmpDir := fs.NewDir(t, os.TempDir())
-		env.Patch(t, "HOME", tmpDir.Path())
-		env.Patch(t, "TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
+		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := configureTC()
 		expected := TestContainersConfig{}
@@ -1515,12 +1512,12 @@ func TestReadTCPropsFile(t *testing.T) {
 		}
 		for i, tt := range tests {
 			t.Run(fmt.Sprintf("[%d]", i), func(t *testing.T) {
-				tmpDir := fs.NewDir(t, os.TempDir())
-				env.Patch(t, "HOME", tmpDir.Path())
+				tmpDir := t.TempDir()
+				t.Setenv("HOME", tmpDir)
 				for k, v := range tt.env {
-					env.Patch(t, k, v)
+					t.Setenv(k, v)
 				}
-				if err := os.WriteFile(tmpDir.Join(".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
+				if err := os.WriteFile(filepath.Join(tmpDir, ".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
 					t.Errorf("Failed to create the file: %v", err)
 					return
 				}
