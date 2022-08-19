@@ -22,7 +22,6 @@ jobs:
         platform: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
@@ -40,8 +39,15 @@ jobs:
           GOOS: linux
         run: go build
 
+      - name: Use Docker
+        uses: actions-hub/docker/cli@master
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        env:
+          SKIP_LOGIN: true
+
       - name: test nested in container
         run: make test-unit-nested
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
 
       - name: gotestsum
         # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
