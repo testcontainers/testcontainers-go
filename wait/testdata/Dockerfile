@@ -1,10 +1,10 @@
-FROM golang:1.15-alpine as builder
+FROM docker.io/golang:1.19-alpine as builder
 WORKDIR /app
 COPY . .
 RUN mkdir -p dist
 RUN go build -o ./dist/server main.go
 
-FROM alpine
+FROM docker.io/alpine:latest
 WORKDIR /app
 COPY --from=builder /app/tls.pem /app/tls-key.pem ./
 COPY --from=builder /app/dist/server .

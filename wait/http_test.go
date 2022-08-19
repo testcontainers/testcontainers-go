@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -46,7 +47,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 		return
 	}
 
-	capath := workdir + "/testdata/root.pem"
+	capath := filepath.Join(workdir, "testdata", "root.pem")
 	cafile, err := os.ReadFile(capath)
 	if err != nil {
 		t.Errorf("can't load ca file: %v", err)
@@ -63,7 +64,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	var i int
 	dockerReq := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context: workdir + "/testdata",
+			Context: filepath.Join(workdir, "testdata"),
 		},
 		ExposedPorts: []string{"6443/tcp"},
 		WaitingFor: wait.

@@ -824,23 +824,24 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		return "", err
 	}
 
-	if img.ShouldPrintBuildLog() {
-		termFd, isTerm := term.GetFdInfo(os.Stderr)
-		err = jsonmessage.DisplayJSONMessagesStream(resp.Body, os.Stderr, termFd, isTerm, nil)
-		if err != nil {
-			return "", err
-		}
-	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
-	// need to read the response from Docker, I think otherwise the image
-	// might not finish building before continuing to execute here
-	buf := new(bytes.Buffer)
-	_, err = buf.ReadFrom(resp.Body)
+	bodyBuf := bytes.NewBuffer(nil)
+	_, err = io.Copy(bodyBuf, resp.Body)
+
 	if err != nil {
 		return "", err
 	}
 
-	_ = resp.Body.Close()
+	if img.ShouldPrintBuildLog() {
+		termFd, isTerm := term.GetFdInfo(os.Stderr)
+		err = jsonmessage.DisplayJSONMessagesStream(bodyBuf, os.Stderr, termFd, isTerm, nil)
+		if err != nil {
+			return "", err
+		}
+	}
 
 	return repoTag, nil
 }
