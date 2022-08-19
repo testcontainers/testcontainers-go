@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
@@ -1075,7 +1074,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1521,7 +1520,7 @@ func TestReadTCPropsFile(t *testing.T) {
 				for k, v := range tt.env {
 					env.Patch(t, k, v)
 				}
-				if err := ioutil.WriteFile(tmpDir.Join(".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
+				if err := os.WriteFile(tmpDir.Join(".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
 					t.Errorf("Failed to create the file: %v", err)
 					return
 				}
@@ -1908,13 +1907,13 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 				for _, f := range tc.files {
 					require.NoError(t, err)
 
-					hostFileData, err := ioutil.ReadFile(f.HostFilePath)
+					hostFileData, err := os.ReadFile(f.HostFilePath)
 					require.NoError(t, err)
 
 					fd, err := nginxC.CopyFileFromContainer(ctx, f.ContainerFilePath)
 					require.NoError(t, err)
 					defer fd.Close()
-					containerFileData, err := ioutil.ReadAll(fd)
+					containerFileData, err := io.ReadAll(fd)
 					require.NoError(t, err)
 
 					require.Equal(t, hostFileData, containerFileData)
@@ -1947,7 +1946,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 
 	copiedFileName := "hello_copy.sh"
 
-	fileContent, err := ioutil.ReadFile("./testresources/hello.sh")
+	fileContent, err := os.ReadFile("./testresources/hello.sh")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1962,7 +1961,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 }
 
 func TestDockerContainerCopyFileFromContainer(t *testing.T) {
-	fileContent, err := ioutil.ReadFile("./testresources/hello.sh")
+	fileContent, err := os.ReadFile("./testresources/hello.sh")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1996,7 +1995,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fileContentFromContainer, err := ioutil.ReadAll(reader)
+	fileContentFromContainer, err := io.ReadAll(reader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2034,7 +2033,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fileContentFromContainer, err := ioutil.ReadAll(reader)
+	fileContentFromContainer, err := io.ReadAll(reader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2185,7 +2184,7 @@ func TestContainerWithUserID(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer r.Close()
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2214,7 +2213,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer r.Close()
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
 	}

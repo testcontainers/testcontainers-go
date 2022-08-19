@@ -2,7 +2,7 @@ package wait
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 )
@@ -61,8 +61,9 @@ func (ws *LogStrategy) WithOccurrence(o int) *LogStrategy {
 //
 // For Example:
 // wait.
-//     ForLog("some text").
-//     WithPollInterval(1 * time.Second)
+//
+//	ForLog("some text").
+//	WithPollInterval(1 * time.Second)
 func ForLog(log string) *LogStrategy {
 	return NewLogStrategy(log)
 }
@@ -85,7 +86,7 @@ LOOP:
 				time.Sleep(ws.PollInterval)
 				continue
 			}
-			b, err := ioutil.ReadAll(reader)
+			b, err := io.ReadAll(reader)
 			logs := string(b)
 			if strings.Count(logs, ws.Log) >= ws.Occurrence {
 				break LOOP
