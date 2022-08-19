@@ -21,7 +21,10 @@ test-unit-nested:
 		-w /work \
 		--network testcontainers-custom \
 		-e CGO_ENABLED=0  \
-		nested-sdk make test-unit
+		nested-sdk go run gotest.tools/gotestsum \
+                   		--format short-verbose \
+                   		--rerun-fails=5 \
+                   		--packages="./..."
 
 .PHONY: test-e2e
 test-e2e:

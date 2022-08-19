@@ -8,4 +8,4 @@ WORKDIR /work
 COPY go.* ./
 
 RUN go mod download -x && \
-    apk add -U docker-compose make \
+    apk add -U docker-compose
