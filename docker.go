@@ -1428,6 +1428,11 @@ func (p *DockerProvider) mapToDockerMounts(ctx context.Context, containerMounts 
 	return mounts, nil
 }
 
+// initContainerEnvInformation checks ONCE if the current process is running within a container
+// if so it tries to extract the current container ID by checking the mount source root of /etc/hostname.
+// Both Docker and Podman are mounting the file from a (sub)-directory named after the container ID.
+// If the container ID was extracted successfully it checks for a valid default gateway for the current container
+// and fetches all bind mounts to be able to map new bind mounts to host relative paths if possible
 func (p *DockerProvider) initContainerEnvInformation(ctx context.Context) error {
 	var initErr error
 
