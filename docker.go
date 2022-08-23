@@ -1413,13 +1413,13 @@ func (p *DockerProvider) mapToDockerMounts(ctx context.Context, containerMounts 
 			Target:   m.Target.Target(),
 		}
 
-		switch typedMounter := m.Source.(type) {
+		switch mounterType := m.Source.(type) {
 		case BindMounter:
-			containerMount.BindOptions = typedMounter.GetBindOptions()
+			containerMount.BindOptions = mounterType.GetBindOptions()
 		case VolumeMounter:
-			containerMount.VolumeOptions = typedMounter.GetVolumeOptions()
+			containerMount.VolumeOptions = mounterType.GetVolumeOptions()
 		case TmpfsMounter:
-			containerMount.TmpfsOptions = typedMounter.GetTmpfsOptions()
+			containerMount.TmpfsOptions = mounterType.GetTmpfsOptions()
 		}
 
 		mounts = append(mounts, containerMount)
