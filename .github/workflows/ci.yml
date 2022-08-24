@@ -57,12 +57,18 @@ jobs:
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-unit
 
+      - name: merge coverage-results
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          sudo chown $(whoami) nested-cover.txt && \
+          go run github.com/wadey/gocovmerge@latest nested-cover.txt cover.txt > cover-all.txt
+
         # only report code coverage on linux
       - name: Upload coverage report
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         uses: codecov/codecov-action@v2
         with:
-          files: ./cover.txt
+          files: ./cover-all.txt
           name: testcontainers-go-${{ matrix.go-version }}
 
       - name: modTidy e2e tests

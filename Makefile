@@ -24,7 +24,8 @@ test-unit-nested:
 		nested-sdk go run gotest.tools/gotestsum \
                    		--format short-verbose \
                    		--rerun-fails=5 \
-                   		--packages="./..."
+                   		--packages="./..." \
+                   		-- -coverprofile=nested-cover.txt
 
 .PHONY: test-e2e
 test-e2e:
