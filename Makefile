@@ -1,6 +1,6 @@
 
 .PHONY: test-all
-test-all: tools test-unit test-e2e test-nested-container
+test-all: tools test-unit test-e2e test-unit-nested
 
 .PHONY: test-unit
 test-unit:
@@ -11,7 +11,7 @@ test-unit:
 		--packages="./..." \
 		-- -coverprofile=cover.txt
 
-.PHONY: test-nested-container
+.PHONY: test-unit-nested
 test-unit-nested:
 	docker network inspect testcontainers-custom > /dev/null || docker network create testcontainers-custom
 	docker build -t nested-sdk -f testresources/nested.dockerfile .
