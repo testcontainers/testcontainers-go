@@ -182,6 +182,31 @@ func TestDockerComposeWithWaitForService(t *testing.T) {
 	assert.Contains(t, compose.Services, "nginx")
 }
 
+func TestDockerComposeWithWaitForShortLifespanService(t *testing.T) {
+	path := "./testresources/docker-compose-short-lifespan.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		//Assumption: tzatziki service wait logic will run before falafel, so that falafel service will exit before
+		WaitForService(compose.Format("tzatziki", "1"), wait.ForExit().WithExitTimeout(10*time.Second)).
+		WaitForService(compose.Format("falafel", "1"), wait.ForExit().WithExitTimeout(10*time.Second)).
+		Invoke()
+	checkIfError(t, err)
+
+	assert.Equal(t, 2, len(compose.Services))
+	assert.Contains(t, compose.Services, "falafel")
+	assert.Contains(t, compose.Services, "tzatziki")
+}
+
 func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
 

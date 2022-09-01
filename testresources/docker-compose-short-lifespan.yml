@@ -1,0 +1,8 @@
+version: '3'
+services:
+  tzatziki:
+    image: docker.io/alpine:latest
+    command: "sleep 5"
+  falafel:
+    image: docker.io/alpine:latest
+    command: "echo 'World is your canvas'"
