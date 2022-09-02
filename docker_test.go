@@ -1855,6 +1855,44 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	}
 }
 
+func TestDockerContainerCopyDirToContainer(t *testing.T) {
+	ctx := context.Background()
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image:        nginxImage,
+			ExposedPorts: []string{nginxDefaultPort},
+			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+		},
+		Started: true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginxC)
+
+	copiedFileName := "testresources"
+	err = nginxC.CopyDirToContainer(ctx, "./testresources", "/tmp", 700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	scripts := []string{
+		"hello.sh", "empty.sh",
+	}
+
+	for _, s := range scripts {
+		script := fmt.Sprintf("/tmp/%s/%s", copiedFileName, s)
+		c, _, err := nginxC.Exec(ctx, []string{"bash", script})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if c != 0 {
+			t.Fatalf("File %s should exist, expected return code 0, got %v", script, c)
+		}
+	}
+}
+
 func TestDockerCreateContainerWithFiles(t *testing.T) {
 	ctx := context.Background()
 	hostFileName := "./testresources/hello.sh"
