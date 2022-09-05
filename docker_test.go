@@ -1880,43 +1880,7 @@ func TestDockerContainerCopyDirToContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// create all copied files into a temporary dir
-	tmpDir := filepath.Join(t.TempDir())
-
-	// compare the bytes of each file in the source with the bytes from the copied-from-container file
-	srcFiles, err := ioutil.ReadDir("./testresources")
-	require.NoError(t, err)
-
-	for _, srcFile := range srcFiles {
-		srcBytes, err := ioutil.ReadFile(filepath.Join("./testresources", srcFile.Name()))
-		if err != nil {
-			require.NoError(t, err)
-		}
-
-		// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
-		// paths for the container files are using Linux path separators
-		fd, err := nginxC.CopyFileFromContainer(ctx, "/tmp/testresources/"+srcFile.Name())
-		require.NoError(t, err, "Path not found in container: %s", "/tmp/testresources/"+srcFile.Name())
-		defer fd.Close()
-
-		targetPath := filepath.Join(tmpDir, srcFile.Name())
-		dst, err := os.Create(targetPath)
-		if err != nil {
-			require.NoError(t, err)
-		}
-		defer dst.Close()
-
-		_, err = io.Copy(dst, fd)
-		if err != nil {
-			require.NoError(t, err)
-		}
-
-		untarBytes, err := ioutil.ReadFile(targetPath)
-		if err != nil {
-			require.NoError(t, err)
-		}
-		assert.Equal(t, srcBytes, untarBytes)
-	}
+	assertExtractedFiles(t, ctx, nginxC, "./testresources", "/tmp/testresources/")
 }
 
 func TestDockerCreateContainerWithFiles(t *testing.T) {
@@ -2046,43 +2010,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			} else {
 				dir := tc.dir
 
-				// create all copied files into a temporary dir
-				tmpDir := filepath.Join(t.TempDir())
-
-				// compare the bytes of each file in the source with the bytes from the copied-from-container file
-				srcFiles, err := ioutil.ReadDir(dir.HostFilePath)
-				require.NoError(t, err)
-
-				for _, srcFile := range srcFiles {
-					srcBytes, err := ioutil.ReadFile(filepath.Join(dir.HostFilePath, srcFile.Name()))
-					if err != nil {
-						require.NoError(t, err)
-					}
-
-					// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
-					// paths for the container files are using Linux path separators
-					fd, err := nginxC.CopyFileFromContainer(ctx, dir.ContainerFilePath+"/"+srcFile.Name())
-					require.NoError(t, err, "Path not found in container: %s", dir.ContainerFilePath+"/"+srcFile.Name())
-					defer fd.Close()
-
-					targetPath := filepath.Join(tmpDir, srcFile.Name())
-					dst, err := os.Create(targetPath)
-					if err != nil {
-						require.NoError(t, err)
-					}
-					defer dst.Close()
-
-					_, err = io.Copy(dst, fd)
-					if err != nil {
-						require.NoError(t, err)
-					}
-
-					untarBytes, err := ioutil.ReadFile(targetPath)
-					if err != nil {
-						require.NoError(t, err)
-					}
-					assert.Equal(t, srcBytes, untarBytes)
-				}
+				assertExtractedFiles(t, ctx, nginxC, dir.HostFilePath, dir.ContainerFilePath)
 			}
 		})
 	}
@@ -2404,6 +2332,47 @@ func TestProviderHasConfig(t *testing.T) {
 	}
 
 	assert.NotNil(t, provider.Config(), "expecting DockerProvider to provide the configuration")
+}
+
+// creates a temporary dir in which the files will be extracted. Then it will compare the bytes of each file in the source with the bytes from the copied-from-container file
+func assertExtractedFiles(t *testing.T, ctx context.Context, container Container, hostFilePath string, containerFilePath string) {
+	// create all copied files into a temporary dir
+	tmpDir := filepath.Join(t.TempDir())
+
+	// compare the bytes of each file in the source with the bytes from the copied-from-container file
+	srcFiles, err := ioutil.ReadDir(hostFilePath)
+	require.NoError(t, err)
+
+	for _, srcFile := range srcFiles {
+		srcBytes, err := ioutil.ReadFile(filepath.Join(hostFilePath, srcFile.Name()))
+		if err != nil {
+			require.NoError(t, err)
+		}
+
+		// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
+		// paths for the container files are using Linux path separators
+		fd, err := container.CopyFileFromContainer(ctx, containerFilePath+"/"+srcFile.Name())
+		require.NoError(t, err, "Path not found in container: %s", containerFilePath+"/"+srcFile.Name())
+		defer fd.Close()
+
+		targetPath := filepath.Join(tmpDir, srcFile.Name())
+		dst, err := os.Create(targetPath)
+		if err != nil {
+			require.NoError(t, err)
+		}
+		defer dst.Close()
+
+		_, err = io.Copy(dst, fd)
+		if err != nil {
+			require.NoError(t, err)
+		}
+
+		untarBytes, err := ioutil.ReadFile(targetPath)
+		if err != nil {
+			require.NoError(t, err)
+		}
+		assert.Equal(t, srcBytes, untarBytes)
+	}
 }
 
 func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr Container) {
