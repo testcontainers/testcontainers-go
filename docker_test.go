@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -1954,13 +1955,107 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 					require.NoError(t, err)
 
 					require.Equal(t, hostFileData, containerFileData)
-
 				}
-			} else {
-				require.Error(t, err)
-				require.Equal(t, tc.errMsg, err.Error())
 			}
+		})
+	}
+}
 
+func TestDockerCreateContainerWithDirs(t *testing.T) {
+	ctx := context.Background()
+	hostDirName := "testresources"
+
+	tests := []struct {
+		name   string
+		dir    ContainerFile
+		errMsg string
+	}{
+		{
+			name: "success copy directory",
+			dir: ContainerFile{
+				HostFilePath:      "./" + hostDirName,
+				ContainerFilePath: "/tmp", // the parent dir must exist
+				FileMode:          700,
+			},
+		},
+		{
+			name: "host dir not found",
+			dir: ContainerFile{
+				HostFilePath:      "./testresources123",
+				ContainerFilePath: "/tmp",
+				FileMode:          700,
+			},
+			errMsg: "can't copy " +
+				"./testresources123 to container: open " +
+				"./testresources123: no such file or directory: " +
+				"failed to create container",
+		},
+		{
+			name: "container dir not found",
+			dir: ContainerFile{
+				HostFilePath:      "./" + hostDirName,
+				ContainerFilePath: "/testresources123",
+				FileMode:          700,
+			},
+			errMsg: "can't copy ./testresources to container: Error: No such container:path",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+				ContainerRequest: ContainerRequest{
+					Image:        "nginx:1.17.6",
+					ExposedPorts: []string{"80/tcp"},
+					WaitingFor:   wait.ForListeningPort("80/tcp"),
+					Files:        []ContainerFile{tc.dir},
+				},
+				Started: false,
+			})
+
+			if err != nil {
+				require.Contains(t, err.Error(), tc.errMsg)
+			} else {
+				dir := tc.dir
+
+				// create all copied files into a temporary dir
+				tmpDir := filepath.Join(t.TempDir())
+
+				// compare the bytes of each file in the source with the bytes from the copied-from-container file
+				srcFiles, err := ioutil.ReadDir(dir.HostFilePath)
+				require.NoError(t, err)
+
+				for _, srcFile := range srcFiles {
+					srcBytes, err := ioutil.ReadFile(filepath.Join(dir.HostFilePath, srcFile.Name()))
+					if err != nil {
+						require.NoError(t, err)
+					}
+
+					// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
+					// paths for the container files are using Linux path separators
+					fd, err := nginxC.CopyFileFromContainer(ctx, dir.ContainerFilePath+"/"+hostDirName+"/"+srcFile.Name())
+					require.NoError(t, err)
+					defer fd.Close()
+
+					targetPath := filepath.Join(tmpDir, srcFile.Name())
+					dst, err := os.Create(targetPath)
+					if err != nil {
+						require.NoError(t, err)
+					}
+					defer dst.Close()
+
+					_, err = io.Copy(dst, fd)
+					if err != nil {
+						require.NoError(t, err)
+					}
+
+					untarBytes, err := ioutil.ReadFile(targetPath)
+					if err != nil {
+						require.NoError(t, err)
+					}
+					assert.Equal(t, srcBytes, untarBytes)
+				}
+			}
 		})
 	}
 }
