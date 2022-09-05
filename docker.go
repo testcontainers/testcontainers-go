@@ -503,6 +503,15 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 }
 
 func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
+	dir, err := isDir(hostFilePath)
+	if err != nil {
+		return err
+	}
+
+	if dir {
+		return c.CopyDirToContainer(ctx, hostFilePath, containerFilePath, fileMode)
+	}
+
 	fileContent, err := ioutil.ReadFile(hostFilePath)
 	if err != nil {
 		return err
