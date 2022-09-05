@@ -1941,7 +1941,9 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 				Started: false,
 			})
 
-			if tc.errMsg == "" {
+			if err != nil {
+				require.Contains(t, err.Error(), tc.errMsg)
+			} else {
 				for _, f := range tc.files {
 					require.NoError(t, err)
 
