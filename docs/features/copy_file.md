@@ -14,7 +14,7 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		Started: true,
 	})
 
-nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/hello_copy.sh", fileContent, 700)
+nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/hello_copy.sh", 700)
 ```
 
 Or you can add a list of files in ContainerRequest's struct, which can be copied before the container started:
