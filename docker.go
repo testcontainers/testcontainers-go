@@ -499,7 +499,10 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 		return err
 	}
 
-	return c.provider.client.CopyToContainer(ctx, c.ID, containerParentPath, buff, types.CopyToContainerOptions{})
+	// create the directory under its parent
+	parent := filepath.Dir(containerParentPath)
+
+	return c.provider.client.CopyToContainer(ctx, c.ID, parent, buff, types.CopyToContainerOptions{})
 }
 
 func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {

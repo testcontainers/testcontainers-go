@@ -1872,25 +1872,47 @@ func TestDockerContainerCopyDirToContainer(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
-	copiedFileName := "testresources"
-	err = nginxC.CopyDirToContainer(ctx, "./testresources", "/tmp", 700)
+	err = nginxC.CopyDirToContainer(ctx, "./testresources", "/tmp/testresources", 700)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	scripts := []string{
-		"hello.sh", "empty.sh",
-	}
+	// create all copied files into a temporary dir
+	tmpDir := filepath.Join(t.TempDir())
 
-	for _, s := range scripts {
-		script := fmt.Sprintf("/tmp/%s/%s", copiedFileName, s)
-		c, _, err := nginxC.Exec(ctx, []string{"bash", script})
+	// compare the bytes of each file in the source with the bytes from the copied-from-container file
+	srcFiles, err := ioutil.ReadDir("./testresources")
+	require.NoError(t, err)
+
+	for _, srcFile := range srcFiles {
+		srcBytes, err := ioutil.ReadFile(filepath.Join("./testresources", srcFile.Name()))
 		if err != nil {
-			t.Fatal(err)
+			require.NoError(t, err)
 		}
-		if c != 0 {
-			t.Fatalf("File %s should exist, expected return code 0, got %v", script, c)
+
+		// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
+		// paths for the container files are using Linux path separators
+		fd, err := nginxC.CopyFileFromContainer(ctx, "/tmp/testresources/"+srcFile.Name())
+		require.NoError(t, err, "Path not found in container: %s", "/tmp/testresources/"+srcFile.Name())
+		defer fd.Close()
+
+		targetPath := filepath.Join(tmpDir, srcFile.Name())
+		dst, err := os.Create(targetPath)
+		if err != nil {
+			require.NoError(t, err)
 		}
+		defer dst.Close()
+
+		_, err = io.Copy(dst, fd)
+		if err != nil {
+			require.NoError(t, err)
+		}
+
+		untarBytes, err := ioutil.ReadFile(targetPath)
+		if err != nil {
+			require.NoError(t, err)
+		}
+		assert.Equal(t, srcBytes, untarBytes)
 	}
 }
 
@@ -1976,15 +1998,15 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			name: "success copy directory",
 			dir: ContainerFile{
 				HostFilePath:      "./" + hostDirName,
-				ContainerFilePath: "/tmp", // the parent dir must exist
+				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
 				FileMode:          700,
 			},
 		},
 		{
 			name: "host dir not found",
 			dir: ContainerFile{
-				HostFilePath:      "./testresources123",
-				ContainerFilePath: "/tmp",
+				HostFilePath:      "./testresources123",  // does not exist
+				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
 				FileMode:          700,
 			},
 			errMsg: "can't copy " +
@@ -1996,7 +2018,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			name: "container dir not found",
 			dir: ContainerFile{
 				HostFilePath:      "./" + hostDirName,
-				ContainerFilePath: "/testresources123",
+				ContainerFilePath: "/parent-does-not-exist/testresources123", // does not exist
 				FileMode:          700,
 			},
 			errMsg: "can't copy ./testresources to container: Error: No such container:path",
@@ -2016,6 +2038,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			})
 
 			if err != nil {
+				require.NotEmpty(t, tc.errMsg)
 				require.Contains(t, err.Error(), tc.errMsg)
 			} else {
 				dir := tc.dir
@@ -2035,8 +2058,8 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 
 					// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
 					// paths for the container files are using Linux path separators
-					fd, err := nginxC.CopyFileFromContainer(ctx, dir.ContainerFilePath+"/"+hostDirName+"/"+srcFile.Name())
-					require.NoError(t, err)
+					fd, err := nginxC.CopyFileFromContainer(ctx, dir.ContainerFilePath+"/"+srcFile.Name())
+					require.NoError(t, err, "Path not found in container: %s", dir.ContainerFilePath+"/"+srcFile.Name())
 					defer fd.Close()
 
 					targetPath := filepath.Join(tmpDir, srcFile.Name())
