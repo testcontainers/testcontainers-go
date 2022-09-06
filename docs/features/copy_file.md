@@ -43,9 +43,9 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 
 It's also possible to copy an entire directory to a container, and that can happen before and/or after the container gets into the "Running" state. As an example, you could need to bulk-copy a set of files, such as a configuration directory that does not exist in the underlying Docker image.
 
-It's important to notice that, when copying the directory to the container, the container path must exists in the Docker image. And this is strong requirement for files to be copied _before_ the container is started, as we cannot create the full path at that time.
+It's important to notice that, when copying the directory to the container, the container path must exist in the Docker image. And this is a strong requirement for files to be copied _before_ the container is started, as we cannot create the full path at that time.
 
-Once we understood that, there are two ways to do copy directories to a container. The first one is using the already existing `CopyFileToContainer` method, which will internally check if the host path is a directory, internally calling the new `CopyDirToContainer` method if needed:
+Once we understood that, there are two ways to copy directories to a container. The first one is using the existing `CopyFileToContainer` method, which will internally check if the host path is a directory, internally calling the new `CopyDirToContainer` method if needed:
 
 ```go
 ctx := context.Background()
