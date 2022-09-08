@@ -1873,7 +1873,7 @@ func TestDockerContainerCopyDirToContainer(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	err = nginxC.CopyDirToContainer(ctx, "./testresources/Dockerfile", "/tmp/testresources/Dockerfile", 700)
-	require.Error(t, err) // copying a file using the directory method will reaise an error
+	require.Error(t, err) // copying a file using the directory method will raise an error
 
 	err = nginxC.CopyDirToContainer(ctx, "./testresources", "/tmp/testresources", 700)
 	if err != nil {
