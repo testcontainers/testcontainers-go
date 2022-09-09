@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -1855,6 +1856,33 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	}
 }
 
+func TestDockerContainerCopyDirToContainer(t *testing.T) {
+	ctx := context.Background()
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image:        nginxImage,
+			ExposedPorts: []string{nginxDefaultPort},
+			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+		},
+		Started: true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginxC)
+
+	err = nginxC.CopyDirToContainer(ctx, "./testresources/Dockerfile", "/tmp/testresources/Dockerfile", 700)
+	require.Error(t, err) // copying a file using the directory method will raise an error
+
+	err = nginxC.CopyDirToContainer(ctx, "./testresources", "/tmp/testresources", 700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertExtractedFiles(t, ctx, nginxC, "./testresources", "/tmp/testresources/")
+}
+
 func TestDockerCreateContainerWithFiles(t *testing.T) {
 	ctx := context.Background()
 	hostFileName := "./testresources/hello.sh"
@@ -1902,7 +1930,9 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 				Started: false,
 			})
 
-			if tc.errMsg == "" {
+			if err != nil {
+				require.Contains(t, err.Error(), tc.errMsg)
+			} else {
 				for _, f := range tc.files {
 					require.NoError(t, err)
 
@@ -1916,13 +1946,72 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 					require.NoError(t, err)
 
 					require.Equal(t, hostFileData, containerFileData)
-
 				}
-			} else {
-				require.Error(t, err)
-				require.Equal(t, tc.errMsg, err.Error())
 			}
+		})
+	}
+}
 
+func TestDockerCreateContainerWithDirs(t *testing.T) {
+	ctx := context.Background()
+	hostDirName := "testresources"
+
+	tests := []struct {
+		name   string
+		dir    ContainerFile
+		errMsg string
+	}{
+		{
+			name: "success copy directory",
+			dir: ContainerFile{
+				HostFilePath:      "./" + hostDirName,
+				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
+				FileMode:          700,
+			},
+		},
+		{
+			name: "host dir not found",
+			dir: ContainerFile{
+				HostFilePath:      "./testresources123",  // does not exist
+				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
+				FileMode:          700,
+			},
+			errMsg: "can't copy " +
+				"./testresources123 to container: open " +
+				"./testresources123: no such file or directory: " +
+				"failed to create container",
+		},
+		{
+			name: "container dir not found",
+			dir: ContainerFile{
+				HostFilePath:      "./" + hostDirName,
+				ContainerFilePath: "/parent-does-not-exist/testresources123", // does not exist
+				FileMode:          700,
+			},
+			errMsg: "can't copy ./testresources to container: Error: No such container:path",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+				ContainerRequest: ContainerRequest{
+					Image:        "nginx:1.17.6",
+					ExposedPorts: []string{"80/tcp"},
+					WaitingFor:   wait.ForListeningPort("80/tcp"),
+					Files:        []ContainerFile{tc.dir},
+				},
+				Started: false,
+			})
+
+			if err != nil {
+				require.NotEmpty(t, tc.errMsg)
+				require.Contains(t, err.Error(), tc.errMsg)
+			} else {
+				dir := tc.dir
+
+				assertExtractedFiles(t, ctx, nginxC, dir.HostFilePath, dir.ContainerFilePath)
+			}
 		})
 	}
 }
@@ -2243,6 +2332,47 @@ func TestProviderHasConfig(t *testing.T) {
 	}
 
 	assert.NotNil(t, provider.Config(), "expecting DockerProvider to provide the configuration")
+}
+
+// creates a temporary dir in which the files will be extracted. Then it will compare the bytes of each file in the source with the bytes from the copied-from-container file
+func assertExtractedFiles(t *testing.T, ctx context.Context, container Container, hostFilePath string, containerFilePath string) {
+	// create all copied files into a temporary dir
+	tmpDir := filepath.Join(t.TempDir())
+
+	// compare the bytes of each file in the source with the bytes from the copied-from-container file
+	srcFiles, err := ioutil.ReadDir(hostFilePath)
+	require.NoError(t, err)
+
+	for _, srcFile := range srcFiles {
+		srcBytes, err := ioutil.ReadFile(filepath.Join(hostFilePath, srcFile.Name()))
+		if err != nil {
+			require.NoError(t, err)
+		}
+
+		// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
+		// paths for the container files are using Linux path separators
+		fd, err := container.CopyFileFromContainer(ctx, containerFilePath+"/"+srcFile.Name())
+		require.NoError(t, err, "Path not found in container: %s", containerFilePath+"/"+srcFile.Name())
+		defer fd.Close()
+
+		targetPath := filepath.Join(tmpDir, srcFile.Name())
+		dst, err := os.Create(targetPath)
+		if err != nil {
+			require.NoError(t, err)
+		}
+		defer dst.Close()
+
+		_, err = io.Copy(dst, fd)
+		if err != nil {
+			require.NoError(t, err)
+		}
+
+		untarBytes, err := ioutil.ReadFile(targetPath)
+		if err != nil {
+			require.NoError(t, err)
+		}
+		assert.Equal(t, srcBytes, untarBytes)
+	}
 }
 
 func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr Container) {

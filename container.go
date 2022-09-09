@@ -57,6 +57,7 @@ type Container interface {
 	Exec(ctx context.Context, cmd []string) (int, io.Reader, error)
 	ContainerIP(context.Context) (string, error) // get container ip
 	CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error
+	CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
 	CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error)
 }
