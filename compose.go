@@ -180,7 +180,7 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 			filters.Arg("name", containerName),
 			filters.Arg("name", composeV2ContainerName),
 			filters.Arg("name", k.service))
-		containerListOptions := types.ContainerListOptions{Filters: f}
+		containerListOptions := types.ContainerListOptions{Filters: f, All: true}
 		containers, err := cli.ContainerList(context.Background(), containerListOptions)
 		if err != nil {
 			return fmt.Errorf("error %w occured while filtering the service %s: %d by name and published port", err, k.service, k.publishedPort)
