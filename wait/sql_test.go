@@ -8,7 +8,7 @@ import (
 
 func Test_waitForSql_WithQuery(t *testing.T) {
 	t.Run("default query", func(t *testing.T) {
-		w := ForSQL("5432/tcp", "postgres", func(port nat.Port) string {
+		w := ForSQL("5432/tcp", "postgres", func(host string, port nat.Port) string {
 			return "fake-url"
 		})
 
@@ -19,7 +19,7 @@ func Test_waitForSql_WithQuery(t *testing.T) {
 	t.Run("custom query", func(t *testing.T) {
 		const q = "SELECT 100;"
 
-		w := ForSQL("5432/tcp", "postgres", func(port nat.Port) string {
+		w := ForSQL("5432/tcp", "postgres", func(host string, port nat.Port) string {
 			return "fake-url"
 		}).WithQuery(q)
 
