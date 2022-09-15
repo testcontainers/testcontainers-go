@@ -214,6 +214,7 @@ func (d *dockerComposeAPI) ServiceContainer(ctx context.Context, svcName string)
 	}
 
 	listOptions := types2.ContainerListOptions{
+		All: true,
 		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ServiceLabel, svcName)),

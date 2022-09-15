@@ -382,6 +382,32 @@ func TestDockerComposeAPIWithBuild(t *testing.T) {
 	assert.NoError(t, err, "compose.Up()")
 }
 
+func TestDockerComposeApiWithWaitForShortLifespanService(t *testing.T) {
+	compose, err := NewDockerComposeAPI("./testresources/docker-compose-short-lifespan.yml")
+	assert.NoError(t, err, "NewDockerComposeAPI()")
+
+	t.Cleanup(func() {
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		//Assumption: tzatziki service wait logic will run before falafel, so that falafel service will exit before
+		WaitForService("tzatziki", wait.ForExit().WithExitTimeout(10*time.Second)).
+		WaitForService("falafel", wait.ForExit().WithExitTimeout(10*time.Second)).
+		Up(ctx)
+
+	assert.NoError(t, err, "compose.Up()")
+
+	services := compose.Services()
+
+	assert.Equal(t, 2, len(services))
+	assert.Contains(t, services, "falafel")
+	assert.Contains(t, services, "tzatziki")
+}
+
 func testNameHash(name string) StackIdentifier {
 	return StackIdentifier(fmt.Sprintf("%x", fnv.New32a().Sum([]byte(name))))
 }
