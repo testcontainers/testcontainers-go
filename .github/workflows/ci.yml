@@ -57,7 +57,7 @@ jobs:
         # only report code coverage on linux
       - name: Upload coverage report
         if: ${{ matrix.platform == 'ubuntu-latest' }}
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@81cd2dc8148241f03f5839d295e000b8f761e378
         with:
           files: ./cover.txt
           name: testcontainers-go-${{ matrix.go-version }}
