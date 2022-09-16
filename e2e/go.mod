@@ -1,6 +1,6 @@
 module e2e
 
-go 1.13
+go 1.18
 
 require (
 	github.com/docker/go-connections v0.4.0
