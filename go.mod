@@ -16,6 +16,7 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/magiconair/properties v1.8.6
+	github.com/miekg/dns v1.1.50 // indirect
 	github.com/moby/sys/mount v0.3.3 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6
 	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799
