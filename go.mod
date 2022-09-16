@@ -3,6 +3,7 @@ module github.com/testcontainers/testcontainers-go
 go 1.13
 
 require (
+	github.com/aws/aws-sdk-go v1.44.99 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/containerd/cgroups v1.0.4 // indirect
 	github.com/containerd/containerd v1.6.8
