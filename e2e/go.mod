@@ -10,6 +10,7 @@ require (
 	github.com/miekg/dns v1.1.50 // indirect
 	github.com/testcontainers/testcontainers-go v0.13.0
 	gotest.tools/gotestsum v1.8.2
+	k8s.io/api v0.25.0 // indirect
 )
 
 replace github.com/testcontainers/testcontainers-go => ../
