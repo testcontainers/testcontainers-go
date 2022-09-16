@@ -15,6 +15,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/google/uuid v1.3.0
+	github.com/hashicorp/consul/sdk v0.11.0 // indirect
 	github.com/magiconair/properties v1.8.6
 	github.com/miekg/dns v1.1.50 // indirect
 	github.com/moby/sys/mount v0.3.3 // indirect
