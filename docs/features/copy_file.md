@@ -17,7 +17,7 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/hello_copy.sh", 700)
 ```
 
-Or you can add a list of files in ContainerRequest's struct, which can be copied before the container started:
+Or you can add a list of files in the `ContainerRequest` initialization, which can be copied before the container starts:
 
 ```go
 ctx := context.Background()
@@ -45,7 +45,7 @@ It's also possible to copy an entire directory to a container, and that can happ
 
 It's important to notice that, when copying the directory to the container, the container path must exist in the Docker image. And this is a strong requirement for files to be copied _before_ the container is started, as we cannot create the full path at that time.
 
-Once we understood that, there are two ways to copy directories to a container. The first one is using the existing `CopyFileToContainer` method, which will internally check if the host path is a directory, internally calling the new `CopyDirToContainer` method if needed:
+There are two ways to copy directories to a container. The first way uses the existing `CopyFileToContainer` method, which will internally check if the host path is a directory, internally calling the new `CopyDirToContainer` method if needed:
 
 ```go
 ctx := context.Background()
@@ -79,7 +79,7 @@ if err != nil {
 }
 ```
 
-And the second way is using the `CopyDirToContainer` method which, as you probably know, needs the existence of the parent directory where to copy the directory:
+And the second way uses the `CopyDirToContainer` method which, as you probably know, needs the existence of the parent directory in order to copy the directory:
 
 ```go
 ctx := context.Background()
