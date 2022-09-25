@@ -1,10 +1,10 @@
-# Testcontainers-Go
+# Testcontainers-go
 
 ![Testcontainers logo](./logo.png)
 
 ## About
 
-Testcontainers-Go is a Go package that makes it simple to create and clean up container-based dependencies for
+Testcontainers-go is a Go package that makes it simple to create and clean up container-based dependencies for
 automated integration/smoke tests. The clean, easy-to-use API enables developers to programmatically define containers
 that should be run as part of a test and clean up those resources when the test is done.
 

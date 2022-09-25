@@ -1,6 +1,6 @@
 # Build from Dockerfile
 
-Testcontainers-Go gives you the ability to build an image and run a container
+Testcontainers-go gives you the ability to build an image and run a container
 from a Dockerfile.
 
 You can do so by specifying a `Context` (the filepath to the build context on
@@ -58,5 +58,5 @@ fromDockerfile := testcontainers.FromDockerfile{
 }
 ```
 
-**Please Note** if you specify a `ContextArchive` this will cause Testcontainers-Go to ignore the path passed
+**Please Note** if you specify a `ContextArchive` this will cause Testcontainers-go to ignore the path passed
 in to `Context`.

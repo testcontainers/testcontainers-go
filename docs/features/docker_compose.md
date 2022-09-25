@@ -7,7 +7,7 @@ This is intended to be useful on projects where Docker Compose is already used
 in dev or other environments to define services that an application may be
 dependent upon.
 
-You can override Testcontainers-Go's default behaviour and make it use a
+You can override Testcontainers-go's default behaviour and make it use a
 docker-compose binary installed on the local machine. This will generally yield
 an experience that is closer to running docker-compose locally, with the caveat
 that Docker Compose needs to be present on dev and CI machines.
