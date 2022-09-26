@@ -15,6 +15,7 @@ categories:
   - title: 🧹 Housekeeping
     labels:
       - type/housekeeping
+      - type/test-flakiness
       - type/test-improvement
   - title: 📦 Dependency updates
     label: dependencies
