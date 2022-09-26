@@ -1,4 +1,4 @@
-TestContainers plays well with the native `go test` framework.
+Testcontainers-go plays well with the native `go test` framework.
 
 The ideal use case is for integration or end to end tests. It helps you to spin
 up and manage the dependencies life cycle via Docker.
@@ -42,11 +42,11 @@ func TestWithRedis(t *testing.T) {
 The `testcontainers.ContainerRequest` describes how the Docker container will
 look.
 
-* `Image` is the docker image the container starts from.
-* `ExposedPorts` lists the ports to be exposed from the container
+* `Image` is the Docker image the container starts from.
+* `ExposedPorts` lists the ports to be exposed from the container.
 * `WaitingFor` is a field you can use to validate when a container is ready. It
   is important to get this set because it helps to know when the container is
-  ready to receive any traffic. In this, case we check for the logs we know come
+  ready to receive any traffic. In this case, we check for the logs we know come
   from Redis, telling us that it is ready to accept requests.
 
 When you use `ExposedPorts` you have to imagine yourself using `docker run -p
@@ -54,7 +54,7 @@ When you use `ExposedPorts` you have to imagine yourself using `docker run -p
 container to a random one available on your host.
 
 In the previous example, we expose `6379` for `tcp` traffic to the outside. This
-allows Redis to be reachable from your code that runs outside the container but
+allows Redis to be reachable from your code that runs outside the container, but
 it also makes parallelization possible because if you add `t.Parallel` to your
 tests, and each of them starts a Redis container each of them will be exposed on a
 different random port.
@@ -70,12 +70,12 @@ terminated function: `defer redisC.Terminate(ctx)`.
 
 !!!tip
 
-    Look at [features/garbage_collector](/features/garbage_collector/) to know the another way you have to
-    clean up.
+    Look at [features/garbage_collector](/features/garbage_collector/) to know another way to
+    clean up resources.
 
 ## 3. Make your code to talk with the container
 
-This is just an example, but usually Go applications that relay on Redis are
+This is just an example, but usually Go applications that rely on Redis are
 using the [redis-go](https://github.com/go-redis/redis) client. This code gets
 the endpoint from the container we just started, and it configures the client.
 
