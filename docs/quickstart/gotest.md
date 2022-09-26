@@ -75,7 +75,7 @@ terminated function: `defer redisC.Terminate(ctx)`.
 
 ## 3. Make your code to talk with the container
 
-This is just an example, but usually Go applications that relay on Redis are
+This is just an example, but usually Go applications that rely on Redis are
 using the [redis-go](https://github.com/go-redis/redis) client. This code gets
 the endpoint from the container we just started, and it configures the client.
 
