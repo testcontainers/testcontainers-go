@@ -12,5 +12,6 @@ If the default 60s timeout is not sufficient, it can be updated with the `WithSt
 
 Below you can find a list of the available wait strategies that you can use:
 
+- [Exec](./wait/exec.md)
 - [HostPort](./wait/host_port.md)
 - [HTTP](./wait/http.md)
