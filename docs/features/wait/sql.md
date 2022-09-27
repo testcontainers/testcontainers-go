@@ -1,6 +1,6 @@
 # SQL Wait strategy
 
-The SQL wait strategy will check the result of an HTTP(S) request that is available in the container, being able to set the following conditions:
+The SQL wait strategy will check the result of a SQL query executed in a container representing a SQL database, and allows to set the following conditions:
 
 - the SQL query to be used, default is `SELECT 1`.
 - the port to be used.
