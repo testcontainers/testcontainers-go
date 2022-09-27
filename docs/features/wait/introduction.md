@@ -19,3 +19,4 @@ Below you can find a list of the available wait strategies that you can use:
 - [HTTP](./http.md)
 - [Log](./log.md)
 - [Multi](./multi.md)
+- [SQL](./sql.md)

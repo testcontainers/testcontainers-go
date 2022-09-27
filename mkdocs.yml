@@ -46,6 +46,7 @@ nav:
             - HTTP: features/wait/http.md
             - Log: features/wait/log.md
             - Multi: features/wait/multi.md
+            - SQL: features/wait/sql.md
     - Examples:
           - examples/cockroachdb.md
           - examples/nginx.md

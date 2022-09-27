@@ -1,0 +1,22 @@
+# SQL Wait strategy
+
+The SQL wait strategy will check the result of an HTTP(S) request that is available in the container, being able to set the following conditions:
+
+- the SQL query to be used, default is `SELECT 1`.
+- the port to be used.
+- the database driver to be used, as a string.
+- the URL of the database to be used, as a function returning the URL string.
+- the startup timeout to be used, default is 60 seconds.
+- the poll interval to be used, default is 100 milliseconds.
+
+```golang
+req := ContainerRequest{
+    Image:        "postgres:14.1-alpine",
+    ExposedPorts: []string{port},
+    Cmd:          []string{"postgres", "-c", "fsync=off"},
+    Env:          env,
+    WaitingFor: wait.ForSQL(nat.Port(port), "postgres", dbURL).
+        WithStartupTimeout(time.Second * 5).
+        WithQuery("SELECT 10"),
+}
+```
