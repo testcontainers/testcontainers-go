@@ -9,7 +9,8 @@ The HTTP wait strategy will check the result of an HTTP(S) request that is avail
 - the HTTP status code as a function to resolve a matcher
 - the HTTP response as a function to resolve a matcher
 - the TLS config to be used for HTTPS
-- the PollInterval to be used, default is 100 milliseconds
+- the startup timeout to be used, default is 60 seconds
+- the poll interval to be used, default is 100 milliseconds
 
 Variations on the HTTP wait strategy are supported, including:
 

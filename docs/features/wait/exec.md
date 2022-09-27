@@ -4,7 +4,8 @@ The exec wait strategy will check the exit code of a process to be executed in t
 
 - the command and arguments to be executed, as an array of strings
 - the exit code as a function to resolve a matcher, being the default one `0`.
-- the PollInterval to be used, default is 100 milliseconds
+- the startup timeout to be used, default is 60 seconds
+- the poll interval to be used, default is 100 milliseconds
 
 ## Match an exit code
 
