@@ -6,8 +6,8 @@ The SQL wait strategy will check the result of an HTTP(S) request that is availa
 - the port to be used.
 - the database driver to be used, as a string.
 - the URL of the database to be used, as a function returning the URL string.
-- the startup timeout to be used, default is 60 seconds.
-- the poll interval to be used, default is 100 milliseconds.
+- the startup timeout to be used in seconds, default is 60 seconds.
+- the poll interval to be used in milliseconds, default is 100 milliseconds.
 
 ```golang
 req := ContainerRequest{

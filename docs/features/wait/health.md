@@ -1,9 +1,9 @@
 # Health Wait strategy
 
-The health wait strategy will check the container is in the healthy state, being able to set the following conditions:
+The health wait strategy will check that the container is in the healthy state and allows to set the following conditions:
 
-- the startupTimeout to be used, default is 60 seconds.
-- the PollInterval to be used, default is 100 milliseconds.
+- the startup timeout to be used in seconds, default is 60 seconds.
+- the poll interval to be used in milliseconds, default is 100 milliseconds.
 
 ```golang
 req := ContainerRequest{

@@ -1,16 +1,16 @@
 # HTTP(S) Wait strategy
 
-The HTTP wait strategy will check the result of an HTTP(S) request that is available in the container, being able to set the following conditions:
+The HTTP wait strategy will check the result of an HTTP(S) request against the container and allows to set the following conditions:
 
 - the port to be used.
 - the path to be used.
 - the HTTP method to be used.
 - the HTTP request body to be sent.
-- the HTTP status code as a function to resolve a matcher.
-- the HTTP response as a function to resolve a matcher.
+- the HTTP status code matcher as a function.
+- the HTTP response matcher as a function.
 - the TLS config to be used for HTTPS.
-- the startup timeout to be used, default is 60 seconds.
-- the poll interval to be used, default is 100 milliseconds.
+- the startup timeout to be used in seconds, default is 60 seconds.
+- the poll interval to be used in milliseconds, default is 100 milliseconds.
 
 Variations on the HTTP wait strategy are supported, including:
 

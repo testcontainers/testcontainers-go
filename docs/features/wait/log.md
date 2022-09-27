@@ -1,11 +1,11 @@
 # Log Wait strategy
 
-The Log wait strategy will check if a string is present in the container logs with a desired number of ocurrences, being able to set the following conditions:
+The Log wait strategy will check if a string occurs in the container logs for a desired number of times, and allows to set the following conditions:
 
-- the string to be searched in the container log.
-- the number of ocurrences of the searched string, default is `1`.
-- the startup timeout to be used, default is 60 seconds.
-- the poll interval to be used, default is 100 milliseconds.
+- the string to be waited for in the container log.
+- the number of occurrences of the string to wait for, default is `1`.
+- the startup timeout to be used in seconds, default is 60 seconds.
+- the poll interval to be used in milliseconds, default is 100 milliseconds.
 
 ```golang
 req := ContainerRequest{

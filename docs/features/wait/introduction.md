@@ -2,7 +2,7 @@
 
 !!! info "Wait strategies vs Startup strategies"
 
-    **Wait strategy:** is the container in a state that is useful for testing. This is generally approximated as 'can we talk to this container over the network'. However, there are quite a few variations and nuances.
+    **Wait strategy:** Is the container in a state that is useful for testing? This is generally approximated as 'Can we talk to this container over the network?'. However, in practice, there are quite a few variations and nuances.
     
     **Startup strategy:** did a container reach the desired running state. *Almost always* this just means 'wait until the container is running' - for a daemon process in a container this is the goal. Sometimes we need to wait until the container reaches a running state and then exits - this is the 'one shot startup' strategy, only used for cases where we need to run a one off command in a container but not a daemon.
 

@@ -2,7 +2,7 @@
 
 The Multi wait strategy will hold a list of wait strategies, in order to wait for all of them. It's possible to set the following conditions:
 
-- the startup timeout to be used, default is 60 seconds.
+- the startup timeout to be used in seconds, default is 60 seconds.
 
 ```golang
 req := ContainerRequest{
