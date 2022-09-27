@@ -38,7 +38,7 @@ nav:
           - features/copy_file.md
           - features/using_podman.md
           - Wait Strategies:
-            - Introduction: features/startup_and_waits.md
+            - Introduction: features/wait/introduction.md
             - HostPort: features/wait/host_port.md
             - HTTP: features/wait/http.md
     - Examples:
