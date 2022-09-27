@@ -1,6 +1,6 @@
 # Exec Wait Strategy
 
-The exec wait strategy will check the exit code of a process to be executed in the container, being able to set the following conditions:
+The exec wait strategy will check the exit code of a process to be executed in the container, and allows to set the following conditions:
 
 - the command and arguments to be executed, as an array of strings.
 - a function to match a specific exit code, with the default matching `0`.
