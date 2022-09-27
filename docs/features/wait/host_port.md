@@ -17,10 +17,11 @@ req := ContainerRequest{
 
 ## Waiting for the first exposed port in the container
 
+The wait strategy will use the first exposed port from the image configuration.
+
 ```golang
 req := ContainerRequest{
     Image:        "docker.io/nginx:alpine",
-    ExposedPorts: []string{"80/tcp"},
     WaitingFor:   wait.ForExposedPort(),
 }
 ```
