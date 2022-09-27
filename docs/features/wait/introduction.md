@@ -14,5 +14,6 @@ Below you can find a list of the available wait strategies that you can use:
 
 - [Exec](./exec.md)
 - [Exit](./exit.md)
+- [Health](./health.md)
 - [HostPort](./host_port.md)
 - [HTTP](./http.md)
