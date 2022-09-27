@@ -40,6 +40,7 @@ nav:
           - Wait Strategies:
             - Introduction: features/wait/introduction.md
             - Exec: features/wait/exec.md
+            - Exit: features/wait/exit.md
             - HostPort: features/wait/host_port.md
             - HTTP: features/wait/http.md
     - Examples:
