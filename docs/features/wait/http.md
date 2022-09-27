@@ -13,7 +13,7 @@ You can choose to wait for an HTTP(S) endpoint that runs in the container, being
 
 Variations on the HTTP wait strategy are supported, including:
 
-## Waiting for an HTTP endpoint matching an HTTP method
+## Match an HTTP method
 
 ```golang
 req := ContainerRequest{
@@ -23,7 +23,7 @@ req := ContainerRequest{
 	}
 ```
 
-## Waiting for an HTTP endpoint matching an HTTP status code
+## Match an HTTP status code
 
 ```golang
 req := ContainerRequest{
@@ -37,7 +37,7 @@ req := ContainerRequest{
 	}
 ```
 
-## Waiting for an HTTPS endpoint including an HTTPS status code and a response matcher
+## Match an HTTPS status code and a response matcher
 
 ```golang
 req := testcontainers.ContainerRequest{

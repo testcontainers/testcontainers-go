@@ -5,7 +5,9 @@ You can choose to wait for:
 - a port to be listening in the container. The port and protocol to be used, which is represented by a string containing port number and protocol in the format "80/tcp"
 - the first exposed port in the container.
 
-## Waiting for a port in the container
+Variations on the HosPort wait strategy are supported, including:
+
+## Listening port in the container
 
 ```golang
 req := ContainerRequest{
@@ -15,7 +17,7 @@ req := ContainerRequest{
 }
 ```
 
-## Waiting for the first exposed port in the container
+## First exposed port in the container
 
 The wait strategy will use the first exposed port from the image configuration.
 
