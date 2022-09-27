@@ -2,10 +2,10 @@
 
 The host-port wait strategy will check if a port is listening in the container, being able to set the following conditions:
 
-- a port to be listening in the container. The port and protocol to be used, which is represented by a string containing port number and protocol in the format "80/tcp"
+- a port to be listening in the container. The port and protocol to be used, which is represented by a string containing port number and protocol in the format "80/tcp".
 - the first exposed port in the container.
-- the startup timeout to be used, default is 60 seconds
-- the poll interval to be used, default is 100 milliseconds
+- the startup timeout to be used, default is 60 seconds.
+- the poll interval to be used, default is 100 milliseconds.
 
 Variations on the HosPort wait strategy are supported, including:
 
