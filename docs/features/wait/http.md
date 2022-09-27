@@ -17,7 +17,7 @@ Variations on the HTTP wait strategy are supported, including:
 
 ```golang
 req := ContainerRequest{
-		Image:        "influxdb:1.8.10-alpine",
+		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"8086/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForHTTP("/ping").WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
@@ -29,7 +29,7 @@ req := ContainerRequest{
 
 ```golang
 req := ContainerRequest{
-		Image:        "influxdb:1.8.10-alpine",
+		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"8086/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForHTTP("/ping").WithPort("8086/tcp").WithStatusCodeMatcher(
