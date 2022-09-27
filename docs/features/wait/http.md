@@ -19,9 +19,7 @@ Variations on the HTTP wait strategy are supported, including:
 req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"8086/tcp"},
-		WaitingFor: wait.ForAll(
-			wait.ForHTTP("/ping").WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
-		),
+		WaitingFor: wait.ForHTTP("/ping").WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
 	}
 ```
 
@@ -31,13 +29,11 @@ req := ContainerRequest{
 req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"8086/tcp"},
-		WaitingFor: wait.ForAll(
-			wait.ForHTTP("/ping").WithPort("8086/tcp").WithStatusCodeMatcher(
-				func(status int) bool {
-					return status == http.StatusNoContent
-				},
-			),
-		),
+		WaitingFor: wait.ForHTTP("/ping").WithPort("8086/tcp").WithStatusCodeMatcher(
+            func(status int) bool {
+                return status == http.StatusNoContent
+            },
+        ),
 	}
 ```
 
