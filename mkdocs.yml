@@ -45,6 +45,7 @@ nav:
             - HostPort: features/wait/host_port.md
             - HTTP: features/wait/http.md
             - Log: features/wait/log.md
+            - Multi: features/wait/multi.md
     - Examples:
           - examples/cockroachdb.md
           - examples/nginx.md
