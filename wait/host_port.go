@@ -21,6 +21,7 @@ type HostPortStrategy struct {
 	Port nat.Port
 	// all WaitStrategies should have a startupTimeout to avoid waiting infinitely
 	startupTimeout time.Duration
+	PollInterval   time.Duration
 }
 
 // NewHostPortStrategy constructs a default host port strategy
@@ -28,6 +29,7 @@ func NewHostPortStrategy(port nat.Port) *HostPortStrategy {
 	return &HostPortStrategy{
 		Port:           port,
 		startupTimeout: defaultStartupTimeout(),
+		PollInterval:   defaultPollInterval(),
 	}
 }
 
@@ -52,6 +54,12 @@ func (hp *HostPortStrategy) WithStartupTimeout(startupTimeout time.Duration) *Ho
 	return hp
 }
 
+// WithPollInterval can be used to override the default polling interval of 100 milliseconds
+func (hp *HostPortStrategy) WithPollInterval(pollInterval time.Duration) *HostPortStrategy {
+	hp.PollInterval = pollInterval
+	return hp
+}
+
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
 	// limit context to startupTimeout
@@ -63,7 +71,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		return
 	}
 
-	var waitInterval = 100 * time.Millisecond
+	var waitInterval = hp.PollInterval
 
 	internalPort := hp.Port
 	if internalPort == "" {
