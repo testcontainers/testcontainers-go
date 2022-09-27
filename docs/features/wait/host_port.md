@@ -1,6 +1,6 @@
 # HostPort wait strategy
 
-You can choose to wait for:
+The host-port wait strategy will check if a port is listening in the container, being able to set the following conditions:
 
 - a port to be listening in the container. The port and protocol to be used, which is represented by a string containing port number and protocol in the format "80/tcp"
 - the first exposed port in the container.

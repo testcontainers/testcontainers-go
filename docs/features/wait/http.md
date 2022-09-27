@@ -1,6 +1,6 @@
 # HTTP(S) Wait strategy
 
-You can choose to wait for an HTTP(S) endpoint that runs in the container, being able to set the following conditions:
+The HTTP wait strategy will check the result of an HTTP(S) request that is available in the container, being able to set the following conditions:
 
 - the port to be used
 - the path to be used
