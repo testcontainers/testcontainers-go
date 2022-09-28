@@ -1,10 +1,8 @@
 # Wait Strategies
 
-!!! info "Wait strategies vs Startup strategies"
+There are scenarios where your tests need the external services they rely on to reach a specific state that is particularly useful for testing. This is generally approximated as 'Can we talk to this container over the network?' or 'Let's wait until the container is running an reaches certain state'.
 
-    **Wait strategy:** Is the container in a state that is useful for testing? This is generally approximated as 'Can we talk to this container over the network?'. However, in practice, there are quite a few variations and nuances.
-    
-    **Startup strategy:** Did a container reach the desired running state? *Almost always* this just means 'wait until the container is running' - for a daemon process in a container this is the goal. Sometimes we need to wait until the container reaches a running state and then exits - this is the `wait.ForExit` strategy, only used for cases where we need to run a one off command in a container but not a daemon.
+Testcontainers-go comes with the concept of `wait strategy`, which allows your tests to actually wait for the most useful conditions to be met, before continuing with their execution. These wait strategies are implemented in the `wait` package.
 
 When defining a wait strategy, Testcontainers will create a cancel context with 60 seconds defined as timeout.
 
