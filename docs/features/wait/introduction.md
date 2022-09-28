@@ -17,6 +17,6 @@ Below you can find a list of the available wait strategies that you can use:
 
 ## Startup timeout
 
-When defining a wait strategy, Testcontainers will create a cancel context with 60 seconds defined as timeout.
+When defining a wait strategy, it should define a way to set the startup timeout to avoid waiting infinitely. For that, Testcontainers-go creates a cancel context with 60 seconds defined as timeout.
 
 If the default 60s timeout is not sufficient, it can be updated with the `WithStartupTimeout(startupTimeout time.Duration)` function, present at each wait struct.
