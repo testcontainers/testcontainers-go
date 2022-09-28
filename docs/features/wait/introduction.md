@@ -4,10 +4,6 @@ There are scenarios where your tests need the external services they rely on to 
 
 Testcontainers-go comes with the concept of `wait strategy`, which allows your tests to actually wait for the most useful conditions to be met, before continuing with their execution. These wait strategies are implemented in the `wait` package.
 
-When defining a wait strategy, Testcontainers will create a cancel context with 60 seconds defined as timeout.
-
-If the default 60s timeout is not sufficient, it can be updated with the `WithStartupTimeout(startupTimeout time.Duration)` function, present at each wait struct.
-
 Below you can find a list of the available wait strategies that you can use:
 
 - [Exec](./exec.md)
@@ -18,3 +14,9 @@ Below you can find a list of the available wait strategies that you can use:
 - [Log](./log.md)
 - [Multi](./multi.md)
 - [SQL](./sql.md)
+
+## Startup timeout
+
+When defining a wait strategy, Testcontainers will create a cancel context with 60 seconds defined as timeout.
+
+If the default 60s timeout is not sufficient, it can be updated with the `WithStartupTimeout(startupTimeout time.Duration)` function, present at each wait struct.
