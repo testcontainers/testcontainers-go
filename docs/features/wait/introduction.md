@@ -15,8 +15,12 @@ Below you can find a list of the available wait strategies that you can use:
 - [Multi](./multi.md)
 - [SQL](./sql.md)
 
-## Startup timeout
+## Startup timeout and Poll interval
 
 When defining a wait strategy, it should define a way to set the startup timeout to avoid waiting infinitely. For that, Testcontainers-go creates a cancel context with 60 seconds defined as timeout.
 
-If the default 60s timeout is not sufficient, it can be updated with the `WithStartupTimeout(startupTimeout time.Duration)` function, present at each wait struct.
+If the default 60s timeout is not sufficient, it can be updated with the `WithStartupTimeout(startupTimeout time.Duration)` function.
+
+Besides that, it's possible to define a poll interval, which will actually stop 100 milliseconds the test execution.
+
+If the default 100 milliseconds poll interval is not sufficient, it can be updated with the `WithPollInterval(pollInterval time.Duration)` function.
