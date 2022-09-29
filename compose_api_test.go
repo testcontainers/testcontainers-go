@@ -43,6 +43,7 @@ func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 		Up(ctx, Wait(true))
 
 	assert.Error(t, err, "Expected error to be thrown because service with wait strategy is not running")
+	assert.Equal(t, err.Error(), "no container found for service name mysql-1")
 
 	serviceNames := compose.Services()
 

@@ -130,8 +130,8 @@ func TestSomethingWithWaiting(t *testing.T) {
 `docker-compose` supports expansion based on environment variables.
 The `ComposeStack` supports this as well in two different variants:
 
-- `ComposeStack.WithEnv(m map[string]string) ComposeStack` to parameterize stacks from your test code
-- `ComposeStack.WithOsEnv() ComposeStack` to parameterize tests from the OS environment e.g. in CI environments
+- `ComposeStack.WithEnv(m map[string]string) ComposeStack` imports environment variables from your test code.
+- `ComposeStack.WithOsEnv() ComposeStack` imports environment variables from OS. Useful in CI environments.
 
 ### Docs
 
