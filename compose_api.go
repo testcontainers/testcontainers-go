@@ -98,7 +98,7 @@ const (
 	RemoveImagesLocal
 )
 
-type dockerComposeAPI struct {
+type dockerCompose struct {
 	lock           sync.RWMutex
 	name           string
 	configs        []string
@@ -110,11 +110,11 @@ type dockerComposeAPI struct {
 	project        *types.Project
 }
 
-func (d *dockerComposeAPI) Services() []string {
+func (d *dockerCompose) Services() []string {
 	return d.project.ServiceNames()
 }
 
-func (d *dockerComposeAPI) Down(ctx context.Context, opts ...StackDownOption) error {
+func (d *dockerCompose) Down(ctx context.Context, opts ...StackDownOption) error {
 	options := stackDownOptions{
 		DownOptions: api.DownOptions{
 			Project: d.project,
@@ -128,7 +128,7 @@ func (d *dockerComposeAPI) Down(ctx context.Context, opts ...StackDownOption) er
 	return d.composeService.Down(ctx, d.name, options.DownOptions)
 }
 
-func (d *dockerComposeAPI) Up(ctx context.Context, opts ...StackUpOption) (err error) {
+func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err error) {
 	d.project, err = d.compileProject()
 	if err != nil {
 		return err
@@ -190,22 +190,22 @@ func (d *dockerComposeAPI) Up(ctx context.Context, opts ...StackUpOption) (err e
 	return errGrp.Wait()
 }
 
-func (d *dockerComposeAPI) WaitForService(s string, strategy wait.Strategy) ComposeStack {
+func (d *dockerCompose) WaitForService(s string, strategy wait.Strategy) ComposeStack {
 	d.waitStrategies[s] = strategy
 	return d
 }
 
-func (d *dockerComposeAPI) WithEnv(m map[string]string) ComposeStack {
+func (d *dockerCompose) WithEnv(m map[string]string) ComposeStack {
 	d.projectOptions = append(d.projectOptions, withEnv(m))
 	return d
 }
 
-func (d *dockerComposeAPI) WithOsEnv() ComposeStack {
+func (d *dockerCompose) WithOsEnv() ComposeStack {
 	d.projectOptions = append(d.projectOptions, cli.WithOsEnv)
 	return d
 }
 
-func (d *dockerComposeAPI) ServiceContainer(ctx context.Context, svcName string) (*DockerContainer, error) {
+func (d *dockerCompose) ServiceContainer(ctx context.Context, svcName string) (*DockerContainer, error) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
@@ -243,7 +243,7 @@ func (d *dockerComposeAPI) ServiceContainer(ctx context.Context, svcName string)
 	return container, nil
 }
 
-func (d *dockerComposeAPI) compileProject() (*types.Project, error) {
+func (d *dockerCompose) compileProject() (*types.Project, error) {
 	projectOptions := make([]cli.ProjectOptionsFn, len(d.projectOptions), len(d.projectOptions)+2)
 	copy(projectOptions, d.projectOptions)
 	projectOptions = append(projectOptions, cli.WithName(d.name), cli.WithDefaultConfigPath)

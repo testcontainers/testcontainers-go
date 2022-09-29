@@ -81,11 +81,11 @@ func WithStackFiles(filePaths ...string) ComposeStackOption {
 	return ComposeStackFiles(filePaths)
 }
 
-func NewDockerComposeAPI(filePaths ...string) (*dockerComposeAPI, error) {
+func NewDockerCompose(filePaths ...string) (*dockerCompose, error) {
 	return NewDockerComposeAPIWith(WithStackFiles(filePaths...))
 }
 
-func NewDockerComposeAPIWith(opts ...ComposeStackOption) (*dockerComposeAPI, error) {
+func NewDockerComposeAPIWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 	composeOptions := composeStackOptions{
 		Identifier: uuid.New().String(),
 	}
@@ -109,7 +109,7 @@ func NewDockerComposeAPIWith(opts ...ComposeStackOption) (*dockerComposeAPI, err
 		return nil, err
 	}
 
-	composeAPI := &dockerComposeAPI{
+	composeAPI := &dockerCompose{
 		name:           composeOptions.Identifier,
 		configs:        composeOptions.Paths,
 		composeService: compose.NewComposeService(dockerCli),
@@ -130,7 +130,7 @@ func NewDockerComposeAPIWith(opts ...ComposeStackOption) (*dockerComposeAPI, err
 // running Compose services.
 //
 // Deprecated: NewLocalDockerCompose returns a DockerCompose compatible instance which is superseded
-// by ComposeStack use NewDockerComposeAPI instead to get a ComposeStack compatible instance
+// by ComposeStack use NewDockerCompose instead to get a ComposeStack compatible instance
 func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
 	dc := &LocalDockerCompose{
 		LocalDockerComposeOptions: &LocalDockerComposeOptions{

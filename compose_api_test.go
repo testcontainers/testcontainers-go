@@ -13,8 +13,8 @@ import (
 )
 
 func TestDockerComposeAPI(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-simple.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-simple.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -27,8 +27,8 @@ func TestDockerComposeAPI(t *testing.T) {
 }
 
 func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-simple.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-simple.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -51,8 +51,8 @@ func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-complex.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-complex.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -75,8 +75,8 @@ func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithRunServices(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-complex.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-complex.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -101,8 +101,8 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitForService(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-simple.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-simple.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -127,8 +127,8 @@ func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-simple.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-simple.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -153,8 +153,8 @@ func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithContainerName(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-container-name.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-container-name.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -179,8 +179,8 @@ func TestDockerComposeAPIWithContainerName(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-no-exposed-ports.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-no-exposed-ports.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -202,8 +202,8 @@ func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-complex.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-complex.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -227,8 +227,8 @@ func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-simple.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-simple.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -255,8 +255,8 @@ func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIComplex(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-complex.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-complex.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -278,7 +278,7 @@ func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeAPIWith(WithStackFiles("./testresources/docker-compose-simple.yml"), identifier)
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -317,7 +317,7 @@ func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 	identifier := testNameHash(t.Name())
 
 	compose, err := NewDockerComposeAPIWith(composeFiles, identifier)
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -350,8 +350,8 @@ func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithVolume(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-volume.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-volume.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -365,8 +365,8 @@ func TestDockerComposeAPIWithVolume(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithBuild(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-build.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-build.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -383,8 +383,8 @@ func TestDockerComposeAPIWithBuild(t *testing.T) {
 }
 
 func TestDockerComposeApiWithWaitForShortLifespanService(t *testing.T) {
-	compose, err := NewDockerComposeAPI("./testresources/docker-compose-short-lifespan.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	compose, err := NewDockerCompose("./testresources/docker-compose-short-lifespan.yml")
+	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
