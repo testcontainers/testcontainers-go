@@ -18,7 +18,7 @@ func ForSQL(port nat.Port, driver string, url func(string, nat.Port) string) *wa
 		URL:            url,
 		Driver:         driver,
 		// Not using the default duration here because it is too low. It will never work
-		startupTimeout: defaultStartupTimeout(),
+		startupTimeout: 20 * time.Second,
 		PollInterval:   defaultPollInterval(),
 		query:          defaultForSqlQuery,
 	}
