@@ -90,7 +90,7 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 	}
 	defer db.Close()
 
-  db.SetConnMaxLifetime(0)
+ 	db.SetConnMaxLifetime(0)
 	db.SetMaxIdleConns(3)
 	db.SetMaxOpenConns(3)
 
