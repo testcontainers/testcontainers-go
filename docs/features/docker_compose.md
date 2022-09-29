@@ -7,7 +7,7 @@ This is intended to be useful on projects where Docker Compose is already used
 in dev or other environments to define services that an application may be
 dependent upon.
 
-You can override Testcontainers' default behaviour and make it use a
+You can override Testcontainers-go's default behaviour and make it use a
 docker-compose binary installed on the local machine. This will generally yield
 an experience that is closer to running docker-compose locally, with the caveat
 that Docker Compose needs to be present on dev and CI machines.
@@ -15,7 +15,7 @@ that Docker Compose needs to be present on dev and CI machines.
 ## Examples
 
 ```go
-composeFilePaths := "testresources/docker-compose.yml"
+composeFilePaths := []string {"testresources/docker-compose.yml"}
 identifier := strings.ToLower(uuid.New().String())
 
 compose := tc.NewLocalDockerCompose(composeFilePaths, identifier)
@@ -34,13 +34,13 @@ return nil
 ```
 
 Note that the environment variables in the `env` map will be applied, if
-possible, to the existing variables declared in the docker compose file.
+possible, to the existing variables declared in the Docker Compose file.
 
-In the following example, we demonstrate how to stop a Docker compose using the
+In the following example, we demonstrate how to stop a Docker Compose created project using the
 convenient `Down` method.
 
 ```go
-composeFilePaths := "testresources/docker-compose.yml"
+composeFilePaths := []string{"testresources/docker-compose.yml"}
 
 compose := tc.NewLocalDockerCompose(composeFilePaths, identifierFromExistingRunningCompose)
 execError := compose.Down()

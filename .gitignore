@@ -7,3 +7,7 @@ site/
 .direnv/
 src/mkdocs-codeinclude-plugin
 src/pip-delete-this-directory.txt
+.idea/
+.DS_Store
+
+cover.txt

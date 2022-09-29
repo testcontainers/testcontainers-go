@@ -7,6 +7,7 @@ verify_ssl = true
 
 [packages]
 mkdocs = "*"
+mkdocs-codeinclude-plugin = "*"
 mkdocs-material = "*"
 mkdocs-markdownextradata-plugin = "*"
 

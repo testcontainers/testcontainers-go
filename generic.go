@@ -2,8 +2,12 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
+	"fmt"
+)
 
-	"github.com/pkg/errors"
+var (
+	ErrReuseEmptyName = errors.New("with reuse option a container name mustn't be empty")
 )
 
 // GenericContainerRequest represents parameters to a generic container
@@ -11,6 +15,8 @@ type GenericContainerRequest struct {
 	ContainerRequest              // embedded request for provider
 	Started          bool         // whether to auto-start the container
 	ProviderType     ProviderType // which provider to use, Docker if empty
+	Logger           Logging      // provide a container specific Logging - use default global logger if empty
+	Reuse            bool         // reuse an existing container if it exists or create a new one. a container name mustn't be empty
 }
 
 // GenericNetworkRequest represents parameters to a generic network
@@ -27,7 +33,7 @@ func GenericNetwork(ctx context.Context, req GenericNetworkRequest) (Network, er
 	}
 	network, err := provider.CreateNetwork(ctx, req.NetworkRequest)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create network")
+		return nil, fmt.Errorf("%w: failed to create network", err)
 	}
 
 	return network, nil
@@ -35,22 +41,34 @@ func GenericNetwork(ctx context.Context, req GenericNetworkRequest) (Network, er
 
 // GenericContainer creates a generic container with parameters
 func GenericContainer(ctx context.Context, req GenericContainerRequest) (Container, error) {
-	provider, err := req.ProviderType.GetProvider()
+	if req.Reuse && req.Name == "" {
+		return nil, ErrReuseEmptyName
+	}
+
+	logging := req.Logger
+	if logging == nil {
+		logging = Logger
+	}
+	provider, err := req.ProviderType.GetProvider(WithLogger(logging))
 	if err != nil {
 		return nil, err
 	}
 
-	c, err := provider.CreateContainer(ctx, req.ContainerRequest)
+	var c Container
+	if req.Reuse {
+		c, err = provider.ReuseOrCreateContainer(ctx, req.ContainerRequest)
+	} else {
+		c, err = provider.CreateContainer(ctx, req.ContainerRequest)
+	}
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create container")
+		return nil, fmt.Errorf("%w: failed to create container", err)
 	}
 
-	if req.Started {
+	if req.Started && !c.IsRunning() {
 		if err := c.Start(ctx); err != nil {
-			return c, errors.Wrap(err, "failed to start container")
+			return c, fmt.Errorf("%w: failed to start container", err)
 		}
 	}
-
 	return c, nil
 }
 

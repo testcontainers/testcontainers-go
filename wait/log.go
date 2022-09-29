@@ -17,17 +17,17 @@ type LogStrategy struct {
 
 	// additional properties
 	Log          string
-	PollInterval time.Duration
 	Occurrence   int
+	PollInterval time.Duration
 }
 
-// NewLogStrategy constructs a HTTP strategy waiting on port 80 and status code 200
+// NewLogStrategy constructs with polling interval of 100 milliseconds and startup timeout of 60 seconds by default
 func NewLogStrategy(log string) *LogStrategy {
 	return &LogStrategy{
 		startupTimeout: defaultStartupTimeout(),
 		Log:            log,
-		PollInterval:   100 * time.Millisecond,
 		Occurrence:     1,
+		PollInterval:   defaultPollInterval(),
 	}
 
 }
@@ -49,7 +49,7 @@ func (ws *LogStrategy) WithPollInterval(pollInterval time.Duration) *LogStrategy
 }
 
 func (ws *LogStrategy) WithOccurrence(o int) *LogStrategy {
-	// the number of occurence needs to be positive
+	// the number of occurrence needs to be positive
 	if o <= 0 {
 		o = 1
 	}
@@ -72,7 +72,6 @@ func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 	// limit context to startupTimeout
 	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
 	defer cancelContext()
-	currentOccurence := 0
 
 LOOP:
 	for {
@@ -88,11 +87,8 @@ LOOP:
 			}
 			b, err := ioutil.ReadAll(reader)
 			logs := string(b)
-			if strings.Contains(logs, ws.Log) {
-				currentOccurence++
-				if ws.Occurrence == 0 || currentOccurence >= ws.Occurrence-1 {
-					break LOOP
-				}
+			if strings.Count(logs, ws.Log) >= ws.Occurrence {
+				break LOOP
 			} else {
 				time.Sleep(ws.PollInterval)
 				continue

@@ -16,10 +16,31 @@ req := ContainerRequest{
 	}
 ```
 
+If your Dockerfile expects build args: 
+
+```Dockerfile
+FROM alpine
+
+ARG FOO
+
+```
+You can specify them like:
+
+```go
+req := ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context: "/path/to/build/context",
+			Dockerfile: "CustomDockerfile",
+			BuildArgs: map[string]*string {
+				"FOO": "BAR",
+			},
+		},
+	}
+```
 ## Dynamic Build Context
 
 If you would like to send a build context that you created in code (maybe you have a dynamic Dockerfile), you can
-send the build context as an `io.Reader` since the Docker Daemon accepts is as a tar file, you can use the [tar](https://golang.org/pkg/archive/tar/) package to create your context.
+send the build context as an `io.Reader` since the Docker Daemon accepts it as a tar file, you can use the [tar](https://golang.org/pkg/archive/tar/) package to create your context.
 
 
 To do this you would use the `ContextArchive` attribute in the `FromDockerfile` struct.
@@ -37,5 +58,5 @@ fromDockerfile := testcontainers.FromDockerfile{
 }
 ```
 
-**Please Note** if you specify a `ContextArchive` this will cause testcontainers to ignore the path passed
-in to `Context`
+**Please Note** if you specify a `ContextArchive` this will cause Testcontainers-go to ignore the path passed
+in to `Context`.

@@ -1,0 +1,6 @@
+version: '3'
+services:
+  nginx:
+    image: docker.io/nginx:stable-alpine
+    ports:
+     - "80"
