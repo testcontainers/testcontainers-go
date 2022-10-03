@@ -703,6 +703,42 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	}
 }
 
+func TestContainerDeletedCase(t *testing.T) {
+	ctx := context.Background()
+
+	cont, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Name:  "doubleknd26_test",
+			Image: nginxAlpineImage,
+			ExposedPorts: []string{
+				nginxDefaultPort,
+			},
+		},
+		Started: true,
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// start without wait strategy.
+	if err = cont.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// wait until container state is running.
+	for {
+		<-time.After(3 * time.Second)
+		if s, err := cont.State(ctx); err != nil {
+		} else {
+			if s.Running {
+				break
+			}
+		}
+	}
+}
+
 func TestContainerCreation(t *testing.T) {
 	ctx := context.Background()
 
