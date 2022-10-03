@@ -6,7 +6,7 @@ template: |
 categories:
   - title: 🚀 Features
     label: type/feature
-  - title: BC Break
+  - title: ⚠️ Breaking Changes
     label: type/bc-break
   - title: 🐛 Bug Fixes
     label: type/bug
