@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
@@ -17,14 +16,11 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-units"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gotest.tools/v3/env"
-	"gotest.tools/v3/fs"
-
-	"github.com/docker/docker/errdefs"
 
 	"github.com/docker/docker/api/types/volume"
 
@@ -190,7 +186,7 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 		t.Fatal(err)
 	}
 
-	defer nginxC.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, nginxC)
 
 	endpoint, err := nginxC.Endpoint(ctx, "http")
 	if err != nil {
@@ -221,7 +217,7 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 		// Error when NetworkMode = host and Network = []string{"bridge"}
 		t.Logf("Can't use Network and NetworkMode together, %s", err)
 	}
-	defer nginx.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, nginx)
 }
 
 func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
@@ -1075,7 +1071,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1113,7 +1109,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, c)
 
 	_ = w.Close()
-	out, _ := ioutil.ReadAll(r)
+	out, _ := io.ReadAll(r)
 	os.Stdout = rescueStdout
 	temp := strings.Split(string(out), "\n")
 
@@ -1279,7 +1275,7 @@ func TestEntrypoint(t *testing.T) {
 
 func TestReadTCPropsFile(t *testing.T) {
 	t.Run("HOME is not set", func(t *testing.T) {
-		env.Patch(t, "HOME", "")
+		t.Setenv("HOME", "")
 
 		config := configureTC()
 
@@ -1287,8 +1283,8 @@ func TestReadTCPropsFile(t *testing.T) {
 	})
 
 	t.Run("HOME is not set - TESTCONTAINERS_ env is set", func(t *testing.T) {
-		env.Patch(t, "HOME", "")
-		env.Patch(t, "TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
+		t.Setenv("HOME", "")
+		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := configureTC()
 
@@ -1299,8 +1295,7 @@ func TestReadTCPropsFile(t *testing.T) {
 	})
 
 	t.Run("HOME does not contain TC props file", func(t *testing.T) {
-		tmpDir := fs.NewDir(t, os.TempDir())
-		env.Patch(t, "HOME", tmpDir.Path())
+		t.Setenv("HOME", t.TempDir())
 
 		config := configureTC()
 
@@ -1308,9 +1303,8 @@ func TestReadTCPropsFile(t *testing.T) {
 	})
 
 	t.Run("HOME does not contain TC props file - TESTCONTAINERS_ env is set", func(t *testing.T) {
-		tmpDir := fs.NewDir(t, os.TempDir())
-		env.Patch(t, "HOME", tmpDir.Path())
-		env.Patch(t, "TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
+		t.Setenv("HOME", t.TempDir())
+		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := configureTC()
 		expected := TestContainersConfig{}
@@ -1515,12 +1509,12 @@ func TestReadTCPropsFile(t *testing.T) {
 		}
 		for i, tt := range tests {
 			t.Run(fmt.Sprintf("[%d]", i), func(t *testing.T) {
-				tmpDir := fs.NewDir(t, os.TempDir())
-				env.Patch(t, "HOME", tmpDir.Path())
+				tmpDir := t.TempDir()
+				t.Setenv("HOME", tmpDir)
 				for k, v := range tt.env {
-					env.Patch(t, k, v)
+					t.Setenv(k, v)
 				}
-				if err := ioutil.WriteFile(tmpDir.Join(".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
+				if err := os.WriteFile(filepath.Join(tmpDir, ".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
 					t.Errorf("Failed to create the file: %v", err)
 					return
 				}
@@ -1936,13 +1930,13 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 				for _, f := range tc.files {
 					require.NoError(t, err)
 
-					hostFileData, err := ioutil.ReadFile(f.HostFilePath)
+					hostFileData, err := os.ReadFile(f.HostFilePath)
 					require.NoError(t, err)
 
 					fd, err := nginxC.CopyFileFromContainer(ctx, f.ContainerFilePath)
 					require.NoError(t, err)
 					defer fd.Close()
-					containerFileData, err := ioutil.ReadAll(fd)
+					containerFileData, err := io.ReadAll(fd)
 					require.NoError(t, err)
 
 					require.Equal(t, hostFileData, containerFileData)
@@ -2034,7 +2028,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 
 	copiedFileName := "hello_copy.sh"
 
-	fileContent, err := ioutil.ReadFile("./testresources/hello.sh")
+	fileContent, err := os.ReadFile("./testresources/hello.sh")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2049,7 +2043,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 }
 
 func TestDockerContainerCopyFileFromContainer(t *testing.T) {
-	fileContent, err := ioutil.ReadFile("./testresources/hello.sh")
+	fileContent, err := os.ReadFile("./testresources/hello.sh")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2083,7 +2077,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fileContentFromContainer, err := ioutil.ReadAll(reader)
+	fileContentFromContainer, err := io.ReadAll(reader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2121,7 +2115,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fileContentFromContainer, err := ioutil.ReadAll(reader)
+	fileContentFromContainer, err := io.ReadAll(reader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2247,7 +2241,7 @@ func TestContainerRunningCheckingStatusCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer influx.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, influx)
 }
 
 func TestContainerWithUserID(t *testing.T) {
@@ -2272,7 +2266,7 @@ func TestContainerWithUserID(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer r.Close()
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2301,7 +2295,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer r.Close()
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2340,11 +2334,11 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 	tmpDir := filepath.Join(t.TempDir())
 
 	// compare the bytes of each file in the source with the bytes from the copied-from-container file
-	srcFiles, err := ioutil.ReadDir(hostFilePath)
+	srcFiles, err := os.ReadDir(hostFilePath)
 	require.NoError(t, err)
 
 	for _, srcFile := range srcFiles {
-		srcBytes, err := ioutil.ReadFile(filepath.Join(hostFilePath, srcFile.Name()))
+		srcBytes, err := os.ReadFile(filepath.Join(hostFilePath, srcFile.Name()))
 		if err != nil {
 			require.NoError(t, err)
 		}
@@ -2367,7 +2361,7 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 			require.NoError(t, err)
 		}
 
-		untarBytes, err := ioutil.ReadFile(targetPath)
+		untarBytes, err := os.ReadFile(targetPath)
 		if err != nil {
 			require.NoError(t, err)
 		}

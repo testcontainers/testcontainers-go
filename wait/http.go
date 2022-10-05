@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -187,9 +186,9 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	endpoint := fmt.Sprintf("%s://%s%s", proto, address, ws.Path)
 
 	// cache the body into a byte-slice so that it can be iterated over multiple times
-	var body []byte
+	bodyBuf := bytes.NewBuffer(nil)
 	if ws.Body != nil {
-		body, err = ioutil.ReadAll(ws.Body)
+		_, err = io.Copy(bodyBuf, ws.Body)
 		if err != nil {
 			return
 		}
@@ -200,7 +199,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(ws.PollInterval):
-			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint, bytes.NewReader(body))
+			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint, bodyBuf)
 			if err != nil {
 				return err
 			}

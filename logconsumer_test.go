@@ -4,14 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gotest.tools/v3/assert"
 
 	"github.com/docker/docker/client"
 
@@ -106,7 +106,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	// get rid of the server "ready" log
 	g.Msgs = g.Msgs[1:]
 
-	assert.DeepEqual(t, []string{"echo hello\n", "echo there\n"}, g.Msgs)
+	assert.Equal(t, []string{"echo hello\n", "echo there\n"}, g.Msgs)
 	_ = c.Terminate(ctx)
 }
 
@@ -181,7 +181,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	<-g.Ack
 	_ = c.StopLogProducer()
 
-	assert.DeepEqual(t, map[string]string{
+	assert.Equal(t, map[string]string{
 		StdoutLog: "echo this-is-stdout\n",
 		StderrLog: "echo this-is-stderr\n",
 	}, g.LogTypes)
@@ -320,13 +320,15 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer container.Terminate(ctx)
+
+	terminateContainerOnEnd(t, ctx, container)
+
 	r, err := container.Logs(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer r.Close()
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
 	}

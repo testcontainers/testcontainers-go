@@ -7,10 +7,10 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -48,8 +48,8 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 		return
 	}
 
-	capath := workdir + "/testdata/root.pem"
-	cafile, err := ioutil.ReadFile(capath)
+	capath := filepath.Join(workdir, "testdata", "root.pem")
+	cafile, err := os.ReadFile(capath)
 	if err != nil {
 		t.Errorf("can't load ca file: %v", err)
 		return
@@ -65,13 +65,13 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	var i int
 	dockerReq := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context: workdir + "/testdata",
+			Context: filepath.Join(workdir, "testdata"),
 		},
 		ExposedPorts: []string{"6443/tcp"},
 		WaitingFor: wait.NewHTTPStrategy("/ping").WithTLS(true, tlsconfig).
 			WithStartupTimeout(time.Second * 10).WithPort("6443/tcp").
 			WithResponseMatcher(func(body io.Reader) bool {
-				data, _ := ioutil.ReadAll(body)
+				data, _ := io.ReadAll(body)
 				return bytes.Equal(data, []byte("pong"))
 			}).
 			WithStatusCodeMatcher(func(status int) bool {

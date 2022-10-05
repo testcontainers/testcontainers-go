@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 	"time"
@@ -302,7 +301,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal(err)
 	} else if err == nil {
-		c.Terminate(ctx)
+		terminateContainerOnEnd(t, ctx, c)
 		t.Fatal("was expecting error starting container")
 	}
 
@@ -311,7 +310,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		t.Fatal(logErr)
 	}
 
-	b, err := ioutil.ReadAll(logs)
+	b, err := io.ReadAll(logs)
 	if err != nil {
 		t.Fatal(err)
 	}
