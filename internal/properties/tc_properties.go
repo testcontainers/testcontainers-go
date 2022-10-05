@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 
 	"github.com/magiconair/properties"
@@ -34,7 +35,7 @@ func Get() *TestcontainersConfig {
 func configureTC() *TestcontainersConfig {
 	applyEnvironmentConfiguration := func(config *TestcontainersConfig) *TestcontainersConfig {
 		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
-		if ryukPrivilegedEnv != "" {
+		if parseBool(ryukPrivilegedEnv) {
 			config.RyukPrivileged = ryukPrivilegedEnv == "true"
 		}
 
@@ -60,4 +61,11 @@ func configureTC() *TestcontainersConfig {
 	}
 
 	return applyEnvironmentConfiguration(config)
+}
+
+func parseBool(input string) bool {
+	if _, err := strconv.ParseBool(input); err == nil {
+		return true
+	}
+	return false
 }
