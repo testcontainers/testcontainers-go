@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"time"
 
@@ -48,6 +47,7 @@ const (
 	Bridge        = "bridge" // Bridge network name (as well as driver)
 	Podman        = "podman"
 	ReaperDefault = "reaper_default" // Default network name when bridge is not available
+	packagePath   = "github.com/testcontainers/testcontainers-go"
 )
 
 // DockerContainer represents a container started using Docker
@@ -773,7 +773,6 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 
 	// log docker server info
 	{
-		type empty struct{}
 		infoMessage := `%v - Connected to docker: 
   Server Version: %v
   API Version: %v
@@ -786,7 +785,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 			return nil, err
 		}
 
-		p.Logger.Printf(infoMessage, reflect.TypeOf(empty{}).PkgPath(),
+		p.Logger.Printf(infoMessage, packagePath,
 			info.ServerVersion, p.client.ClientVersion(),
 			info.OperatingSystem, info.MemTotal/1024/1024)
 	}
