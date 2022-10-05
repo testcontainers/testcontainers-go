@@ -257,8 +257,6 @@ func (d *dockerCompose) WithOsEnv() ComposeStack {
 	return d
 }
 
-
-
 func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*DockerContainer, error) {
 	if container, ok := d.containers[svcName]; ok {
 		return container, nil
