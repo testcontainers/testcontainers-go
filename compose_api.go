@@ -174,14 +174,10 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 	}
 
 	upOptions := stackUpOptions{
-		CreateOptions: api.CreateOptions{
-			Services:             d.project.ServiceNames(),
-			Recreate:             api.RecreateDiverged,
-			RecreateDependencies: api.RecreateDiverged,
-		},
-		StartOptions: api.StartOptions{
-			Project: d.project,
-		},
+		Services:             d.project.ServiceNames(),
+		Recreate:             api.RecreateDiverged,
+		RecreateDependencies: api.RecreateDiverged,
+		Project:              d.project,
 	}
 
 	for i := range opts {
@@ -203,8 +199,16 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 	}
 
 	err = d.composeService.Up(ctx, d.project, api.UpOptions{
-		Create: upOptions.CreateOptions,
-		Start:  upOptions.StartOptions,
+		Create: api.CreateOptions{
+			Services:             upOptions.Services,
+			Recreate:             upOptions.Recreate,
+			RecreateDependencies: upOptions.RecreateDependencies,
+			RemoveOrphans:        upOptions.RemoveOrphans,
+		},
+		Start: api.StartOptions{
+			Project: upOptions.Project,
+			Wait:    upOptions.Wait,
+		},
 	})
 
 	if err != nil {

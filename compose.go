@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/compose-spec/compose-go/types"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
 	"github.com/docker/compose/v2/pkg/api"
@@ -33,8 +34,18 @@ type ComposeStackOption interface {
 }
 
 type stackUpOptions struct {
-	api.CreateOptions
-	api.StartOptions
+	// Services defines the services user interacts with
+	Services []string
+	// Remove legacy containers for services that are not defined in the project
+	RemoveOrphans bool
+	// Wait won't return until containers reached the running|healthy state
+	Wait bool
+	// Recreate define the strategy to apply on existing containers
+	Recreate string
+	// RecreateDependencies define the strategy to apply on dependencies services
+	RecreateDependencies string
+	// Project is the compose project used to define this app. Might be nil if user ran command just with project name
+	Project *types.Project
 }
 
 type StackUpOption interface {
