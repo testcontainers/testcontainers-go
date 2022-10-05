@@ -4,9 +4,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/magiconair/properties"
 )
+
+var tcConfig *TestcontainersConfig
+var tcConfigOnce sync.Once
+
+func init() {
+	tcConfig = configureTC()
+}
 
 // or through Decode
 type TestcontainersConfig struct {
@@ -18,10 +26,8 @@ type TestcontainersConfig struct {
 
 // configureTC reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
-func configureTC() TestcontainersConfig {
-	config := TestcontainersConfig{}
-
-	applyEnvironmentConfiguration := func(config TestcontainersConfig) TestcontainersConfig {
+func configureTC() *TestcontainersConfig {
+	applyEnvironmentConfiguration := func(config *TestcontainersConfig) *TestcontainersConfig {
 		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
 		if ryukPrivilegedEnv != "" {
 			config.RyukPrivileged = ryukPrivilegedEnv == "true"
@@ -30,22 +36,29 @@ func configureTC() TestcontainersConfig {
 		return config
 	}
 
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return applyEnvironmentConfiguration(config)
-	}
+	tcConfigOnce.Do(func() {
+		config := &TestcontainersConfig{}
 
-	tcProp := filepath.Join(home, ".testcontainers.properties")
-	// init from a file
-	properties, err := properties.LoadFile(tcProp, properties.UTF8)
-	if err != nil {
-		return applyEnvironmentConfiguration(config)
-	}
+		home, err := os.UserHomeDir()
+		if err != nil {
+			tcConfig = applyEnvironmentConfiguration(config)
+			return
+		}
 
-	if err := properties.Decode(&config); err != nil {
-		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
-		return applyEnvironmentConfiguration(config)
-	}
+		tcProp := filepath.Join(home, ".testcontainers.properties")
+		// init from a file
+		properties, err := properties.LoadFile(tcProp, properties.UTF8)
+		if err != nil {
+			tcConfig = applyEnvironmentConfiguration(config)
+			return
+		}
 
-	return applyEnvironmentConfiguration(config)
+		if err := properties.Decode(config); err != nil {
+			fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
+		}
+
+		tcConfig = applyEnvironmentConfiguration(config)
+	})
+
+	return tcConfig
 }
