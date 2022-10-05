@@ -13,6 +13,7 @@ import (
 
 	"github.com/docker/go-connections/nat"
 
+	"github.com/testcontainers/testcontainers-go/internal/properties"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -36,7 +37,7 @@ var (
 // The ContainerProvider interface should usually satisfy this as well, so it is pluggable
 type ReaperProvider interface {
 	RunContainer(ctx context.Context, req ContainerRequest) (Container, error)
-	Config() *TestcontainersConfig
+	Config() *properties.TestcontainersConfig
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use

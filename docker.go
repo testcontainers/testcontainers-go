@@ -33,6 +33,7 @@ import (
 	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
+	"github.com/testcontainers/testcontainers-go/internal/properties"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -648,7 +649,7 @@ type DockerProvider struct {
 	client    *client.Client
 	host      string
 	hostCache string
-	config    *TestcontainersConfig
+	config    *properties.TestcontainersConfig
 }
 
 var _ ContainerProvider = (*DockerProvider)(nil)
@@ -696,8 +697,8 @@ func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
 	})
 }
 
-func NewDockerClient() (cli *client.Client, host string, tcConfig *TestcontainersConfig, err error) {
-	tcConfig = configureTC()
+func NewDockerClient() (cli *client.Client, host string, tcConfig *properties.TestcontainersConfig, err error) {
+	tcConfig = properties.Get()
 
 	host = tcConfig.Host
 
@@ -722,7 +723,7 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig *Testcontainer
 	cli, err = client.NewClientWithOpts(opts...)
 
 	if err != nil {
-		return nil, "", &TestcontainersConfig{}, err
+		return nil, "", &properties.TestcontainersConfig{}, err
 	}
 
 	cli.NegotiateAPIVersion(context.Background())
@@ -1168,7 +1169,7 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 
 // Config provides the TestcontainersConfig read from $HOME/.testcontainers.properties or
 // the environment variables
-func (p *DockerProvider) Config() *TestcontainersConfig {
+func (p *DockerProvider) Config() *properties.TestcontainersConfig {
 	return p.config
 }
 

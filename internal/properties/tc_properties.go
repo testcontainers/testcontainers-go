@@ -1,4 +1,4 @@
-package testcontainers
+package properties
 
 import (
 	"fmt"
@@ -12,16 +12,23 @@ import (
 var tcConfig *TestcontainersConfig
 var tcConfigOnce sync.Once
 
-func init() {
-	tcConfig = configureTC()
-}
-
 // or through Decode
 type TestcontainersConfig struct {
 	Host           string `properties:"docker.host,default="`
 	TLSVerify      int    `properties:"docker.tls.verify,default=0"`
 	CertPath       string `properties:"docker.cert.path,default="`
 	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
+}
+
+// Get initializes the configuration in a lazy manner
+func Get() *TestcontainersConfig {
+	if tcConfig != nil {
+		tcConfigOnce.Do(func() {
+			tcConfig = configureTC()
+		})
+	}
+
+	return tcConfig
 }
 
 // configureTC reads from testcontainers properties file, if it exists
@@ -36,29 +43,23 @@ func configureTC() *TestcontainersConfig {
 		return config
 	}
 
-	tcConfigOnce.Do(func() {
-		config := &TestcontainersConfig{}
+	config := &TestcontainersConfig{}
 
-		home, err := os.UserHomeDir()
-		if err != nil {
-			tcConfig = applyEnvironmentConfiguration(config)
-			return
-		}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return applyEnvironmentConfiguration(config)
+	}
 
-		tcProp := filepath.Join(home, ".testcontainers.properties")
-		// init from a file
-		properties, err := properties.LoadFile(tcProp, properties.UTF8)
-		if err != nil {
-			tcConfig = applyEnvironmentConfiguration(config)
-			return
-		}
+	tcProp := filepath.Join(home, ".testcontainers.properties")
+	// init from a file
+	properties, err := properties.LoadFile(tcProp, properties.UTF8)
+	if err != nil {
+		return applyEnvironmentConfiguration(config)
+	}
 
-		if err := properties.Decode(config); err != nil {
-			fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
-		}
+	if err := properties.Decode(config); err != nil {
+		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
+	}
 
-		tcConfig = applyEnvironmentConfiguration(config)
-	})
-
-	return tcConfig
+	return applyEnvironmentConfiguration(config)
 }

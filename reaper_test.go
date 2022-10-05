@@ -7,12 +7,13 @@ import (
 
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go/internal/properties"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 type mockReaperProvider struct {
 	req    ContainerRequest
-	config *TestcontainersConfig
+	config *properties.TestcontainersConfig
 }
 
 var errExpected = errors.New("expected")
@@ -25,7 +26,7 @@ func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequ
 	return nil, errExpected
 }
 
-func (m *mockReaperProvider) Config() *TestcontainersConfig {
+func (m *mockReaperProvider) Config() *properties.TestcontainersConfig {
 	return m.config
 }
 
@@ -56,14 +57,14 @@ func Test_NewReaper(t *testing.T) {
 	type cases struct {
 		name   string
 		req    ContainerRequest
-		config *TestcontainersConfig
+		config *properties.TestcontainersConfig
 	}
 
 	tests := []cases{
 		{
 			name:   "non-privileged",
 			req:    createContainerRequest(nil),
-			config: &TestcontainersConfig{},
+			config: &properties.TestcontainersConfig{},
 		},
 		{
 			name: "privileged",
@@ -71,7 +72,7 @@ func Test_NewReaper(t *testing.T) {
 				req.Privileged = true
 				return req
 			}),
-			config: &TestcontainersConfig{
+			config: &properties.TestcontainersConfig{
 				RyukPrivileged: true,
 			},
 		},

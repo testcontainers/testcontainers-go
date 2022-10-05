@@ -1,4 +1,4 @@
-package testcontainers
+package properties
 
 import (
 	"fmt"
