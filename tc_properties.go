@@ -9,7 +9,7 @@ import (
 )
 
 // or through Decode
-type TestContainersConfig struct {
+type TestcontainersConfig struct {
 	Host           string `properties:"docker.host,default="`
 	TLSVerify      int    `properties:"docker.tls.verify,default=0"`
 	CertPath       string `properties:"docker.cert.path,default="`
@@ -18,10 +18,10 @@ type TestContainersConfig struct {
 
 // configureTC reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
-func configureTC() TestContainersConfig {
-	config := TestContainersConfig{}
+func configureTC() TestcontainersConfig {
+	config := TestcontainersConfig{}
 
-	applyEnvironmentConfiguration := func(config TestContainersConfig) TestContainersConfig {
+	applyEnvironmentConfiguration := func(config TestcontainersConfig) TestcontainersConfig {
 		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
 		if ryukPrivilegedEnv != "" {
 			config.RyukPrivileged = ryukPrivilegedEnv == "true"

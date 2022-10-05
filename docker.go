@@ -648,7 +648,7 @@ type DockerProvider struct {
 	client    *client.Client
 	host      string
 	hostCache string
-	config    TestContainersConfig
+	config    TestcontainersConfig
 }
 
 var _ ContainerProvider = (*DockerProvider)(nil)
@@ -696,7 +696,7 @@ func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
 	})
 }
 
-func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainersConfig, err error) {
+func NewDockerClient() (cli *client.Client, host string, tcConfig TestcontainersConfig, err error) {
 	tcConfig = configureTC()
 
 	host = tcConfig.Host
@@ -722,7 +722,7 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 	cli, err = client.NewClientWithOpts(opts...)
 
 	if err != nil {
-		return nil, "", TestContainersConfig{}, err
+		return nil, "", TestcontainersConfig{}, err
 	}
 
 	cli.NegotiateAPIVersion(context.Background())
@@ -1166,9 +1166,9 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 	return c, nil
 }
 
-// Config provides the TestContainersConfig read from $HOME/.testcontainers.properties or
+// Config provides the TestcontainersConfig read from $HOME/.testcontainers.properties or
 // the environment variables
-func (p *DockerProvider) Config() TestContainersConfig {
+func (p *DockerProvider) Config() TestcontainersConfig {
 	return p.config
 }
 

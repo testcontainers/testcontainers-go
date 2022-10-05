@@ -13,10 +13,10 @@ func SkipIfProviderIsNotHealthy(t *testing.T) {
 	ctx := context.Background()
 	provider, err := ProviderDocker.GetProvider()
 	if err != nil {
-		t.Skipf("Docker is not running. TestContainers can't perform is work without it: %s", err)
+		t.Skipf("Docker is not running. Testcontainers can't perform is work without it: %s", err)
 	}
 	err = provider.Health(ctx)
 	if err != nil {
-		t.Skipf("Docker is not running. TestContainers can't perform is work without it: %s", err)
+		t.Skipf("Docker is not running. Testcontainers can't perform is work without it: %s", err)
 	}
 }

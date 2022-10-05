@@ -12,7 +12,7 @@ import (
 
 type mockReaperProvider struct {
 	req    ContainerRequest
-	config TestContainersConfig
+	config TestcontainersConfig
 }
 
 var errExpected = errors.New("expected")
@@ -25,7 +25,7 @@ func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequ
 	return nil, errExpected
 }
 
-func (m *mockReaperProvider) Config() TestContainersConfig {
+func (m *mockReaperProvider) Config() TestcontainersConfig {
 	return m.config
 }
 
@@ -56,14 +56,14 @@ func Test_NewReaper(t *testing.T) {
 	type cases struct {
 		name   string
 		req    ContainerRequest
-		config TestContainersConfig
+		config TestcontainersConfig
 	}
 
 	tests := []cases{
 		{
 			name:   "non-privileged",
 			req:    createContainerRequest(nil),
-			config: TestContainersConfig{},
+			config: TestcontainersConfig{},
 		},
 		{
 			name: "privileged",
@@ -71,7 +71,7 @@ func Test_NewReaper(t *testing.T) {
 				req.Privileged = true
 				return req
 			}),
-			config: TestContainersConfig{
+			config: TestcontainersConfig{
 				RyukPrivileged: true,
 			},
 		},
