@@ -7,13 +7,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gotest.tools/v3/env"
 	"gotest.tools/v3/fs"
 )
 
 func TestReadTCPropsFile(t *testing.T) {
 	t.Run("HOME is not set", func(t *testing.T) {
-		env.Patch(t, "HOME", "")
+		t.Setenv("HOME", "")
 
 		config := configureTC()
 
@@ -21,8 +20,8 @@ func TestReadTCPropsFile(t *testing.T) {
 	})
 
 	t.Run("HOME is not set - TESTCONTAINERS_ env is set", func(t *testing.T) {
-		env.Patch(t, "HOME", "")
-		env.Patch(t, "TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
+		t.Setenv("HOME", "")
+		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := configureTC()
 
@@ -34,7 +33,7 @@ func TestReadTCPropsFile(t *testing.T) {
 
 	t.Run("HOME does not contain TC props file", func(t *testing.T) {
 		tmpDir := fs.NewDir(t, os.TempDir())
-		env.Patch(t, "HOME", tmpDir.Path())
+		t.Setenv("HOME", tmpDir.Path())
 
 		config := configureTC()
 
@@ -43,8 +42,8 @@ func TestReadTCPropsFile(t *testing.T) {
 
 	t.Run("HOME does not contain TC props file - TESTCONTAINERS_ env is set", func(t *testing.T) {
 		tmpDir := fs.NewDir(t, os.TempDir())
-		env.Patch(t, "HOME", tmpDir.Path())
-		env.Patch(t, "TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
+		t.Setenv("HOME", tmpDir.Path())
+		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := configureTC()
 		expected := TestcontainersConfig{}
@@ -250,9 +249,9 @@ func TestReadTCPropsFile(t *testing.T) {
 		for i, tt := range tests {
 			t.Run(fmt.Sprintf("[%d]", i), func(t *testing.T) {
 				tmpDir := fs.NewDir(t, os.TempDir())
-				env.Patch(t, "HOME", tmpDir.Path())
+				t.Setenv("HOME", tmpDir.Path())
 				for k, v := range tt.env {
-					env.Patch(t, k, v)
+					t.Setenv(k, v)
 				}
 				if err := ioutil.WriteFile(tmpDir.Join(".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
 					t.Errorf("Failed to create the file: %v", err)
