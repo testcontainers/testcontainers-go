@@ -22,11 +22,9 @@ type TestcontainersConfig struct {
 
 // Get initializes the configuration in a lazy manner
 func Get() *TestcontainersConfig {
-	if tcConfig != nil {
-		tcConfigOnce.Do(func() {
-			tcConfig = configureTC()
-		})
-	}
+	tcConfigOnce.Do(func() {
+		tcConfig = configureTC()
+	})
 
 	return tcConfig
 }
