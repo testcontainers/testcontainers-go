@@ -43,9 +43,11 @@ func TestReadTCPropsFile(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("HOME", tmpDir)
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
+		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 
 		config := configureTC()
 		expected := &TestcontainersConfig{}
+		expected.RyukDisabled = true
 		expected.RyukPrivileged = true
 
 		assert.Equal(t, expected, config)
@@ -160,6 +162,16 @@ func TestReadTCPropsFile(t *testing.T) {
 				},
 			},
 			{
+				`ryuk.disabled=true`,
+				map[string]string{},
+				&TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: true,
+				},
+			},
+			{
 				``,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
@@ -172,6 +184,18 @@ func TestReadTCPropsFile(t *testing.T) {
 				},
 			},
 			{
+				``,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_DISABLED": "true",
+				},
+				&TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: true,
+				},
+			},
+			{
 				`ryuk.container.privileged=true`,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
@@ -181,6 +205,18 @@ func TestReadTCPropsFile(t *testing.T) {
 					TLSVerify:      0,
 					CertPath:       "",
 					RyukPrivileged: true,
+				},
+			},
+			{
+				`ryuk.disabled=true`,
+				map[string]string{
+					"TESTCONTAINERS_DISABLED": "true",
+				},
+				&TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: true,
 				},
 			},
 			{
@@ -196,6 +232,18 @@ func TestReadTCPropsFile(t *testing.T) {
 				},
 			},
 			{
+				`ryuk.disabled=false`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_DISABLED": "true",
+				},
+				&TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: true,
+				},
+			},
+			{
 				`ryuk.container.privileged=true`,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
@@ -208,6 +256,18 @@ func TestReadTCPropsFile(t *testing.T) {
 				},
 			},
 			{
+				`ryuk.disabled=true`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_DISABLED": "false",
+				},
+				&TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: false,
+				},
+			},
+			{
 				`ryuk.container.privileged=false`,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
@@ -217,6 +277,18 @@ func TestReadTCPropsFile(t *testing.T) {
 					TLSVerify:      0,
 					CertPath:       "",
 					RyukPrivileged: false,
+				},
+			},
+			{
+				`ryuk.disabled=false`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_DISABLED": "false",
+				},
+				&TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: false,
 				},
 			},
 			{
@@ -244,6 +316,18 @@ func TestReadTCPropsFile(t *testing.T) {
 					RyukPrivileged: false,
 				},
 			},
+			{
+				`ryuk.disabled=true`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_DISABLED": "foo",
+				},
+				&TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: true,
+				},
+			},
 		}
 		for i, tt := range tests {
 			t.Run(fmt.Sprintf("[%d]", i), func(t *testing.T) {
@@ -260,7 +344,6 @@ func TestReadTCPropsFile(t *testing.T) {
 				config := configureTC()
 
 				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
-
 			})
 		}
 	})
