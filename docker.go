@@ -14,6 +14,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"runtime"
 	"strings"
 	"time"
 
@@ -32,6 +34,7 @@ import (
 	"github.com/magiconair/properties"
 	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
+	"github.com/shirou/gopsutil/v3/mem"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -770,7 +773,24 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		config:                tcConfig,
 	}
 
+	logDockerServerInfo(p)
+
 	return p, nil
+}
+
+func logDockerServerInfo(p *DockerProvider) {
+	type empty struct{}
+	info := `%v - Connected to docker: 
+  Server Version: %v
+  API Version: %v
+  Operating System: %v
+  Total Memory: %v MB
+`
+
+	sv, _ := p.client.ServerVersion(context.Background())
+	v, _ := mem.VirtualMemory()
+	p.Logger.Printf(info, reflect.TypeOf(empty{}).PkgPath(),
+		sv.Version, sv.APIVersion, runtime.GOOS, v.Total/1024/1024)
 }
 
 // configureTC reads from testcontainers properties file, if it exists
