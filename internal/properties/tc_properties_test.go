@@ -24,7 +24,7 @@ func TestReadTCPropsFile(t *testing.T) {
 
 		config := configureTC()
 
-		expected := TestcontainersConfig{}
+		expected := &TestcontainersConfig{}
 		expected.RyukPrivileged = true
 
 		assert.Equal(t, expected, config)
@@ -45,7 +45,7 @@ func TestReadTCPropsFile(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := configureTC()
-		expected := TestcontainersConfig{}
+		expected := &TestcontainersConfig{}
 		expected.RyukPrivileged = true
 
 		assert.Equal(t, expected, config)
@@ -55,12 +55,12 @@ func TestReadTCPropsFile(t *testing.T) {
 		tests := []struct {
 			content  string
 			env      map[string]string
-			expected TestcontainersConfig
+			expected *TestcontainersConfig
 		}{
 			{
 				"docker.host = tcp://127.0.0.1:33293",
 				map[string]string{},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:      "tcp://127.0.0.1:33293",
 					TLSVerify: 0,
 					CertPath:  "",
@@ -69,7 +69,7 @@ func TestReadTCPropsFile(t *testing.T) {
 			{
 				"docker.host = tcp://127.0.0.1:33293",
 				map[string]string{},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:      "tcp://127.0.0.1:33293",
 					TLSVerify: 0,
 					CertPath:  "",
@@ -80,7 +80,7 @@ func TestReadTCPropsFile(t *testing.T) {
 	docker.host = tcp://127.0.0.1:4711
 	`,
 				map[string]string{},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:      "tcp://127.0.0.1:4711",
 					TLSVerify: 0,
 					CertPath:  "",
@@ -93,7 +93,7 @@ func TestReadTCPropsFile(t *testing.T) {
 	docker.tls.verify = 1
 	`,
 				map[string]string{},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:      "tcp://127.0.0.1:1234",
 					TLSVerify: 1,
 					CertPath:  "",
@@ -102,7 +102,7 @@ func TestReadTCPropsFile(t *testing.T) {
 			{
 				"",
 				map[string]string{},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:      "",
 					TLSVerify: 0,
 					CertPath:  "",
@@ -113,7 +113,7 @@ func TestReadTCPropsFile(t *testing.T) {
 	docker.host = tcp://127.0.0.1:1234
 			`,
 				map[string]string{},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:      "tcp://127.0.0.1:1234",
 					TLSVerify: 0,
 					CertPath:  "",
@@ -122,7 +122,7 @@ func TestReadTCPropsFile(t *testing.T) {
 			{
 				"docker.host=tcp://127.0.0.1:33293",
 				map[string]string{},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:      "tcp://127.0.0.1:33293",
 					TLSVerify: 0,
 					CertPath:  "",
@@ -131,7 +131,7 @@ func TestReadTCPropsFile(t *testing.T) {
 			{
 				`#docker.host=tcp://127.0.0.1:33293`,
 				map[string]string{},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:      "",
 					TLSVerify: 0,
 					CertPath:  "",
@@ -143,7 +143,7 @@ func TestReadTCPropsFile(t *testing.T) {
 	docker.host = tcp://127.0.0.1:1234
 	docker.cert.path=/tmp/certs`,
 				map[string]string{},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:      "tcp://127.0.0.1:1234",
 					TLSVerify: 0,
 					CertPath:  "/tmp/certs",
@@ -152,7 +152,7 @@ func TestReadTCPropsFile(t *testing.T) {
 			{
 				`ryuk.container.privileged=true`,
 				map[string]string{},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:           "",
 					TLSVerify:      0,
 					CertPath:       "",
@@ -164,7 +164,7 @@ func TestReadTCPropsFile(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:           "",
 					TLSVerify:      0,
 					CertPath:       "",
@@ -176,7 +176,7 @@ func TestReadTCPropsFile(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:           "",
 					TLSVerify:      0,
 					CertPath:       "",
@@ -188,7 +188,7 @@ func TestReadTCPropsFile(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:           "",
 					TLSVerify:      0,
 					CertPath:       "",
@@ -200,7 +200,7 @@ func TestReadTCPropsFile(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
 				},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:           "",
 					TLSVerify:      0,
 					CertPath:       "",
@@ -212,7 +212,7 @@ func TestReadTCPropsFile(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
 				},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:           "",
 					TLSVerify:      0,
 					CertPath:       "",
@@ -225,7 +225,7 @@ func TestReadTCPropsFile(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:           "",
 					TLSVerify:      0,
 					CertPath:       "",
@@ -237,7 +237,7 @@ func TestReadTCPropsFile(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "foo",
 				},
-				TestcontainersConfig{
+				&TestcontainersConfig{
 					Host:           "",
 					TLSVerify:      0,
 					CertPath:       "",
