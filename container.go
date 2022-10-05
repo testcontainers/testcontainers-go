@@ -30,7 +30,7 @@ type ContainerProvider interface {
 	ReuseOrCreateContainer(context.Context, ContainerRequest) (Container, error) // reuses a container if it exists or creates a container without starting
 	RunContainer(context.Context, ContainerRequest) (Container, error)           // create a container and start it
 	Health(context.Context) error
-	Config() TestcontainersConfig
+	Config() *TestcontainersConfig
 }
 
 // Container allows getting info about and controlling a single container instance
