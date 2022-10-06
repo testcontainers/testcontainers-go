@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types/filters"
@@ -40,6 +41,7 @@ var (
 	// Implement interfaces
 	_ Container = (*DockerContainer)(nil)
 
+	logOnce                 sync.Once
 	ErrDuplicateMountTarget = errors.New("duplicate mount target detected")
 )
 
@@ -47,6 +49,7 @@ const (
 	Bridge        = "bridge" // Bridge network name (as well as driver)
 	Podman        = "podman"
 	ReaperDefault = "reaper_default" // Default network name when bridge is not available
+	packagePath   = "github.com/testcontainers/testcontainers-go"
 )
 
 // DockerContainer represents a container started using Docker
@@ -770,7 +773,28 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		config:                tcConfig,
 	}
 
+	// log docker server info only once
+	logOnce.Do(p.logDockerServerInfo)
+
 	return p, nil
+}
+
+func (p *DockerProvider) logDockerServerInfo() {
+	infoMessage := `%v - Connected to docker: 
+  Server Version: %v
+  API Version: %v
+  Operating System: %v
+  Total Memory: %v MB
+`
+
+	info, err := p.client.Info(context.Background())
+	if err != nil {
+		p.Logger.Printf("failed getting information about docker server: %s", err)
+	}
+
+	p.Logger.Printf(infoMessage, packagePath,
+		info.ServerVersion, p.client.ClientVersion(),
+		info.OperatingSystem, info.MemTotal/1024/1024)
 }
 
 // configureTC reads from testcontainers properties file, if it exists
