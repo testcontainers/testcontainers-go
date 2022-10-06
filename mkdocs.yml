@@ -37,6 +37,7 @@ nav:
           - features/override_container_command.md
           - features/copy_file.md
           - features/using_podman.md
+          - features/using_colima.md
           - Wait Strategies:
             - Introduction: features/wait/introduction.md
             - Exec: features/wait/exec.md
