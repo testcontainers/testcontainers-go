@@ -403,8 +403,8 @@ func (c *DockerContainer) ContainerIPs(ctx context.Context) ([]string, error) {
 	}
 
 	networks := inspect.NetworkSettings.Networks
-	for _, endpoints := range networks {
-		ips = append(ips, endpoints.IPAddress)
+	for _, nw := range networks {
+		ips = append(ips, nw.IPAddress)
 	}
 
 	return ips, nil
