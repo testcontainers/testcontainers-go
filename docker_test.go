@@ -457,11 +457,7 @@ func TestContainerTerminationResetsState(t *testing.T) {
 
 func TestContainerStopWithReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		t.Fatal(err)
-	}
-	client.NegotiateAPIVersion(ctx)
+
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -476,12 +472,11 @@ func TestContainerStopWithReaper(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxA)
 
-	containerID := nginxA.GetContainerID()
-	resp, err := client.ContainerInspect(ctx, containerID)
+	state, err := nginxA.State(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.State.Running != true {
+	if state.Running != true {
 		t.Fatal("The container shoud be in running state")
 	}
 	stopTimeout := 10 * time.Second
@@ -489,25 +484,22 @@ func TestContainerStopWithReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err = client.ContainerInspect(ctx, containerID)
+
+	state, err = nginxA.State(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.State.Running != false {
+	if state.Running != false {
 		t.Fatal("The container shoud not be running")
 	}
-	if resp.State.Status != "exited" {
+	if state.Status != "exited" {
 		t.Fatal("The container shoud be in exited state")
 	}
 }
 
 func TestContainerTerminationWithReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		t.Fatal(err)
-	}
-	client.NegotiateAPIVersion(ctx)
+
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -521,19 +513,19 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	containerID := nginxA.GetContainerID()
-	resp, err := client.ContainerInspect(ctx, containerID)
+
+	state, err := nginxA.State(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.State.Running != true {
+	if state.Running != true {
 		t.Fatal("The container shoud be in running state")
 	}
 	err = nginxA.Terminate(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = client.ContainerInspect(ctx, containerID)
+	_, err = nginxA.State(ctx)
 	if err == nil {
 		t.Fatal("expected error from container inspect.")
 	}
@@ -541,11 +533,7 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		t.Fatal(err)
-	}
-	client.NegotiateAPIVersion(ctx)
+
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -560,19 +548,20 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	containerID := nginxA.GetContainerID()
-	resp, err := client.ContainerInspect(ctx, containerID)
+
+	state, err := nginxA.State(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.State.Running != true {
+	if state.Running != true {
 		t.Fatal("The container shoud be in running state")
 	}
 	err = nginxA.Terminate(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = client.ContainerInspect(ctx, containerID)
+
+	_, err = nginxA.State(ctx)
 	if err == nil {
 		t.Fatal("expected error from container inspect.")
 	}
