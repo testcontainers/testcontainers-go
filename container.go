@@ -91,31 +91,32 @@ type ContainerFile struct {
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
 	FromDockerfile
-	Image           string
-	Entrypoint      []string
-	Env             map[string]string
-	ExposedPorts    []string // allow specifying protocol info
-	Cmd             []string
-	Labels          map[string]string
-	Mounts          ContainerMounts
-	Tmpfs           map[string]string
-	RegistryCred    string
-	WaitingFor      wait.Strategy
-	Name            string // for specifying container name
-	Hostname        string
-	ExtraHosts      []string
-	Privileged      bool                // for starting privileged container
-	Networks        []string            // for specifying network names
-	NetworkAliases  map[string][]string // for specifying network aliases
-	NetworkMode     container.NetworkMode
-	Resources       container.Resources
-	Files           []ContainerFile // files which will be copied when container starts
-	User            string          // for specifying uid:gid
-	SkipReaper      bool            // indicates whether we skip setting up a reaper for this
-	ReaperImage     string          // alternative reaper image
-	AutoRemove      bool            // if set to true, the container will be removed from the host when stopped
-	AlwaysPullImage bool            // Always pull image
-	ImagePlatform   string          // ImagePlatform describes the platform which the image runs on.
+	Image          string
+	Entrypoint     []string
+	Env            map[string]string
+	ExposedPorts   []string // allow specifying protocol info
+	Cmd            []string
+	Labels         map[string]string
+	Mounts         ContainerMounts
+	Tmpfs          map[string]string
+	RegistryCred   string
+	WaitingFor     wait.Strategy
+	Name           string // for specifying container name
+	Hostname       string
+	ExtraHosts     []string
+	Privileged     bool                // for starting privileged container
+	Networks       []string            // for specifying network names
+	NetworkAliases map[string][]string // for specifying network aliases
+	NetworkMode    container.NetworkMode
+	Resources      container.Resources
+	Files          []ContainerFile // files which will be copied when container starts
+	User           string          // for specifying uid:gid
+	// Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
+	SkipReaper      bool
+	ReaperImage     string // alternative reaper image
+	AutoRemove      bool   // if set to true, the container will be removed from the host when stopped
+	AlwaysPullImage bool   // Always pull image
+	ImagePlatform   string // ImagePlatform describes the platform which the image runs on.
 	Binds           []string
 	ShmSize         int64 // Amount of memory shared with the host (in bytes)
 }
