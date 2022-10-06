@@ -393,9 +393,9 @@ func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
 	return ip, nil
 }
 
-// ContainerIPList gets the IP addresses of all the networks within the container.
-func (c *DockerContainer) ContainerIPList(ctx context.Context) ([]string, error) {
-	ipList := make([]string, 0)
+// ContainerIPs gets the IP addresses of all the networks within the container.
+func (c *DockerContainer) ContainerIPs(ctx context.Context) ([]string, error) {
+	ips := make([]string, 0)
 
 	inspect, err := c.inspectContainer(ctx)
 	if err != nil {
@@ -404,10 +404,10 @@ func (c *DockerContainer) ContainerIPList(ctx context.Context) ([]string, error)
 
 	networks := inspect.NetworkSettings.Networks
 	for _, endpoints := range networks {
-		ipList = append(ipList, endpoints.IPAddress)
+		ips = append(ips, endpoints.IPAddress)
 	}
 
-	return ipList, nil
+	return ips, nil
 }
 
 // NetworkAliases gets the aliases of the container for the networks it is attached to.
