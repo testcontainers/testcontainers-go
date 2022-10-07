@@ -884,10 +884,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
-		termSignal, err = r.Connect()
-		if err != nil {
-			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
-		}
+		termSignal = r.termSignal
+
 		for k, v := range r.Labels() {
 			if _, ok := req.Labels[k]; !ok {
 				req.Labels[k] = v
@@ -1098,10 +1096,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
-		termSignal, err = r.Connect()
-		if err != nil {
-			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
-		}
+		termSignal = r.termSignal
 	}
 	dc := &DockerContainer{
 		ID:                c.ID,
@@ -1252,10 +1247,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}
-		termSignal, err = r.Connect()
-		if err != nil {
-			return nil, fmt.Errorf("%w: connecting to network reaper failed", err)
-		}
+		termSignal = r.termSignal
 		for k, v := range r.Labels() {
 			if _, ok := req.Labels[k]; !ok {
 				req.Labels[k] = v

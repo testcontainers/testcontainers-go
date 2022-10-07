@@ -89,6 +89,12 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 				SessionID: sessionID,
 			}
 			reaper.Endpoint = endpoint
+
+			termSignal, err := reaper.Connect()
+			if err != nil {
+				return nil, fmt.Errorf("%w: connecting to reaper failed", err)
+			}
+			reaper.termSignal = termSignal
 		}
 	}
 	return reaper, nil
@@ -96,9 +102,10 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 
 // Reaper is used to start a sidecar container that cleans up resources
 type Reaper struct {
-	Provider  ReaperProvider
-	SessionID string
-	Endpoint  string
+	Provider   ReaperProvider
+	SessionID  string
+	Endpoint   string
+	termSignal chan bool
 }
 
 // Connect runs a goroutine which can be terminated by sending true into the returned channel
