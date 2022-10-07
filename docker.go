@@ -697,7 +697,7 @@ func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
 	})
 }
 
-func NewDockerClient() (cli *client.Client, host string, err error) {
+func newDockerClient() (cli *client.Client, host string, err error) {
 	tcConfig := properties.Get()
 
 	host = tcConfig.Host
@@ -743,7 +743,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		provOpts[idx].ApplyDockerTo(o)
 	}
 
-	c, host, err := NewDockerClient()
+	c, host, err := newDockerClient()
 	if err != nil {
 		return nil, err
 	}
