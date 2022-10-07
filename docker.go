@@ -697,8 +697,8 @@ func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
 	})
 }
 
-func NewDockerClient() (cli *client.Client, host string, tcConfig *properties.TestcontainersConfig, err error) {
-	tcConfig = properties.Get()
+func NewDockerClient() (cli *client.Client, host string, err error) {
+	tcConfig := properties.Get()
 
 	host = tcConfig.Host
 
@@ -723,12 +723,12 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig *properties.Te
 	cli, err = client.NewClientWithOpts(opts...)
 
 	if err != nil {
-		return nil, "", &properties.TestcontainersConfig{}, err
+		return nil, "", err
 	}
 
 	cli.NegotiateAPIVersion(context.Background())
 
-	return cli, host, tcConfig, nil
+	return cli, host, nil
 }
 
 // NewDockerProvider creates a Docker provider with the EnvClient
@@ -743,7 +743,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		provOpts[idx].ApplyDockerTo(o)
 	}
 
-	c, host, tcConfig, err := NewDockerClient()
+	c, host, err := NewDockerClient()
 	if err != nil {
 		return nil, err
 	}
@@ -762,7 +762,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		DockerProviderOptions: o,
 		host:                  host,
 		client:                c,
-		config:                tcConfig,
+		config:                properties.Get(),
 	}
 
 	// log docker server info only once
