@@ -42,56 +42,55 @@ type ReaperProvider interface {
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
 func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
-	mutex.Lock()
-	defer mutex.Unlock()
-	// If reaper already exists re-use it
-	if reaper != nil {
-		return reaper, nil
+	if reaper == nil {
+		mutex.Lock()
+		defer mutex.Unlock()
+
+		if reaper == nil {
+			dockerHost := extractDockerHost(ctx)
+
+			listeningPort := nat.Port("8080/tcp")
+
+			req := ContainerRequest{
+				Image:        reaperImage(reaperImageName),
+				ExposedPorts: []string{string(listeningPort)},
+				NetworkMode:  Bridge,
+				Labels: map[string]string{
+					TestcontainerLabel:         "true",
+					TestcontainerLabelIsReaper: "true",
+				},
+				SkipReaper: true,
+				Mounts:     Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
+				AutoRemove: true,
+				WaitingFor: wait.ForListeningPort(listeningPort),
+			}
+
+			tcConfig := provider.Config()
+			req.Privileged = tcConfig.RyukPrivileged
+
+			// Attach reaper container to a requested network if it is specified
+			if p, ok := provider.(*DockerProvider); ok {
+				req.Networks = append(req.Networks, p.DefaultNetwork)
+			}
+
+			c, err := provider.RunContainer(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+
+			endpoint, err := c.PortEndpoint(ctx, "8080", "")
+			if err != nil {
+				return nil, err
+			}
+
+			// Otherwise create a new one
+			reaper = &Reaper{
+				Provider:  provider,
+				SessionID: sessionID,
+			}
+			reaper.Endpoint = endpoint
+		}
 	}
-
-	dockerHost := extractDockerHost(ctx)
-
-	// Otherwise create a new one
-	reaper = &Reaper{
-		Provider:  provider,
-		SessionID: sessionID,
-	}
-
-	listeningPort := nat.Port("8080/tcp")
-
-	req := ContainerRequest{
-		Image:        reaperImage(reaperImageName),
-		ExposedPorts: []string{string(listeningPort)},
-		NetworkMode:  Bridge,
-		Labels: map[string]string{
-			TestcontainerLabel:         "true",
-			TestcontainerLabelIsReaper: "true",
-		},
-		SkipReaper: true,
-		Mounts:     Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
-		AutoRemove: true,
-		WaitingFor: wait.ForListeningPort(listeningPort),
-	}
-
-	tcConfig := provider.Config()
-	req.Privileged = tcConfig.RyukPrivileged
-
-	// Attach reaper container to a requested network if it is specified
-	if p, ok := provider.(*DockerProvider); ok {
-		req.Networks = append(req.Networks, p.DefaultNetwork)
-	}
-
-	c, err := provider.RunContainer(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	endpoint, err := c.PortEndpoint(ctx, "8080", "")
-	if err != nil {
-		return nil, err
-	}
-	reaper.Endpoint = endpoint
-
 	return reaper, nil
 }
 
