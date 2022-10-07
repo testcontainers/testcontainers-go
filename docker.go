@@ -993,7 +993,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	exposedPorts := req.ExposedPorts
-	if len(exposedPorts) == 0 {
+	if len(exposedPorts) == 0 && !req.NetworkMode.IsContainer() {
 		image, _, err := p.client.ImageInspectWithRaw(ctx, tag)
 		if err != nil {
 			return nil, err
