@@ -2323,6 +2323,33 @@ func TestProviderHasConfig(t *testing.T) {
 	assert.NotNil(t, provider.Config(), "expecting DockerProvider to provide the configuration")
 }
 
+func TestNetworkModeWithContainerReference(t *testing.T) {
+	ctx := context.Background()
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: nginxAlpineImage,
+		},
+		Started: true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginxA)
+
+	networkMode := fmt.Sprintf("container:%v", nginxA.GetContainerID())
+	nginxB, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image:       nginxAlpineImage,
+			NetworkMode: container.NetworkMode(networkMode),
+		},
+		Started: true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginxB)
+}
+
 // creates a temporary dir in which the files will be extracted. Then it will compare the bytes of each file in the source with the bytes from the copied-from-container file
 func assertExtractedFiles(t *testing.T, ctx context.Context, container Container, hostFilePath string, containerFilePath string) {
 	// create all copied files into a temporary dir
