@@ -878,7 +878,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	sessionID := uuid.New()
 
 	var termSignal chan bool
-	if !properties.Get().RyukDisabled {
+	// the reaper does not need to start a reaper for itself
+	if !properties.Get().RyukDisabled && !strings.EqualFold(req.Image, reaperImage(req.ReaperImage)) {
 		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
