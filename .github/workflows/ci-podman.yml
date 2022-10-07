@@ -68,7 +68,7 @@ jobs:
           ./scripts/check_environment.sh
 
       - name: Test Summary
-        uses: test-summary/action@v1
+        uses: test-summary/action@77bb5a9f9c572416423f9a157cbf1159c1e75a4c
         with:
           paths: "**/TEST-*.xml"
         if: always()

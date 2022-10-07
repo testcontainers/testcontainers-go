@@ -4,6 +4,7 @@ test: tools
 	go run gotest.tools/gotestsum \
 		--format short-verbose \
 		--rerun-fails=5 \
+		--junitfile TEST-e2e.xml \
 		--packages="./..." \
 
 .PHONY: tools
