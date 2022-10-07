@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-units"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
@@ -2212,6 +2213,39 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	assert.Equal(t, 2, len(cnt.NetworkSettings.Networks))
 	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[0]])
 	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[1]])
+}
+
+func TestContainerCapAdd(t *testing.T) {
+	if providerType == ProviderPodman {
+		t.Skip("Rootless Podman does not support setting cap-add/cap-drop")
+	}
+
+	ctx := context.Background()
+
+	expected := "IPC_LOCK"
+
+	nginx, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image:        nginxAlpineImage,
+			ExposedPorts: []string{nginxDefaultPort},
+			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+			CapAdd:       []string{expected},
+		},
+		Started: true,
+	})
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginx)
+
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	require.NoError(t, err)
+	defer dockerClient.Close()
+
+	containerID := nginx.GetContainerID()
+	resp, err := dockerClient.ContainerInspect(ctx, containerID)
+	require.NoError(t, err)
+
+	assert.Equal(t, strslice.StrSlice{expected}, resp.HostConfig.CapAdd)
 }
 
 func TestContainerRunningCheckingStatusCode(t *testing.T) {

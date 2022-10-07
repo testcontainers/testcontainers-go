@@ -1033,6 +1033,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		NetworkMode:  req.NetworkMode,
 		Resources:    req.Resources,
 		ShmSize:      req.ShmSize,
+		CapAdd:       req.CapAdd,
+		CapDrop:      req.CapDrop,
 	}
 
 	endpointConfigs := map[string]*network.EndpointSettings{}
