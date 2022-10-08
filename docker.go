@@ -1109,9 +1109,11 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 	if name == "" {
 		return nil, nil
 	}
+
+	// Note that, 'name' filter will use regex to find the containers
 	filter := filters.NewArgs(filters.KeyValuePair{
 		Key:   "name",
-		Value: name,
+		Value: fmt.Sprintf("^%s$", name),
 	})
 	containers, err := p.client.ContainerList(ctx, types.ContainerListOptions{Filters: filter})
 	if err != nil {
