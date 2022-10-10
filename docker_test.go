@@ -845,12 +845,9 @@ func TestContainerCreationTimesOut(t *testing.T) {
 		},
 		Started: true,
 	})
+	terminateContainerOnEnd(t, ctx, nginxC)
 	if err == nil {
 		t.Error("Expected timeout")
-		err := nginxC.Terminate(ctx)
-		if err != nil {
-			t.Fatal(err)
-		}
 	}
 }
 
