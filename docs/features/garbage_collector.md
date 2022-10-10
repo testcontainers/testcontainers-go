@@ -13,7 +13,7 @@ Containers can be unused because:
 ## Terminate function
 
 As we saw previously there are at least two ways to remove unused containers.
-The primary method is to use the `Terminate(context.Conext)` function that is
+The primary method is to use the `Terminate(context.Context)` function that is
 available when a container is created. Use `defer` to ensure that it is called
 on test completion.
 
@@ -27,8 +27,8 @@ on test completion.
 
 [Ryuk](https://github.com/testcontainers/moby-ryuk) (also referred to as
 `Reaper` in this package) removes containers/networks/volumes created by
-Testcontainers-Go after a specified delay. It is a project developed by the
-TestContainers organization and is used across the board for many of the
+Testcontainers-go after a specified delay. It is a project developed by the
+Testcontainers organization and is used across the board for many of the
 different language implementations.
 
 When you run one test, you will see an additional container called `ryuk`
@@ -39,7 +39,7 @@ for more than 10 seconds, it will be killed.
 
 !!!tip
 
-    This feature can be disabled when creating a container
+    This feature can be disabled when creating a container.
 
 Even if you do not call Terminate, Ryuk ensures that the environment will be
 kept clean and even cleans itself when there is nothing left to do.

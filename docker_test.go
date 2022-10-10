@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-units"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
@@ -457,11 +458,7 @@ func TestContainerTerminationResetsState(t *testing.T) {
 
 func TestContainerStopWithReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		t.Fatal(err)
-	}
-	client.NegotiateAPIVersion(ctx)
+
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -476,12 +473,11 @@ func TestContainerStopWithReaper(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxA)
 
-	containerID := nginxA.GetContainerID()
-	resp, err := client.ContainerInspect(ctx, containerID)
+	state, err := nginxA.State(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.State.Running != true {
+	if state.Running != true {
 		t.Fatal("The container shoud be in running state")
 	}
 	stopTimeout := 10 * time.Second
@@ -489,25 +485,22 @@ func TestContainerStopWithReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err = client.ContainerInspect(ctx, containerID)
+
+	state, err = nginxA.State(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.State.Running != false {
+	if state.Running != false {
 		t.Fatal("The container shoud not be running")
 	}
-	if resp.State.Status != "exited" {
+	if state.Status != "exited" {
 		t.Fatal("The container shoud be in exited state")
 	}
 }
 
 func TestContainerTerminationWithReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		t.Fatal(err)
-	}
-	client.NegotiateAPIVersion(ctx)
+
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -521,19 +514,19 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	containerID := nginxA.GetContainerID()
-	resp, err := client.ContainerInspect(ctx, containerID)
+
+	state, err := nginxA.State(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.State.Running != true {
+	if state.Running != true {
 		t.Fatal("The container shoud be in running state")
 	}
 	err = nginxA.Terminate(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = client.ContainerInspect(ctx, containerID)
+	_, err = nginxA.State(ctx)
 	if err == nil {
 		t.Fatal("expected error from container inspect.")
 	}
@@ -541,11 +534,7 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		t.Fatal(err)
-	}
-	client.NegotiateAPIVersion(ctx)
+
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -560,19 +549,20 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	containerID := nginxA.GetContainerID()
-	resp, err := client.ContainerInspect(ctx, containerID)
+
+	state, err := nginxA.State(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.State.Running != true {
+	if state.Running != true {
 		t.Fatal("The container shoud be in running state")
 	}
 	err = nginxA.Terminate(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = client.ContainerInspect(ctx, containerID)
+
+	_, err = nginxA.State(ctx)
 	if err == nil {
 		t.Fatal("expected error from container inspect.")
 	}
@@ -2225,6 +2215,39 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[1]])
 }
 
+func TestContainerCapAdd(t *testing.T) {
+	if providerType == ProviderPodman {
+		t.Skip("Rootless Podman does not support setting cap-add/cap-drop")
+	}
+
+	ctx := context.Background()
+
+	expected := "IPC_LOCK"
+
+	nginx, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image:        nginxAlpineImage,
+			ExposedPorts: []string{nginxDefaultPort},
+			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+			CapAdd:       []string{expected},
+		},
+		Started: true,
+	})
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginx)
+
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	require.NoError(t, err)
+	defer dockerClient.Close()
+
+	containerID := nginx.GetContainerID()
+	resp, err := dockerClient.ContainerInspect(ctx, containerID)
+	require.NoError(t, err)
+
+	assert.Equal(t, strslice.StrSlice{expected}, resp.HostConfig.CapAdd)
+}
+
 func TestContainerRunningCheckingStatusCode(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
@@ -2332,6 +2355,33 @@ func TestProviderHasConfig(t *testing.T) {
 	}
 
 	assert.NotNil(t, provider.Config(), "expecting DockerProvider to provide the configuration")
+}
+
+func TestNetworkModeWithContainerReference(t *testing.T) {
+	ctx := context.Background()
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: nginxAlpineImage,
+		},
+		Started: true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginxA)
+
+	networkMode := fmt.Sprintf("container:%v", nginxA.GetContainerID())
+	nginxB, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image:       nginxAlpineImage,
+			NetworkMode: container.NetworkMode(networkMode),
+		},
+		Started: true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginxB)
 }
 
 // creates a temporary dir in which the files will be extracted. Then it will compare the bytes of each file in the source with the bytes from the copied-from-container file

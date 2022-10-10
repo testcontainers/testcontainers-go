@@ -1,14 +1,14 @@
 # Using Podman instead of Docker
 
-Testcontainers supports to use Podman (rootless or rootful) instead of Docker.
+Testcontainers-go supports the use of Podman (rootless or rootful) instead of Docker.
 In most scenarios no special setup is required.
-Testcontainers will automatically discover the socket based on the `DOCKER_HOST` or the `TC_HOST` environment variables.
-Alternatively you can also configure the host with a `.testcontainers.properties` file.
+Testcontainers-go will automatically discover the socket based on the `DOCKER_HOST` or the `TC_HOST` environment variables.
+Alternatively you can configure the host with a `.testcontainers.properties` file.
 The discovered Docker host is also taken into account when starting a reaper container.
 
 There's currently only one special case where additional configuration is necessary: complex container network scenarios.
 
-By default Testcontainers takes advantage of the default network settings both Docker and Podman are applying to newly created containers.
+By default Testcontainers-go takes advantage of the default network settings both Docker and Podman are applying to newly created containers.
 It only intervenes in scenarios where a `ContainerRequest` specifies networks and does not include the default network of the current container provider.
 Unfortunately the default network for Docker is called _bridge_ where the default network in Podman is called _podman_.
 It is not even possible to create a network called _bridge_ with Podman as Podman does not allow creating a network with the same name as an already existing network mode.

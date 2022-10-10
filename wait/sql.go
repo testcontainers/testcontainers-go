@@ -33,8 +33,14 @@ type waitForSql struct {
 }
 
 //Timeout sets the maximum waiting time for the strategy after which it'll give up and return an error
+// Deprecated: Use WithStartupTimeout
 func (w *waitForSql) Timeout(duration time.Duration) *waitForSql {
-	w.startupTimeout = duration
+	return w.WithStartupTimeout(duration)
+}
+
+// WithStartupTimeout can be used to change the default startup timeout
+func (w *waitForSql) WithStartupTimeout(startupTimeout time.Duration) *waitForSql {
+	w.startupTimeout = startupTimeout
 	return w
 }
 
