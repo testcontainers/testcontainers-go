@@ -915,11 +915,12 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 		},
 		WaitingFor: wait.ForLog("test context timeout").WithStartupTimeout(1 * time.Second),
 	}
-	_, err := GenericContainer(ctx, GenericContainerRequest{
+	mysqlC, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
+	terminateContainerOnEnd(t, ctx, mysqlC)
 
 	if err == nil {
 		t.Error("Expected timeout")
@@ -1120,11 +1121,12 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 			wait.ForListeningPort("3306/tcp"),
 		),
 	}
-	_, err := GenericContainer(ctx, GenericContainerRequest{
+	mysqlC, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
+	terminateContainerOnEnd(t, ctx, mysqlC)
 
 	if err == nil {
 		t.Fatal("Expected timeout")
