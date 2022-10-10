@@ -41,7 +41,7 @@ for more than 10 seconds, it will be killed.
 
     This feature can be disabled in two different manners:
     1. adding `ryuk.disabled=true` to the `.testcontainers.properties` file.
-    2. setting the `TESTCONTAINERS_RYUK_DISABLED=false` environment variable. This manner takes precedence over the properties file.
+    2. setting the `TESTCONTAINERS_RYUK_DISABLED=true` environment variable. This manner takes precedence over the properties file.
 
 Even if you do not call Terminate, Ryuk ensures that the environment will be
 kept clean and even cleans itself when there is nothing left to do.
