@@ -47,6 +47,7 @@ jobs:
         run: go build
 
       - name: Enable Ryuk at properties side
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
         run:  |
           set -x
           echo 'ryuk.disabled=false' >> ${HOME}/.testcontainers.properties
