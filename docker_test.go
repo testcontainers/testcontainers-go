@@ -33,6 +33,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 
+	"github.com/testcontainers/testcontainers-go/internal/properties"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -387,6 +388,10 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 }
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
+	if properties.Get().RyukDisabled {
+		t.Skip("Skipping because the reaper is disabled")
+	}
+
 	ctx := context.Background()
 	client, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
