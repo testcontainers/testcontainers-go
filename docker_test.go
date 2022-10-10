@@ -393,7 +393,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 		t.Fatal(err)
 	}
 	client.NegotiateAPIVersion(ctx)
-	_, err = GenericContainer(ctx, GenericContainerRequest{
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
@@ -403,9 +403,9 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 		},
 		Started: true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginxC)
+
 	filtersJSON := fmt.Sprintf(`{"label":{"%s":true}}`, TestcontainerLabelIsReaper)
 	f, err := filters.FromJSON(filtersJSON)
 	if err != nil {
@@ -1266,7 +1266,7 @@ func TestEntrypoint(t *testing.T) {
 func ExampleDockerProvider_CreateContainer() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
+		Image:        nginxAlpineImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
@@ -1280,7 +1280,7 @@ func ExampleDockerProvider_CreateContainer() {
 func ExampleContainer_Host() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
+		Image:        nginxAlpineImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
@@ -1296,7 +1296,7 @@ func ExampleContainer_Host() {
 func ExampleContainer_Start() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
+		Image:        nginxAlpineImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
@@ -1310,7 +1310,7 @@ func ExampleContainer_Start() {
 func ExampleContainer_Stop() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
+		Image:        nginxAlpineImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
@@ -1325,7 +1325,7 @@ func ExampleContainer_Stop() {
 func ExampleContainer_MappedPort() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
+		Image:        nginxAlpineImage,
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
