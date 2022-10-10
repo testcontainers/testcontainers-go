@@ -1,4 +1,4 @@
-name: Main pipeline
+name: Reaper-Off pipeline
 
 on: [push, pull_request]
 
@@ -19,8 +19,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.18.x, 1.x]
-        platform: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
     steps:
 
       - name: Set up Go
@@ -46,33 +45,22 @@ jobs:
           GOOS: linux
         run: go build
 
-      - name: Enable Ryuk at properties side
+      - name: Disable Ryuk at properties side
         run:  |
           set -x
-          echo 'ryuk.disabled=false' >> ${HOME}/.testcontainers.properties
+          echo 'ryuk.disabled=true' >> ${HOME}/.testcontainers.properties
 
       - name: gotestsum
         # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
         # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-unit
 
-        # only report code coverage on linux
-      - name: Upload coverage report
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        uses: codecov/codecov-action@81cd2dc8148241f03f5839d295e000b8f761e378
-        with:
-          files: ./cover.txt
-          name: testcontainers-go-${{ matrix.go-version }}
-
       - name: modTidy e2e tests
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make -C e2e tools-tidy
 
       - name: Run e2e tests
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-e2e
 
       - name: Run checker
