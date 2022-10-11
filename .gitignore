@@ -11,3 +11,4 @@ src/pip-delete-this-directory.txt
 .DS_Store
 
 cover.txt
+TEST-*.xml
