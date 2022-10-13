@@ -51,6 +51,7 @@ nav:
           - examples/nginx.md
           - examples/redis.md
     - System Requirements:
+          - system_requirements/index.md
           - system_requirements/using_colima.md
           - system_requirements/using_podman.md
     - Contributing:
