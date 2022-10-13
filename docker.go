@@ -934,6 +934,12 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				req.Labels[k] = v
 			}
 		}
+	} else {
+		ryukDisabledMessage := `
+*************************************************************************************************
+Ryuk has been disabled for the container. This can cause unexpected behavior in your environment.
+*************************************************************************************************`
+		p.Logger.Printf(ryukDisabledMessage)
 	}
 
 	if err = req.Validate(); err != nil {
@@ -1145,6 +1151,12 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		if err != nil {
 			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
 		}
+	} else {
+		ryukDisabledMessage := `
+*************************************************************************************************
+Ryuk has been disabled for the container. This can cause unexpected behavior in your environment.
+*************************************************************************************************`
+		p.Logger.Printf(ryukDisabledMessage)
 	}
 	dc := &DockerContainer{
 		ID:                c.ID,
@@ -1304,6 +1316,12 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 				req.Labels[k] = v
 			}
 		}
+	} else {
+		ryukDisabledMessage := `
+**********************************************************************************************
+Ryuk has been disabled for the network. This can cause unexpected behavior in your environment.
+**********************************************************************************************`
+		p.Logger.Printf(ryukDisabledMessage)
 	}
 
 	response, err := p.client.NetworkCreate(ctx, req.Name, nc)
