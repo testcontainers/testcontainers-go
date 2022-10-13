@@ -938,6 +938,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		ryukDisabledMessage := `
 *************************************************************************************************
 Ryuk has been disabled for the container. This can cause unexpected behavior in your environment.
+More on this: https://golang.testcontainers.org/features/garbage_collector/
 *************************************************************************************************`
 		p.Logger.Printf(ryukDisabledMessage)
 	}
@@ -1155,6 +1156,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		ryukDisabledMessage := `
 *************************************************************************************************
 Ryuk has been disabled for the container. This can cause unexpected behavior in your environment.
+More on this: https://golang.testcontainers.org/features/garbage_collector/
 *************************************************************************************************`
 		p.Logger.Printf(ryukDisabledMessage)
 	}
@@ -1320,6 +1322,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		ryukDisabledMessage := `
 **********************************************************************************************
 Ryuk has been disabled for the network. This can cause unexpected behavior in your environment.
+More on this: https://golang.testcontainers.org/features/garbage_collector/
 **********************************************************************************************`
 		p.Logger.Printf(ryukDisabledMessage)
 	}
