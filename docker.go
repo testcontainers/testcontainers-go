@@ -935,12 +935,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			}
 		}
 	} else {
-		ryukDisabledMessage := `
-*************************************************************************************************
-Ryuk has been disabled for the container. This can cause unexpected behavior in your environment.
-More on this: https://golang.testcontainers.org/features/garbage_collector/
-*************************************************************************************************`
-		p.Logger.Printf(ryukDisabledMessage)
+		p.printReaperBanner("container")
 	}
 
 	if err = req.Validate(); err != nil {
@@ -1153,12 +1148,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
 		}
 	} else {
-		ryukDisabledMessage := `
-*************************************************************************************************
-Ryuk has been disabled for the container. This can cause unexpected behavior in your environment.
-More on this: https://golang.testcontainers.org/features/garbage_collector/
-*************************************************************************************************`
-		p.Logger.Printf(ryukDisabledMessage)
+		p.printReaperBanner("container")
 	}
 	dc := &DockerContainer{
 		ID:                c.ID,
@@ -1319,12 +1309,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 			}
 		}
 	} else {
-		ryukDisabledMessage := `
-**********************************************************************************************
-Ryuk has been disabled for the network. This can cause unexpected behavior in your environment.
-More on this: https://golang.testcontainers.org/features/garbage_collector/
-**********************************************************************************************`
-		p.Logger.Printf(ryukDisabledMessage)
+		p.printReaperBanner("network")
 	}
 
 	response, err := p.client.NetworkCreate(ctx, req.Name, nc)
@@ -1381,6 +1366,15 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	}
 
 	return ip, nil
+}
+
+func (p *DockerProvider) printReaperBanner(resource string) {
+	ryukDisabledMessage := `
+	**********************************************************************************************
+	Ryuk has been disabled for the ` + resource + `. This can cause unexpected behavior in your environment.
+	More on this: https://golang.testcontainers.org/features/garbage_collector/
+	**********************************************************************************************`
+	p.Logger.Printf(ryukDisabledMessage)
 }
 
 func inAContainer() bool {
