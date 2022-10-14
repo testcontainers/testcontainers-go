@@ -1010,7 +1010,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	exposedPorts := req.ExposedPorts
-	if len(exposedPorts) == 0 {
+	if len(exposedPorts) == 0 && !req.NetworkMode.IsContainer() {
 		image, _, err := p.client.ImageInspectWithRaw(ctx, tag)
 		if err != nil {
 			return nil, err
@@ -1050,6 +1050,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		NetworkMode:  req.NetworkMode,
 		Resources:    req.Resources,
 		ShmSize:      req.ShmSize,
+		CapAdd:       req.CapAdd,
+		CapDrop:      req.CapDrop,
 	}
 
 	endpointConfigs := map[string]*network.EndpointSettings{}
