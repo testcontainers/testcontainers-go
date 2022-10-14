@@ -55,7 +55,8 @@ type Container interface {
 	Networks(context.Context) ([]string, error)                  // get container networks
 	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string) (int, io.Reader, error)
-	ContainerIP(context.Context) (string, error) // get container ip
+	ContainerIP(context.Context) (string, error)    // get container ip
+	ContainerIPs(context.Context) ([]string, error) // get all container IPs
 	CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error
 	CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
@@ -116,7 +117,9 @@ type ContainerRequest struct {
 	AlwaysPullImage bool            // Always pull image
 	ImagePlatform   string          // ImagePlatform describes the platform which the image runs on.
 	Binds           []string
-	ShmSize         int64 // Amount of memory shared with the host (in bytes)
+	ShmSize         int64    // Amount of memory shared with the host (in bytes)
+	CapAdd          []string // Add Linux capabilities
+	CapDrop         []string // Drop Linux capabilities
 }
 
 type (

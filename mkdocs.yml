@@ -36,8 +36,6 @@ nav:
           - features/follow_logs.md
           - features/override_container_command.md
           - features/copy_file.md
-          - features/using_podman.md
-          - features/using_colima.md
           - Wait Strategies:
             - Introduction: features/wait/introduction.md
             - Exec: features/wait/exec.md
@@ -52,6 +50,10 @@ nav:
           - examples/cockroachdb.md
           - examples/nginx.md
           - examples/redis.md
+    - System Requirements:
+          - system_requirements/index.md
+          - system_requirements/using_colima.md
+          - system_requirements/using_podman.md
     - Contributing:
           - contributing.md
           - contributing_docs.md

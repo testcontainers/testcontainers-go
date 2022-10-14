@@ -21,7 +21,7 @@ const (
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
 	TestcontainerLabelIsReaper  = TestcontainerLabel + ".reaper"
 
-	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.3.3"
+	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.3.4"
 )
 
 type reaperContextKey string
