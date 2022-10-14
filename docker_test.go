@@ -741,6 +741,54 @@ func TestContainerCreation(t *testing.T) {
 	}
 }
 
+func TestContainerIPs(t *testing.T) {
+	ctx := context.Background()
+
+	networkName := "new-network"
+	newNetwork, err := GenericNetwork(ctx, GenericNetworkRequest{
+		ProviderType: providerType,
+		NetworkRequest: NetworkRequest{
+			Name:           networkName,
+			CheckDuplicate: true,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() {
+		require.NoError(t, newNetwork.Remove(ctx))
+	})
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: nginxAlpineImage,
+			ExposedPorts: []string{
+				nginxDefaultPort,
+			},
+			Networks: []string{
+				"bridge",
+				networkName,
+			},
+			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+		},
+		Started: true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginxC)
+
+	ips, err := nginxC.ContainerIPs(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(ips) != 2 {
+		t.Errorf("Expected two IP addresses, got %v", len(ips))
+	}
+}
+
 func TestContainerCreationWithName(t *testing.T) {
 	ctx := context.Background()
 
