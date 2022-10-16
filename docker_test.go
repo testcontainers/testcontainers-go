@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	// Import mysql into the scope of this package (required)
+	_ "github.com/go-sql-driver/mysql"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -28,9 +30,6 @@ import (
 	"github.com/docker/docker/errdefs"
 
 	"github.com/docker/docker/api/types/volume"
-
-	// Import mysql into the scope of this package (required)
-	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
@@ -738,6 +737,54 @@ func TestContainerCreation(t *testing.T) {
 	}
 	if len(networkAliases["bridge"]) != 0 {
 		t.Errorf("Expected number of aliases for 'bridge' network %d. Got %d.", 0, len(networkAliases["bridge"]))
+	}
+}
+
+func TestContainerIPs(t *testing.T) {
+	ctx := context.Background()
+
+	networkName := "new-network"
+	newNetwork, err := GenericNetwork(ctx, GenericNetworkRequest{
+		ProviderType: providerType,
+		NetworkRequest: NetworkRequest{
+			Name:           networkName,
+			CheckDuplicate: true,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() {
+		require.NoError(t, newNetwork.Remove(ctx))
+	})
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: nginxAlpineImage,
+			ExposedPorts: []string{
+				nginxDefaultPort,
+			},
+			Networks: []string{
+				"bridge",
+				networkName,
+			},
+			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+		},
+		Started: true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginxC)
+
+	ips, err := nginxC.ContainerIPs(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(ips) != 2 {
+		t.Errorf("Expected two IP addresses, got %v", len(ips))
 	}
 }
 
@@ -2447,4 +2494,41 @@ func randomString() string {
 		b.WriteRune(chars[rand.Intn(len(chars))])
 	}
 	return b.String()
+}
+
+func TestDockerProviderFindContainerByName(t *testing.T) {
+	ctx := context.Background()
+	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
+	require.NoError(t, err)
+
+	c1, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Name:       "test",
+			Image:      "nginx:1.17.6",
+			WaitingFor: wait.ForExposedPort(),
+		},
+		Started: true,
+	})
+	require.NoError(t, err)
+	c1Name, err := c1.Name(ctx)
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, c1)
+
+	c2, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Name:       "test2",
+			Image:      "nginx:1.17.6",
+			WaitingFor: wait.ForExposedPort(),
+		},
+		Started: true,
+	})
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, c2)
+
+	c, err := provider.findContainerByName(ctx, "test")
+	assert.NoError(t, err)
+	require.NotNil(t, c)
+	assert.Contains(t, c.Names, c1Name)
 }

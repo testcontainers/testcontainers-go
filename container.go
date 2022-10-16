@@ -55,7 +55,8 @@ type Container interface {
 	Networks(context.Context) ([]string, error)                  // get container networks
 	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string) (int, io.Reader, error)
-	ContainerIP(context.Context) (string, error) // get container ip
+	ContainerIP(context.Context) (string, error)    // get container ip
+	ContainerIPs(context.Context) ([]string, error) // get all container IPs
 	CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error
 	CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error

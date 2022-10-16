@@ -396,6 +396,23 @@ func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
 	return ip, nil
 }
 
+// ContainerIPs gets the IP addresses of all the networks within the container.
+func (c *DockerContainer) ContainerIPs(ctx context.Context) ([]string, error) {
+	ips := make([]string, 0)
+
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	networks := inspect.NetworkSettings.Networks
+	for _, nw := range networks {
+		ips = append(ips, nw.IPAddress)
+	}
+
+	return ips, nil
+}
+
 // NetworkAliases gets the aliases of the container for the networks it is attached to.
 func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]string, error) {
 	inspect, err := c.inspectContainer(ctx)
@@ -934,6 +951,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				req.Labels[k] = v
 			}
 		}
+	} else {
+		p.printReaperBanner("container")
 	}
 
 	if err = req.Validate(); err != nil {
@@ -1111,9 +1130,11 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 	if name == "" {
 		return nil, nil
 	}
+
+	// Note that, 'name' filter will use regex to find the containers
 	filter := filters.NewArgs(filters.KeyValuePair{
 		Key:   "name",
-		Value: name,
+		Value: fmt.Sprintf("^%s$", name),
 	})
 	containers, err := p.client.ContainerList(ctx, types.ContainerListOptions{Filters: filter})
 	if err != nil {
@@ -1145,6 +1166,8 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		if err != nil {
 			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
 		}
+	} else {
+		p.printReaperBanner("container")
 	}
 	dc := &DockerContainer{
 		ID:                c.ID,
@@ -1304,6 +1327,8 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 				req.Labels[k] = v
 			}
 		}
+	} else {
+		p.printReaperBanner("network")
 	}
 
 	response, err := p.client.NetworkCreate(ctx, req.Name, nc)
@@ -1360,6 +1385,15 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	}
 
 	return ip, nil
+}
+
+func (p *DockerProvider) printReaperBanner(resource string) {
+	ryukDisabledMessage := `
+	**********************************************************************************************
+	Ryuk has been disabled for the ` + resource + `. This can cause unexpected behavior in your environment.
+	More on this: https://golang.testcontainers.org/features/garbage_collector/
+	**********************************************************************************************`
+	p.Logger.Printf(ryukDisabledMessage)
 }
 
 func inAContainer() bool {
