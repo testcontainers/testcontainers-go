@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -34,9 +35,13 @@ func ExampleHTTPStrategy() {
 		panic(err)
 	}
 
-	defer gogs.Terminate(ctx) // nolint: errcheck
-	// Here you have a running container
+	defer func() {
+		if err := gogs.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
 
+	// Here you have a running container
 }
 
 func TestHTTPStrategyWaitUntilReady(t *testing.T) {
@@ -79,20 +84,24 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
 	}
 
-	container, err := testcontainers.GenericContainer(context.Background(),
-		testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
+	ctx := context.Background()
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	defer container.Terminate(context.Background()) // nolint: errcheck
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
 
-	host, err := container.Host(context.Background())
+	host, err := container.Host(ctx)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	port, err := container.MappedPort(context.Background(), "6443/tcp")
+	port, err := container.MappedPort(ctx, "6443/tcp")
 	if err != nil {
 		t.Error(err)
 		return

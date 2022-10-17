@@ -81,12 +81,17 @@ LOOP:
 			return ctx.Err()
 		default:
 			reader, err := target.Logs(ctx)
-
 			if err != nil {
 				time.Sleep(ws.PollInterval)
 				continue
 			}
+
 			b, err := io.ReadAll(reader)
+			if err != nil {
+				time.Sleep(ws.PollInterval)
+				continue
+			}
+
 			logs := string(b)
 			if strings.Count(logs, ws.Log) >= ws.Occurrence {
 				break LOOP

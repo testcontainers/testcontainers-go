@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log"
 	"testing"
 	"time"
 
@@ -29,7 +30,12 @@ func ExampleExecStrategy() {
 		panic(err)
 	}
 
-	defer localstack.Terminate(ctx) // nolint: errcheck
+	defer func() {
+		if err := localstack.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
+
 	// Here you have a running container
 }
 

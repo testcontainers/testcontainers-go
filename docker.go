@@ -295,13 +295,9 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	r := bufio.NewReader(rc)
 
 	go func() {
-		var (
-			isPrefix    = true
-			lineStarted = true
-			line        []byte
-		)
+		var lineStarted = true
 		for err == nil {
-			line, isPrefix, err = r.ReadLine()
+			line, isPrefix, err := r.ReadLine()
 
 			if lineStarted && len(line) >= streamHeaderSize {
 				line = line[streamHeaderSize:] // trim stream header

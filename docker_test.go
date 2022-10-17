@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 
 	// Import mysql into the scope of this package (required)
 	"io"
@@ -194,7 +195,7 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 		t.Fatal(err)
 	}
 
-	defer nginxC.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, nginxC)
 
 	endpoint, err := nginxC.Endpoint(ctx, "http")
 	if err != nil {
@@ -225,7 +226,7 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 		// Error when NetworkMode = host and Network = []string{"bridge"}
 		t.Logf("Can't use Network and NetworkMode together, %s", err)
 	}
-	defer nginx.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, nginx)
 }
 
 func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
@@ -636,9 +637,10 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		_, _, err = client.ImageInspectWithRaw(ctx, imageID)
 		if err == nil {
-			t.Fatal("custom built image should have been removed")
+			t.Fatal("custom built image should have been removed", err)
 		}
 	})
 }
@@ -686,6 +688,9 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	}
 
 	endpointB, err := nginxB.PortEndpoint(ctx, nginxDefaultPort, "http")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	resp, err = http.Get(endpointB)
 	if err != nil {
@@ -1016,6 +1021,9 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 		"root", "password", host, port, "database")
 
 	db, err := sql.Open("mysql", connectionString)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 
 	if err = db.Ping(); err != nil {
@@ -1719,7 +1727,11 @@ func ExampleDockerProvider_CreateContainer() {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		if err := nginxC.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
 }
 
 func ExampleContainer_Host() {
@@ -1733,7 +1745,11 @@ func ExampleContainer_Host() {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		if err := nginxC.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
 	ip, _ := nginxC.Host(ctx)
 	println(ip)
 }
@@ -1748,7 +1764,11 @@ func ExampleContainer_Start() {
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
 	})
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		if err := nginxC.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
 	_ = nginxC.Start(ctx)
 }
 
@@ -1762,7 +1782,11 @@ func ExampleContainer_Stop() {
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
 	})
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		if err := nginxC.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
 	timeout := 10 * time.Second
 	_ = nginxC.Stop(ctx, &timeout)
 }
@@ -1778,7 +1802,11 @@ func ExampleContainer_MappedPort() {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		if err := nginxC.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
 	ip, _ := nginxC.Host(ctx)
 	port, _ := nginxC.MappedPort(ctx, "80")
 	_, _ = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
@@ -1926,11 +1954,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 			Started: false,
 		})
 
-		t.Cleanup(func() {
-			if c != nil {
-				c.Terminate(ctx)
-			}
-		})
+		terminateContainerOnEnd(t, ctx, c)
 
 		assert.Error(t, err)
 	})
@@ -2450,7 +2474,7 @@ func TestContainerRunningCheckingStatusCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer influx.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, influx)
 }
 
 func TestContainerWithUserID(t *testing.T) {

@@ -107,7 +107,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	g.Msgs = g.Msgs[1:]
 
 	assert.DeepEqual(t, []string{"echo hello\n", "echo there\n"}, g.Msgs)
-	_ = c.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, c)
 }
 
 type TestLogTypeConsumer struct {
@@ -144,7 +144,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _ = c.Terminate(ctx) }()
+	terminateContainerOnEnd(t, ctx, c)
 
 	ep, err := c.Endpoint(ctx, "http")
 	if err != nil {
@@ -248,7 +248,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	if err := nginx.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer nginx.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, nginx)
 
 	port, err := nginx.MappedPort(ctx, "80/tcp")
 	if err != nil {
@@ -259,7 +259,9 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	if err = nginx.StartLogProducer(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer nginx.StopLogProducer()
+	defer func() {
+		_ = nginx.StopLogProducer()
+	}()
 	nginx.FollowOutput(&consumer)
 
 	// Gather the initial container logs
@@ -320,7 +322,7 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer container.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, container)
 	r, err := container.Logs(ctx)
 	if err != nil {
 		t.Fatal(err)
