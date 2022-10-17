@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 	"time"
@@ -356,7 +355,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		t.Fatal(logErr)
 	}
 
-	b, err := ioutil.ReadAll(logs)
+	b, err := io.ReadAll(logs)
 	if err != nil {
 		t.Fatal(err)
 	}

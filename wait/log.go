@@ -2,7 +2,7 @@ package wait
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 )
@@ -86,7 +86,7 @@ LOOP:
 				time.Sleep(ws.PollInterval)
 				continue
 			}
-			b, err := ioutil.ReadAll(reader)
+			b, err := io.ReadAll(reader)
 			logs := string(b)
 			if strings.Count(logs, ws.Log) >= ws.Occurrence {
 				break LOOP
