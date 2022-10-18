@@ -6,13 +6,13 @@ import (
 	"github.com/google/uuid"
 )
 
-var sessionID uuid.UUID
-var sessionIDOnce sync.Once
+var tcSessionID uuid.UUID
+var tcSessionIDOnce sync.Once
 
-func SessionID() uuid.UUID {
-	sessionIDOnce.Do(func() {
-		sessionID = uuid.New()
+func sessionID() uuid.UUID {
+	tcSessionIDOnce.Do(func() {
+		tcSessionID = uuid.New()
 	})
 
-	return sessionID
+	return tcSessionID
 }
