@@ -58,6 +58,7 @@ func Test_NewReaper(t *testing.T) {
 		name   string
 		req    ContainerRequest
 		config TestContainersConfig
+		ctx    context.Context
 	}
 
 	tests := []cases{
@@ -76,6 +77,15 @@ func Test_NewReaper(t *testing.T) {
 				RyukPrivileged: true,
 			},
 		},
+		{
+			name: "docker-host in context",
+			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
+				req.Mounts = Mounts(BindMount("/value/in/context.sock", "/var/run/docker.sock"))
+				return req
+			}),
+			config: TestContainersConfig{},
+			ctx:    context.WithValue(context.TODO(), dockerHostContextKey, "unix:///value/in/context.sock"),
+		},
 	}
 
 	for _, test := range tests {
@@ -86,7 +96,11 @@ func Test_NewReaper(t *testing.T) {
 				config: test.config,
 			}
 
-			_, err := NewReaper(context.TODO(), "sessionId", provider, "reaperImage")
+			if test.ctx == nil {
+				test.ctx = context.TODO()
+			}
+
+			_, err := NewReaper(test.ctx, "sessionId", provider, "reaperImage")
 			// we should have errored out see mockReaperProvider.RunContainer
 			assert.EqualError(t, err, "expected")
 
