@@ -63,13 +63,17 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		ExposedPorts: []string{string(listeningPort)},
 		NetworkMode:  Bridge,
 		Labels: map[string]string{
-			TestcontainerLabel:         "true",
 			TestcontainerLabelIsReaper: "true",
 		},
 		SkipReaper: true,
 		Mounts:     Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
 		AutoRemove: true,
 		WaitingFor: wait.ForListeningPort(listeningPort),
+	}
+
+	// include reaper-specific labels to the reaper container
+	for k, v := range reaper.Labels() {
+		req.Labels[k] = v
 	}
 
 	tcConfig := provider.Config()

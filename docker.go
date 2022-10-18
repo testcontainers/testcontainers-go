@@ -745,6 +745,12 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 		host = "unix:///var/run/docker.sock"
 	}
 
+	opts = append(opts, client.WithHTTPHeaders(
+		map[string]string{
+			"x-tc-sid": sessionID().String(),
+		}),
+	)
+
 	cli, err = client.NewClientWithOpts(opts...)
 
 	if err != nil {
@@ -934,7 +940,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		req.Labels = make(map[string]string)
 	}
 
-	sessionID := uuid.New()
+	sessionID := sessionID()
 
 	var termSignal chan bool
 	if !req.SkipReaper {
@@ -1155,7 +1161,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		return p.CreateContainer(ctx, req)
 	}
 
-	sessionID := uuid.New()
+	sessionID := sessionID()
 	var termSignal chan bool
 	if !req.SkipReaper {
 		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
@@ -1310,10 +1316,9 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		IPAM:           req.IPAM,
 	}
 
-	sessionID := uuid.New()
-
 	var termSignal chan bool
 	if !req.SkipReaper {
+		sessionID := sessionID()
 		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
