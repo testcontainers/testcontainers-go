@@ -7,19 +7,15 @@ This is intended to be useful on projects where Docker Compose is already used
 in dev or other environments to define services that an application may be
 dependent upon.
 
-<<<<<<< HEAD
-You can override Testcontainers-go's default behaviour and make it use a
-=======
 ## Using `docker-compose` directly
 
 Because `docker-compose` v2 is implemented in Go it's possible for _testcontainers-go_ to
-use [`github.com/docker/compose`](https://github.com/docker/compose) directly and skip any process execution/_
-docker-compose-in-a-container_ scenario.
+use [`github.com/docker/compose`](https://github.com/docker/compose) directly and skip any process execution/_docker-compose-in-a-container_ scenario.
 The `ComposeStack` API exposes this variant of using `docker-compose` in an easy way.
 
 ### Basic examples
 
-Use the convenience `NewDockerComposeAPI(...)` constructor which creates a random identifier and takes a variable number
+Use the convenience `NewDockerCompose(...)` constructor which creates a random identifier and takes a variable number
 of stack files:
 
 ```go
@@ -34,7 +30,7 @@ import (
 )
 
 func TestSomething(t *testing.T) {
-	compose, err := tc.NewDockerComposeAPI("testresources/docker-compose.yml")
+	compose, err := tc.NewDockerCompose("testresources/docker-compose.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -50,7 +46,7 @@ func TestSomething(t *testing.T) {
 }
 ```
 
-Use the advanced `NewDockerComposeAPIWith(...)` constructor allowing you to specify an identifier:
+Use the advanced `NewDockerComposeWith(...)` constructor allowing you to specify an identifier:
 
 ```go
 package example_test
@@ -65,7 +61,7 @@ import (
 
 func TestSomethingElse(t *testing.T) {
 	identifier := tc.StackIdentifier("some_ident")
-	compose, err := tc.NewDockerComposeAPIWith(tc.WithStackFiles("./testresources/docker-compose-simple.yml"), identifier)
+	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("./testresources/docker-compose-simple.yml"), identifier)
 	assert.NoError(t, err, "NewDockerComposeAPIWith()")
 
 	t.Cleanup(func() {
@@ -81,10 +77,19 @@ func TestSomethingElse(t *testing.T) {
 }
 ```
 
+### Interacting with compose services
+
+To interact with service containers after a stack was started it is possible to get an `*tc.DockerContainer` instance via the `ServiceContainer(...)` function.
+The function takes a **service name** (and a `context.Context`) and returns either a `*tc.DockerContainer` or an `error`.
+This is different to the previous `LocalDockerCompose` API where service containers were accessed via their **container name** e.g. `mysql_1` or `mysql-1` (depending on the version of `docker-compose`).
+
+Furthermore, there's the convenience function `Serices()` to get a list of all services **defined** by the current project.
+Note that not all of them need necessarily be correctly started as the information is based on the given compose files.
+
 ### Wait strategies
 
 Just like with regular test containers you can also apply wait strategies to `docker-compose` services.
-The `ComposeStack.WaitForService(...)` function allows you to apply a wait strategy to a service by name.
+The `ComposeStack.WaitForService(...)` function allows you to apply a wait strategy to **a service by name**.
 All wait strategies are executed in parallel to both improve startup performance by not blocking too long and to fail
 early if something's wrong.
 
@@ -105,7 +110,7 @@ import (
 
 func TestSomethingWithWaiting(t *testing.T) {
 	identifier := tc.StackIdentifier("some_ident")
-	compose, err := tc.NewDockerComposeAPIWith(tc.WithStackFiles("./testresources/docker-compose-simple.yml"), identifier)
+	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("./testresources/docker-compose-simple.yml"), identifier)
 	assert.NoError(t, err, "NewDockerComposeAPIWith()")
 
 	t.Cleanup(func() {
@@ -130,8 +135,8 @@ func TestSomethingWithWaiting(t *testing.T) {
 `docker-compose` supports expansion based on environment variables.
 The `ComposeStack` supports this as well in two different variants:
 
-- `ComposeStack.WithEnv(m map[string]string) ComposeStack` imports environment variables from your test code.
-- `ComposeStack.WithOsEnv() ComposeStack` imports environment variables from OS. Useful in CI environments.
+- `ComposeStack.WithEnv(m map[string]string) ComposeStack` to parameterize stacks from your test code
+- `ComposeStack.WithOsEnv() ComposeStack` to parameterize tests from the OS environment e.g. in CI environments
 
 ### Docs
 
@@ -144,7 +149,6 @@ _Node:_ this API is deprecated and superseded by `ComposeStack` which takes adva
 implemented in Go as well by directly using the upstream project.
 
 You can override Testcontainers' default behaviour and make it use a
->>>>>>> 1ee569c (docs(docker-compose): add docs about new ComposeStack API)
 docker-compose binary installed on the local machine. This will generally yield
 an experience that is closer to running docker-compose locally, with the caveat
 that Docker Compose needs to be present on dev and CI machines.
@@ -157,15 +161,16 @@ identifier := strings.ToLower(uuid.New().String())
 
 compose := tc.NewLocalDockerCompose(composeFilePaths, identifier)
 execError := compose.
-WithCommand([]string{"up", "-d"}).
-WithEnv(map[string]string {
-"key1": "value1",
-"key2": "value2",
-}).
-Invoke()
+    WithCommand([]string{"up", "-d"}).
+    WithEnv(map[string]string {
+        "key1": "value1",
+        "key2": "value2",
+    }).
+    Invoke()
+
 err := execError.Error
 if err != nil {
-return fmt.Errorf("Could not run compose file: %v - %v", composeFilePaths, err)
+    return fmt.Errorf("Could not run compose file: %v - %v", composeFilePaths, err)
 }
 return nil
 ```
@@ -183,7 +188,7 @@ compose := tc.NewLocalDockerCompose(composeFilePaths, identifierFromExistingRunn
 execError := compose.Down()
 err := execError.Error
 if err != nil {
-return fmt.Errorf("Could not run compose file: %v - %v", composeFilePaths, err)
+    return fmt.Errorf("Could not run compose file: %v - %v", composeFilePaths, err)
 }
 return nil
 ```

@@ -93,10 +93,10 @@ func WithStackFiles(filePaths ...string) ComposeStackOption {
 }
 
 func NewDockerCompose(filePaths ...string) (*dockerCompose, error) {
-	return NewDockerComposeAPIWith(WithStackFiles(filePaths...))
+	return NewDockerComposeWith(WithStackFiles(filePaths...))
 }
 
-func NewDockerComposeAPIWith(opts ...ComposeStackOption) (*dockerCompose, error) {
+func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 	composeOptions := composeStackOptions{
 		Identifier: uuid.New().String(),
 	}

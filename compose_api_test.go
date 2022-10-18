@@ -278,7 +278,7 @@ func TestDockerComposeAPIComplex(t *testing.T) {
 func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeAPIWith(WithStackFiles("./testresources/docker-compose-simple.yml"), identifier)
+	compose, err := NewDockerComposeWith(WithStackFiles("./testresources/docker-compose-simple.yml"), identifier)
 	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
@@ -317,7 +317,7 @@ func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 
 	identifier := testNameHash(t.Name())
 
-	compose, err := NewDockerComposeAPIWith(composeFiles, identifier)
+	compose, err := NewDockerComposeWith(composeFiles, identifier)
 	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
