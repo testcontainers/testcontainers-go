@@ -94,3 +94,42 @@ func Test_NewReaper(t *testing.T) {
 		})
 	}
 }
+
+func Test_ExtractDockerHost(t *testing.T) {
+	t.Run("Docker Host as environment variable", func(t *testing.T) {
+		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
+		host := extractDockerHost(context.Background())
+
+		assert.Equal(t, "/path/to/docker.sock", host)
+	})
+
+	t.Run("Default Docker Host", func(t *testing.T) {
+		host := extractDockerHost(context.Background())
+
+		assert.Equal(t, "/var/run/docker.sock", host)
+	})
+
+	t.Run("Malformed Docker Host is passed in context", func(t *testing.T) {
+		ctx := context.Background()
+
+		host := extractDockerHost(context.WithValue(ctx, dockerHostContextKey, "path-to-docker-sock"))
+
+		assert.Equal(t, "/var/run/docker.sock", host)
+	})
+
+	t.Run("Malformed Schema Docker Host is passed in context", func(t *testing.T) {
+		ctx := context.Background()
+
+		host := extractDockerHost(context.WithValue(ctx, dockerHostContextKey, "http://path to docker sock"))
+
+		assert.Equal(t, "/var/run/docker.sock", host)
+	})
+
+	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
+		ctx := context.Background()
+
+		host := extractDockerHost(context.WithValue(ctx, dockerHostContextKey, "unix:///this/is/a/sample.sock"))
+
+		assert.Equal(t, "/this/is/a/sample.sock", host)
+	})
+}
