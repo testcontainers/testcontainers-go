@@ -1164,7 +1164,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	sessionID := sessionID()
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := NewReaper(ctx, sessionID.String(), p, req.ReaperImage)
+		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
