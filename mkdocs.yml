@@ -58,5 +58,6 @@ nav:
           - contributing.md
           - contributing_docs.md
     - Getting help: getting_help.md
+edit_uri: edit/main/docs/
 extra:
     latest_version: 0.14.0

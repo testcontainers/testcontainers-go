@@ -1996,7 +1996,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 	tests := []struct {
 		name   string
 		dir    ContainerFile
-		errMsg string
+		errMsg []string
 	}{
 		{
 			name: "success copy directory",
@@ -2013,10 +2013,11 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
 				FileMode:          700,
 			},
-			errMsg: "can't copy " +
-				"./testresources123 to container: open " +
-				"./testresources123: no such file or directory: " +
+			errMsg: []string{
+				"can't copy ./testresources123 to container",
+				"open ./testresources123: no such file or directory",
 				"failed to create container",
+			},
 		},
 		{
 			name: "container dir not found",
@@ -2025,7 +2026,10 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 				ContainerFilePath: "/parent-does-not-exist/testresources123", // does not exist
 				FileMode:          700,
 			},
-			errMsg: "can't copy ./testresources to container: Error: No such container:path",
+			errMsg: []string{
+				"can't copy ./testresources to container",
+				"No such container:path",
+			},
 		},
 	}
 
@@ -2043,7 +2047,9 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 
 			if err != nil {
 				require.NotEmpty(t, tc.errMsg)
-				require.Contains(t, err.Error(), tc.errMsg)
+				for _, msg := range tc.errMsg {
+					require.Contains(t, err.Error(), msg)
+				}
 			} else {
 				dir := tc.dir
 
