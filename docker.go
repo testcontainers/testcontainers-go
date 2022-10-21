@@ -950,7 +950,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	sessionID := sessionID()
 
 	var termSignal chan bool
-	if !req.SkipReaper {
+	// the reaper does not need to start a reaper for itself
+	isReaperContainer := strings.EqualFold(req.Image, reaperImage(req.ReaperImage))
+	if !req.SkipReaper && !isReaperContainer {
 		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
@@ -964,7 +966,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				req.Labels[k] = v
 			}
 		}
-	} else {
+	} else if !isReaperContainer {
 		p.printReaperBanner("container")
 	}
 
@@ -1168,7 +1170,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	sessionID := sessionID()
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := NewReaper(ctx, sessionID.String(), p, req.ReaperImage)
+		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
