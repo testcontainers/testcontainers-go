@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"path"
 
 	// Import mysql into the scope of this package (required)
 	"io"
@@ -26,7 +27,6 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gotest.tools/v3/fs"
 
 	"github.com/docker/docker/errdefs"
 
@@ -1481,8 +1481,8 @@ func TestReadTCPropsFile(t *testing.T) {
 	})
 
 	t.Run("HOME does not contain TC props file", func(t *testing.T) {
-		tmpDir := fs.NewDir(t, os.TempDir())
-		t.Setenv("HOME", tmpDir.Path())
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
 
 		config := configureTC()
 
@@ -1490,8 +1490,8 @@ func TestReadTCPropsFile(t *testing.T) {
 	})
 
 	t.Run("HOME does not contain TC props file - TESTCONTAINERS_ env is set", func(t *testing.T) {
-		tmpDir := fs.NewDir(t, os.TempDir())
-		t.Setenv("HOME", tmpDir.Path())
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := configureTC()
@@ -1697,12 +1697,12 @@ func TestReadTCPropsFile(t *testing.T) {
 		}
 		for i, tt := range tests {
 			t.Run(fmt.Sprintf("[%d]", i), func(t *testing.T) {
-				tmpDir := fs.NewDir(t, os.TempDir())
-				t.Setenv("HOME", tmpDir.Path())
+				tmpDir := t.TempDir()
+				t.Setenv("HOME", tmpDir)
 				for k, v := range tt.env {
 					t.Setenv(k, v)
 				}
-				if err := os.WriteFile(tmpDir.Join(".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
+				if err := os.WriteFile(path.Join(tmpDir, ".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
 					t.Errorf("Failed to create the file: %v", err)
 					return
 				}

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gotest.tools/v3/assert"
 
 	"github.com/docker/docker/client"
 
@@ -106,7 +106,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	// get rid of the server "ready" log
 	g.Msgs = g.Msgs[1:]
 
-	assert.DeepEqual(t, []string{"echo hello\n", "echo there\n"}, g.Msgs)
+	assert.Equal(t, []string{"echo hello\n", "echo there\n"}, g.Msgs)
 	terminateContainerOnEnd(t, ctx, c)
 }
 
@@ -181,7 +181,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	<-g.Ack
 	_ = c.StopLogProducer()
 
-	assert.DeepEqual(t, map[string]string{
+	assert.Equal(t, map[string]string{
 		StdoutLog: "echo this-is-stdout\n",
 		StderrLog: "echo this-is-stderr\n",
 	}, g.LogTypes)
