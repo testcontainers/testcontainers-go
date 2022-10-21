@@ -2028,7 +2028,8 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			},
 			errMsg: []string{
 				"can't copy ./testresources to container",
-				"No such container:path",
+				"Could not find the file",
+				"failed to create container",
 			},
 		},
 	}
