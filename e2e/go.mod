@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/docker/go-connections v0.4.0
 	github.com/lib/pq v1.10.7
-	github.com/testcontainers/testcontainers-go v0.13.0
+	github.com/testcontainers/testcontainers-go v0.14.0
 	gotest.tools/gotestsum v1.8.2
 )
 
@@ -136,8 +136,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.24.1 // indirect
-	k8s.io/apimachinery v0.24.2 // indirect
-	k8s.io/client-go v0.24.2 // indirect
+	k8s.io/apimachinery v0.24.1 // indirect
+	k8s.io/client-go v0.24.1 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
@@ -151,7 +151,6 @@ replace (
 
 	github.com/opencontainers/runc => github.com/opencontainers/runc v1.1.2 // Can be removed on next bump of containerd to > 1.6.4
 	github.com/testcontainers/testcontainers-go => ../
-	github.com/tonistiigi/fsutil => github.com/tonistiigi/fsutil v0.0.0-20220115021204-b19f7f9cb274
 
 	// For k8s dependencies, we use a replace directive, to prevent them being
 	// upgraded to the version specified in containerd, which is not relevant to the
