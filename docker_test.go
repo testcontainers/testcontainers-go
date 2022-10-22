@@ -1994,9 +1994,9 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 	hostDirName := "testresources"
 
 	tests := []struct {
-		name   string
-		dir    ContainerFile
-		errMsg []string
+		name     string
+		dir      ContainerFile
+		hasError bool
 	}{
 		{
 			name: "success copy directory",
@@ -2005,6 +2005,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
 				FileMode:          700,
 			},
+			hasError: false,
 		},
 		{
 			name: "host dir not found",
@@ -2013,11 +2014,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
 				FileMode:          700,
 			},
-			errMsg: []string{
-				"can't copy ./testresources123 to container",
-				"open ./testresources123: no such file or directory",
-				"failed to create container",
-			},
+			hasError: true,
 		},
 		{
 			name: "container dir not found",
@@ -2026,10 +2023,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 				ContainerFilePath: "/parent-does-not-exist/testresources123", // does not exist
 				FileMode:          700,
 			},
-			errMsg: []string{
-				"can't copy ./testresources to container",
-				"No such container:path",
-			},
+			hasError: true,
 		},
 	}
 
@@ -2045,12 +2039,8 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 				Started: false,
 			})
 
-			if err != nil {
-				require.NotEmpty(t, tc.errMsg)
-				for _, msg := range tc.errMsg {
-					require.Contains(t, err.Error(), msg)
-				}
-			} else {
+			require.True(t, (err != nil) == tc.hasError)
+			if err == nil {
 				dir := tc.dir
 
 				assertExtractedFiles(t, ctx, nginxC, dir.HostFilePath, dir.ContainerFilePath)
