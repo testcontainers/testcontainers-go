@@ -10,8 +10,8 @@ var _ Strategy = (*ExecStrategy)(nil)
 
 type ExecStrategy struct {
 	// all Strategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
-	cmd            []string
+	timeout *time.Duration
+	cmd     []string
 
 	// additional properties
 	ExitCodeMatcher func(exitCode int) bool
@@ -21,7 +21,6 @@ type ExecStrategy struct {
 // NewExecStrategy constructs an Exec strategy ...
 func NewExecStrategy(cmd []string) *ExecStrategy {
 	return &ExecStrategy{
-		startupTimeout:  defaultStartupTimeout(),
 		cmd:             cmd,
 		ExitCodeMatcher: defaultExitCodeMatcher,
 		PollInterval:    defaultPollInterval(),
@@ -32,8 +31,9 @@ func defaultExitCodeMatcher(exitCode int) bool {
 	return exitCode == 0
 }
 
+// WithStartupTimeout can be used to change the default startup timeout
 func (ws *ExecStrategy) WithStartupTimeout(startupTimeout time.Duration) *ExecStrategy {
-	ws.startupTimeout = startupTimeout
+	ws.timeout = &startupTimeout
 	return ws
 }
 
@@ -53,10 +53,18 @@ func ForExec(cmd []string) *ExecStrategy {
 	return NewExecStrategy(cmd)
 }
 
-func (ws ExecStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
-	// limit context to startupTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
-	defer cancelContext()
+func (ws *ExecStrategy) Timeout() *time.Duration {
+	return ws.timeout
+}
+
+func (ws *ExecStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
+	timeout := defaultStartupTimeout()
+	if ws.timeout != nil {
+		timeout = *ws.timeout
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	for {
 		select {

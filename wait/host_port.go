@@ -20,16 +20,15 @@ type HostPortStrategy struct {
 	// which
 	Port nat.Port
 	// all WaitStrategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
-	PollInterval   time.Duration
+	timeout      *time.Duration
+	PollInterval time.Duration
 }
 
 // NewHostPortStrategy constructs a default host port strategy
 func NewHostPortStrategy(port nat.Port) *HostPortStrategy {
 	return &HostPortStrategy{
-		Port:           port,
-		startupTimeout: defaultStartupTimeout(),
-		PollInterval:   defaultPollInterval(),
+		Port:         port,
+		PollInterval: defaultPollInterval(),
 	}
 }
 
@@ -49,8 +48,9 @@ func ForExposedPort() *HostPortStrategy {
 	return NewHostPortStrategy("")
 }
 
+// WithStartupTimeout can be used to change the default startup timeout
 func (hp *HostPortStrategy) WithStartupTimeout(startupTimeout time.Duration) *HostPortStrategy {
-	hp.startupTimeout = startupTimeout
+	hp.timeout = &startupTimeout
 	return hp
 }
 
@@ -60,11 +60,19 @@ func (hp *HostPortStrategy) WithPollInterval(pollInterval time.Duration) *HostPo
 	return hp
 }
 
+func (hp *HostPortStrategy) Timeout() *time.Duration {
+	return hp.timeout
+}
+
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	// limit context to startupTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, hp.startupTimeout)
-	defer cancelContext()
+	timeout := defaultStartupTimeout()
+	if hp.timeout != nil {
+		timeout = *hp.timeout
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	ipAddress, err := target.Host(ctx)
 	if err != nil {

@@ -12,7 +12,7 @@ var _ Strategy = (*ExitStrategy)(nil)
 // ExitStrategy will wait until container exit
 type ExitStrategy struct {
 	// all Strategies should have a timeout to avoid waiting infinitely
-	exitTimeout time.Duration
+	timeout *time.Duration
 
 	// additional properties
 	PollInterval time.Duration
@@ -32,11 +32,11 @@ func NewExitStrategy() *ExitStrategy {
 
 // WithExitTimeout can be used to change the default exit timeout
 func (ws *ExitStrategy) WithExitTimeout(exitTimeout time.Duration) *ExitStrategy {
-	ws.exitTimeout = exitTimeout
+	ws.timeout = &exitTimeout
 	return ws
 }
 
-// WithPollInterval can be used to override the default polling interval of 100 milliseconds
+// WithPollInterval can be used to override the default polling interval of 100 milliseconds func (ws *ExitStrategy) WithPollInterval(pollInterval time.Duration) *ExitStrategy {
 func (ws *ExitStrategy) WithPollInterval(pollInterval time.Duration) *ExitStrategy {
 	ws.PollInterval = pollInterval
 	return ws
@@ -53,13 +53,16 @@ func ForExit() *ExitStrategy {
 	return NewExitStrategy()
 }
 
+func (ws *ExitStrategy) Timeout() *time.Duration {
+	return ws.timeout
+}
+
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (ws *ExitStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	// limit context to exitTimeout
-	if ws.exitTimeout > 0 {
-		var cancelContext context.CancelFunc
-		ctx, cancelContext = context.WithTimeout(ctx, ws.exitTimeout)
-		defer cancelContext()
+	if ws.timeout != nil {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, *ws.timeout)
+		defer cancel()
 	}
 
 	for {

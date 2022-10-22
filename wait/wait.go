@@ -11,6 +11,7 @@ import (
 
 type Strategy interface {
 	WaitUntilReady(context.Context, StrategyTarget) error
+	Timeout() *time.Duration
 }
 
 type StrategyTarget interface {
