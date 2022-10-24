@@ -421,9 +421,6 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 }
 
 func TestLocalDockerComposeWithVolume(t *testing.T) {
-	if providerType == ProviderPodman {
-		t.Skip("fails for some reason with Podman")
-	}
 	path := "./testresources/docker-compose-volume.yml"
 
 	identifier := strings.ToLower(uuid.New().String())
