@@ -12,7 +12,7 @@ import (
 const defaultForSqlQuery = "SELECT 1"
 
 //ForSQL constructs a new waitForSql strategy for the given driver
-func ForSQL(port nat.Port, driver string, url func(string, nat.Port) string) *waitForSql {
+func ForSQL(port nat.Port, driver string, url func(host string, port nat.Port) string) *waitForSql {
 	return &waitForSql{
 		Port:           port,
 		URL:            url,
