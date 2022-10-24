@@ -9,8 +9,7 @@ test-unit:
 		--format short-verbose \
 		--rerun-fails=5 \
 		--packages="./..." \
-		--junitfile TEST-unit.xml \
-		-- -coverprofile=cover.txt
+		--junitfile TEST-unit.xml
 
 .PHONY: test-e2e
 test-e2e:
