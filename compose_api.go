@@ -110,9 +110,7 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) {
 	projectName := filepath.Base(currentDir)
 	projectHash := fmt.Sprintf("%x", fnv.New32a().Sum([]byte(currentDir)))[:32]
 	tmpDir := filepath.Join(os.TempDir(), "testcontainers-go", fmt.Sprintf("%s-%s", projectName, projectHash))
-	if err := os.RemoveAll(tmpDir); err != nil {
-		panic(err)
-	}
+
 	if err := os.MkdirAll(tmpDir, os.ModePerm); err != nil {
 		panic(err)
 	}
