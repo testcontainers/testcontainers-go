@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
-	"io"
 	"strings"
 	"testing"
 	"time"
@@ -432,8 +431,8 @@ services:
     image: redis:alpine3.15
 `)
 	)
-	compose, err := NewDockerComposeWithReaders([]io.Reader{specOne, specTwo, specTree})
-	assert.NoError(t, err, "NewDockerComposeWithReaders()")
+	compose, err := NewDockerComposeWith(WithStackReaders(specOne, specTwo, specTree))
+	assert.NoError(t, err, "NewDockerComposeWith(WithStackReaders(...))")
 	assert.Equal(t, 3, len(compose.configs))
 
 	t.Cleanup(func() {

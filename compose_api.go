@@ -3,6 +3,10 @@ package testcontainers
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
+	"io"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -90,6 +94,45 @@ func (f StackIdentifier) applyToComposeStack(o *composeStackOptions) {
 
 func (f StackIdentifier) String() string {
 	return string(f)
+}
+
+type ComposeStackReaders []io.Reader
+
+func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	// choose directory to keep temporary files
+	// like
+	// 		/tmp/testcontainers-go/my-awesome-service-2f686f6d652f676f666f7262726f6b65
+	projectName := filepath.Base(currentDir)
+	projectHash := fmt.Sprintf("%x", fnv.New32a().Sum([]byte(currentDir)))[:32]
+	tmpDir := filepath.Join(os.TempDir(), "testcontainers-go", fmt.Sprintf("%s-%s", projectName, projectHash))
+	if err := os.RemoveAll(tmpDir); err != nil {
+		panic(err)
+	}
+	if err := os.MkdirAll(tmpDir, os.ModePerm); err != nil {
+		panic(err)
+	}
+
+	// write temporary files and put to files list
+	filePaths := make([]string, 0, len(r))
+	for idx, src := range r {
+		content, err := io.ReadAll(src)
+		if err != nil {
+			panic(err)
+		}
+		name := fmt.Sprintf("docker-compose-%d.yaml", idx)
+		filename := filepath.Join(tmpDir, name)
+		if err := os.WriteFile(filename, content, os.ModePerm); err != nil {
+			continue
+		}
+		filePaths = append(filePaths, filename)
+	}
+
+	o.Paths = filePaths
 }
 
 const (

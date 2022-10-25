@@ -3,10 +3,7 @@ package testcontainers
 import (
 	"context"
 	"errors"
-	"fmt"
-	"hash/fnv"
 	"io"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -96,6 +93,10 @@ func WithStackFiles(filePaths ...string) ComposeStackOption {
 	return ComposeStackFiles(filePaths)
 }
 
+func WithStackReaders(readers ...io.Reader) ComposeStackOption {
+	return ComposeStackReaders(readers)
+}
+
 func NewDockerCompose(filePaths ...string) (*dockerCompose, error) {
 	return NewDockerComposeWith(WithStackFiles(filePaths...))
 }
@@ -178,42 +179,4 @@ func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalD
 	dc.WaitStrategyMap = make(map[waitService]wait.Strategy)
 
 	return dc
-}
-
-func NewDockerComposeWithReaders(readers []io.Reader) (*dockerCompose, error) {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	// choose directory to keep temporary files
-	// like
-	// 		/tmp/testcontainers-go/my-awesome-service-2f686f6d652f676f666f7262726f6b65
-	projectName := filepath.Base(currentDir)
-	projectHash := fmt.Sprintf("%x", fnv.New32a().Sum([]byte(currentDir)))[:32]
-	tmpDir := filepath.Join(os.TempDir(), "testcontainers-go", fmt.Sprintf("%s-%s", projectName, projectHash))
-	if err := os.RemoveAll(tmpDir); err != nil {
-		return nil, err
-	}
-	if err := os.MkdirAll(tmpDir, os.ModePerm); err != nil {
-		return nil, err
-	}
-
-	// write temporary files and put to files list
-	filePaths := make([]string, 0, len(readers))
-	for idx, src := range readers {
-		content, err := io.ReadAll(src)
-		if err != nil {
-			return nil, err
-		}
-		name := fmt.Sprintf("docker-compose-%d.yaml", idx)
-		filename := filepath.Join(tmpDir, name)
-		if err := os.WriteFile(filename, content, os.ModePerm); err != nil {
-			continue
-		}
-		filePaths = append(filePaths, filename)
-	}
-
-	// call usual constructor
-	return NewDockerCompose(filePaths...)
 }
