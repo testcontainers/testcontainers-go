@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -407,6 +409,48 @@ func TestDockerComposeApiWithWaitForShortLifespanService(t *testing.T) {
 	assert.Equal(t, 2, len(services))
 	assert.Contains(t, services, "falafel")
 	assert.Contains(t, services, "tzatziki")
+}
+
+func TestNewDockerComposeWithReaders(t *testing.T) {
+	var (
+		specOne = strings.NewReader(`
+version: "3"
+services:
+  nginx:
+    image: nginx:1.22.0-alpine
+`)
+		specTwo = strings.NewReader(`
+version: "3"
+services:
+  php:
+    image: php:8.1.7-alpine3.15
+`)
+		specTree = strings.NewReader(`
+version: "3"
+services:
+  redis:
+    image: redis:alpine3.15
+`)
+	)
+	compose, err := NewDockerComposeWithReaders([]io.Reader{specOne, specTwo, specTree})
+	assert.NoError(t, err, "NewDockerComposeWithReaders()")
+	assert.Equal(t, 3, len(compose.configs))
+
+	t.Cleanup(func() {
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.Up(ctx)
+	assert.NoError(t, err, "compose.Up()")
+
+	serviceNames := compose.Services()
+	assert.Equal(t, 3, len(serviceNames))
+	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "php")
+	assert.Contains(t, serviceNames, "redis")
 }
 
 func testNameHash(name string) StackIdentifier {
