@@ -6,26 +6,26 @@ template: |
 categories:
   - title: 🚀 Features
     labels:
-      - feature
-      - type/feature
+      - 'feature'
+      - 'type/feature'
   - title: ⚠️ Breaking Changes
     labels:
-      - breaking change
-      - type/bc-break
+      - 'breaking change'
+      - 'type/bc-break'
   - title: 🐛 Bug Fixes
     labels:
-      - bug
-      - type/bug
+      - 'bug'
+      - 'type/bug'
   - title: 📖 Documentation
     labels:
-      - documentation
-      - type/docs
+      - 'documentation'
+      - 'type/docs'
   - title: 🧹 Housekeeping
     labels:
-      - chore
-      - test flakiness
-      - type/housekeeping
-      - type/test-flakiness
-      - type/test-improvement
+      - 'chore'
+      - 'test flakiness'
+      - 'type/housekeeping'
+      - 'type/test-flakiness'
+      - 'type/test-improvement'
   - title: 📦 Dependency updates
     label: dependencies
