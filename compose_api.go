@@ -3,7 +3,6 @@ package testcontainers
 import (
 	"context"
 	"fmt"
-	"hash/fnv"
 	"io"
 	"os"
 	"path/filepath"
@@ -18,6 +17,7 @@ import (
 	types2 "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -99,18 +99,11 @@ func (f StackIdentifier) String() string {
 type ComposeStackReaders []io.Reader
 
 func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
 	// choose directory to keep temporary files
 	// like
-	// 		/tmp/testcontainers-go/my-awesome-service-2f686f6d652f676f666f7262726f6b65
-	projectName := filepath.Base(currentDir)
-	projectHash := fmt.Sprintf("%x", fnv.New32a().Sum([]byte(currentDir)))[:32]
-	tmpDir := filepath.Join(os.TempDir(), "testcontainers-go", fmt.Sprintf("%s-%s", projectName, projectHash))
-
+	// 		/tmp/00000000-00000000-00000000-00000000/
+	composeID := uuid.New().String()
+	tmpDir := filepath.Join(os.TempDir(), composeID)
 	if err := os.MkdirAll(tmpDir, os.ModePerm); err != nil {
 		panic(err)
 	}
@@ -122,10 +115,9 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) {
 		if err != nil {
 			panic(err)
 		}
-		name := fmt.Sprintf("docker-compose-%d.yaml", idx)
-		filename := filepath.Join(tmpDir, name)
+		filename := filepath.Join(tmpDir, fmt.Sprintf("docker-compose-%d.yaml", idx))
 		if err := os.WriteFile(filename, content, os.ModePerm); err != nil {
-			continue
+			panic(err)
 		}
 		filePaths = append(filePaths, filename)
 	}
