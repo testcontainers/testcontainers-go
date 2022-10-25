@@ -5,15 +5,25 @@ template: |
     $CHANGES
 categories:
   - title: 🚀 Features
-    label: type/feature
+    labels:
+      - feature
+      - type/feature
   - title: ⚠️ Breaking Changes
-    label: type/bc-break
+    labels:
+      - breaking change
+      - type/bc-break
   - title: 🐛 Bug Fixes
-    label: type/bug
+    labels:
+      - bug
+      - type/bug
   - title: 📖 Documentation
-    label: type/docs
+    labels:
+      - documentation
+      - type/docs
   - title: 🧹 Housekeeping
     labels:
+      - chore
+      - test flakiness
       - type/housekeeping
       - type/test-flakiness
       - type/test-improvement
