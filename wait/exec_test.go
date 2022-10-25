@@ -44,6 +44,10 @@ func (st mockExecTarget) Host(_ context.Context) (string, error) {
 	return "", errors.New("not implemented")
 }
 
+func (st mockExecTarget) Ports(ctx context.Context) (nat.PortMap, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (st mockExecTarget) MappedPort(_ context.Context, n nat.Port) (nat.Port, error) {
 	return n, errors.New("not implemented")
 }

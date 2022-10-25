@@ -8,7 +8,7 @@ import (
 // SkipIfProviderIsNotHealthy is a utility function capable of skipping tests
 // if the provider is not healthy, or running at all.
 // This is a function designed to be used in your test, when Docker is not mandatory for CI/CD.
-// In this way tests that depend on testcontainers won't run if the provider is provisioned correctly.
+// In this way tests that depend on Testcontainers won't run if the provider is provisioned correctly.
 func SkipIfProviderIsNotHealthy(t *testing.T) {
 	ctx := context.Background()
 	provider, err := ProviderDocker.GetProvider()

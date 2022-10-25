@@ -9,28 +9,38 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+const defaultForSqlQuery = "SELECT 1"
+
 //ForSQL constructs a new waitForSql strategy for the given driver
-func ForSQL(port nat.Port, driver string, url func(nat.Port) string) *waitForSql {
+func ForSQL(port nat.Port, driver string, url func(host string, port nat.Port) string) *waitForSql {
 	return &waitForSql{
 		Port:           port,
 		URL:            url,
 		Driver:         driver,
 		startupTimeout: defaultStartupTimeout(),
 		PollInterval:   defaultPollInterval(),
+		query:          defaultForSqlQuery,
 	}
 }
 
 type waitForSql struct {
-	URL            func(port nat.Port) string
+	URL            func(host string, port nat.Port) string
 	Driver         string
 	Port           nat.Port
 	startupTimeout time.Duration
 	PollInterval   time.Duration
+	query          string
 }
 
 //Timeout sets the maximum waiting time for the strategy after which it'll give up and return an error
+// Deprecated: Use WithStartupTimeout
 func (w *waitForSql) Timeout(duration time.Duration) *waitForSql {
-	w.startupTimeout = duration
+	return w.WithStartupTimeout(duration)
+}
+
+// WithStartupTimeout can be used to change the default startup timeout
+func (w *waitForSql) WithStartupTimeout(startupTimeout time.Duration) *waitForSql {
+	w.startupTimeout = startupTimeout
 	return w
 }
 
@@ -40,11 +50,23 @@ func (w *waitForSql) WithPollInterval(pollInterval time.Duration) *waitForSql {
 	return w
 }
 
-//WaitUntilReady repeatedly tries to run "SELECT 1" query on the given port using sql and driver.
-// If the it doesn't succeed until the timeout value which defaults to 60 seconds, it will return an error
+//WithQuery can be used to override the default query used in the strategy.
+func (w *waitForSql) WithQuery(query string) *waitForSql {
+	w.query = query
+	return w
+}
+
+//WaitUntilReady repeatedly tries to run "SELECT 1" or user defined query on the given port using sql and driver.
+//
+// If it doesn't succeed until the timeout value which defaults to 60 seconds, it will return an error.
 func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, w.startupTimeout)
 	defer cancel()
+
+	host, err := target.Host(ctx)
+	if err != nil {
+		return
+	}
 
 	ticker := time.NewTicker(w.PollInterval)
 	defer ticker.Stop()
@@ -61,7 +83,7 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 		}
 	}
 
-	db, err := sql.Open(w.Driver, w.URL(port))
+	db, err := sql.Open(w.Driver, w.URL(host, port))
 	if err != nil {
 		return fmt.Errorf("sql.Open: %v", err)
 	}
@@ -72,7 +94,7 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 			return ctx.Err()
 		case <-ticker.C:
 
-			if _, err := db.ExecContext(ctx, "SELECT 1"); err != nil {
+			if _, err := db.ExecContext(ctx, w.query); err != nil {
 				continue
 			}
 			return nil
