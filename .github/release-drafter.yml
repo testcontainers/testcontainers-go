@@ -28,4 +28,4 @@ categories:
       - 'type/test-flakiness'
       - 'type/test-improvement'
   - title: 📦 Dependency updates
-    label: dependencies
+    label: 'dependencies'
