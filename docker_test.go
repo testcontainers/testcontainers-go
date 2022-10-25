@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	// Import mysql into the scope of this package (required)
-	_ "github.com/go-sql-driver/mysql"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -18,7 +16,11 @@ import (
 	"testing"
 	"time"
 
+	// Import mysql into the scope of this package (required)
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-units"
 	"github.com/go-redis/redis/v8"
@@ -128,6 +130,62 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 	if len(networkIP) == 0 {
 		t.Errorf("Expected an IP address, got %v", networkIP)
 	}
+}
+
+func TestContainerAttachedToNewNetworkWithFixedIP(t *testing.T) {
+	// user specified IP address is supported only when connecting to networks with user configured subnets
+	networkName := "network-ipam-ip"
+	ctx := context.Background()
+	ipamConfig := network.IPAM{
+		Driver: "default",
+		Config: []network.IPAMConfig{
+			{
+				Subnet:  "10.1.2.0/24",
+				Gateway: "10.1.2.254",
+			},
+		},
+		Options: map[string]string{
+			"driver": "host-local",
+		},
+	}
+	net, err := GenericNetwork(ctx, GenericNetworkRequest{
+		NetworkRequest: NetworkRequest{
+			Name:           networkName,
+			CheckDuplicate: true,
+			IPAM:           &ipamConfig,
+		},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, net.Remove(ctx))
+	})
+
+	customIP := "10.1.2.5" // so its not first one available
+	gcr := GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: nginxAlpineImage,
+			ExposedPorts: []string{
+				nginxDefaultPort,
+			},
+			Networks: []string{
+				networkName,
+			},
+			IPAMConfig: &network.EndpointIPAMConfig{
+				IPv4Address: customIP,
+			},
+		},
+		Started: true,
+	}
+
+	nginx, err := GenericContainer(ctx, gcr)
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginx)
+	networkIP, err := nginx.ContainerIP(ctx)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, networkIP)
+	require.Equal(t, networkIP, customIP, "ip address is not the same as requested one")
 }
 
 func TestContainerWithHostNetworkOptions(t *testing.T) {
@@ -1565,7 +1623,6 @@ func TestReadTCPropsFile(t *testing.T) {
 				config := configureTC()
 
 				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
-
 			})
 		}
 	})
