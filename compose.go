@@ -81,6 +81,7 @@ type DockerCompose interface {
 	WithCommand([]string) DockerCompose
 	WithEnv(map[string]string) DockerCompose
 	WithExposedService(string, int, wait.Strategy) DockerCompose
+	ServiceContainer(service string) (Container, error)
 }
 
 type waitService struct {
@@ -172,6 +173,7 @@ func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalD
 	dc.Identifier = strings.ToLower(identifier)
 	dc.waitStrategySupplied = false
 	dc.WaitStrategyMap = make(map[waitService]wait.Strategy)
-
+	dc.ServiceContainers = make(map[string]Container)
+	
 	return dc
 }

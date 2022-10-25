@@ -523,3 +523,35 @@ func checkIfError(t *testing.T, err ExecError) {
 	assert.NotNil(t, err.StdoutOutput)
 	assert.NotNil(t, err.StderrOutput)
 }
+
+func TestLocalDockerCompose_GetServiceContainer(t *testing.T) {
+	path := "./testresources/docker-compose-simple.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	compose_err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithEnv(map[string]string{
+			"bar": "BAR",
+		}).
+		Invoke()
+	checkIfError(t, compose_err)
+
+	serviceContainer, err := compose.ServiceContainer("nginx")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	containerName, err := serviceContainer.Name(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Contains(t, containerName, "nginx")
+}
