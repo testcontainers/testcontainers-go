@@ -811,6 +811,24 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 	return p, nil
 }
 
+func logDockerServerInfo(ctx context.Context, client client.APIClient, logger Logging) {
+	infoMessage := `%v - Connected to docker: 
+  Server Version: %v
+  API Version: %v
+  Operating System: %v
+  Total Memory: %v MB
+`
+
+	info, err := client.Info(ctx)
+	if err != nil {
+		logger.Printf("failed getting information about docker server: %s", err)
+	}
+
+	logger.Printf(infoMessage, packagePath,
+		info.ServerVersion, client.ClientVersion(),
+		info.OperatingSystem, info.MemTotal/1024/1024)
+}
+
 // configureTC reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
 func configureTC() TestContainersConfig {
