@@ -822,6 +822,7 @@ func logDockerServerInfo(ctx context.Context, client client.APIClient, logger Lo
 	info, err := client.Info(ctx)
 	if err != nil {
 		logger.Printf("failed getting information about docker server: %s", err)
+		return
 	}
 
 	logger.Printf(infoMessage, packagePath,
