@@ -58,7 +58,7 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 
 	var c Container
 	if req.Reuse {
-		// we must protect the reusability of the container in the case it's invoke
+		// we must protect the reusability of the container in the case it's invoked
 		// in a parallel execution, via ParallelContainers or t.Parallel()
 		reuseContainerMx.Lock()
 		defer reuseContainerMx.Unlock()
