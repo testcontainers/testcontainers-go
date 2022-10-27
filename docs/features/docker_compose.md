@@ -9,7 +9,7 @@ dependent upon.
 
 ## Using `docker-compose` directly
 
-Because `docker-compose` v2 is implemented in Go it's possible for _testcontainers-go_ to
+Because `docker-compose` v2 is implemented in Go it's possible for _Testcontainers for Go_ to
 use [`github.com/docker/compose`](https://github.com/docker/compose) directly and skip any process execution/_docker-compose-in-a-container_ scenario.
 The `ComposeStack` API exposes this variant of using `docker-compose` in an easy way.
 
