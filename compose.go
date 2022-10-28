@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/compose-spec/compose-go/types"
 	"github.com/docker/cli/cli/command"
@@ -23,6 +24,7 @@ const (
 	envComposeFile = "COMPOSE_FILE"
 )
 
+var composeLogOnce sync.Once
 var ErrNoStackConfigured = errors.New("no stack files configured")
 
 type composeStackOptions struct {
@@ -133,6 +135,11 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		waitStrategies: make(map[string]wait.Strategy),
 		containers:     make(map[string]*DockerContainer),
 	}
+
+	// log docker server info only once
+	composeLogOnce.Do(func() {
+		logDockerServerInfo(context.Background(), dockerCli.Client(), Logger)
+	})
 
 	return composeAPI, nil
 }
