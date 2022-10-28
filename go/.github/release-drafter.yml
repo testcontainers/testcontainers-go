@@ -1,0 +1,24 @@
+name-template: v$NEXT_PATCH_VERSION
+tag-template: v$NEXT_PATCH_VERSION
+template: |
+    # What's Changed
+    $CHANGES
+categories:
+  - title: 🚀 Features
+    labels:
+      - 'feature'
+  - title: ⚠️ Breaking Changes
+    labels:
+      - 'breaking change'
+  - title: 🐛 Bug Fixes
+    labels:
+      - 'bug'
+  - title: 📖 Documentation
+    labels:
+      - 'documentation'
+  - title: 🧹 Housekeeping
+    labels:
+      - 'chore'
+      - 'test flakiness'
+  - title: 📦 Dependency updates
+    label: 'dependencies'

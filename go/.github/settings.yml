@@ -1,0 +1,193 @@
+# These settings are synced to GitHub by https://probot.github.io/apps/settings/
+
+repository:
+  # See https://docs.github.com/en/rest/reference/repos#update-a-repository for all available settings.
+
+  # The name of the repository. Changing this will rename the repository
+  name: testcontainers-go
+
+  # A short description of the repository that will show up on GitHub
+  description: Testcontainers for Go is a Golang library that provides a friendly API to run Docker containers. It is designed to create a runtime testing environment to use during your automatic tests.
+
+  # A URL with more information about the repository
+  homepage: https://golang.testcontainers.org
+
+  # A comma-separated list of topics to set on the repository
+  topics: testing,go,docker,golang,automation,testcontainers,hacktoberfest,testcontainers-go
+
+  # Either `true` to make the repository private, or `false` to make it public.
+  private: false
+
+  # Either `true` to enable issues for this repository, `false` to disable them.
+  has_issues: true
+
+  # Either `true` to enable projects for this repository, or `false` to disable them.
+  # If projects are disabled for the organization, passing `true` will cause an API error.
+  has_projects: false
+
+  # Either `true` to enable the wiki for this repository, `false` to disable it.
+  has_wiki: false
+
+  # Either `true` to enable downloads for this repository, `false` to disable them.
+  has_downloads: false
+
+  # Updates the default branch for this repository.
+  default_branch: main
+
+  # Either `true` to allow squash-merging pull requests, or `false` to prevent
+  # squash-merging.
+  allow_squash_merge: true
+
+  # Either `true` to allow merging pull requests with a merge commit, or `false`
+  # to prevent merging pull requests with merge commits.
+  allow_merge_commit: false
+
+  # Either `true` to allow rebase-merging pull requests, or `false` to prevent
+  # rebase-merging.
+  allow_rebase_merge: false
+
+  # Either `true` to enable automatic deletion of branches on merge, or `false` to disable
+  delete_branch_on_merge: true
+
+# Labels: define labels for Issues and Pull Requests
+# If including a `#`, make sure to wrap it with quotes!
+labels:
+  - name: bug
+    color: '#ff0000'
+    description: An issue with the library
+
+  - name: compose
+    color: '#0888DA'
+    description: Docker Compose.
+
+  - name: dependencies
+    color: '#0c19d1'
+    description: Dependencies or external services
+
+  - name: duplicate
+    color: '#cfd3d7'
+    description: This issue or pull request already exists
+
+  - name: enhancement
+    color: '#a2eeef'
+    description: New feature or request
+
+  - name: good first issue
+    color: '#FEF2C0'
+    description: Want to contribute to testcontainers? Start from here
+
+  - name: hacktoberfest
+    color: '#fbca04'
+    description: Pull Requests accepted for Hacktoberfest.
+
+  - name: help wanted
+    color: '#008672'
+    description: Extra attention is needed
+
+  - name: invalid
+    color: '#e4e669'
+    description: Not accepted or invalid for any reason.
+
+  - name: low hanging fruit
+    color: '#FFC300'
+    description: Issues that are good for newcomers.
+
+  - name: podman
+    color: '#B52710'
+    description: Issues regarding podman.
+
+  - name: breaking change
+    color: '#c91873'
+    description: Causing compatibility issues.
+
+  - name: documentation
+    color: '#ede889'
+    description: Docs, docs, docs.
+
+  - name: feature
+    color: '#11c134'
+    description: New functionality or new behaviors on the existing one
+
+  - name: chore
+    color: '#c87eea'
+    description: Changes that do not impact the existing functionality
+
+  - name: question
+    color: '#8ba7f4'
+    description: Have you tried our Slack (https://testcontainers.slack.com)?
+
+  - name: security
+    color: '#D93F0B'
+    description: Vulnerabilities in dependencies or in the library itself
+
+  - name: test flakiness
+    color: '#602A4F'
+    description: Report a flaky test that happens on the CI
+
+  - name: "won't fix"
+    color: '#ffffff'
+    description: This will not be worked on
+
+# Collaborators: give specific users access to this repository.
+# See https://docs.github.com/en/rest/reference/repos#add-a-repository-collaborator for available options
+collaborators:
+  - username: gianarb
+    permission: maintain
+  - username: mdelapenya
+    permission: admin
+
+  # Note: `permission` is only valid on organization-owned repositories.
+  # The permission to grant the collaborator. Can be one of:
+  # * `pull` - can pull, but not push to or administer this repository.
+  # * `push` - can pull and push, but not administer this repository.
+  # * `admin` - can pull, push and administer this repository.
+  # * `maintain` - Recommended for project managers who need to manage the repository without access to sensitive or destructive actions.
+  # * `triage` - Recommended for contributors who need to proactively manage issues and pull requests without write access.
+
+# See https://docs.github.com/en/rest/reference/teams#add-or-update-team-repository-permissions for available options
+teams:
+  # Please make sure the team already exist in the organization, as the repository-settings application is not creating them.
+  # See https://github.com/repository-settings/app/discussions/639 for more information about teams and settings
+  - name: go-team
+    # The permission to grant the team. Can be one of:
+    # * `pull` - can pull, but not push to or administer this repository.
+    # * `push` - can pull and push, but not administer this repository.
+    # * `admin` - can pull, push and administer this repository.
+    # * `maintain` - Recommended for project managers who need to manage the repository without access to sensitive or destructive actions.
+    # * `triage` - Recommended for contributors who need to proactively manage issues and pull requests without write access.
+    permission: admin
+  - name: oss-team
+    permission: maintain
+
+branches:
+  - name: main
+    # https://docs.github.com/en/rest/reference/repos#update-branch-protection
+    # Branch Protection settings. Set to null to disable
+    protection:
+      # Required. Require at least one approving review on a pull request, before merging. Set to null to disable.
+      required_pull_request_reviews:
+        # The number of approvals required. (1-6)
+        required_approving_review_count: 1
+        # Dismiss approved reviews automatically when a new commit is pushed.
+        dismiss_stale_reviews: true
+        # Blocks merge until code owners have reviewed.
+        require_code_owner_reviews: true
+        # Specify which users and teams can dismiss pull request reviews. Pass an empty dismissal_restrictions object to disable. User and team dismissal_restrictions are only available for organization-owned repositories. Omit this parameter for personal repositories.
+        dismissal_restrictions:
+          users: []
+          teams: [go-team]
+      # Required. Require status checks to pass before merging. Set to null to disable
+      required_status_checks:
+        # Required. Require branches to be up to date before merging.
+        strict: true
+        # Required. The list of status checks to require in order to merge into this branch
+        contexts: ["static-analysis", "tests (1.x, ubuntu-latest)"]
+      # Required. Enforce all configured restrictions for administrators. Set to true to enforce required status checks for repository administrators. Set to null to disable.
+      enforce_admins: false
+      # Prevent merge commits from being pushed to matching branches
+      required_linear_history: true
+      # Required. Restrict who can push to this branch. Team and user restrictions are only available for organization-owned repositories. Set to null to disable.
+      restrictions:
+        apps: []
+        users: []
+        teams: [go-team]
