@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 )
 
 var (
+	reuseContainerMx  sync.Mutex
 	ErrReuseEmptyName = errors.New("with reuse option a container name mustn't be empty")
 )
 
@@ -56,6 +58,11 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 
 	var c Container
 	if req.Reuse {
+		// we must protect the reusability of the container in the case it's invoked
+		// in a parallel execution, via ParallelContainers or t.Parallel()
+		reuseContainerMx.Lock()
+		defer reuseContainerMx.Unlock()
+
 		c, err = provider.ReuseOrCreateContainer(ctx, req.ContainerRequest)
 	} else {
 		c, err = provider.CreateContainer(ctx, req.ContainerRequest)
