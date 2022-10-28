@@ -6,7 +6,7 @@
 Get lightweight and throwaway containers during your tests that let you test against any container image (database, broker, browser, etc..) using one of the several supported languages.
 
 
-<p align=center><strong>Not using Go? Here are other supported languages!</strong></p>
+<p align="center"><strong>Not using Go? Here are other supported languages!</strong></p>
 <div class="card-grid">
     <a href="https://testcontainers.org" class="card-grid-item"><img src="language-logos/java.svg"/>Java</a>
     <a class="card-grid-item"><img src="language-logos/go.svg"/>Go</a>
