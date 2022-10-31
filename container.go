@@ -76,12 +76,12 @@ type ImageBuildInfo interface {
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
 // rather than using a pre-built one
 type FromDockerfile struct {
-	Context        string             // the path to the context of of the docker build
-	ContextArchive io.Reader          // the tar archive file to send to docker that contains the build context
-	Dockerfile     string             // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
-	BuildArgs      map[string]*string // enable user to pass build args to docker daemon
-	PrintBuildLog  bool               // enable user to print build log
-	AuthConfigs    map[string]types.AuthConfig
+	Context        string                      // the path to the context of of the docker build
+	ContextArchive io.Reader                   // the tar archive file to send to docker that contains the build context
+	Dockerfile     string                      // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
+	BuildArgs      map[string]*string          // enable user to pass build args to docker daemon
+	PrintBuildLog  bool                        // enable user to print build log
+	AuthConfigs    map[string]types.AuthConfig // enable auth configs to be able to pull from an authenticated docker registry
 }
 
 type ContainerFile struct {
