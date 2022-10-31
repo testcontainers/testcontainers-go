@@ -1,6 +1,6 @@
 # Build from Dockerfile
 
-Testcontainers-go gives you the ability to build an image and run a container
+_Testcontainers for Go_ gives you the ability to build an image and run a container
 from a Dockerfile.
 
 You can do so by specifying a `Context` (the filepath to the build context on

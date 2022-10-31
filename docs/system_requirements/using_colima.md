@@ -4,7 +4,7 @@
 integrates with Docker's tooling and can be configured in various ways.
 
 As of Colima v0.4.0 it's recommended to set the active Docker context to use
-Colima. After the context is set testcontainers-go will automatically be
+Colima. After the context is set _Testcontainers for Go_ will automatically be
 configured to use Colima.
 
 ```bash
