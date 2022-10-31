@@ -7,12 +7,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"testing"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
-	. "github.com/onsi/gomega"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -20,10 +18,9 @@ import (
 func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	g := NewGomegaWithT(t)
 
 	matchAdminResponse := func(r io.Reader) bool {
-		respBytes, _ := ioutil.ReadAll(r)
+		respBytes, _ := io.ReadAll(r)
 		resp := string(respBytes)
 		return resp == `["standalone"]`
 	}
@@ -41,7 +38,9 @@ func TestPulsar(t *testing.T) {
 		ContainerRequest: pulsarRequest,
 		Started:          true,
 	})
-	g.Expect(err).ToNot(HaveOccurred())
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() { pulsarContainer.Terminate(ctx) })
 
 	pulsarContainer.StartLogProducer(ctx)
@@ -50,14 +49,18 @@ func TestPulsar(t *testing.T) {
 	pulsarContainer.FollowOutput(&lc)
 
 	pulsarPort, err := pulsarContainer.MappedPort(ctx, "6650/tcp")
-	g.Expect(err).ToNot(HaveOccurred())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	pc, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL:               fmt.Sprintf("pulsar://127.0.0.1:%v", pulsarPort.Int()),
 		OperationTimeout:  30 * time.Second,
 		ConnectionTimeout: 30 * time.Second,
 	})
-	g.Expect(err).ToNot(HaveOccurred())
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() { pc.Close() })
 
 	consumer, err := pc.Subscribe(pulsar.ConsumerOptions{
@@ -65,13 +68,18 @@ func TestPulsar(t *testing.T) {
 		SubscriptionName: "pulsar-test",
 		Type:             pulsar.Exclusive,
 	})
-	g.Expect(err).ToNot(HaveOccurred())
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() { consumer.Close() })
 
 	msgChan := make(chan []byte)
 	go func() {
 		msg, err := consumer.Receive(ctx)
-		g.Expect(err).ToNot(HaveOccurred())
+		if err != nil {
+			fmt.Println("failed to receive message", err)
+			return
+		}
 		msgChan <- msg.Payload()
 		consumer.Ack(msg)
 	}()
@@ -79,13 +87,23 @@ func TestPulsar(t *testing.T) {
 	producer, err := pc.CreateProducer(pulsar.ProducerOptions{
 		Topic: "test-topic",
 	})
-	g.Expect(err).ToNot(HaveOccurred())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	producer.Send(ctx, &pulsar.ProducerMessage{
 		Payload: []byte("hello world"),
 	})
 
-	g.Eventually(msgChan).Should(Receive(Equal([]byte("hello world"))))
+	ticker := time.NewTicker(1 * time.Minute)
+	select {
+	case <-ticker.C:
+		t.Fatal("did not receive message in time")
+	case msg := <-msgChan:
+		if string(msg) != "hello world" {
+			t.Fatal("received unexpected message bytes")
+		}
+	}
 }
 
 type logConsumer struct{}
