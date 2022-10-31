@@ -15,10 +15,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func TestPulsar(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+type pulsarContainer struct {
+	testcontainers.Container
+	URI string
+}
 
+func setupPulsar(ctx context.Context) (*pulsarContainer, error) {
 	matchAdminResponse := func(r io.Reader) bool {
 		respBytes, _ := io.ReadAll(r)
 		resp := string(respBytes)
@@ -34,27 +36,42 @@ func TestPulsar(t *testing.T) {
 			"/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss",
 		},
 	}
-	pulsarContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: pulsarRequest,
 		Started:          true,
 	})
 	if err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
-	t.Cleanup(func() { pulsarContainer.Terminate(ctx) })
 
-	pulsarContainer.StartLogProducer(ctx)
-	defer pulsarContainer.StopLogProducer()
+	c.StartLogProducer(ctx)
+	defer c.StopLogProducer()
 	lc := logConsumer{}
-	pulsarContainer.FollowOutput(&lc)
+	c.FollowOutput(&lc)
 
-	pulsarPort, err := pulsarContainer.MappedPort(ctx, "6650/tcp")
+	pulsarPort, err := c.MappedPort(ctx, "6650/tcp")
+	if err != nil {
+		return nil, err
+	}
+
+	return &pulsarContainer{
+		Container: c,
+		URI:       fmt.Sprintf("pulsar://127.0.0.1:%v", pulsarPort.Int()),
+	}, nil
+}
+
+func TestPulsar(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	c, err := setupPulsar(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { c.Container.Terminate(ctx) })
 
 	pc, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL:               fmt.Sprintf("pulsar://127.0.0.1:%v", pulsarPort.Int()),
+		URL:               c.URI,
 		OperationTimeout:  30 * time.Second,
 		ConnectionTimeout: 30 * time.Second,
 	})
