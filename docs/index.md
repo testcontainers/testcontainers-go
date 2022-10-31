@@ -2,10 +2,6 @@
 
 <img src="logo.png" alt="Testcontainers logo" width="1024" height="512"/>
 
-## Test dependencies as code for your entire stack
-Get lightweight and throwaway containers during your tests that let you test against any container image (database, broker, browser, etc..) using one of the several supported languages.
-
-
 <p align="center"><strong>Not using Go? Here are other supported languages!</strong></p>
 <div class="card-grid">
     <a href="https://testcontainers.org" class="card-grid-item"><img src="language-logos/java.svg"/>Java</a>
@@ -16,7 +12,7 @@ Get lightweight and throwaway containers during your tests that let you test aga
     <a href="https://docs.rs/testcontainers/latest/testcontainers/" class="card-grid-item"><img src="language-logos/rust.svg"/>Rust</a>
 </div>
 
-## About
+## About Testcontainers for Go
 
 _Testcontainers for Go_ is a Go package that makes it simple to create and clean up container-based dependencies for
 automated integration/smoke tests. The clean, easy-to-use API enables developers to programmatically define containers
