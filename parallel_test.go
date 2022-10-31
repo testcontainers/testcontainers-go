@@ -2,9 +2,12 @@ package testcontainers
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestParallelContainers(t *testing.T) {
@@ -118,5 +121,52 @@ func TestParallelContainers(t *testing.T) {
 				t.Fatalf("expected containers: %d, got: %d\n", tc.resLen, len(res))
 			}
 		})
+	}
+}
+
+func TestParallelContainersWithReuse(t *testing.T) {
+	const (
+		postgresPort     = 5432
+		postgresPassword = "test"
+		postgresUser     = "test"
+		postgresDb       = "test"
+	)
+
+	natPort := fmt.Sprintf("%d/tcp", postgresPort)
+
+	req := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:        "postgis/postgis",
+			Name:         "test-postgres",
+			ExposedPorts: []string{natPort},
+			Env: map[string]string{
+				"POSTGRES_PASSWORD": postgresPassword,
+				"POSTGRES_USER":     postgresUser,
+				"POSTGRES_DATABASE": postgresDb,
+			},
+			WaitingFor: wait.ForLog("database system is ready to accept connections").
+				WithPollInterval(100 * time.Millisecond).
+				WithOccurrence(2),
+		},
+		Started: true,
+		Reuse:   true,
+	}
+
+	parallelRequest := ParallelContainerRequest{
+		req,
+		req,
+		req,
+	}
+
+	ctx := context.Background()
+
+	res, err := ParallelContainers(ctx, parallelRequest, ParallelContainersOptions{})
+	if err != nil {
+		e, _ := err.(ParallelContainersError)
+		t.Fatalf("expected errors: %d, got: %d\n", 0, len(e.Errors))
+	}
+
+	for _, c := range res {
+		defer c.Terminate(ctx)
 	}
 }
