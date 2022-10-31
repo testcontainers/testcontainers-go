@@ -1,4 +1,4 @@
-site_name: Testcontainers-Go
+site_name: Testcontainers for Go
 plugins:
     - search
     - codeinclude
