@@ -6,13 +6,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/docker/docker/api/types"
 	"io"
 	"io/ioutil"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/testcontainers/testcontainers-go/wait"
