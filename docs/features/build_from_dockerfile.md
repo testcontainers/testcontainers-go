@@ -60,3 +60,24 @@ fromDockerfile := testcontainers.FromDockerfile{
 
 **Please Note** if you specify a `ContextArchive` this will cause Testcontainers-go to ignore the path passed
 in to `Context`.
+
+## Images requiring auth
+
+If you are building a local Docker image that is fetched from a Docker image in a registry requiring authentication
+(e.g., assuming you are fetching from a custom registry such as `myregistry.com`), you will need to specify the
+credentials to succeed, as follows:
+
+```go
+req := ContainerRequest{
+    FromDockerfile: testcontainers.FromDockerfile{
+        Context: "/path/to/build/context",
+        Dockerfile: "CustomDockerfile",
+		AuthConfigs:   map[string]types.AuthConfig{
+            "https://myregistry.com": {
+                Username: "myusername",
+                Password: "mypassword",
+            },
+        },
+	},
+}
+```

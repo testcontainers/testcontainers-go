@@ -65,11 +65,12 @@ type Container interface {
 
 // ImageBuildInfo defines what is needed to build an image
 type ImageBuildInfo interface {
-	GetContext() (io.Reader, error)   // the path to the build context
-	GetDockerfile() string            // the relative path to the Dockerfile, including the fileitself
-	ShouldPrintBuildLog() bool        // allow build log to be printed to stdout
-	ShouldBuildImage() bool           // return true if the image needs to be built
-	GetBuildArgs() map[string]*string // return the environment args used to build the from Dockerfile
+	GetContext() (io.Reader, error)              // the path to the build context
+	GetDockerfile() string                       // the relative path to the Dockerfile, including the fileitself
+	ShouldPrintBuildLog() bool                   // allow build log to be printed to stdout
+	ShouldBuildImage() bool                      // return true if the image needs to be built
+	GetBuildArgs() map[string]*string            // return the environment args used to build the from Dockerfile
+	GetAuthConfigs() map[string]types.AuthConfig // return the auth configs to be able to pull from an authenticated docker registry
 }
 
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
@@ -80,6 +81,7 @@ type FromDockerfile struct {
 	Dockerfile     string             // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
 	BuildArgs      map[string]*string // enable user to pass build args to docker daemon
 	PrintBuildLog  bool               // enable user to print build log
+	AuthConfigs    map[string]types.AuthConfig
 }
 
 type ContainerFile struct {
@@ -228,6 +230,11 @@ func (c *ContainerRequest) GetDockerfile() string {
 	}
 
 	return f
+}
+
+// GetAuthConfigs returns the auth configs to be able to pull from an authenticated docker registry
+func (c *ContainerRequest) GetAuthConfigs() map[string]types.AuthConfig {
+	return c.FromDockerfile.AuthConfigs
 }
 
 func (c *ContainerRequest) ShouldBuildImage() bool {
