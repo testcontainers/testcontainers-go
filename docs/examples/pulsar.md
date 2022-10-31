@@ -29,7 +29,10 @@ func setupPulsar(ctx context.Context) (*pulsarContainer, error) {
 	pulsarRequest := testcontainers.ContainerRequest{
 		Image:        "docker.io/apachepulsar/pulsar:2.10.2",
 		ExposedPorts: []string{"6650/tcp", "8080/tcp"},
-		WaitingFor:   wait.ForHTTP("/admin/v2/clusters").WithPort("8080/tcp").WithResponseMatcher(matchAdminResponse),
+		WaitingFor: wait.ForAll(
+			wait.ForHTTP("/admin/v2/clusters").WithPort("8080/tcp").WithResponseMatcher(matchAdminResponse),
+			wait.ForLog("Successfully updated the policies on namespace public/default"),
+		),
 		Cmd: []string{
 			"/bin/bash",
 			"-c",
