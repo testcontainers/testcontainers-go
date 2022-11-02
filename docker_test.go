@@ -1075,6 +1075,7 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfig
 				},
 			},
 		},
+
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("Ready to accept connections"),
 	}
@@ -1107,17 +1108,52 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithoutAuthConfig
 }
 
 func prepareLocalRegistryWithAuth(t *testing.T) {
-	compose, err := NewDockerCompose("./testresources/docker-compose-auth.yml")
-	assert.NoError(t, err, "NewDockerCompose()")
+	ctx := context.Background()
+	wd, err := os.Getwd()
+	assert.NoError(t, err)
+	req := ContainerRequest{
+		Image:        "registry:2",
+		ExposedPorts: []string{"5000:5000/tcp"},
+		Env: map[string]string{
+			"REGISTRY_AUTH":                             "htpasswd",
+			"REGISTRY_AUTH_HTPASSWD_REALM":              "Registry",
+			"REGISTRY_AUTH_HTPASSWD_PATH":               "/auth/htpasswd",
+			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY": "/data",
+		},
+		Mounts: ContainerMounts{
+			ContainerMount{
+				Source: GenericBindMountSource{
+					HostPath: fmt.Sprintf("%s/testresources/auth", wd),
+				},
+				Target: "/auth",
+			},
+			ContainerMount{
+				Source: GenericBindMountSource{
+					HostPath: fmt.Sprintf("%s/testresources/data", wd),
+				},
+				Target: "/data",
+			},
+		},
+		WaitingFor: wait.ForExposedPort(),
+	}
+
+	genContainerReq := GenericContainerRequest{
+		ProviderType:     providerType,
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	t.Log("creating registry container")
+
+	registryC, err := GenericContainer(ctx, genContainerReq)
+	assert.NoError(t, err)
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+		assert.NoError(t, registryC.Terminate(context.Background()))
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-
-	assert.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
 }
 
 func prepareRedisImage(ctx context.Context, req ContainerRequest, t *testing.T) (Container, error) {
