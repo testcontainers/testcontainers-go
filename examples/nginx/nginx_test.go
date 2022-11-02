@@ -22,6 +22,10 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 	defer nginxC.Terminate(ctx)
 
 	resp, err := http.Get(nginxC.URI)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
