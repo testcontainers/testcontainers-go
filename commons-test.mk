@@ -6,3 +6,11 @@ test-%:
 		--rerun-fails=5 \
 		--packages="./..." \
 		--junitfile TEST-$*.xml
+
+.PHONY: tools
+tools:
+	go mod download
+
+.PHONY: tools-tidy
+tools-tidy:
+	go mod tidy
