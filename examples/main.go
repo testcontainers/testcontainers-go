@@ -37,14 +37,14 @@ func main() {
 		}
 	}
 
-	err := generate(nameVar)
+	err := generate(nameVar, filepath.Dir(nameVar))
 	if err != nil {
 		fmt.Printf(">> error generating the example: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func generate(name string) error {
+func generate(name string, examplesDir string) error {
 	example := Example{Name: name}
 
 	funcMap := template.FuncMap{
@@ -56,8 +56,13 @@ func generate(name string) error {
 		"docs_example.md", "example_test.go", "example.go", "go.mod", "go.sum", "Makefile", "tools.go",
 	}
 
+	abs, err := filepath.Abs(examplesDir)
+	if err != nil {
+		return err
+	}
+
 	// create the example dir
-	err := os.Mkdir(example.Lower(), 0700)
+	err = os.MkdirAll(abs, 0700)
 	if err != nil {
 		return err
 	}
