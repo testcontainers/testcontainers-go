@@ -36,7 +36,7 @@ jobs:
         run: go mod verify
 
       - name: modTidy
-        run: go mod tidy
+        run: make tools-tidy
 
       - name: vet
         run: go vet ./...

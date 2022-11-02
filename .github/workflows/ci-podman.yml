@@ -48,7 +48,7 @@ jobs:
         run: go mod verify
 
       - name: modTidy
-        run: go mod tidy
+        run: make tools-tidy
 
       - name: gotestsum
         # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
