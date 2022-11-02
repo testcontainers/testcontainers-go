@@ -37,14 +37,22 @@ func main() {
 		}
 	}
 
-	err := generate(nameVar, filepath.Dir(nameVar))
+	examplesDir, err := filepath.Abs(filepath.Dir(nameVar))
+	if err != nil {
+		fmt.Printf(">> could not get the examples dir: %v\n", err)
+		os.Exit(1)
+	}
+
+	examplesDocsPath := filepath.Join(filepath.Dir(examplesDir), "docs", "examples")
+
+	err = generate(nameVar, examplesDir, examplesDocsPath)
 	if err != nil {
 		fmt.Printf(">> error generating the example: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func generate(name string, examplesDir string) error {
+func generate(name string, examplesDir string, docsDir string) error {
 	example := Example{Name: name}
 
 	funcMap := template.FuncMap{
@@ -56,13 +64,8 @@ func generate(name string, examplesDir string) error {
 		"docs_example.md", "example_test.go", "example.go", "go.mod", "go.sum", "Makefile", "tools.go",
 	}
 
-	abs, err := filepath.Abs(examplesDir)
-	if err != nil {
-		return err
-	}
-
 	// create the example dir
-	err = os.MkdirAll(abs, 0700)
+	err := os.MkdirAll(examplesDir, 0700)
 	if err != nil {
 		return err
 	}
@@ -80,14 +83,7 @@ func generate(name string, examplesDir string) error {
 
 		// docs example file will go into the docs directory
 		if strings.EqualFold(tmpl, "docs_example.md") {
-			abs, err := filepath.Abs(exampleFilePath)
-			if err != nil {
-				return err
-			}
-
-			examplesDocsPath := filepath.Join(filepath.Dir(filepath.Dir(filepath.Dir(abs))), "docs", "examples")
-
-			exampleFilePath = filepath.Join(examplesDocsPath, example.Lower()+".md")
+			exampleFilePath = filepath.Join(docsDir, example.Lower()+".md")
 		}
 
 		err = os.MkdirAll(filepath.Dir(exampleFilePath), 0777)
