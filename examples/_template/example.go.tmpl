@@ -1,0 +1,28 @@
+{{ $lower := .Name | ToLower }}
+package {{ $lower }}
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/testcontainers/testcontainers-go"
+)
+
+type {{ $lower }}Container struct {
+	testcontainers.Container
+}
+
+func setup{{ .Name }}(ctx context.Context) (*{{ $lower }}Container, error) {
+	req := testcontainers.ContainerRequest{
+		Image:        "image",
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &{{ $lower }}Container{Container: container}, nil
+}

@@ -1,0 +1,10 @@
+{{ $lower := .Name | ToLower }}
+# {{ .Name }}
+
+{{ codeinclude "<!--codeinclude-->" }}
+[Creating a {{ .Name }} container](../../examples/{{ $lower }}/{{ $lower }}.go)
+{{ codeinclude "<!--/codeinclude-->" }}
+
+{{ codeinclude "<!--codeinclude-->" }}
+[Test for a {{ .Name }} container](../../examples/{{ $lower }}/{{ $lower }}_test.go)
+{{ codeinclude "<!--/codeinclude-->" }}

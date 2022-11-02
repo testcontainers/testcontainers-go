@@ -1,0 +1,12 @@
+{{ $lower := .Name | ToLower }}
+//go:build tools
+// +build tools
+
+// This package contains the tool dependencies of the {{ $lower }} example.
+
+package {{ $lower }}
+
+import (
+	// Register gotestsum for pinning version
+	_ "gotest.tools/gotestsum"
+)
