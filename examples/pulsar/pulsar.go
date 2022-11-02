@@ -9,7 +9,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// pulsarContainer {
 type pulsarContainer struct {
 	testcontainers.Container
 	URI string
@@ -63,5 +62,3 @@ type logConsumer struct{}
 func (lc *logConsumer) Accept(l testcontainers.Log) {
 	fmt.Print(string(l.Content))
 }
-
-// }

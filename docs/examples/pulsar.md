@@ -1,9 +1,9 @@
 # Pulsar
 
 <!--codeinclude-->
-[Creating an Apache Pulsar container](../../examples/pulsar/pulsar.go) inside_block:pulsarContainer
+[Creating an Apache Pulsar container](../../examples/pulsar/pulsar.go)
 <!--/codeinclude-->
 
 <!--codeinclude-->
-[Test for an Apache Pulsar container](../../examples/pulsar/pulsar_test.go) inside_block:testPulsarContainer
+[Test for an Apache Pulsar container](../../examples/pulsar/pulsar_test.go)
 <!--/codeinclude-->

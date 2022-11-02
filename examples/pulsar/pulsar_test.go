@@ -9,7 +9,6 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 )
 
-// testPulsarContainer {
 func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -72,5 +71,3 @@ func TestPulsar(t *testing.T) {
 		}
 	}
 }
-
-// }

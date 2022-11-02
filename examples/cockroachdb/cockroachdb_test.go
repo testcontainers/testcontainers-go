@@ -10,8 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// testCockroachDBContainer{
-
 // Task represents a unit of work to complete. We're going to be using this in
 // our example as a way to organize data that is being manipulated in
 // the database.
@@ -101,5 +99,3 @@ func TestIntegrationDBInsertSelect(t *testing.T) {
 		t.Fatalf("Saved task is not the same:\n%s", cmp.Diff(tsk, savedTsk))
 	}
 }
-
-// }

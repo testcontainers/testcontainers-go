@@ -9,7 +9,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// cockroachDBContainer {
 type cockroachDBContainer struct {
 	testcontainers.Container
 	URI string
@@ -44,5 +43,3 @@ func setupCockroachDB(ctx context.Context) (*cockroachDBContainer, error) {
 
 	return &cockroachDBContainer{Container: container, URI: uri}, nil
 }
-
-// }

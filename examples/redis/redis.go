@@ -8,7 +8,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// redisContainer {
 type redisContainer struct {
 	testcontainers.Container
 	URI string
@@ -42,5 +41,3 @@ func setupRedis(ctx context.Context) (*redisContainer, error) {
 
 	return &redisContainer{Container: container, URI: uri}, nil
 }
-
-// }

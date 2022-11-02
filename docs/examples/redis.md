@@ -1,9 +1,9 @@
 # Redis
 
 <!--codeinclude-->
-[Creating a Redis container](../../examples/redis/redis.go) inside_block:RedisContainer
+[Creating a Redis container](../../examples/redis/redis.go)
 <!--/codeinclude-->
 
 <!--codeinclude-->
-[Test for a Redis container](../../examples/redis/redis_test.go) inside_block:testRedisContainer
+[Test for a Redis container](../../examples/redis/redis_test.go)
 <!--/codeinclude-->

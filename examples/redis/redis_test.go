@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// testRedisContainer {
 func TestIntegrationSetGet(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test")
@@ -56,5 +55,3 @@ func TestIntegrationSetGet(t *testing.T) {
 func flushRedis(ctx context.Context, client redis.Client) error {
 	return client.FlushAll(ctx).Err()
 }
-
-// }

@@ -1,9 +1,9 @@
 # Nginx
 
 <!--codeinclude-->
-[Creating a Nginx container](../../examples/nginx/nginx.go) inside_block:nginxContainer
+[Creating a Nginx container](../../examples/nginx/nginx.go)
 <!--/codeinclude-->
 
 <!--codeinclude-->
-[Test for a Nginx container](../../examples/nginx/nginx_test.go) inside_block:testNginxContainer
+[Test for a Nginx container](../../examples/nginx/nginx_test.go)
 <!--/codeinclude-->

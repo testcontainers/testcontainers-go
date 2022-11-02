@@ -8,7 +8,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// nginxContainer {
 type nginxContainer struct {
 	testcontainers.Container
 	URI string
@@ -42,5 +41,3 @@ func setupNginx(ctx context.Context) (*nginxContainer, error) {
 
 	return &nginxContainer{Container: container, URI: uri}, nil
 }
-
-// }
