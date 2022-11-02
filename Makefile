@@ -1,15 +1,7 @@
+include ./commons-test.mk
 
 .PHONY: test-all
 test-all: tools test-unit test-e2e
-
-.PHONY: test-unit
-test-unit:
-	@echo "Running unit tests..."
-	go run gotest.tools/gotestsum \
-		--format short-verbose \
-		--rerun-fails=5 \
-		--packages="./..." \
-		--junitfile TEST-unit.xml
 
 .PHONY: test-e2e
 test-e2e:
