@@ -37,7 +37,15 @@ func main() {
 		}
 	}
 
-	example := Example{Name: nameVar}
+	err := generate(nameVar)
+	if err != nil {
+		fmt.Printf(">> error generating the example: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func generate(name string) error {
+	example := Example{Name: name}
 
 	funcMap := template.FuncMap{
 		"ToLower":     strings.ToLower,
@@ -51,14 +59,14 @@ func main() {
 	// create the example dir
 	err := os.Mkdir(example.Lower(), 0700)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	for _, tmpl := range tmpls {
 		name := tmpl + ".tmpl"
 		t, err := template.New(name).Funcs(funcMap).ParseFiles(filepath.Join("_template", name))
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		// create a new file
@@ -69,7 +77,7 @@ func main() {
 		if strings.EqualFold(tmpl, "docs_example.md") {
 			abs, err := filepath.Abs(exampleFilePath)
 			if err != nil {
-				panic(err)
+				return err
 			}
 
 			examplesDocsPath := filepath.Join(filepath.Dir(filepath.Dir(filepath.Dir(abs))), "docs", "examples")
@@ -79,7 +87,7 @@ func main() {
 
 		err = os.MkdirAll(filepath.Dir(exampleFilePath), 0777)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		exampleFile, _ := os.Create(exampleFilePath)
@@ -87,11 +95,12 @@ func main() {
 
 		err = t.ExecuteTemplate(exampleFile, name, example)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
 	fmt.Println("Please go to", example.Lower(), "directory and execute 'go mod tidy' to synchronize the dependencies")
 	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
 	fmt.Println("Thanks!")
+	return nil
 }
