@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	// Import mysql into the scope of this package (required)
-	_ "github.com/go-sql-driver/mysql"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -17,6 +17,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
@@ -54,6 +56,7 @@ func init() {
 	}
 }
 
+// testNetworkAliases {
 func TestContainerAttachedToNewNetwork(t *testing.T) {
 	aliases := []string{"alias1", "alias2", "alias3"}
 	networkName := "new-network"
@@ -130,6 +133,8 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 		t.Errorf("Expected an IP address, got %v", networkIP)
 	}
 }
+
+// }
 
 func TestContainerWithHostNetworkOptions(t *testing.T) {
 	absPath, err := filepath.Abs("./testresources/nginx-highport.conf")
@@ -981,6 +986,7 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 }
 
 func TestContainerCreationWaitsForLog(t *testing.T) {
+	// exposePorts {
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        "docker.io/mysql:latest",
@@ -996,13 +1002,18 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
+	// }
 
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, mysqlC)
 
+	// containerHost {
 	host, _ := mysqlC.Host(ctx)
+	// }
+	// mappedPort {
 	p, _ := mysqlC.MappedPort(ctx, "3306/tcp")
 	port := p.Int()
+	// }
 	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?tls=skip-verify",
 		"root", "password", host, port, "database")
 
@@ -1368,6 +1379,7 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, mysqlC)
 
+	// buildingAddresses {
 	host, _ := mysqlC.Host(ctx)
 	p, _ := mysqlC.MappedPort(ctx, "3306/tcp")
 	port := p.Int()
@@ -1378,6 +1390,7 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// }
 
 	defer db.Close()
 
