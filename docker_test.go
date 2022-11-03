@@ -43,6 +43,7 @@ const (
 	nginxAlpineImage = "docker.io/nginx:alpine"
 	nginxDefaultPort = "80/tcp"
 	nginxHighPort    = "8080/tcp"
+	daemonMaxVersion = "1.41"
 )
 
 var providerType = ProviderDocker
@@ -1033,8 +1034,129 @@ func Test_BuildContainerFromDockerfile(t *testing.T) {
 		WaitingFor:   wait.ForLog("Ready to accept connections"),
 	}
 
-	t.Log("creating generic container request from container request")
+	redisC, err := prepareRedisImage(ctx, req, t)
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, redisC)
 
+	checkSuccessfulRedisImage(ctx, redisC, t)
+
+}
+
+func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfigs(t *testing.T) {
+	prepareLocalRegistryWithAuth(t)
+	defer func() {
+		ctx := context.Background()
+		testcontainersClient, err := client.NewClientWithOpts(client.WithVersion(daemonMaxVersion))
+		if err != nil {
+			t.Log("could not create client to cleanup registry: ", err)
+		}
+
+		_, err = testcontainersClient.ImageRemove(ctx, "localhost:5000/redis:5.0-alpine", types.ImageRemoveOptions{
+			Force:         true,
+			PruneChildren: true,
+		})
+		if err != nil {
+			t.Log("could not remove image: ", err)
+		}
+
+	}()
+
+	t.Log("getting context")
+	ctx := context.Background()
+	t.Log("got context, creating container request")
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:    "./testresources",
+			Dockerfile: "auth.Dockerfile",
+			AuthConfigs: map[string]types.AuthConfig{
+				"localhost:5000": {
+					Username: "testuser",
+					Password: "testpassword",
+				},
+			},
+		},
+
+		ExposedPorts: []string{"6379/tcp"},
+		WaitingFor:   wait.ForLog("Ready to accept connections"),
+	}
+
+	redisC, err := prepareRedisImage(ctx, req, t)
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, redisC)
+
+	checkSuccessfulRedisImage(ctx, redisC, t)
+}
+
+func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithoutAuthConfigs(t *testing.T) {
+	prepareLocalRegistryWithAuth(t)
+
+	t.Log("getting context")
+	ctx := context.Background()
+	t.Log("got context, creating container request")
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:    "./testresources",
+			Dockerfile: "auth.Dockerfile",
+		},
+		ExposedPorts: []string{"6379/tcp"},
+		WaitingFor:   wait.ForLog("Ready to accept connections"),
+	}
+
+	redisC, err := prepareRedisImage(ctx, req, t)
+	require.Error(t, err)
+	terminateContainerOnEnd(t, ctx, redisC)
+}
+
+func prepareLocalRegistryWithAuth(t *testing.T) {
+	ctx := context.Background()
+	wd, err := os.Getwd()
+	assert.NoError(t, err)
+	req := ContainerRequest{
+		Image:        "registry:2",
+		ExposedPorts: []string{"5000:5000/tcp"},
+		Env: map[string]string{
+			"REGISTRY_AUTH":                             "htpasswd",
+			"REGISTRY_AUTH_HTPASSWD_REALM":              "Registry",
+			"REGISTRY_AUTH_HTPASSWD_PATH":               "/auth/htpasswd",
+			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY": "/data",
+		},
+		Mounts: ContainerMounts{
+			ContainerMount{
+				Source: GenericBindMountSource{
+					HostPath: fmt.Sprintf("%s/testresources/auth", wd),
+				},
+				Target: "/auth",
+			},
+			ContainerMount{
+				Source: GenericBindMountSource{
+					HostPath: fmt.Sprintf("%s/testresources/data", wd),
+				},
+				Target: "/data",
+			},
+		},
+		WaitingFor: wait.ForExposedPort(),
+	}
+
+	genContainerReq := GenericContainerRequest{
+		ProviderType:     providerType,
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	t.Log("creating registry container")
+
+	registryC, err := GenericContainer(ctx, genContainerReq)
+	assert.NoError(t, err)
+
+	t.Cleanup(func() {
+		assert.NoError(t, registryC.Terminate(context.Background()))
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+}
+
+func prepareRedisImage(ctx context.Context, req ContainerRequest, t *testing.T) (Container, error) {
 	genContainerReq := GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
@@ -1044,9 +1166,13 @@ func Test_BuildContainerFromDockerfile(t *testing.T) {
 	t.Log("creating redis container")
 
 	redisC, err := GenericContainer(ctx, genContainerReq)
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, redisC)
 
+	t.Log("created redis container")
+
+	return redisC, err
+}
+
+func checkSuccessfulRedisImage(ctx context.Context, redisC Container, t *testing.T) {
 	t.Log("created redis container")
 
 	t.Log("getting redis container endpoint")
@@ -1057,12 +1183,12 @@ func Test_BuildContainerFromDockerfile(t *testing.T) {
 
 	t.Log("retrieved redis container endpoint")
 
-	client := redis.NewClient(&redis.Options{
+	redisClient := redis.NewClient(&redis.Options{
 		Addr: endpoint,
 	})
 
 	t.Log("pinging redis")
-	pong, err := client.Ping(ctx).Result()
+	pong, err := redisClient.Ping(ctx).Result()
 	require.NoError(t, err)
 
 	t.Log("received response from redis")
@@ -2437,6 +2563,9 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 	require.NoError(t, err)
 
 	for _, srcFile := range srcFiles {
+		if srcFile.IsDir() {
+			continue
+		}
 		srcBytes, err := ioutil.ReadFile(filepath.Join(hostFilePath, srcFile.Name()))
 		if err != nil {
 			require.NoError(t, err)
