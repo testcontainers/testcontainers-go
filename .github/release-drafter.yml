@@ -6,6 +6,7 @@ template: |
 categories:
   - title: 🚀 Features
     labels:
+      - 'enhancement'
       - 'feature'
   - title: ⚠️ Breaking Changes
     labels:
