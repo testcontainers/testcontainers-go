@@ -3,9 +3,9 @@ module github.com/testcontainers/testcontainers-go/examples/cockroachdb
 go 1.18
 
 require (
-	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgx/v4 v4.17.2
+	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.15.0
 	gotest.tools/gotestsum v1.8.2
 )
@@ -66,6 +66,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
@@ -123,7 +124,6 @@ require (
 	github.com/spf13/cobra v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.4.0 // indirect
-	github.com/stretchr/testify v1.8.0 // indirect
 	github.com/theupdateframework/notary v0.7.0 // indirect
 	github.com/tonistiigi/fsutil v0.0.0-20220930225714-4638ad635be5 // indirect
 	github.com/tonistiigi/units v0.0.0-20180711220420-6950e57a87ea // indirect

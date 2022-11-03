@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // Task represents a unit of work to complete. We're going to be using this in
@@ -95,7 +95,9 @@ func TestIntegrationDBInsertSelect(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !cmp.Equal(tsk, savedTsk) {
-		t.Fatalf("Saved task is not the same:\n%s", cmp.Diff(tsk, savedTsk))
-	}
+	assert.Equal(t, tsk.ID, savedTsk.ID)
+	assert.Equal(t, tsk.Description, savedTsk.Description)
+	assert.Equal(t, tsk.DateDue, savedTsk.DateDue)
+	assert.Equal(t, tsk.DateCreated.Local().String(), savedTsk.DateCreated.Local().String())
+	assert.Equal(t, tsk.DateUpdated.Local().String(), savedTsk.DateUpdated.Local().String())
 }
