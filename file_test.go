@@ -73,6 +73,9 @@ func Test_TarDir(t *testing.T) {
 	}
 
 	for _, srcFile := range srcFiles {
+		if srcFile.IsDir() {
+			continue
+		}
 		srcBytes, err := ioutil.ReadFile(filepath.Join(src, srcFile.Name()))
 		if err != nil {
 			t.Fatal(err)
