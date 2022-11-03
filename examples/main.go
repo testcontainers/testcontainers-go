@@ -11,6 +11,10 @@ import (
 
 var nameVar string
 
+var templates = []string{
+	"docs_example.md", "example_test.go", "example.go", "go.mod", "go.sum", "Makefile", "tools.go",
+}
+
 func init() {
 	flag.StringVar(&nameVar, "name", "", "Name of the example, use camel-case when needed")
 }
@@ -60,17 +64,13 @@ func generate(name string, examplesDir string, docsDir string) error {
 		"codeinclude": func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
 	}
 
-	tmpls := []string{
-		"docs_example.md", "example_test.go", "example.go", "go.mod", "go.sum", "Makefile", "tools.go",
-	}
-
 	// create the example dir
 	err := os.MkdirAll(examplesDir, 0700)
 	if err != nil {
 		return err
 	}
 
-	for _, tmpl := range tmpls {
+	for _, tmpl := range templates {
 		name := tmpl + ".tmpl"
 		t, err := template.New(name).Funcs(funcMap).ParseFiles(filepath.Join("_template", name))
 		if err != nil {
