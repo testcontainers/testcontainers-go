@@ -1,4 +1,4 @@
-Testcontainers-go plays well with the native `go test` framework.
+_Testcontainers for Go_ plays well with the native `go test` framework.
 
 The ideal use case is for integration or end to end tests. It helps you to spin
 up and manage the dependencies life cycle via Docker.

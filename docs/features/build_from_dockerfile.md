@@ -58,7 +58,7 @@ fromDockerfile := testcontainers.FromDockerfile{
 }
 ```
 
-**Please Note** if you specify a `ContextArchive` this will cause Testcontainers-go to ignore the path passed
+**Please Note** if you specify a `ContextArchive` this will cause _Testcontainers for Go_ to ignore the path passed
 in to `Context`.
 
 ## Images requiring auth
