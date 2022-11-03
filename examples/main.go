@@ -78,7 +78,7 @@ func generate(name string, examplesDir string, docsDir string) error {
 		}
 
 		// create a new file
-		exampleFilePath := filepath.Join(example.Lower(), tmpl)
+		exampleFilePath := filepath.Join(examplesDir, example.Lower(), tmpl)
 		exampleFilePath = strings.ReplaceAll(exampleFilePath, "example", example.Lower())
 
 		// docs example file will go into the docs directory
