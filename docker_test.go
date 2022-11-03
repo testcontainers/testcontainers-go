@@ -2563,6 +2563,9 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 	require.NoError(t, err)
 
 	for _, srcFile := range srcFiles {
+		if srcFile.IsDir() {
+			continue
+		}
 		srcBytes, err := ioutil.ReadFile(filepath.Join(hostFilePath, srcFile.Name()))
 		if err != nil {
 			require.NoError(t, err)
