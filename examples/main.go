@@ -81,9 +81,12 @@ func generate(name string, examplesDir string, docsDir string) error {
 		exampleFilePath := filepath.Join(examplesDir, example.Lower(), tmpl)
 		exampleFilePath = strings.ReplaceAll(exampleFilePath, "example", example.Lower())
 
-		// docs example file will go into the docs directory
 		if strings.EqualFold(tmpl, "docs_example.md") {
+			// docs example file will go into the docs directory
 			exampleFilePath = filepath.Join(docsDir, example.Lower()+".md")
+		} else if strings.EqualFold(tmpl, "tools.go") {
+			// tools.go example file will go into the tools package
+			exampleFilePath = filepath.Join(examplesDir, example.Lower(), "tools", tmpl)
 		}
 
 		err = os.MkdirAll(filepath.Dir(exampleFilePath), 0777)
