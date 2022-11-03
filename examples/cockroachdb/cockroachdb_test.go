@@ -98,6 +98,4 @@ func TestIntegrationDBInsertSelect(t *testing.T) {
 	assert.Equal(t, tsk.ID, savedTsk.ID)
 	assert.Equal(t, tsk.Description, savedTsk.Description)
 	assert.Equal(t, tsk.DateDue, savedTsk.DateDue)
-	assert.Equal(t, tsk.DateCreated.Local().String(), savedTsk.DateCreated.Local().String())
-	assert.Equal(t, tsk.DateUpdated.Local().String(), savedTsk.DateUpdated.Local().String())
 }
