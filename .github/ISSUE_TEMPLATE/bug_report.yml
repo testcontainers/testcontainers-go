@@ -1,7 +1,7 @@
-name: Bug Report
+name: Bug report
 description: File a bug report
 title: "[Bug]: "
-labels: ["type/bug"]
+labels: ["bug"]
 body:
   - type: markdown
     attributes:
@@ -36,7 +36,7 @@ body:
   - type: input
     id: host-arch
     attributes:
-      label: Host Arch
+      label: Host arch
       description: Which architecture are you using?
       placeholder: e.g. x86, ARM
     validations:
@@ -44,7 +44,7 @@ body:
   - type: input
     id: go-version
     attributes:
-      label: Go Version
+      label: Go version
       description: Which Go version are you using?
       placeholder: e.g. 1.18
     validations:
@@ -81,7 +81,7 @@ body:
   - type: textarea
     id: additional-information
     attributes:
-      label: Additional Information
+      label: Additional information
       description: |
         Any links or references to have more context about the issue.
 
