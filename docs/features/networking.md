@@ -17,7 +17,7 @@ Note that this exposed port number is from the *perspective of the container*.
 This is by design, to avoid port collisions that may arise with locally running software or in between parallel test runs.
 
 Because there is this layer of indirection, it is necessary to ask Testcontainers for the actual mapped port at runtime.
-This can be done using the `getMappedPort` method, which takes the original (container) port as an argument:
+This can be done using the `MappedPort` function, which takes the original (container) port as an argument:
 
 <!--codeinclude-->
 [Retrieving actual ports at runtime](../../docker_test.go) inside_block:mappedPort
