@@ -1036,7 +1036,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if err != nil {
 			return nil, err
 		}
-		for p, _ := range image.ContainerConfig.ExposedPorts {
+		for p := range image.ContainerConfig.ExposedPorts {
 			exposedPorts = append(exposedPorts, string(p))
 		}
 	}

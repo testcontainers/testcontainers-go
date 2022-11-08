@@ -18,7 +18,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-//
 // https://github.com/testcontainers/testcontainers-go/issues/183
 func ExampleHTTPStrategy() {
 	ctx := context.Background()

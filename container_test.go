@@ -95,19 +95,19 @@ func Test_GetDockerfile(t *testing.T) {
 	}
 
 	testTable := []TestCase{
-		TestCase{
+		{
 			name:                   "defaults to \"Dockerfile\" 1",
 			ExpectedDockerfileName: "Dockerfile",
 			ContainerRequest:       ContainerRequest{},
 		},
-		TestCase{
+		{
 			name:                   "defaults to \"Dockerfile\" 2",
 			ExpectedDockerfileName: "Dockerfile",
 			ContainerRequest: ContainerRequest{
 				FromDockerfile: FromDockerfile{},
 			},
 		},
-		TestCase{
+		{
 			name:                   "will override name",
 			ExpectedDockerfileName: "CustomDockerfile",
 			ContainerRequest: ContainerRequest{

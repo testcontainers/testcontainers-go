@@ -60,9 +60,10 @@ func (ws *LogStrategy) WithOccurrence(o int) *LogStrategy {
 // ForLog is the default construction for the fluid interface.
 //
 // For Example:
-// wait.
-//     ForLog("some text").
-//     WithPollInterval(1 * time.Second)
+//
+//	wait.
+//		ForLog("some text").
+//		WithPollInterval(1 * time.Second)
 func ForLog(log string) *LogStrategy {
 	return NewLogStrategy(log)
 }

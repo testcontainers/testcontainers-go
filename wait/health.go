@@ -45,9 +45,10 @@ func (ws *HealthStrategy) WithPollInterval(pollInterval time.Duration) *HealthSt
 // ForHealthCheck is the default construction for the fluid interface.
 //
 // For Example:
-// wait.
-//     ForHealthCheck().
-//     WithPollInterval(1 * time.Second)
+//
+//	wait.
+//		ForHealthCheck().
+//		WithPollInterval(1 * time.Second)
 func ForHealthCheck() *HealthStrategy {
 	return NewHealthStrategy()
 }
