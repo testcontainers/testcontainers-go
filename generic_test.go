@@ -29,7 +29,7 @@ func TestGenericReusableContainer(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, n1.IsRunning())
-	terminateContainerOnEnd(t, ctx, n1)
+	Cleanup(t, ctx, n1)
 
 	copiedFileName := "hello_copy.sh"
 	err = n1.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)

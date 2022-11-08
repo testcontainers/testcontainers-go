@@ -107,7 +107,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	g.Msgs = g.Msgs[1:]
 
 	assert.Equal(t, []string{"echo hello\n", "echo there\n"}, g.Msgs)
-	terminateContainerOnEnd(t, ctx, c)
+	Cleanup(t, ctx, c)
 }
 
 type TestLogTypeConsumer struct {
@@ -144,7 +144,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	terminateContainerOnEnd(t, ctx, c)
+	Cleanup(t, ctx, c)
 
 	ep, err := c.Endpoint(ctx, "http")
 	if err != nil {
@@ -208,7 +208,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, dind)
+	Cleanup(t, ctx, dind)
 
 	var remoteDocker string
 
@@ -248,7 +248,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	if err := nginx.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	terminateContainerOnEnd(t, ctx, nginx)
+	Cleanup(t, ctx, nginx)
 
 	port, err := nginx.MappedPort(ctx, "80/tcp")
 	if err != nil {
@@ -322,7 +322,7 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	terminateContainerOnEnd(t, ctx, container)
+	Cleanup(t, ctx, container)
 	r, err := container.Logs(ctx)
 	if err != nil {
 		t.Fatal(err)

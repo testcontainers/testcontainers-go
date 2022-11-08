@@ -65,12 +65,7 @@ func TestIntegrationSetGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		t.Log("terminating container")
-		if err := redisContainer.Terminate(ctx); err != nil {
-			t.Errorf("failed to terminate container: :%w", err)
-		}
-	})
+	testcontainers.Cleanup(t, ctx, redisContainer)
 
 	// You will likely want to wrap your Redis package of choice in an
 	// interface to aid in unit testing and limit lock-in throughtout your

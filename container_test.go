@@ -324,7 +324,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			} else if err != nil {
 				t.Fatal(err)
 			} else {
-				terminateContainerOnEnd(t, ctx, c)
+				Cleanup(t, ctx, c)
 			}
 		})
 	}
@@ -346,7 +346,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal(err)
 	} else if err == nil {
-		terminateContainerOnEnd(t, ctx, c)
+		Cleanup(t, ctx, c)
 		t.Fatal("was expecting error starting container")
 	}
 
@@ -396,7 +396,7 @@ func createTestContainer(t *testing.T, ctx context.Context) int {
 		t.Fatalf("could not get mapped port: %v", err)
 	}
 
-	terminateContainerOnEnd(t, ctx, container)
+	Cleanup(t, ctx, container)
 
 	return port.Int()
 }

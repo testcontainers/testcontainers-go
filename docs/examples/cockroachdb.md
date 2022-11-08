@@ -94,11 +94,7 @@ func TestIntegrationDBInsertSelect(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() {
-		if err := cdbContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.Cleanup(t, ctx, cbdContainer)
 
 	db, err := sql.Open("pgx", cdbContainer.URI+"/projectmanagement")
 	if err != nil {

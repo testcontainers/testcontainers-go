@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/stretchr/testify/require"
 	. "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
@@ -46,7 +45,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		terminateContainerOnEnd(t, ctx, container)
+		Cleanup(t, ctx, container)
 	})
 	t.Run("custom query", func(t *testing.T) {
 		req := ContainerRequest{
@@ -66,7 +65,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		terminateContainerOnEnd(t, ctx, container)
+		Cleanup(t, ctx, container)
 	})
 	t.Run("custom bad query", func(t *testing.T) {
 		req := ContainerRequest{
@@ -86,17 +85,6 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			t.Fatal("expected error, but got a nil")
 		}
 
-		terminateContainerOnEnd(t, ctx, container)
-	})
-}
-
-func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr Container) {
-	tb.Helper()
-	if ctr == nil {
-		return
-	}
-	tb.Cleanup(func() {
-		tb.Log("terminating container")
-		require.NoError(tb, ctr.Terminate(ctx))
+		Cleanup(t, ctx, container)
 	})
 }

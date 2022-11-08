@@ -20,3 +20,15 @@ func SkipIfProviderIsNotHealthy(t *testing.T) {
 		t.Skipf("Docker is not running. TestContainers can't perform is work without it: %s", err)
 	}
 }
+
+// Cleanup is a utility function used to cleanup containers in a testing
+// context.
+func Cleanup(tb testing.TB, ctx context.Context, ctr Container) {
+	tb.Helper()
+	tb.Cleanup(func() {
+		tb.Logf("terminating container \"%s\"\n", ctr.GetContainerID())
+		if err := ctr.Terminate(ctx); err != nil {
+			tb.Fatalf("failed to terminate container \":%s\": %s\n", ctr.GetContainerID(), err)
+		}
+	})
+}

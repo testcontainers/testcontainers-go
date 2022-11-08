@@ -89,7 +89,7 @@ func Test_NetworkWithIPAM(t *testing.T) {
 			},
 		},
 	})
-	terminateContainerOnEnd(t, ctx, nginxC)
+	Cleanup(t, ctx, nginxC)
 	nginxC.GetContainerID()
 
 	provider, err := ProviderDocker.GetProvider()
@@ -145,7 +145,7 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	terminateContainerOnEnd(t, ctx, postgres)
+	Cleanup(t, ctx, postgres)
 
 	env = make(map[string]string)
 	env["RABBITMQ_ERLANG_COOKIE"] = "f2a2d3d27c75"
@@ -170,7 +170,7 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 		return
 	}
 
-	terminateContainerOnEnd(t, ctx, rabbitmq)
+	Cleanup(t, ctx, rabbitmq)
 	fmt.Println(postgres.GetContainerID())
 	fmt.Println(rabbitmq.GetContainerID())
 }
