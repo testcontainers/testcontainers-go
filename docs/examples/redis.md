@@ -67,7 +67,7 @@ func TestIntegrationSetGet(t *testing.T) {
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
 		t.Log("terminating container")
-		if err := redisContainer.Terminate(ctx)); err != nil {
+		if err := redisContainer.Terminate(ctx); err != nil {
 			t.Errorf("failed to terminate container: :%w", err)
 		}
 	})
