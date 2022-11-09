@@ -30,6 +30,7 @@ nav:
           - quickstart/gotest.md
     - Features:
           - features/creating_container.md
+          - features/networking.md
           - features/garbage_collector.md
           - features/build_from_dockerfile.md
           - features/docker_compose.md

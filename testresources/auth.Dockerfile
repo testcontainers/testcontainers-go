@@ -1,0 +1,1 @@
+FROM localhost:5000/redis:5.0-alpine
