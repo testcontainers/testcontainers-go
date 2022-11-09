@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -67,7 +66,7 @@ func Test_TarDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srcFiles, err := ioutil.ReadDir(src)
+	srcFiles, err := os.ReadDir(src)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,12 +75,12 @@ func Test_TarDir(t *testing.T) {
 		if srcFile.IsDir() {
 			continue
 		}
-		srcBytes, err := ioutil.ReadFile(filepath.Join(src, srcFile.Name()))
+		srcBytes, err := os.ReadFile(filepath.Join(src, srcFile.Name()))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		untarBytes, err := ioutil.ReadFile(filepath.Join(tmpDir, "testresources", srcFile.Name()))
+		untarBytes, err := os.ReadFile(filepath.Join(tmpDir, "testresources", srcFile.Name()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -90,7 +89,7 @@ func Test_TarDir(t *testing.T) {
 }
 
 func Test_TarFile(t *testing.T) {
-	b, err := ioutil.ReadFile(filepath.Join(".", "testresources", "Dockerfile"))
+	b, err := os.ReadFile(filepath.Join(".", "testresources", "Dockerfile"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +105,7 @@ func Test_TarFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	untarBytes, err := ioutil.ReadFile(filepath.Join(tmpDir, "Docker.file"))
+	untarBytes, err := os.ReadFile(filepath.Join(tmpDir, "Docker.file"))
 	if err != nil {
 		t.Fatal(err)
 	}

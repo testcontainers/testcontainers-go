@@ -3,18 +3,6 @@ name: Main pipeline
 on: [push, pull_request]
 
 jobs:
-  static-analysis:
-    runs-on: ubuntu-latest
-    steps:
-
-      - uses: actions/checkout@v3
-      - name: Run ShellCheck
-        run: |
-          shellcheck scripts/*.sh
-
-      - name: Run gofmt
-        run: |
-          ./scripts/checks.sh
   test:
     strategy:
       matrix:
@@ -37,9 +25,6 @@ jobs:
 
       - name: modTidy
         run: go mod tidy
-
-      - name: vet
-        run: go vet ./...
 
       - name: ensure compilation
         env:

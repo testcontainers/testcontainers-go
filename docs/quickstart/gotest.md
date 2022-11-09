@@ -35,7 +35,11 @@ func TestWithRedis(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer redisC.Terminate(ctx)
+	defer func() {
+		if err := redisC.terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %w", err)
+		}
+	}()
 }
 ```
 

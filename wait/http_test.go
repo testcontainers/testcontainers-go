@@ -7,10 +7,11 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-//
 // https://github.com/testcontainers/testcontainers-go/issues/183
 func ExampleHTTPStrategy() {
 	ctx := context.Background()
@@ -36,9 +36,13 @@ func ExampleHTTPStrategy() {
 		panic(err)
 	}
 
-	defer gogs.Terminate(ctx) // nolint: errcheck
-	// Here you have a running container
+	defer func() {
+		if err := gogs.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
 
+	// Here you have a running container
 }
 
 func TestHTTPStrategyWaitUntilReady(t *testing.T) {
@@ -48,8 +52,8 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 		return
 	}
 
-	capath := workdir + "/testdata/root.pem"
-	cafile, err := ioutil.ReadFile(capath)
+	capath := filepath.Join(workdir, "testdata", "root.pem")
+	cafile, err := os.ReadFile(capath)
 	if err != nil {
 		t.Errorf("can't load ca file: %v", err)
 		return
@@ -65,13 +69,13 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	var i int
 	dockerReq := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context: workdir + "/testdata",
+			Context: filepath.Join(workdir, "testdata"),
 		},
 		ExposedPorts: []string{"6443/tcp"},
 		WaitingFor: wait.NewHTTPStrategy("/ping").WithTLS(true, tlsconfig).
 			WithStartupTimeout(time.Second * 10).WithPort("6443/tcp").
 			WithResponseMatcher(func(body io.Reader) bool {
-				data, _ := ioutil.ReadAll(body)
+				data, _ := io.ReadAll(body)
 				return bytes.Equal(data, []byte("pong"))
 			}).
 			WithStatusCodeMatcher(func(status int) bool {
@@ -81,20 +85,24 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
 	}
 
-	container, err := testcontainers.GenericContainer(context.Background(),
-		testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
+	ctx := context.Background()
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	defer container.Terminate(context.Background()) // nolint: errcheck
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
 
-	host, err := container.Host(context.Background())
+	host, err := container.Host(ctx)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	port, err := container.MappedPort(context.Background(), "6443/tcp")
+	port, err := container.MappedPort(ctx, "6443/tcp")
 	if err != nil {
 		t.Error(err)
 		return

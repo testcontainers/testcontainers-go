@@ -71,7 +71,13 @@ func TestPulsar(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { c.Container.Terminate(ctx) })
+	// Cleanup the container after the test is complete
+	t.Cleanup(func() {
+		t.Log("terminating container")
+		if err := ctr.Terminate(ctx)); err != nil {
+			t.Errorf("failed to terminate container: :%w", err)
+		}
+	})
 
 	pc, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL:               c.URI,

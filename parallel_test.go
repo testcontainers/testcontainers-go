@@ -103,7 +103,6 @@ func TestParallelContainers(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			res, err := ParallelContainers(context.Background(), tc.reqs, ParallelContainersOptions{})
-
 			if err != nil {
 				require.NotZero(t, tc.expErrors)
 				e, _ := err.(ParallelContainersError)
@@ -114,7 +113,8 @@ func TestParallelContainers(t *testing.T) {
 			}
 
 			for _, c := range res {
-				defer c.Terminate(context.Background())
+				c := c
+				terminateContainerOnEnd(t, context.Background(), c)
 			}
 
 			if len(res) != tc.resLen {
@@ -165,8 +165,6 @@ func TestParallelContainersWithReuse(t *testing.T) {
 		e, _ := err.(ParallelContainersError)
 		t.Fatalf("expected errors: %d, got: %d\n", 0, len(e.Errors))
 	}
-
-	for _, c := range res {
-		defer c.Terminate(ctx)
-	}
+	// Container is reused, only terminate first container
+	terminateContainerOnEnd(t, ctx, res[0])
 }
