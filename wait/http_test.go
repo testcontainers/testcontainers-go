@@ -69,7 +69,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	var i int
 	dockerReq := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context: filepath.Join(workdir, "/testdata"),
+			Context: filepath.Join(workdir, "testdata"),
 		},
 		ExposedPorts: []string{"6443/tcp"},
 		WaitingFor: wait.NewHTTPStrategy("/ping").WithTLS(true, tlsconfig).
