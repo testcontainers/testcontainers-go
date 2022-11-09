@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"path"
 
 	// Import mysql into the scope of this package (required)
 	"io"
@@ -1702,7 +1701,7 @@ func TestReadTCPropsFile(t *testing.T) {
 				for k, v := range tt.env {
 					t.Setenv(k, v)
 				}
-				if err := os.WriteFile(path.Join(tmpDir, ".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
+				if err := os.WriteFile(filepath.Join(tmpDir, ".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
 					t.Errorf("Failed to create the file: %v", err)
 					return
 				}
