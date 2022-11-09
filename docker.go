@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -296,13 +295,9 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	r := bufio.NewReader(rc)
 
 	go func() {
-		var (
-			isPrefix    = true
-			lineStarted = true
-			line        []byte
-		)
+		var lineStarted = true
 		for err == nil {
-			line, isPrefix, err = r.ReadLine()
+			line, isPrefix, err := r.ReadLine()
 
 			if lineStarted && len(line) >= streamHeaderSize {
 				line = line[streamHeaderSize:] // trim stream header
@@ -542,7 +537,7 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 		return c.CopyDirToContainer(ctx, hostFilePath, containerFilePath, fileMode)
 	}
 
-	fileContent, err := ioutil.ReadFile(hostFilePath)
+	fileContent, err := os.ReadFile(hostFilePath)
 	if err != nil {
 		return err
 	}
@@ -1036,7 +1031,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if err != nil {
 			return nil, err
 		}
-		for p, _ := range image.ContainerConfig.ExposedPorts {
+		for p := range image.ContainerConfig.ExposedPorts {
 			exposedPorts = append(exposedPorts, string(p))
 		}
 	}
@@ -1225,7 +1220,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	defer pull.Close()
 
 	// download of docker image finishes at EOF of the pull request
-	_, err = ioutil.ReadAll(pull)
+	_, err = io.ReadAll(pull)
 	return err
 }
 
