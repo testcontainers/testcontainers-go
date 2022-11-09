@@ -14,9 +14,10 @@ func TestGenerate(t *testing.T) {
 	examplesDocTmp := t.TempDir()
 
 	exampleName := "Foo"
+	exampleImage := "docker.io/example/foo:latest"
 	exampleNameLower := strings.ToLower(exampleName)
 
-	err := generate(exampleName, examplesTmp, examplesDocTmp)
+	err := generate(exampleName, exampleImage, examplesTmp, examplesDocTmp)
 	assert.Nil(t, err)
 
 	templatesDir, err := os.ReadDir(filepath.Join(".", "_template"))
@@ -41,7 +42,7 @@ func TestGenerate(t *testing.T) {
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, exampleNameLower)
 	assertExampleTestContent(t, exampleName, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
-	assertExampleContent(t, exampleName, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
+	assertExampleContent(t, exampleName, exampleImage, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
 	assertGoModContent(t, exampleName, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, exampleName, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertToolsGoContent(t, exampleName, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
@@ -77,7 +78,7 @@ func assertExampleTestContent(t *testing.T, exampleName string, exampleTestFile 
 }
 
 // assert content example
-func assertExampleContent(t *testing.T, exampleName string, exampleFile string) {
+func assertExampleContent(t *testing.T, exampleName string, exampleImage string, exampleFile string) {
 	content, err := os.ReadFile(exampleFile)
 	assert.Nil(t, err)
 
@@ -87,6 +88,7 @@ func assertExampleContent(t *testing.T, exampleName string, exampleFile string) 
 	assert.Equal(t, data[1], "package "+lower)
 	assert.Equal(t, data[10], "type "+lower+"Container struct {")
 	assert.Equal(t, data[14], "func setup"+exampleName+"(ctx context.Context) (*"+lower+"Container, error) {")
+	assert.Equal(t, data[16], "\t\tImage: \""+exampleImage+"\",")
 	assert.Equal(t, data[26], "\treturn &"+lower+"Container{Container: container}, nil")
 }
 

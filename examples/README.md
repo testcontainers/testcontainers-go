@@ -9,7 +9,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 - a Go module for the example, including:
     - go.mod and go.sum files
     - a Go package named after the example, in lowercase
-    - a Go file for the creation of the container, using a dedicated struct.
+    - a Go file for the creation of the container, using a dedicated struct in which the image flag is set as Docker image.
     - a Go test file for running a simple test for your container, consuming the above struct.
     - a Makefile to run the tests in a consistent manner
     - a tools.go file including the build tools (i.e. `gotestsum`) used to build/run the example.
@@ -25,5 +25,5 @@ We have provided a command line tool to generate the scaffolding for the code of
 From the `examples` directory, please run:
 
 ```shell
-go run main.go --name ${NAME_OF_YOUR_EXAMPLE}
+go run main.go --name ${NAME_OF_YOUR_EXAMPLE} --image "${REGISTRY}/${EXAMPLE}:${TAG}"
 ```

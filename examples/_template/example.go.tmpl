@@ -14,7 +14,7 @@ type {{ $lower }}Container struct {
 
 func setup{{ .Name }}(ctx context.Context) (*{{ $lower }}Container, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "image",
+		Image: "{{ .Image }}",
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,

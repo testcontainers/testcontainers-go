@@ -10,6 +10,7 @@ import (
 )
 
 var nameVar string
+var imageVar string
 
 var templates = []string{
 	"docs_example.md", "example_test.go", "example.go", "go.mod", "go.sum", "Makefile", "tools.go",
@@ -17,10 +18,12 @@ var templates = []string{
 
 func init() {
 	flag.StringVar(&nameVar, "name", "", "Name of the example, use camel-case when needed")
+	flag.StringVar(&imageVar, "image", "", "Fully-qualified name of the Docker image to be used by the example")
 }
 
 type Example struct {
-	Name string
+	Image string // fully qualified name of the Docker image
+	Name  string
 }
 
 func (e *Example) Lower() string {
@@ -28,7 +31,7 @@ func (e *Example) Lower() string {
 }
 
 func main() {
-	required := []string{"name"}
+	required := []string{"name", "image"}
 	flag.Parse()
 
 	seen := make(map[string]bool)
@@ -49,15 +52,15 @@ func main() {
 
 	examplesDocsPath := filepath.Join(filepath.Dir(examplesDir), "docs", "examples")
 
-	err = generate(nameVar, examplesDir, examplesDocsPath)
+	err = generate(nameVar, imageVar, examplesDir, examplesDocsPath)
 	if err != nil {
 		fmt.Printf(">> error generating the example: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func generate(name string, examplesDir string, docsDir string) error {
-	example := Example{Name: name}
+func generate(name string, image string, examplesDir string, docsDir string) error {
+	example := Example{Name: name, Image: image}
 
 	funcMap := template.FuncMap{
 		"ToLower":     strings.ToLower,
