@@ -13,7 +13,7 @@ permissions:
   # pull-requests: read
 
 jobs:
-  golangci:
+  static-analysis:
     name: lint
     runs-on: ubuntu-latest
     steps:
