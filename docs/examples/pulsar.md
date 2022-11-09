@@ -74,7 +74,7 @@ func TestPulsar(t *testing.T) {
 	// Cleanup the container after the test is complete
 	t.Cleanup(func() {
 		t.Log("terminating container")
-		if err := ctr.Terminate(ctx)); err != nil {
+		if err := c.Terminate(ctx); err != nil {
 			t.Errorf("failed to terminate container: :%w", err)
 		}
 	})
