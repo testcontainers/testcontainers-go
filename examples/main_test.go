@@ -7,19 +7,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 func TestGenerate(t *testing.T) {
 	examplesTmp := t.TempDir()
 	examplesDocTmp := t.TempDir()
 
-	exampleName := "foo"
-	exampleImage := "docker.io/example/foo:latest"
-	exampleNameLower := strings.ToLower(exampleName)
+	example := Example{
+		Name:  "foo",
+		Image: "docker.io/example/foo:latest",
+	}
+	exampleNameLower := example.Lower()
 
-	err := generate(exampleName, exampleImage, examplesTmp, examplesDocTmp)
+	err := generate(example, examplesTmp, examplesDocTmp)
 	assert.Nil(t, err)
 
 	templatesDir, err := os.ReadDir(filepath.Join(".", "_template"))
@@ -40,23 +40,23 @@ func TestGenerate(t *testing.T) {
 	// check the number of template files is equal to examples + 1 (the doc)
 	assert.Equal(t, len(newExampleDir)+1, len(templatesDir))
 
-	assertExampleDocContent(t, exampleName, exampleDocFile)
+	assertExampleDocContent(t, example, exampleDocFile)
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, exampleNameLower)
-	assertExampleTestContent(t, exampleName, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
-	assertExampleContent(t, exampleName, exampleImage, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
-	assertGoModContent(t, exampleName, filepath.Join(generatedTemplatesDir, "go.mod"))
-	assertMakefileContent(t, exampleName, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertToolsGoContent(t, exampleName, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
+	assertExampleTestContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
+	assertExampleContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
+	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))
+	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
+	assertToolsGoContent(t, example, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
 }
 
 // assert content example file in the docs
-func assertExampleDocContent(t *testing.T, exampleName string, exampleDocFile string) {
+func assertExampleDocContent(t *testing.T, example Example, exampleDocFile string) {
 	content, err := os.ReadFile(exampleDocFile)
 	assert.Nil(t, err)
 
-	lower := strings.ToLower(exampleName)
-	title := cases.Title(language.Und, cases.NoLower).String(exampleName)
+	lower := example.Lower()
+	title := example.Title()
 
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "# "+title)
@@ -69,25 +69,23 @@ func assertExampleDocContent(t *testing.T, exampleName string, exampleDocFile st
 }
 
 // assert content example test
-func assertExampleTestContent(t *testing.T, exampleName string, exampleTestFile string) {
+func assertExampleTestContent(t *testing.T, example Example, exampleTestFile string) {
 	content, err := os.ReadFile(exampleTestFile)
 	assert.Nil(t, err)
 
-	lower := strings.ToLower(exampleName)
-	title := cases.Title(language.Und, cases.NoLower).String(exampleName)
-
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[0], "package "+lower)
-	assert.Equal(t, data[7], "func Test"+title+"(t *testing.T) {")
+	assert.Equal(t, data[0], "package "+example.Lower())
+	assert.Equal(t, data[7], "func Test"+example.Title()+"(t *testing.T) {")
 }
 
 // assert content example
-func assertExampleContent(t *testing.T, exampleName string, exampleImage string, exampleFile string) {
+func assertExampleContent(t *testing.T, example Example, exampleFile string) {
 	content, err := os.ReadFile(exampleFile)
 	assert.Nil(t, err)
 
-	lower := strings.ToLower(exampleName)
-	title := cases.Title(language.Und, cases.NoLower).String(exampleName)
+	lower := example.Lower()
+	title := example.Title()
+	exampleName := example.Name
 
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "package "+lower)
@@ -95,38 +93,34 @@ func assertExampleContent(t *testing.T, exampleName string, exampleImage string,
 	assert.Equal(t, data[9], "type "+lower+"Container struct {")
 	assert.Equal(t, data[13], "// setup"+title+" creates an instance of the "+exampleName+" container type")
 	assert.Equal(t, data[14], "func setup"+title+"(ctx context.Context) (*"+lower+"Container, error) {")
-	assert.Equal(t, data[16], "\t\tImage: \""+exampleImage+"\",")
+	assert.Equal(t, data[16], "\t\tImage: \""+example.Image+"\",")
 	assert.Equal(t, data[26], "\treturn &"+lower+"Container{Container: container}, nil")
 }
 
 // assert content go.mod
-func assertGoModContent(t *testing.T, exampleName string, goModFile string) {
+func assertGoModContent(t *testing.T, example Example, goModFile string) {
 	content, err := os.ReadFile(goModFile)
 	assert.Nil(t, err)
 
-	lower := strings.ToLower(exampleName)
-
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[0], "module github.com/testcontainers/testcontainers-go/examples/"+lower)
+	assert.Equal(t, data[0], "module github.com/testcontainers/testcontainers-go/examples/"+example.Lower())
 }
 
 // assert content Makefile
-func assertMakefileContent(t *testing.T, exampleName string, makefile string) {
+func assertMakefileContent(t *testing.T, example Example, makefile string) {
 	content, err := os.ReadFile(makefile)
 	assert.Nil(t, err)
 
-	lower := strings.ToLower(exampleName)
-
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[4], "\t$(MAKE) test-"+lower)
+	assert.Equal(t, data[4], "\t$(MAKE) test-"+example.Lower())
 }
 
 // assert content tools/tools.go
-func assertToolsGoContent(t *testing.T, exampleName string, tools string) {
+func assertToolsGoContent(t *testing.T, example Example, tools string) {
 	content, err := os.ReadFile(tools)
 	assert.Nil(t, err)
 
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[3], "// This package contains the tool dependencies of the "+exampleName+" example.")
+	assert.Equal(t, data[3], "// This package contains the tool dependencies of the "+example.Name+" example.")
 	assert.Equal(t, data[5], "package tools")
 }

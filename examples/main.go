@@ -33,6 +33,10 @@ func (e *Example) Lower() string {
 	return strings.ToLower(e.Name)
 }
 
+func (e *Example) Title() string {
+	return cases.Title(language.Und, cases.NoLower).String(e.Lower())
+}
+
 func main() {
 	required := []string{"name", "image"}
 	flag.Parse()
@@ -55,16 +59,14 @@ func main() {
 
 	examplesDocsPath := filepath.Join(filepath.Dir(examplesDir), "docs", "examples")
 
-	err = generate(nameVar, imageVar, examplesDir, examplesDocsPath)
+	err = generate(Example{Name: nameVar, Image: imageVar}, examplesDir, examplesDocsPath)
 	if err != nil {
 		fmt.Printf(">> error generating the example: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func generate(name string, image string, examplesDir string, docsDir string) error {
-	example := Example{Name: name, Image: image}
-
+func generate(example Example, examplesDir string, docsDir string) error {
 	funcMap := template.FuncMap{
 		"ToLower":     strings.ToLower,
 		"Title":       cases.Title(language.Und, cases.NoLower).String,
