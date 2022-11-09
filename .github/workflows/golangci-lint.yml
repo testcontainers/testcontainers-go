@@ -1,4 +1,4 @@
-name: golangci-lint
+name: golangci-lint / static-analysis
 on:
   push:
     tags:
@@ -14,7 +14,6 @@ permissions:
 
 jobs:
   static-analysis:
-    name: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v3
