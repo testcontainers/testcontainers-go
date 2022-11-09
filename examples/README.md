@@ -15,6 +15,13 @@ We have provided a command line tool to generate the scaffolding for the code of
     - a tools.go file including the build tools (i.e. `gotestsum`) used to build/run the example.
 - a markdown file in the docs/examples directory including the snippets for both the creation of the container and a simple test.
 
+### Command line flags
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| -name | string | Yes | Name of the example, use camel-case when needed |
+| -image | string | Yes | Fully-qualified name of the Docker image to be used by the example (i.e. 'docker.io/org/project:tag') |
+
 ### What is this tool not doing?
 
 - If the example already exists, it will exit without updating the existing files.
