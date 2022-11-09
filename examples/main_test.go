@@ -91,10 +91,12 @@ func assertExampleContent(t *testing.T, exampleName string, exampleImage string,
 
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "package "+lower)
-	assert.Equal(t, data[8], "type "+lower+"Container struct {")
-	assert.Equal(t, data[12], "func setup"+title+"(ctx context.Context) (*"+lower+"Container, error) {")
-	assert.Equal(t, data[14], "\t\tImage: \""+exampleImage+"\",")
-	assert.Equal(t, data[24], "\treturn &"+lower+"Container{Container: container}, nil")
+	assert.Equal(t, data[8], "// "+lower+"Container represents the "+exampleName+" container type used in the module")
+	assert.Equal(t, data[9], "type "+lower+"Container struct {")
+	assert.Equal(t, data[13], "// setup"+title+" creates an instance of the "+exampleName+" container type")
+	assert.Equal(t, data[14], "func setup"+title+"(ctx context.Context) (*"+lower+"Container, error) {")
+	assert.Equal(t, data[16], "\t\tImage: \""+exampleImage+"\",")
+	assert.Equal(t, data[26], "\treturn &"+lower+"Container{Container: container}, nil")
 }
 
 // assert content go.mod

@@ -6,10 +6,12 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
+// {{ $lower }}Container represents the {{ .Name }} container type used in the module
 type {{ $lower }}Container struct {
 	testcontainers.Container
 }
 
+// setup{{ $title }} creates an instance of the {{ .Name }} container type
 func setup{{ $title }}(ctx context.Context) (*{{ $lower }}Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image: "{{ .Image }}",
