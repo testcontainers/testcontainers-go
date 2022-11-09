@@ -7,13 +7,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func TestGenerate(t *testing.T) {
 	examplesTmp := t.TempDir()
 	examplesDocTmp := t.TempDir()
 
-	exampleName := "Foo"
+	exampleName := "foo"
 	exampleImage := "docker.io/example/foo:latest"
 	exampleNameLower := strings.ToLower(exampleName)
 
@@ -54,15 +56,16 @@ func assertExampleDocContent(t *testing.T, exampleName string, exampleDocFile st
 	assert.Nil(t, err)
 
 	lower := strings.ToLower(exampleName)
+	title := cases.Title(language.Und, cases.NoLower).String(exampleName)
 
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[1], "# "+exampleName)
-	assert.Equal(t, data[3], "<!--codeinclude-->")
-	assert.Equal(t, data[4], "[Creating a "+exampleName+" container](../../examples/"+lower+"/"+lower+".go)")
-	assert.Equal(t, data[5], "<!--/codeinclude-->")
-	assert.Equal(t, data[7], "<!--codeinclude-->")
-	assert.Equal(t, data[8], "[Test for a "+exampleName+" container](../../examples/"+lower+"/"+lower+"_test.go)")
-	assert.Equal(t, data[9], "<!--/codeinclude-->")
+	assert.Equal(t, data[0], "# "+title)
+	assert.Equal(t, data[2], "<!--codeinclude-->")
+	assert.Equal(t, data[3], "[Creating a "+title+" container](../../examples/"+lower+"/"+lower+".go)")
+	assert.Equal(t, data[4], "<!--/codeinclude-->")
+	assert.Equal(t, data[6], "<!--codeinclude-->")
+	assert.Equal(t, data[7], "[Test for a "+title+" container](../../examples/"+lower+"/"+lower+"_test.go)")
+	assert.Equal(t, data[8], "<!--/codeinclude-->")
 }
 
 // assert content example test
@@ -71,10 +74,11 @@ func assertExampleTestContent(t *testing.T, exampleName string, exampleTestFile 
 	assert.Nil(t, err)
 
 	lower := strings.ToLower(exampleName)
+	title := cases.Title(language.Und, cases.NoLower).String(exampleName)
 
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[1], "package "+lower)
-	assert.Equal(t, data[8], "func Test"+exampleName+"(t *testing.T) {")
+	assert.Equal(t, data[0], "package "+lower)
+	assert.Equal(t, data[7], "func Test"+title+"(t *testing.T) {")
 }
 
 // assert content example
@@ -83,13 +87,14 @@ func assertExampleContent(t *testing.T, exampleName string, exampleImage string,
 	assert.Nil(t, err)
 
 	lower := strings.ToLower(exampleName)
+	title := cases.Title(language.Und, cases.NoLower).String(exampleName)
 
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[1], "package "+lower)
-	assert.Equal(t, data[10], "type "+lower+"Container struct {")
-	assert.Equal(t, data[14], "func setup"+exampleName+"(ctx context.Context) (*"+lower+"Container, error) {")
-	assert.Equal(t, data[16], "\t\tImage: \""+exampleImage+"\",")
-	assert.Equal(t, data[26], "\treturn &"+lower+"Container{Container: container}, nil")
+	assert.Equal(t, data[0], "package "+lower)
+	assert.Equal(t, data[8], "type "+lower+"Container struct {")
+	assert.Equal(t, data[12], "func setup"+title+"(ctx context.Context) (*"+lower+"Container, error) {")
+	assert.Equal(t, data[14], "\t\tImage: \""+exampleImage+"\",")
+	assert.Equal(t, data[24], "\treturn &"+lower+"Container{Container: container}, nil")
 }
 
 // assert content go.mod
@@ -100,7 +105,7 @@ func assertGoModContent(t *testing.T, exampleName string, goModFile string) {
 	lower := strings.ToLower(exampleName)
 
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[1], "module github.com/testcontainers/testcontainers-go/examples/"+lower)
+	assert.Equal(t, data[0], "module github.com/testcontainers/testcontainers-go/examples/"+lower)
 }
 
 // assert content Makefile
@@ -111,7 +116,7 @@ func assertMakefileContent(t *testing.T, exampleName string, makefile string) {
 	lower := strings.ToLower(exampleName)
 
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[5], "\t$(MAKE) test-"+lower)
+	assert.Equal(t, data[4], "\t$(MAKE) test-"+lower)
 }
 
 // assert content tools/tools.go

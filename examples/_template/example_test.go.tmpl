@@ -1,15 +1,14 @@
-{{ $lower := .Name | ToLower }}
-package {{ $lower }}
+{{ $lower := .Name | ToLower }}{{ $title := .Name | Title }}package {{ $lower }}
 
 import (
 	"context"
 	"testing"
 )
 
-func Test{{ .Name }}(t *testing.T) {
+func Test{{ $title }}(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := setup{{ .Name }}(ctx)
+	container, err := setup{{ $title }}(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

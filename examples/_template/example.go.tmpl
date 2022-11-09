@@ -1,5 +1,4 @@
-{{ $lower := .Name | ToLower }}
-package {{ $lower }}
+{{ $lower := .Name | ToLower }}{{ $title := .Name | Title }}package {{ $lower }}
 
 import (
 	"context"
@@ -11,7 +10,7 @@ type {{ $lower }}Container struct {
 	testcontainers.Container
 }
 
-func setup{{ .Name }}(ctx context.Context) (*{{ $lower }}Container, error) {
+func setup{{ $title }}(ctx context.Context) (*{{ $lower }}Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image: "{{ .Image }}",
 	}

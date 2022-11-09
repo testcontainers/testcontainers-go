@@ -7,6 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 var nameVar string
@@ -64,6 +67,7 @@ func generate(name string, image string, examplesDir string, docsDir string) err
 
 	funcMap := template.FuncMap{
 		"ToLower":     strings.ToLower,
+		"Title":       cases.Title(language.Und, cases.NoLower).String,
 		"codeinclude": func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
 	}
 
