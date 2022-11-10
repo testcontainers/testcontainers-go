@@ -1940,7 +1940,6 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		t.Skip("Incompatible Docker API version for Podman")
 	}
 	t.Run("error with a non-existent platform", func(t *testing.T) {
-		t.Parallel()
 		nonExistentPlatform := "windows/arm12"
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
@@ -1960,7 +1959,6 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 	})
 
 	t.Run("specific platform should be propagated", func(t *testing.T) {
-		t.Parallel()
 		ctx := context.Background()
 
 		c, err := GenericContainer(ctx, GenericContainerRequest{

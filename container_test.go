@@ -298,7 +298,6 @@ func Test_BuildImageWithContexts(t *testing.T) {
 	for _, testCase := range testCases {
 		testCase := testCase
 		t.Run(testCase.Name, func(t *testing.T) {
-			t.Parallel()
 			ctx := context.Background()
 			a, err := testCase.ContextArchive()
 			if err != nil {
@@ -372,7 +371,6 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		t.Run(fmt.Sprintf("iteration_%d", i), func(t *testing.T) {
-			t.Parallel()
 			createTestContainer(t, ctx)
 		})
 	}
@@ -402,7 +400,6 @@ func createTestContainer(t *testing.T, ctx context.Context) int {
 }
 
 func TestBindMount(t *testing.T) {
-	t.Parallel()
 	type args struct {
 		hostPath    string
 		mountTarget ContainerMountTarget
@@ -426,14 +423,12 @@ func TestBindMount(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			assert.Equalf(t, tt.want, BindMount(tt.args.hostPath, tt.args.mountTarget), "BindMount(%v, %v)", tt.args.hostPath, tt.args.mountTarget)
 		})
 	}
 }
 
 func TestVolumeMount(t *testing.T) {
-	t.Parallel()
 	type args struct {
 		volumeName  string
 		mountTarget ContainerMountTarget
@@ -457,7 +452,6 @@ func TestVolumeMount(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			assert.Equalf(t, tt.want, VolumeMount(tt.args.volumeName, tt.args.mountTarget), "VolumeMount(%v, %v)", tt.args.volumeName, tt.args.mountTarget)
 		})
 	}
