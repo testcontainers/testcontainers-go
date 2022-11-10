@@ -135,7 +135,7 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 	}
 
 	capath := workdir + "/testdata/root.pem"
-	cafile, err := io.ReadFile(capath)
+	cafile, err := os.ReadFile(capath)
 	if err != nil {
 		t.Errorf("can't load ca file: %v", err)
 		return
