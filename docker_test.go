@@ -39,6 +39,7 @@ import (
 )
 
 const (
+	mysqlImage       = "docker.io/mysql:8.0.30"
 	nginxImage       = "docker.io/nginx"
 	nginxAlpineImage = "docker.io/nginx:alpine"
 	nginxDefaultPort = "80/tcp"
@@ -968,7 +969,7 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/mysql:latest",
+		Image:        mysqlImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "password",
@@ -991,7 +992,7 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 	// exposePorts {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/mysql:latest",
+		Image:        mysqlImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "password",
@@ -1304,7 +1305,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/mysql:latest",
+		Image:        mysqlImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "password",
@@ -1363,7 +1364,7 @@ func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.
 func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/mysql:latest",
+		Image:        mysqlImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "password",
