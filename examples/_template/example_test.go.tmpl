@@ -14,7 +14,11 @@ func Test{{ $title }}(t *testing.T) {
 	}
 
 	// Clean up the container after the test is complete
-	defer container.Terminate(ctx)
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
 
 	// perform assertions
 }

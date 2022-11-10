@@ -19,7 +19,11 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 	}
 
 	// Clean up the container after the test is complete
-	defer nginxC.Terminate(ctx)
+	t.Cleanup(func() {
+		if err := nginxC.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
 
 	resp, err := http.Get(nginxC.URI)
 	if err != nil {
