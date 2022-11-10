@@ -4,13 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
-
-const defaultTimeout = time.Minute * 3
 
 type pulsarContainer struct {
 	testcontainers.Container
@@ -27,9 +24,9 @@ func setupPulsar(ctx context.Context) (*pulsarContainer, error) {
 		Image:        "docker.io/apachepulsar/pulsar:2.10.2",
 		ExposedPorts: []string{"6650/tcp", "8080/tcp"},
 		WaitingFor: wait.ForAll(
-			wait.ForHTTP("/admin/v2/clusters").WithPort("8080/tcp").WithResponseMatcher(matchAdminResponse).WithStartupTimeout(defaultTimeout),
-			wait.ForLog("Successfully updated the policies on namespace public/default").WithStartupTimeout(defaultTimeout),
-		).WithStartupTimeout(defaultTimeout),
+			wait.ForHTTP("/admin/v2/clusters").WithPort("8080/tcp").WithResponseMatcher(matchAdminResponse),
+			wait.ForLog("Successfully updated the policies on namespace public/default"),
+		),
 		Cmd: []string{
 			"/bin/bash",
 			"-c",
