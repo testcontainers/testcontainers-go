@@ -74,7 +74,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 		WaitingFor: wait.NewHTTPStrategy("/auth-ping").WithTLS(true, tlsconfig).
 			WithStartupTimeout(time.Second*10).WithPort("6443/tcp").
 			WithResponseMatcher(func(body io.Reader) bool {
-				data, _ := ioutil.ReadAll(body)
+				data, _ := io.ReadAll(body)
 				return bytes.Equal(data, []byte("pong"))
 			}).
 			WithBasicAuth("admin", "admin").
@@ -135,7 +135,7 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 	}
 
 	capath := workdir + "/testdata/root.pem"
-	cafile, err := ioutil.ReadFile(capath)
+	cafile, err := io.ReadFile(capath)
 	if err != nil {
 		t.Errorf("can't load ca file: %v", err)
 		return
