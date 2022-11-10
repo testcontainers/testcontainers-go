@@ -10,4 +10,4 @@ src/pip-delete-this-directory.txt
 .idea/
 .DS_Store
 
-cover.txt
+TEST-*.xml

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -206,7 +205,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	// cache the body into a byte-slice so that it can be iterated over multiple times
 	var body []byte
 	if ws.Body != nil {
-		body, err = ioutil.ReadAll(ws.Body)
+		body, err = io.ReadAll(ws.Body)
 		if err != nil {
 			return
 		}

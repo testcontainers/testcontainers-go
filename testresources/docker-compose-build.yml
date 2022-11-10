@@ -1,0 +1,11 @@
+version: '3'
+services:
+  echo:
+    build:
+      dockerfile: echoserver.Dockerfile
+    environment:
+      FOO: "Hello, World!"
+    ports:
+      - target: 8080
+        published: 8080
+        protocol: tcp

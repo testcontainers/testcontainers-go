@@ -12,11 +12,14 @@ import (
 
 type exitStrategyTarget struct {
 	isRunning bool
-	err       error
 }
 
 func (st exitStrategyTarget) Host(ctx context.Context) (string, error) {
 	return "", nil
+}
+
+func (st exitStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
+	return nil, nil
 }
 
 func (st exitStrategyTarget) MappedPort(ctx context.Context, n nat.Port) (nat.Port, error) {

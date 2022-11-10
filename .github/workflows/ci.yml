@@ -3,27 +3,15 @@ name: Main pipeline
 on: [push, pull_request]
 
 jobs:
-  static-analysis:
-    runs-on: ubuntu-latest
-    steps:
-
-      - uses: actions/checkout@v3
-      - name: Run ShellCheck
-        run: |
-          shellcheck scripts/*.sh
-
-      - name: Run gofmt
-        run: |
-          ./scripts/checks.sh
   test:
     strategy:
       matrix:
-        go-version: [1.14.x, 1.15.x, 1.16.x, 1.17.x, 1.x]
+        go-version: [1.18.x, 1.x]
         platform: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
 
-      - name: Set up Go 1.x
+      - name: Set up Go
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
@@ -38,9 +26,6 @@ jobs:
       - name: modTidy
         run: go mod tidy
 
-      - name: vet
-        run: go vet ./...
-
       - name: ensure compilation
         env:
           GOOS: linux
@@ -54,14 +39,6 @@ jobs:
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-unit
 
-        # only report code coverage on linux
-      - name: Upload coverage report
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        uses: codecov/codecov-action@v2
-        with:
-          files: ./cover.txt
-          name: testcontainers-go-${{ matrix.go-version }}
-
       - name: modTidy e2e tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make -C e2e tools-tidy
@@ -73,3 +50,9 @@ jobs:
       - name: Run checker
         run: |
           ./scripts/check_environment.sh
+
+      - name: Test Summary
+        uses: test-summary/action@4ee9ece4bca777a38f05c8fc578ac2007fe266f7
+        with:
+          paths: "**/TEST-*.xml"
+        if: always()

@@ -2,7 +2,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/testcontainers/testcontainers-go)](https://goreportcard.com/report/github.com/testcontainers/testcontainers-go)
 [![GoDoc Reference](https://camo.githubusercontent.com/8609cfcb531fa0f5598a3d4353596fae9336cce3/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f79616e6777656e6d61692f686f772d746f2d6164642d62616467652d696e2d6769746875622d726561646d653f7374617475732e737667)](https://pkg.go.dev/github.com/testcontainers/testcontainers-go)
 
-Testcontainers-Go is a Go package that makes it simple to create and clean up container-based dependencies for
+_Testcontainers for Go_ is a Go package that makes it simple to create and clean up container-based dependencies for
 automated integration/smoke tests. The clean, easy-to-use API enables developers to programmatically define containers
 that should be run as part of a test and clean up those resources when the test is done.
 
@@ -68,7 +68,11 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 	}
 
 	// Clean up the container after the test is complete
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		if err := nginxC.terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %w", err)
+		}
+	}()
 
 	resp, err := http.Get(nginxC.URI)
 	if resp.StatusCode != http.StatusOK {
@@ -82,5 +86,5 @@ Cleaning up your environment after test completion should be accomplished by def
 
 ## Documentation
 
-More information about TestContainers-Go can be found in [./docs](./docs), which is rendered at
+More information about _Testcontainers for Go_ can be found in [./docs](./docs), which is rendered at
 [golang.testcontainers.org](https://golang.testcontainers.org).

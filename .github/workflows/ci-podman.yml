@@ -6,10 +6,10 @@ jobs:
   build:
     strategy:
       matrix:
-        go-version: [1.14.x, 1.15.x, 1.16.x, 1.17.x, 1.x]
+        go-version: [1.18.x, 1.x]
     runs-on: ubuntu-22.04
     steps:
-      - name: Set up Go 1.x
+      - name: Set up Go
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
@@ -66,3 +66,9 @@ jobs:
       - name: Run checker
         run: |
           ./scripts/check_environment.sh
+
+      - name: Test Summary
+        uses: test-summary/action@77bb5a9f9c572416423f9a157cbf1159c1e75a4c
+        with:
+          paths: "**/TEST-*.xml"
+        if: always()

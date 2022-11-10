@@ -1,0 +1,16 @@
+name: Enhancement
+description: Suggest an enhancement
+title: "[Enhancement]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting an `enhancement`, please make sure there is no existing enhancement for the one you are requesting. If so, please provide the following information:
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should be improved? What are the limitations of the current implications that would be solved by the proposal?
+    validations:
+      required: true

@@ -4,14 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gotest.tools/v3/assert"
 
 	"github.com/docker/docker/client"
 
@@ -35,7 +35,6 @@ func (g *TestLogConsumer) Accept(l Log) {
 }
 
 func Test_LogConsumerGetsCalled(t *testing.T) {
-	t.Skip("This test is randomly failing for different versions of Go")
 	/*
 		send one request at a time to a server that will
 		print whatever was sent in the "echo" parameter, the log
@@ -107,8 +106,8 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	// get rid of the server "ready" log
 	g.Msgs = g.Msgs[1:]
 
-	assert.DeepEqual(t, []string{"echo hello\n", "echo there\n"}, g.Msgs)
-	_ = c.Terminate(ctx)
+	assert.Equal(t, []string{"echo hello\n", "echo there\n"}, g.Msgs)
+	terminateContainerOnEnd(t, ctx, c)
 }
 
 type TestLogTypeConsumer struct {
@@ -145,7 +144,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _ = c.Terminate(ctx) }()
+	terminateContainerOnEnd(t, ctx, c)
 
 	ep, err := c.Endpoint(ctx, "http")
 	if err != nil {
@@ -182,7 +181,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	<-g.Ack
 	_ = c.StopLogProducer()
 
-	assert.DeepEqual(t, map[string]string{
+	assert.Equal(t, map[string]string{
 		StdoutLog: "echo this-is-stdout\n",
 		StderrLog: "echo this-is-stderr\n",
 	}, g.LogTypes)
@@ -249,7 +248,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	if err := nginx.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer nginx.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, nginx)
 
 	port, err := nginx.MappedPort(ctx, "80/tcp")
 	if err != nil {
@@ -260,7 +259,9 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	if err = nginx.StartLogProducer(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer nginx.StopLogProducer()
+	defer func() {
+		_ = nginx.StopLogProducer()
+	}()
 	nginx.FollowOutput(&consumer)
 
 	// Gather the initial container logs
@@ -321,13 +322,13 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer container.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, container)
 	r, err := container.Logs(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer r.Close()
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
 	}

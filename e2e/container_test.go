@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 	. "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
@@ -24,8 +25,8 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 		"POSTGRES_DB":       dbname,
 	}
 	var port = "5432/tcp"
-	dbURL := func(port nat.Port) string {
-		return fmt.Sprintf("postgres://postgres:password@localhost:%s/%s?sslmode=disable", port.Port(), dbname)
+	dbURL := func(host string, port nat.Port) string {
+		return fmt.Sprintf("postgres://postgres:password@%s:%s/%s?sslmode=disable", host, port.Port(), dbname)
 	}
 
 	t.Run("default query", func(t *testing.T) {
@@ -45,7 +46,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		defer container.Terminate(ctx)
+		terminateContainerOnEnd(t, ctx, container)
 	})
 	t.Run("custom query", func(t *testing.T) {
 		req := ContainerRequest{
@@ -65,7 +66,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		defer container.Terminate(ctx)
+		terminateContainerOnEnd(t, ctx, container)
 	})
 	t.Run("custom bad query", func(t *testing.T) {
 		req := ContainerRequest{
@@ -85,6 +86,17 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			t.Fatal("expected error, but got a nil")
 		}
 
-		defer container.Terminate(ctx)
+		terminateContainerOnEnd(t, ctx, container)
+	})
+}
+
+func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr Container) {
+	tb.Helper()
+	if ctr == nil {
+		return
+	}
+	tb.Cleanup(func() {
+		tb.Log("terminating container")
+		require.NoError(tb, ctr.Terminate(ctx))
 	})
 }

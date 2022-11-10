@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -32,7 +32,7 @@ func main() {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
-			data, _ := ioutil.ReadAll(req.Body)
+			data, _ := io.ReadAll(req.Body)
 			if bytes.Equal(data, []byte("ping")) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("pong"))
@@ -46,7 +46,7 @@ func main() {
 	})
 
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, req *http.Request) {
-		data, _ := ioutil.ReadAll(req.Body)
+		data, _ := io.ReadAll(req.Body)
 		if bytes.Equal(data, []byte("ping")) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte("pong"))

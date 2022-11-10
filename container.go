@@ -26,8 +26,9 @@ type DeprecatedContainer interface {
 
 // ContainerProvider allows the creation of containers on an arbitrary system
 type ContainerProvider interface {
-	CreateContainer(context.Context, ContainerRequest) (Container, error) // create a container without starting it
-	RunContainer(context.Context, ContainerRequest) (Container, error)    // create a container and start it
+	CreateContainer(context.Context, ContainerRequest) (Container, error)        // create a container without starting it
+	ReuseOrCreateContainer(context.Context, ContainerRequest) (Container, error) // reuses a container if it exists or creates a container without starting
+	RunContainer(context.Context, ContainerRequest) (Container, error)           // create a container and start it
 	Health(context.Context) error
 	Config() TestContainersConfig
 }
@@ -41,10 +42,11 @@ type Container interface {
 	MappedPort(context.Context, nat.Port) (nat.Port, error)         // get externally mapped port for a container port
 	Ports(context.Context) (nat.PortMap, error)                     // get all exposed ports
 	SessionID() string                                              // get session id
-	Start(context.Context) error                                    // start the container
-	Stop(context.Context, *time.Duration) error                     // stop the container
-	Terminate(context.Context) error                                // terminate the container
-	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
+	IsRunning() bool
+	Start(context.Context) error                 // start the container
+	Stop(context.Context, *time.Duration) error  // stop the container
+	Terminate(context.Context) error             // terminate the container
+	Logs(context.Context) (io.ReadCloser, error) // Get logs of the container
 	FollowOutput(LogConsumer)
 	StartLogProducer(context.Context) error
 	StopLogProducer() error
@@ -53,29 +55,39 @@ type Container interface {
 	Networks(context.Context) ([]string, error)                  // get container networks
 	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string) (int, io.Reader, error)
-	ContainerIP(context.Context) (string, error) // get container ip
+	ContainerIP(context.Context) (string, error)    // get container ip
+	ContainerIPs(context.Context) ([]string, error) // get all container IPs
 	CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error
+	CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
 	CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error)
 }
 
 // ImageBuildInfo defines what is needed to build an image
 type ImageBuildInfo interface {
-	GetContext() (io.Reader, error)   // the path to the build context
-	GetDockerfile() string            // the relative path to the Dockerfile, including the fileitself
-	ShouldPrintBuildLog() bool        // allow build log to be printed to stdout
-	ShouldBuildImage() bool           // return true if the image needs to be built
-	GetBuildArgs() map[string]*string // return the environment args used to build the from Dockerfile
+	GetContext() (io.Reader, error)              // the path to the build context
+	GetDockerfile() string                       // the relative path to the Dockerfile, including the fileitself
+	ShouldPrintBuildLog() bool                   // allow build log to be printed to stdout
+	ShouldBuildImage() bool                      // return true if the image needs to be built
+	GetBuildArgs() map[string]*string            // return the environment args used to build the from Dockerfile
+	GetAuthConfigs() map[string]types.AuthConfig // return the auth configs to be able to pull from an authenticated docker registry
 }
 
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
 // rather than using a pre-built one
 type FromDockerfile struct {
-	Context        string             // the path to the context of of the docker build
-	ContextArchive io.Reader          // the tar archive file to send to docker that contains the build context
-	Dockerfile     string             // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
-	BuildArgs      map[string]*string // enable user to pass build args to docker daemon
-	PrintBuildLog  bool               // enable user to print build log
+	Context        string                      // the path to the context of of the docker build
+	ContextArchive io.Reader                   // the tar archive file to send to docker that contains the build context
+	Dockerfile     string                      // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
+	BuildArgs      map[string]*string          // enable user to pass build args to docker daemon
+	PrintBuildLog  bool                        // enable user to print build log
+	AuthConfigs    map[string]types.AuthConfig // enable auth configs to be able to pull from an authenticated docker registry
+}
+
+type ContainerFile struct {
+	HostFilePath      string
+	ContainerFilePath string
+	FileMode          int64
 }
 
 // ContainerRequest represents the parameters used to get a running container
@@ -99,14 +111,17 @@ type ContainerRequest struct {
 	NetworkAliases  map[string][]string // for specifying network aliases
 	NetworkMode     container.NetworkMode
 	Resources       container.Resources
-	User            string // for specifying uid:gid
-	SkipReaper      bool   // indicates whether we skip setting up a reaper for this
-	ReaperImage     string // alternative reaper image
-	AutoRemove      bool   // if set to true, the container will be removed from the host when stopped
-	AlwaysPullImage bool   // Always pull image
-	ImagePlatform   string // ImagePlatform describes the platform which the image runs on.
+	Files           []ContainerFile // files which will be copied when container starts
+	User            string          // for specifying uid:gid
+	SkipReaper      bool            // indicates whether we skip setting up a reaper for this
+	ReaperImage     string          // alternative reaper image
+	AutoRemove      bool            // if set to true, the container will be removed from the host when stopped
+	AlwaysPullImage bool            // Always pull image
+	ImagePlatform   string          // ImagePlatform describes the platform which the image runs on.
 	Binds           []string
-	ShmSize         int64 // Amount of memory shared with the host (in bytes)
+	ShmSize         int64    // Amount of memory shared with the host (in bytes)
+	CapAdd          []string // Add Linux capabilities
+	CapDrop         []string // Drop Linux capabilities
 }
 
 type (
@@ -215,6 +230,11 @@ func (c *ContainerRequest) GetDockerfile() string {
 	}
 
 	return f
+}
+
+// GetAuthConfigs returns the auth configs to be able to pull from an authenticated docker registry
+func (c *ContainerRequest) GetAuthConfigs() map[string]types.AuthConfig {
+	return c.FromDockerfile.AuthConfigs
 }
 
 func (c *ContainerRequest) ShouldBuildImage() bool {

@@ -31,6 +31,7 @@ type nginxContainer struct {
 	URI string
 }
 
+
 func setupNginx(ctx context.Context) (*nginxContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx",
@@ -73,7 +74,11 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 	}
 
 	// Clean up the container after the test is complete
-	defer nginxC.Terminate(ctx)
+	t.Cleanup(func() {
+		if err := nginxC.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
 
 	resp, err := http.Get(nginxC.URI)
 	if resp.StatusCode != http.StatusOK {
@@ -82,7 +87,73 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 }
 ```
 
-# Parallel running
+## Reusable container
+
+With `Reuse` option you can reuse an existing container. Reusing will work only if you pass an 
+existing container name via 'req.Name' field. If the name is not in a list of existing containers, 
+the function will create a new generic container. If `Reuse` is true and `Name` is empty, you will get error.
+
+The following test creates an NGINX container, adds a file into it and then reuses the container again for checking the file:
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/testcontainers/testcontainers-go"
+)
+
+const (
+	reusableContainerName = "my_test_reusable_container"
+)
+
+ctx := context.Background()
+
+n1, err := GenericContainer(ctx, GenericContainerRequest{
+	ContainerRequest: ContainerRequest{
+		Image:        "nginx:1.17.6",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		Name:         reusableContainerName,
+	},
+	Started: true,
+})
+if err != nil {
+	log.Fatal(err)
+}
+defer n1.Terminate(ctx)
+
+copiedFileName := "hello_copy.sh"
+err = n1.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
+
+if err != nil {
+	log.Fatal(err)
+}
+
+n2, err := GenericContainer(ctx, GenericContainerRequest{
+	ContainerRequest: ContainerRequest{
+		Image:        "nginx:1.17.6",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		Name:         reusableContainerName,
+    },
+	Started: true,
+	Reuse: true,
+})
+if err != nil {
+	log.Fatal(err)
+}
+
+c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println(c)
+```
+
+## Parallel running
 
 `testcontainers.ParallelContainers` - defines the containers that should be run in parallel mode.
 
@@ -126,7 +197,6 @@ func main() {
 	}
 
 	res, err := testcontainers.ParallelContainers(ctx, requests, testcontainers.ParallelContainersOptions{})
-
 	if err != nil {
 		e, ok := err.(testcontainers.ParallelContainersError)
 		if !ok {
@@ -140,7 +210,12 @@ func main() {
 	}
 
 	for _, c := range res {
-		defer c.Terminate(ctx)
+		c := c
+		defer func() {
+			if err := c.Terminate(ctx); err != nil {
+				log.Fatalf("failed to terminate container: %s", c)
+			}
+		}()
 	}
 }
 ```

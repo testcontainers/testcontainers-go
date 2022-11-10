@@ -1,6 +1,6 @@
 # Build from Dockerfile
 
-Testcontainers-go gives you the ability to build an image and run a container
+_Testcontainers for Go_ gives you the ability to build an image and run a container
 from a Dockerfile.
 
 You can do so by specifying a `Context` (the filepath to the build context on
@@ -40,7 +40,7 @@ req := ContainerRequest{
 ## Dynamic Build Context
 
 If you would like to send a build context that you created in code (maybe you have a dynamic Dockerfile), you can
-send the build context as an `io.Reader` since the Docker Daemon accepts is as a tar file, you can use the [tar](https://golang.org/pkg/archive/tar/) package to create your context.
+send the build context as an `io.Reader` since the Docker Daemon accepts it as a tar file, you can use the [tar](https://golang.org/pkg/archive/tar/) package to create your context.
 
 
 To do this you would use the `ContextArchive` attribute in the `FromDockerfile` struct.
@@ -58,5 +58,26 @@ fromDockerfile := testcontainers.FromDockerfile{
 }
 ```
 
-**Please Note** if you specify a `ContextArchive` this will cause testcontainers to ignore the path passed
-in to `Context`
+**Please Note** if you specify a `ContextArchive` this will cause _Testcontainers for Go_ to ignore the path passed
+in to `Context`.
+
+## Images requiring auth
+
+If you are building a local Docker image that is fetched from a Docker image in a registry requiring authentication
+(e.g., assuming you are fetching from a custom registry such as `myregistry.com`), you will need to specify the
+credentials to succeed, as follows:
+
+```go
+req := ContainerRequest{
+    FromDockerfile: testcontainers.FromDockerfile{
+        Context: "/path/to/build/context",
+        Dockerfile: "CustomDockerfile",
+		AuthConfigs:   map[string]types.AuthConfig{
+            "https://myregistry.com": {
+                Username: "myusername",
+                Password: "mypassword",
+            },
+        },
+	},
+}
+```
