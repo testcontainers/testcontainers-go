@@ -402,6 +402,7 @@ func createTestContainer(t *testing.T, ctx context.Context) int {
 }
 
 func TestBindMount(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		hostPath    string
 		mountTarget ContainerMountTarget
@@ -432,6 +433,7 @@ func TestBindMount(t *testing.T) {
 }
 
 func TestVolumeMount(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		volumeName  string
 		mountTarget ContainerMountTarget
