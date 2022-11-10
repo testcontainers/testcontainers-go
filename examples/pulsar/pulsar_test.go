@@ -10,19 +10,13 @@ import (
 )
 
 func TestPulsar(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
 	c, err := setupPulsar(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() {
-		t.Log("terminating container")
-		if err := c.Terminate(ctx); err != nil {
-			t.Errorf("failed to terminate container: :%v", err)
-		}
-	})
 
 	pc, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL:               c.URI,
