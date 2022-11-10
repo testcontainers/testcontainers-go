@@ -2,7 +2,7 @@ package wait
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 )
@@ -60,9 +60,10 @@ func (ws *LogStrategy) WithOccurrence(o int) *LogStrategy {
 // ForLog is the default construction for the fluid interface.
 //
 // For Example:
-// wait.
-//     ForLog("some text").
-//     WithPollInterval(1 * time.Second)
+//
+//	wait.
+//		ForLog("some text").
+//		WithPollInterval(1 * time.Second)
 func ForLog(log string) *LogStrategy {
 	return NewLogStrategy(log)
 }
@@ -80,12 +81,17 @@ LOOP:
 			return ctx.Err()
 		default:
 			reader, err := target.Logs(ctx)
-
 			if err != nil {
 				time.Sleep(ws.PollInterval)
 				continue
 			}
-			b, err := ioutil.ReadAll(reader)
+
+			b, err := io.ReadAll(reader)
+			if err != nil {
+				time.Sleep(ws.PollInterval)
+				continue
+			}
+
 			logs := string(b)
 			if strings.Count(logs, ws.Log) >= ws.Occurrence {
 				break LOOP

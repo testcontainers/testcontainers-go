@@ -12,7 +12,6 @@ import (
 
 type exitStrategyTarget struct {
 	isRunning bool
-	err       error
 }
 
 func (st exitStrategyTarget) Host(ctx context.Context) (string, error) {

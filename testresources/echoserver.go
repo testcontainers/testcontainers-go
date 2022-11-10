@@ -11,7 +11,7 @@ import (
 func envHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 
-		rw.Write([]byte(os.Getenv("FOO")))
+		_, _ = rw.Write([]byte(os.Getenv("FOO")))
 
 		rw.WriteHeader(http.StatusAccepted)
 	}
@@ -44,5 +44,5 @@ func main() {
 
 	fmt.Println("ready")
 
-	http.Serve(ln, mux)
+	_ = http.Serve(ln, mux)
 }

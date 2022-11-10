@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -220,7 +219,7 @@ func (dc *LocalDockerCompose) validate() error {
 	for _, abs := range dc.absComposeFilePaths {
 		c := compose{}
 
-		yamlFile, err := ioutil.ReadFile(abs)
+		yamlFile, err := os.ReadFile(abs)
 		if err != nil {
 			return err
 		}
