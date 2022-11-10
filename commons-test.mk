@@ -5,7 +5,8 @@ test-%:
 		--format short-verbose \
 		--rerun-fails=5 \
 		--packages="./..." \
-		--junitfile TEST-$*.xml
+		--junitfile TEST-$*.xml \
+		-- -timeout=300s
 
 .PHONY: tools
 tools:
