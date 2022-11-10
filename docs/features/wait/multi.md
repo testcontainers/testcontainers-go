@@ -6,7 +6,7 @@ The Multi wait strategy will hold a list of wait strategies, in order to wait fo
 
 ```golang
 req := ContainerRequest{
-    Image:        "docker.io/mysql:latest",
+    Image:        "docker.io/mysql:8.0.30",
     ExposedPorts: []string{"3306/tcp", "33060/tcp"},
     Env: map[string]string{
         "MYSQL_ROOT_PASSWORD": "password",
