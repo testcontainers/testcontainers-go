@@ -10,7 +10,7 @@ import (
 )
 
 func TestPulsar(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
 	c, err := setupPulsar(ctx)
