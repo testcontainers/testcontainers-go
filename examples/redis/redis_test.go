@@ -25,7 +25,7 @@ func TestIntegrationSetGet(t *testing.T) {
 	t.Cleanup(func() {
 		t.Log("terminating container")
 		if err := redisContainer.Terminate(ctx); err != nil {
-			t.Errorf("failed to terminate container: :%w", err)
+			t.Errorf("failed to terminate container: :%v", err)
 		}
 	})
 
