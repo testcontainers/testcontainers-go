@@ -1118,9 +1118,8 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithoutAuthConfig
 		WaitingFor:   wait.ForLog("Ready to accept connections"),
 	}
 
-	redisC, err := prepareRedisImage(ctx, req, t)
+	_, err := prepareRedisImage(ctx, req, t)
 	require.Error(t, err)
-	Cleanup(t, ctx, redisC)
 }
 
 func prepareLocalRegistryWithAuth(t *testing.T) {
