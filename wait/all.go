@@ -24,7 +24,7 @@ func (ms *MultiStrategy) WithStartupTimeoutDefault(timeout time.Duration) *Multi
 	return ms
 }
 
-// WithStartupTimeoutDefault sets the default timeout for all inner wait strategies
+// WithStartupTimeout sets a time.Duration which limits all wait strategies
 //
 // Deprecated: use WithDeadline
 func (ms *MultiStrategy) WithStartupTimeout(timeout time.Duration) Strategy {
