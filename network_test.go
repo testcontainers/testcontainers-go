@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"context"
 	"fmt"
+	"log"
 	"testing"
 	"time"
 
@@ -22,7 +23,9 @@ func ExampleNetworkProvider_CreateNetwork() {
 			CheckDuplicate: true,
 		},
 	})
-	defer net.Remove(ctx)
+	defer func() {
+		_ = net.Remove(ctx)
+	}()
 
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -35,7 +38,12 @@ func ExampleNetworkProvider_CreateNetwork() {
 			},
 		},
 	})
-	defer nginxC.Terminate(ctx)
+	defer func() {
+		if err := nginxC.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
+
 	nginxC.GetContainerID()
 }
 
@@ -66,7 +74,9 @@ func Test_NetworkWithIPAM(t *testing.T) {
 		t.Fatal("cannot create network: ", err)
 	}
 
-	defer net.Remove(ctx)
+	defer func() {
+		_ = net.Remove(ctx)
+	}()
 
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -79,7 +89,7 @@ func Test_NetworkWithIPAM(t *testing.T) {
 			},
 		},
 	})
-	defer nginxC.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, nginxC)
 	nginxC.GetContainerID()
 
 	provider, err := ProviderDocker.GetProvider()
@@ -123,7 +133,9 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 		t.Fatal("cannot create network")
 	}
 
-	defer net.Remove(ctx)
+	defer func() {
+		_ = net.Remove(ctx)
+	}()
 
 	postgres, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: dbContainerRequest,
@@ -133,7 +145,7 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer postgres.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, postgres)
 
 	env = make(map[string]string)
 	env["RABBITMQ_ERLANG_COOKIE"] = "f2a2d3d27c75"
@@ -158,7 +170,7 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 		return
 	}
 
-	defer rabbitmq.Terminate(ctx)
+	terminateContainerOnEnd(t, ctx, rabbitmq)
 	fmt.Println(postgres.GetContainerID())
 	fmt.Println(rabbitmq.GetContainerID())
 }

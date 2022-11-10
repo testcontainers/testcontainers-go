@@ -29,8 +29,10 @@ func (f stackUpOptionFunc) applyToStackUp(o *stackUpOptions) {
 	f(o)
 }
 
+//nolint:unused
 type stackDownOptionFunc func(do *api.DownOptions)
 
+//nolint:unused
 func (f stackDownOptionFunc) applyToStackDown(do *api.DownOptions) {
 	f(do)
 }
@@ -46,6 +48,7 @@ func RunServices(serviceNames ...string) StackUpOption {
 // IgnoreOrphans - Ignore legacy containers for services that are not defined in the project
 type IgnoreOrphans bool
 
+//nolint:unused
 func (io IgnoreOrphans) applyToStackUp(co *api.CreateOptions, _ *api.StartOptions) {
 	co.IgnoreOrphans = bool(io)
 }

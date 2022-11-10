@@ -7,11 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -94,19 +94,19 @@ func Test_GetDockerfile(t *testing.T) {
 	}
 
 	testTable := []TestCase{
-		TestCase{
+		{
 			name:                   "defaults to \"Dockerfile\" 1",
 			ExpectedDockerfileName: "Dockerfile",
 			ContainerRequest:       ContainerRequest{},
 		},
-		TestCase{
+		{
 			name:                   "defaults to \"Dockerfile\" 2",
 			ExpectedDockerfileName: "Dockerfile",
 			ContainerRequest: ContainerRequest{
 				FromDockerfile: FromDockerfile{},
 			},
 		},
-		TestCase{
+		{
 			name:                   "will override name",
 			ExpectedDockerfileName: "CustomDockerfile",
 			ContainerRequest: ContainerRequest{
@@ -123,6 +123,50 @@ func Test_GetDockerfile(t *testing.T) {
 			if n != testCase.ExpectedDockerfileName {
 				t.Fatalf("expected Dockerfile name: %s, received: %s", testCase.ExpectedDockerfileName, n)
 			}
+		})
+	}
+}
+
+func Test_GetAuthConfigs(t *testing.T) {
+	type TestCase struct {
+		name                string
+		ExpectedAuthConfigs map[string]types.AuthConfig
+		ContainerRequest    ContainerRequest
+	}
+
+	testTable := []TestCase{
+		{
+			name:                "defaults to no auth",
+			ExpectedAuthConfigs: nil,
+			ContainerRequest: ContainerRequest{
+				FromDockerfile: FromDockerfile{},
+			},
+		},
+		{
+			name: "will specify credentials",
+			ExpectedAuthConfigs: map[string]types.AuthConfig{
+				"https://myregistry.com/": {
+					Username: "username",
+					Password: "password",
+				},
+			},
+			ContainerRequest: ContainerRequest{
+				FromDockerfile: FromDockerfile{
+					AuthConfigs: map[string]types.AuthConfig{
+						"https://myregistry.com/": {
+							Username: "username",
+							Password: "password",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			cfgs := testCase.ContainerRequest.GetAuthConfigs()
+			assert.Equal(t, testCase.ExpectedAuthConfigs, cfgs)
 		})
 	}
 }
@@ -280,7 +324,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			} else if err != nil {
 				t.Fatal(err)
 			} else {
-				c.Terminate(ctx)
+				terminateContainerOnEnd(t, ctx, c)
 			}
 		})
 	}
@@ -302,7 +346,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal(err)
 	} else if err == nil {
-		c.Terminate(ctx)
+		terminateContainerOnEnd(t, ctx, c)
 		t.Fatal("was expecting error starting container")
 	}
 
@@ -311,7 +355,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		t.Fatal(logErr)
 	}
 
-	b, err := ioutil.ReadAll(logs)
+	b, err := io.ReadAll(logs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -352,9 +396,7 @@ func createTestContainer(t *testing.T, ctx context.Context) int {
 		t.Fatalf("could not get mapped port: %v", err)
 	}
 
-	t.Cleanup(func() {
-		container.Terminate(context.Background())
-	})
+	terminateContainerOnEnd(t, ctx, container)
 
 	return port.Int()
 }

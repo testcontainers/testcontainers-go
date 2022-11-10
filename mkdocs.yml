@@ -1,4 +1,4 @@
-site_name: Testcontainers-Go
+site_name: Testcontainers for Go
 plugins:
     - search
     - codeinclude
@@ -30,6 +30,7 @@ nav:
           - quickstart/gotest.md
     - Features:
           - features/creating_container.md
+          - features/networking.md
           - features/garbage_collector.md
           - features/build_from_dockerfile.md
           - features/docker_compose.md
@@ -50,6 +51,7 @@ nav:
           - examples/cockroachdb.md
           - examples/nginx.md
           - examples/redis.md
+          - examples/pulsar.md
     - System Requirements:
           - system_requirements/index.md
           - system_requirements/using_colima.md

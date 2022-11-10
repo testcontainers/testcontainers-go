@@ -74,7 +74,11 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 	}
 
 	// Clean up the container after the test is complete
-	defer nginxC.Terminate(ctx)
+	t.Cleanup(func() {
+		if err := nginxC.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
 
 	resp, err := http.Get(nginxC.URI)
 	if resp.StatusCode != http.StatusOK {
@@ -193,7 +197,6 @@ func main() {
 	}
 
 	res, err := testcontainers.ParallelContainers(ctx, requests, testcontainers.ParallelContainersOptions{})
-
 	if err != nil {
 		e, ok := err.(testcontainers.ParallelContainersError)
 		if !ok {
@@ -207,7 +210,12 @@ func main() {
 	}
 
 	for _, c := range res {
-		defer c.Terminate(ctx)
+		c := c
+		defer func() {
+			if err := c.Terminate(ctx); err != nil {
+				log.Fatalf("failed to terminate container: %s", c)
+			}
+		}()
 	}
 }
 ```
