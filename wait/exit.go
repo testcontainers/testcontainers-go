@@ -36,7 +36,7 @@ func (ws *ExitStrategy) WithExitTimeout(exitTimeout time.Duration) *ExitStrategy
 	return ws
 }
 
-// WithPollInterval can be used to override the default polling interval of 100 milliseconds func (ws *ExitStrategy) WithPollInterval(pollInterval time.Duration) *ExitStrategy {
+// WithPollInterval can be used to override the default polling interval of 100 milliseconds
 func (ws *ExitStrategy) WithPollInterval(pollInterval time.Duration) *ExitStrategy {
 	ws.PollInterval = pollInterval
 	return ws
