@@ -22,6 +22,33 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 		wantErr  bool
 	}{
 		{
+			name:     "returns error when no WaitStrategies are passed",
+			strategy: ForAll(),
+			args: args{
+				ctx:    context.Background(),
+				target: NopStrategyTarget{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "returns WaitStrategy error",
+			strategy: ForAll(
+				ForNop(
+					func(ctx context.Context, target StrategyTarget) error {
+						return errors.New("intentional failure")
+					},
+				),
+				ForLog("docker"),
+			),
+			args: args{
+				ctx: context.Background(),
+				target: NopStrategyTarget{
+					ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "WithDeadline sets context Deadline for WaitStrategy",
 			strategy: ForAll(
 				ForNop(
