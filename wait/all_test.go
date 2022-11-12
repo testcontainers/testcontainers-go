@@ -38,13 +38,10 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 						return errors.New("intentional failure")
 					},
 				),
-				ForLog("docker"),
 			),
 			args: args{
-				ctx: context.Background(),
-				target: NopStrategyTarget{
-					ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
-				},
+				ctx:    context.Background(),
+				target: NopStrategyTarget{},
 			},
 			wantErr: true,
 		},
@@ -75,7 +72,7 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 				ForNop(
 					func(ctx context.Context, target StrategyTarget) error {
 						if _, set := ctx.Deadline(); set {
-							return errors.New("unexpected context.Deadline to be set")
+							return errors.New("expected context.Deadline not to be set")
 						}
 						return nil
 					},
