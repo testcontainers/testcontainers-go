@@ -33,6 +33,7 @@ import (
 	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -433,7 +434,7 @@ func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]stri
 	return a, nil
 }
 
-func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, io.Reader, error) {
+func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
 	cli := c.provider.client
 	response, err := cli.ContainerExecCreate(ctx, c.ID, types.ExecConfig{
 		Cmd:          cmd,
@@ -448,6 +449,14 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, io.Reade
 	hijack, err := cli.ContainerExecAttach(ctx, response.ID, types.ExecStartCheck{})
 	if err != nil {
 		return 0, nil, err
+	}
+
+	opt := &tcexec.ProcessOptions{
+		Reader: hijack.Reader,
+	}
+
+	for _, o := range options {
+		o.Apply(opt)
 	}
 
 	var exitCode int
@@ -465,7 +474,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, io.Reade
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	return exitCode, hijack.Reader, nil
+	return exitCode, opt.Reader, nil
 }
 
 type FileFromContainer struct {
