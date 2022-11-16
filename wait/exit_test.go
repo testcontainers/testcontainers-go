@@ -8,6 +8,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 
 type exitStrategyTarget struct {
@@ -30,7 +31,7 @@ func (st exitStrategyTarget) Logs(ctx context.Context) (io.ReadCloser, error) {
 	return nil, nil
 }
 
-func (st exitStrategyTarget) Exec(ctx context.Context, cmd []string) (int, io.Reader, error) {
+func (st exitStrategyTarget) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
 	return 0, nil, nil
 }
 
