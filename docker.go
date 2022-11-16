@@ -440,12 +440,15 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, io.Reade
 		Detach:       false,
 		AttachStdout: true,
 		AttachStderr: true,
+		Tty:          false,
 	})
 	if err != nil {
 		return 0, nil, err
 	}
 
-	hijack, err := cli.ContainerExecAttach(ctx, response.ID, types.ExecStartCheck{})
+	hijack, err := cli.ContainerExecAttach(ctx, response.ID, types.ExecStartCheck{
+		Tty: true,
+	})
 	if err != nil {
 		return 0, nil, err
 	}
