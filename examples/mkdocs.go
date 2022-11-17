@@ -42,15 +42,8 @@ type MkDocsConfig struct {
 	} `yaml:"extra"`
 }
 
-func getMkdocsConfigFile() (string, error) {
-	parent, err := getRootDir()
-	if err != nil {
-		return "", err
-	}
-
-	config := filepath.Join(parent, "mkdocs.yml")
-
-	return config, nil
+func getMkdocsConfigFile(rootDir string) string {
+	return filepath.Join(rootDir, "mkdocs.yml")
 }
 
 func getExamples() ([]os.DirEntry, error) {
@@ -98,23 +91,31 @@ func getRootDir() (string, error) {
 	return filepath.Dir(current), nil
 }
 
-func readMkdocsConfig() (*MkDocsConfig, error) {
-	configFile, err := getMkdocsConfigFile()
-	if err != nil {
-		return nil, err
-	}
+func readMkdocsConfig(rootDir string) (*MkDocsConfig, error) {
+	configFile := getMkdocsConfigFile(rootDir)
 
-	yfile, err := ioutil.ReadFile(configFile)
+	file, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return nil, err
 	}
 
 	config := &MkDocsConfig{}
 
-	err = yaml.Unmarshal(yfile, config)
+	err = yaml.Unmarshal(file, config)
 	if err != nil {
 		return nil, err
 	}
 
 	return config, nil
+}
+
+func writeMkdocsConfig(rootDir string, config *MkDocsConfig) error {
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	file := getMkdocsConfigFile(rootDir)
+
+	return ioutil.WriteFile(file, data, 0777)
 }

@@ -10,8 +10,16 @@ import (
 )
 
 func TestGenerate(t *testing.T) {
-	examplesTmp := t.TempDir()
-	examplesDocTmp := t.TempDir()
+	rootTmp := t.TempDir()
+	examplesTmp := filepath.Join(rootTmp, "examples")
+	examplesDocTmp := filepath.Join(rootTmp, "docs", "examples")
+
+	err := os.MkdirAll(examplesTmp, 0777)
+	assert.Nil(t, err)
+	err = os.MkdirAll(examplesDocTmp, 0777)
+	assert.Nil(t, err)
+	err = copyInitialConfig(t, rootTmp)
+	assert.Nil(t, err)
 
 	example := Example{
 		Name:  "foo",
@@ -19,7 +27,7 @@ func TestGenerate(t *testing.T) {
 	}
 	exampleNameLower := example.Lower()
 
-	err := generate(example, examplesTmp, examplesDocTmp)
+	err = generate(example, examplesTmp, examplesDocTmp)
 	assert.Nil(t, err)
 
 	templatesDir, err := os.ReadDir(filepath.Join(".", "_template"))
@@ -48,6 +56,7 @@ func TestGenerate(t *testing.T) {
 	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertToolsGoContent(t, example, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
+	assertMkdocsExamplesNav(t, example, rootTmp)
 }
 
 // assert content example file in the docs
@@ -113,6 +122,23 @@ func assertMakefileContent(t *testing.T, example Example, makefile string) {
 
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[4], "\t$(MAKE) test-"+example.Lower())
+}
+
+// assert content in the Examples nav from mkdocs.yml
+func assertMkdocsExamplesNav(t *testing.T, example Example, rootDir string) {
+	config, err := readMkdocsConfig(rootDir)
+	assert.Nil(t, err)
+
+	examples := config.Nav[3].Examples
+	found := false
+	for _, ex := range examples {
+		markdownExample := "examples/" + example.Lower() + ".md"
+		if markdownExample == ex {
+			found = true
+		}
+	}
+
+	assert.True(t, found)
 }
 
 // assert content tools/tools.go

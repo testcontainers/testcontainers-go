@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -10,15 +11,33 @@ import (
 )
 
 func TestGetMkDocsConfigFile(t *testing.T) {
-	file, err := getMkdocsConfigFile()
+	tmp := t.TempDir()
+
+	rootDir := filepath.Join(tmp, "testcontainers-go")
+	cfgFile := filepath.Join(rootDir, "mkdocs.yml")
+	err := os.MkdirAll(rootDir, 0777)
 	require.NoError(t, err)
+
+	err = os.WriteFile(cfgFile, []byte{}, 0777)
+	require.NoError(t, err)
+
+	file := getMkdocsConfigFile(rootDir)
 	require.NotNil(t, file)
 
 	assert.True(t, strings.HasSuffix(file, filepath.Join("testcontainers-go", "mkdocs.yml")))
 }
 
 func TestReadMkDocsConfig(t *testing.T) {
-	config, err := readMkdocsConfig()
+	tmp := t.TempDir()
+
+	rootDir := filepath.Join(tmp, "testcontainers-go")
+	err := os.MkdirAll(rootDir, 0777)
+	require.NoError(t, err)
+
+	err = copyInitialConfig(t, rootDir)
+	require.NoError(t, err)
+
+	config, err := readMkdocsConfig(rootDir)
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
@@ -34,6 +53,7 @@ func TestReadMkDocsConfig(t *testing.T) {
 	nav := config.Nav
 	assert.Equal(t, "index.md", nav[0].Home)
 	assert.Greater(t, len(nav[2].Features), 0)
+	assert.Greater(t, len(nav[3].Examples), 0)
 }
 
 func TestExamples(t *testing.T) {
@@ -57,4 +77,14 @@ func TestExamples(t *testing.T) {
 		}
 		assert.True(t, found, "example %s is not present in the docs", example.Name())
 	}
+}
+
+func copyInitialConfig(t *testing.T, tmpDir string) error {
+	projectDir, err := getRootDir()
+	require.NoError(t, err)
+
+	initialConfig, err := readMkdocsConfig(projectDir)
+	require.NoError(t, err)
+
+	return writeMkdocsConfig(tmpDir, initialConfig)
 }

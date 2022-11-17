@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"golang.org/x/text/cases"
@@ -79,14 +80,14 @@ func generate(example Example, examplesDir string, docsDir string) error {
 		return err
 	}
 
+	exampleLower := example.Lower()
+
 	for _, tmpl := range templates {
 		name := tmpl + ".tmpl"
 		t, err := template.New(name).Funcs(funcMap).ParseFiles(filepath.Join("_template", name))
 		if err != nil {
 			return err
 		}
-
-		exampleLower := example.Lower()
 
 		// create a new file
 		var exampleFilePath string
@@ -113,6 +114,25 @@ func generate(example Example, examplesDir string, docsDir string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	rootDir := filepath.Dir(examplesDir)
+
+	// update examples in mkdocs
+	mkdocsConfig, err := readMkdocsConfig(rootDir)
+	if err != nil {
+		return err
+	}
+
+	mkdocsExamplesNav := mkdocsConfig.Nav[3].Examples
+
+	mkdocsExamplesNav = append(mkdocsExamplesNav, "examples/"+exampleLower+".md")
+	sort.Strings(mkdocsExamplesNav)
+	mkdocsConfig.Nav[3].Examples = mkdocsExamplesNav
+
+	err = writeMkdocsConfig(rootDir, mkdocsConfig)
+	if err != nil {
+		return err
 	}
 
 	fmt.Println("Please go to", example.Lower(), "directory and execute 'go mod tidy' to synchronize the dependencies")
