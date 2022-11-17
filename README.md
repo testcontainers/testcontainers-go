@@ -69,8 +69,8 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	defer func() {
-		if err := nginxC.terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %w", err)
+		if err := nginxC.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %v", err)
 		}
 	}()
 
