@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 
 type noopStrategyTarget struct {
@@ -31,7 +32,7 @@ func (st noopStrategyTarget) Logs(ctx context.Context) (io.ReadCloser, error) {
 	return st.ioReaderCloser, nil
 }
 
-func (st noopStrategyTarget) Exec(ctx context.Context, cmd []string) (int, io.Reader, error) {
+func (st noopStrategyTarget) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
 	return 0, nil, nil
 }
 func (st noopStrategyTarget) State(ctx context.Context) (*types.ContainerState, error) {
