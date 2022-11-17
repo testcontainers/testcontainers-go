@@ -7,6 +7,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 
 type Strategy interface {
@@ -19,7 +20,7 @@ type StrategyTarget interface {
 	Ports(ctx context.Context) (nat.PortMap, error)
 	MappedPort(context.Context, nat.Port) (nat.Port, error)
 	Logs(context.Context) (io.ReadCloser, error)
-	Exec(ctx context.Context, cmd []string) (int, io.Reader, error)
+	Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error)
 	State(context.Context) (*types.ContainerState, error)
 }
 
