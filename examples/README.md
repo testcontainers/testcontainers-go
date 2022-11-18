@@ -14,6 +14,7 @@ We have provided a command line tool to generate the scaffolding for the code of
     - a Makefile to run the tests in a consistent manner
     - a tools.go file including the build tools (i.e. `gotestsum`) used to build/run the example.
 - a markdown file in the docs/examples directory including the snippets for both the creation of the container and a simple test.
+- a new Nav entry for the example in the docs site, adding it to the `mkdocs.yml` file located at the root directory of the project.
 
 ### Command line flags
 
@@ -25,7 +26,6 @@ We have provided a command line tool to generate the scaffolding for the code of
 ### What is this tool not doing?
 
 - If the example already exists, it will exit without updating the existing files.
-- You have to manually add the markdown entry in the docs to the [`mkdocs.yml`](../mkdocs.yml) file in the root directory of the project. It will generate the navigation menu for the docs website.
 
 ### How to run the tool
 
