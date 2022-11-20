@@ -17,6 +17,7 @@ import (
 
 // Implement interface
 var _ Strategy = (*HTTPStrategy)(nil)
+var _ StrategyTimeout = (*HTTPStrategy)(nil)
 
 type HTTPStrategy struct {
 	// all Strategies should have a startupTimeout to avoid waiting infinitely

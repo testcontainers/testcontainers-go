@@ -14,6 +14,7 @@ import (
 
 // Implement interface
 var _ Strategy = (*HostPortStrategy)(nil)
+var _ StrategyTimeout = (*HostPortStrategy)(nil)
 
 type HostPortStrategy struct {
 	// Port is a string containing port number and protocol in the format "80/tcp"

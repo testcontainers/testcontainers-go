@@ -8,6 +8,7 @@ import (
 
 // Implement interface
 var _ Strategy = (*MultiStrategy)(nil)
+var _ StrategyTimeout = (*MultiStrategy)(nil)
 
 type MultiStrategy struct {
 	// all Strategies should have a startupTimeout to avoid waiting infinitely
@@ -47,7 +48,7 @@ func (ms *MultiStrategy) Timeout() *time.Duration {
 	return ms.timeout
 }
 
-func (ms *MultiStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
+func (ms *MultiStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
 	var cancel context.CancelFunc
 	if ms.deadline != nil {
 		ctx, cancel = context.WithTimeout(ctx, *ms.deadline)
@@ -60,9 +61,13 @@ func (ms *MultiStrategy) WaitUntilReady(ctx context.Context, target StrategyTarg
 
 	for _, strategy := range ms.Strategies {
 		strategyCtx := ctx
-		if ms.Timeout() != nil && strategy.Timeout() == nil {
-			strategyCtx, cancel = context.WithTimeout(ctx, *ms.Timeout())
-			defer cancel()
+
+		// Set default Timeout when strategy implements StrategyTimeout
+		if st, ok := strategy.(StrategyTimeout); ok {
+			if ms.Timeout() != nil && st.Timeout() == nil {
+				strategyCtx, cancel = context.WithTimeout(ctx, *ms.Timeout())
+				defer cancel()
+			}
 		}
 
 		err := strategy.WaitUntilReady(strategyCtx, target)
@@ -70,5 +75,6 @@ func (ms *MultiStrategy) WaitUntilReady(ctx context.Context, target StrategyTarg
 			return err
 		}
 	}
+
 	return nil
 }

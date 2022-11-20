@@ -7,6 +7,7 @@ import (
 
 // Implement interface
 var _ Strategy = (*HealthStrategy)(nil)
+var _ StrategyTimeout = (*HealthStrategy)(nil)
 
 // HealthStrategy will wait until the container becomes healthy
 type HealthStrategy struct {

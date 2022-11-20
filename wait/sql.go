@@ -9,6 +9,9 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+var _ Strategy = (*waitForSql)(nil)
+var _ StrategyTimeout = (*waitForSql)(nil)
+
 const defaultForSqlQuery = "SELECT 1"
 
 // ForSQL constructs a new waitForSql strategy for the given driver

@@ -7,8 +7,11 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
-	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/exec"
 )
+
+var _ Strategy = (*NopStrategy)(nil)
+var _ StrategyTimeout = (*NopStrategy)(nil)
 
 type NopStrategy struct {
 	timeout        *time.Duration
@@ -57,7 +60,7 @@ func (st NopStrategyTarget) Logs(_ context.Context) (io.ReadCloser, error) {
 	return st.ReaderCloser, nil
 }
 
-func (st NopStrategyTarget) Exec(_ context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
+func (st NopStrategyTarget) Exec(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
 	return 0, nil, nil
 }
 

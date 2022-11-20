@@ -7,6 +7,7 @@ import (
 
 // Implement interface
 var _ Strategy = (*ExecStrategy)(nil)
+var _ StrategyTimeout = (*ExecStrategy)(nil)
 
 type ExecStrategy struct {
 	// all Strategies should have a startupTimeout to avoid waiting infinitely
