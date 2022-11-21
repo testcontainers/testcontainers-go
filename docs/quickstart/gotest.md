@@ -13,6 +13,15 @@ We use [gomod](https://blog.golang.org/using-go-modules) and you can get it inst
 go get github.com/testcontainers/testcontainers-go
 ```
 
+Given the version includes the Compose dependency, and the Docker folks added [a replace directive until the upcoming Docker 22.06 release is out](https://github.com/docker/compose/issues/9946#issuecomment-1288923912),
+we were forced to add it too, causing consumers of _Testcontainers for Go_ to add the following replace directive to their `go.mod` files.
+
+```
+replace github.com/docker/docker => github.com/docker/docker v20.10.3-0.20221013203545-33ab36d6b304+incompatible // 22.06 branch
+```
+
+We expect this to be removed in the next releases of _Testcontainers for Go_.
+
 ## 2. Spin up Redis
 
 ```go
