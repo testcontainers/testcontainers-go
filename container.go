@@ -102,7 +102,7 @@ type ContainerRequest struct {
 	Cmd               []string
 	Labels            map[string]string
 	Mounts            ContainerMounts
-	Tmpfs             map[string]string // Deprecated: Use PreCreateModifier instead
+	Tmpfs             map[string]string // Use PreCreateModifier instead
 	RegistryCred      string
 	WaitingFor        wait.Strategy
 	Name              string // for specifying container name

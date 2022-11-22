@@ -74,6 +74,5 @@ func defaultPreCreateModifier(req ContainerRequest) func(hostConfig *container.H
 		hostConfig.Privileged = req.Privileged
 		hostConfig.Resources = req.Resources
 		hostConfig.ShmSize = req.ShmSize
-		hostConfig.Tmpfs = req.Tmpfs
 	}
 }

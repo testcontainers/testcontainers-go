@@ -1044,7 +1044,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		User:       req.User,
 	}
 
-	hostConfig := &container.HostConfig{}
+	hostConfig := &container.HostConfig{
+		Tmpfs: req.Tmpfs,
+	}
+
 	networkingConfig := &network.NetworkingConfig{}
 
 	err = p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
