@@ -108,7 +108,7 @@ type ContainerRequest struct {
 	Name              string // for specifying container name
 	Hostname          string
 	ExtraHosts        []string                                                          // Deprecated: Use PreCreateModifier instead
-	Privileged        bool                                                              // Deprecated: Use PreCreateModifier instead. For starting privileged container
+	Privileged        bool                                                              // Use PreCreateModifier instead. For starting privileged container
 	Networks          []string                                                          // for specifying network names
 	NetworkAliases    map[string][]string                                               // for specifying network aliases
 	NetworkMode       container.NetworkMode                                             // Deprecated: Use PreCreateModifier instead

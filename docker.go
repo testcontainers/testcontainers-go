@@ -1045,7 +1045,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	hostConfig := &container.HostConfig{
-		Tmpfs: req.Tmpfs,
+		Privileged: req.Privileged,
+		Tmpfs:      req.Tmpfs,
 	}
 
 	networkingConfig := &network.NetworkingConfig{}

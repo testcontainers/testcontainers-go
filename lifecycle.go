@@ -71,7 +71,6 @@ func defaultPreCreateModifier(req ContainerRequest) func(hostConfig *container.H
 		hostConfig.Binds = req.Binds
 		hostConfig.ExtraHosts = req.ExtraHosts
 		hostConfig.NetworkMode = req.NetworkMode
-		hostConfig.Privileged = req.Privileged
 		hostConfig.Resources = req.Resources
 		hostConfig.ShmSize = req.ShmSize
 	}

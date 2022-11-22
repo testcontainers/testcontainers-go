@@ -152,10 +152,10 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 			ExposedPorts: []string{
 				nginxHighPort,
 			},
+			Privileged: true,
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
 			PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
 				hc.NetworkMode = "host"
-				hc.Privileged = true
 			},
 		},
 		Started: true,
@@ -186,11 +186,9 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			Image:      "nginx",
+			Privileged: true,
 			SkipReaper: true,
 			WaitingFor: wait.ForExposedPort(),
-			PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
-				hc.Privileged = true
-			},
 		},
 		Started: true,
 	}

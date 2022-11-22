@@ -70,11 +70,11 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		},
 		SkipReaper: true,
 		Mounts:     Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
+		Privileged: tcConfig.RyukPrivileged,
 		WaitingFor: wait.ForListeningPort(listeningPort),
 		PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
 			hc.AutoRemove = true
 			hc.NetworkMode = Bridge
-			hc.Privileged = tcConfig.RyukPrivileged
 		},
 	}
 
