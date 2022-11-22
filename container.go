@@ -102,28 +102,28 @@ type ContainerRequest struct {
 	Cmd               []string
 	Labels            map[string]string
 	Mounts            ContainerMounts
-	Tmpfs             map[string]string // Deprecated: Use PreCreationHook instead
+	Tmpfs             map[string]string // Deprecated: Use PreCreateModifier instead
 	RegistryCred      string
 	WaitingFor        wait.Strategy
 	Name              string // for specifying container name
 	Hostname          string
-	ExtraHosts        []string                                                          // Deprecated: Use PreCreationHook instead
-	Privileged        bool                                                              // Deprecated: Use PreCreationHook instead. For starting privileged container
+	ExtraHosts        []string                                                          // Deprecated: Use PreCreateModifier instead
+	Privileged        bool                                                              // Deprecated: Use PreCreateModifier instead. For starting privileged container
 	Networks          []string                                                          // for specifying network names
 	NetworkAliases    map[string][]string                                               // for specifying network aliases
-	NetworkMode       container.NetworkMode                                             // Deprecated: Use PreCreationHook instead
-	Resources         container.Resources                                               // Deprecated: Use PreCreationHook instead
+	NetworkMode       container.NetworkMode                                             // Deprecated: Use PreCreateModifier instead
+	Resources         container.Resources                                               // Deprecated: Use PreCreateModifier instead
 	Files             []ContainerFile                                                   // files which will be copied when container starts
 	User              string                                                            // for specifying uid:gid
 	SkipReaper        bool                                                              // indicates whether we skip setting up a reaper for this
 	ReaperImage       string                                                            // alternative reaper image
-	AutoRemove        bool                                                              // Deprecated: Use PreCreationHook instead. If set to true, the container will be removed from the host when stopped
+	AutoRemove        bool                                                              // Deprecated: Use PreCreateModifier instead. If set to true, the container will be removed from the host when stopped
 	AlwaysPullImage   bool                                                              // Always pull image
 	ImagePlatform     string                                                            // ImagePlatform describes the platform which the image runs on.
-	Binds             []string                                                          // Deprecated: Use PreCreationHook instead
-	ShmSize           int64                                                             // Deprecated: Use PreCreationHook instead. Amount of memory shared with the host (in bytes)
-	CapAdd            []string                                                          // Deprecated: Use PreCreationHook instead. Add Linux capabilities
-	CapDrop           []string                                                          // Deprecated: Use PreCreationHook instead. Drop Linux capabilities
+	Binds             []string                                                          // Deprecated: Use PreCreateModifier instead
+	ShmSize           int64                                                             // Deprecated: Use PreCreateModifier instead. Amount of memory shared with the host (in bytes)
+	CapAdd            []string                                                          // Deprecated: Use PreCreateModifier instead. Add Linux capabilities
+	CapDrop           []string                                                          // Deprecated: Use PreCreateModifier instead. Drop Linux capabilities
 	PreCreateModifier func(*container.HostConfig, map[string]*network.EndpointSettings) // Modifier for the host config and network settings before container creation
 }
 

@@ -40,7 +40,7 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	networkingConfig.EndpointsConfig = endpointSettings
 
 	exposedPorts := req.ExposedPorts
-	// this check must be done after the preCreationHook is called, so the network mode is already set
+	// this check must be done after the PreCreateModifier is called, so the network mode is already set
 	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
 		image, _, err := p.client.ImageInspectWithRaw(ctx, dockerInput.Image)
 		if err != nil {
