@@ -1070,7 +1070,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		Mounts:       mounts,
 	}
 
-	endpointConfigs := map[string]*network.EndpointSettings{}
+	endpointSettings := map[string]*network.EndpointSettings{}
 
 	// #248: Docker allows only one network to be specified during container creation
 	// If there is more than one network specified in the request container should be attached to them
@@ -1086,17 +1086,17 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				Aliases:   req.NetworkAliases[attachContainerTo],
 				NetworkID: nw.ID,
 			}
-			endpointConfigs[attachContainerTo] = &endpointSetting
+			endpointSettings[attachContainerTo] = &endpointSetting
 		}
 	}
 
 	networkingConfig := network.NetworkingConfig{
-		EndpointsConfig: endpointConfigs,
+		EndpointsConfig: endpointSettings,
 	}
 
 	if req.PreCreationCallback == nil {
 		// provide default callback including the deprecated fields
-		req.PreCreationCallback = func(hostConfig *container.HostConfig, networkingConfig map[string]*network.EndpointSettings) {
+		req.PreCreationCallback = func(hostConfig *container.HostConfig, endpointSettings map[string]*network.EndpointSettings) {
 			hostConfig.AutoRemove = req.AutoRemove
 			hostConfig.CapAdd = req.CapAdd
 			hostConfig.CapDrop = req.CapDrop
@@ -1109,7 +1109,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			hostConfig.Tmpfs = req.Tmpfs
 		}
 	}
-	req.PreCreationCallback(hostConfig, endpointConfigs)
+	req.PreCreationCallback(hostConfig, endpointSettings)
 
 	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, platform, req.Name)
 	if err != nil {
