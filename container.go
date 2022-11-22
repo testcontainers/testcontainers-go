@@ -107,7 +107,7 @@ type ContainerRequest struct {
 	WaitingFor          wait.Strategy
 	Name                string // for specifying container name
 	Hostname            string
-	ExtraHosts          []string
+	ExtraHosts          []string            // Deprecated: Use PreCreationCallback instead
 	Privileged          bool                // for starting privileged container
 	Networks            []string            // for specifying network names
 	NetworkAliases      map[string][]string // for specifying network aliases

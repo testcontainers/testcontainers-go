@@ -1065,7 +1065,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	mounts := mapToDockerMounts(req.Mounts)
 
 	hostConfig := &container.HostConfig{
-		ExtraHosts:   req.ExtraHosts,
 		PortBindings: exposedPortMap,
 		Binds:        req.Binds,
 		Mounts:       mounts,
@@ -1103,9 +1102,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		EndpointsConfig: endpointConfigs,
 	}
 
-	if req.PreCreationCallback != nil {
-		req.PreCreationCallback(hostConfig, endpointConfigs)
+	if req.PreCreationCallback == nil {
+		// provide default callback including the deprecated fields
+		req.PreCreationCallback = func(hostConfig *container.HostConfig, networkingConfig map[string]*network.EndpointSettings) {
+			hostConfig.ExtraHosts = req.ExtraHosts
+		}
 	}
+	req.PreCreationCallback(hostConfig, endpointConfigs)
 
 	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, platform, req.Name)
 	if err != nil {
