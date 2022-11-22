@@ -1034,72 +1034,25 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
-	exposedPorts := req.ExposedPorts
-	// we should evaluate moving this check after the preCreationCallback call
-	if len(exposedPorts) == 0 && !req.NetworkMode.IsContainer() {
-		image, _, err := p.client.ImageInspectWithRaw(ctx, tag)
-		if err != nil {
-			return nil, err
-		}
-		for p := range image.ContainerConfig.ExposedPorts {
-			exposedPorts = append(exposedPorts, string(p))
-		}
+	dockerInput := &container.Config{
+		Entrypoint: req.Entrypoint,
+		Image:      tag,
+		Env:        env,
+		Labels:     req.Labels,
+		Cmd:        req.Cmd,
+		Hostname:   req.Hostname,
+		User:       req.User,
 	}
 
-	exposedPortSet, exposedPortMap, err := nat.ParsePortSpecs(exposedPorts)
+	hostConfig := &container.HostConfig{}
+	networkingConfig := &network.NetworkingConfig{}
+
+	err = p.preCreationHooks(ctx, req, dockerInput, hostConfig, networkingConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	dockerInput := &container.Config{
-		Entrypoint:   req.Entrypoint,
-		Image:        tag,
-		Env:          env,
-		ExposedPorts: exposedPortSet,
-		Labels:       req.Labels,
-		Cmd:          req.Cmd,
-		Hostname:     req.Hostname,
-		User:         req.User,
-	}
-
-	// prepare mounts
-	mounts := mapToDockerMounts(req.Mounts)
-
-	hostConfig := &container.HostConfig{
-		PortBindings: exposedPortMap,
-		Mounts:       mounts,
-	}
-
-	endpointSettings := map[string]*network.EndpointSettings{}
-
-	// #248: Docker allows only one network to be specified during container creation
-	// If there is more than one network specified in the request container should be attached to them
-	// once it is created. We will take a first network if any specified in the request and use it to create container
-	if len(req.Networks) > 0 {
-		attachContainerTo := req.Networks[0]
-
-		nw, err := p.GetNetwork(ctx, NetworkRequest{
-			Name: attachContainerTo,
-		})
-		if err == nil {
-			endpointSetting := network.EndpointSettings{
-				Aliases:   req.NetworkAliases[attachContainerTo],
-				NetworkID: nw.ID,
-			}
-			endpointSettings[attachContainerTo] = &endpointSetting
-		}
-	}
-
-	networkingConfig := network.NetworkingConfig{
-		EndpointsConfig: endpointSettings,
-	}
-
-	if req.PreCreationHook == nil {
-		req.PreCreationHook = defaultPreCreationHook(req)
-	}
-	req.PreCreationHook(hostConfig, endpointSettings)
-
-	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, platform, req.Name)
+	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, networkingConfig, platform, req.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -1159,6 +1112,60 @@ func defaultPreCreationHook(req ContainerRequest) func(hostConfig *container.Hos
 		hostConfig.ShmSize = req.ShmSize
 		hostConfig.Tmpfs = req.Tmpfs
 	}
+}
+
+func (p *DockerProvider) preCreationHooks(ctx context.Context, req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
+	// prepare mounts
+	hostConfig.Mounts = mapToDockerMounts(req.Mounts)
+
+	endpointSettings := map[string]*network.EndpointSettings{}
+
+	// #248: Docker allows only one network to be specified during container creation
+	// If there is more than one network specified in the request container should be attached to them
+	// once it is created. We will take a first network if any specified in the request and use it to create container
+	if len(req.Networks) > 0 {
+		attachContainerTo := req.Networks[0]
+
+		nw, err := p.GetNetwork(ctx, NetworkRequest{
+			Name: attachContainerTo,
+		})
+		if err == nil {
+			endpointSetting := network.EndpointSettings{
+				Aliases:   req.NetworkAliases[attachContainerTo],
+				NetworkID: nw.ID,
+			}
+			endpointSettings[attachContainerTo] = &endpointSetting
+		}
+	}
+
+	if req.PreCreationHook == nil {
+		req.PreCreationHook = defaultPreCreationHook(req)
+	}
+	req.PreCreationHook(hostConfig, endpointSettings)
+
+	networkingConfig.EndpointsConfig = endpointSettings
+
+	exposedPorts := req.ExposedPorts
+	// this check must be done after the preCreationHook is called, so the network mode is already set
+	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
+		image, _, err := p.client.ImageInspectWithRaw(ctx, dockerInput.Image)
+		if err != nil {
+			return err
+		}
+		for p := range image.ContainerConfig.ExposedPorts {
+			exposedPorts = append(exposedPorts, string(p))
+		}
+	}
+
+	exposedPortSet, exposedPortMap, err := nat.ParsePortSpecs(exposedPorts)
+	if err != nil {
+		return err
+	}
+
+	dockerInput.ExposedPorts = exposedPortSet
+	hostConfig.PortBindings = exposedPortMap
+
+	return nil
 }
 
 func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (*types.Container, error) {
