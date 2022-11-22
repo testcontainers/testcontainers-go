@@ -1047,7 +1047,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	hostConfig := &container.HostConfig{}
 	networkingConfig := &network.NetworkingConfig{}
 
-	err = p.preCreationHooks(ctx, req, dockerInput, hostConfig, networkingConfig)
+	err = p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -1098,8 +1098,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	return c, nil
 }
 
-// defaultPreCreationHook provides a default hook including the deprecated fields
-func defaultPreCreationHook(req ContainerRequest) func(hostConfig *container.HostConfig, endpointSettings map[string]*network.EndpointSettings) {
+// defaultPreCreateModifier provides a default modifier including the deprecated fields
+func defaultPreCreateModifier(req ContainerRequest) func(hostConfig *container.HostConfig, endpointSettings map[string]*network.EndpointSettings) {
 	return func(hostConfig *container.HostConfig, endpointSettings map[string]*network.EndpointSettings) {
 		hostConfig.AutoRemove = req.AutoRemove
 		hostConfig.CapAdd = req.CapAdd
@@ -1114,7 +1114,7 @@ func defaultPreCreationHook(req ContainerRequest) func(hostConfig *container.Hos
 	}
 }
 
-func (p *DockerProvider) preCreationHooks(ctx context.Context, req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
+func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
 	// prepare mounts
 	hostConfig.Mounts = mapToDockerMounts(req.Mounts)
 
@@ -1138,10 +1138,10 @@ func (p *DockerProvider) preCreationHooks(ctx context.Context, req ContainerRequ
 		}
 	}
 
-	if req.PreCreationHook == nil {
-		req.PreCreationHook = defaultPreCreationHook(req)
+	if req.PreCreateModifier == nil {
+		req.PreCreateModifier = defaultPreCreateModifier(req)
 	}
-	req.PreCreationHook(hostConfig, endpointSettings)
+	req.PreCreateModifier(hostConfig, endpointSettings)
 
 	networkingConfig.EndpointsConfig = endpointSettings
 
