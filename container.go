@@ -124,7 +124,7 @@ type ContainerRequest struct {
 	ShmSize         int64                                                             // Deprecated: Use PreCreationHook instead. Amount of memory shared with the host (in bytes)
 	CapAdd          []string                                                          // Deprecated: Use PreCreationHook instead. Add Linux capabilities
 	CapDrop         []string                                                          // Deprecated: Use PreCreationHook instead. Drop Linux capabilities
-	PreCreationHook func(*container.HostConfig, map[string]*network.EndpointSettings) // Callback for modifying host config and network settings before container creation
+	PreCreationHook func(*container.HostConfig, map[string]*network.EndpointSettings) // Hook for modifying host config and network settings before container creation
 }
 
 type (
