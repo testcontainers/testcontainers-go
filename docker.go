@@ -1067,7 +1067,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	hostConfig := &container.HostConfig{
 		PortBindings: exposedPortMap,
 		Mounts:       mounts,
-		Privileged:   req.Privileged,
 		NetworkMode:  req.NetworkMode,
 		Resources:    req.Resources,
 		ShmSize:      req.ShmSize,
@@ -1105,6 +1104,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			hostConfig.AutoRemove = req.AutoRemove
 			hostConfig.Binds = req.Binds
 			hostConfig.ExtraHosts = req.ExtraHosts
+			hostConfig.Privileged = req.Privileged
 			hostConfig.Tmpfs = req.Tmpfs
 		}
 	}

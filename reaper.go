@@ -60,6 +60,8 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 
 	listeningPort := nat.Port("8080/tcp")
 
+	tcConfig := provider.Config()
+
 	req := ContainerRequest{
 		Image:        reaperImage(reaperImageName),
 		ExposedPorts: []string{string(listeningPort)},
@@ -72,6 +74,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		WaitingFor: wait.ForListeningPort(listeningPort),
 		PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
 			hc.AutoRemove = true
+			hc.Privileged = tcConfig.RyukPrivileged
 		},
 	}
 
@@ -79,9 +82,6 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 	for k, v := range reaper.Labels() {
 		req.Labels[k] = v
 	}
-
-	tcConfig := provider.Config()
-	req.Privileged = tcConfig.RyukPrivileged
 
 	// Attach reaper container to a requested network if it is specified
 	if p, ok := provider.(*DockerProvider); ok {

@@ -21,6 +21,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-units"
 	"github.com/go-redis/redis/v8"
@@ -146,7 +147,6 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:       nginxAlpineImage,
-			Privileged:  true,
 			SkipReaper:  true,
 			NetworkMode: "host",
 			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
@@ -154,6 +154,9 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 				nginxHighPort,
 			},
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
+				hc.Privileged = true
+			},
 		},
 		Started: true,
 	}
@@ -183,9 +186,11 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			Image:      "nginx",
-			Privileged: true,
 			SkipReaper: true,
 			WaitingFor: wait.ForExposedPort(),
+			PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
+				hc.Privileged = true
+			},
 		},
 		Started: true,
 	}
