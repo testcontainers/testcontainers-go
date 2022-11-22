@@ -107,11 +107,11 @@ type ContainerRequest struct {
 	WaitingFor          wait.Strategy
 	Name                string // for specifying container name
 	Hostname            string
-	ExtraHosts          []string            // Deprecated: Use PreCreationCallback instead
-	Privileged          bool                // Deprecated: Use PreCreationCallback instead. For starting privileged container
-	Networks            []string            // for specifying network names
-	NetworkAliases      map[string][]string // for specifying network aliases
-	NetworkMode         container.NetworkMode
+	ExtraHosts          []string                                                          // Deprecated: Use PreCreationCallback instead
+	Privileged          bool                                                              // Deprecated: Use PreCreationCallback instead. For starting privileged container
+	Networks            []string                                                          // for specifying network names
+	NetworkAliases      map[string][]string                                               // for specifying network aliases
+	NetworkMode         container.NetworkMode                                             // Deprecated: Use PreCreationCallback instead
 	Resources           container.Resources                                               // Deprecated: Use PreCreationCallback instead
 	Files               []ContainerFile                                                   // files which will be copied when container starts
 	User                string                                                            // for specifying uid:gid

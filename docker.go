@@ -1035,6 +1035,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	exposedPorts := req.ExposedPorts
+	// we should evaluate moving this check after the preCreationCallback call
 	if len(exposedPorts) == 0 && !req.NetworkMode.IsContainer() {
 		image, _, err := p.client.ImageInspectWithRaw(ctx, tag)
 		if err != nil {
@@ -1067,7 +1068,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	hostConfig := &container.HostConfig{
 		PortBindings: exposedPortMap,
 		Mounts:       mounts,
-		NetworkMode:  req.NetworkMode,
 	}
 
 	endpointConfigs := map[string]*network.EndpointSettings{}
@@ -1102,6 +1102,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			hostConfig.CapDrop = req.CapDrop
 			hostConfig.Binds = req.Binds
 			hostConfig.ExtraHosts = req.ExtraHosts
+			hostConfig.NetworkMode = req.NetworkMode
 			hostConfig.Privileged = req.Privileged
 			hostConfig.Resources = req.Resources
 			hostConfig.ShmSize = req.ShmSize

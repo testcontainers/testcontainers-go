@@ -146,15 +146,15 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:      nginxAlpineImage,
+			SkipReaper: true,
+			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
 			ExposedPorts: []string{
 				nginxHighPort,
 			},
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
 			PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
+				hc.NetworkMode = "host"
 				hc.Privileged = true
 			},
 		},
@@ -218,10 +218,12 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			Networks:    []string{"new-network"},
+			Image:      nginxImage,
+			SkipReaper: true,
+			Networks:   []string{"new-network"},
+			PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -245,11 +247,13 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort(nginxHighPort),
-			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:      nginxAlpineImage,
+			SkipReaper: true,
+			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -281,11 +285,13 @@ func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort(nginxHighPort),
-			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:      nginxAlpineImage,
+			SkipReaper: true,
+			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -318,11 +324,13 @@ func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort(nginxHighPort),
-			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:      nginxAlpineImage,
+			SkipReaper: true,
+			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -2587,8 +2595,10 @@ func TestNetworkModeWithContainerReference(t *testing.T) {
 	nginxB, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			NetworkMode: container.NetworkMode(networkMode),
+			Image: nginxAlpineImage,
+			PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
+				hc.NetworkMode = container.NetworkMode(networkMode)
+			},
 		},
 		Started: true,
 	})

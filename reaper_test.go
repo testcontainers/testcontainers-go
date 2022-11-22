@@ -13,14 +13,36 @@ import (
 )
 
 type mockReaperProvider struct {
-	req    ContainerRequest
-	config TestContainersConfig
+	req             ContainerRequest
+	hostConfig      *container.HostConfig
+	enpointSettings map[string]*network.EndpointSettings
+	config          TestContainersConfig
 }
 
 var errExpected = errors.New("expected")
 
 func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	m.req = req
+
+	m.hostConfig = &container.HostConfig{}
+	m.enpointSettings = map[string]*network.EndpointSettings{}
+
+	if req.PreCreationCallback == nil {
+		// provide default callback including the deprecated fields
+		req.PreCreationCallback = func(hostConfig *container.HostConfig, enpointSettings map[string]*network.EndpointSettings) {
+			hostConfig.AutoRemove = req.AutoRemove
+			hostConfig.CapAdd = req.CapAdd
+			hostConfig.CapDrop = req.CapDrop
+			hostConfig.Binds = req.Binds
+			hostConfig.ExtraHosts = req.ExtraHosts
+			hostConfig.NetworkMode = req.NetworkMode
+			hostConfig.Privileged = req.Privileged
+			hostConfig.Resources = req.Resources
+			hostConfig.ShmSize = req.ShmSize
+			hostConfig.Tmpfs = req.Tmpfs
+		}
+	}
+	req.PreCreationCallback(m.hostConfig, m.enpointSettings)
 
 	// we're only interested in the request, so instead of mocking the Docker client
 	// we'll error out here
@@ -41,13 +63,9 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 			TestcontainerLabelIsReaper:  "true",
 			TestcontainerLabelSessionID: "sessionId",
 		},
-		SkipReaper:  true,
-		Mounts:      Mounts(BindMount("/var/run/docker.sock", "/var/run/docker.sock")),
-		WaitingFor:  wait.ForListeningPort(nat.Port("8080/tcp")),
-		NetworkMode: "bridge",
-		PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
-			hc.AutoRemove = true
-		},
+		SkipReaper: true,
+		Mounts:     Mounts(BindMount("/var/run/docker.sock", "/var/run/docker.sock")),
+		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
 	}
 	if customize == nil {
 		return req
@@ -114,7 +132,10 @@ func Test_NewReaper(t *testing.T) {
 			assert.Equal(t, test.req.SkipReaper, provider.req.SkipReaper, "expected skipReaper doesn't match the submitted request")
 			assert.Equal(t, test.req.Mounts, provider.req.Mounts, "expected mounts don't match the submitted request")
 			assert.Equal(t, test.req.WaitingFor, provider.req.WaitingFor, "expected waitingFor don't match the submitted request")
-			assert.Equal(t, test.req.NetworkMode, provider.req.NetworkMode, "expected networkMode doesn't match the submitted request")
+
+			// checks for reaper's preCreationCallback fields
+			assert.Equal(t, container.NetworkMode(Bridge), provider.hostConfig.NetworkMode, "expected networkMode doesn't match the submitted request")
+			assert.Equal(t, true, provider.hostConfig.AutoRemove, "expected networkMode doesn't match the submitted request")
 		})
 	}
 }

@@ -65,7 +65,6 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 	req := ContainerRequest{
 		Image:        reaperImage(reaperImageName),
 		ExposedPorts: []string{string(listeningPort)},
-		NetworkMode:  Bridge,
 		Labels: map[string]string{
 			TestcontainerLabelIsReaper: "true",
 		},
@@ -74,6 +73,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		WaitingFor: wait.ForListeningPort(listeningPort),
 		PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
 			hc.AutoRemove = true
+			hc.NetworkMode = Bridge
 			hc.Privileged = tcConfig.RyukPrivileged
 		},
 	}
