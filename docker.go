@@ -1068,7 +1068,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		PortBindings: exposedPortMap,
 		Mounts:       mounts,
 		NetworkMode:  req.NetworkMode,
-		CapDrop:      req.CapDrop,
 	}
 
 	endpointConfigs := map[string]*network.EndpointSettings{}
@@ -1100,6 +1099,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		req.PreCreationCallback = func(hostConfig *container.HostConfig, networkingConfig map[string]*network.EndpointSettings) {
 			hostConfig.AutoRemove = req.AutoRemove
 			hostConfig.CapAdd = req.CapAdd
+			hostConfig.CapDrop = req.CapDrop
 			hostConfig.Binds = req.Binds
 			hostConfig.ExtraHosts = req.ExtraHosts
 			hostConfig.Privileged = req.Privileged
