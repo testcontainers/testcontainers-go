@@ -2441,7 +2441,9 @@ func TestContainerCapAdd(t *testing.T) {
 			Image:        nginxAlpineImage,
 			ExposedPorts: []string{nginxDefaultPort},
 			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-			CapAdd:       []string{expected},
+			PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
+				hc.CapAdd = []string{expected}
+			},
 		},
 		Started: true,
 	})
