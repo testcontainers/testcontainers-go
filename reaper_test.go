@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -41,9 +43,11 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		},
 		SkipReaper:  true,
 		Mounts:      Mounts(BindMount("/var/run/docker.sock", "/var/run/docker.sock")),
-		AutoRemove:  true,
 		WaitingFor:  wait.ForListeningPort(nat.Port("8080/tcp")),
 		NetworkMode: "bridge",
+		PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
+			hc.AutoRemove = true
+		},
 	}
 	if customize == nil {
 		return req
@@ -104,7 +108,13 @@ func Test_NewReaper(t *testing.T) {
 			// we should have errored out see mockReaperProvider.RunContainer
 			assert.EqualError(t, err, "expected")
 
-			assert.Equal(t, test.req, provider.req, "expected ContainerRequest doesn't match the submitted request")
+			assert.Equal(t, test.req.Image, provider.req.Image, "expected image doesn't match the submitted request")
+			assert.Equal(t, test.req.ExposedPorts, provider.req.ExposedPorts, "expected exposed ports don't match the submitted request")
+			assert.Equal(t, test.req.Labels, provider.req.Labels, "expected labels don't match the submitted request")
+			assert.Equal(t, test.req.SkipReaper, provider.req.SkipReaper, "expected skipReaper doesn't match the submitted request")
+			assert.Equal(t, test.req.Mounts, provider.req.Mounts, "expected mounts don't match the submitted request")
+			assert.Equal(t, test.req.WaitingFor, provider.req.WaitingFor, "expected waitingFor don't match the submitted request")
+			assert.Equal(t, test.req.NetworkMode, provider.req.NetworkMode, "expected networkMode doesn't match the submitted request")
 		})
 	}
 }

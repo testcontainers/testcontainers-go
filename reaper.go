@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -67,8 +69,10 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		},
 		SkipReaper: true,
 		Mounts:     Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
-		AutoRemove: true,
 		WaitingFor: wait.ForListeningPort(listeningPort),
+		PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
+			hc.AutoRemove = true
+		},
 	}
 
 	// include reaper-specific labels to the reaper container
