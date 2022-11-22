@@ -27,9 +27,9 @@ func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequ
 	m.hostConfig = &container.HostConfig{}
 	m.enpointSettings = map[string]*network.EndpointSettings{}
 
-	if req.PreCreationCallback == nil {
-		// provide default callback including the deprecated fields
-		req.PreCreationCallback = func(hostConfig *container.HostConfig, enpointSettings map[string]*network.EndpointSettings) {
+	if req.PreCreationHook == nil {
+		// provide default hook including the deprecated fields
+		req.PreCreationHook = func(hostConfig *container.HostConfig, enpointSettings map[string]*network.EndpointSettings) {
 			hostConfig.AutoRemove = req.AutoRemove
 			hostConfig.CapAdd = req.CapAdd
 			hostConfig.CapDrop = req.CapDrop
@@ -42,7 +42,7 @@ func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequ
 			hostConfig.Tmpfs = req.Tmpfs
 		}
 	}
-	req.PreCreationCallback(m.hostConfig, m.enpointSettings)
+	req.PreCreationHook(m.hostConfig, m.enpointSettings)
 
 	// we're only interested in the request, so instead of mocking the Docker client
 	// we'll error out here

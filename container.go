@@ -95,36 +95,36 @@ type ContainerFile struct {
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
 	FromDockerfile
-	Image               string
-	Entrypoint          []string
-	Env                 map[string]string
-	ExposedPorts        []string // allow specifying protocol info
-	Cmd                 []string
-	Labels              map[string]string
-	Mounts              ContainerMounts
-	Tmpfs               map[string]string // Deprecated: Use PreCreationCallback instead
-	RegistryCred        string
-	WaitingFor          wait.Strategy
-	Name                string // for specifying container name
-	Hostname            string
-	ExtraHosts          []string                                                          // Deprecated: Use PreCreationCallback instead
-	Privileged          bool                                                              // Deprecated: Use PreCreationCallback instead. For starting privileged container
-	Networks            []string                                                          // for specifying network names
-	NetworkAliases      map[string][]string                                               // for specifying network aliases
-	NetworkMode         container.NetworkMode                                             // Deprecated: Use PreCreationCallback instead
-	Resources           container.Resources                                               // Deprecated: Use PreCreationCallback instead
-	Files               []ContainerFile                                                   // files which will be copied when container starts
-	User                string                                                            // for specifying uid:gid
-	SkipReaper          bool                                                              // indicates whether we skip setting up a reaper for this
-	ReaperImage         string                                                            // alternative reaper image
-	AutoRemove          bool                                                              // Deprecated: Use PreCreationCallback instead. If set to true, the container will be removed from the host when stopped
-	AlwaysPullImage     bool                                                              // Always pull image
-	ImagePlatform       string                                                            // ImagePlatform describes the platform which the image runs on.
-	Binds               []string                                                          // Deprecated: Use PreCreationCallback instead
-	ShmSize             int64                                                             // Deprecated: Use PreCreationCallback instead. Amount of memory shared with the host (in bytes)
-	CapAdd              []string                                                          // Deprecated: Use PreCreationCallback instead. Add Linux capabilities
-	CapDrop             []string                                                          // Deprecated: Use PreCreationCallback instead. Drop Linux capabilities
-	PreCreationCallback func(*container.HostConfig, map[string]*network.EndpointSettings) // Callback for modifying host config and network settings before container creation
+	Image           string
+	Entrypoint      []string
+	Env             map[string]string
+	ExposedPorts    []string // allow specifying protocol info
+	Cmd             []string
+	Labels          map[string]string
+	Mounts          ContainerMounts
+	Tmpfs           map[string]string // Deprecated: Use PreCreationHook instead
+	RegistryCred    string
+	WaitingFor      wait.Strategy
+	Name            string // for specifying container name
+	Hostname        string
+	ExtraHosts      []string                                                          // Deprecated: Use PreCreationHook instead
+	Privileged      bool                                                              // Deprecated: Use PreCreationHook instead. For starting privileged container
+	Networks        []string                                                          // for specifying network names
+	NetworkAliases  map[string][]string                                               // for specifying network aliases
+	NetworkMode     container.NetworkMode                                             // Deprecated: Use PreCreationHook instead
+	Resources       container.Resources                                               // Deprecated: Use PreCreationHook instead
+	Files           []ContainerFile                                                   // files which will be copied when container starts
+	User            string                                                            // for specifying uid:gid
+	SkipReaper      bool                                                              // indicates whether we skip setting up a reaper for this
+	ReaperImage     string                                                            // alternative reaper image
+	AutoRemove      bool                                                              // Deprecated: Use PreCreationHook instead. If set to true, the container will be removed from the host when stopped
+	AlwaysPullImage bool                                                              // Always pull image
+	ImagePlatform   string                                                            // ImagePlatform describes the platform which the image runs on.
+	Binds           []string                                                          // Deprecated: Use PreCreationHook instead
+	ShmSize         int64                                                             // Deprecated: Use PreCreationHook instead. Amount of memory shared with the host (in bytes)
+	CapAdd          []string                                                          // Deprecated: Use PreCreationHook instead. Add Linux capabilities
+	CapDrop         []string                                                          // Deprecated: Use PreCreationHook instead. Drop Linux capabilities
+	PreCreationHook func(*container.HostConfig, map[string]*network.EndpointSettings) // Callback for modifying host config and network settings before container creation
 }
 
 type (

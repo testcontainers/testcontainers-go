@@ -1094,9 +1094,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		EndpointsConfig: endpointSettings,
 	}
 
-	if req.PreCreationCallback == nil {
-		// provide default callback including the deprecated fields
-		req.PreCreationCallback = func(hostConfig *container.HostConfig, endpointSettings map[string]*network.EndpointSettings) {
+	if req.PreCreationHook == nil {
+		// provide default hook including the deprecated fields
+		req.PreCreationHook = func(hostConfig *container.HostConfig, endpointSettings map[string]*network.EndpointSettings) {
 			hostConfig.AutoRemove = req.AutoRemove
 			hostConfig.CapAdd = req.CapAdd
 			hostConfig.CapDrop = req.CapDrop
@@ -1109,7 +1109,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			hostConfig.Tmpfs = req.Tmpfs
 		}
 	}
-	req.PreCreationCallback(hostConfig, endpointSettings)
+	req.PreCreationHook(hostConfig, endpointSettings)
 
 	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, platform, req.Name)
 	if err != nil {
