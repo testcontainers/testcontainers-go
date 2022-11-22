@@ -113,14 +113,14 @@ type ContainerRequest struct {
 	NetworkAliases      map[string][]string // for specifying network aliases
 	NetworkMode         container.NetworkMode
 	Resources           container.Resources
-	Files               []ContainerFile // files which will be copied when container starts
-	User                string          // for specifying uid:gid
-	SkipReaper          bool            // indicates whether we skip setting up a reaper for this
-	ReaperImage         string          // alternative reaper image
-	AutoRemove          bool            // if set to true, the container will be removed from the host when stopped
-	AlwaysPullImage     bool            // Always pull image
-	ImagePlatform       string          // ImagePlatform describes the platform which the image runs on.
-	Binds               []string
+	Files               []ContainerFile                                                   // files which will be copied when container starts
+	User                string                                                            // for specifying uid:gid
+	SkipReaper          bool                                                              // indicates whether we skip setting up a reaper for this
+	ReaperImage         string                                                            // alternative reaper image
+	AutoRemove          bool                                                              // if set to true, the container will be removed from the host when stopped
+	AlwaysPullImage     bool                                                              // Always pull image
+	ImagePlatform       string                                                            // ImagePlatform describes the platform which the image runs on.
+	Binds               []string                                                          // Deprecated: Use PreCreationCallback instead
 	ShmSize             int64                                                             // Amount of memory shared with the host (in bytes)
 	CapAdd              []string                                                          // Add Linux capabilities
 	CapDrop             []string                                                          // Drop Linux capabilities
