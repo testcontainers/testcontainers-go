@@ -2353,8 +2353,10 @@ func TestDockerContainerResources(t *testing.T) {
 			Image:        nginxAlpineImage,
 			ExposedPorts: []string{nginxDefaultPort},
 			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-			Resources: container.Resources{
-				Ulimits: expected,
+			PreCreationCallback: func(hc *container.HostConfig, m map[string]*network.EndpointSettings) {
+				hc.Resources = container.Resources{
+					Ulimits: expected,
+				}
 			},
 		},
 		Started: true,

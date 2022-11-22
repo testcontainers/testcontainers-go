@@ -112,7 +112,7 @@ type ContainerRequest struct {
 	Networks            []string            // for specifying network names
 	NetworkAliases      map[string][]string // for specifying network aliases
 	NetworkMode         container.NetworkMode
-	Resources           container.Resources
+	Resources           container.Resources                                               // Deprecated: Use PreCreationCallback instead
 	Files               []ContainerFile                                                   // files which will be copied when container starts
 	User                string                                                            // for specifying uid:gid
 	SkipReaper          bool                                                              // indicates whether we skip setting up a reaper for this
