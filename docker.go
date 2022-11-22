@@ -1095,19 +1095,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	if req.PreCreationHook == nil {
-		// provide default hook including the deprecated fields
-		req.PreCreationHook = func(hostConfig *container.HostConfig, endpointSettings map[string]*network.EndpointSettings) {
-			hostConfig.AutoRemove = req.AutoRemove
-			hostConfig.CapAdd = req.CapAdd
-			hostConfig.CapDrop = req.CapDrop
-			hostConfig.Binds = req.Binds
-			hostConfig.ExtraHosts = req.ExtraHosts
-			hostConfig.NetworkMode = req.NetworkMode
-			hostConfig.Privileged = req.Privileged
-			hostConfig.Resources = req.Resources
-			hostConfig.ShmSize = req.ShmSize
-			hostConfig.Tmpfs = req.Tmpfs
-		}
+		req.PreCreationHook = defaultPreCreationHook(req)
 	}
 	req.PreCreationHook(hostConfig, endpointSettings)
 
@@ -1155,6 +1143,22 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	return c, nil
+}
+
+// defaultPreCreationHook provides a default hook including the deprecated fields
+func defaultPreCreationHook(req ContainerRequest) func(hostConfig *container.HostConfig, endpointSettings map[string]*network.EndpointSettings) {
+	return func(hostConfig *container.HostConfig, endpointSettings map[string]*network.EndpointSettings) {
+		hostConfig.AutoRemove = req.AutoRemove
+		hostConfig.CapAdd = req.CapAdd
+		hostConfig.CapDrop = req.CapDrop
+		hostConfig.Binds = req.Binds
+		hostConfig.ExtraHosts = req.ExtraHosts
+		hostConfig.NetworkMode = req.NetworkMode
+		hostConfig.Privileged = req.Privileged
+		hostConfig.Resources = req.Resources
+		hostConfig.ShmSize = req.ShmSize
+		hostConfig.Tmpfs = req.Tmpfs
+	}
 }
 
 func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (*types.Container, error) {

@@ -28,19 +28,7 @@ func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequ
 	m.enpointSettings = map[string]*network.EndpointSettings{}
 
 	if req.PreCreationHook == nil {
-		// provide default hook including the deprecated fields
-		req.PreCreationHook = func(hostConfig *container.HostConfig, enpointSettings map[string]*network.EndpointSettings) {
-			hostConfig.AutoRemove = req.AutoRemove
-			hostConfig.CapAdd = req.CapAdd
-			hostConfig.CapDrop = req.CapDrop
-			hostConfig.Binds = req.Binds
-			hostConfig.ExtraHosts = req.ExtraHosts
-			hostConfig.NetworkMode = req.NetworkMode
-			hostConfig.Privileged = req.Privileged
-			hostConfig.Resources = req.Resources
-			hostConfig.ShmSize = req.ShmSize
-			hostConfig.Tmpfs = req.Tmpfs
-		}
+		req.PreCreationHook = defaultPreCreationHook(req)
 	}
 	req.PreCreationHook(m.hostConfig, m.enpointSettings)
 
