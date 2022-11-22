@@ -1103,6 +1103,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		EndpointsConfig: endpointConfigs,
 	}
 
+	if req.PreCreationCallback != nil {
+		req.PreCreationCallback(hostConfig, endpointConfigs)
+	}
+
 	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, platform, req.Name)
 	if err != nil {
 		return nil, err

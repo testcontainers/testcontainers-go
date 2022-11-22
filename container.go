@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 
@@ -94,35 +95,36 @@ type ContainerFile struct {
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
 	FromDockerfile
-	Image           string
-	Entrypoint      []string
-	Env             map[string]string
-	ExposedPorts    []string // allow specifying protocol info
-	Cmd             []string
-	Labels          map[string]string
-	Mounts          ContainerMounts
-	Tmpfs           map[string]string
-	RegistryCred    string
-	WaitingFor      wait.Strategy
-	Name            string // for specifying container name
-	Hostname        string
-	ExtraHosts      []string
-	Privileged      bool                // for starting privileged container
-	Networks        []string            // for specifying network names
-	NetworkAliases  map[string][]string // for specifying network aliases
-	NetworkMode     container.NetworkMode
-	Resources       container.Resources
-	Files           []ContainerFile // files which will be copied when container starts
-	User            string          // for specifying uid:gid
-	SkipReaper      bool            // indicates whether we skip setting up a reaper for this
-	ReaperImage     string          // alternative reaper image
-	AutoRemove      bool            // if set to true, the container will be removed from the host when stopped
-	AlwaysPullImage bool            // Always pull image
-	ImagePlatform   string          // ImagePlatform describes the platform which the image runs on.
-	Binds           []string
-	ShmSize         int64    // Amount of memory shared with the host (in bytes)
-	CapAdd          []string // Add Linux capabilities
-	CapDrop         []string // Drop Linux capabilities
+	Image               string
+	Entrypoint          []string
+	Env                 map[string]string
+	ExposedPorts        []string // allow specifying protocol info
+	Cmd                 []string
+	Labels              map[string]string
+	Mounts              ContainerMounts
+	Tmpfs               map[string]string
+	RegistryCred        string
+	WaitingFor          wait.Strategy
+	Name                string // for specifying container name
+	Hostname            string
+	ExtraHosts          []string
+	Privileged          bool                // for starting privileged container
+	Networks            []string            // for specifying network names
+	NetworkAliases      map[string][]string // for specifying network aliases
+	NetworkMode         container.NetworkMode
+	Resources           container.Resources
+	Files               []ContainerFile // files which will be copied when container starts
+	User                string          // for specifying uid:gid
+	SkipReaper          bool            // indicates whether we skip setting up a reaper for this
+	ReaperImage         string          // alternative reaper image
+	AutoRemove          bool            // if set to true, the container will be removed from the host when stopped
+	AlwaysPullImage     bool            // Always pull image
+	ImagePlatform       string          // ImagePlatform describes the platform which the image runs on.
+	Binds               []string
+	ShmSize             int64                                                             // Amount of memory shared with the host (in bytes)
+	CapAdd              []string                                                          // Add Linux capabilities
+	CapDrop             []string                                                          // Drop Linux capabilities
+	PreCreationCallback func(*container.HostConfig, map[string]*network.EndpointSettings) // Callback for modifying host config and network settings before container creation
 }
 
 type (
