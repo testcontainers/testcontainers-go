@@ -30,7 +30,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 
 ### How to run the tool
 
-From the `examples` directory, please run:
+From the [`examples` directory]({{repo_url}}/tree/main/examples), please run:
 
 ```shell
 go run main.go --name ${NAME_OF_YOUR_EXAMPLE} --image "${REGISTRY}/${EXAMPLE}:${TAG}"
