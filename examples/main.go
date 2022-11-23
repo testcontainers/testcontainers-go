@@ -17,7 +17,7 @@ var nameVar string
 var imageVar string
 
 var templates = []string{
-	"docs_example.md", "example_test.go", "example.go", "go.mod", "go.sum", "Makefile", "tools.go",
+	"ci.yml", "docs_example.md", "example_test.go", "example.go", "go.mod", "go.sum", "Makefile", "tools.go",
 }
 
 func init() {
@@ -58,16 +58,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	githubWorkflowsPath := filepath.Join(filepath.Dir(examplesDir), ".github", "workflows")
 	examplesDocsPath := filepath.Join(filepath.Dir(examplesDir), "docs", "examples")
 
-	err = generate(Example{Name: nameVar, Image: imageVar}, examplesDir, examplesDocsPath)
+	err = generate(Example{Name: nameVar, Image: imageVar}, examplesDir, examplesDocsPath, githubWorkflowsPath)
 	if err != nil {
 		fmt.Printf(">> error generating the example: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func generate(example Example, examplesDir string, docsDir string) error {
+func generate(example Example, examplesDir string, docsDir string, githubWorkflowsDir string) error {
 	funcMap := template.FuncMap{
 		"ToLower":     strings.ToLower,
 		"Title":       cases.Title(language.Und, cases.NoLower).String,
@@ -95,6 +96,9 @@ func generate(example Example, examplesDir string, docsDir string) error {
 		if strings.EqualFold(tmpl, "docs_example.md") {
 			// docs example file will go into the docs directory
 			exampleFilePath = filepath.Join(docsDir, exampleLower+".md")
+		} else if strings.EqualFold(tmpl, "ci.yml") {
+			// GitHub workflow example file will go into the .github/workflows directory
+			exampleFilePath = filepath.Join(githubWorkflowsDir, exampleLower+"-example.yml")
 		} else if strings.EqualFold(tmpl, "tools.go") {
 			// tools.go example file will go into the tools package
 			exampleFilePath = filepath.Join(examplesDir, exampleLower, "tools", tmpl)

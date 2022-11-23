@@ -13,11 +13,15 @@ func TestGenerate(t *testing.T) {
 	rootTmp := t.TempDir()
 	examplesTmp := filepath.Join(rootTmp, "examples")
 	examplesDocTmp := filepath.Join(rootTmp, "docs", "examples")
+	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
 
 	err := os.MkdirAll(examplesTmp, 0777)
 	assert.Nil(t, err)
 	err = os.MkdirAll(examplesDocTmp, 0777)
 	assert.Nil(t, err)
+	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	assert.Nil(t, err)
+
 	err = copyInitialConfig(t, rootTmp)
 	assert.Nil(t, err)
 
@@ -27,7 +31,7 @@ func TestGenerate(t *testing.T) {
 	}
 	exampleNameLower := example.Lower()
 
-	err = generate(example, examplesTmp, examplesDocTmp)
+	err = generate(example, examplesTmp, examplesDocTmp, githubWorkflowsTmp)
 	assert.Nil(t, err)
 
 	templatesDir, err := os.ReadDir(filepath.Join(".", "_template"))
@@ -45,10 +49,15 @@ func TestGenerate(t *testing.T) {
 	_, err = os.Stat(exampleDocFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
-	// check the number of template files is equal to examples + 1 (the doc)
-	assert.Equal(t, len(newExampleDir)+1, len(templatesDir))
+	exampleWorkflowFile := filepath.Join(githubWorkflowsTmp, exampleNameLower+"-example.yml")
+	_, err = os.Stat(exampleWorkflowFile)
+	assert.Nil(t, err) // error nil implies the file exist
+
+	// check the number of template files is equal to examples + 2 (the doc and the github workflow)
+	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
 
 	assertExampleDocContent(t, example, exampleDocFile)
+	assertExampleGithubWorkflowContent(t, example, exampleWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, exampleNameLower)
 	assertExampleTestContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
@@ -104,6 +113,25 @@ func assertExampleContent(t *testing.T, example Example, exampleFile string) {
 	assert.Equal(t, data[14], "func setup"+title+"(ctx context.Context) (*"+lower+"Container, error) {")
 	assert.Equal(t, data[16], "\t\tImage: \""+example.Image+"\",")
 	assert.Equal(t, data[26], "\treturn &"+lower+"Container{Container: container}, nil")
+}
+
+// assert content GitHub workflow for the example
+func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWorkflowFile string) {
+	content, err := os.ReadFile(exampleWorkflowFile)
+	assert.Nil(t, err)
+
+	lower := example.Lower()
+	title := example.Title()
+
+	data := strings.Split(string(content), "\n")
+	assert.Equal(t, "name: "+title+" example pipeline", data[0])
+	assert.Equal(t, "  test-"+lower+":", data[5])
+	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[15])
+	assert.Equal(t, "        working-directory: ./examples/foo", data[22])
+	assert.Equal(t, "        working-directory: ./examples/foo", data[26])
+	assert.Equal(t, "        working-directory: ./examples/foo", data[32])
+	assert.Equal(t, "        working-directory: ./examples/foo", data[36])
+	assert.Equal(t, "          paths: \"**/TEST-foo*.xml\"", data[46])
 }
 
 // assert content go.mod

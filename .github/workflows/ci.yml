@@ -47,10 +47,6 @@ jobs:
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-e2e
 
-      - name: Run Example tests
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make test-examples
-
       - name: Run checker
         run: |
           ./scripts/check_environment.sh
