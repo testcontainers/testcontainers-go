@@ -129,9 +129,8 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[15])
 	assert.Equal(t, "        working-directory: ./examples/foo", data[22])
 	assert.Equal(t, "        working-directory: ./examples/foo", data[26])
-	assert.Equal(t, "        working-directory: ./examples/foo", data[32])
-	assert.Equal(t, "        working-directory: ./examples/foo", data[36])
-	assert.Equal(t, "          paths: \"**/TEST-foo*.xml\"", data[46])
+	assert.Equal(t, "        working-directory: ./examples/foo", data[30])
+	assert.Equal(t, "          paths: \"**/TEST-foo*.xml\"", data[40])
 }
 
 // assert content go.mod

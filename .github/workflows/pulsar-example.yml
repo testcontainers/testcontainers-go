@@ -27,12 +27,6 @@ jobs:
         working-directory: ./examples/pulsar
         run: make tools-tidy
 
-      - name: ensure compilation
-        env:
-          GOOS: linux
-        working-directory: ./examples/pulsar
-        run: go build
-
       - name: gotestsum
         working-directory: ./examples/pulsar
         run: make test-unit

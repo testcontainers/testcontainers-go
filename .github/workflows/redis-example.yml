@@ -27,12 +27,6 @@ jobs:
         working-directory: ./examples/redis
         run: make tools-tidy
 
-      - name: ensure compilation
-        env:
-          GOOS: linux
-        working-directory: ./examples/redis
-        run: go build
-
       - name: gotestsum
         working-directory: ./examples/redis
         run: make test-unit

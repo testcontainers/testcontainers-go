@@ -27,12 +27,6 @@ jobs:
         working-directory: ./examples/nginx
         run: make tools-tidy
 
-      - name: ensure compilation
-        env:
-          GOOS: linux
-        working-directory: ./examples/nginx
-        run: go build
-
       - name: gotestsum
         working-directory: ./examples/nginx
         run: make test-unit

@@ -27,12 +27,6 @@ jobs:
         working-directory: ./examples/{{ $lower }}
         run: make tools-tidy
 
-      - name: ensure compilation
-        env:
-          GOOS: linux
-        working-directory: ./examples/{{ $lower }}
-        run: go build
-
       - name: gotestsum
         working-directory: ./examples/{{ $lower }}
         run: make test-unit
