@@ -48,6 +48,7 @@ nav:
             - Multi: features/wait/multi.md
             - SQL: features/wait/sql.md
     - Examples:
+          - examples/index.md
           - examples/cockroachdb.md
           - examples/nginx.md
           - examples/redis.md
