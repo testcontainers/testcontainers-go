@@ -54,6 +54,7 @@ nav:
           - examples/firestore.md
           - examples/nginx.md
           - examples/redis.md
+          - examples/pubsub.md
           - examples/pulsar.md
     - System Requirements:
           - system_requirements/index.md
