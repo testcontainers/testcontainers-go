@@ -9,6 +9,49 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGenerateWrongExampleName(t *testing.T) {
+	rootTmp := t.TempDir()
+	examplesTmp := filepath.Join(rootTmp, "examples")
+	examplesDocTmp := filepath.Join(rootTmp, "docs", "examples")
+	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
+
+	err := os.MkdirAll(examplesTmp, 0777)
+	assert.Nil(t, err)
+	err = os.MkdirAll(examplesDocTmp, 0777)
+	assert.Nil(t, err)
+	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	assert.Nil(t, err)
+
+	err = copyInitialConfig(t, rootTmp)
+	assert.Nil(t, err)
+
+	tests := []struct {
+		name string
+	}{
+		{name: " foo"},
+		{name: "foo "},
+		{name: "foo bar"},
+		{name: "foo-bar"},
+		{name: "foo/bar"},
+		{name: "foo\\bar"},
+		{name: "1foo"},
+		{name: "foo1"},
+		{name: "-foo"},
+		{name: "foo-"},
+	}
+
+	for _, test := range tests {
+		example := Example{
+			Name:      test.name,
+			Image:     "docker.io/example/" + test.name + ":latest",
+			TCVersion: "v0.0.0-test",
+		}
+
+		err = generate(example, rootTmp)
+		assert.Error(t, err)
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	rootTmp := t.TempDir()
 	examplesTmp := filepath.Join(rootTmp, "examples")
@@ -26,12 +69,13 @@ func TestGenerate(t *testing.T) {
 	assert.Nil(t, err)
 
 	example := Example{
-		Name:  "foo",
-		Image: "docker.io/example/foo:latest",
+		Name:      "foo",
+		Image:     "docker.io/example/foo:latest",
+		TCVersion: "v0.0.0-test",
 	}
 	exampleNameLower := example.Lower()
 
-	err = generate(example, examplesTmp, examplesDocTmp, githubWorkflowsTmp)
+	err = generate(example, rootTmp)
 	assert.Nil(t, err)
 
 	templatesDir, err := os.ReadDir(filepath.Join(".", "_template"))
@@ -127,10 +171,10 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	assert.Equal(t, "name: "+title+" example pipeline", data[0])
 	assert.Equal(t, "  test-"+lower+":", data[5])
 	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[15])
-	assert.Equal(t, "        working-directory: ./examples/foo", data[22])
-	assert.Equal(t, "        working-directory: ./examples/foo", data[26])
-	assert.Equal(t, "        working-directory: ./examples/foo", data[30])
-	assert.Equal(t, "          paths: \"**/TEST-foo*.xml\"", data[40])
+	assert.Equal(t, "        working-directory: ./examples/"+lower, data[22])
+	assert.Equal(t, "        working-directory: ./examples/"+lower, data[26])
+	assert.Equal(t, "        working-directory: ./examples/"+lower, data[30])
+	assert.Equal(t, "          paths: \"**/TEST-"+lower+"*.xml\"", data[40])
 }
 
 // assert content go.mod
@@ -139,7 +183,8 @@ func assertGoModContent(t *testing.T, example Example, goModFile string) {
 	assert.Nil(t, err)
 
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[0], "module github.com/testcontainers/testcontainers-go/examples/"+example.Lower())
+	assert.Equal(t, "module github.com/testcontainers/testcontainers-go/examples/"+example.Lower(), data[0])
+	assert.Equal(t, "\tgithub.com/testcontainers/testcontainers-go v"+example.TCVersion, data[5])
 }
 
 // assert content Makefile
@@ -156,6 +201,7 @@ func assertMkdocsExamplesNav(t *testing.T, example Example, rootDir string) {
 	config, err := readMkdocsConfig(rootDir)
 	assert.Nil(t, err)
 
+	// the example should be in the nav
 	examples := config.Nav[3].Examples
 	found := false
 	for _, ex := range examples {
@@ -166,6 +212,9 @@ func assertMkdocsExamplesNav(t *testing.T, example Example, rootDir string) {
 	}
 
 	assert.True(t, found)
+
+	// first item is the index
+	assert.Equal(t, "examples/index.md", examples[0], examples)
 }
 
 // assert content tools/tools.go

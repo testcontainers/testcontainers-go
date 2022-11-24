@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -21,13 +22,14 @@ var templates = []string{
 }
 
 func init() {
-	flag.StringVar(&nameVar, "name", "", "Name of the example, use camel-case when needed")
+	flag.StringVar(&nameVar, "name", "", "Name of the example, use camel-case when needed. Only alphabetical characters are allowed.")
 	flag.StringVar(&imageVar, "image", "", "Fully-qualified name of the Docker image to be used by the example")
 }
 
 type Example struct {
-	Image string // fully qualified name of the Docker image
-	Name  string
+	Image     string // fully qualified name of the Docker image
+	Name      string
+	TCVersion string // Testcontainers for Go version
 }
 
 func (e *Example) Lower() string {
@@ -58,17 +60,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	githubWorkflowsPath := filepath.Join(filepath.Dir(examplesDir), ".github", "workflows")
-	examplesDocsPath := filepath.Join(filepath.Dir(examplesDir), "docs", "examples")
+	rootDir := filepath.Dir(examplesDir)
 
-	err = generate(Example{Name: nameVar, Image: imageVar}, examplesDir, examplesDocsPath, githubWorkflowsPath)
+	mkdocsConfig, err := readMkdocsConfig(rootDir)
+	if err != nil {
+		fmt.Printf(">> could not read MkDocs config: %v\n", err)
+		os.Exit(1)
+	}
+
+	err = generate(Example{Name: nameVar, Image: imageVar, TCVersion: mkdocsConfig.Extra.LatestVersion}, rootDir)
 	if err != nil {
 		fmt.Printf(">> error generating the example: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func generate(example Example, examplesDir string, docsDir string, githubWorkflowsDir string) error {
+func generate(example Example, rootDir string) error {
+	if !regexp.MustCompile(`^[A-Za-z]+$`).MatchString(example.Name) {
+		return fmt.Errorf("invalid name: %s. Only alphabetical characters are allowed", example.Name)
+	}
+
+	githubWorkflowsDir := filepath.Join(rootDir, ".github", "workflows")
+	examplesDir := filepath.Join(rootDir, "examples")
+	docsDir := filepath.Join(rootDir, "docs", "examples")
+
 	funcMap := template.FuncMap{
 		"ToLower":     strings.ToLower,
 		"Title":       cases.Title(language.Und, cases.NoLower).String,
@@ -120,8 +135,6 @@ func generate(example Example, examplesDir string, docsDir string, githubWorkflo
 		}
 	}
 
-	rootDir := filepath.Dir(examplesDir)
-
 	// update examples in mkdocs
 	mkdocsConfig, err := readMkdocsConfig(rootDir)
 	if err != nil {
@@ -130,9 +143,23 @@ func generate(example Example, examplesDir string, docsDir string, githubWorkflo
 
 	mkdocsExamplesNav := mkdocsConfig.Nav[3].Examples
 
-	mkdocsExamplesNav = append(mkdocsExamplesNav, "examples/"+exampleLower+".md")
-	sort.Strings(mkdocsExamplesNav)
-	mkdocsConfig.Nav[3].Examples = mkdocsExamplesNav
+	// make sure the index.md is the first element in the list of examples in the nav
+	examplesNav := make([]string, len(mkdocsExamplesNav)-1)
+
+	for _, exampleNav := range mkdocsExamplesNav {
+		// filter out the index.md file
+		if !strings.HasSuffix("index.md", exampleNav) {
+			examplesNav = append(examplesNav, exampleNav)
+		}
+	}
+
+	examplesNav = append(examplesNav, "examples/"+exampleLower+".md")
+	sort.Strings(examplesNav)
+
+	// prepend the index.md file
+	examplesNav = append([]string{"examples/index.md"}, examplesNav...)
+
+	mkdocsConfig.Nav[3].Examples = examplesNav
 
 	err = writeMkdocsConfig(rootDir, mkdocsConfig)
 	if err != nil {
