@@ -60,8 +60,6 @@ func main() {
 	}
 
 	rootDir := filepath.Dir(examplesDir)
-	githubWorkflowsPath := filepath.Join(rootDir, ".github", "workflows")
-	examplesDocsPath := filepath.Join(rootDir, "docs", "examples")
 
 	mkdocsConfig, err := readMkdocsConfig(rootDir)
 	if err != nil {
@@ -69,14 +67,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = generate(Example{Name: nameVar, Image: imageVar, TCVersion: mkdocsConfig.Extra.LatestVersion}, examplesDir, examplesDocsPath, githubWorkflowsPath)
+	err = generate(Example{Name: nameVar, Image: imageVar, TCVersion: mkdocsConfig.Extra.LatestVersion}, rootDir)
 	if err != nil {
 		fmt.Printf(">> error generating the example: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func generate(example Example, examplesDir string, docsDir string, githubWorkflowsDir string) error {
+func generate(example Example, rootDir string) error {
+	githubWorkflowsDir := filepath.Join(rootDir, ".github", "workflows")
+	examplesDir := filepath.Join(rootDir, "examples")
+	docsDir := filepath.Join(rootDir, "docs", "examples")
+
 	funcMap := template.FuncMap{
 		"ToLower":     strings.ToLower,
 		"Title":       cases.Title(language.Und, cases.NoLower).String,
@@ -127,8 +129,6 @@ func generate(example Example, examplesDir string, docsDir string, githubWorkflo
 			return err
 		}
 	}
-
-	rootDir := filepath.Dir(examplesDir)
 
 	// update examples in mkdocs
 	mkdocsConfig, err := readMkdocsConfig(rootDir)

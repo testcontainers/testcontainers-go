@@ -32,7 +32,7 @@ func TestGenerate(t *testing.T) {
 	}
 	exampleNameLower := example.Lower()
 
-	err = generate(example, examplesTmp, examplesDocTmp, githubWorkflowsTmp)
+	err = generate(example, rootTmp)
 	assert.Nil(t, err)
 
 	templatesDir, err := os.ReadDir(filepath.Join(".", "_template"))
