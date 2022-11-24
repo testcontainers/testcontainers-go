@@ -51,6 +51,7 @@ nav:
           - examples/index.md
           - examples/cockroachdb.md
           - examples/datastore.md
+          - examples/firestore.md
           - examples/nginx.md
           - examples/redis.md
           - examples/pulsar.md
