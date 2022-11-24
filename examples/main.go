@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -21,7 +22,7 @@ var templates = []string{
 }
 
 func init() {
-	flag.StringVar(&nameVar, "name", "", "Name of the example, use camel-case when needed")
+	flag.StringVar(&nameVar, "name", "", "Name of the example, use camel-case when needed. Only alphabetical characters are allowed.")
 	flag.StringVar(&imageVar, "image", "", "Fully-qualified name of the Docker image to be used by the example")
 }
 
@@ -75,6 +76,10 @@ func main() {
 }
 
 func generate(example Example, rootDir string) error {
+	if !regexp.MustCompile(`[aA-zZ]+`).MatchString(example.Name) {
+		return fmt.Errorf("invalid name: %s. Only alphabetical characters are allowed", example.Name)
+	}
+
 	githubWorkflowsDir := filepath.Join(rootDir, ".github", "workflows")
 	examplesDir := filepath.Join(rootDir, "examples")
 	docsDir := filepath.Join(rootDir, "docs", "examples")

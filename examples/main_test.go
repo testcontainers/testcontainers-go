@@ -9,6 +9,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGenerateWrongExampleName(t *testing.T) {
+	rootTmp := t.TempDir()
+	examplesTmp := filepath.Join(rootTmp, "examples")
+	examplesDocTmp := filepath.Join(rootTmp, "docs", "examples")
+	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
+
+	err := os.MkdirAll(examplesTmp, 0777)
+	assert.Nil(t, err)
+	err = os.MkdirAll(examplesDocTmp, 0777)
+	assert.Nil(t, err)
+	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	assert.Nil(t, err)
+
+	err = copyInitialConfig(t, rootTmp)
+	assert.Nil(t, err)
+
+	example := Example{
+		Name:      "foo-bar",
+		Image:     "docker.io/example/foo-bar:latest",
+		TCVersion: "v0.0.0-test",
+	}
+
+	err = generate(example, rootTmp)
+	assert.Error(t, err)
+}
+
 func TestGenerate(t *testing.T) {
 	rootTmp := t.TempDir()
 	examplesTmp := filepath.Join(rootTmp, "examples")
