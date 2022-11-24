@@ -3,9 +3,8 @@ package pubsub
 import (
 	"context"
 	"fmt"
-	"github.com/testcontainers/testcontainers-go/wait"
-
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // pubsubContainer represents the pubsub container type used in the module
