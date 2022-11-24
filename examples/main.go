@@ -26,8 +26,9 @@ func init() {
 }
 
 type Example struct {
-	Image string // fully qualified name of the Docker image
-	Name  string
+	Image     string // fully qualified name of the Docker image
+	Name      string
+	TCVersion string // Testcontainers for Go version
 }
 
 func (e *Example) Lower() string {
@@ -58,10 +59,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	githubWorkflowsPath := filepath.Join(filepath.Dir(examplesDir), ".github", "workflows")
-	examplesDocsPath := filepath.Join(filepath.Dir(examplesDir), "docs", "examples")
+	rootDir := filepath.Dir(examplesDir)
+	githubWorkflowsPath := filepath.Join(rootDir, ".github", "workflows")
+	examplesDocsPath := filepath.Join(rootDir, "docs", "examples")
 
-	err = generate(Example{Name: nameVar, Image: imageVar}, examplesDir, examplesDocsPath, githubWorkflowsPath)
+	mkdocsConfig, err := readMkdocsConfig(rootDir)
+	if err != nil {
+		fmt.Printf(">> could not read MkDocs config: %v\n", err)
+		os.Exit(1)
+	}
+
+	err = generate(Example{Name: nameVar, Image: imageVar, TCVersion: mkdocsConfig.Extra.LatestVersion}, examplesDir, examplesDocsPath, githubWorkflowsPath)
 	if err != nil {
 		fmt.Printf(">> error generating the example: %v\n", err)
 		os.Exit(1)

@@ -7,7 +7,7 @@ In this section you'll discover how to create code examples for _Testcontainers 
 We have provided a command line tool to generate the scaffolding for the code of the example you are interested in. This tool will generate:
 
 - a Go module for the example, including:
-    - go.mod and go.sum files
+    - go.mod and go.sum files, including the current version of _Testcontainer for Go_.
     - a Go package named after the example, in lowercase
     - a Go file for the creation of the container, using a dedicated struct in which the image flag is set as Docker image.
     - a Go test file for running a simple test for your container, consuming the above struct.

@@ -26,8 +26,9 @@ func TestGenerate(t *testing.T) {
 	assert.Nil(t, err)
 
 	example := Example{
-		Name:  "foo",
-		Image: "docker.io/example/foo:latest",
+		Name:      "foo",
+		Image:     "docker.io/example/foo:latest",
+		TCVersion: "v0.0.0-test",
 	}
 	exampleNameLower := example.Lower()
 
@@ -139,7 +140,8 @@ func assertGoModContent(t *testing.T, example Example, goModFile string) {
 	assert.Nil(t, err)
 
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[0], "module github.com/testcontainers/testcontainers-go/examples/"+example.Lower())
+	assert.Equal(t, "module github.com/testcontainers/testcontainers-go/examples/"+example.Lower(), data[0])
+	assert.Equal(t, "\tgithub.com/testcontainers/testcontainers-go v"+example.TCVersion, data[5])
 }
 
 // assert content Makefile
