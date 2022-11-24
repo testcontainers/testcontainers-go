@@ -143,7 +143,7 @@ func generate(example Example, rootDir string) error {
 
 	mkdocsExamplesNav := mkdocsConfig.Nav[3].Examples
 
-	// make sure the example is the first element in the list of examples in the nav
+	// make sure the index.md is the first element in the list of examples in the nav
 	examplesNav := make([]string, len(mkdocsExamplesNav)-1)
 
 	for _, exampleNav := range mkdocsExamplesNav {
