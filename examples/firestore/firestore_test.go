@@ -3,7 +3,6 @@ package firestore
 import (
 	"cloud.google.com/go/firestore"
 	"context"
-	"os"
 	"testing"
 )
 
