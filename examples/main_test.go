@@ -25,14 +25,31 @@ func TestGenerateWrongExampleName(t *testing.T) {
 	err = copyInitialConfig(t, rootTmp)
 	assert.Nil(t, err)
 
-	example := Example{
-		Name:      "foo-bar",
-		Image:     "docker.io/example/foo-bar:latest",
-		TCVersion: "v0.0.0-test",
+	tests := []struct {
+		name string
+	}{
+		{name: " foo"},
+		{name: "foo "},
+		{name: "foo bar"},
+		{name: "foo-bar"},
+		{name: "foo/bar"},
+		{name: "foo\\bar"},
+		{name: "1foo"},
+		{name: "foo1"},
+		{name: "-foo"},
+		{name: "foo-"},
 	}
 
-	err = generate(example, rootTmp)
-	assert.Error(t, err)
+	for _, test := range tests {
+		example := Example{
+			Name:      test.name,
+			Image:     "docker.io/example/" + test.name + ":latest",
+			TCVersion: "v0.0.0-test",
+		}
+
+		err = generate(example, rootTmp)
+		assert.Error(t, err)
+	}
 }
 
 func TestGenerate(t *testing.T) {

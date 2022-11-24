@@ -76,7 +76,7 @@ func main() {
 }
 
 func generate(example Example, rootDir string) error {
-	if !regexp.MustCompile(`[aA-zZ]+`).MatchString(example.Name) {
+	if !regexp.MustCompile(`^[A-Za-z]+$`).MatchString(example.Name) {
 		return fmt.Errorf("invalid name: %s. Only alphabetical characters are allowed", example.Name)
 	}
 
