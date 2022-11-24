@@ -27,7 +27,7 @@ func TestFirestore(t *testing.T) {
 		}
 	})
 
-	os.Setenv("FIRESTORE_EMULATOR_HOST", container.URI)
+	t.Setenv("FIRESTORE_EMULATOR_HOST", container.URI)
 	client, err := firestore.NewClient(ctx, "test-project")
 	if err != nil {
 		t.Fatal(err)
