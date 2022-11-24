@@ -158,6 +158,7 @@ func assertMkdocsExamplesNav(t *testing.T, example Example, rootDir string) {
 	config, err := readMkdocsConfig(rootDir)
 	assert.Nil(t, err)
 
+	// the example should be in the nav
 	examples := config.Nav[3].Examples
 	found := false
 	for _, ex := range examples {
@@ -168,6 +169,9 @@ func assertMkdocsExamplesNav(t *testing.T, example Example, rootDir string) {
 	}
 
 	assert.True(t, found)
+
+	// first item is the index
+	assert.Equal(t, "examples/index.md", examples[0], examples)
 }
 
 // assert content tools/tools.go

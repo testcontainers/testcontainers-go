@@ -138,9 +138,23 @@ func generate(example Example, rootDir string) error {
 
 	mkdocsExamplesNav := mkdocsConfig.Nav[3].Examples
 
-	mkdocsExamplesNav = append(mkdocsExamplesNav, "examples/"+exampleLower+".md")
-	sort.Strings(mkdocsExamplesNav)
-	mkdocsConfig.Nav[3].Examples = mkdocsExamplesNav
+	// make sure the example is the first element in the list of examples in the nav
+	examplesNav := make([]string, len(mkdocsExamplesNav)-1)
+
+	for _, exampleNav := range mkdocsExamplesNav {
+		// filter out the index.md file
+		if !strings.HasSuffix("index.md", exampleNav) {
+			examplesNav = append(examplesNav, exampleNav)
+		}
+	}
+
+	examplesNav = append(examplesNav, "examples/"+exampleLower+".md")
+	sort.Strings(examplesNav)
+
+	// prepend the index.md file
+	examplesNav = append([]string{"examples/index.md"}, examplesNav...)
+
+	mkdocsConfig.Nav[3].Examples = examplesNav
 
 	err = writeMkdocsConfig(rootDir, mkdocsConfig)
 	if err != nil {
