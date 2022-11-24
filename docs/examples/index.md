@@ -33,5 +33,5 @@ We have provided a command line tool to generate the scaffolding for the code of
 From the [`examples` directory]({{repo_url}}/tree/main/examples), please run:
 
 ```shell
-go run main.go --name ${NAME_OF_YOUR_EXAMPLE} --image "${REGISTRY}/${EXAMPLE}:${TAG}"
+go run . --name ${NAME_OF_YOUR_EXAMPLE} --image "${REGISTRY}/${EXAMPLE}:${TAG}"
 ```
