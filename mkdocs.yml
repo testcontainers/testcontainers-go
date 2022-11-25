@@ -56,6 +56,7 @@ nav:
           - examples/redis.md
           - examples/pubsub.md
           - examples/pulsar.md
+          - examples/spanner.md
     - System Requirements:
           - system_requirements/index.md
           - system_requirements/using_colima.md
