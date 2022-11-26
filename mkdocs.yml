@@ -57,6 +57,7 @@ nav:
           - examples/pubsub.md
           - examples/pulsar.md
           - examples/spanner.md
+          - examples/toxiproxy.md
     - System Requirements:
           - system_requirements/index.md
           - system_requirements/using_colima.md
