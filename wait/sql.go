@@ -17,9 +17,9 @@ const defaultForSqlQuery = "SELECT 1"
 // ForSQL constructs a new waitForSql strategy for the given driver
 func ForSQL(port nat.Port, driver string, url func(host string, port nat.Port) string) *waitForSql {
 	return &waitForSql{
-		Port:           port,
-		URL:            url,
-		Driver:         driver,
+		Port:   port,
+		URL:    url,
+		Driver: driver,
 		// Not using the default duration here because it is too low. It will never work
 		startupTimeout: 20 * time.Second,
 		PollInterval:   time.Second * 1,
@@ -98,7 +98,7 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 	}
 	defer db.Close()
 
- 	db.SetConnMaxLifetime(0)
+	db.SetConnMaxLifetime(0)
 	db.SetMaxIdleConns(3)
 	db.SetMaxOpenConns(3)
 
