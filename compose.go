@@ -1,18 +1,21 @@
 package testcontainers
 
 import (
-	"bytes"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
-	"os/exec"
+	"context"
+	"errors"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
 
-	"gopkg.in/yaml.v2"
+	"github.com/compose-spec/compose-go/types"
+	"github.com/docker/cli/cli/command"
+	"github.com/docker/cli/cli/flags"
+	"github.com/docker/compose/v2/pkg/api"
+	"github.com/docker/compose/v2/pkg/compose"
+	"github.com/google/uuid"
+
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -20,24 +23,120 @@ const (
 	envComposeFile = "COMPOSE_FILE"
 )
 
+var composeLogOnce sync.Once
+var ErrNoStackConfigured = errors.New("no stack files configured")
+
+type composeStackOptions struct {
+	Identifier string
+	Paths      []string
+}
+
+type ComposeStackOption interface {
+	applyToComposeStack(o *composeStackOptions)
+}
+
+type stackUpOptions struct {
+	// Services defines the services user interacts with
+	Services []string
+	// Remove legacy containers for services that are not defined in the project
+	RemoveOrphans bool
+	// Wait won't return until containers reached the running|healthy state
+	Wait bool
+	// Recreate define the strategy to apply on existing containers
+	Recreate string
+	// RecreateDependencies define the strategy to apply on dependencies services
+	RecreateDependencies string
+	// Project is the compose project used to define this app. Might be nil if user ran command just with project name
+	Project *types.Project
+}
+
+type StackUpOption interface {
+	applyToStackUp(o *stackUpOptions)
+}
+
+type stackDownOptions struct {
+	api.DownOptions
+}
+
+type StackDownOption interface {
+	applyToStackDown(do *stackDownOptions)
+}
+
+// ComposeStack defines operations that can be applied to a parsed compose stack
+type ComposeStack interface {
+	Up(ctx context.Context, opts ...StackUpOption) error
+	Down(ctx context.Context, opts ...StackDownOption) error
+	Services() []string
+	WaitForService(s string, strategy wait.Strategy) ComposeStack
+	WithEnv(m map[string]string) ComposeStack
+	WithOsEnv() ComposeStack
+	ServiceContainer(ctx context.Context, svcName string) (*DockerContainer, error)
+}
+
 // DockerCompose defines the contract for running Docker Compose
+// Deprecated: DockerCompose is the old shell escape based API
+// use ComposeStack instead
 type DockerCompose interface {
 	Down() ExecError
 	Invoke() ExecError
+	WaitForService(string, wait.Strategy) DockerCompose
 	WithCommand([]string) DockerCompose
 	WithEnv(map[string]string) DockerCompose
+	WithExposedService(string, int, wait.Strategy) DockerCompose
 }
 
-// LocalDockerCompose represents a Docker Compose execution using local binary
-// docker-compose or docker-compose.exe, depending on the underlying platform
-type LocalDockerCompose struct {
-	Executable          string
-	ComposeFilePaths    []string
-	absComposeFilePaths []string
-	Identifier          string
-	Cmd                 []string
-	Env                 map[string]string
-	Services            map[string]interface{}
+type waitService struct {
+	service       string
+	publishedPort int
+}
+
+func WithStackFiles(filePaths ...string) ComposeStackOption {
+	return ComposeStackFiles(filePaths)
+}
+
+func NewDockerCompose(filePaths ...string) (*dockerCompose, error) {
+	return NewDockerComposeWith(WithStackFiles(filePaths...))
+}
+
+func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
+	composeOptions := composeStackOptions{
+		Identifier: uuid.New().String(),
+	}
+
+	for i := range opts {
+		opts[i].applyToComposeStack(&composeOptions)
+	}
+
+	if len(composeOptions.Paths) < 1 {
+		return nil, ErrNoStackConfigured
+	}
+
+	dockerCli, err := command.NewDockerCli()
+	if err != nil {
+		return nil, err
+	}
+
+	if err = dockerCli.Initialize(&flags.ClientOptions{
+		Common: new(flags.CommonOptions),
+	}, command.WithInitializeClient(makeClient)); err != nil {
+		return nil, err
+	}
+
+	composeAPI := &dockerCompose{
+		name:           composeOptions.Identifier,
+		configs:        composeOptions.Paths,
+		composeService: compose.NewComposeService(dockerCli),
+		dockerClient:   dockerCli.Client(),
+		waitStrategies: make(map[string]wait.Strategy),
+		containers:     make(map[string]*DockerContainer),
+	}
+
+	// log docker server info only once
+	composeLogOnce.Do(func() {
+		logDockerServerInfo(context.Background(), dockerCli.Client(), Logger)
+	})
+
+	return composeAPI, nil
 }
 
 // NewLocalDockerCompose returns an instance of the local Docker Compose, using an
@@ -47,8 +146,19 @@ type LocalDockerCompose struct {
 // Docker Compose execution. The identifier represents the name of the execution,
 // which will define the name of the underlying Docker network and the name of the
 // running Compose services.
-func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCompose {
-	dc := &LocalDockerCompose{}
+//
+// Deprecated: NewLocalDockerCompose returns a DockerCompose compatible instance which is superseded
+// by ComposeStack use NewDockerCompose instead to get a ComposeStack compatible instance
+func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
+	dc := &LocalDockerCompose{
+		LocalDockerComposeOptions: &LocalDockerComposeOptions{
+			Logger: Logger,
+		},
+	}
+
+	for idx := range opts {
+		opts[idx].ApplyToLocalCompose(dc.LocalDockerComposeOptions)
+	}
 
 	dc.Executable = "docker-compose"
 	if runtime.GOOS == "windows" {
@@ -63,207 +173,12 @@ func NewLocalDockerCompose(filePaths []string, identifier string) *LocalDockerCo
 		dc.absComposeFilePaths[i] = abs
 	}
 
-	dc.validate()
+	_ = dc.determineVersion()
+	_ = dc.validate()
 
 	dc.Identifier = strings.ToLower(identifier)
+	dc.waitStrategySupplied = false
+	dc.WaitStrategyMap = make(map[waitService]wait.Strategy)
 
 	return dc
-}
-
-// Down executes docker-compose down
-func (dc *LocalDockerCompose) Down() ExecError {
-	return executeCompose(dc, []string{"down"})
-}
-
-func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
-	environment := map[string]string{}
-
-	composeFileEnvVariableValue := ""
-	for _, abs := range dc.absComposeFilePaths {
-		composeFileEnvVariableValue += abs + string(os.PathListSeparator)
-	}
-
-	environment[envProjectName] = dc.Identifier
-	environment[envComposeFile] = composeFileEnvVariableValue
-
-	return environment
-}
-
-// Invoke invokes the docker compose
-func (dc *LocalDockerCompose) Invoke() ExecError {
-	return executeCompose(dc, dc.Cmd)
-}
-
-// WithCommand assigns the command
-func (dc *LocalDockerCompose) WithCommand(cmd []string) DockerCompose {
-	dc.Cmd = cmd
-	return dc
-}
-
-// WithEnv assigns the environment
-func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
-	dc.Env = env
-	return dc
-}
-
-// validate checks if the files to be run in the compose are valid YAML files, setting up
-// references to all services in them
-func (dc *LocalDockerCompose) validate() error {
-	type compose struct {
-		Services map[string]interface{}
-	}
-
-	for _, abs := range dc.absComposeFilePaths {
-		c := compose{}
-
-		yamlFile, err := ioutil.ReadFile(abs)
-		if err != nil {
-			return err
-		}
-		err = yaml.Unmarshal(yamlFile, &c)
-		if err != nil {
-			return err
-		}
-
-		dc.Services = c.Services
-	}
-
-	return nil
-}
-
-// ExecError is super struct that holds any information about an execution error, so the client code
-// can handle the result
-type ExecError struct {
-	Command []string
-	Error   error
-	Stdout  error
-	Stderr  error
-}
-
-// execute executes a program with arguments and environment variables inside a specific directory
-func execute(
-	dirContext string, environment map[string]string, binary string, args []string) ExecError {
-
-	var errStdout, errStderr error
-
-	cmd := exec.Command(binary, args...)
-	cmd.Dir = dirContext
-	cmd.Env = os.Environ()
-
-	for key, value := range environment {
-		cmd.Env = append(cmd.Env, key+"="+value)
-	}
-
-	stdoutIn, _ := cmd.StdoutPipe()
-	stderrIn, _ := cmd.StderrPipe()
-
-	stdout := newCapturingPassThroughWriter(os.Stdout)
-	stderr := newCapturingPassThroughWriter(os.Stderr)
-
-	err := cmd.Start()
-	if err != nil {
-		execCmd := []string{"Starting command", dirContext, binary}
-		execCmd = append(execCmd, args...)
-
-		return ExecError{
-			// add information about the CMD and arguments used
-			Command: execCmd,
-			Error:   err,
-			Stderr:  errStderr,
-			Stdout:  errStdout,
-		}
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	go func() {
-		_, errStdout = io.Copy(stdout, stdoutIn)
-		wg.Done()
-	}()
-
-	_, errStderr = io.Copy(stderr, stderrIn)
-	wg.Wait()
-
-	err = cmd.Wait()
-
-	execCmd := []string{"Reading std", dirContext, binary}
-	execCmd = append(execCmd, args...)
-
-	return ExecError{
-		Command: execCmd,
-		Error:   err,
-		Stderr:  errStderr,
-		Stdout:  errStdout,
-	}
-}
-
-func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
-	if which(dc.Executable) != nil {
-		return ExecError{
-			Command: []string{dc.Executable},
-			Error:   fmt.Errorf("Local Docker Compose not found. Is %s on the PATH?", dc.Executable),
-		}
-	}
-
-	environment := dc.getDockerComposeEnvironment()
-	for k, v := range dc.Env {
-		environment[k] = v
-	}
-
-	cmds := []string{}
-	pwd := "."
-	if len(dc.absComposeFilePaths) > 0 {
-		pwd, _ = filepath.Split(dc.absComposeFilePaths[0])
-
-		for _, abs := range dc.absComposeFilePaths {
-			cmds = append(cmds, "-f", abs)
-		}
-	} else {
-		cmds = append(cmds, "-f", "docker-compose.yml")
-	}
-	cmds = append(cmds, args...)
-
-	execErr := execute(pwd, environment, dc.Executable, cmds)
-	err := execErr.Error
-	if err != nil {
-		args := strings.Join(dc.Cmd, " ")
-		return ExecError{
-			Command: []string{dc.Executable},
-			Error:   fmt.Errorf("Local Docker compose exited abnormally whilst running %s: [%v]. %s", dc.Executable, args, err.Error()),
-		}
-	}
-
-	return execErr
-}
-
-// capturingPassThroughWriter is a writer that remembers
-// data written to it and passes it to w
-type capturingPassThroughWriter struct {
-	buf bytes.Buffer
-	w   io.Writer
-}
-
-// newCapturingPassThroughWriter creates new capturingPassThroughWriter
-func newCapturingPassThroughWriter(w io.Writer) *capturingPassThroughWriter {
-	return &capturingPassThroughWriter{
-		w: w,
-	}
-}
-
-func (w *capturingPassThroughWriter) Write(d []byte) (int, error) {
-	w.buf.Write(d)
-	return w.w.Write(d)
-}
-
-// Bytes returns bytes written to the writer
-func (w *capturingPassThroughWriter) Bytes() []byte {
-	return w.buf.Bytes()
-}
-
-// Which checks if a binary is present in PATH
-func which(binary string) error {
-	_, err := exec.LookPath(binary)
-
-	return err
 }

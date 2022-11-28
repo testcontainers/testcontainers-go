@@ -1,6 +1,7 @@
 package wait
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -16,10 +17,11 @@ import (
 
 // Implement interface
 var _ Strategy = (*HTTPStrategy)(nil)
+var _ StrategyTimeout = (*HTTPStrategy)(nil)
 
 type HTTPStrategy struct {
 	// all Strategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
+	timeout *time.Duration
 
 	// additional properties
 	Port              nat.Port
@@ -37,7 +39,6 @@ type HTTPStrategy struct {
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
 func NewHTTPStrategy(path string) *HTTPStrategy {
 	return &HTTPStrategy{
-		startupTimeout:    defaultStartupTimeout(),
 		Port:              "80/tcp",
 		Path:              path,
 		StatusCodeMatcher: defaultStatusCodeMatcher,
@@ -58,8 +59,9 @@ func defaultStatusCodeMatcher(status int) bool {
 // since go has neither covariance nor generics, the return type must be the type of the concrete implementation
 // this is true for all properties, even the "shared" ones like startupTimeout
 
-func (ws *HTTPStrategy) WithStartupTimeout(startupTimeout time.Duration) *HTTPStrategy {
-	ws.startupTimeout = startupTimeout
+// WithStartupTimeout can be used to change the default startup timeout
+func (ws *HTTPStrategy) WithStartupTimeout(timeout time.Duration) *HTTPStrategy {
+	ws.timeout = &timeout
 	return ws
 }
 
@@ -113,20 +115,35 @@ func ForHTTP(path string) *HTTPStrategy {
 	return NewHTTPStrategy(path)
 }
 
+func (ws *HTTPStrategy) Timeout() *time.Duration {
+	return ws.timeout
+}
+
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	// limit context to startupTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
-	defer cancelContext()
+	timeout := defaultStartupTimeout()
+	if ws.timeout != nil {
+		timeout = *ws.timeout
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	ipAddress, err := target.Host(ctx)
 	if err != nil {
 		return
 	}
 
-	port, err := target.MappedPort(ctx, ws.Port)
-	if err != nil {
-		return
+	var port nat.Port
+	port, err = target.MappedPort(ctx, ws.Port)
+
+	for port == "" {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("%s:%w", ctx.Err(), err)
+		case <-time.After(ws.PollInterval):
+			port, err = target.MappedPort(ctx, ws.Port)
+		}
 	}
 
 	if port.Proto() != "tcp" {
@@ -177,12 +194,21 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	address := net.JoinHostPort(ipAddress, strconv.Itoa(port.Int()))
 	endpoint := fmt.Sprintf("%s://%s%s", proto, address, ws.Path)
 
+	// cache the body into a byte-slice so that it can be iterated over multiple times
+	var body []byte
+	if ws.Body != nil {
+		body, err = io.ReadAll(ws.Body)
+		if err != nil {
+			return
+		}
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(ws.PollInterval):
-			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint, ws.Body)
+			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint, bytes.NewReader(body))
 			if err != nil {
 				return err
 			}

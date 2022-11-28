@@ -2,18 +2,19 @@ package wait
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 )
 
 // Implement interface
 var _ Strategy = (*LogStrategy)(nil)
+var _ StrategyTimeout = (*LogStrategy)(nil)
 
 // LogStrategy will wait until a given log entry shows up in the docker logs
 type LogStrategy struct {
 	// all Strategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
+	timeout *time.Duration
 
 	// additional properties
 	Log          string
@@ -24,12 +25,10 @@ type LogStrategy struct {
 // NewLogStrategy constructs with polling interval of 100 milliseconds and startup timeout of 60 seconds by default
 func NewLogStrategy(log string) *LogStrategy {
 	return &LogStrategy{
-		startupTimeout: defaultStartupTimeout(),
-		Log:            log,
-		Occurrence:     1,
-		PollInterval:   defaultPollInterval(),
+		Log:          log,
+		Occurrence:   1,
+		PollInterval: defaultPollInterval(),
 	}
-
 }
 
 // fluent builders for each property
@@ -37,8 +36,8 @@ func NewLogStrategy(log string) *LogStrategy {
 // this is true for all properties, even the "shared" ones like startupTimeout
 
 // WithStartupTimeout can be used to change the default startup timeout
-func (ws *LogStrategy) WithStartupTimeout(startupTimeout time.Duration) *LogStrategy {
-	ws.startupTimeout = startupTimeout
+func (ws *LogStrategy) WithStartupTimeout(timeout time.Duration) *LogStrategy {
+	ws.timeout = &timeout
 	return ws
 }
 
@@ -60,19 +59,27 @@ func (ws *LogStrategy) WithOccurrence(o int) *LogStrategy {
 // ForLog is the default construction for the fluid interface.
 //
 // For Example:
-// wait.
-//     ForLog("some text").
-//     WithPollInterval(1 * time.Second)
+//
+//	wait.
+//		ForLog("some text").
+//		WithPollInterval(1 * time.Second)
 func ForLog(log string) *LogStrategy {
 	return NewLogStrategy(log)
 }
 
+func (ws *LogStrategy) Timeout() *time.Duration {
+	return ws.timeout
+}
+
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	// limit context to startupTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
-	defer cancelContext()
-	currentOccurence := 0
+	timeout := defaultStartupTimeout()
+	if ws.timeout != nil {
+		timeout = *ws.timeout
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 LOOP:
 	for {
@@ -81,18 +88,20 @@ LOOP:
 			return ctx.Err()
 		default:
 			reader, err := target.Logs(ctx)
-
 			if err != nil {
 				time.Sleep(ws.PollInterval)
 				continue
 			}
-			b, err := ioutil.ReadAll(reader)
+
+			b, err := io.ReadAll(reader)
+			if err != nil {
+				time.Sleep(ws.PollInterval)
+				continue
+			}
+
 			logs := string(b)
-			if strings.Contains(logs, ws.Log) {
-				currentOccurence++
-				if ws.Occurrence == 0 || currentOccurence >= ws.Occurrence-1 {
-					break LOOP
-				}
+			if strings.Count(logs, ws.Log) >= ws.Occurrence {
+				break LOOP
 			} else {
 				time.Sleep(ws.PollInterval)
 				continue

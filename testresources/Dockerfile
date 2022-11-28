@@ -1,1 +1,1 @@
-FROM redis:5.0-alpine
+FROM docker.io/redis:5.0-alpine
