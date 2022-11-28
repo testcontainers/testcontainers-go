@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -54,8 +55,9 @@ type Container interface {
 	State(context.Context) (*types.ContainerState, error)        // returns container's running state
 	Networks(context.Context) ([]string, error)                  // get container networks
 	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
-	Exec(ctx context.Context, cmd []string) (int, io.Reader, error)
-	ContainerIP(context.Context) (string, error) // get container ip
+	Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error)
+	ContainerIP(context.Context) (string, error)    // get container ip
+	ContainerIPs(context.Context) ([]string, error) // get all container IPs
 	CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error
 	CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
@@ -64,21 +66,23 @@ type Container interface {
 
 // ImageBuildInfo defines what is needed to build an image
 type ImageBuildInfo interface {
-	GetContext() (io.Reader, error)   // the path to the build context
-	GetDockerfile() string            // the relative path to the Dockerfile, including the fileitself
-	ShouldPrintBuildLog() bool        // allow build log to be printed to stdout
-	ShouldBuildImage() bool           // return true if the image needs to be built
-	GetBuildArgs() map[string]*string // return the environment args used to build the from Dockerfile
+	GetContext() (io.Reader, error)              // the path to the build context
+	GetDockerfile() string                       // the relative path to the Dockerfile, including the fileitself
+	ShouldPrintBuildLog() bool                   // allow build log to be printed to stdout
+	ShouldBuildImage() bool                      // return true if the image needs to be built
+	GetBuildArgs() map[string]*string            // return the environment args used to build the from Dockerfile
+	GetAuthConfigs() map[string]types.AuthConfig // return the auth configs to be able to pull from an authenticated docker registry
 }
 
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
 // rather than using a pre-built one
 type FromDockerfile struct {
-	Context        string             // the path to the context of of the docker build
-	ContextArchive io.Reader          // the tar archive file to send to docker that contains the build context
-	Dockerfile     string             // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
-	BuildArgs      map[string]*string // enable user to pass build args to docker daemon
-	PrintBuildLog  bool               // enable user to print build log
+	Context        string                      // the path to the context of of the docker build
+	ContextArchive io.Reader                   // the tar archive file to send to docker that contains the build context
+	Dockerfile     string                      // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
+	BuildArgs      map[string]*string          // enable user to pass build args to docker daemon
+	PrintBuildLog  bool                        // enable user to print build log
+	AuthConfigs    map[string]types.AuthConfig // enable auth configs to be able to pull from an authenticated docker registry
 }
 
 type ContainerFile struct {
@@ -116,7 +120,9 @@ type ContainerRequest struct {
 	AlwaysPullImage bool            // Always pull image
 	ImagePlatform   string          // ImagePlatform describes the platform which the image runs on.
 	Binds           []string
-	ShmSize         int64 // Amount of memory shared with the host (in bytes)
+	ShmSize         int64    // Amount of memory shared with the host (in bytes)
+	CapAdd          []string // Add Linux capabilities
+	CapDrop         []string // Drop Linux capabilities
 }
 
 type (
@@ -225,6 +231,11 @@ func (c *ContainerRequest) GetDockerfile() string {
 	}
 
 	return f
+}
+
+// GetAuthConfigs returns the auth configs to be able to pull from an authenticated docker registry
+func (c *ContainerRequest) GetAuthConfigs() map[string]types.AuthConfig {
+	return c.FromDockerfile.AuthConfigs
 }
 
 func (c *ContainerRequest) ShouldBuildImage() bool {

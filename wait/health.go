@@ -7,11 +7,12 @@ import (
 
 // Implement interface
 var _ Strategy = (*HealthStrategy)(nil)
+var _ StrategyTimeout = (*HealthStrategy)(nil)
 
 // HealthStrategy will wait until the container becomes healthy
 type HealthStrategy struct {
 	// all Strategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
+	timeout *time.Duration
 
 	// additional properties
 	PollInterval time.Duration
@@ -20,8 +21,7 @@ type HealthStrategy struct {
 // NewHealthStrategy constructs with polling interval of 100 milliseconds and startup timeout of 60 seconds by default
 func NewHealthStrategy() *HealthStrategy {
 	return &HealthStrategy{
-		startupTimeout: defaultStartupTimeout(),
-		PollInterval:   defaultPollInterval(),
+		PollInterval: defaultPollInterval(),
 	}
 
 }
@@ -32,7 +32,7 @@ func NewHealthStrategy() *HealthStrategy {
 
 // WithStartupTimeout can be used to change the default startup timeout
 func (ws *HealthStrategy) WithStartupTimeout(startupTimeout time.Duration) *HealthStrategy {
-	ws.startupTimeout = startupTimeout
+	ws.timeout = &startupTimeout
 	return ws
 }
 
@@ -45,18 +45,27 @@ func (ws *HealthStrategy) WithPollInterval(pollInterval time.Duration) *HealthSt
 // ForHealthCheck is the default construction for the fluid interface.
 //
 // For Example:
-// wait.
-//     ForHealthCheck().
-//     WithPollInterval(1 * time.Second)
+//
+//	wait.
+//		ForHealthCheck().
+//		WithPollInterval(1 * time.Second)
 func ForHealthCheck() *HealthStrategy {
 	return NewHealthStrategy()
 }
 
+func (ws *HealthStrategy) Timeout() *time.Duration {
+	return ws.timeout
+}
+
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (ws *HealthStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	// limit context to exitTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
-	defer cancelContext()
+	timeout := defaultStartupTimeout()
+	if ws.timeout != nil {
+		timeout = *ws.timeout
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	for {
 		select {

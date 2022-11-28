@@ -1,10 +1,20 @@
-# Testcontainers-go
+# Testcontainers
 
-![Testcontainers logo](./logo.png)
+<img src="logo.png" alt="Testcontainers logo" width="1024" height="512"/>
 
-## About
+<p align="center"><strong>Not using Go? Here are other supported languages!</strong></p>
+<div class="card-grid">
+    <a href="https://testcontainers.org" class="card-grid-item"><img src="language-logos/java.svg"/>Java</a>
+    <a class="card-grid-item"><img src="language-logos/go.svg"/>Go</a>
+    <a href="https://dotnet.testcontainers.org/" class="card-grid-item"><img src="language-logos/dotnet.svg"/>.NET</a>
+    <a href="https://testcontainers-python.readthedocs.io/en/latest/" class="card-grid-item"><img src="language-logos/python.svg"/>Python</a>
+    <a href="https://github.com/testcontainers/testcontainers-node" class="card-grid-item"><img src="language-logos/nodejs.svg"/>Node.js</a></a>
+    <a href="https://docs.rs/testcontainers/latest/testcontainers/" class="card-grid-item"><img src="language-logos/rust.svg"/>Rust</a>
+</div>
 
-Testcontainers-go is a Go package that makes it simple to create and clean up container-based dependencies for
+## About Testcontainers for Go
+
+_Testcontainers for Go_ is a Go package that makes it simple to create and clean up container-based dependencies for
 automated integration/smoke tests. The clean, easy-to-use API enables developers to programmatically define containers
 that should be run as part of a test and clean up those resources when the test is done.
 

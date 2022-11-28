@@ -49,7 +49,7 @@ req := testcontainers.ContainerRequest{
     WaitingFor: wait.NewHTTPStrategy("/ping").
         WithStartupTimeout(time.Second * 10).WithPort("80/tcp").
         WithResponseMatcher(func(body io.Reader) bool {
-            data, _ := ioutil.ReadAll(body)
+            data, _ := io.ReadAll(body)
             return bytes.Equal(data, []byte("pong"))
         }).
         WithStatusCodeMatcher(func(status int) bool {

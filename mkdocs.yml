@@ -1,4 +1,4 @@
-site_name: Testcontainers-Go
+site_name: Testcontainers for Go
 plugins:
     - search
     - codeinclude
@@ -30,13 +30,13 @@ nav:
           - quickstart/gotest.md
     - Features:
           - features/creating_container.md
+          - features/networking.md
           - features/garbage_collector.md
           - features/build_from_dockerfile.md
           - features/docker_compose.md
           - features/follow_logs.md
           - features/override_container_command.md
           - features/copy_file.md
-          - features/using_podman.md
           - Wait Strategies:
             - Introduction: features/wait/introduction.md
             - Exec: features/wait/exec.md
@@ -48,12 +48,24 @@ nav:
             - Multi: features/wait/multi.md
             - SQL: features/wait/sql.md
     - Examples:
+          - examples/index.md
           - examples/cockroachdb.md
+          - examples/datastore.md
+          - examples/firestore.md
           - examples/nginx.md
           - examples/redis.md
+          - examples/pubsub.md
+          - examples/pulsar.md
+          - examples/spanner.md
+          - examples/toxiproxy.md
+    - System Requirements:
+          - system_requirements/index.md
+          - system_requirements/using_colima.md
+          - system_requirements/using_podman.md
     - Contributing:
           - contributing.md
           - contributing_docs.md
     - Getting help: getting_help.md
+edit_uri: edit/main/docs/
 extra:
-    latest_version: 0.14.0
+    latest_version: 0.16.0
