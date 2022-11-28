@@ -12,6 +12,7 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -62,7 +63,7 @@ func (st mockExecTarget) Logs(_ context.Context) (io.ReadCloser, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (st mockExecTarget) Exec(ctx context.Context, _ []string) (int, io.Reader, error) {
+func (st mockExecTarget) Exec(ctx context.Context, _ []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
 	time.Sleep(st.waitDuration)
 
 	if err := ctx.Err(); err != nil {

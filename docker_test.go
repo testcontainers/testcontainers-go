@@ -460,6 +460,64 @@ func TestContainerTerminationResetsState(t *testing.T) {
 	}
 }
 
+func TestContainerStateAfterTermination(t *testing.T) {
+	createContainerFn := func(ctx context.Context) (Container, error) {
+		return GenericContainer(ctx, GenericContainerRequest{
+			ProviderType: providerType,
+			ContainerRequest: ContainerRequest{
+				Image: nginxAlpineImage,
+				ExposedPorts: []string{
+					nginxDefaultPort,
+				},
+			},
+			Started: true,
+		})
+	}
+
+	t.Run("Nil State after termination", func(t *testing.T) {
+		ctx := context.Background()
+		nginx, err := createContainerFn(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// terminate the container before the raw state is set
+		err = nginx.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		state, err := nginx.State(ctx)
+		assert.Error(t, err, "expected error from container inspect.")
+
+		assert.Nil(t, state, "expected nil container inspect.")
+	})
+
+	t.Run("Non-nil State after termination if raw as already set", func(t *testing.T) {
+		ctx := context.Background()
+		nginx, err := createContainerFn(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		state, err := nginx.State(ctx)
+		assert.NoError(t, err, "unexpected error from container inspect before container termination.")
+
+		assert.NotNil(t, state, "unexpected nil container inspect before container termination.")
+
+		// terminate the container before the raw state is set
+		err = nginx.Terminate(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		state, err = nginx.State(ctx)
+		assert.Error(t, err, "expected error from container inspect after container termination.")
+
+		assert.NotNil(t, state, "unexpected nil container inspect after container termination.")
+	})
+}
+
 func TestContainerStopWithReaper(t *testing.T) {
 	ctx := context.Background()
 
