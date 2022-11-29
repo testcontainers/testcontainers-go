@@ -121,7 +121,7 @@ type ContainerRequest struct {
 	AlwaysPullImage   bool                                                              // Always pull image
 	ImagePlatform     string                                                            // ImagePlatform describes the platform which the image runs on.
 	Binds             []string                                                          // Deprecated: Use PreCreateModifier instead
-	ShmSize           int64                                                             // Deprecated: Use PreCreateModifier instead. Amount of memory shared with the host (in bytes)
+	ShmSize           int64                                                             // Amount of memory shared with the host (in bytes)
 	CapAdd            []string                                                          // Deprecated: Use PreCreateModifier instead. Add Linux capabilities
 	CapDrop           []string                                                          // Deprecated: Use PreCreateModifier instead. Drop Linux capabilities
 	PreCreateModifier func(*container.HostConfig, map[string]*network.EndpointSettings) // Modifier for the host config and network settings before container creation
