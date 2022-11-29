@@ -102,13 +102,13 @@ type ContainerRequest struct {
 	Cmd               []string
 	Labels            map[string]string
 	Mounts            ContainerMounts
-	Tmpfs             map[string]string // Use PreCreateModifier instead
+	Tmpfs             map[string]string
 	RegistryCred      string
 	WaitingFor        wait.Strategy
 	Name              string // for specifying container name
 	Hostname          string
 	ExtraHosts        []string                                                          // Deprecated: Use PreCreateModifier instead
-	Privileged        bool                                                              // Use PreCreateModifier instead. For starting privileged container
+	Privileged        bool                                                              // For starting privileged container
 	Networks          []string                                                          // for specifying network names
 	NetworkAliases    map[string][]string                                               // for specifying network aliases
 	NetworkMode       container.NetworkMode                                             // Deprecated: Use PreCreateModifier instead
