@@ -24,7 +24,7 @@ jobs:
         run: go mod verify
 
       - name: modTidy
-        run: go mod tidy
+        run: make tools-tidy
 
       - name: ensure compilation
         env:
@@ -42,6 +42,10 @@ jobs:
       - name: modTidy e2e tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make -C e2e tools-tidy
+
+      - name: Run example generator tests
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: make -C examples test-unit
 
       - name: Run e2e tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}

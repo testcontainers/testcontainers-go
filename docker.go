@@ -355,7 +355,10 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
 	inspect, err := c.inspectRawContainer(ctx)
 	if err != nil {
-		return c.raw.State, err
+		if c.raw != nil {
+			return c.raw.State, err
+		}
+		return nil, err
 	}
 	return inspect.State, nil
 }
