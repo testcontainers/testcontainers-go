@@ -17,7 +17,7 @@ require (
 	github.com/magiconair/properties v1.8.6
 	github.com/moby/term v0.0.0-20220808134915-39b0c02b01ae
 	github.com/opencontainers/image-spec v1.0.3-0.20220303224323-02efb9a75ee1
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	golang.org/x/sync v0.1.0
 	golang.org/x/sys v0.1.0
 	golang.org/x/text v0.3.7
