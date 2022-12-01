@@ -39,8 +39,23 @@ type ReaperProvider interface {
 	Config() TestContainersConfig
 }
 
+// ReaperOptions functional options for the reaper
+type reaperOptions struct {
+	RegistryCredentials string
+}
+
+// functional option for setting the reaper image
+type ReaperOption func(*reaperOptions)
+
+// WithRegistryCredentials sets the reaper registry credentials
+func WithRegistryCredentials(registryCredentials string) ReaperOption {
+	return func(o *reaperOptions) {
+		o.RegistryCredentials = registryCredentials
+	}
+}
+
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
-func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
+func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string, opts ...ReaperOption) (*Reaper, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	// If reaper already exists re-use it
@@ -58,6 +73,12 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 
 	listeningPort := nat.Port("8080/tcp")
 
+	reaperOpts := reaperOptions{}
+
+	for _, opt := range opts {
+		opt(&reaperOpts)
+	}
+
 	req := ContainerRequest{
 		Image:        reaperImage(reaperImageName),
 		ExposedPorts: []string{string(listeningPort)},
@@ -65,10 +86,11 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		Labels: map[string]string{
 			TestcontainerLabelIsReaper: "true",
 		},
-		SkipReaper: true,
-		Mounts:     Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
-		AutoRemove: true,
-		WaitingFor: wait.ForListeningPort(listeningPort),
+		SkipReaper:   true,
+		RegistryCred: reaperOpts.RegistryCredentials,
+		Mounts:       Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
+		AutoRemove:   true,
+		WaitingFor:   wait.ForListeningPort(listeningPort),
 	}
 
 	// include reaper-specific labels to the reaper container
@@ -100,9 +122,10 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 
 // Reaper is used to start a sidecar container that cleans up resources
 type Reaper struct {
-	Provider  ReaperProvider
-	SessionID string
-	Endpoint  string
+	Provider            ReaperProvider
+	SessionID           string
+	Endpoint            string
+	registryCredentials string
 }
 
 // Connect runs a goroutine which can be terminated by sending true into the returned channel

@@ -55,10 +55,11 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 func Test_NewReaper(t *testing.T) {
 
 	type cases struct {
-		name   string
-		req    ContainerRequest
-		config TestContainersConfig
-		ctx    context.Context
+		name          string
+		req           ContainerRequest
+		config        TestContainersConfig
+		ctx           context.Context
+		reaperOptions []ReaperOption
 	}
 
 	tests := []cases{
@@ -86,6 +87,15 @@ func Test_NewReaper(t *testing.T) {
 			config: TestContainersConfig{},
 			ctx:    context.WithValue(context.TODO(), dockerHostContextKey, "unix:///value/in/context.sock"),
 		},
+		{
+			name: "with registry credentials",
+			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
+				req.RegistryCred = "registry-cred"
+				return req
+			}),
+			config:        TestContainersConfig{},
+			reaperOptions: []ReaperOption{WithRegistryCredentials("registry-cred")},
+		},
 	}
 
 	for _, test := range tests {
@@ -100,7 +110,7 @@ func Test_NewReaper(t *testing.T) {
 				test.ctx = context.TODO()
 			}
 
-			_, err := NewReaper(test.ctx, "sessionId", provider, "reaperImage")
+			_, err := NewReaper(test.ctx, "sessionId", provider, "reaperImage", test.reaperOptions...)
 			// we should have errored out see mockReaperProvider.RunContainer
 			assert.EqualError(t, err, "expected")
 
