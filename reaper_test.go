@@ -157,3 +157,28 @@ func Test_ExtractDockerHost(t *testing.T) {
 		assert.Equal(t, "/this/is/a/sample.sock", host)
 	})
 }
+
+func Test_ReaperForNetwork(t *testing.T) {
+	ctx := context.Background()
+
+	networkName := "test-network-with-custom-reaper"
+
+	req := GenericNetworkRequest{
+		NetworkRequest: NetworkRequest{
+			Name:           networkName,
+			CheckDuplicate: true,
+			ReaperOptions: []ReaperOption{
+				WithRegistryCredentials("credentials"),
+			},
+		},
+	}
+
+	provider := &mockReaperProvider{
+		config: TestContainersConfig{},
+	}
+
+	_, err := NewReaper(ctx, "sessionId", provider, "reaperImage", req.ReaperOptions...)
+	assert.EqualError(t, err, "expected")
+
+	assert.Equal(t, "credentials", provider.req.RegistryCred)
+}
