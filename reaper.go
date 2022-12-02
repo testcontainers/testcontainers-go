@@ -41,11 +41,19 @@ type ReaperProvider interface {
 
 // ReaperOptions functional options for the reaper
 type reaperOptions struct {
+	ImageName           string
 	RegistryCredentials string
 }
 
 // functional option for setting the reaper image
 type ReaperOption func(*reaperOptions)
+
+// WithImageName sets the reaper image name
+func WithImageName(imageName string) ReaperOption {
+	return func(o *reaperOptions) {
+		o.ImageName = imageName
+	}
+}
 
 // WithRegistryCredentials sets the reaper registry credentials
 func WithRegistryCredentials(registryCredentials string) ReaperOption {
@@ -55,7 +63,7 @@ func WithRegistryCredentials(registryCredentials string) ReaperOption {
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
-func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string, opts ...ReaperOption) (*Reaper, error) {
+func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ReaperOption) (*Reaper, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	// If reaper already exists re-use it
@@ -80,18 +88,22 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 	}
 
 	req := ContainerRequest{
-		Image:        reaperImage(reaperImageName),
+		Image:        reaperImage(reaperOpts.ImageName),
 		ExposedPorts: []string{string(listeningPort)},
 		NetworkMode:  Bridge,
 		Labels: map[string]string{
 			TestcontainerLabelIsReaper: "true",
 		},
-		SkipReaper:   true,
-		RegistryCred: reaperOpts.RegistryCredentials,
-		Mounts:       Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
-		AutoRemove:   true,
-		WaitingFor:   wait.ForListeningPort(listeningPort),
+		SkipReaper:    true,
+		RegistryCred:  reaperOpts.RegistryCredentials,
+		Mounts:        Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
+		AutoRemove:    true,
+		WaitingFor:    wait.ForListeningPort(listeningPort),
+		ReaperOptions: opts,
 	}
+
+	// keep backwards compatibility
+	req.ReaperImage = req.Image
 
 	// include reaper-specific labels to the reaper container
 	for k, v := range reaper.Labels() {

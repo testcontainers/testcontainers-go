@@ -41,6 +41,6 @@ type NetworkRequest struct {
 	IPAM           *network.IPAM
 
 	SkipReaper    bool           // indicates whether we skip setting up a reaper for this
-	ReaperImage   string         // alternative reaper registry
+	ReaperImage   string         // Deprecated: use WithImageName ReaperOption instead. Alternative reaper registry
 	ReaperOptions []ReaperOption // Reaper options to use for this network
 }

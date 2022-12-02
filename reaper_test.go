@@ -33,6 +33,7 @@ func (m *mockReaperProvider) Config() TestContainersConfig {
 func createContainerRequest(customize func(ContainerRequest) ContainerRequest) ContainerRequest {
 	req := ContainerRequest{
 		Image:        "reaperImage",
+		ReaperImage:  "reaperImage",
 		ExposedPorts: []string{"8080/tcp"},
 		Labels: map[string]string{
 			TestcontainerLabel:          "true",
@@ -44,6 +45,9 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		AutoRemove:  true,
 		WaitingFor:  wait.ForListeningPort(nat.Port("8080/tcp")),
 		NetworkMode: "bridge",
+		ReaperOptions: []ReaperOption{
+			WithImageName("reaperImage"),
+		},
 	}
 	if customize == nil {
 		return req
@@ -53,13 +57,13 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 }
 
 func Test_NewReaper(t *testing.T) {
+	defer func() { reaper = nil }()
 
 	type cases struct {
-		name          string
-		req           ContainerRequest
-		config        TestContainersConfig
-		ctx           context.Context
-		reaperOptions []ReaperOption
+		name   string
+		req    ContainerRequest
+		config TestContainersConfig
+		ctx    context.Context
 	}
 
 	tests := []cases{
@@ -90,11 +94,12 @@ func Test_NewReaper(t *testing.T) {
 		{
 			name: "with registry credentials",
 			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
-				req.RegistryCred = "registry-cred"
+				creds := "registry-creds"
+				req.RegistryCred = creds
+				req.ReaperOptions = append(req.ReaperOptions, WithRegistryCredentials(creds))
 				return req
 			}),
-			config:        TestContainersConfig{},
-			reaperOptions: []ReaperOption{WithRegistryCredentials("registry-cred")},
+			config: TestContainersConfig{},
 		},
 	}
 
@@ -110,7 +115,7 @@ func Test_NewReaper(t *testing.T) {
 				test.ctx = context.TODO()
 			}
 
-			_, err := NewReaper(test.ctx, "sessionId", provider, "reaperImage", test.reaperOptions...)
+			_, err := NewReaper(test.ctx, "sessionId", provider, test.req.ReaperOptions...)
 			// we should have errored out see mockReaperProvider.RunContainer
 			assert.EqualError(t, err, "expected")
 
@@ -120,6 +125,8 @@ func Test_NewReaper(t *testing.T) {
 }
 
 func Test_ExtractDockerHost(t *testing.T) {
+	defer func() { reaper = nil }()
+
 	t.Run("Docker Host as environment variable", func(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
 		host := extractDockerHost(context.Background())
@@ -159,6 +166,8 @@ func Test_ExtractDockerHost(t *testing.T) {
 }
 
 func Test_ReaperForNetwork(t *testing.T) {
+	defer func() { reaper = nil }()
+
 	ctx := context.Background()
 
 	networkName := "test-network-with-custom-reaper"
@@ -169,6 +178,7 @@ func Test_ReaperForNetwork(t *testing.T) {
 			CheckDuplicate: true,
 			ReaperOptions: []ReaperOption{
 				WithRegistryCredentials("credentials"),
+				WithImageName("reaperImage"),
 			},
 		},
 	}
@@ -177,8 +187,10 @@ func Test_ReaperForNetwork(t *testing.T) {
 		config: TestContainersConfig{},
 	}
 
-	_, err := NewReaper(ctx, "sessionId", provider, "reaperImage", req.ReaperOptions...)
+	_, err := NewReaper(ctx, "sessionId", provider, req.ReaperOptions...)
 	assert.EqualError(t, err, "expected")
 
 	assert.Equal(t, "credentials", provider.req.RegistryCred)
+	assert.Equal(t, "reaperImage", provider.req.Image)
+	assert.Equal(t, "reaperImage", provider.req.ReaperImage)
 }
