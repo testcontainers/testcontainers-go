@@ -134,10 +134,9 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 
 // Reaper is used to start a sidecar container that cleans up resources
 type Reaper struct {
-	Provider            ReaperProvider
-	SessionID           string
-	Endpoint            string
-	registryCredentials string
+	Provider  ReaperProvider
+	SessionID string
+	Endpoint  string
 }
 
 // Connect runs a goroutine which can be terminated by sending true into the returned channel
