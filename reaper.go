@@ -63,7 +63,13 @@ func WithRegistryCredentials(registryCredentials string) ReaperOption {
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
-func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ReaperOption) (*Reaper, error) {
+// Deprecated: it's not possible to create a reaper anymore.
+func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
+	return newReaper(ctx, sessionID, provider, WithImageName(reaperImageName))
+}
+
+// newReaper creates a Reaper with a sessionID to identify containers and a provider to use
+func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ReaperOption) (*Reaper, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	// If reaper already exists re-use it

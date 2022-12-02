@@ -115,7 +115,7 @@ func Test_NewReaper(t *testing.T) {
 				test.ctx = context.TODO()
 			}
 
-			_, err := NewReaper(test.ctx, "sessionId", provider, test.req.ReaperOptions...)
+			_, err := newReaper(test.ctx, "sessionId", provider, test.req.ReaperOptions...)
 			// we should have errored out see mockReaperProvider.RunContainer
 			assert.EqualError(t, err, "expected")
 
@@ -187,7 +187,7 @@ func Test_ReaperForNetwork(t *testing.T) {
 		config: TestContainersConfig{},
 	}
 
-	_, err := NewReaper(ctx, "sessionId", provider, req.ReaperOptions...)
+	_, err := newReaper(ctx, "sessionId", provider, req.ReaperOptions...)
 	assert.EqualError(t, err, "expected")
 
 	assert.Equal(t, "credentials", provider.req.RegistryCred)
