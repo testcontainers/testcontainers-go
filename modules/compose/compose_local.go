@@ -1,4 +1,4 @@
-package testcontainers
+package compose
 
 import (
 	"bytes"
@@ -17,6 +17,7 @@ import (
 	"github.com/docker/docker/client"
 	"gopkg.in/yaml.v3"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -62,7 +63,7 @@ type LocalDockerCompose struct {
 type (
 	// LocalDockerComposeOptions defines options applicable to LocalDockerCompose
 	LocalDockerComposeOptions struct {
-		Logger Logging
+		Logger testcontainers.Logging
 	}
 
 	// LocalDockerComposeOption defines a common interface to modify LocalDockerComposeOptions
@@ -74,6 +75,23 @@ type (
 	// LocalDockerComposeOptionsFunc is a shorthand to implement the LocalDockerComposeOption interface
 	LocalDockerComposeOptionsFunc func(opts *LocalDockerComposeOptions)
 )
+
+type ComposeLoggerOption struct {
+	logger testcontainers.Logging
+}
+
+// WithLogger is a generic option that implements LocalDockerComposeOption
+// It replaces the global Logging implementation with a user defined one e.g. to aggregate logs from testcontainers
+// with the logs of specific test case
+func WithLogger(logger testcontainers.Logging) ComposeLoggerOption {
+	return ComposeLoggerOption{
+		logger: logger,
+	}
+}
+
+func (o ComposeLoggerOption) ApplyToLocalCompose(opts *LocalDockerComposeOptions) {
+	opts.Logger = o.logger
+}
 
 func (f LocalDockerComposeOptionsFunc) ApplyToLocalCompose(opts *LocalDockerComposeOptions) {
 	f(opts)
@@ -133,11 +151,14 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 		}
 		container := containers[0]
 		strategy := dc.WaitStrategyMap[k]
-		dockerProvider, err := NewDockerProvider(WithLogger(dc.Logger))
+		dockerProvider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(dc.Logger))
 		if err != nil {
 			return fmt.Errorf("unable to create new Docker Provider: %w", err)
 		}
-		dockercontainer := &DockerContainer{ID: container.ID, WaitingFor: strategy, provider: dockerProvider, logger: dc.Logger}
+		dockercontainer := &testcontainers.DockerContainer{ID: container.ID, WaitingFor: strategy}
+		dockercontainer.SetLogger(dc.Logger)
+		dockercontainer.SetProvider(dockerProvider)
+
 		err = strategy.WaitUntilReady(context.Background(), dockercontainer)
 		if err != nil {
 			return fmt.Errorf("Unable to apply wait strategy %v to service %s due to %w", strategy, k.service, err)

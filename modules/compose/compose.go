@@ -1,4 +1,4 @@
-package testcontainers
+package compose
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	"github.com/docker/compose/v2/pkg/compose"
 	"github.com/google/uuid"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -70,7 +71,7 @@ type ComposeStack interface {
 	WaitForService(s string, strategy wait.Strategy) ComposeStack
 	WithEnv(m map[string]string) ComposeStack
 	WithOsEnv() ComposeStack
-	ServiceContainer(ctx context.Context, svcName string) (*DockerContainer, error)
+	ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error)
 }
 
 // DockerCompose defines the contract for running Docker Compose
@@ -128,12 +129,12 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		composeService: compose.NewComposeService(dockerCli),
 		dockerClient:   dockerCli.Client(),
 		waitStrategies: make(map[string]wait.Strategy),
-		containers:     make(map[string]*DockerContainer),
+		containers:     make(map[string]*testcontainers.DockerContainer),
 	}
 
 	// log docker server info only once
 	composeLogOnce.Do(func() {
-		logDockerServerInfo(context.Background(), dockerCli.Client(), Logger)
+		testcontainers.LogDockerServerInfo(context.Background(), dockerCli.Client(), testcontainers.Logger)
 	})
 
 	return composeAPI, nil
@@ -152,7 +153,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
 	dc := &LocalDockerCompose{
 		LocalDockerComposeOptions: &LocalDockerComposeOptions{
-			Logger: Logger,
+			Logger: testcontainers.Logger,
 		},
 	}
 

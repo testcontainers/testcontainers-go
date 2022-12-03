@@ -71,6 +71,16 @@ type DockerContainer struct {
 	logger            Logging
 }
 
+// SetLogger sets the logger for the container
+func (c *DockerContainer) SetLogger(logger Logging) {
+	c.logger = logger
+}
+
+// SetProvider sets the provider for the container
+func (c *DockerContainer) SetProvider(provider *DockerProvider) {
+	c.provider = provider
+}
+
 func (c *DockerContainer) GetContainerID() string {
 	return c.ID
 }
@@ -207,14 +217,7 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	shortID := c.ID[:12]
 	c.logger.Printf("Stopping container id: %s image: %s", shortID, c.Image)
 
-	var options container.StopOptions
-
-	if timeout != nil {
-		timeoutSeconds := int(timeout.Seconds())
-		options.Timeout = &timeoutSeconds
-	}
-
-	if err := c.provider.client.ContainerStop(ctx, c.ID, options); err != nil {
+	if err := c.provider.client.ContainerStop(ctx, c.ID, timeout); err != nil {
 		return err
 	}
 
@@ -681,6 +684,11 @@ type DockerProvider struct {
 	host      string
 	hostCache string
 	config    TestContainersConfig
+}
+
+// SetClient sets the docker client to be used by the provider
+func (p *DockerProvider) SetClient(c client.APIClient) {
+	p.client = c
 }
 
 var _ ContainerProvider = (*DockerProvider)(nil)

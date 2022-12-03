@@ -1,4 +1,4 @@
-package testcontainers
+package compose
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -98,7 +99,7 @@ func TestLocalDockerCompose(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -115,7 +116,7 @@ func TestDockerComposeStrategyForInvalidService(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -138,7 +139,7 @@ func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -162,7 +163,7 @@ func TestDockerComposeWithWaitForService(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -187,7 +188,7 @@ func TestDockerComposeWithWaitForShortLifespanService(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -212,7 +213,7 @@ func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -262,7 +263,7 @@ func TestDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -284,7 +285,7 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -308,7 +309,7 @@ func TestDockerComposeWithFailedStrategy(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -335,7 +336,7 @@ func TestLocalDockerComposeComplex(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -357,7 +358,7 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -391,7 +392,7 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose(composeFiles, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose(composeFiles, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -425,7 +426,7 @@ func TestLocalDockerComposeWithVolume(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(testcontainers.TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -440,7 +441,7 @@ func TestLocalDockerComposeWithVolume(t *testing.T) {
 }
 
 func assertVolumeDoesNotExist(tb testing.TB, volumeName string) {
-	containerClient, _, _, err := NewDockerClient()
+	containerClient, _, _, err := testcontainers.NewDockerClient()
 	if err != nil {
 		tb.Fatalf("Failed to get provider: %v", err)
 	}
@@ -465,7 +466,7 @@ func assertContainerEnvironmentVariables(
 	present map[string]string,
 	absent map[string]string,
 ) {
-	containerClient, _, _, err := NewDockerClient()
+	containerClient, _, _, err := testcontainers.NewDockerClient()
 	if err != nil {
 		tb.Fatalf("Failed to get provider: %v", err)
 	}
