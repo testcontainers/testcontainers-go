@@ -812,29 +812,10 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 
 	// log docker server info only once
 	logOnce.Do(func() {
-		logDockerServerInfo(context.Background(), p.client, p.Logger)
+		LogDockerServerInfo(context.Background(), p.client, p.Logger)
 	})
 
 	return p, nil
-}
-
-func logDockerServerInfo(ctx context.Context, client client.APIClient, logger Logging) {
-	infoMessage := `%v - Connected to docker: 
-  Server Version: %v
-  API Version: %v
-  Operating System: %v
-  Total Memory: %v MB
-`
-
-	info, err := client.Info(ctx)
-	if err != nil {
-		logger.Printf("failed getting information about docker server: %s", err)
-		return
-	}
-
-	logger.Printf(infoMessage, packagePath,
-		info.ServerVersion, client.ClientVersion(),
-		info.OperatingSystem, info.MemTotal/1024/1024)
 }
 
 // configureTC reads from testcontainers properties file, if it exists

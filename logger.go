@@ -1,9 +1,12 @@
 package testcontainers
 
 import (
+	"context"
 	"log"
 	"os"
 	"testing"
+
+	"github.com/docker/docker/client"
 )
 
 // Logger is the default log instance
@@ -12,6 +15,26 @@ var Logger Logging = log.New(os.Stderr, "", log.LstdFlags)
 // Logging defines the Logger interface
 type Logging interface {
 	Printf(format string, v ...interface{})
+}
+
+// LogDockerServerInfo logs the docker server info using the provided logger and Docker client
+func LogDockerServerInfo(ctx context.Context, client client.APIClient, logger Logging) {
+	infoMessage := `%v - Connected to docker: 
+  Server Version: %v
+  API Version: %v
+  Operating System: %v
+  Total Memory: %v MB
+`
+
+	info, err := client.Info(ctx)
+	if err != nil {
+		logger.Printf("failed getting information about docker server: %s", err)
+		return
+	}
+
+	logger.Printf(infoMessage, packagePath,
+		info.ServerVersion, client.ClientVersion(),
+		info.OperatingSystem, info.MemTotal/1024/1024)
 }
 
 // TestLogger returns a Logging implementation for testing.TB
