@@ -34,7 +34,7 @@ func TestReadMkDocsConfig(t *testing.T) {
 	err := os.MkdirAll(rootDir, 0777)
 	require.NoError(t, err)
 
-	err = copyInitialConfig(t, rootDir)
+	err = copyInitialMkdocsConfig(t, rootDir)
 	require.NoError(t, err)
 
 	config, err := readMkdocsConfig(rootDir)
@@ -80,7 +80,7 @@ func TestExamples(t *testing.T) {
 	}
 }
 
-func copyInitialConfig(t *testing.T, tmpDir string) error {
+func copyInitialMkdocsConfig(t *testing.T, tmpDir string) error {
 	projectDir, err := getRootDir()
 	require.NoError(t, err)
 

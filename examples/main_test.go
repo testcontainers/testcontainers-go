@@ -22,7 +22,7 @@ func TestGenerateWrongExampleName(t *testing.T) {
 	err = os.MkdirAll(githubWorkflowsTmp, 0777)
 	assert.Nil(t, err)
 
-	err = copyInitialConfig(t, rootTmp)
+	err = copyInitialMkdocsConfig(t, rootTmp)
 	assert.Nil(t, err)
 
 	tests := []struct {
@@ -65,7 +65,7 @@ func TestGenerate(t *testing.T) {
 	err = os.MkdirAll(githubWorkflowsTmp, 0777)
 	assert.Nil(t, err)
 
-	err = copyInitialConfig(t, rootTmp)
+	err = copyInitialMkdocsConfig(t, rootTmp)
 	assert.Nil(t, err)
 
 	example := Example{
