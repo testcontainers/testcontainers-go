@@ -145,11 +145,13 @@ func generate(example Example, rootDir string) error {
 
 	// make sure the index.md is the first element in the list of examples in the nav
 	examplesNav := make([]string, len(mkdocsExamplesNav)-1)
+	j := 0
 
 	for _, exampleNav := range mkdocsExamplesNav {
 		// filter out the index.md file
-		if !strings.HasSuffix("index.md", exampleNav) {
-			examplesNav = append(examplesNav, exampleNav)
+		if !strings.HasSuffix(exampleNav, "index.md") {
+			examplesNav[j] = exampleNav
+			j++
 		}
 	}
 
