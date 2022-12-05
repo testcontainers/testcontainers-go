@@ -136,6 +136,19 @@ func generate(example Example, rootDir string) error {
 	}
 
 	// update examples in mkdocs
+	err = generateMkdocs(rootDir, exampleLower)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Please go to", example.Lower(), "directory and execute 'go mod tidy' to synchronize the dependencies")
+	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
+	fmt.Println("Thanks!")
+	return nil
+}
+
+func generateMkdocs(rootDir string, exampleLower string) error {
+	// update examples in mkdocs
 	mkdocsConfig, err := readMkdocsConfig(rootDir)
 	if err != nil {
 		return err
@@ -161,13 +174,5 @@ func generate(example Example, rootDir string) error {
 
 	mkdocsConfig.Nav[3].Examples = examplesNav
 
-	err = writeMkdocsConfig(rootDir, mkdocsConfig)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("Please go to", example.Lower(), "directory and execute 'go mod tidy' to synchronize the dependencies")
-	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
-	fmt.Println("Thanks!")
-	return nil
+	return writeMkdocsConfig(rootDir, mkdocsConfig)
 }
