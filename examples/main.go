@@ -175,15 +175,7 @@ func generateDependabotUpdates(rootDir string, exampleLower string) error {
 		}
 	}
 
-	exampleUpdates = append(exampleUpdates, Update{
-		Directory:             "/examples/" + exampleLower,
-		OpenPullRequestsLimit: 3,
-		PackageEcosystem:      "gomod",
-		RebaseStrategy:        "disabled",
-		Schedule: Schedule{
-			Interval: "daily",
-		},
-	})
+	exampleUpdates = append(exampleUpdates, NewUpdate(exampleLower))
 	sort.Sort(exampleUpdates)
 
 	// prepend the main and e2e modules

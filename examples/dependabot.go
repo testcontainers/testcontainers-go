@@ -26,6 +26,18 @@ type Update struct {
 	RebaseStrategy        string   `yaml:"rebase-strategy"`
 }
 
+func NewUpdate(example string) Update {
+	return Update{
+		Directory:             "/examples/" + example,
+		OpenPullRequestsLimit: 3,
+		PackageEcosystem:      "gomod",
+		RebaseStrategy:        "disabled",
+		Schedule: Schedule{
+			Interval: "daily",
+		},
+	}
+}
+
 // Len is the number of elements in the collection.
 func (u Updates) Len() int {
 	return len(u)
