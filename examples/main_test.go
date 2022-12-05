@@ -68,6 +68,9 @@ func TestGenerate(t *testing.T) {
 	err = copyInitialConfig(t, rootTmp)
 	assert.Nil(t, err)
 
+	originalConfig, err := readMkdocsConfig(rootTmp)
+	assert.Nil(t, err)
+
 	example := Example{
 		Name:      "foo",
 		Image:     "docker.io/example/foo:latest",
@@ -109,7 +112,7 @@ func TestGenerate(t *testing.T) {
 	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertToolsGoContent(t, example, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
-	assertMkdocsExamplesNav(t, example, rootTmp)
+	assertMkdocsExamplesNav(t, example, originalConfig, rootTmp)
 }
 
 // assert content example file in the docs
@@ -197,12 +200,15 @@ func assertMakefileContent(t *testing.T, example Example, makefile string) {
 }
 
 // assert content in the Examples nav from mkdocs.yml
-func assertMkdocsExamplesNav(t *testing.T, example Example, rootDir string) {
+func assertMkdocsExamplesNav(t *testing.T, example Example, originalConfig *MkDocsConfig, rootDir string) {
 	config, err := readMkdocsConfig(rootDir)
 	assert.Nil(t, err)
 
-	// the example should be in the nav
 	examples := config.Nav[3].Examples
+
+	assert.Equal(t, len(originalConfig.Nav[3].Examples)+1, len(examples))
+
+	// the example should be in the nav
 	found := false
 	for _, ex := range examples {
 		markdownExample := "examples/" + example.Lower() + ".md"
