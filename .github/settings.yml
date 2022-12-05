@@ -135,6 +135,8 @@ collaborators:
     permission: maintain
   - username: mdelapenya
     permission: admin
+  - username: testcontainersbot
+    permission: write
 
   # Note: `permission` is only valid on organization-owned repositories.
   # The permission to grant the collaborator. Can be one of:

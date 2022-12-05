@@ -48,10 +48,16 @@ nav:
             - Multi: features/wait/multi.md
             - SQL: features/wait/sql.md
     - Examples:
+          - examples/index.md
           - examples/cockroachdb.md
+          - examples/datastore.md
+          - examples/firestore.md
           - examples/nginx.md
           - examples/redis.md
+          - examples/pubsub.md
           - examples/pulsar.md
+          - examples/spanner.md
+          - examples/toxiproxy.md
     - System Requirements:
           - system_requirements/index.md
           - system_requirements/using_colima.md
@@ -62,4 +68,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: 0.15.0
+    latest_version: 0.16.0

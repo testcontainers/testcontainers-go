@@ -36,7 +36,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			Cmd:          []string{"postgres", "-c", "fsync=off"},
 			Env:          env,
 			WaitingFor: wait.ForSQL(nat.Port(port), "postgres", dbURL).
-				Timeout(time.Second * 5),
+				WithStartupTimeout(time.Second * 5),
 		}
 		container, err := GenericContainer(ctx, GenericContainerRequest{
 			ContainerRequest: req,
@@ -55,7 +55,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			Cmd:          []string{"postgres", "-c", "fsync=off"},
 			Env:          env,
 			WaitingFor: wait.ForSQL(nat.Port(port), "postgres", dbURL).
-				Timeout(time.Second * 5).
+				WithStartupTimeout(time.Second * 5).
 				WithQuery("SELECT 10"),
 		}
 		container, err := GenericContainer(ctx, GenericContainerRequest{
@@ -75,7 +75,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			Cmd:          []string{"postgres", "-c", "fsync=off"},
 			Env:          env,
 			WaitingFor: wait.ForSQL(nat.Port(port), "postgres", dbURL).
-				Timeout(time.Second * 5).
+				WithStartupTimeout(time.Second * 5).
 				WithQuery("SELECT 'a' from b"),
 		}
 		container, err := GenericContainer(ctx, GenericContainerRequest{
