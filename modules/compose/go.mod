@@ -22,7 +22,7 @@ replace (
 
 require (
 	github.com/compose-spec/compose-go v1.6.0
-	github.com/docker/cli v20.10.19+incompatible
+	github.com/docker/cli v20.10.20+incompatible
 	github.com/docker/compose/v2 v2.12.2
 	github.com/docker/docker v20.10.19+incompatible
 	github.com/google/uuid v1.3.0
@@ -39,7 +39,7 @@ require (
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/goterm v1.0.4 // indirect
-	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
+	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/containerd/containerd v1.6.10 // indirect

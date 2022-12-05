@@ -3,21 +3,21 @@ module github.com/testcontainers/testcontainers-go
 go 1.18
 
 require (
-	github.com/cenkalti/backoff/v4 v4.1.3
-	github.com/containerd/containerd v1.6.8
-	github.com/docker/docker v20.10.19+incompatible
+	github.com/cenkalti/backoff/v4 v4.2.0
+	github.com/containerd/containerd v1.6.10
+	github.com/docker/cli v20.10.20+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.5.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/magiconair/properties v1.8.6
-	github.com/moby/term v0.0.0-20220808134915-39b0c02b01ae
-	github.com/opencontainers/image-spec v1.0.3-0.20220303224323-02efb9a75ee1
-	github.com/stretchr/testify v1.8.0
+	github.com/moby/term v0.0.0-20221128092401-c43b287e0e0f
+	github.com/opencontainers/image-spec v1.1.0-rc2
+	github.com/stretchr/testify v1.8.1
 	golang.org/x/sys v0.1.0
 	golang.org/x/text v0.3.7
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools/gotestsum v1.8.2
 )
 
