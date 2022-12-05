@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go
 go 1.18
 
 require (
-	github.com/cenkalti/backoff/v4 v4.1.3
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/compose-spec/compose-go v1.6.0
 	github.com/containerd/containerd v1.6.10
 	github.com/docker/cli v20.10.19+incompatible
