@@ -12,3 +12,57 @@ updates:
         interval: daily
       open-pull-requests-limit: 3
       rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/cockroachdb
+      schedule:
+        interval: daily
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/datastore
+      schedule:
+        interval: daily
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/firestore
+      schedule:
+        interval: daily
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/nginx
+      schedule:
+        interval: daily
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/pubsub
+      schedule:
+        interval: daily
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/pulsar
+      schedule:
+        interval: daily
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/redis
+      schedule:
+        interval: daily
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/spanner
+      schedule:
+        interval: daily
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/toxiproxy
+      schedule:
+        interval: daily
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled

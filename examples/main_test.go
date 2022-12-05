@@ -22,7 +22,7 @@ func TestGenerateWrongExampleName(t *testing.T) {
 	err = os.MkdirAll(githubWorkflowsTmp, 0777)
 	assert.Nil(t, err)
 
-	err = copyInitialConfig(t, rootTmp)
+	err = copyInitialMkdocsConfig(t, rootTmp)
 	assert.Nil(t, err)
 
 	tests := []struct {
@@ -65,10 +65,16 @@ func TestGenerate(t *testing.T) {
 	err = os.MkdirAll(githubWorkflowsTmp, 0777)
 	assert.Nil(t, err)
 
-	err = copyInitialConfig(t, rootTmp)
+	err = copyInitialMkdocsConfig(t, rootTmp)
 	assert.Nil(t, err)
 
 	originalConfig, err := readMkdocsConfig(rootTmp)
+	assert.Nil(t, err)
+
+	err = copyInitialDependabotConfig(t, rootTmp)
+	assert.Nil(t, err)
+
+	originalDependabotConfig, err := readDependabotConfig(rootTmp)
 	assert.Nil(t, err)
 
 	example := Example{
@@ -113,6 +119,33 @@ func TestGenerate(t *testing.T) {
 	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertToolsGoContent(t, example, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
 	assertMkdocsExamplesNav(t, example, originalConfig, rootTmp)
+	assertDependabotExamplesUpdates(t, example, originalDependabotConfig, rootTmp)
+}
+
+// assert content in the Examples nav from mkdocs.yml
+func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConfig *DependabotConfig, rootDir string) {
+	config, err := readDependabotConfig(rootDir)
+	assert.Nil(t, err)
+
+	examples := config.Updates
+
+	assert.Equal(t, len(originalConfig.Updates)+1, len(examples))
+
+	// the example should be in the dependabot updates
+	found := false
+	for _, ex := range examples {
+		directory := "/examples/" + example.Lower()
+		if directory == ex.Directory {
+			found = true
+		}
+	}
+
+	assert.True(t, found)
+
+	// first item is the main module
+	assert.Equal(t, "/", examples[0].Directory, examples)
+	// second item is the e2e module
+	assert.Equal(t, "/e2e", examples[1].Directory, examples)
 }
 
 // assert content example file in the docs
