@@ -36,3 +36,12 @@ From the [`examples` directory]({{repo_url}}/tree/main/examples), please run:
 ```shell
 go run . --name ${NAME_OF_YOUR_EXAMPLE} --image "${REGISTRY}/${EXAMPLE}:${TAG}"
 ```
+
+## Update Go dependencies in the examples
+
+To update the Go dependencies in the examples, please run:
+
+```shell
+$ cd examples
+$ make tidy-examples
+```
