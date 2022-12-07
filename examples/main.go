@@ -136,6 +136,58 @@ func generate(example Example, rootDir string) error {
 	}
 
 	// update examples in mkdocs
+	err = generateMkdocs(rootDir, exampleLower)
+	if err != nil {
+		return err
+	}
+
+	// update examples in dependabot
+	err = generateDependabotUpdates(rootDir, exampleLower)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Please go to", example.Lower(), "directory and execute 'go mod tidy' to synchronize the dependencies")
+	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
+	fmt.Println("Thanks!")
+	return nil
+}
+
+func generateDependabotUpdates(rootDir string, exampleLower string) error {
+	// update examples in dependabot
+	dependabotConfig, err := readDependabotConfig(rootDir)
+	if err != nil {
+		return err
+	}
+
+	dependabotExampleUpdates := dependabotConfig.Updates
+
+	// make sure the main module is the first element in the list of examples
+	// and the e2e module is the second element
+	exampleUpdates := make(Updates, len(dependabotExampleUpdates)-2)
+	j := 0
+
+	for _, exampleUpdate := range dependabotExampleUpdates {
+		// filter out the index.md file
+		if exampleUpdate.Directory != "/" && exampleUpdate.Directory != "/e2e" {
+			exampleUpdates[j] = exampleUpdate
+			j++
+		}
+	}
+
+	exampleUpdates = append(exampleUpdates, NewUpdate(exampleLower))
+	sort.Sort(exampleUpdates)
+
+	// prepend the main and e2e modules
+	exampleUpdates = append([]Update{dependabotExampleUpdates[0], dependabotExampleUpdates[1]}, exampleUpdates...)
+
+	dependabotConfig.Updates = exampleUpdates
+
+	return writeDependabotConfig(rootDir, dependabotConfig)
+}
+
+func generateMkdocs(rootDir string, exampleLower string) error {
+	// update examples in mkdocs
 	mkdocsConfig, err := readMkdocsConfig(rootDir)
 	if err != nil {
 		return err
@@ -145,11 +197,13 @@ func generate(example Example, rootDir string) error {
 
 	// make sure the index.md is the first element in the list of examples in the nav
 	examplesNav := make([]string, len(mkdocsExamplesNav)-1)
+	j := 0
 
 	for _, exampleNav := range mkdocsExamplesNav {
 		// filter out the index.md file
-		if !strings.HasSuffix("index.md", exampleNav) {
-			examplesNav = append(examplesNav, exampleNav)
+		if !strings.HasSuffix(exampleNav, "index.md") {
+			examplesNav[j] = exampleNav
+			j++
 		}
 	}
 
@@ -161,13 +215,5 @@ func generate(example Example, rootDir string) error {
 
 	mkdocsConfig.Nav[3].Examples = examplesNav
 
-	err = writeMkdocsConfig(rootDir, mkdocsConfig)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("Please go to", example.Lower(), "directory and execute 'go mod tidy' to synchronize the dependencies")
-	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
-	fmt.Println("Thanks!")
-	return nil
+	return writeMkdocsConfig(rootDir, mkdocsConfig)
 }
