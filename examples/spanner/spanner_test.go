@@ -6,8 +6,12 @@ import (
 	instance "cloud.google.com/go/spanner/admin/instance/apiv1"
 	"context"
 	"fmt"
+	"google.golang.org/api/option"
+	"google.golang.org/api/option/internaloption"
 	databasepb "google.golang.org/genproto/googleapis/spanner/admin/database/v1"
 	instancepb "google.golang.org/genproto/googleapis/spanner/admin/instance/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"testing"
 )
 
@@ -32,9 +36,14 @@ func TestSpanner(t *testing.T) {
 		}
 	})
 
-	t.Setenv("SPANNER_EMULATOR_HOST", container.GRPCEndpoint)
+	options := []option.ClientOption{
+		option.WithEndpoint(container.GRPCEndpoint),
+		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
+		option.WithoutAuthentication(),
+		internaloption.SkipDialSettingsValidation(),
+	}
 
-	instanceAdmin, err := instance.NewInstanceAdminClient(ctx)
+	instanceAdmin, err := instance.NewInstanceAdminClient(ctx, options...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +64,7 @@ func TestSpanner(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c, err := database.NewDatabaseAdminClient(ctx)
+	c, err := database.NewDatabaseAdminClient(ctx, options...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +85,8 @@ func TestSpanner(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	client, err := spanner.NewClient(ctx, fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectId, instanceId, databaseName))
+	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectId, instanceId, databaseName)
+	client, err := spanner.NewClient(ctx, db, options...)
 	if err != nil {
 		t.Fatal(err)
 	}
