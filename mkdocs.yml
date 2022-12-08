@@ -49,6 +49,7 @@ nav:
             - SQL: features/wait/sql.md
     - Examples:
         - examples/index.md
+        - examples/bigtable.md
         - examples/cockroachdb.md
         - examples/datastore.md
         - examples/firestore.md
