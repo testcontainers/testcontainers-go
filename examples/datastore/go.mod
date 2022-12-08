@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/datastore v1.10.0
 	github.com/testcontainers/testcontainers-go v0.16.0
 	google.golang.org/api v0.103.0
-	google.golang.org/grpc v1.50.1
+	google.golang.org/grpc v1.51.0
 	gotest.tools/gotestsum v1.8.2
 )
 
@@ -23,7 +23,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/compose-spec/compose-go v1.8.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
-	github.com/containerd/containerd v1.6.10 // indirect
+	github.com/containerd/containerd v1.6.12 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/containerd/ttrpc v1.1.0 // indirect
 	github.com/containerd/typeurl v1.0.2 // indirect
@@ -75,7 +75,7 @@ require (
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.2 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/miekg/pkcs11 v1.1.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
