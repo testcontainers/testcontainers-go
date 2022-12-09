@@ -54,6 +54,7 @@ nav:
         - examples/datastore.md
         - examples/firestore.md
         - examples/nginx.md
+        - examples/postgres.md
         - examples/pubsub.md
         - examples/pulsar.md
         - examples/redis.md
