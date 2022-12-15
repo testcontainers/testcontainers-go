@@ -217,7 +217,14 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	shortID := c.ID[:12]
 	c.logger.Printf("Stopping container id: %s image: %s", shortID, c.Image)
 
-	if err := c.provider.client.ContainerStop(ctx, c.ID, timeout); err != nil {
+	var options container.StopOptions
+
+	if timeout != nil {
+		timeoutSeconds := int(timeout.Seconds())
+		options.Timeout = &timeoutSeconds
+	}
+
+	if err := c.provider.client.ContainerStop(ctx, c.ID, options); err != nil {
 		return err
 	}
 
@@ -684,6 +691,11 @@ type DockerProvider struct {
 	host      string
 	hostCache string
 	config    TestContainersConfig
+}
+
+// Client gets the docker client used by the provider
+func (p *DockerProvider) Client() client.APIClient {
+	return p.client
 }
 
 // SetClient sets the docker client to be used by the provider
