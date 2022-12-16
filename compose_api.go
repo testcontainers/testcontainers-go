@@ -157,6 +157,7 @@ func (d *dockerCompose) Down(ctx context.Context, opts ...StackDownOption) error
 	options := stackDownOptions{
 		DownOptions: api.DownOptions{
 			Project: d.project,
+			Volumes: true,
 		},
 	}
 
