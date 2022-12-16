@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/compose-spec/compose-go v1.8.0
-	github.com/containerd/containerd v1.6.12
+	github.com/containerd/containerd v1.6.13
 	github.com/docker/cli v20.10.20+incompatible
 	github.com/docker/compose/v2 v2.14.0
 	github.com/docker/docker v20.10.20+incompatible
