@@ -1043,7 +1043,6 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 }
 
 func TestContainerCreationWaitsForLog(t *testing.T) {
-	// exposePorts {
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        mysqlImage,
@@ -1059,7 +1058,6 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	// }
 
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, mysqlC)
