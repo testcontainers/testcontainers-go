@@ -2,12 +2,10 @@ package testcontainers
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 
-	// Import mysql into the scope of this package (required)
 	"io"
 	"math/rand"
 	"net/http"
@@ -17,8 +15,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
@@ -1046,7 +1042,6 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 }
 
 func TestContainerCreationWaitsForLog(t *testing.T) {
-	// exposePorts {
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        mysqlImage,
@@ -1062,38 +1057,9 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	// }
 
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, mysqlC)
-
-	// containerHost {
-	host, _ := mysqlC.Host(ctx)
-	// }
-	// mappedPort {
-	p, _ := mysqlC.MappedPort(ctx, "3306/tcp")
-	port := p.Int()
-	// }
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?tls=skip-verify",
-		"root", "password", host, port, "database")
-
-	db, err := sql.Open("mysql", connectionString)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		t.Errorf("error pinging db: %+v\n", err)
-	}
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
-		" `col_1` VARCHAR(128) NOT NULL, \n" +
-		" `col_2` VARCHAR(128) NOT NULL, \n" +
-		" PRIMARY KEY (`col_1`, `col_2`) \n" +
-		")")
-	if err != nil {
-		t.Errorf("error creating table: %+v\n", err)
-	}
 }
 
 func Test_BuildContainerFromDockerfile(t *testing.T) {
@@ -1355,11 +1321,13 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 
 func TestContainerCreationWaitingForHostPort(t *testing.T) {
 	ctx := context.Background()
+	// exposePorts {
 	req := ContainerRequest{
 		Image:        nginxAlpineImage,
 		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
 	}
+	// }
 	nginx, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
@@ -1385,50 +1353,6 @@ func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.
 
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginx)
-}
-
-func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
-	ctx := context.Background()
-	req := ContainerRequest{
-		Image:        mysqlImage,
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
-		Env: map[string]string{
-			"MYSQL_ROOT_PASSWORD": "password",
-			"MYSQL_DATABASE":      "database",
-		},
-		WaitingFor: wait.ForAll(
-			wait.ForLog("port: 3306  MySQL Community Server - GPL"),
-			wait.ForListeningPort("3306/tcp"),
-		),
-	}
-
-	mysqlC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
-
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, mysqlC)
-
-	// buildingAddresses {
-	host, _ := mysqlC.Host(ctx)
-	p, _ := mysqlC.MappedPort(ctx, "3306/tcp")
-	port := p.Int()
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?tls=skip-verify",
-		"root", "password", host, port, "database")
-
-	db, err := sql.Open("mysql", connectionString)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// }
-
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		t.Errorf("error pinging db: %+v\n", err)
-	}
 }
 
 func TestCMD(t *testing.T) {
@@ -1776,7 +1700,9 @@ func ExampleContainer_Host() {
 			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
+	// containerHost {
 	ip, _ := nginxC.Host(ctx)
+	// }
 	println(ip)
 }
 
@@ -1833,9 +1759,11 @@ func ExampleContainer_MappedPort() {
 			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
+	// buildingAddresses {
 	ip, _ := nginxC.Host(ctx)
 	port, _ := nginxC.MappedPort(ctx, "80")
 	_, _ = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
+	// }
 }
 
 func TestContainerCreationWithBindAndVolume(t *testing.T) {
