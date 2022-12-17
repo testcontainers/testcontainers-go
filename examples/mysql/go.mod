@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/examples/mysql
 go 1.18
 
 require (
-	github.com/go-sql-driver/mysql v1.6.0
+	github.com/go-sql-driver/mysql v1.7.0
 	github.com/testcontainers/testcontainers-go v0.16.0
 	gotest.tools/gotestsum v1.8.2
 )
