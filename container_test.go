@@ -391,7 +391,9 @@ func createTestContainer(t *testing.T, ctx context.Context) int {
 	if err != nil {
 		t.Fatalf("could not start container: %v", err)
 	}
+	// mappedPort {
 	port, err := container.MappedPort(ctx, nginxDefaultPort)
+	// }
 	if err != nil {
 		t.Fatalf("could not get mapped port: %v", err)
 	}

@@ -20,7 +20,7 @@ Because there is this layer of indirection, it is necessary to ask Testcontainer
 This can be done using the `MappedPort` function, which takes the original (container) port as an argument:
 
 <!--codeinclude-->
-[Retrieving actual ports at runtime](../../docker_test.go) inside_block:mappedPort
+[Retrieving actual ports at runtime](../../container_test.go) inside_block:mappedPort
 <!--/codeinclude-->
 
 !!! warning
