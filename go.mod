@@ -11,7 +11,6 @@ require (
 	github.com/docker/docker v20.10.20+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.5.0
-	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/magiconair/properties v1.8.7
@@ -55,7 +54,6 @@ require (
 	github.com/containerd/ttrpc v1.1.0 // indirect
 	github.com/containerd/typeurl v1.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/distribution/distribution/v3 v3.0.0-20221201083218-92d136e113cf // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/buildx v0.9.1 // indirect
