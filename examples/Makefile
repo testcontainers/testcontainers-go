@@ -1,5 +1,9 @@
 include ../commons-test.mk
 
+.PHONY: dependencies-scan-examples
+dependencies-scan-examples:
+	@find . -type f -name Makefile -execdir make dependencies-scan \;
+
 .PHONY: test
 test: test-unit
 	$(MAKE) -C cockroachdb test
