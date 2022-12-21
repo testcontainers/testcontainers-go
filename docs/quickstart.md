@@ -3,15 +3,11 @@ _Testcontainers for Go_ plays well with the native `go test` framework.
 The ideal use case is for integration or end to end tests. It helps you to spin
 up and manage the dependencies life cycle via Docker.
 
-Docker has to be available for this library to work.
+## 1. System requirements
 
-## 1. Install
+Please the [system requirements](./system_requirements/) page before you start.
 
-We use [gomod](https://blog.golang.org/using-go-modules) and you can get it installed via:
-
-```
-go get github.com/testcontainers/testcontainers-go
-```
+## 2. Install _Testcontainers for Go_
 
 !!!warning
 
@@ -38,7 +34,13 @@ go get github.com/testcontainers/testcontainers-go
 	)
 	```
 
-## 2. Spin up Redis
+We use [gomod](https://blog.golang.org/using-go-modules) and you can get it installed via:
+
+```
+go get github.com/testcontainers/testcontainers-go
+```
+
+## 3. Spin up Redis
 
 ```go
 import (
@@ -105,7 +107,7 @@ terminated function: `defer redisC.Terminate(ctx)`.
     Look at [features/garbage_collector](/features/garbage_collector/) to know another way to
     clean up resources.
 
-## 3. Make your code to talk with the container
+## 4. Make your code to talk with the container
 
 This is just an example, but usually Go applications that rely on Redis are
 using the [redis-go](https://github.com/go-redis/redis) client. This code gets
@@ -133,6 +135,6 @@ We expose only one port, so the `Endpoint` does not need a second argument set.
 
 In this case it returns: `localhost:<mappedportfor-6379>`.
 
-## 3. Run the test
+## 5. Run the test
 
 You can run the test via `go test ./...`
