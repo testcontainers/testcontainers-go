@@ -19,7 +19,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-units"
-	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -1078,9 +1077,6 @@ func Test_BuildContainerFromDockerfile(t *testing.T) {
 	redisC, err := prepareRedisImage(ctx, req, t)
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, redisC)
-
-	checkSuccessfulRedisImage(ctx, redisC, t)
-
 }
 
 func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfigs(t *testing.T) {
@@ -1124,8 +1120,6 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfig
 	redisC, err := prepareRedisImage(ctx, req, t)
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, redisC)
-
-	checkSuccessfulRedisImage(ctx, redisC, t)
 }
 
 func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithoutAuthConfigs(t *testing.T) {
@@ -1211,32 +1205,6 @@ func prepareRedisImage(ctx context.Context, req ContainerRequest, t *testing.T) 
 	t.Log("created redis container")
 
 	return redisC, err
-}
-
-func checkSuccessfulRedisImage(ctx context.Context, redisC Container, t *testing.T) {
-	t.Log("created redis container")
-
-	t.Log("getting redis container endpoint")
-	endpoint, err := redisC.Endpoint(ctx, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Log("retrieved redis container endpoint")
-
-	redisClient := redis.NewClient(&redis.Options{
-		Addr: endpoint,
-	})
-
-	t.Log("pinging redis")
-	pong, err := redisClient.Ping(ctx).Result()
-	require.NoError(t, err)
-
-	t.Log("received response from redis")
-
-	if pong != "PONG" {
-		t.Fatalf("received unexpected response from redis: %s", pong)
-	}
 }
 
 func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
