@@ -7,3 +7,7 @@ automated integration/smoke tests. The clean, easy-to-use API enables developers
 that should be run as part of a test and clean up those resources when the test is done.
 
 You can find more information about _Testcontainers for Go_ at [golang.testcontainers.org](https://golang.testcontainers.org), which is rendered from the [./docs](./docs) directory.
+
+## Using _Testcontainers for Go_
+
+Please visit [the quickstart guide](https://golang.testcontainers.org/quickstart) to understand how to add the dependency to your Go project.
