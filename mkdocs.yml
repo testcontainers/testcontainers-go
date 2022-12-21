@@ -53,6 +53,7 @@ nav:
         - examples/cockroachdb.md
         - examples/datastore.md
         - examples/firestore.md
+        - examples/mysql.md
         - examples/nginx.md
         - examples/postgres.md
         - examples/pubsub.md
