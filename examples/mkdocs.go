@@ -29,7 +29,7 @@ type MkDocsConfig struct {
 	MarkdownExtensions []interface{} `yaml:"markdown_extensions"`
 	Nav                []struct {
 		Home               string        `yaml:"Home,omitempty"`
-		Quickstart         []string      `yaml:"Quickstart,omitempty"`
+		Quickstart         string        `yaml:"Quickstart,omitempty"`
 		Features           []interface{} `yaml:"Features,omitempty"`
 		Examples           []string      `yaml:"Examples,omitempty"`
 		SystemRequirements []string      `yaml:"System Requirements,omitempty"`
