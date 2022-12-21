@@ -225,13 +225,17 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 
 // Terminate is used to kill the container. It is usually triggered by as defer function.
 func (c *DockerContainer) Terminate(ctx context.Context) error {
-	c.StopLogProducer()
+	err := c.StopLogProducer()
+	if err != nil {
+		return err
+	}
+
 	select {
 	// close reaper if it was created
 	case c.terminationSignal <- true:
 	default:
 	}
-	err := c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
+	err = c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
 		RemoveVolumes: true,
 		Force:         true,
 	})
