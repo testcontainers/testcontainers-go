@@ -40,7 +40,7 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 	tw := tar.NewWriter(zr)
 
 	// walk through every file in the folder
-	filepath.Walk(src, func(file string, fi os.FileInfo, errFn error) error {
+	err := filepath.Walk(src, func(file string, fi os.FileInfo, errFn error) error {
 		if errFn != nil {
 			return fmt.Errorf("error traversing the file system: %w", errFn)
 		}
@@ -80,6 +80,9 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 		}
 		return nil
 	})
+	if err != nil {
+		return buffer, err
+	}
 
 	// produce tar
 	if err := tw.Close(); err != nil {

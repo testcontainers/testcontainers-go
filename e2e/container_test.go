@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 	. "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
@@ -35,7 +36,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			Cmd:          []string{"postgres", "-c", "fsync=off"},
 			Env:          env,
 			WaitingFor: wait.ForSQL(nat.Port(port), "postgres", dbURL).
-				Timeout(time.Second * 5),
+				WithStartupTimeout(time.Second * 5),
 		}
 		container, err := GenericContainer(ctx, GenericContainerRequest{
 			ContainerRequest: req,
@@ -45,7 +46,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		defer container.Terminate(ctx)
+		terminateContainerOnEnd(t, ctx, container)
 	})
 	t.Run("custom query", func(t *testing.T) {
 		req := ContainerRequest{
@@ -54,7 +55,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			Cmd:          []string{"postgres", "-c", "fsync=off"},
 			Env:          env,
 			WaitingFor: wait.ForSQL(nat.Port(port), "postgres", dbURL).
-				Timeout(time.Second * 5).
+				WithStartupTimeout(time.Second * 5).
 				WithQuery("SELECT 10"),
 		}
 		container, err := GenericContainer(ctx, GenericContainerRequest{
@@ -65,7 +66,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		defer container.Terminate(ctx)
+		terminateContainerOnEnd(t, ctx, container)
 	})
 	t.Run("custom bad query", func(t *testing.T) {
 		req := ContainerRequest{
@@ -74,7 +75,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			Cmd:          []string{"postgres", "-c", "fsync=off"},
 			Env:          env,
 			WaitingFor: wait.ForSQL(nat.Port(port), "postgres", dbURL).
-				Timeout(time.Second * 5).
+				WithStartupTimeout(time.Second * 5).
 				WithQuery("SELECT 'a' from b"),
 		}
 		container, err := GenericContainer(ctx, GenericContainerRequest{
@@ -85,6 +86,17 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			t.Fatal("expected error, but got a nil")
 		}
 
-		defer container.Terminate(ctx)
+		terminateContainerOnEnd(t, ctx, container)
+	})
+}
+
+func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr Container) {
+	tb.Helper()
+	if ctr == nil {
+		return
+	}
+	tb.Cleanup(func() {
+		tb.Log("terminating container")
+		require.NoError(tb, ctr.Terminate(ctx))
 	})
 }

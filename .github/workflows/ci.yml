@@ -2,19 +2,11 @@ name: Main pipeline
 
 on: [push, pull_request]
 
+concurrency:
+  group: "${{ github.workflow }}-${{ github.head_ref || github.sha }}"
+  cancel-in-progress: true
+
 jobs:
-  static-analysis:
-    runs-on: ubuntu-latest
-    steps:
-
-      - uses: actions/checkout@v3
-      - name: Run ShellCheck
-        run: |
-          shellcheck scripts/*.sh
-
-      - name: Run gofmt
-        run: |
-          ./scripts/checks.sh
   test:
     strategy:
       matrix:
@@ -36,10 +28,7 @@ jobs:
         run: go mod verify
 
       - name: modTidy
-        run: go mod tidy
-
-      - name: vet
-        run: go vet ./...
+        run: make tools-tidy
 
       - name: ensure compilation
         env:
@@ -54,17 +43,13 @@ jobs:
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-unit
 
-        # only report code coverage on linux
-      - name: Upload coverage report
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        uses: codecov/codecov-action@81cd2dc8148241f03f5839d295e000b8f761e378
-        with:
-          files: ./cover.txt
-          name: testcontainers-go-${{ matrix.go-version }}
-
       - name: modTidy e2e tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make -C e2e tools-tidy
+
+      - name: Run example generator tests
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: make -C examples test-unit
 
       - name: Run e2e tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}
@@ -75,7 +60,7 @@ jobs:
           ./scripts/check_environment.sh
 
       - name: Test Summary
-        uses: test-summary/action@77bb5a9f9c572416423f9a157cbf1159c1e75a4c
+        uses: test-summary/action@4ee9ece4bca777a38f05c8fc578ac2007fe266f7
         with:
           paths: "**/TEST-*.xml"
         if: always()

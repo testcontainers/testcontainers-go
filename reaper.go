@@ -21,7 +21,7 @@ const (
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
 	TestcontainerLabelIsReaper  = TestcontainerLabel + ".reaper"
 
-	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.3.3"
+	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.3.4"
 )
 
 type reaperContextKey string
@@ -63,13 +63,17 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		ExposedPorts: []string{string(listeningPort)},
 		NetworkMode:  Bridge,
 		Labels: map[string]string{
-			TestcontainerLabel:         "true",
 			TestcontainerLabelIsReaper: "true",
 		},
 		SkipReaper: true,
 		Mounts:     Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
 		AutoRemove: true,
 		WaitingFor: wait.ForListeningPort(listeningPort),
+	}
+
+	// include reaper-specific labels to the reaper container
+	for k, v := range reaper.Labels() {
+		req.Labels[k] = v
 	}
 
 	tcConfig := provider.Config()
@@ -122,8 +126,14 @@ func (r *Reaper) Connect() (chan bool, error) {
 		for retryLimit > 0 {
 			retryLimit--
 
-			sock.WriteString(strings.Join(labelFilters, "&"))
-			sock.WriteString("\n")
+			if _, err := sock.WriteString(strings.Join(labelFilters, "&")); err != nil {
+				continue
+			}
+
+			if _, err := sock.WriteString("\n"); err != nil {
+				continue
+			}
+
 			if err := sock.Flush(); err != nil {
 				continue
 			}
@@ -132,6 +142,7 @@ func (r *Reaper) Connect() (chan bool, error) {
 			if err != nil {
 				continue
 			}
+
 			if resp == "ACK\n" {
 				break
 			}
