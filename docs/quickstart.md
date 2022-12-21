@@ -5,7 +5,7 @@ up and manage the dependencies life cycle via Docker.
 
 ## 1. System requirements
 
-Please the [system requirements](../system_requirements/) page before you start.
+Please read the [system requirements](../system_requirements/) page before you start.
 
 ## 2. Install _Testcontainers for Go_
 
