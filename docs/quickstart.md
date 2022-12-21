@@ -138,3 +138,7 @@ In this case it returns: `localhost:<mappedportfor-6379>`.
 ## 5. Run the test
 
 You can run the test via `go test ./...`
+
+## 6. Want to go deeper with Redis?
+
+You can find a more elaborated Redis example in our examples section. Please check it out [here](./examples/redis.md).
