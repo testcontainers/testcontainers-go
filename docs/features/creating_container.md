@@ -1,54 +1,221 @@
 # How to create a container
 
-When I have to describe TestContainer I say: "it is a wrapper around the docker
-daemon designed for tests."
-
-This libraries demands all the complexity of creating and managing container to
-Docker to stay focused on usability in a testing environment.
-
-You can use this library to run everything you can run with docker:
-
-* NoSQL databases or other data stores (e.g. redis, elasticsearch, mongo)
-* Web servers/proxies (e.g. nginx, apache)
-* Log services (e.g. logstash, kibana)
+Testcontainers are a wrapper around the Docker daemon designed for tests. Anything you can run in Docker, you can spin
+up with Testcontainers and integrate into your tests:
+* NoSQL databases or other data stores (e.g. Redis, ElasticSearch, MongoDB)
+* Web servers/proxies (e.g. NGINX, Apache)
+* Log services (e.g. Logstash, Kibana)
 * Other services developed by your team/organization which are already dockerized
 
 ## GenericContainer
 
-`testcontainers.GenericContainer` identifies the ability to spin up a single
-container, you can look at it as a different way to create a `docker run`
-command.
+`testcontainers.GenericContainer` defines the container that should be run, similar to the `docker run` command.
+
+The following test creates an NGINX container and validates that it returns 200 for the status code:
 
 ```go
-func TestNginxLatestReturn(t *testing.T) {
-	ctx := context.Background()
+package main
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"testing"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+)
+
+type nginxContainer struct {
+	testcontainers.Container
+	URI string
+}
+
+
+func setupNginx(ctx context.Context) (*nginxContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
-	nginxC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
 	if err != nil {
-		t.Error(err)
+		return nil, err
 	}
-	defer nginxC.Terminate(ctx)
-	ip, err := nginxC.Host(ctx)
+
+	ip, err := container.Host(ctx)
 	if err != nil {
-		t.Error(err)
+		return nil, err
 	}
-	port, err := nginxC.MappedPort(ctx, "80")
+
+	mappedPort, err := container.MappedPort(ctx, "80")
 	if err != nil {
-		t.Error(err)
+		return nil, err
 	}
-	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
+
+	uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+
+	return &nginxContainer{Container: container, URI: uri}, nil
+}
+
+func TestIntegrationNginxLatestReturn(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	nginxC, err := setupNginx(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Clean up the container after the test is complete
+	t.Cleanup(func() {
+		if err := nginxC.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	resp, err := http.Get(nginxC.URI)
 	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+		t.Fatalf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 }
 ```
 
-This test creates an Nginx container and it validates that it returns a 200 as
-StatusCode.
+## Reusable container
+
+With `Reuse` option you can reuse an existing container. Reusing will work only if you pass an 
+existing container name via 'req.Name' field. If the name is not in a list of existing containers, 
+the function will create a new generic container. If `Reuse` is true and `Name` is empty, you will get error.
+
+The following test creates an NGINX container, adds a file into it and then reuses the container again for checking the file:
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/testcontainers/testcontainers-go"
+)
+
+const (
+	reusableContainerName = "my_test_reusable_container"
+)
+
+ctx := context.Background()
+
+n1, err := GenericContainer(ctx, GenericContainerRequest{
+	ContainerRequest: ContainerRequest{
+		Image:        "nginx:1.17.6",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		Name:         reusableContainerName,
+	},
+	Started: true,
+})
+if err != nil {
+	log.Fatal(err)
+}
+defer n1.Terminate(ctx)
+
+copiedFileName := "hello_copy.sh"
+err = n1.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
+
+if err != nil {
+	log.Fatal(err)
+}
+
+n2, err := GenericContainer(ctx, GenericContainerRequest{
+	ContainerRequest: ContainerRequest{
+		Image:        "nginx:1.17.6",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		Name:         reusableContainerName,
+    },
+	Started: true,
+	Reuse: true,
+})
+if err != nil {
+	log.Fatal(err)
+}
+
+c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println(c)
+```
+
+## Parallel running
+
+`testcontainers.ParallelContainers` - defines the containers that should be run in parallel mode.
+
+The following test creates two NGINX containers in parallel:
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/testcontainers/testcontainers-go"
+)
+
+func main() {
+	ctx := context.Background()
+
+	requests := testcontainers.ParallelContainerRequest{
+		{
+			ContainerRequest: testcontainers.ContainerRequest{
+
+				Image: "nginx",
+				ExposedPorts: []string{
+					"10080/tcp",
+				},
+			},
+			Started: true,
+		},
+		{
+			ContainerRequest: testcontainers.ContainerRequest{
+
+				Image: "nginx",
+				ExposedPorts: []string{
+					"10081/tcp",
+				},
+			},
+			Started: true,
+		},
+	}
+
+	res, err := testcontainers.ParallelContainers(ctx, requests, testcontainers.ParallelContainersOptions{})
+	if err != nil {
+		e, ok := err.(testcontainers.ParallelContainersError)
+		if !ok {
+			log.Fatalf("unknown error: %v", err)
+		}
+
+		for _, pe := range e.Errors {
+			fmt.Println(pe.Request, pe.Error)
+		}
+		return
+	}
+
+	for _, c := range res {
+		c := c
+		defer func() {
+			if err := c.Terminate(ctx); err != nil {
+				log.Fatalf("failed to terminate container: %s", c)
+			}
+		}()
+	}
+}
+```

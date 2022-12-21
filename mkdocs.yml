@@ -1,40 +1,74 @@
-site_name: Testcontainers-Go
+site_name: Testcontainers for Go
 plugins:
     - search
+    - codeinclude
     - markdownextradata
 theme:
-    name: 'material'
+    name: material
     palette:
-        primary: 'blue'
-        accent: 'teal'
-    font: false
-    logo: 'logo.svg'
-    favicon: 'favicon.ico'
+        scheme: testcontainers
+    font:
+        text: Roboto
+        code: Roboto Mono
+    logo: logo.svg
+    favicon: favicon.ico
 extra_css:
-    - 'css/extra.css'
-repo_name: 'testcontainers-go'
-repo_url: 'https://github.com/testcontainers/testcontainers-go'
+    - css/extra.css
+repo_name: testcontainers-go
+repo_url: https://github.com/testcontainers/testcontainers-go
 markdown_extensions:
     - admonition
     - codehilite:
-          linenums: False
+        linenums: false
     - pymdownx.superfences
+    - pymdownx.tabbed:
+        alternate_style: true
     - pymdownx.snippets
 nav:
     - Home: index.md
     - Quickstart:
-          - quickstart/gotest.md
+        - quickstart/gotest.md
     - Features:
-          - features/creating_container.md
-          - features/garbage_collector.md
-          - features/build_from_dockerfile.md
-          - features/docker_compose.md
-          - features/follow_logs.md
-          - features/override_container_command.md
-    - Modules: modules.md
+        - features/creating_container.md
+        - features/networking.md
+        - features/garbage_collector.md
+        - features/build_from_dockerfile.md
+        - features/docker_compose.md
+        - features/follow_logs.md
+        - features/override_container_command.md
+        - features/copy_file.md
+        - Wait Strategies:
+            - Introduction: features/wait/introduction.md
+            - Exec: features/wait/exec.md
+            - Exit: features/wait/exit.md
+            - Health: features/wait/health.md
+            - HostPort: features/wait/host_port.md
+            - HTTP: features/wait/http.md
+            - Log: features/wait/log.md
+            - Multi: features/wait/multi.md
+            - SQL: features/wait/sql.md
+    - Examples:
+        - examples/index.md
+        - examples/bigtable.md
+        - examples/cockroachdb.md
+        - examples/datastore.md
+        - examples/firestore.md
+        - examples/mysql.md
+        - examples/nginx.md
+        - examples/postgres.md
+        - examples/pubsub.md
+        - examples/pulsar.md
+        - examples/redis.md
+        - examples/spanner.md
+        - examples/toxiproxy.md
+    - System Requirements:
+        - system_requirements/index.md
+        - system_requirements/using_colima.md
+        - system_requirements/using_podman.md
     - Contributing:
-          - contributing.md
-          - contributing_docs.md
+        - contributing.md
+        - contributing_docs.md
     - Getting help: getting_help.md
+edit_uri: edit/main/docs/
 extra:
-    latest_version: 1.14.1
+    latest_version: 0.16.0

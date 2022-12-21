@@ -4,14 +4,16 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/docker/docker/api/types"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -24,7 +26,7 @@ func Test_ContainerValidation(t *testing.T) {
 	}
 
 	testTable := []ContainerValidationTestCase{
-		ContainerValidationTestCase{
+		{
 			Name:          "cannot set both context and image",
 			ExpectedError: errors.New("you cannot specify both an Image and Context in a ContainerRequest"),
 			ContainerRequest: ContainerRequest{
@@ -34,20 +36,36 @@ func Test_ContainerValidation(t *testing.T) {
 				Image: "redis:latest",
 			},
 		},
-		ContainerValidationTestCase{
+		{
 			Name:          "can set image without context",
 			ExpectedError: nil,
 			ContainerRequest: ContainerRequest{
 				Image: "redis:latest",
 			},
 		},
-		ContainerValidationTestCase{
+		{
 			Name:          "can set context without image",
 			ExpectedError: nil,
 			ContainerRequest: ContainerRequest{
 				FromDockerfile: FromDockerfile{
 					Context: ".",
 				},
+			},
+		},
+		{
+			Name:          "Can mount same source to multiple targets",
+			ExpectedError: nil,
+			ContainerRequest: ContainerRequest{
+				Image:  "redis:latest",
+				Mounts: Mounts(BindMount("/data", "/srv"), BindMount("/data", "/data")),
+			},
+		},
+		{
+			Name:          "Cannot mount multiple sources to same target",
+			ExpectedError: errors.New("duplicate mount target detected: /data"),
+			ContainerRequest: ContainerRequest{
+				Image:  "redis:latest",
+				Mounts: Mounts(BindMount("/srv", "/data"), BindMount("/data", "/data")),
 			},
 		},
 	}
@@ -66,7 +84,6 @@ func Test_ContainerValidation(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func Test_GetDockerfile(t *testing.T) {
@@ -77,19 +94,19 @@ func Test_GetDockerfile(t *testing.T) {
 	}
 
 	testTable := []TestCase{
-		TestCase{
+		{
 			name:                   "defaults to \"Dockerfile\" 1",
 			ExpectedDockerfileName: "Dockerfile",
 			ContainerRequest:       ContainerRequest{},
 		},
-		TestCase{
+		{
 			name:                   "defaults to \"Dockerfile\" 2",
 			ExpectedDockerfileName: "Dockerfile",
 			ContainerRequest: ContainerRequest{
 				FromDockerfile: FromDockerfile{},
 			},
 		},
-		TestCase{
+		{
 			name:                   "will override name",
 			ExpectedDockerfileName: "CustomDockerfile",
 			ContainerRequest: ContainerRequest{
@@ -110,6 +127,50 @@ func Test_GetDockerfile(t *testing.T) {
 	}
 }
 
+func Test_GetAuthConfigs(t *testing.T) {
+	type TestCase struct {
+		name                string
+		ExpectedAuthConfigs map[string]types.AuthConfig
+		ContainerRequest    ContainerRequest
+	}
+
+	testTable := []TestCase{
+		{
+			name:                "defaults to no auth",
+			ExpectedAuthConfigs: nil,
+			ContainerRequest: ContainerRequest{
+				FromDockerfile: FromDockerfile{},
+			},
+		},
+		{
+			name: "will specify credentials",
+			ExpectedAuthConfigs: map[string]types.AuthConfig{
+				"https://myregistry.com/": {
+					Username: "username",
+					Password: "password",
+				},
+			},
+			ContainerRequest: ContainerRequest{
+				FromDockerfile: FromDockerfile{
+					AuthConfigs: map[string]types.AuthConfig{
+						"https://myregistry.com/": {
+							Username: "username",
+							Password: "password",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			cfgs := testCase.ContainerRequest.GetAuthConfigs()
+			assert.Equal(t, testCase.ExpectedAuthConfigs, cfgs)
+		})
+	}
+}
+
 func Test_BuildImageWithContexts(t *testing.T) {
 	type TestCase struct {
 		Name               string
@@ -121,7 +182,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 	}
 
 	testCases := []TestCase{
-		TestCase{
+		{
 			Name: "test build from context archive",
 			ContextArchive: func() (io.Reader, error) {
 				var buf bytes.Buffer
@@ -132,8 +193,8 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				}{
 					{
 						Name: "Dockerfile",
-						Contents: `FROM alpine
-						CMD ["echo", "this is from the archive"]`,
+						Contents: `FROM docker.io/alpine
+								CMD ["echo", "this is from the archive"]`,
 					},
 				}
 
@@ -165,7 +226,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			},
 			ExpectedEchoOutput: "this is from the archive",
 		},
-		TestCase{
+		{
 			Name: "test build from context archive and be able to use files in it",
 			ContextArchive: func() (io.Reader, error) {
 				var buf bytes.Buffer
@@ -180,17 +241,17 @@ func Test_BuildImageWithContexts(t *testing.T) {
 					},
 					{
 						Name: "Dockerfile",
-						Contents: `FROM alpine
-						WORKDIR /app
-						COPY . .
-						CMD ["sh", "./say_hi.sh"]`,
+						Contents: `FROM docker.io/alpine
+								WORKDIR /app
+								COPY . .
+								CMD ["sh", "./say_hi.sh"]`,
 					},
 				}
 
 				for _, f := range files {
 					header := tar.Header{
 						Name:     f.Name,
-						Mode:     0777,
+						Mode:     0o0777,
 						Size:     int64(len(f.Contents)),
 						Typeflag: tar.TypeReg,
 						Format:   tar.FormatGNU,
@@ -215,7 +276,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			},
 			ExpectedEchoOutput: "hi this is from the say_hi.sh file!",
 		},
-		TestCase{
+		{
 			Name:               "test buildling from a context on the filesystem",
 			ContextPath:        "./testresources",
 			Dockerfile:         "echo.Dockerfile",
@@ -224,18 +285,20 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				return nil, nil
 			},
 		},
-		TestCase{
+		{
 			Name:        "it should error if neither a context nor a context archive are specified",
 			ContextPath: "",
 			ContextArchive: func() (io.Reader, error) {
 				return nil, nil
 			},
-			ExpectedError: errors.New("failed to create container: you must specify either a build context or an image"),
+			ExpectedError: errors.New("you must specify either a build context or an image: failed to create container"),
 		},
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
 		t.Run(testCase.Name, func(t *testing.T) {
+			t.Parallel()
 			ctx := context.Background()
 			a, err := testCase.ContextArchive()
 			if err != nil {
@@ -261,18 +324,16 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			} else if err != nil {
 				t.Fatal(err)
 			} else {
-				c.Terminate(ctx)
+				terminateContainerOnEnd(t, ctx, c)
 			}
-
 		})
-
 	}
 }
 
 func Test_GetLogsFromFailedContainer(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:      "alpine",
+		Image:      "docker.io/alpine",
 		Cmd:        []string{"echo", "-n", "I was not expecting this"},
 		WaitingFor: wait.ForLog("I was expecting this").WithStartupTimeout(5 * time.Second),
 	}
@@ -282,10 +343,10 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		Started:          true,
 	})
 
-	if err != nil && err.Error() != "failed to start container: context deadline exceeded" {
+	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal(err)
 	} else if err == nil {
-		c.Terminate(ctx)
+		terminateContainerOnEnd(t, ctx, c)
 		t.Fatal("was expecting error starting container")
 	}
 
@@ -294,7 +355,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		t.Fatal(logErr)
 	}
 
-	b, err := ioutil.ReadAll(logs)
+	b, err := io.ReadAll(logs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -319,8 +380,8 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 
 func createTestContainer(t *testing.T, ctx context.Context) int {
 	req := ContainerRequest{
-		Image:        "nginx",
-		ExposedPorts: []string{"80/tcp"},
+		Image:        nginxAlpineImage,
+		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
 	container, err := GenericContainer(ctx, GenericContainerRequest{
@@ -330,14 +391,76 @@ func createTestContainer(t *testing.T, ctx context.Context) int {
 	if err != nil {
 		t.Fatalf("could not start container: %v", err)
 	}
-	port, err := container.MappedPort(ctx, "80")
+	// mappedPort {
+	port, err := container.MappedPort(ctx, nginxDefaultPort)
+	// }
 	if err != nil {
 		t.Fatalf("could not get mapped port: %v", err)
 	}
 
-	t.Cleanup(func() {
-		container.Terminate(context.Background())
-	})
+	terminateContainerOnEnd(t, ctx, container)
 
 	return port.Int()
+}
+
+func TestBindMount(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		hostPath    string
+		mountTarget ContainerMountTarget
+	}
+	tests := []struct {
+		name string
+		args args
+		want ContainerMount
+	}{
+		{
+			name: "/var/run/docker.sock:/var/run/docker.sock",
+			args: args{hostPath: "/var/run/docker.sock", mountTarget: "/var/run/docker.sock"},
+			want: ContainerMount{Source: GenericBindMountSource{HostPath: "/var/run/docker.sock"}, Target: "/var/run/docker.sock"},
+		},
+		{
+			name: "/var/lib/app/data:/data",
+			args: args{hostPath: "/var/lib/app/data", mountTarget: "/data"},
+			want: ContainerMount{Source: GenericBindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data"},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equalf(t, tt.want, BindMount(tt.args.hostPath, tt.args.mountTarget), "BindMount(%v, %v)", tt.args.hostPath, tt.args.mountTarget)
+		})
+	}
+}
+
+func TestVolumeMount(t *testing.T) {
+	t.Parallel()
+	type args struct {
+		volumeName  string
+		mountTarget ContainerMountTarget
+	}
+	tests := []struct {
+		name string
+		args args
+		want ContainerMount
+	}{
+		{
+			name: "sample-data:/data",
+			args: args{volumeName: "sample-data", mountTarget: "/data"},
+			want: ContainerMount{Source: GenericVolumeMountSource{Name: "sample-data"}, Target: "/data"},
+		},
+		{
+			name: "web:/var/nginx/html",
+			args: args{volumeName: "web", mountTarget: "/var/nginx/html"},
+			want: ContainerMount{Source: GenericVolumeMountSource{Name: "web"}, Target: "/var/nginx/html"},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equalf(t, tt.want, VolumeMount(tt.args.volumeName, tt.args.mountTarget), "VolumeMount(%v, %v)", tt.args.volumeName, tt.args.mountTarget)
+		})
+	}
 }

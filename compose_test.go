@@ -1,14 +1,18 @@
 package testcontainers
 
 import (
+	"context"
 	"fmt"
-	"os/exec"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -94,7 +98,7 @@ func TestLocalDockerCompose(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -111,7 +115,7 @@ func TestDockerComposeStrategyForInvalidService(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -121,7 +125,7 @@ func TestDockerComposeStrategyForInvalidService(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		// Appending with _1 as given in the Java Test-Containers Example
-		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		WithExposedService(compose.Format("mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Invoke()
 	assert.NotEqual(t, err.Error, nil, "Expected error to be thrown because service with wait strategy is not running")
 
@@ -134,7 +138,7 @@ func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -144,7 +148,7 @@ func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		// Appending with _1 as given in the Java Test-Containers Example
-		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		WithExposedService(compose.Format("mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -158,7 +162,7 @@ func TestDockerComposeWithWaitForService(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -170,7 +174,7 @@ func TestDockerComposeWithWaitForService(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("nginx_1", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService(compose.Format("nginx", "1"), wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -178,8 +182,58 @@ func TestDockerComposeWithWaitForService(t *testing.T) {
 	assert.Contains(t, compose.Services, "nginx")
 }
 
+func TestDockerComposeWithWaitForShortLifespanService(t *testing.T) {
+	path := "./testresources/docker-compose-short-lifespan.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		//Assumption: tzatziki service wait logic will run before falafel, so that falafel service will exit before
+		WaitForService(compose.Format("tzatziki", "1"), wait.ForExit().WithExitTimeout(10*time.Second)).
+		WaitForService(compose.Format("falafel", "1"), wait.ForExit().WithExitTimeout(10*time.Second)).
+		Invoke()
+	checkIfError(t, err)
+
+	assert.Equal(t, 2, len(compose.Services))
+	assert.Contains(t, compose.Services, "falafel")
+	assert.Contains(t, compose.Services, "tzatziki")
+}
+
 func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 	path := "./testresources/docker-compose-simple.yml"
+
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		WithEnv(map[string]string{
+			"bar": "BAR",
+		}).
+		WithExposedService(compose.Format("nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		Invoke()
+	checkIfError(t, err)
+
+	assert.Equal(t, 1, len(compose.Services))
+	assert.Contains(t, compose.Services, "nginx")
+}
+
+func TestDockerComposeWithContainerName(t *testing.T) {
+	path := "./testresources/docker-compose-container-name.yml"
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -195,7 +249,7 @@ func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService("nginxy", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -208,7 +262,7 @@ func TestDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -217,7 +271,7 @@ func TestDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
-		WithExposedService("nginx_1", 9080, wait.ForLog("Configuration complete; ready for start up")).
+		WithExposedService(compose.Format("nginx", "1"), 9080, wait.ForLog("Configuration complete; ready for start up")).
 		Invoke()
 	checkIfError(t, err)
 
@@ -230,7 +284,7 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -239,8 +293,8 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
-		WithExposedService("mysql_1", 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
-		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -254,7 +308,7 @@ func TestDockerComposeWithFailedStrategy(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -281,7 +335,7 @@ func TestLocalDockerComposeComplex(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -303,7 +357,7 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose([]string{path}, identifier)
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -321,24 +375,23 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 	assert.Equal(t, 1, len(compose.Services))
 	assert.Contains(t, compose.Services, "nginx")
 
-	containerNameNginx := compose.Identifier + "_nginx_1"
-
 	present := map[string]string{
 		"bar": "BAR",
 	}
 	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, containerNameNginx, present, absent)
+	assertContainerEnvironmentVariables(t, compose.Identifier, "nginx", present, absent)
 }
 
 func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 	composeFiles := []string{
 		"testresources/docker-compose-simple.yml",
+		"testresources/docker-compose-postgres.yml",
 		"testresources/docker-compose-override.yml",
 	}
 
 	identifier := strings.ToLower(uuid.New().String())
 
-	compose := NewLocalDockerCompose(composeFiles, identifier)
+	compose := NewLocalDockerCompose(composeFiles, identifier, WithLogger(TestLogger(t)))
 	destroyFn := func() {
 		err := compose.Down()
 		checkIfError(t, err)
@@ -354,38 +407,107 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Equal(t, 2, len(compose.Services))
+	assert.Equal(t, 3, len(compose.Services))
 	assert.Contains(t, compose.Services, "nginx")
 	assert.Contains(t, compose.Services, "mysql")
-
-	containerNameNginx := compose.Identifier + "_nginx_1"
+	assert.Contains(t, compose.Services, "postgres")
 
 	present := map[string]string{
 		"bar": "BAR",
 		"foo": "FOO",
 	}
 	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, containerNameNginx, present, absent)
+	assertContainerEnvironmentVariables(t, compose.Identifier, "nginx", present, absent)
 }
 
-func assertContainerEnvironmentVariables(t *testing.T, containerName string, present map[string]string, absent map[string]string) {
-	args := []string{"exec", containerName, "env"}
+func TestLocalDockerComposeWithVolume(t *testing.T) {
+	path := "./testresources/docker-compose-volume.yml"
 
-	output, err := executeAndGetOutput("docker", args)
+	identifier := strings.ToLower(uuid.New().String())
+
+	compose := NewLocalDockerCompose([]string{path}, identifier, WithLogger(TestLogger(t)))
+	destroyFn := func() {
+		err := compose.Down()
+		checkIfError(t, err)
+		assertVolumeDoesNotExist(t, compose.Format(identifier, "mydata"))
+	}
+	defer destroyFn()
+
+	err := compose.
+		WithCommand([]string{"up", "-d"}).
+		Invoke()
 	checkIfError(t, err)
+}
+
+func assertVolumeDoesNotExist(tb testing.TB, volumeName string) {
+	containerClient, _, _, err := NewDockerClient()
+	if err != nil {
+		tb.Fatalf("Failed to get provider: %v", err)
+	}
+
+	volumeList, err := containerClient.VolumeList(context.Background(), filters.NewArgs(filters.Arg("name", volumeName)))
+	if err != nil {
+		tb.Fatalf("Failed to list volumes: %v", err)
+	}
+
+	if len(volumeList.Warnings) > 0 {
+		tb.Logf("Volume list warnings: %v", volumeList.Warnings)
+	}
+
+	if len(volumeList.Volumes) > 0 {
+		tb.Fatalf("Volume list is not empty")
+	}
+}
+
+func assertContainerEnvironmentVariables(
+	tb testing.TB,
+	composeIdentifier, serviceName string,
+	present map[string]string,
+	absent map[string]string,
+) {
+	containerClient, _, _, err := NewDockerClient()
+	if err != nil {
+		tb.Fatalf("Failed to get provider: %v", err)
+	}
+
+	containers, err := containerClient.ContainerList(context.Background(), types.ContainerListOptions{})
+	if err != nil {
+		tb.Fatalf("Failed to list containers: %v", err)
+	} else if len(containers) == 0 {
+		tb.Fatalf("container list empty")
+	}
+
+	containerNameRegexp := regexp.MustCompile(fmt.Sprintf(`^\/?%s(_|-)%s(_|-)\d$`, composeIdentifier, serviceName))
+	var containerID string
+containerLoop:
+	for i := range containers {
+		c := containers[i]
+		for j := range c.Names {
+			if containerNameRegexp.MatchString(c.Names[j]) {
+				containerID = c.ID
+				break containerLoop
+			}
+		}
+	}
+
+	details, err := containerClient.ContainerInspect(context.Background(), containerID)
+	if err != nil {
+		tb.Fatalf("Failed to inspect container: %v", err)
+	}
 
 	for k, v := range present {
 		keyVal := k + "=" + v
-		assert.Contains(t, output, keyVal)
+		assert.Contains(tb, details.Config.Env, keyVal)
 	}
 
 	for k, v := range absent {
 		keyVal := k + "=" + v
-		assert.NotContains(t, output, keyVal)
+		assert.NotContains(tb, details.Config.Env, keyVal)
 	}
 }
 
 func checkIfError(t *testing.T, err ExecError) {
+	t.Helper()
 	if err.Error != nil {
 		t.Fatalf("Failed when running %v: %v", err.Command, err.Error)
 	}
@@ -397,14 +519,7 @@ func checkIfError(t *testing.T, err ExecError) {
 	if err.Stderr != nil {
 		t.Fatalf("An error in Stderr happened when running %v: %v", err.Command, err.Stderr)
 	}
-}
 
-func executeAndGetOutput(command string, args []string) (string, ExecError) {
-	cmd := exec.Command(command, args...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", ExecError{Error: err}
-	}
-
-	return string(out), ExecError{Error: nil}
+	assert.NotNil(t, err.StdoutOutput)
+	assert.NotNil(t, err.StderrOutput)
 }

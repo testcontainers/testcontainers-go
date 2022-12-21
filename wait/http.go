@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -18,10 +17,11 @@ import (
 
 // Implement interface
 var _ Strategy = (*HTTPStrategy)(nil)
+var _ StrategyTimeout = (*HTTPStrategy)(nil)
 
 type HTTPStrategy struct {
 	// all Strategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
+	timeout *time.Duration
 
 	// additional properties
 	Port              nat.Port
@@ -39,7 +39,6 @@ type HTTPStrategy struct {
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
 func NewHTTPStrategy(path string) *HTTPStrategy {
 	return &HTTPStrategy{
-		startupTimeout:    defaultStartupTimeout(),
 		Port:              "80/tcp",
 		Path:              path,
 		StatusCodeMatcher: defaultStatusCodeMatcher,
@@ -60,8 +59,9 @@ func defaultStatusCodeMatcher(status int) bool {
 // since go has neither covariance nor generics, the return type must be the type of the concrete implementation
 // this is true for all properties, even the "shared" ones like startupTimeout
 
-func (ws *HTTPStrategy) WithStartupTimeout(startupTimeout time.Duration) *HTTPStrategy {
-	ws.startupTimeout = startupTimeout
+// WithStartupTimeout can be used to change the default startup timeout
+func (ws *HTTPStrategy) WithStartupTimeout(timeout time.Duration) *HTTPStrategy {
+	ws.timeout = &timeout
 	return ws
 }
 
@@ -115,11 +115,19 @@ func ForHTTP(path string) *HTTPStrategy {
 	return NewHTTPStrategy(path)
 }
 
+func (ws *HTTPStrategy) Timeout() *time.Duration {
+	return ws.timeout
+}
+
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	// limit context to startupTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
-	defer cancelContext()
+	timeout := defaultStartupTimeout()
+	if ws.timeout != nil {
+		timeout = *ws.timeout
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	ipAddress, err := target.Host(ctx)
 	if err != nil {
@@ -189,7 +197,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	// cache the body into a byte-slice so that it can be iterated over multiple times
 	var body []byte
 	if ws.Body != nil {
-		body, err = ioutil.ReadAll(ws.Body)
+		body, err = io.ReadAll(ws.Body)
 		if err != nil {
 			return
 		}

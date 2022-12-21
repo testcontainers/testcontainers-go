@@ -1,0 +1,8 @@
+version: '3'
+services:
+  postgres:
+    image: docker.io/postgres:14
+    environment:
+      POSTGRES_PASSWORD: s3cr3t
+    ports:
+     - "15432:5432"
