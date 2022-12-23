@@ -18,8 +18,7 @@ _Testcontainers for Go_ is a Go package that makes it simple to create and clean
 automated integration/smoke tests. The clean, easy-to-use API enables developers to programmatically define containers
 that should be run as part of a test and clean up those resources when the test is done.
 
-This project is opensource and you can have a look at the code on
-[GitHub](https://github.com/testcontainers/testcontainers-go).
+To start using _Testcontainers for Go_ please read our [quickstart guide](./quickstart.md).
 
 ## GoDoc
 
@@ -34,7 +33,8 @@ examples as well. Check it out at
 
 ## License
 
-See [LICENSE](https://github.com/testcontainers/testcontainers-go/blob/main/LICENSE).
+This project is opensource and you can have a look at the code on
+[GitHub](https://github.com/testcontainers/testcontainers-go). See [LICENSE](https://github.com/testcontainers/testcontainers-go/blob/main/LICENSE).
 
 ## Copyright
 

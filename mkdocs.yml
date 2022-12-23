@@ -26,8 +26,7 @@ markdown_extensions:
     - pymdownx.snippets
 nav:
     - Home: index.md
-    - Quickstart:
-        - quickstart/gotest.md
+    - Quickstart: quickstart.md
     - Features:
         - features/creating_container.md
         - features/networking.md
