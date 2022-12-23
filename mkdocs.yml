@@ -26,8 +26,7 @@ markdown_extensions:
     - pymdownx.snippets
 nav:
     - Home: index.md
-    - Quickstart:
-        - quickstart/gotest.md
+    - Quickstart: quickstart.md
     - Features:
         - features/creating_container.md
         - features/networking.md
@@ -71,4 +70,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: 0.16.0
+    latest_version: 0.17.0
