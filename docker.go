@@ -960,9 +960,14 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	sessionID := sessionID()
 
+	reaperOpts := containerOptions{}
+	for _, opt := range req.ReaperOptions {
+		opt(&reaperOpts)
+	}
+
 	var termSignal chan bool
 	// the reaper does not need to start a reaper for itself
-	isReaperContainer := strings.EqualFold(req.Image, reaperImage(req.ReaperImage))
+	isReaperContainer := strings.EqualFold(req.Image, reaperImage(reaperOpts.ImageName))
 	if !req.SkipReaper && !isReaperContainer {
 		r, err := newReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
 		if err != nil {
