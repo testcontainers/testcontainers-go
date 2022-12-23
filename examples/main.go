@@ -162,14 +162,15 @@ func generateDependabotUpdates(rootDir string, exampleLower string) error {
 
 	dependabotExampleUpdates := dependabotConfig.Updates
 
-	// make sure the main module is the first element in the list of examples
-	// and the e2e module is the second element
-	exampleUpdates := make(Updates, len(dependabotExampleUpdates)-2)
+	// make sure the main module is the first element in the list of examples,
+	// the compose module is the second element
+	// and the e2e module is the third element
+	exampleUpdates := make(Updates, len(dependabotExampleUpdates)-3)
 	j := 0
 
 	for _, exampleUpdate := range dependabotExampleUpdates {
 		// filter out the index.md file
-		if exampleUpdate.Directory != "/" && exampleUpdate.Directory != "/e2e" {
+		if exampleUpdate.Directory != "/" && exampleUpdate.Directory != "/modules/compose" && exampleUpdate.Directory != "/e2e" {
 			exampleUpdates[j] = exampleUpdate
 			j++
 		}
@@ -179,7 +180,7 @@ func generateDependabotUpdates(rootDir string, exampleLower string) error {
 	sort.Sort(exampleUpdates)
 
 	// prepend the main and e2e modules
-	exampleUpdates = append([]Update{dependabotExampleUpdates[0], dependabotExampleUpdates[1]}, exampleUpdates...)
+	exampleUpdates = append([]Update{dependabotExampleUpdates[0], dependabotExampleUpdates[1], dependabotExampleUpdates[2]}, exampleUpdates...)
 
 	dependabotConfig.Updates = exampleUpdates
 
