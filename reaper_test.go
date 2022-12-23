@@ -45,7 +45,7 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		AutoRemove:  true,
 		WaitingFor:  wait.ForListeningPort(nat.Port("8080/tcp")),
 		NetworkMode: "bridge",
-		ReaperOptions: []ReaperOption{
+		ReaperOptions: []ContainerOption{
 			WithImageName("reaperImage"),
 		},
 	}
@@ -176,7 +176,7 @@ func Test_ReaperForNetwork(t *testing.T) {
 		NetworkRequest: NetworkRequest{
 			Name:           networkName,
 			CheckDuplicate: true,
-			ReaperOptions: []ReaperOption{
+			ReaperOptions: []ContainerOption{
 				WithRegistryCredentials("credentials"),
 				WithImageName("reaperImage"),
 			},

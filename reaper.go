@@ -39,29 +39,6 @@ type ReaperProvider interface {
 	Config() TestContainersConfig
 }
 
-// ReaperOptions functional options for the reaper
-type reaperOptions struct {
-	ImageName           string
-	RegistryCredentials string
-}
-
-// functional option for setting the reaper image
-type ReaperOption func(*reaperOptions)
-
-// WithImageName sets the reaper image name
-func WithImageName(imageName string) ReaperOption {
-	return func(o *reaperOptions) {
-		o.ImageName = imageName
-	}
-}
-
-// WithRegistryCredentials sets the reaper registry credentials
-func WithRegistryCredentials(registryCredentials string) ReaperOption {
-	return func(o *reaperOptions) {
-		o.RegistryCredentials = registryCredentials
-	}
-}
-
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
 // Deprecated: it's not possible to create a reaper anymore.
 func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
@@ -69,7 +46,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 }
 
 // newReaper creates a Reaper with a sessionID to identify containers and a provider to use
-func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ReaperOption) (*Reaper, error) {
+func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	// If reaper already exists re-use it
@@ -87,7 +64,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 
 	listeningPort := nat.Port("8080/tcp")
 
-	reaperOpts := reaperOptions{}
+	reaperOpts := containerOptions{}
 
 	for _, opt := range opts {
 		opt(&reaperOpts)
