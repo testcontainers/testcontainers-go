@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/firestore v1.9.0
-	github.com/testcontainers/testcontainers-go v0.16.0
+	github.com/testcontainers/testcontainers-go v0.17.0
 	google.golang.org/api v0.105.0
 	google.golang.org/grpc v1.51.0
 	gotest.tools/gotestsum v1.8.2
