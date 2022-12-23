@@ -1,4 +1,4 @@
-package testcontainers
+package compose
 
 import (
 	"context"
@@ -16,7 +16,8 @@ import (
 	"github.com/docker/docker/client"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/testcontainers/testcontainers-go/wait"
+	testcontainers "github.com/testcontainers/testcontainers-go"
+	wait "github.com/testcontainers/testcontainers-go/wait"
 )
 
 type stackUpOptionFunc func(s *stackUpOptions)
@@ -119,7 +120,7 @@ type dockerCompose struct {
 
 	// cache for containers that are part of the stack
 	// used in ServiceContainer(...) function to avoid calls to the Docker API
-	containers map[string]*DockerContainer
+	containers map[string]*testcontainers.DockerContainer
 
 	// docker/compose API service instance used to control the compose stack
 	composeService api.Service
@@ -136,7 +137,7 @@ type dockerCompose struct {
 	project *types.Project
 }
 
-func (d *dockerCompose) ServiceContainer(ctx context.Context, svcName string) (*DockerContainer, error) {
+func (d *dockerCompose) ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
@@ -264,7 +265,7 @@ func (d *dockerCompose) WithOsEnv() ComposeStack {
 	return d
 }
 
-func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*DockerContainer, error) {
+func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
 	if container, ok := d.containers[svcName]; ok {
 		return container, nil
 	}
@@ -287,12 +288,14 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*D
 	}
 
 	containerInstance := containers[0]
-	container := &DockerContainer{
+	container := &testcontainers.DockerContainer{
 		ID: containerInstance.ID,
-		provider: &DockerProvider{
-			client: d.dockerClient,
-		},
 	}
+
+	dockerProvider := &testcontainers.DockerProvider{}
+	dockerProvider.SetClient(d.dockerClient)
+
+	container.SetProvider(dockerProvider)
 
 	d.containers[svcName] = container
 
@@ -349,7 +352,7 @@ func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
 }
 
 func makeClient(*command.DockerCli) (client.APIClient, error) {
-	dockerClient, _, _, err := NewDockerClient()
+	dockerClient, _, _, err := testcontainers.NewDockerClient()
 	if err != nil {
 		return nil, err
 	}

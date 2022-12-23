@@ -1,4 +1,4 @@
-package testcontainers
+package compose
 
 import (
 	"context"

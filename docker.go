@@ -71,6 +71,16 @@ type DockerContainer struct {
 	logger            Logging
 }
 
+// SetLogger sets the logger for the container
+func (c *DockerContainer) SetLogger(logger Logging) {
+	c.logger = logger
+}
+
+// SetProvider sets the provider for the container
+func (c *DockerContainer) SetProvider(provider *DockerProvider) {
+	c.provider = provider
+}
+
 func (c *DockerContainer) GetContainerID() string {
 	return c.ID
 }
@@ -683,6 +693,16 @@ type DockerProvider struct {
 	config    TestContainersConfig
 }
 
+// Client gets the docker client used by the provider
+func (p *DockerProvider) Client() client.APIClient {
+	return p.client
+}
+
+// SetClient sets the docker client to be used by the provider
+func (p *DockerProvider) SetClient(c client.APIClient) {
+	p.client = c
+}
+
 var _ ContainerProvider = (*DockerProvider)(nil)
 
 // or through Decode
@@ -812,29 +832,10 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 
 	// log docker server info only once
 	logOnce.Do(func() {
-		logDockerServerInfo(context.Background(), p.client, p.Logger)
+		LogDockerServerInfo(context.Background(), p.client, p.Logger)
 	})
 
 	return p, nil
-}
-
-func logDockerServerInfo(ctx context.Context, client client.APIClient, logger Logging) {
-	infoMessage := `%v - Connected to docker: 
-  Server Version: %v
-  API Version: %v
-  Operating System: %v
-  Total Memory: %v MB
-`
-
-	info, err := client.Info(ctx)
-	if err != nil {
-		logger.Printf("failed getting information about docker server: %s", err)
-		return
-	}
-
-	logger.Printf(infoMessage, packagePath,
-		info.ServerVersion, client.ClientVersion(),
-		info.OperatingSystem, info.MemTotal/1024/1024)
 }
 
 // configureTC reads from testcontainers properties file, if it exists
