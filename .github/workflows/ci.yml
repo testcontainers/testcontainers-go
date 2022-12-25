@@ -43,17 +43,9 @@ jobs:
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-unit
 
-      - name: modTidy e2e tests
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make -C e2e tools-tidy
-
       - name: Run example generator tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make -C examples test-unit
-
-      - name: Run e2e tests
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make test-e2e
 
       - name: Run checker
         run: |
