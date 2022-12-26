@@ -146,8 +146,6 @@ func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConf
 	assert.Equal(t, "/", examples[0].Directory, examples)
 	// second item is the compose module
 	assert.Equal(t, "/modules/compose", examples[1].Directory, examples)
-	// third item is the e2e module
-	assert.Equal(t, "/e2e", examples[2].Directory, examples)
 }
 
 // assert content example file in the docs
