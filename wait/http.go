@@ -217,11 +217,11 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 				continue
 			}
 			if ws.StatusCodeMatcher != nil && !ws.StatusCodeMatcher(resp.StatusCode) {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 				continue
 			}
 			if ws.ResponseMatcher != nil && !ws.ResponseMatcher(resp.Body) {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 				continue
 			}
 			if err := resp.Body.Close(); err != nil {
