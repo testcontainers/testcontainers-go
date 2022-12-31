@@ -65,10 +65,11 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		Labels: map[string]string{
 			TestcontainerLabelIsReaper: "true",
 		},
-		SkipReaper: true,
-		Mounts:     Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
-		AutoRemove: true,
-		WaitingFor: wait.ForListeningPort(listeningPort),
+		SkipReaper:  true,
+		Mounts:      Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
+		AutoRemove:  true,
+		WaitingFor:  wait.ForListeningPort(listeningPort),
+		ReaperImage: reaperImage(reaperImageName),
 	}
 
 	// include reaper-specific labels to the reaper container

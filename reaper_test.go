@@ -44,6 +44,7 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		AutoRemove:  true,
 		WaitingFor:  wait.ForListeningPort(nat.Port("8080/tcp")),
 		NetworkMode: "bridge",
+		ReaperImage: "reaperImage",
 	}
 	if customize == nil {
 		return req
