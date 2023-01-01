@@ -961,7 +961,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	sessionID := sessionID()
 
-	reaperOpts := containerOptions{}
+	reaperOpts := containerOptions{
+	   ImageName: req.ReaperImage
+	}
 	for _, opt := range req.ReaperOptions {
 		opt(&reaperOpts)
 	}
