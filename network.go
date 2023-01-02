@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+
 	"github.com/docker/docker/api/types/network"
 
 	"github.com/docker/docker/api/types"
@@ -39,6 +40,7 @@ type NetworkRequest struct {
 	Attachable     bool
 	IPAM           *network.IPAM
 
-	SkipReaper  bool   // indicates whether we skip setting up a reaper for this
-	ReaperImage string //alternative reaper registry
+	SkipReaper    bool              // indicates whether we skip setting up a reaper for this
+	ReaperImage   string            // Deprecated: use WithImageName ContainerOption instead. Alternative reaper registry
+	ReaperOptions []ContainerOption // Reaper options to use for this network
 }
