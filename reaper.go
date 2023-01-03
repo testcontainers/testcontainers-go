@@ -42,7 +42,13 @@ type ReaperProvider interface {
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
+// Deprecated: it's not possible to create a reaper anymore.
 func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
+	return newReaper(ctx, sessionID, provider, WithImageName(reaperImageName))
+}
+
+// newReaper creates a Reaper with a sessionID to identify containers and a provider to use
+func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	// If reaper already exists re-use it
@@ -62,21 +68,32 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 
 	tcConfig := provider.Config()
 
+	reaperOpts := containerOptions{}
+
+	for _, opt := range opts {
+		opt(&reaperOpts)
+	}
+
 	req := ContainerRequest{
-		Image:        reaperImage(reaperImageName),
+		Image:        reaperImage(reaperOpts.ImageName),
 		ExposedPorts: []string{string(listeningPort)},
 		Labels: map[string]string{
 			TestcontainerLabelIsReaper: "true",
 		},
-		SkipReaper: true,
-		Mounts:     Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
-		Privileged: tcConfig.RyukPrivileged,
-		WaitingFor: wait.ForListeningPort(listeningPort),
+		SkipReaper:    true,
+		RegistryCred:  reaperOpts.RegistryCredentials,
+		Mounts:        Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
+		Privileged:    tcConfig.RyukPrivileged,
+		WaitingFor:    wait.ForListeningPort(listeningPort),
+		ReaperOptions: opts,
 		PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
 			hc.AutoRemove = true
 			hc.NetworkMode = Bridge
 		},
 	}
+
+	// keep backwards compatibility
+	req.ReaperImage = req.Image
 
 	// include reaper-specific labels to the reaper container
 	for k, v := range reaper.Labels() {

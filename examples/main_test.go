@@ -22,7 +22,7 @@ func TestGenerateWrongExampleName(t *testing.T) {
 	err = os.MkdirAll(githubWorkflowsTmp, 0777)
 	assert.Nil(t, err)
 
-	err = copyInitialConfig(t, rootTmp)
+	err = copyInitialMkdocsConfig(t, rootTmp)
 	assert.Nil(t, err)
 
 	tests := []struct {
@@ -65,7 +65,16 @@ func TestGenerate(t *testing.T) {
 	err = os.MkdirAll(githubWorkflowsTmp, 0777)
 	assert.Nil(t, err)
 
-	err = copyInitialConfig(t, rootTmp)
+	err = copyInitialMkdocsConfig(t, rootTmp)
+	assert.Nil(t, err)
+
+	originalConfig, err := readMkdocsConfig(rootTmp)
+	assert.Nil(t, err)
+
+	err = copyInitialDependabotConfig(t, rootTmp)
+	assert.Nil(t, err)
+
+	originalDependabotConfig, err := readDependabotConfig(rootTmp)
 	assert.Nil(t, err)
 
 	example := Example{
@@ -109,7 +118,34 @@ func TestGenerate(t *testing.T) {
 	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertToolsGoContent(t, example, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
-	assertMkdocsExamplesNav(t, example, rootTmp)
+	assertMkdocsExamplesNav(t, example, originalConfig, rootTmp)
+	assertDependabotExamplesUpdates(t, example, originalDependabotConfig, rootTmp)
+}
+
+// assert content in the Examples nav from mkdocs.yml
+func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConfig *DependabotConfig, rootDir string) {
+	config, err := readDependabotConfig(rootDir)
+	assert.Nil(t, err)
+
+	examples := config.Updates
+
+	assert.Equal(t, len(originalConfig.Updates)+1, len(examples))
+
+	// the example should be in the dependabot updates
+	found := false
+	for _, ex := range examples {
+		directory := "/examples/" + example.Lower()
+		if directory == ex.Directory {
+			found = true
+		}
+	}
+
+	assert.True(t, found)
+
+	// first item is the main module
+	assert.Equal(t, "/", examples[0].Directory, examples)
+	// second item is the compose module
+	assert.Equal(t, "/modules/compose", examples[1].Directory, examples)
 }
 
 // assert content example file in the docs
@@ -169,12 +205,12 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, "name: "+title+" example pipeline", data[0])
-	assert.Equal(t, "  test-"+lower+":", data[5])
-	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[15])
-	assert.Equal(t, "        working-directory: ./examples/"+lower, data[22])
+	assert.Equal(t, "  test-"+lower+":", data[9])
+	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[19])
 	assert.Equal(t, "        working-directory: ./examples/"+lower, data[26])
 	assert.Equal(t, "        working-directory: ./examples/"+lower, data[30])
-	assert.Equal(t, "          paths: \"**/TEST-"+lower+"*.xml\"", data[40])
+	assert.Equal(t, "        working-directory: ./examples/"+lower, data[34])
+	assert.Equal(t, "          paths: \"**/TEST-"+lower+"*.xml\"", data[44])
 }
 
 // assert content go.mod
@@ -197,12 +233,15 @@ func assertMakefileContent(t *testing.T, example Example, makefile string) {
 }
 
 // assert content in the Examples nav from mkdocs.yml
-func assertMkdocsExamplesNav(t *testing.T, example Example, rootDir string) {
+func assertMkdocsExamplesNav(t *testing.T, example Example, originalConfig *MkDocsConfig, rootDir string) {
 	config, err := readMkdocsConfig(rootDir)
 	assert.Nil(t, err)
 
-	// the example should be in the nav
 	examples := config.Nav[3].Examples
+
+	assert.Equal(t, len(originalConfig.Nav[3].Examples)+1, len(examples))
+
+	// the example should be in the nav
 	found := false
 	for _, ex := range examples {
 		markdownExample := "examples/" + example.Lower() + ".md"

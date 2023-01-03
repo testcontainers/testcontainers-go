@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIntegrationSetGet(t *testing.T) {
@@ -36,6 +37,16 @@ func TestIntegrationSetGet(t *testing.T) {
 	}
 	client := redis.NewClient(options)
 	defer flushRedis(ctx, *client)
+
+	t.Log("pinging redis")
+	pong, err := client.Ping(ctx).Result()
+	require.NoError(t, err)
+
+	t.Log("received response from redis")
+
+	if pong != "PONG" {
+		t.Fatalf("received unexpected response from redis: %s", pong)
+	}
 
 	// Set data
 	key := fmt.Sprintf("{user.%s}.favoritefood", uuid.NewString())

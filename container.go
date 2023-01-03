@@ -116,7 +116,8 @@ type ContainerRequest struct {
 	Files             []ContainerFile                                                   // files which will be copied when container starts
 	User              string                                                            // for specifying uid:gid
 	SkipReaper        bool                                                              // indicates whether we skip setting up a reaper for this
-	ReaperImage       string                                                            // alternative reaper image
+	ReaperImage       string                                                            // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image
+	ReaperOptions     []ContainerOption                                                 // options for the reaper
 	AutoRemove        bool                                                              // Deprecated: Use PreCreateModifier instead. If set to true, the container will be removed from the host when stopped
 	AlwaysPullImage   bool                                                              // Always pull image
 	ImagePlatform     string                                                            // ImagePlatform describes the platform which the image runs on.
@@ -149,6 +150,29 @@ type (
 
 func (f GenericProviderOptionFunc) ApplyGenericTo(opts *GenericProviderOptions) {
 	f(opts)
+}
+
+// containerOptions functional options for a container
+type containerOptions struct {
+	ImageName           string
+	RegistryCredentials string
+}
+
+// functional option for setting the reaper image
+type ContainerOption func(*containerOptions)
+
+// WithImageName sets the reaper image name
+func WithImageName(imageName string) ContainerOption {
+	return func(o *containerOptions) {
+		o.ImageName = imageName
+	}
+}
+
+// WithRegistryCredentials sets the reaper registry credentials
+func WithRegistryCredentials(registryCredentials string) ContainerOption {
+	return func(o *containerOptions) {
+		o.RegistryCredentials = registryCredentials
+	}
 }
 
 // possible provider types

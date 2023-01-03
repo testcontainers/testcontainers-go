@@ -3,9 +3,23 @@ _Testcontainers for Go_ plays well with the native `go test` framework.
 The ideal use case is for integration or end to end tests. It helps you to spin
 up and manage the dependencies life cycle via Docker.
 
-Docker has to be available for this library to work.
+## 1. System requirements
 
-## 1. Install
+Please read the [system requirements](../system_requirements/) page before you start.
+
+## 2. Install _Testcontainers for Go_
+
+!!!warning
+
+	Given the new Compose module needs a fixed version of Docker to work, and the Docker folks added [a replace directive until the upcoming Docker 22.06 release is out](https://github.com/docker/compose/issues/9946#issuecomment-1288923912),
+	we were forced to add it too, causing consumers of _Testcontainers for Go_ to add the following replace directive to their `go.mod` files.
+	We expect this to be removed in the next releases of _Testcontainers for Go_.
+
+	```
+	replace (
+		github.com/docker/docker => github.com/docker/docker v20.10.3-0.20221013203545-33ab36d6b304+incompatible // 22.06 branch
+	)
+	```
 
 We use [gomod](https://blog.golang.org/using-go-modules) and you can get it installed via:
 
@@ -13,32 +27,7 @@ We use [gomod](https://blog.golang.org/using-go-modules) and you can get it inst
 go get github.com/testcontainers/testcontainers-go
 ```
 
-!!!warning
-
-	Given the version includes the Compose dependency, and the Docker folks added [a replace directive until the upcoming Docker 22.06 release is out](https://github.com/docker/compose/issues/9946#issuecomment-1288923912),
-	we were forced to add it too, causing consumers of _Testcontainers for Go_ to add the following replace directive to their `go.mod` files.
-	We expect this to be removed in the next releases of _Testcontainers for Go_.
-
-	```
-	replace (
-		github.com/docker/cli => github.com/docker/cli v20.10.3-0.20221013132413-1d6c6e2367e2+incompatible // 22.06 master branch
-		github.com/docker/docker => github.com/docker/docker v20.10.3-0.20221013203545-33ab36d6b304+incompatible // 22.06 branch
-		github.com/moby/buildkit => github.com/moby/buildkit v0.10.1-0.20220816171719-55ba9d14360a // same as buildx
-
-		github.com/opencontainers/runc => github.com/opencontainers/runc v1.1.2 // Can be removed on next bump of containerd to > 1.6.4
-
-		// For k8s dependencies, we use a replace directive, to prevent them being
-		// upgraded to the version specified in containerd, which is not relevant to the
-		// version needed.
-		// See https://github.com/docker/buildx/pull/948 for details.
-		// https://github.com/docker/buildx/blob/v0.8.1/go.mod#L62-L64
-		k8s.io/api => k8s.io/api v0.22.4
-		k8s.io/apimachinery => k8s.io/apimachinery v0.22.4
-		k8s.io/client-go => k8s.io/client-go v0.22.4
-	)
-	```
-
-## 2. Spin up Redis
+## 3. Spin up Redis
 
 ```go
 import (
@@ -105,7 +94,7 @@ terminated function: `defer redisC.Terminate(ctx)`.
     Look at [features/garbage_collector](/features/garbage_collector/) to know another way to
     clean up resources.
 
-## 3. Make your code to talk with the container
+## 4. Make your code to talk with the container
 
 This is just an example, but usually Go applications that rely on Redis are
 using the [redis-go](https://github.com/go-redis/redis) client. This code gets
@@ -133,6 +122,10 @@ We expose only one port, so the `Endpoint` does not need a second argument set.
 
 In this case it returns: `localhost:<mappedportfor-6379>`.
 
-## 3. Run the test
+## 5. Run the test
 
 You can run the test via `go test ./...`
+
+## 6. Want to go deeper with Redis?
+
+You can find a more elaborated Redis example in our examples section. Please check it out [here](./examples/redis.md).
