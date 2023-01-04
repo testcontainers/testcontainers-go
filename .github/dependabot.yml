@@ -25,6 +25,12 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /examples/consul
+      schedule:
+        interval: daily
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /examples/datastore
       schedule:
         interval: daily
