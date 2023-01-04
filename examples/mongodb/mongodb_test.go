@@ -9,10 +9,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func TestMongodb(t *testing.T) {
+func TestMongoDB(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := setupMongodb(ctx)
+	container, err := setupMongoDB(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

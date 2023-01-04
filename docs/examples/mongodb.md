@@ -1,9 +1,9 @@
-# Mongodb
+# MongoDB
 
 <!--codeinclude-->
-[Creating a Mongodb container](../../examples/mongodb/mongodb.go)
+[Creating a MongoDB container](../../examples/mongodb/mongodb.go)
 <!--/codeinclude-->
 
 <!--codeinclude-->
-[Test for a Mongodb container](../../examples/mongodb/mongodb_test.go)
+[Test for a MongoDB container](../../examples/mongodb/mongodb_test.go)
 <!--/codeinclude-->

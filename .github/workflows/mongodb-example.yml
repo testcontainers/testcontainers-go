@@ -1,4 +1,4 @@
-name: Mongodb example pipeline
+name: MongoDB example pipeline
 
 on: [push, pull_request]
 
