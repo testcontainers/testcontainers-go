@@ -37,7 +37,7 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	}
 	req.HostConfigModifier(hostConfig)
 
-	if req.HostConfigModifier != nil {
+	if req.EnpointSettingsModifier != nil {
 		req.EnpointSettingsModifier(endpointSettings)
 	}
 
