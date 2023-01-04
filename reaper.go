@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -86,7 +85,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 		Privileged:    tcConfig.RyukPrivileged,
 		WaitingFor:    wait.ForListeningPort(listeningPort),
 		ReaperOptions: opts,
-		PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
+		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.AutoRemove = true
 			hc.NetworkMode = Bridge
 		},

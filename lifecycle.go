@@ -32,15 +32,19 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 		}
 	}
 
-	if req.PreCreateModifier == nil {
-		req.PreCreateModifier = defaultPreCreateModifier(req)
+	if req.HostConfigModifier == nil {
+		req.HostConfigModifier = defaultHostConfigModifier(req)
 	}
-	req.PreCreateModifier(hostConfig, endpointSettings)
+	req.HostConfigModifier(hostConfig)
+
+	if req.HostConfigModifier != nil {
+		req.EnpointSettingsModifier(endpointSettings)
+	}
 
 	networkingConfig.EndpointsConfig = endpointSettings
 
 	exposedPorts := req.ExposedPorts
-	// this check must be done after the PreCreateModifier is called, so the network mode is already set
+	// this check must be done after the pre-creation Modifiers are called, so the network mode is already set
 	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
 		image, _, err := p.client.ImageInspectWithRaw(ctx, dockerInput.Image)
 		if err != nil {
@@ -62,9 +66,9 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	return nil
 }
 
-// defaultPreCreateModifier provides a default modifier including the deprecated fields
-func defaultPreCreateModifier(req ContainerRequest) func(hostConfig *container.HostConfig, endpointSettings map[string]*network.EndpointSettings) {
-	return func(hostConfig *container.HostConfig, endpointSettings map[string]*network.EndpointSettings) {
+// defaultHostConfigModifier provides a default modifier including the deprecated fields
+func defaultHostConfigModifier(req ContainerRequest) func(hostConfig *container.HostConfig) {
+	return func(hostConfig *container.HostConfig) {
 		hostConfig.AutoRemove = req.AutoRemove
 		hostConfig.CapAdd = req.CapAdd
 		hostConfig.CapDrop = req.CapDrop

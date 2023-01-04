@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-units"
 	"github.com/stretchr/testify/assert"
@@ -149,7 +148,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 			},
 			Privileged: true,
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
-			PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
+			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.NetworkMode = "host"
 			},
 		},
@@ -214,7 +213,7 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 			Image:      nginxImage,
 			SkipReaper: true,
 			Networks:   []string{"new-network"},
-			PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
+			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.NetworkMode = "host"
 			},
 		},
@@ -244,7 +243,7 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 			SkipReaper: true,
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
 			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
-			PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
+			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.NetworkMode = "host"
 			},
 		},
@@ -282,7 +281,7 @@ func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
 			SkipReaper: true,
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
 			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
-			PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
+			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.NetworkMode = "host"
 			},
 		},
@@ -321,7 +320,7 @@ func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
 			SkipReaper: true,
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
 			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
-			PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
+			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.NetworkMode = "host"
 			},
 		},
@@ -2313,7 +2312,7 @@ func TestDockerContainerResources(t *testing.T) {
 			Image:        nginxAlpineImage,
 			ExposedPorts: []string{nginxDefaultPort},
 			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-			PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
+			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.Resources = container.Resources{
 					Ulimits: expected,
 				}
@@ -2401,7 +2400,7 @@ func TestContainerCapAdd(t *testing.T) {
 			Image:        nginxAlpineImage,
 			ExposedPorts: []string{nginxDefaultPort},
 			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-			PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
+			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.CapAdd = []string{expected}
 			},
 		},
@@ -2548,7 +2547,7 @@ func TestNetworkModeWithContainerReference(t *testing.T) {
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
-			PreCreateModifier: func(hc *container.HostConfig, es map[string]*network.EndpointSettings) {
+			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.NetworkMode = container.NetworkMode(networkMode)
 			},
 		},

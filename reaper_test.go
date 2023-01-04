@@ -27,10 +27,14 @@ func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequ
 	m.hostConfig = &container.HostConfig{}
 	m.enpointSettings = map[string]*network.EndpointSettings{}
 
-	if req.PreCreateModifier == nil {
-		req.PreCreateModifier = defaultPreCreateModifier(req)
+	if req.HostConfigModifier == nil {
+		req.HostConfigModifier = defaultHostConfigModifier(req)
 	}
-	req.PreCreateModifier(m.hostConfig, m.enpointSettings)
+	req.HostConfigModifier(m.hostConfig)
+
+	if req.EnpointSettingsModifier != nil {
+		req.EnpointSettingsModifier(m.enpointSettings)
+	}
 
 	// we're only interested in the request, so instead of mocking the Docker client
 	// we'll error out here
