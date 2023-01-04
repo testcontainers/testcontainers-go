@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // mongodbContainer represents the mongodb container type used in the module
@@ -14,7 +15,12 @@ type mongodbContainer struct {
 // setupMongodb creates an instance of the mongodb container type
 func setupMongodb(ctx context.Context) (*mongodbContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "mongo:6",
+		Image:        "mongo:6",
+		ExposedPorts: []string{"27017/tcp"},
+		WaitingFor: wait.ForAll(
+			wait.ForLog("Waiting for connections"),
+			wait.ForListeningPort("27017/tcp"),
+		),
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
