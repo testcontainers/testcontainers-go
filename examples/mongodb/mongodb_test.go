@@ -26,14 +26,12 @@ func TestMongoDB(t *testing.T) {
 
 	// perform assertions
 
-	host, _ := container.Host(ctx)
+	endpoint, err := container.Endpoint(ctx, "mongodb")
+	if err != nil {
+		t.Error(fmt.Errorf("failed to get endpoint: %w", err))
+	}
 
-	p, _ := container.MappedPort(ctx, "27017/tcp")
-	port := p.Int()
-
-	connectionString := fmt.Sprintf("mongodb://%s:%d", host, port)
-
-	mongoClient, err := mongo.NewClient(options.Client().ApplyURI(connectionString))
+	mongoClient, err := mongo.NewClient(options.Client().ApplyURI(endpoint))
 	if err != nil {
 		t.Fatal(fmt.Errorf("error creating mongo client: %w", err))
 	}
