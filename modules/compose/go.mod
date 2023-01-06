@@ -20,9 +20,9 @@ replace (
 )
 
 require (
-	github.com/compose-spec/compose-go v1.8.1
+	github.com/compose-spec/compose-go v1.8.2
 	github.com/docker/cli v20.10.20+incompatible
-	github.com/docker/compose/v2 v2.14.2
+	github.com/docker/compose/v2 v2.15.0
 	github.com/docker/docker v20.10.20+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.1
@@ -142,9 +142,9 @@ require (
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 // indirect
-	golang.org/x/text v0.5.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
