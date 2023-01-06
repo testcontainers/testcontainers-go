@@ -22,7 +22,7 @@ replace (
 require (
 	github.com/compose-spec/compose-go v1.8.2
 	github.com/docker/cli v20.10.20+incompatible
-	github.com/docker/compose/v2 v2.14.2
+	github.com/docker/compose/v2 v2.15.0
 	github.com/docker/docker v20.10.20+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.1
