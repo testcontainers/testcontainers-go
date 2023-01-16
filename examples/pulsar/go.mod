@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/apache/pulsar-client-go v0.9.0
 	github.com/testcontainers/testcontainers-go v0.17.0
-	gotest.tools/gotestsum v1.8.2
+	gotest.tools/gotestsum v1.9.0
 )
 
 replace (
@@ -24,7 +24,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/containerd/containerd v1.6.14 // indirect
+	github.com/containerd/containerd v1.6.15 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
@@ -71,7 +71,7 @@ require (
 	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
