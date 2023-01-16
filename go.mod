@@ -16,7 +16,7 @@ require (
 	golang.org/x/sys v0.4.0
 	golang.org/x/text v0.6.0
 	gopkg.in/yaml.v3 v3.0.1
-	gotest.tools/gotestsum v1.8.2
+	gotest.tools/gotestsum v1.9.0
 )
 
 replace github.com/docker/docker => github.com/docker/docker v20.10.3-0.20221013203545-33ab36d6b304+incompatible // 22.06 branch
