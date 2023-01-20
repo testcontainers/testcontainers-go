@@ -20,7 +20,7 @@ replace (
 )
 
 require (
-	github.com/compose-spec/compose-go v1.8.2
+	github.com/compose-spec/compose-go v1.9.0
 	github.com/docker/cli v20.10.20+incompatible
 	github.com/docker/compose/v2 v2.15.0
 	github.com/docker/docker v20.10.20+incompatible
@@ -41,7 +41,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/containerd/console v1.0.3 // indirect
-	github.com/containerd/containerd v1.6.14 // indirect
+	github.com/containerd/containerd v1.6.15 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/containerd/ttrpc v1.1.0 // indirect
 	github.com/containerd/typeurl v1.0.2 // indirect
