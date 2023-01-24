@@ -90,6 +90,9 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 
 	// include reaper-specific labels to the reaper container
 	for k, v := range reaper.Labels() {
+		if k == TestcontainerLabelSessionID {
+			continue
+		}
 		req.Labels[k] = v
 	}
 

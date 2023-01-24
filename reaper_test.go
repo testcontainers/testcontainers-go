@@ -36,9 +36,8 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		ReaperImage:  "reaperImage",
 		ExposedPorts: []string{"8080/tcp"},
 		Labels: map[string]string{
-			TestcontainerLabel:          "true",
-			TestcontainerLabelIsReaper:  "true",
-			TestcontainerLabelSessionID: "sessionId",
+			TestcontainerLabel:         "true",
+			TestcontainerLabelIsReaper: "true",
 		},
 		SkipReaper:  true,
 		Mounts:      Mounts(BindMount("/var/run/docker.sock", "/var/run/docker.sock")),
