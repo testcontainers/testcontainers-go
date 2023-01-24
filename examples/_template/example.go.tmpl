@@ -1,4 +1,4 @@
-{{ $lower := .Name | ToLower }}{{ $title := .Name | Title }}package {{ $lower }}
+{{ $lower := ToLower }}{{ $title := Title }}{{ $lowerTitle := ToLowerTitle }}package {{ $lower }}
 
 import (
 	"context"
@@ -6,13 +6,13 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-// {{ $lower }}Container represents the {{ .Name }} container type used in the module
-type {{ $lower }}Container struct {
+// {{ $lowerTitle }}Container represents the {{ $title }} container type used in the module
+type {{ $lowerTitle }}Container struct {
 	testcontainers.Container
 }
 
-// setup{{ $title }} creates an instance of the {{ .Name }} container type
-func setup{{ $title }}(ctx context.Context) (*{{ $lower }}Container, error) {
+// setup{{ $title }} creates an instance of the {{ $title }} container type
+func setup{{ $title }}(ctx context.Context) (*{{ $lowerTitle }}Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image: "{{ .Image }}",
 	}
@@ -24,5 +24,5 @@ func setup{{ $title }}(ctx context.Context) (*{{ $lower }}Container, error) {
 		return nil, err
 	}
 
-	return &{{ $lower }}Container{Container: container}, nil
+	return &{{ $lowerTitle }}Container{Container: container}, nil
 }
