@@ -71,6 +71,16 @@ type DockerContainer struct {
 	logger            Logging
 }
 
+// SetLogger sets the logger for the container
+func (c *DockerContainer) SetLogger(logger Logging) {
+	c.logger = logger
+}
+
+// SetProvider sets the provider for the container
+func (c *DockerContainer) SetProvider(provider *DockerProvider) {
+	c.provider = provider
+}
+
 func (c *DockerContainer) GetContainerID() string {
 	return c.ID
 }
@@ -683,6 +693,16 @@ type DockerProvider struct {
 	config    TestContainersConfig
 }
 
+// Client gets the docker client used by the provider
+func (p *DockerProvider) Client() client.APIClient {
+	return p.client
+}
+
+// SetClient sets the docker client to be used by the provider
+func (p *DockerProvider) SetClient(c client.APIClient) {
+	p.client = c
+}
+
 var _ ContainerProvider = (*DockerProvider)(nil)
 
 // or through Decode
@@ -812,29 +832,10 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 
 	// log docker server info only once
 	logOnce.Do(func() {
-		logDockerServerInfo(context.Background(), p.client, p.Logger)
+		LogDockerServerInfo(context.Background(), p.client, p.Logger)
 	})
 
 	return p, nil
-}
-
-func logDockerServerInfo(ctx context.Context, client client.APIClient, logger Logging) {
-	infoMessage := `%v - Connected to docker: 
-  Server Version: %v
-  API Version: %v
-  Operating System: %v
-  Total Memory: %v MB
-`
-
-	info, err := client.Info(ctx)
-	if err != nil {
-		logger.Printf("failed getting information about docker server: %s", err)
-		return
-	}
-
-	logger.Printf(infoMessage, packagePath,
-		info.ServerVersion, client.ClientVersion(),
-		info.OperatingSystem, info.MemTotal/1024/1024)
 }
 
 // configureTC reads from testcontainers properties file, if it exists
@@ -960,11 +961,18 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	sessionID := sessionID()
 
+	reaperOpts := containerOptions{
+		ImageName: req.ReaperImage,
+	}
+	for _, opt := range req.ReaperOptions {
+		opt(&reaperOpts)
+	}
+
 	var termSignal chan bool
 	// the reaper does not need to start a reaper for itself
-	isReaperContainer := strings.EqualFold(req.Image, reaperImage(req.ReaperImage))
+	isReaperContainer := strings.EqualFold(req.Image, reaperImage(reaperOpts.ImageName))
 	if !req.SkipReaper && !isReaperContainer {
-		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
+		r, err := newReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1181,7 +1189,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	sessionID := sessionID()
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
+		r, err := newReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1336,7 +1344,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	var termSignal chan bool
 	if !req.SkipReaper {
 		sessionID := sessionID()
-		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
+		r, err := newReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}

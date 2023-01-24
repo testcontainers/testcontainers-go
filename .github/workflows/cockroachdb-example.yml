@@ -2,6 +2,10 @@ name: Cockroachdb example pipeline
 
 on: [push, pull_request]
 
+concurrency:
+  group: "${{ github.workflow }}-${{ github.head_ref || github.sha }}"
+  cancel-in-progress: true
+
 jobs:
   test-cockroachdb:
     strategy:
