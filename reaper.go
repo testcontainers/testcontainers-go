@@ -40,7 +40,13 @@ type ReaperProvider interface {
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
+// Deprecated: it's not possible to create a reaper anymore.
 func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
+	return newReaper(ctx, sessionID, provider, WithImageName(reaperImageName))
+}
+
+// newReaper creates a Reaper with a sessionID to identify containers and a provider to use
+func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	// If reaper already exists re-use it
@@ -58,18 +64,29 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 
 	listeningPort := nat.Port("8080/tcp")
 
+	reaperOpts := containerOptions{}
+
+	for _, opt := range opts {
+		opt(&reaperOpts)
+	}
+
 	req := ContainerRequest{
-		Image:        reaperImage(reaperImageName),
+		Image:        reaperImage(reaperOpts.ImageName),
 		ExposedPorts: []string{string(listeningPort)},
 		NetworkMode:  Bridge,
 		Labels: map[string]string{
 			TestcontainerLabelIsReaper: "true",
 		},
-		SkipReaper: true,
-		Mounts:     Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
-		AutoRemove: true,
-		WaitingFor: wait.ForListeningPort(listeningPort),
+		SkipReaper:    true,
+		RegistryCred:  reaperOpts.RegistryCredentials,
+		Mounts:        Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
+		AutoRemove:    true,
+		WaitingFor:    wait.ForListeningPort(listeningPort),
+		ReaperOptions: opts,
 	}
+
+	// keep backwards compatibility
+	req.ReaperImage = req.Image
 
 	// include reaper-specific labels to the reaper container
 	for k, v := range reaper.Labels() {
