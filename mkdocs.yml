@@ -50,8 +50,10 @@ nav:
         - examples/index.md
         - examples/bigtable.md
         - examples/cockroachdb.md
+        - examples/consul.md
         - examples/datastore.md
         - examples/firestore.md
+        - examples/mongodb.md
         - examples/mysql.md
         - examples/nginx.md
         - examples/postgres.md
