@@ -20,7 +20,7 @@ replace (
 )
 
 require (
-	github.com/compose-spec/compose-go v1.8.2
+	github.com/compose-spec/compose-go v1.9.0
 	github.com/docker/cli v20.10.20+incompatible
 	github.com/docker/compose/v2 v2.15.1
 	github.com/docker/docker v20.10.20+incompatible
