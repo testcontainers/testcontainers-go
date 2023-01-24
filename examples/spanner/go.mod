@@ -3,10 +3,10 @@ module github.com/testcontainers/testcontainers-go/examples/spanner
 go 1.18
 
 require (
-	cloud.google.com/go/spanner v1.42.0
+	cloud.google.com/go/spanner v1.43.0
 	github.com/testcontainers/testcontainers-go v0.17.0
 	google.golang.org/api v0.108.0
-	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
 	google.golang.org/grpc v1.52.0
 	gotest.tools/gotestsum v1.8.2
 )
