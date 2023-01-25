@@ -56,8 +56,6 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 }
 
 func Test_NewReaper(t *testing.T) {
-	defer func() { reaper = nil }()
-
 	type cases struct {
 		name   string
 		req    ContainerRequest
@@ -104,8 +102,6 @@ func Test_NewReaper(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// make sure we re-initialize the singleton
-			reaper = nil
 			provider := &mockReaperProvider{
 				config: test.config,
 			}
@@ -124,8 +120,6 @@ func Test_NewReaper(t *testing.T) {
 }
 
 func Test_ExtractDockerHost(t *testing.T) {
-	defer func() { reaper = nil }()
-
 	t.Run("Docker Host as environment variable", func(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
 		host := extractDockerHost(context.Background())
@@ -165,8 +159,6 @@ func Test_ExtractDockerHost(t *testing.T) {
 }
 
 func Test_ReaperForNetwork(t *testing.T) {
-	defer func() { reaper = nil }()
-
 	ctx := context.Background()
 
 	networkName := "test-network-with-custom-reaper"
@@ -192,4 +184,34 @@ func Test_ReaperForNetwork(t *testing.T) {
 	assert.Equal(t, "credentials", provider.req.RegistryCred)
 	assert.Equal(t, "reaperImage", provider.req.Image)
 	assert.Equal(t, "reaperImage", provider.req.ReaperImage)
+}
+
+func Test_ReaperReusedIfHealthy(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test")
+	}
+	SkipIfProviderIsNotHealthy(&testing.T{})
+
+	defer func() { reaperSingleton = nil }()
+
+	ctx := context.Background()
+	// Make sure there is no existing Reaper instance before running the test
+	if reaperSingleton != nil {
+		_ = reaperSingleton.container.Terminate(ctx)
+		reaperSingleton = nil
+	}
+
+	provider, _ := ProviderDocker.GetProvider()
+	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, dockerHostContextKey, provider.(*DockerProvider).host), "sessionId", provider)
+	terminateContainerOnEnd(t, ctx, reaper.container)
+	assert.NoError(t, err, "creating the Reaper should not error")
+
+	reaperReused, _ := reuseOrCreateReaper(context.WithValue(ctx, dockerHostContextKey, provider.(*DockerProvider).host), "sessionId", provider)
+	assert.Same(t, reaper, reaperReused, "expecting the same reaper instance is returned if running and healthy")
+
+	terminate, err := reaper.Connect()
+	defer func(term chan bool) {
+		term <- true
+	}(terminate)
+	assert.NoError(t, err, "connecting to Reaper should be successful")
 }

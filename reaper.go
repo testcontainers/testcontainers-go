@@ -28,7 +28,7 @@ type reaperContextKey string
 
 var (
 	dockerHostContextKey = reaperContextKey("docker_host")
-	reaper               *Reaper // We would like to create reaper only once
+	reaperSingleton      *Reaper // We would like to create reaper only once
 	mutex                sync.Mutex
 )
 
@@ -42,22 +42,39 @@ type ReaperProvider interface {
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
 // Deprecated: it's not possible to create a reaper anymore.
 func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
-	return newReaper(ctx, sessionID, provider, WithImageName(reaperImageName))
+	return reuseOrCreateReaper(ctx, sessionID, provider, WithImageName(reaperImageName))
+}
+
+// reuseOrCreateReaper returns an existing Reaper instance if it exists and is running. Otherwise, a new Reaper instance
+// will be created with a sessionID to identify containers and a provider to use
+func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	// If reaper already exists and healthy, re-use it
+	if reaperSingleton != nil {
+		// Verify this instance is still running by checking state.
+		// Can't use Container.IsRunning because the bool is not updated when Reaper is terminated
+		state, err := reaperSingleton.container.State(ctx)
+		if err == nil && state.Running {
+			return reaperSingleton, nil
+		}
+	}
+
+	r, err := newReaper(ctx, sessionID, provider, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	reaperSingleton = r
+	return reaperSingleton, nil
 }
 
 // newReaper creates a Reaper with a sessionID to identify containers and a provider to use
+// Should only be used internally and instead use reuseOrCreateReaper to prefer reusing an existing Reaper instance
 func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
-	mutex.Lock()
-	defer mutex.Unlock()
-	// If reaper already exists re-use it
-	if reaper != nil {
-		return reaper, nil
-	}
-
 	dockerHost := extractDockerHost(ctx)
 
-	// Otherwise create a new one
-	reaper = &Reaper{
+	reaper := &Reaper{
 		Provider:  provider,
 		SessionID: sessionID,
 	}
@@ -108,6 +125,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 	if err != nil {
 		return nil, err
 	}
+	reaper.container = c
 
 	endpoint, err := c.PortEndpoint(ctx, "8080", "")
 	if err != nil {
@@ -123,6 +141,7 @@ type Reaper struct {
 	Provider  ReaperProvider
 	SessionID string
 	Endpoint  string
+	container Container
 }
 
 // Connect runs a goroutine which can be terminated by sending true into the returned channel
