@@ -5,6 +5,9 @@ readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
 
 readonly tag="${1}"
 
+git tag -d "${tag}" | true # do not fail if tag does not exist
+git tag "${tag}"
+
 directories=(examples modules)
 
 for directory in "${directories[@]}"
