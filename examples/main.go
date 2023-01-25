@@ -26,14 +26,14 @@ var templates = []string{
 
 func init() {
 	flag.StringVar(&nameVar, "name", "", "Name of the example. Only alphabetical characters are allowed.")
-	flag.StringVar(&nameTitleVar, "title", "", "(Optional) Title of the example name, used to override the name in the case initials are present (Mongodb -> MongoDB). Use camel-case when needed. Only alphabetical characters are allowed.")
+	flag.StringVar(&nameTitleVar, "title", "", "(Optional) Title of the example name, used to override the name in the case of mixed casing (Mongodb -> MongoDB). Use camel-case when needed. Only alphabetical characters are allowed.")
 	flag.StringVar(&imageVar, "image", "", "Fully-qualified name of the Docker image to be used by the example")
 }
 
 type Example struct {
 	Image     string // fully qualified name of the Docker image
 	Name      string
-	TitleName string // title of the name: i.e. "mongodb" -> "MongoDB"
+	TitleName string // title of the name: e.g. "mongodb" -> "MongoDB"
 	TCVersion string // Testcontainers for Go version
 }
 

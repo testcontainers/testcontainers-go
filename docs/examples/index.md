@@ -23,7 +23,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 |------|------|----------|-------------|
 | -name | string | Yes | Name of the example, use camel-case when needed. Only alphabetical characters are allowed. |
 | -image | string | Yes | Fully-qualified name of the Docker image to be used by the example (i.e. 'docker.io/org/project:tag') |
-| -title | string | No | A variant of the Name including uppercase characters (i.e. 'MongoDB'). Only alphabetical characters are allowed. |
+| -title | string | No | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphabetical characters are allowed. |
 
 ### What is this tool not doing?
 
