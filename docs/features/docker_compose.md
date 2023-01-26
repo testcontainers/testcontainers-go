@@ -53,7 +53,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	tc "github.com/testcontainers/testcontainers-go"
+	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
 func TestSomething(t *testing.T) {
@@ -83,7 +83,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	tc "github.com/testcontainers/testcontainers-go"
+	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
 func TestSomethingElse(t *testing.T) {
@@ -131,7 +131,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	tc "github.com/testcontainers/testcontainers-go"
+	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
