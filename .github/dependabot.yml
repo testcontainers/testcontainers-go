@@ -3,96 +3,96 @@ updates:
     - package-ecosystem: gomod
       directory: /
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/compose
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/bigtable
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/cockroachdb
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/consul
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/datastore
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/firestore
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/mongodb
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/mysql
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/nginx
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/postgres
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/pubsub
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/pulsar
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/redis
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/spanner
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/toxiproxy
       schedule:
-        interval: daily
+        interval: weekly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
