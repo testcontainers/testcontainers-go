@@ -61,6 +61,8 @@ func TestExamplesHasDependabotEntry(t *testing.T) {
 		for _, exampleUpdate := range exampleUpdates {
 			dependabotDir := "/examples/" + strings.ToLower(example.Name())
 
+			assert.Equal(t, exampleUpdate.Schedule.Interval, "weekly")
+
 			if dependabotDir == exampleUpdate.Directory {
 				found = true
 				continue
