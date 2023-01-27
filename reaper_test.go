@@ -192,18 +192,12 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 	}
 	SkipIfProviderIsNotHealthy(&testing.T{})
 
-	defer func() { reaperSingleton = nil }()
-
 	ctx := context.Background()
-	// Make sure there is no existing Reaper instance before running the test
-	if reaperSingleton != nil {
-		_ = reaperSingleton.container.Terminate(ctx)
-		reaperSingleton = nil
-	}
+	// As other integration tests run with the (shared) Reaper as well, re-use the instance to not interrupt other tests
+	wasReaperRunning := reaperSingleton != nil
 
 	provider, _ := ProviderDocker.GetProvider()
 	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, dockerHostContextKey, provider.(*DockerProvider).host), "sessionId", provider)
-	terminateContainerOnEnd(t, ctx, reaper.container)
 	assert.NoError(t, err, "creating the Reaper should not error")
 
 	reaperReused, _ := reuseOrCreateReaper(context.WithValue(ctx, dockerHostContextKey, provider.(*DockerProvider).host), "sessionId", provider)
@@ -214,4 +208,8 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 		term <- true
 	}(terminate)
 	assert.NoError(t, err, "connecting to Reaper should be successful")
+
+	if !wasReaperRunning {
+		terminateContainerOnEnd(t, ctx, reaper.container)
+	}
 }
