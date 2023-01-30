@@ -2,8 +2,10 @@ package localstack
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -16,6 +18,7 @@ type localStackContainer struct {
 func setupLocalStack(ctx context.Context) (*localStackContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:      "localstack/localstack:0.11.2",
+		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
 		WaitingFor: wait.ForLog(".*Ready\\.\n").WithOccurrence(1),
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
