@@ -7,6 +7,7 @@ import (
 
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -88,7 +89,7 @@ func Test_NewReaper(t *testing.T) {
 				return req
 			}),
 			config: TestContainersConfig{},
-			ctx:    context.WithValue(context.TODO(), dockerHostContextKey, "unix:///value/in/context.sock"),
+			ctx:    context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, "unix:///value/in/context.sock"),
 		},
 		{
 			name: "with registry credentials",
@@ -121,47 +122,6 @@ func Test_NewReaper(t *testing.T) {
 			assert.Equal(t, test.req, provider.req, "expected ContainerRequest doesn't match the submitted request")
 		})
 	}
-}
-
-func Test_ExtractDockerHost(t *testing.T) {
-	defer func() { reaper = nil }()
-
-	t.Run("Docker Host as environment variable", func(t *testing.T) {
-		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
-		host := extractDockerHost(context.Background())
-
-		assert.Equal(t, "/path/to/docker.sock", host)
-	})
-
-	t.Run("Default Docker Host", func(t *testing.T) {
-		host := extractDockerHost(context.Background())
-
-		assert.Equal(t, "/var/run/docker.sock", host)
-	})
-
-	t.Run("Malformed Docker Host is passed in context", func(t *testing.T) {
-		ctx := context.Background()
-
-		host := extractDockerHost(context.WithValue(ctx, dockerHostContextKey, "path-to-docker-sock"))
-
-		assert.Equal(t, "/var/run/docker.sock", host)
-	})
-
-	t.Run("Malformed Schema Docker Host is passed in context", func(t *testing.T) {
-		ctx := context.Background()
-
-		host := extractDockerHost(context.WithValue(ctx, dockerHostContextKey, "http://path to docker sock"))
-
-		assert.Equal(t, "/var/run/docker.sock", host)
-	})
-
-	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
-		ctx := context.Background()
-
-		host := extractDockerHost(context.WithValue(ctx, dockerHostContextKey, "unix:///this/is/a/sample.sock"))
-
-		assert.Equal(t, "/this/is/a/sample.sock", host)
-	})
 }
 
 func Test_ReaperForNetwork(t *testing.T) {
