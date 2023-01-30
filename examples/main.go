@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -21,7 +22,7 @@ var nameTitleVar string
 var imageVar string
 
 var templates = []string{
-	"ci.yml", "docs_example.md", "example_test.go", "example.go", "go.mod", "go.sum", "Makefile", "tools.go",
+	"ci.yml", "docs_example.md", "example_test.go", "example.go", "go.mod", "Makefile", "tools.go",
 }
 
 func init() {
@@ -110,6 +111,18 @@ func main() {
 		fmt.Printf(">> error generating the example: %v\n", err)
 		os.Exit(1)
 	}
+
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Dir = filepath.Join(rootDir, "examples", example.Lower())
+	err = cmd.Run()
+	if err != nil {
+		fmt.Printf(">> error synchronizing the dependencies: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Please go to", example.Lower(), "directory to check the results, where 'go mod tidy' was executed to synchronize the dependencies")
+	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
+	fmt.Println("Thanks!")
 }
 
 func generate(example Example, rootDir string) error {
@@ -185,9 +198,6 @@ func generate(example Example, rootDir string) error {
 		return err
 	}
 
-	fmt.Println("Please go to", example.Lower(), "directory and execute 'go mod tidy' to synchronize the dependencies")
-	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
-	fmt.Println("Thanks!")
 	return nil
 }
 

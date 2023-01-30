@@ -894,7 +894,18 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		ForceRemove: true,
 	}
 
-	resp, err := p.client.ImageBuild(ctx, buildContext, buildOptions)
+	var resp types.ImageBuildResponse
+	err = backoff.Retry(func() error {
+		resp, err = p.client.ImageBuild(ctx, buildContext, buildOptions)
+		if err != nil {
+			if _, ok := err.(errdefs.ErrNotFound); ok {
+				return backoff.Permanent(err)
+			}
+			Logger.Printf("Failed to build image: %s, will retry", err)
+			return err
+		}
+		return nil
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 	if err != nil {
 		return "", err
 	}
