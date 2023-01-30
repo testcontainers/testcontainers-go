@@ -194,7 +194,7 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 
 	ctx := context.Background()
 	// As other integration tests run with the (shared) Reaper as well, re-use the instance to not interrupt other tests
-	wasReaperRunning := reaperSingleton != nil
+	wasReaperRunning := reaperInstance != nil
 
 	provider, _ := ProviderDocker.GetProvider()
 	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, dockerHostContextKey, provider.(*DockerProvider).host), "sessionId", provider)

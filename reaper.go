@@ -28,7 +28,7 @@ type reaperContextKey string
 
 var (
 	dockerHostContextKey = reaperContextKey("docker_host")
-	reaperSingleton      *Reaper // We would like to create reaper only once
+	reaperInstance       *Reaper // We would like to create reaper only once
 	mutex                sync.Mutex
 )
 
@@ -51,12 +51,12 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 	mutex.Lock()
 	defer mutex.Unlock()
 	// If reaper already exists and healthy, re-use it
-	if reaperSingleton != nil {
+	if reaperInstance != nil {
 		// Verify this instance is still running by checking state.
 		// Can't use Container.IsRunning because the bool is not updated when Reaper is terminated
-		state, err := reaperSingleton.container.State(ctx)
+		state, err := reaperInstance.container.State(ctx)
 		if err == nil && state.Running {
-			return reaperSingleton, nil
+			return reaperInstance, nil
 		}
 	}
 
@@ -65,8 +65,8 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 		return nil, err
 	}
 
-	reaperSingleton = r
-	return reaperSingleton, nil
+	reaperInstance = r
+	return reaperInstance, nil
 }
 
 // newReaper creates a Reaper with a sessionID to identify containers and a provider to use
