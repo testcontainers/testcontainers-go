@@ -110,6 +110,10 @@ func main() {
 		fmt.Printf(">> error generating the example: %v\n", err)
 		os.Exit(1)
 	}
+
+	fmt.Println("Please go to", example.Lower(), "directory and execute 'go mod tidy' to synchronize the dependencies")
+	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
+	fmt.Println("Thanks!")
 }
 
 func generate(example Example, rootDir string) error {
@@ -185,9 +189,6 @@ func generate(example Example, rootDir string) error {
 		return err
 	}
 
-	fmt.Println("Please go to", example.Lower(), "directory and execute 'go mod tidy' to synchronize the dependencies")
-	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
-	fmt.Println("Thanks!")
 	return nil
 }
 
