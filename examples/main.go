@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
