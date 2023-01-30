@@ -113,12 +113,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Printf("Running command and waiting for it to finish...")
 	cmd := exec.Command("go", "mod", "tidy")
 	cmd.Dir = filepath.Join(rootDir, "examples", example.Lower())
 	err = cmd.Run()
 	if err != nil {
-		fmt.Printf(">> error synchornizing the dependencies: %v\n", err)
+		fmt.Printf(">> error synchronizing the dependencies: %v\n", err)
 		os.Exit(1)
 	}
 
