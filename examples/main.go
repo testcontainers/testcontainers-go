@@ -4,7 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -111,7 +113,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Please go to", example.Lower(), "directory and execute 'go mod tidy' to synchronize the dependencies")
+	log.Printf("Running command and waiting for it to finish...")
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Dir = filepath.Join(rootDir, "examples", example.Lower())
+	err = cmd.Run()
+	if err != nil {
+		fmt.Printf(">> error synchornizing the dependencies: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Please go to", example.Lower(), "directory to check the results, where 'go mod tidy' was executed to synchronize the dependencies")
 	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
 	fmt.Println("Thanks!")
 }
