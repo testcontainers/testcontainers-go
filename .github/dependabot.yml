@@ -43,6 +43,12 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /examples/localstack
+      schedule:
+        interval: weekly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /examples/mongodb
       schedule:
         interval: weekly
