@@ -782,7 +782,7 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 
 	opts = append(opts, client.WithHTTPHeaders(
 		map[string]string{
-			"x-tc-sid": testcontainerssession.ID().String(),
+			"x-tc-sid": testcontainerssession.String(),
 		}),
 	)
 
@@ -971,8 +971,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		req.Labels = make(map[string]string)
 	}
 
-	sessionID := testcontainerssession.ID()
-
 	reaperOpts := containerOptions{
 		ImageName: req.ReaperImage,
 	}
@@ -984,7 +982,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.EqualFold(req.Image, reaperImage(reaperOpts.ImageName))
 	if !req.SkipReaper && !isReaperContainer {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1154,7 +1152,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		WaitingFor:        req.WaitingFor,
 		Image:             tag,
 		imageWasBuilt:     req.ShouldBuildImage(),
-		sessionID:         sessionID,
+		sessionID:         testcontainerssession.ID(),
 		provider:          p,
 		terminationSignal: termSignal,
 		skipReaper:        req.SkipReaper,
@@ -1198,10 +1196,9 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		return p.CreateContainer(ctx, req)
 	}
 
-	sessionID := testcontainerssession.ID()
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1216,7 +1213,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		ID:                c.ID,
 		WaitingFor:        req.WaitingFor,
 		Image:             c.Image,
-		sessionID:         sessionID,
+		sessionID:         testcontainerssession.ID(),
 		provider:          p,
 		terminationSignal: termSignal,
 		skipReaper:        req.SkipReaper,
@@ -1354,8 +1351,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	var termSignal chan bool
 	if !req.SkipReaper {
-		sessionID := testcontainerssession.ID()
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}

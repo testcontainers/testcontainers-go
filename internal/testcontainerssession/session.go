@@ -16,3 +16,7 @@ func ID() uuid.UUID {
 
 	return id
 }
+
+func String() string {
+	return ID().String()
+}
