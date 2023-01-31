@@ -61,8 +61,9 @@ func TestInAContainer(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		f := filepath.Join(tmpDir, dockerenvName)
-		os.Create(f)
 
+		_, err := os.Create(f)
+		assert.NoError(t, err)
 		assert.True(t, inAContainer(f))
 	})
 }
