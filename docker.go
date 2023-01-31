@@ -34,6 +34,7 @@ import (
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -781,7 +782,7 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 
 	opts = append(opts, client.WithHTTPHeaders(
 		map[string]string{
-			"x-tc-sid": sessionID().String(),
+			"x-tc-sid": testcontainerssession.ID().String(),
 		}),
 	)
 
@@ -970,7 +971,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		req.Labels = make(map[string]string)
 	}
 
-	sessionID := sessionID()
+	sessionID := testcontainerssession.ID()
 
 	reaperOpts := containerOptions{
 		ImageName: req.ReaperImage,
@@ -1197,7 +1198,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		return p.CreateContainer(ctx, req)
 	}
 
-	sessionID := sessionID()
+	sessionID := testcontainerssession.ID()
 	var termSignal chan bool
 	if !req.SkipReaper {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
@@ -1353,7 +1354,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	var termSignal chan bool
 	if !req.SkipReaper {
-		sessionID := sessionID()
+		sessionID := testcontainerssession.ID()
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
