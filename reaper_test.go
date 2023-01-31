@@ -187,9 +187,6 @@ func Test_ReaperForNetwork(t *testing.T) {
 }
 
 func Test_ReaperReusedIfHealthy(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test")
-	}
 	SkipIfProviderIsNotHealthy(&testing.T{})
 
 	ctx := context.Background()
