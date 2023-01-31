@@ -57,8 +57,6 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 }
 
 func Test_NewReaper(t *testing.T) {
-	defer func() { reaper = nil }()
-
 	type cases struct {
 		name   string
 		req    ContainerRequest
@@ -105,8 +103,6 @@ func Test_NewReaper(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// make sure we re-initialize the singleton
-			reaper = nil
 			provider := &mockReaperProvider{
 				config: test.config,
 			}
@@ -125,8 +121,6 @@ func Test_NewReaper(t *testing.T) {
 }
 
 func Test_ReaperForNetwork(t *testing.T) {
-	defer func() { reaper = nil }()
-
 	ctx := context.Background()
 
 	networkName := "test-network-with-custom-reaper"
@@ -152,4 +146,29 @@ func Test_ReaperForNetwork(t *testing.T) {
 	assert.Equal(t, "credentials", provider.req.RegistryCred)
 	assert.Equal(t, "reaperImage", provider.req.Image)
 	assert.Equal(t, "reaperImage", provider.req.ReaperImage)
+}
+
+func Test_ReaperReusedIfHealthy(t *testing.T) {
+	SkipIfProviderIsNotHealthy(&testing.T{})
+
+	ctx := context.Background()
+	// As other integration tests run with the (shared) Reaper as well, re-use the instance to not interrupt other tests
+	wasReaperRunning := reaperInstance != nil
+
+	provider, _ := ProviderDocker.GetProvider()
+	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), "sessionId", provider)
+	assert.NoError(t, err, "creating the Reaper should not error")
+
+	reaperReused, _ := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), "sessionId", provider)
+	assert.Same(t, reaper, reaperReused, "expecting the same reaper instance is returned if running and healthy")
+
+	terminate, err := reaper.Connect()
+	defer func(term chan bool) {
+		term <- true
+	}(terminate)
+	assert.NoError(t, err, "connecting to Reaper should be successful")
+
+	if !wasReaperRunning {
+		terminateContainerOnEnd(t, ctx, reaper.container)
+	}
 }
