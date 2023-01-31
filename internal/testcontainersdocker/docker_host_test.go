@@ -2,6 +2,8 @@ package testcontainersdocker
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,5 +45,24 @@ func Test_ExtractDockerHost(t *testing.T) {
 		host := ExtractDockerHost(context.WithValue(ctx, DockerHostContextKey, "unix:///this/is/a/sample.sock"))
 
 		assert.Equal(t, "/this/is/a/sample.sock", host)
+	})
+}
+
+func TestInAContainer(t *testing.T) {
+	const dockerenvName = ".dockerenv"
+
+	t.Run("file does not exist", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		assert.False(t, inAContainer(filepath.Join(tmpDir, dockerenvName)))
+	})
+
+	t.Run("file exists", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		f := filepath.Join(tmpDir, dockerenvName)
+		os.Create(f)
+
+		assert.True(t, inAContainer(f))
 	})
 }
