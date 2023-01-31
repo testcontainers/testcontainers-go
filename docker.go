@@ -1307,7 +1307,7 @@ func (p *DockerProvider) daemonHost(ctx context.Context) (string, error) {
 	case "http", "https", "tcp":
 		p.hostCache = url.Hostname()
 	case "unix", "npipe":
-		if inAContainer() {
+		if testcontainersdocker.InAContainer() {
 			ip, err := p.GetGatewayIP(ctx)
 			if err != nil {
 				// fallback to getDefaultGatewayIP
@@ -1436,14 +1436,6 @@ func (p *DockerProvider) printReaperBanner(resource string) {
 	More on this: https://golang.testcontainers.org/features/garbage_collector/
 	**********************************************************************************************`
 	p.Logger.Printf(ryukDisabledMessage)
-}
-
-func inAContainer() bool {
-	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L15
-	if _, err := os.Stat("/.dockerenv"); err == nil {
-		return true
-	}
-	return false
 }
 
 // deprecated
