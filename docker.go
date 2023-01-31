@@ -11,7 +11,6 @@ import (
 	"io"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -1310,8 +1309,7 @@ func (p *DockerProvider) daemonHost(ctx context.Context) (string, error) {
 		if testcontainersdocker.InAContainer() {
 			ip, err := p.GetGatewayIP(ctx)
 			if err != nil {
-				// fallback to getDefaultGatewayIP
-				ip, err = getDefaultGatewayIP()
+				ip, err = testcontainersdocker.DefaultGatewayIP()
 				if err != nil {
 					ip = "localhost"
 				}
@@ -1321,7 +1319,7 @@ func (p *DockerProvider) daemonHost(ctx context.Context) (string, error) {
 			p.hostCache = "localhost"
 		}
 	default:
-		return "", errors.New("Could not determine host through env or docker host")
+		return "", errors.New("could not determine host through env or docker host")
 	}
 
 	return p.hostCache, nil
@@ -1436,22 +1434,6 @@ func (p *DockerProvider) printReaperBanner(resource string) {
 	More on this: https://golang.testcontainers.org/features/garbage_collector/
 	**********************************************************************************************`
 	p.Logger.Printf(ryukDisabledMessage)
-}
-
-// deprecated
-// see https://github.com/testcontainers/testcontainers-java/blob/main/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L46
-func getDefaultGatewayIP() (string, error) {
-	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L27
-	cmd := exec.Command("sh", "-c", "ip route|awk '/default/ { print $3 }'")
-	stdout, err := cmd.Output()
-	if err != nil {
-		return "", errors.New("Failed to detect docker host")
-	}
-	ip := strings.TrimSpace(string(stdout))
-	if len(ip) == 0 {
-		return "", errors.New("Failed to parse default gateway IP")
-	}
-	return ip, nil
 }
 
 func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APIClient) (string, error) {
