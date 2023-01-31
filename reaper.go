@@ -5,14 +5,13 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/docker/go-connections/nat"
 
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -24,12 +23,9 @@ const (
 	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.3.4"
 )
 
-type reaperContextKey string
-
 var (
-	dockerHostContextKey = reaperContextKey("docker_host")
-	reaperInstance       *Reaper // We would like to create reaper only once
-	mutex                sync.Mutex
+	reaperInstance *Reaper // We would like to create reaper only once
+	mutex          sync.Mutex
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
@@ -72,7 +68,7 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 // newReaper creates a Reaper with a sessionID to identify containers and a provider to use
 // Should only be used internally and instead use reuseOrCreateReaper to prefer reusing an existing Reaper instance
 func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
-	dockerHost := extractDockerHost(ctx)
+	dockerHost := testcontainersdocker.ExtractDockerHost(ctx)
 
 	reaper := &Reaper{
 		Provider:  provider,
@@ -197,34 +193,6 @@ func (r *Reaper) Labels() map[string]string {
 	return map[string]string{
 		TestcontainerLabel:          "true",
 		TestcontainerLabelSessionID: r.SessionID,
-	}
-}
-
-func extractDockerHost(ctx context.Context) (dockerHostPath string) {
-	if dockerHostPath = os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"); dockerHostPath != "" {
-		return dockerHostPath
-	}
-
-	dockerHostPath = "/var/run/docker.sock"
-
-	var hostRawURL string
-	if h, ok := ctx.Value(dockerHostContextKey).(string); !ok || h == "" {
-		return dockerHostPath
-	} else {
-		hostRawURL = h
-	}
-	var hostURL *url.URL
-	if u, err := url.Parse(hostRawURL); err != nil {
-		return dockerHostPath
-	} else {
-		hostURL = u
-	}
-
-	switch hostURL.Scheme {
-	case "unix":
-		return hostURL.Path
-	default:
-		return dockerHostPath
 	}
 }
 

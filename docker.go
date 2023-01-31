@@ -34,6 +34,7 @@ import (
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -894,7 +895,18 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		ForceRemove: true,
 	}
 
-	resp, err := p.client.ImageBuild(ctx, buildContext, buildOptions)
+	var resp types.ImageBuildResponse
+	err = backoff.Retry(func() error {
+		resp, err = p.client.ImageBuild(ctx, buildContext, buildOptions)
+		if err != nil {
+			if _, ok := err.(errdefs.ErrNotFound); ok {
+				return backoff.Permanent(err)
+			}
+			Logger.Printf("Failed to build image: %s, will retry", err)
+			return err
+		}
+		return nil
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 	if err != nil {
 		return "", err
 	}
@@ -972,7 +984,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.EqualFold(req.Image, reaperImage(reaperOpts.ImageName))
 	if !req.SkipReaper && !isReaperContainer {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1189,7 +1201,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	sessionID := sessionID()
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1344,7 +1356,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	var termSignal chan bool
 	if !req.SkipReaper {
 		sessionID := sessionID()
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}
