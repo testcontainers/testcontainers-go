@@ -74,6 +74,7 @@ func TestWithServices(t *testing.T) {
 
 		WithServices(test.services...)(req)
 		assert.Equal(t, test.expectedServices, req.Env["SERVICES"])
+		assert.Equal(t, len(test.services), len(req.enabledServices))
 		if len(test.expectedLegacyPorts) > 0 {
 			assert.Equal(t, len(expectedNonLegacyPorts), len(req.ExposedPorts))
 			assert.Equal(t, expectedNonLegacyPorts, req.ExposedPorts)
@@ -87,6 +88,7 @@ func TestWithServices(t *testing.T) {
 
 		WithServices(test.services...)(req)
 		assert.Equal(t, test.expectedServices, req.Env["SERVICES"])
+		assert.Equal(t, len(test.services), len(req.enabledServices))
 		assert.Equal(t, len(test.expectedLegacyPorts), len(req.ExposedPorts))
 		for _, p := range test.expectedLegacyPorts {
 			assert.Contains(t, req.ExposedPorts, p)

@@ -10,11 +10,13 @@ import (
 
 type LocalStackContainerRequest struct {
 	testcontainers.ContainerRequest
-	legacyMode bool
-	version    string
+	legacyMode      bool
+	version         string
+	enabledServices []Service
 }
 
-type enabledService interface {
+// EnabledService is an interface for services that can be enabled
+type EnabledService interface {
 	Name() string
 	Named(string) string
 	Port() int
@@ -229,6 +231,9 @@ func WithServices(services ...Service) func(req *LocalStackContainerRequest) {
 
 			servicesPorts[servicePort] = true
 			serviceNames = append(serviceNames, service.Name())
+
+			// add services to the list of enabled services
+			req.enabledServices = append(req.enabledServices, service)
 		}
 
 		if req.Env == nil {

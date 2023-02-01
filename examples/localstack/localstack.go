@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -19,16 +20,23 @@ const hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
 // LocalStackContainer represents the LocalStack container type used in the module
 type LocalStackContainer struct {
 	testcontainers.Container
+	EnabledServices map[string]Service
 }
 
-// Endpoint returns the endpoint of the given service
-func (l *LocalStackContainer) Endpoint(ctx context.Context, service Service) (string, error) {
-	provider, err := testcontainers.NewDockerProvider()
+// EndpointOverride returns the endpoint of the given service
+func (l *LocalStackContainer) EndpointOverride(ctx context.Context, service EnabledService) (nat.Port, error) {
+	if _, ok := l.EnabledServices[service.Name()]; !ok {
+		return "", fmt.Errorf("service %s is not enabled", service.Name())
+	}
+
+	internalPort := l.EnabledServices[service.Name()].servicePort()
+
+	p, err := nat.NewPort("tcp", fmt.Sprintf("%d", internalPort))
 	if err != nil {
 		return "", err
 	}
 
-	return service.endpoint(ctx, provider)
+	return l.MappedPort(ctx, p)
 }
 
 func runInLegacyMode(version string) bool {
@@ -96,7 +104,12 @@ func setupLocalStack(ctx context.Context, version string, legacyMode bool, opts 
 		return nil, err
 	}
 
-	return &LocalStackContainer{Container: container}, nil
+	enabledServices := make(map[string]Service)
+	for _, service := range localStackReq.enabledServices {
+		enabledServices[service.Name()] = service
+	}
+
+	return &LocalStackContainer{Container: container, EnabledServices: enabledServices}, nil
 }
 
 func configure(req *LocalStackContainerRequest) (reason string, err error) {
