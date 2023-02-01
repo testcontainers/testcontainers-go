@@ -1,6 +1,7 @@
 package localstack
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -23,6 +24,15 @@ type Service struct {
 	name       string
 	legacyMode bool
 	port       int
+}
+
+func (s Service) endpoint(ctx context.Context, provider *testcontainers.DockerProvider) (string, error) {
+	host, err := provider.DaemonHost(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s:%d", host, s.servicePort()), nil
 }
 
 // Name returns the name of the service

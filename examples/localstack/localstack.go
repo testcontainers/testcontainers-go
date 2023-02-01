@@ -21,6 +21,16 @@ type LocalStackContainer struct {
 	testcontainers.Container
 }
 
+// Endpoint returns the endpoint of the given service
+func (l *LocalStackContainer) Endpoint(ctx context.Context, service Service) (string, error) {
+	provider, err := testcontainers.NewDockerProvider()
+	if err != nil {
+		return "", err
+	}
+
+	return service.endpoint(ctx, provider)
+}
+
 func runInLegacyMode(version string) bool {
 	if version == "latest" {
 		return false
