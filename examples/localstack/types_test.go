@@ -16,6 +16,33 @@ func generateContainerRequest() *LocalStackContainerRequest {
 	}
 }
 
+func TestWithRegion(t *testing.T) {
+	tests := []struct {
+		region         string
+		expectedRegion string
+	}{
+		{
+			region:         "",
+			expectedRegion: defaultRegion,
+		},
+		{
+			region:         "us-east-1",
+			expectedRegion: defaultRegion,
+		},
+		{
+			region:         "eu-west-1",
+			expectedRegion: "eu-west-1",
+		},
+	}
+
+	for _, test := range tests {
+		req := generateContainerRequest()
+
+		WithRegion(test.region)(req)
+		assert.Equal(t, test.expectedRegion, req.Env["DEFAULT_REGION"])
+	}
+}
+
 func TestWithServices(t *testing.T) {
 	expectedNonLegacyPorts := []string{"4566/tcp"}
 

@@ -184,6 +184,26 @@ var StepFunctions = Service{
 
 type localStackContainerOption func(req *LocalStackContainerRequest)
 
+// WithDefaultRegion uses the default region for the container, which is "us-east-1"
+func WithDefaultRegion() func(req *LocalStackContainerRequest) {
+	return WithRegion(defaultRegion)
+}
+
+// WithRegion returns a function that can be used to configure the AWS region of the container
+func WithRegion(region string) func(req *LocalStackContainerRequest) {
+	return func(req *LocalStackContainerRequest) {
+		if req.Env == nil {
+			req.Env = map[string]string{}
+		}
+
+		if region == "" {
+			region = defaultRegion
+		}
+
+		req.Env["DEFAULT_REGION"] = region
+	}
+}
+
 // WithServices returns a function that can be used to configure the container
 func WithServices(services ...Service) func(req *LocalStackContainerRequest) {
 	return func(req *LocalStackContainerRequest) {
