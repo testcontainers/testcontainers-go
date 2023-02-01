@@ -16,10 +16,9 @@ const defaultRegion = "us-east-1"
 const defaultVersion = "0.11.2"
 const hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
 
-// localStackContainer represents the LocalStack container type used in the module
-type localStackContainer struct {
+// LocalStackContainer represents the LocalStack container type used in the module
+type LocalStackContainer struct {
 	testcontainers.Container
-	legacyMode bool
 }
 
 func runInLegacyMode(version string) bool {
@@ -41,7 +40,7 @@ func runInLegacyMode(version string) bool {
 }
 
 // setupLocalStack creates an instance of the LocalStack container type
-func setupLocalStack(ctx context.Context, version string, legacyMode bool, opts ...localStackContainerOption) (*localStackContainer, error) {
+func setupLocalStack(ctx context.Context, version string, legacyMode bool, opts ...localStackContainerOption) (*LocalStackContainer, error) {
 	if version == "" {
 		version = defaultVersion
 	}
@@ -87,7 +86,7 @@ func setupLocalStack(ctx context.Context, version string, legacyMode bool, opts 
 		return nil, err
 	}
 
-	return &localStackContainer{Container: container, legacyMode: legacyMode}, nil
+	return &LocalStackContainer{Container: container}, nil
 }
 
 func configure(req *LocalStackContainerRequest) (reason string, err error) {
