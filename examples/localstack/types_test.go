@@ -1,0 +1,88 @@
+package localstack
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	testcontainers "github.com/testcontainers/testcontainers-go"
+)
+
+func generateContainerRequest() *testcontainers.ContainerRequest {
+	return &testcontainers.ContainerRequest{
+		Env:          map[string]string{},
+		ExposedPorts: []string{},
+	}
+}
+
+func TestWithServices(t *testing.T) {
+	expectedNonLegacyPorts := []string{"4566/tcp"}
+
+	tests := []struct {
+		services            []Service
+		expectedServices    string
+		expectedLegacyPorts []string
+	}{
+		{
+			services:            []Service{},
+			expectedServices:    "",
+			expectedLegacyPorts: []string{},
+		},
+		{
+			services:            []Service{S3},
+			expectedServices:    "s3",
+			expectedLegacyPorts: []string{"4572/tcp"},
+		},
+		{
+			services:            []Service{S3, DynamoDB, DynamoDBStreams},
+			expectedServices:    "s3,dynamodb,dynamodbstreams",
+			expectedLegacyPorts: []string{"4572/tcp", "4569/tcp", "4570/tcp"},
+		},
+	}
+
+	for _, test := range tests {
+		req := generateContainerRequest()
+
+		WithServices(test.services...)(false, req)
+		assert.Equal(t, test.expectedServices, req.Env["SERVICES"])
+		if len(test.expectedLegacyPorts) > 0 {
+			assert.Equal(t, len(expectedNonLegacyPorts), len(req.ExposedPorts))
+			assert.Equal(t, expectedNonLegacyPorts, req.ExposedPorts)
+		} else {
+			assert.Equal(t, []string{}, req.ExposedPorts)
+		}
+
+		// legacy mode
+		req = generateContainerRequest()
+
+		WithServices(test.services...)(true, req)
+		assert.Equal(t, test.expectedServices, req.Env["SERVICES"])
+		assert.Equal(t, len(test.expectedLegacyPorts), len(req.ExposedPorts))
+		for _, p := range test.expectedLegacyPorts {
+			assert.Contains(t, req.ExposedPorts, p)
+		}
+	}
+}
+
+func TestServicePort(t *testing.T) {
+	tests := []struct {
+		service  Service
+		legacy   bool
+		expected int
+	}{
+		{
+			service:  S3,
+			legacy:   false,
+			expected: defaultPort,
+		},
+		{
+			service:  S3,
+			legacy:   true,
+			expected: 4572,
+		},
+	}
+
+	for _, test := range tests {
+		assert.Equal(t, test.expected, test.service.servicePort(test.legacy))
+	}
+
+}

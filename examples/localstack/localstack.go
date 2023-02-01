@@ -11,7 +11,9 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+const defaultPort = 4566
 const defaultVersion = "0.11.2"
+const hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
 
 // localStackContainer represents the LocalStack container type used in the module
 type localStackContainer struct {
@@ -38,7 +40,7 @@ func runInLegacyMode(version string) bool {
 }
 
 // setupLocalStack creates an instance of the LocalStack container type
-func setupLocalStack(ctx context.Context, version string, legacyMode bool) (*localStackContainer, error) {
+func setupLocalStack(ctx context.Context, version string, legacyMode bool, opts ...localStackContainerOption) (*localStackContainer, error) {
 	if version == "" {
 		version = defaultVersion
 	}
@@ -52,13 +54,24 @@ func setupLocalStack(ctx context.Context, version string, legacyMode bool) (*loc
 			| true            | false      | true   |
 			| true            | true       | true   |
 	*/
-	legacyMode = !runInLegacyMode(version) && !legacyMode
+	legacyMode = !(!runInLegacyMode(version) && !legacyMode)
 
 	req := testcontainers.ContainerRequest{
 		Image:      "localstack/localstack:0.11.2",
 		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
-		WaitingFor: wait.ForLog(".*Ready\\.\n").WithOccurrence(1),
+		WaitingFor: wait.ForLog("Ready.\n").WithOccurrence(1),
 	}
+
+	for _, opt := range opts {
+		opt(legacyMode, &req)
+	}
+
+	hostnameExternalReason, err := configure(&req)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("Setting %s to %s (%s)\n", hostnameExternalEnvVar, req.Env[hostnameExternalEnvVar], hostnameExternalReason)
+
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
@@ -68,4 +81,41 @@ func setupLocalStack(ctx context.Context, version string, legacyMode bool) (*loc
 	}
 
 	return &localStackContainer{Container: container, legacyMode: legacyMode}, nil
+}
+
+func configure(req *testcontainers.ContainerRequest) (reason string, err error) {
+	err = nil
+	reason = ""
+
+	if _, ok := req.Env[hostnameExternalEnvVar]; ok {
+		reason = "explicitly as environment variable"
+		return
+	}
+
+	// if the container is not connected to the default network, use the last network alias in the first network
+	// for that we need to check if the container is connected to a network and if it has network aliases
+	if len(req.Networks) > 0 && len(req.NetworkAliases) > 0 && len(req.NetworkAliases[req.Networks[0]]) > 0 {
+		alias := req.NetworkAliases[req.Networks[0]][len(req.NetworkAliases[req.Networks[0]])-1]
+
+		req.Env[hostnameExternalEnvVar] = alias
+		reason = "to match last network alias on container with non-default network"
+		return
+	}
+
+	var dockerProvider *testcontainers.DockerProvider
+	dockerProvider, err = testcontainers.NewDockerProvider()
+	if err != nil {
+		return
+	}
+
+	var daemonHost string
+	daemonHost, err = dockerProvider.DaemonHost(context.Background())
+	if err != nil {
+		return
+	}
+
+	req.Env[hostnameExternalEnvVar] = daemonHost
+	reason = "to match host-routable address for container"
+
+	return
 }
