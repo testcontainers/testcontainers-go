@@ -62,11 +62,17 @@ func setupLocalStack(ctx context.Context, version string, legacyMode bool, opts 
 		WaitingFor: wait.ForLog("Ready.\n").WithOccurrence(1),
 	}
 
-	for _, opt := range opts {
-		opt(legacyMode, &req)
+	localStackReq := LocalStackContainerRequest{
+		ContainerRequest: req,
+		legacyMode:       legacyMode,
+		version:          version,
 	}
 
-	hostnameExternalReason, err := configure(&req)
+	for _, opt := range opts {
+		opt(&localStackReq)
+	}
+
+	hostnameExternalReason, err := configure(&localStackReq)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +89,7 @@ func setupLocalStack(ctx context.Context, version string, legacyMode bool, opts 
 	return &localStackContainer{Container: container, legacyMode: legacyMode}, nil
 }
 
-func configure(req *testcontainers.ContainerRequest) (reason string, err error) {
+func configure(req *LocalStackContainerRequest) (reason string, err error) {
 	err = nil
 	reason = ""
 

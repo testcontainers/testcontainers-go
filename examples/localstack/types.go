@@ -7,6 +7,12 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
+type LocalStackContainerRequest struct {
+	testcontainers.ContainerRequest
+	legacyMode bool
+	version    string
+}
+
 type enabledService interface {
 	Name() string
 	Named(string) string
@@ -14,8 +20,9 @@ type enabledService interface {
 }
 
 type Service struct {
-	name string
-	port int
+	name       string
+	legacyMode bool
+	port       int
 }
 
 // Name returns the name of the service
@@ -33,8 +40,8 @@ func (s Service) Port() int {
 	return s.port
 }
 
-func (s Service) servicePort(legacyMode bool) int {
-	if legacyMode {
+func (s Service) servicePort() int {
+	if s.legacyMode {
 		return s.Port()
 	}
 
@@ -175,16 +182,20 @@ var StepFunctions = Service{
 	port: 4585,
 }
 
-type localStackContainerOption func(legacyMode bool, req *testcontainers.ContainerRequest)
+type localStackContainerOption func(req *LocalStackContainerRequest)
 
 // WithServices returns a function that can be used to configure the container
-func WithServices(services ...Service) func(legacyMode bool, req *testcontainers.ContainerRequest) {
-	return func(legacyMode bool, req *testcontainers.ContainerRequest) {
+func WithServices(services ...Service) func(req *LocalStackContainerRequest) {
+	return func(req *LocalStackContainerRequest) {
 		serviceNames := []string{}
 		servicesPorts := map[int]bool{} // map of unique exposed ports
 
 		for _, service := range services {
-			servicePort := service.servicePort(legacyMode)
+			// automatically set legacy mode for services that require it,
+			// as it will affect how the service is exposed
+			service.legacyMode = req.legacyMode
+
+			servicePort := service.servicePort()
 
 			servicesPorts[servicePort] = true
 			serviceNames = append(serviceNames, service.Name())

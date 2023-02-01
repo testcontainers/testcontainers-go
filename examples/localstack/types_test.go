@@ -7,10 +7,12 @@ import (
 	testcontainers "github.com/testcontainers/testcontainers-go"
 )
 
-func generateContainerRequest() *testcontainers.ContainerRequest {
-	return &testcontainers.ContainerRequest{
-		Env:          map[string]string{},
-		ExposedPorts: []string{},
+func generateContainerRequest() *LocalStackContainerRequest {
+	return &LocalStackContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Env:          map[string]string{},
+			ExposedPorts: []string{},
+		},
 	}
 }
 
@@ -41,8 +43,9 @@ func TestWithServices(t *testing.T) {
 
 	for _, test := range tests {
 		req := generateContainerRequest()
+		req.legacyMode = false
 
-		WithServices(test.services...)(false, req)
+		WithServices(test.services...)(req)
 		assert.Equal(t, test.expectedServices, req.Env["SERVICES"])
 		if len(test.expectedLegacyPorts) > 0 {
 			assert.Equal(t, len(expectedNonLegacyPorts), len(req.ExposedPorts))
@@ -53,8 +56,9 @@ func TestWithServices(t *testing.T) {
 
 		// legacy mode
 		req = generateContainerRequest()
+		req.legacyMode = true
 
-		WithServices(test.services...)(true, req)
+		WithServices(test.services...)(req)
 		assert.Equal(t, test.expectedServices, req.Env["SERVICES"])
 		assert.Equal(t, len(test.expectedLegacyPorts), len(req.ExposedPorts))
 		for _, p := range test.expectedLegacyPorts {
@@ -82,7 +86,8 @@ func TestServicePort(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		assert.Equal(t, test.expected, test.service.servicePort(test.legacy))
+		test.service.legacyMode = test.legacy
+		assert.Equal(t, test.expected, test.service.servicePort())
 	}
 
 }
