@@ -44,6 +44,32 @@ func TestWithRegion(t *testing.T) {
 	}
 }
 
+func TestWithLegacyMode(t *testing.T) {
+	tests := []struct {
+		legacyMode         bool
+		expectedLegacyMode bool
+	}{
+		{
+			legacyMode:         false,
+			expectedLegacyMode: false,
+		},
+		{
+			legacyMode:         true,
+			expectedLegacyMode: true,
+		},
+	}
+
+	for _, test := range tests {
+		req := generateContainerRequest()
+
+		if test.legacyMode {
+			WithLegacyMode()(req)
+		}
+
+		assert.Equal(t, test.expectedLegacyMode, req.legacyMode)
+	}
+}
+
 func TestWithServices(t *testing.T) {
 	expectedNonLegacyPorts := []string{"4566/tcp"}
 
@@ -94,6 +120,29 @@ func TestWithServices(t *testing.T) {
 		for _, p := range test.expectedLegacyPorts {
 			assert.Contains(t, req.ExposedPorts, p)
 		}
+	}
+}
+
+func TestWithVersion(t *testing.T) {
+	tests := []struct {
+		version         string
+		expectedVersion string
+	}{
+		{
+			version:         "",
+			expectedVersion: defaultVersion,
+		},
+		{
+			version:         "0.10.5",
+			expectedVersion: "0.10.5",
+		},
+	}
+
+	for _, test := range tests {
+		req := generateContainerRequest()
+
+		WithVersion(test.version)(req)
+		assert.Equal(t, test.expectedVersion, req.version)
 	}
 }
 

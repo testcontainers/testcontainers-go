@@ -73,7 +73,7 @@ func TestRunInLegacyMode(t *testing.T) {
 func TestLocalStack(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := setupLocalStack(ctx, defaultVersion, false)
+	container, err := setupLocalStack(ctx, WithLegacyMode())
 	if err != nil {
 		t.Fatal(err)
 	}

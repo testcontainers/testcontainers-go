@@ -50,7 +50,7 @@ func runInLegacyMode(version string) bool {
 	}
 
 	if semver.IsValid(version) {
-		return semver.Compare(version, "v0.11") < 0
+		return semver.Compare(version, "v0.11") < 0 // version < v0.11
 	}
 
 	fmt.Printf("Version %s is not a semantic version, LocalStack will run in legacy mode.\n", version)
@@ -59,10 +59,26 @@ func runInLegacyMode(version string) bool {
 }
 
 // setupLocalStack creates an instance of the LocalStack container type
-func setupLocalStack(ctx context.Context, version string, legacyMode bool, opts ...localStackContainerOption) (*LocalStackContainer, error) {
-	if version == "" {
-		version = defaultVersion
+func setupLocalStack(ctx context.Context, opts ...localStackContainerOption) (*LocalStackContainer, error) {
+	req := testcontainers.ContainerRequest{
+		Image:      "localstack/localstack",
+		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
+		WaitingFor: wait.ForLog("Ready.\n").WithOccurrence(1),
 	}
+
+	localStackReq := LocalStackContainerRequest{
+		ContainerRequest: req,
+	}
+
+	for _, opt := range opts {
+		opt(&localStackReq)
+	}
+
+	if localStackReq.version == "" {
+		WithDefaultVersion()(&localStackReq)
+	}
+	// use the passed version as image tag
+	localStackReq.Image = fmt.Sprintf("%s:%s", localStackReq.Image, localStackReq.version)
 
 	/*
 		Do not run in legacy mode when the version is a valid semver version greater than the v0.11 and legacyMode is false
@@ -73,23 +89,7 @@ func setupLocalStack(ctx context.Context, version string, legacyMode bool, opts 
 			| true            | false      | true   |
 			| true            | true       | true   |
 	*/
-	legacyMode = !(!runInLegacyMode(version) && !legacyMode)
-
-	req := testcontainers.ContainerRequest{
-		Image:      "localstack/localstack:0.11.2",
-		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
-		WaitingFor: wait.ForLog("Ready.\n").WithOccurrence(1),
-	}
-
-	localStackReq := LocalStackContainerRequest{
-		ContainerRequest: req,
-		legacyMode:       legacyMode,
-		version:          version,
-	}
-
-	for _, opt := range opts {
-		opt(&localStackReq)
-	}
+	localStackReq.legacyMode = !(!runInLegacyMode(localStackReq.version) && !localStackReq.legacyMode)
 
 	if localStackReq.region == "" {
 		WithDefaultRegion()(&localStackReq)
@@ -102,7 +102,7 @@ func setupLocalStack(ctx context.Context, version string, legacyMode bool, opts 
 	fmt.Printf("Setting %s to %s (%s)\n", hostnameExternalEnvVar, req.Env[hostnameExternalEnvVar], hostnameExternalReason)
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
+		ContainerRequest: localStackReq.ContainerRequest,
 		Started:          true,
 	})
 	if err != nil {

@@ -218,6 +218,13 @@ func WithRegion(region string) func(req *LocalStackContainerRequest) {
 	}
 }
 
+// WithLegacyMode uses the legacy mode for the container, which exposes each service on a different port
+func WithLegacyMode() func(req *LocalStackContainerRequest) {
+	return func(req *LocalStackContainerRequest) {
+		req.legacyMode = true
+	}
+}
+
 // WithServices returns a function that can be used to configure the container
 func WithServices(services ...Service) func(req *LocalStackContainerRequest) {
 	return func(req *LocalStackContainerRequest) {
@@ -252,5 +259,21 @@ func WithServices(services ...Service) func(req *LocalStackContainerRequest) {
 		}
 
 		req.ExposedPorts = exposedPorts
+	}
+}
+
+// WithDefaultVersion uses the default version for the container, which is "0.11"
+func WithDefaultVersion() func(req *LocalStackContainerRequest) {
+	return WithVersion(defaultVersion)
+}
+
+// WithVersion returns a function that can be used to configure the version of the container
+func WithVersion(v string) func(req *LocalStackContainerRequest) {
+	return func(req *LocalStackContainerRequest) {
+		if v == "" {
+			v = defaultVersion
+		}
+
+		req.version = v
 	}
 }
