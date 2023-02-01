@@ -40,6 +40,7 @@ func TestWithRegion(t *testing.T) {
 
 		WithRegion(test.region)(req)
 		assert.Equal(t, test.expectedRegion, req.Env["DEFAULT_REGION"])
+		assert.Equal(t, test.expectedRegion, req.region)
 	}
 }
 

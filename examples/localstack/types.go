@@ -11,6 +11,7 @@ import (
 type LocalStackContainerRequest struct {
 	testcontainers.ContainerRequest
 	legacyMode      bool
+	region          string
 	version         string
 	enabledServices []Service
 }
@@ -213,6 +214,7 @@ func WithRegion(region string) func(req *LocalStackContainerRequest) {
 		}
 
 		req.Env["DEFAULT_REGION"] = region
+		req.region = region
 	}
 }
 

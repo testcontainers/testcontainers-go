@@ -20,6 +20,7 @@ const hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
 // LocalStackContainer represents the LocalStack container type used in the module
 type LocalStackContainer struct {
 	testcontainers.Container
+	Region          string
 	EnabledServices map[string]Service
 }
 
@@ -109,7 +110,12 @@ func setupLocalStack(ctx context.Context, version string, legacyMode bool, opts 
 		enabledServices[service.Name()] = service
 	}
 
-	return &LocalStackContainer{Container: container, EnabledServices: enabledServices}, nil
+	c := &LocalStackContainer{
+		Container:       container,
+		EnabledServices: enabledServices,
+		Region:          localStackReq.region,
+	}
+	return c, nil
 }
 
 func configure(req *LocalStackContainerRequest) (reason string, err error) {
