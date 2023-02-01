@@ -91,6 +91,10 @@ func setupLocalStack(ctx context.Context, version string, legacyMode bool, opts 
 		opt(&localStackReq)
 	}
 
+	if localStackReq.region == "" {
+		WithDefaultRegion()(&localStackReq)
+	}
+
 	hostnameExternalReason, err := configure(&localStackReq)
 	if err != nil {
 		return nil, err
