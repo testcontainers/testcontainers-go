@@ -6,6 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
@@ -18,6 +21,10 @@ const defaultRegion = "us-east-1"
 const defaultVersion = "0.11.2"
 const hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
 
+const accessKeyID = "accesskey"
+const secretAccessKey = "secretkey"
+const token = "token"
+
 // LocalStackContainer represents the LocalStack container type used in the module
 type LocalStackContainer struct {
 	testcontainers.Container
@@ -25,8 +32,36 @@ type LocalStackContainer struct {
 	EnabledServices map[string]Service
 }
 
-// EndpointOverride returns the endpoint of the given service
-func (l *LocalStackContainer) EndpointOverride(ctx context.Context, service EnabledService) (nat.Port, error) {
+// Session returns a new AWS session for the given service
+func (l *LocalStackContainer) Session(ctx context.Context, srv Service) (*session.Session, error) {
+	mappedPort, err := l.ServicePort(ctx, srv)
+	if err != nil {
+		return &session.Session{}, err
+	}
+
+	provider, err := testcontainers.NewDockerProvider()
+	if err != nil {
+		return &session.Session{}, err
+	}
+
+	host, err := provider.DaemonHost(ctx)
+	if err != nil {
+		return &session.Session{}, err
+	}
+
+	awsConfig := &aws.Config{
+		Region:                        aws.String(l.Region),
+		CredentialsChainVerboseErrors: aws.Bool(true),
+		Credentials:                   credentials.NewStaticCredentials(accessKeyID, secretAccessKey, token),
+		S3ForcePathStyle:              aws.Bool(true),
+		Endpoint:                      aws.String(fmt.Sprintf("http://%s:%d", host, mappedPort.Int())),
+	}
+
+	return session.NewSession(awsConfig)
+}
+
+// ServicePort returns the port of the given service
+func (l *LocalStackContainer) ServicePort(ctx context.Context, service EnabledService) (nat.Port, error) {
 	if _, ok := l.EnabledServices[service.Name()]; !ok {
 		return "", fmt.Errorf("service %s is not enabled", service.Name())
 	}
@@ -65,6 +100,10 @@ func setupLocalStack(ctx context.Context, overrideReq overrideContainerRequestOp
 		Image:      "localstack/localstack",
 		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
 		WaitingFor: wait.ForLog("Ready.\n").WithOccurrence(1).WithStartupTimeout(2 * time.Minute),
+		Env: map[string]string{
+			"AWS_ACCESS_KEY_ID":     accessKeyID,
+			"AWS_SECRET_ACCESS_KEY": secretAccessKey,
+		},
 	}
 
 	localStackReq := LocalStackContainerRequest{
