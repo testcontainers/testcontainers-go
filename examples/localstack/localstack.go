@@ -6,9 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
@@ -30,34 +27,6 @@ type LocalStackContainer struct {
 	testcontainers.Container
 	Region          string
 	EnabledServices map[string]Service
-}
-
-// Session returns a new AWS session for the given service
-func (l *LocalStackContainer) Session(ctx context.Context, srv Service) (*session.Session, error) {
-	mappedPort, err := l.ServicePort(ctx, srv)
-	if err != nil {
-		return &session.Session{}, err
-	}
-
-	provider, err := testcontainers.NewDockerProvider()
-	if err != nil {
-		return &session.Session{}, err
-	}
-
-	host, err := provider.DaemonHost(ctx)
-	if err != nil {
-		return &session.Session{}, err
-	}
-
-	awsConfig := &aws.Config{
-		Region:                        aws.String(l.Region),
-		CredentialsChainVerboseErrors: aws.Bool(true),
-		Credentials:                   credentials.NewStaticCredentials(accessKeyID, secretAccessKey, token),
-		S3ForcePathStyle:              aws.Bool(true),
-		Endpoint:                      aws.String(fmt.Sprintf("http://%s:%d", host, mappedPort.Int())),
-	}
-
-	return session.NewSession(awsConfig)
 }
 
 // ServicePort returns the port of the given service
