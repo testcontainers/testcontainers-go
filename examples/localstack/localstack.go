@@ -115,7 +115,7 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 	}
 
 	if localStackReq.version == "" {
-		WithDefaultVersion()(&localStackReq)
+		WithDefaultVersion(&localStackReq)
 	}
 	// use the passed version as image tag
 	localStackReq.Image = fmt.Sprintf("%s:%s", localStackReq.Image, localStackReq.version)
@@ -132,7 +132,7 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 	localStackReq.legacyMode = !(!runInLegacyMode(localStackReq.version) && !localStackReq.legacyMode)
 
 	if localStackReq.region == "" {
-		WithDefaultRegion()(&localStackReq)
+		WithDefaultRegion(&localStackReq)
 	}
 
 	hostnameExternalReason, err := configure(&localStackReq)

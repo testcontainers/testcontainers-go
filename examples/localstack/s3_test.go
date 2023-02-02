@@ -15,7 +15,7 @@ import (
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := StartContainer(ctx, NoopOverrideContainerRequest(), WithServices(S3, SQS, CloudWatchLogs, KMS))
+	container, err := StartContainer(ctx, NoopOverrideContainerRequest, WithServices(S3, SQS, CloudWatchLogs, KMS))
 	require.Nil(t, err)
 
 	session, err := container.Session(ctx, S3)

@@ -189,9 +189,7 @@ var StepFunctions = Service{
 type localStackContainerOption func(req *LocalStackContainerRequest)
 
 // WithDefaultRegion uses the default region for the container, which is "us-east-1"
-func WithDefaultRegion() func(req *LocalStackContainerRequest) {
-	return WithRegion(defaultRegion)
-}
+var WithDefaultRegion = WithRegion(defaultRegion)
 
 // WithRegion returns a function that can be used to configure the AWS region of the container
 func WithRegion(region string) func(req *LocalStackContainerRequest) {
@@ -210,10 +208,8 @@ func WithRegion(region string) func(req *LocalStackContainerRequest) {
 }
 
 // WithLegacyMode uses the legacy mode for the container, which exposes each service on a different port
-func WithLegacyMode() func(req *LocalStackContainerRequest) {
-	return func(req *LocalStackContainerRequest) {
-		req.legacyMode = true
-	}
+var WithLegacyMode = func(req *LocalStackContainerRequest) {
+	req.legacyMode = true
 }
 
 // WithServices returns a function that can be used to configure the container
@@ -254,9 +250,7 @@ func WithServices(services ...Service) func(req *LocalStackContainerRequest) {
 }
 
 // WithDefaultVersion uses the default version for the container, which is "0.11"
-func WithDefaultVersion() func(req *LocalStackContainerRequest) {
-	return WithVersion(defaultVersion)
-}
+var WithDefaultVersion = WithVersion(defaultVersion)
 
 // WithVersion returns a function that can be used to configure the version of the container
 func WithVersion(v string) func(req *LocalStackContainerRequest) {
@@ -272,10 +266,8 @@ func WithVersion(v string) func(req *LocalStackContainerRequest) {
 type overrideContainerRequestOption func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest
 
 // NoopOverrideContainerRequest returns a function that can be used to be merged with the container request
-func NoopOverrideContainerRequest() func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
-	return func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
-		return req
-	}
+var NoopOverrideContainerRequest = func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
+	return req
 }
 
 // OverrideContainerRequest returns a function that can be used to be merged with the container request

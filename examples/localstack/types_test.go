@@ -101,7 +101,7 @@ func TestWithLegacyMode(t *testing.T) {
 		req := generateContainerRequest()
 
 		if test.legacyMode {
-			WithLegacyMode()(req)
+			WithLegacyMode(req)
 		}
 
 		assert.Equal(t, test.expectedLegacyMode, req.legacyMode)
