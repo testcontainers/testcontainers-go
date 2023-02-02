@@ -5,5 +5,5 @@
 <!--/codeinclude-->
 
 <!--codeinclude-->
-[Test for a LocalStack container](../../examples/localstack/localstack_test.go)
+[Test for a LocalStack container](../../examples/localstack/s3_test.go)
 <!--/codeinclude-->
