@@ -125,6 +125,7 @@ type ContainerRequest struct {
 	ShmSize                 int64                                      // Amount of memory shared with the host (in bytes)
 	CapAdd                  []string                                   // Deprecated: Use HostConfigModifier instead. Add Linux capabilities
 	CapDrop                 []string                                   // Deprecated: Use HostConfigModifier instead. Drop Linux capabilities
+	ConfigModifier          func(*container.Config)                    // Modifier for the config before container creation
 	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 }

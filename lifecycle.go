@@ -32,6 +32,10 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 		}
 	}
 
+	if req.ConfigModifier != nil {
+		req.ConfigModifier(dockerInput)
+	}
+
 	if req.HostConfigModifier == nil {
 		req.HostConfigModifier = defaultHostConfigModifier(req)
 	}
