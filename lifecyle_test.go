@@ -1,0 +1,230 @@
+package testcontainers
+
+import (
+	"context"
+	"testing"
+
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/strslice"
+	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestPreCreateModifierHook(t *testing.T) {
+	ctx := context.Background()
+
+	provider, err := NewDockerProvider()
+	require.Nil(t, err)
+
+	t.Run("No exposed ports", func(t *testing.T) {
+		req := ContainerRequest{
+			Image: nginxAlpineImage,
+			ConfigModifier: func(config *container.Config) {
+				config.Env = []string{"a=b"}
+			},
+			HostConfigModifier: func(hostConfig *container.HostConfig) {
+				hostConfig.PortBindings = nat.PortMap{
+					"80/tcp": []nat.PortBinding{
+						{
+							HostIP:   "1",
+							HostPort: "2",
+						},
+					},
+				}
+			},
+			EnpointSettingsModifier: func(endpointSettings map[string]*network.EndpointSettings) {
+				endpointSettings["a"] = &network.EndpointSettings{
+					Aliases: []string{"b"},
+					Links:   []string{"link1", "link2"},
+				}
+			},
+		}
+
+		// define empty inputs to be overwritten by the pre create hook
+		inputConfig := &container.Config{
+			Image: req.Image,
+		}
+		inputHostConfig := &container.HostConfig{}
+		inputNetworkingConfig := &network.NetworkingConfig{}
+
+		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		require.Nil(t, err)
+
+		// assertions
+
+		assert.Equal(t, []string{"a=b"}, inputConfig.Env)
+		assert.Equal(t, nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}), inputConfig.ExposedPorts)
+
+		assert.Equal(t, nat.PortMap{
+			"80/tcp": []nat.PortBinding{
+				{
+					HostIP:   "",
+					HostPort: "",
+				},
+			},
+		}, inputHostConfig.PortBindings)
+
+		assert.Equal(t, []string{"b"}, inputNetworkingConfig.EndpointsConfig["a"].Aliases)
+		assert.Equal(t, []string{"link1", "link2"}, inputNetworkingConfig.EndpointsConfig["a"].Links)
+	})
+
+	t.Run("No exposed ports and network mode IsContainer", func(t *testing.T) {
+		req := ContainerRequest{
+			Image: nginxAlpineImage,
+			HostConfigModifier: func(hostConfig *container.HostConfig) {
+				hostConfig.PortBindings = nat.PortMap{
+					"80/tcp": []nat.PortBinding{
+						{
+							HostIP:   "1",
+							HostPort: "2",
+						},
+					},
+				}
+				hostConfig.NetworkMode = "container:foo"
+			},
+		}
+
+		// define empty inputs to be overwritten by the pre create hook
+		inputConfig := &container.Config{
+			Image: req.Image,
+		}
+		inputHostConfig := &container.HostConfig{}
+		inputNetworkingConfig := &network.NetworkingConfig{}
+
+		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		require.Nil(t, err)
+
+		// assertions
+
+		assert.Equal(t, nat.PortSet(nat.PortSet{}), inputConfig.ExposedPorts, "exposed ports should be empty")
+		assert.Equal(t, nat.PortMap{}, inputHostConfig.PortBindings, "portBinding should be empty")
+	})
+
+	t.Run("Nil hostConfigModifier should apply default host config modifier", func(t *testing.T) {
+		req := ContainerRequest{
+			Image:       nginxAlpineImage,
+			AutoRemove:  true,
+			CapAdd:      []string{"addFoo", "addBar"},
+			CapDrop:     []string{"dropFoo", "dropBar"},
+			Binds:       []string{"bindFoo", "bindBar"},
+			ExtraHosts:  []string{"hostFoo", "hostBar"},
+			NetworkMode: "networkModeFoo",
+			Resources: container.Resources{
+				Memory:   2048,
+				NanoCPUs: 8,
+			},
+			HostConfigModifier: nil,
+		}
+
+		// define empty inputs to be overwritten by the pre create hook
+		inputConfig := &container.Config{
+			Image: req.Image,
+		}
+		inputHostConfig := &container.HostConfig{}
+		inputNetworkingConfig := &network.NetworkingConfig{}
+
+		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		require.Nil(t, err)
+
+		// assertions
+
+		assert.Equal(t, req.AutoRemove, inputHostConfig.AutoRemove)
+		assert.Equal(t, strslice.StrSlice(req.CapAdd), inputHostConfig.CapAdd)
+		assert.Equal(t, strslice.StrSlice(req.CapDrop), inputHostConfig.CapDrop)
+		assert.Equal(t, req.Binds, inputHostConfig.Binds)
+		assert.Equal(t, req.ExtraHosts, inputHostConfig.ExtraHosts)
+		assert.Equal(t, req.Resources, inputHostConfig.Resources)
+	})
+
+	t.Run("Request contains more than one network including aliases", func(t *testing.T) {
+		networkName := "foo"
+		net, err := provider.CreateNetwork(ctx, NetworkRequest{
+			Name: networkName,
+		})
+		require.Nil(t, err)
+		defer net.Remove(ctx)
+
+		dockerNetwork, err := provider.GetNetwork(ctx, NetworkRequest{
+			Name: networkName,
+		})
+		require.Nil(t, err)
+
+		req := ContainerRequest{
+			Image:    nginxAlpineImage,
+			Networks: []string{networkName, "bar"},
+			NetworkAliases: map[string][]string{
+				"foo": {"foo1"}, // network aliases are needed at the moment there is a network
+			},
+		}
+
+		// define empty inputs to be overwritten by the pre create hook
+		inputConfig := &container.Config{
+			Image: req.Image,
+		}
+		inputHostConfig := &container.HostConfig{}
+		inputNetworkingConfig := &network.NetworkingConfig{}
+
+		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		require.Nil(t, err)
+
+		// assertions
+
+		assert.Equal(
+			t,
+			req.NetworkAliases[networkName],
+			inputNetworkingConfig.EndpointsConfig[networkName].Aliases,
+			"aliases should come from the container request",
+		)
+		assert.Equal(
+			t,
+			dockerNetwork.ID,
+			inputNetworkingConfig.EndpointsConfig[networkName].NetworkID,
+			"network ID should be retrieved from Docker",
+		)
+	})
+
+	t.Run("Request contains more than one network without aliases", func(t *testing.T) {
+		networkName := "foo"
+		net, err := provider.CreateNetwork(ctx, NetworkRequest{
+			Name: networkName,
+		})
+		require.Nil(t, err)
+		defer net.Remove(ctx)
+
+		dockerNetwork, err := provider.GetNetwork(ctx, NetworkRequest{
+			Name: networkName,
+		})
+		require.Nil(t, err)
+
+		req := ContainerRequest{
+			Image:    nginxAlpineImage,
+			Networks: []string{networkName, "bar"},
+		}
+
+		// define empty inputs to be overwritten by the pre create hook
+		inputConfig := &container.Config{
+			Image: req.Image,
+		}
+		inputHostConfig := &container.HostConfig{}
+		inputNetworkingConfig := &network.NetworkingConfig{}
+
+		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		require.Nil(t, err)
+
+		// assertions
+
+		assert.Empty(
+			t,
+			inputNetworkingConfig.EndpointsConfig[networkName].Aliases,
+			"aliases should be empty",
+		)
+		assert.Equal(
+			t,
+			dockerNetwork.ID,
+			inputNetworkingConfig.EndpointsConfig[networkName].NetworkID,
+			"network ID should be retrieved from Docker",
+		)
+	})
+}
