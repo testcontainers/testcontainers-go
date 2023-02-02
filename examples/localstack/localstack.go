@@ -90,12 +90,12 @@ func runInLegacyMode(version string) bool {
 	}
 
 	fmt.Printf("Version %s is not a semantic version, LocalStack will run in legacy mode.\n", version)
-	fmt.Printf("Consider using \"setupLocalStack(context context.Context, version string, legacyMode bool)\" constructor if you want to disable legacy mode.")
+	fmt.Printf("Consider using \"StartContainer(ctx, NoopOverrideContainerRequest, WithLegacyMode)\" constructor if you want to enable legacy mode.")
 	return true
 }
 
-// setupLocalStack creates an instance of the LocalStack container type
-func setupLocalStack(ctx context.Context, overrideReq overrideContainerRequestOption, opts ...localStackContainerOption) (*LocalStackContainer, error) {
+// StartContainer creates an instance of the LocalStack container type
+func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOption, opts ...localStackContainerOption) (*LocalStackContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:      "localstack/localstack",
 		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
