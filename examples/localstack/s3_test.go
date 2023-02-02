@@ -1,0 +1,77 @@
+package localstack
+
+import (
+	"bytes"
+	"context"
+	"testing"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestS3(t *testing.T) {
+	ctx := context.Background()
+
+	container, err := setupLocalStack(ctx, NoopOverrideContainerRequest(), WithServices(S3, SQS, CloudWatchLogs, KMS))
+	require.Nil(t, err)
+
+	session, err := container.Session(ctx, S3)
+	require.Nil(t, err)
+
+	s3Uploader := s3manager.NewUploader(session)
+
+	t.Run("S3 operations", func(t *testing.T) {
+		bucketName := "localstack-bucket"
+
+		// Create an Amazon S3 service client
+		s3API := s3Uploader.S3
+
+		// Create Bucket
+		outputBucket, err := s3API.CreateBucket(&s3.CreateBucketInput{
+			Bucket: aws.String(bucketName),
+		})
+		require.Nil(t, err)
+		assert.NotNil(t, outputBucket)
+
+		// put object
+		s3Key1 := "key1"
+		body1 := []byte("Hello from localstack 1")
+		outputObject, err := s3API.PutObject(&s3.PutObjectInput{
+			Bucket:             aws.String(bucketName),
+			Key:                aws.String(s3Key1),
+			Body:               bytes.NewReader(body1),
+			ContentLength:      aws.Int64(int64(len(body1))),
+			ContentType:        aws.String("application/text"),
+			ContentDisposition: aws.String("attachment"),
+		})
+		require.Nil(t, err)
+		assert.NotNil(t, outputObject)
+
+		t.Run("List Buckets", func(t *testing.T) {
+			output, err := s3API.ListBuckets(nil)
+			require.Nil(t, err)
+			assert.NotNil(t, output)
+
+			buckets := output.Buckets
+			assert.Equal(t, 1, len(buckets))
+			assert.Equal(t, bucketName, *buckets[0].Name)
+		})
+
+		t.Run("List Objects in Bucket", func(t *testing.T) {
+			output, err := s3API.ListObjects(&s3.ListObjectsInput{
+				Bucket: aws.String(bucketName),
+			})
+			require.Nil(t, err)
+			assert.NotNil(t, output)
+
+			objects := output.Contents
+
+			assert.Equal(t, 1, len(objects))
+			assert.Equal(t, s3Key1, *objects[0].Key)
+			assert.Equal(t, int64(len(body1)), *objects[0].Size)
+		})
+	})
+}
