@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/imdario/mergo"
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -275,5 +276,26 @@ func WithVersion(v string) func(req *LocalStackContainerRequest) {
 		}
 
 		req.version = v
+	}
+}
+
+type overrideContainerRequestOption func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest
+
+// NoopOverrideContainerRequest returns a function that can be used to be merged with the container request
+func NoopOverrideContainerRequest() func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
+	return func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
+		return req
+	}
+}
+
+// OverrideContainerRequest returns a function that can be used to be merged with the container request
+func OverrideContainerRequest(r testcontainers.ContainerRequest) func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
+	return func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
+		if err := mergo.Merge(&req, r, mergo.WithOverride); err != nil {
+			fmt.Printf("error merging container request %v. Keeping the default one: %v", err, req)
+			return req
+		}
+
+		return req
 	}
 }

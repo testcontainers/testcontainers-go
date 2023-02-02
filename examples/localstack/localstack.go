@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
@@ -59,11 +60,11 @@ func runInLegacyMode(version string) bool {
 }
 
 // setupLocalStack creates an instance of the LocalStack container type
-func setupLocalStack(ctx context.Context, opts ...localStackContainerOption) (*LocalStackContainer, error) {
+func setupLocalStack(ctx context.Context, overrideReq overrideContainerRequestOption, opts ...localStackContainerOption) (*LocalStackContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:      "localstack/localstack",
 		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
-		WaitingFor: wait.ForLog("Ready.\n").WithOccurrence(1),
+		WaitingFor: wait.ForLog("Ready.\n").WithOccurrence(1).WithStartupTimeout(2 * time.Minute),
 	}
 
 	localStackReq := LocalStackContainerRequest{
@@ -100,6 +101,12 @@ func setupLocalStack(ctx context.Context, opts ...localStackContainerOption) (*L
 		return nil, err
 	}
 	fmt.Printf("Setting %s to %s (%s)\n", hostnameExternalEnvVar, req.Env[hostnameExternalEnvVar], hostnameExternalReason)
+
+	// at the end, when needed, we merge the user request with the default one
+	if overrideReq != nil {
+		merged := overrideReq(localStackReq.ContainerRequest)
+		localStackReq.ContainerRequest = merged
+	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: localStackReq.ContainerRequest,
