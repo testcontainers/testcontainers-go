@@ -33,7 +33,7 @@ func NewUpdate(example string) Update {
 		PackageEcosystem:      "gomod",
 		RebaseStrategy:        "disabled",
 		Schedule: Schedule{
-			Interval: "daily",
+			Interval: "weekly",
 		},
 	}
 }

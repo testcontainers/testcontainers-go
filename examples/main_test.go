@@ -9,6 +9,31 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestExampleWithTitle(t *testing.T) {
+	t.Run("with title", func(t *testing.T) {
+		example := Example{
+			Name:      "mongoDB",
+			Image:     "mongodb:latest",
+			TitleName: "MongoDB",
+		}
+
+		assert.Equal(t, example.Lower(), "mongodb")
+		assert.Equal(t, example.Title(), "MongoDB")
+		assert.Equal(t, example.LowerTitle(), "mongoDB")
+	})
+
+	t.Run("without title", func(t *testing.T) {
+		example := Example{
+			Name:  "mongoDB",
+			Image: "mongodb:latest",
+		}
+
+		assert.Equal(t, example.Lower(), "mongodb")
+		assert.Equal(t, example.Title(), "Mongodb")
+		assert.Equal(t, example.LowerTitle(), "Mongodb")
+	})
+}
+
 func TestGenerateWrongExampleName(t *testing.T) {
 	rootTmp := t.TempDir()
 	examplesTmp := filepath.Join(rootTmp, "examples")
@@ -52,6 +77,50 @@ func TestGenerateWrongExampleName(t *testing.T) {
 	}
 }
 
+func TestGenerateWrongExampleTitle(t *testing.T) {
+	rootTmp := t.TempDir()
+	examplesTmp := filepath.Join(rootTmp, "examples")
+	examplesDocTmp := filepath.Join(rootTmp, "docs", "examples")
+	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
+
+	err := os.MkdirAll(examplesTmp, 0777)
+	assert.Nil(t, err)
+	err = os.MkdirAll(examplesDocTmp, 0777)
+	assert.Nil(t, err)
+	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	assert.Nil(t, err)
+
+	err = copyInitialMkdocsConfig(t, rootTmp)
+	assert.Nil(t, err)
+
+	tests := []struct {
+		title string
+	}{
+		{title: " fooDB"},
+		{title: "fooDB "},
+		{title: "foo barDB"},
+		{title: "foo-barDB"},
+		{title: "foo/barDB"},
+		{title: "foo\\barDB"},
+		{title: "1fooDB"},
+		{title: "foo1DB"},
+		{title: "-fooDB"},
+		{title: "foo-DB"},
+	}
+
+	for _, test := range tests {
+		example := Example{
+			Name:      "foo",
+			TitleName: test.title,
+			Image:     "docker.io/example/foo:latest",
+			TCVersion: "v0.0.0-test",
+		}
+
+		err = generate(example, rootTmp)
+		assert.Error(t, err)
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	rootTmp := t.TempDir()
 	examplesTmp := filepath.Join(rootTmp, "examples")
@@ -78,8 +147,9 @@ func TestGenerate(t *testing.T) {
 	assert.Nil(t, err)
 
 	example := Example{
-		Name:      "foo",
-		Image:     "docker.io/example/foo:latest",
+		Name:      "foodb",
+		TitleName: "FooDB",
+		Image:     "docker.io/example/foodb:latest",
 		TCVersion: "v0.0.0-test",
 	}
 	exampleNameLower := example.Lower()
@@ -174,6 +244,7 @@ func assertExampleTestContent(t *testing.T, example Example, exampleTestFile str
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "package "+example.Lower())
 	assert.Equal(t, data[7], "func Test"+example.Title()+"(t *testing.T) {")
+	assert.Equal(t, data[10], "\tcontainer, err := setup"+example.Title()+"(ctx)")
 }
 
 // assert content example
@@ -182,17 +253,17 @@ func assertExampleContent(t *testing.T, example Example, exampleFile string) {
 	assert.Nil(t, err)
 
 	lower := example.Lower()
-	title := example.Title()
-	exampleName := example.Name
+	lowerTitle := example.LowerTitle()
+	exampleName := example.Title()
 
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "package "+lower)
-	assert.Equal(t, data[8], "// "+lower+"Container represents the "+exampleName+" container type used in the module")
-	assert.Equal(t, data[9], "type "+lower+"Container struct {")
-	assert.Equal(t, data[13], "// setup"+title+" creates an instance of the "+exampleName+" container type")
-	assert.Equal(t, data[14], "func setup"+title+"(ctx context.Context) (*"+lower+"Container, error) {")
+	assert.Equal(t, data[8], "// "+lowerTitle+"Container represents the "+exampleName+" container type used in the module")
+	assert.Equal(t, data[9], "type "+lowerTitle+"Container struct {")
+	assert.Equal(t, data[13], "// setup"+exampleName+" creates an instance of the "+exampleName+" container type")
+	assert.Equal(t, data[14], "func setup"+exampleName+"(ctx context.Context) (*"+lowerTitle+"Container, error) {")
 	assert.Equal(t, data[16], "\t\tImage: \""+example.Image+"\",")
-	assert.Equal(t, data[26], "\treturn &"+lower+"Container{Container: container}, nil")
+	assert.Equal(t, data[26], "\treturn &"+lowerTitle+"Container{Container: container}, nil")
 }
 
 // assert content GitHub workflow for the example
@@ -262,6 +333,6 @@ func assertToolsGoContent(t *testing.T, example Example, tools string) {
 	assert.Nil(t, err)
 
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[3], "// This package contains the tool dependencies of the "+example.Name+" example.")
+	assert.Equal(t, data[3], "// This package contains the tool dependencies of the "+example.Title()+" example.")
 	assert.Equal(t, data[5], "package tools")
 }

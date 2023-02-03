@@ -1,4 +1,4 @@
-{{ $lower := .Name | ToLower }}{{ $title := .Name | Title }}name: {{ $title }} example pipeline
+{{ $lower := ToLower }}name: {{ Title }} example pipeline
 
 on: [push, pull_request]
 

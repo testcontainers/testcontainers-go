@@ -5,30 +5,36 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
 var nameVar string
+var nameTitleVar string
 var imageVar string
 
 var templates = []string{
-	"ci.yml", "docs_example.md", "example_test.go", "example.go", "go.mod", "go.sum", "Makefile", "tools.go",
+	"ci.yml", "docs_example.md", "example_test.go", "example.go", "go.mod", "Makefile", "tools.go",
 }
 
 func init() {
-	flag.StringVar(&nameVar, "name", "", "Name of the example, use camel-case when needed. Only alphabetical characters are allowed.")
+	flag.StringVar(&nameVar, "name", "", "Name of the example. Only alphabetical characters are allowed.")
+	flag.StringVar(&nameTitleVar, "title", "", "(Optional) Title of the example name, used to override the name in the case of mixed casing (Mongodb -> MongoDB). Use camel-case when needed. Only alphabetical characters are allowed.")
 	flag.StringVar(&imageVar, "image", "", "Fully-qualified name of the Docker image to be used by the example")
 }
 
 type Example struct {
 	Image     string // fully qualified name of the Docker image
 	Name      string
+	TitleName string // title of the name: e.g. "mongodb" -> "MongoDB"
 	TCVersion string // Testcontainers for Go version
 }
 
@@ -36,8 +42,33 @@ func (e *Example) Lower() string {
 	return strings.ToLower(e.Name)
 }
 
-func (e *Example) Title() string {
+func (e *Example) LowerTitle() string {
+	if e.TitleName != "" {
+		r, n := utf8.DecodeRuneInString(e.TitleName)
+		return string(unicode.ToLower(r)) + e.TitleName[n:]
+	}
+
 	return cases.Title(language.Und, cases.NoLower).String(e.Lower())
+}
+
+func (e *Example) Title() string {
+	if e.TitleName != "" {
+		return e.TitleName
+	}
+
+	return cases.Title(language.Und, cases.NoLower).String(e.Lower())
+}
+
+func (e *Example) Validate() error {
+	if !regexp.MustCompile(`^[A-Za-z]+$`).MatchString(e.Name) {
+		return fmt.Errorf("invalid name: %s. Only alphabetical characters are allowed", e.Name)
+	}
+
+	if !regexp.MustCompile(`^[A-Za-z]+$`).MatchString(e.TitleName) {
+		return fmt.Errorf("invalid title: %s. Only alphabetical characters are allowed", e.TitleName)
+	}
+
+	return nil
 }
 
 func main() {
@@ -68,16 +99,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = generate(Example{Name: nameVar, Image: imageVar, TCVersion: mkdocsConfig.Extra.LatestVersion}, rootDir)
+	example := Example{
+		Image:     imageVar,
+		Name:      nameVar,
+		TitleName: nameTitleVar,
+		TCVersion: mkdocsConfig.Extra.LatestVersion,
+	}
+
+	err = generate(example, rootDir)
 	if err != nil {
 		fmt.Printf(">> error generating the example: %v\n", err)
 		os.Exit(1)
 	}
+
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Dir = filepath.Join(rootDir, "examples", example.Lower())
+	err = cmd.Run()
+	if err != nil {
+		fmt.Printf(">> error synchronizing the dependencies: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Please go to", example.Lower(), "directory to check the results, where 'go mod tidy' was executed to synchronize the dependencies")
+	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
+	fmt.Println("Thanks!")
 }
 
 func generate(example Example, rootDir string) error {
-	if !regexp.MustCompile(`^[A-Za-z]+$`).MatchString(example.Name) {
-		return fmt.Errorf("invalid name: %s. Only alphabetical characters are allowed", example.Name)
+	if err := example.Validate(); err != nil {
+		return err
 	}
 
 	githubWorkflowsDir := filepath.Join(rootDir, ".github", "workflows")
@@ -85,9 +135,10 @@ func generate(example Example, rootDir string) error {
 	docsDir := filepath.Join(rootDir, "docs", "examples")
 
 	funcMap := template.FuncMap{
-		"ToLower":     strings.ToLower,
-		"Title":       cases.Title(language.Und, cases.NoLower).String,
-		"codeinclude": func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
+		"ToLower":      func() string { return example.Lower() },
+		"Title":        func() string { return example.Title() },
+		"ToLowerTitle": func() string { return example.LowerTitle() },
+		"codeinclude":  func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
 	}
 
 	// create the example dir
@@ -147,9 +198,6 @@ func generate(example Example, rootDir string) error {
 		return err
 	}
 
-	fmt.Println("Please go to", example.Lower(), "directory and execute 'go mod tidy' to synchronize the dependencies")
-	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
-	fmt.Println("Thanks!")
 	return nil
 }
 

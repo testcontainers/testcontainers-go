@@ -11,7 +11,6 @@ import (
 	"io"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -34,6 +33,8 @@ import (
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -132,7 +133,7 @@ func (c *DockerContainer) PortEndpoint(ctx context.Context, port nat.Port, proto
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
 // You can use the "TC_HOST" env variable to set this yourself
 func (c *DockerContainer) Host(ctx context.Context) (string, error) {
-	host, err := c.provider.daemonHost(ctx)
+	host, err := c.provider.DaemonHost(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -781,7 +782,7 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 
 	opts = append(opts, client.WithHTTPHeaders(
 		map[string]string{
-			"x-tc-sid": sessionID().String(),
+			"x-tc-sid": testcontainerssession.String(),
 		}),
 	)
 
@@ -894,7 +895,18 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		ForceRemove: true,
 	}
 
-	resp, err := p.client.ImageBuild(ctx, buildContext, buildOptions)
+	var resp types.ImageBuildResponse
+	err = backoff.Retry(func() error {
+		resp, err = p.client.ImageBuild(ctx, buildContext, buildOptions)
+		if err != nil {
+			if _, ok := err.(errdefs.ErrNotFound); ok {
+				return backoff.Permanent(err)
+			}
+			Logger.Printf("Failed to build image: %s, will retry", err)
+			return err
+		}
+		return nil
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 	if err != nil {
 		return "", err
 	}
@@ -959,8 +971,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		req.Labels = make(map[string]string)
 	}
 
-	sessionID := sessionID()
-
 	reaperOpts := containerOptions{
 		ImageName: req.ReaperImage,
 	}
@@ -972,7 +982,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.EqualFold(req.Image, reaperImage(reaperOpts.ImageName))
 	if !req.SkipReaper && !isReaperContainer {
-		r, err := newReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1096,7 +1106,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		WaitingFor:        req.WaitingFor,
 		Image:             tag,
 		imageWasBuilt:     req.ShouldBuildImage(),
-		sessionID:         sessionID,
+		sessionID:         testcontainerssession.ID(),
 		provider:          p,
 		terminationSignal: termSignal,
 		skipReaper:        req.SkipReaper,
@@ -1140,10 +1150,9 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		return p.CreateContainer(ctx, req)
 	}
 
-	sessionID := sessionID()
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := newReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1158,7 +1167,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		ID:                c.ID,
 		WaitingFor:        req.WaitingFor,
 		Image:             c.Image,
-		sessionID:         sessionID,
+		sessionID:         testcontainerssession.ID(),
 		provider:          p,
 		terminationSignal: termSignal,
 		skipReaper:        req.SkipReaper,
@@ -1225,10 +1234,14 @@ func (p *DockerProvider) Config() TestContainersConfig {
 	return p.config
 }
 
-// daemonHost gets the host or ip of the Docker daemon where ports are exposed on
+// DaemonHost gets the host or ip of the Docker daemon where ports are exposed on
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
 // You can use the "TC_HOST" env variable to set this yourself
-func (p *DockerProvider) daemonHost(ctx context.Context) (string, error) {
+func (p *DockerProvider) DaemonHost(ctx context.Context) (string, error) {
+	return daemonHost(ctx, p)
+}
+
+func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 	if p.hostCache != "" {
 		return p.hostCache, nil
 	}
@@ -1249,11 +1262,10 @@ func (p *DockerProvider) daemonHost(ctx context.Context) (string, error) {
 	case "http", "https", "tcp":
 		p.hostCache = url.Hostname()
 	case "unix", "npipe":
-		if inAContainer() {
+		if testcontainersdocker.InAContainer() {
 			ip, err := p.GetGatewayIP(ctx)
 			if err != nil {
-				// fallback to getDefaultGatewayIP
-				ip, err = getDefaultGatewayIP()
+				ip, err = testcontainersdocker.DefaultGatewayIP()
 				if err != nil {
 					ip = "localhost"
 				}
@@ -1263,7 +1275,7 @@ func (p *DockerProvider) daemonHost(ctx context.Context) (string, error) {
 			p.hostCache = "localhost"
 		}
 	default:
-		return "", errors.New("Could not determine host through env or docker host")
+		return "", errors.New("could not determine host through env or docker host")
 	}
 
 	return p.hostCache, nil
@@ -1297,8 +1309,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	var termSignal chan bool
 	if !req.SkipReaper {
-		sessionID := sessionID()
-		r, err := newReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}
@@ -1378,30 +1389,6 @@ func (p *DockerProvider) printReaperBanner(resource string) {
 	More on this: https://golang.testcontainers.org/features/garbage_collector/
 	**********************************************************************************************`
 	p.Logger.Printf(ryukDisabledMessage)
-}
-
-func inAContainer() bool {
-	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L15
-	if _, err := os.Stat("/.dockerenv"); err == nil {
-		return true
-	}
-	return false
-}
-
-// deprecated
-// see https://github.com/testcontainers/testcontainers-java/blob/main/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L46
-func getDefaultGatewayIP() (string, error) {
-	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L27
-	cmd := exec.Command("sh", "-c", "ip route|awk '/default/ { print $3 }'")
-	stdout, err := cmd.Output()
-	if err != nil {
-		return "", errors.New("Failed to detect docker host")
-	}
-	ip := strings.TrimSpace(string(stdout))
-	if len(ip) == 0 {
-		return "", errors.New("Failed to parse default gateway IP")
-	}
-	return ip, nil
 }
 
 func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APIClient) (string, error) {
