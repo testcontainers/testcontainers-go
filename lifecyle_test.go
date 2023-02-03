@@ -201,7 +201,12 @@ func TestPreCreateModifierHook(t *testing.T) {
 			Name: networkName,
 		})
 		require.Nil(t, err)
-		defer net.Remove(ctx)
+		defer func() {
+			err := net.Remove(ctx)
+			if err != nil {
+				t.Logf("failed to remove network %s: %s", networkName, err)
+			}
+		}()
 
 		dockerNetwork, err := provider.GetNetwork(ctx, NetworkRequest{
 			Name: networkName,
