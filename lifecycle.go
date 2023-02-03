@@ -24,8 +24,12 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 			Name: attachContainerTo,
 		})
 		if err == nil {
+			aliases := []string{}
+			if _, ok := req.NetworkAliases[attachContainerTo]; ok {
+				aliases = req.NetworkAliases[attachContainerTo]
+			}
 			endpointSetting := network.EndpointSettings{
-				Aliases:   req.NetworkAliases[attachContainerTo],
+				Aliases:   aliases,
 				NetworkID: nw.ID,
 			}
 			endpointSettings[attachContainerTo] = &endpointSetting
