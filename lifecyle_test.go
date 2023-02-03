@@ -20,7 +20,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 	t.Run("No exposed ports", func(t *testing.T) {
 		req := ContainerRequest{
-			Image: nginxAlpineImage,
+			Image: nginxAlpineImage, // alpine image does expose port 80
 			ConfigModifier: func(config *container.Config) {
 				config.Env = []string{"a=b"}
 			},
@@ -54,8 +54,17 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		// assertions
 
-		assert.Equal(t, []string{"a=b"}, inputConfig.Env)
-		assert.Equal(t, nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}), inputConfig.ExposedPorts)
+		assert.Equal(
+			t,
+			[]string{"a=b"},
+			inputConfig.Env,
+			"Docker config's env should be overwritten by the modifier",
+		)
+		assert.Equal(t,
+			nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}),
+			inputConfig.ExposedPorts,
+			"Docker config's exposed ports should be overwritten by the modifier",
+		)
 
 		assert.Equal(t, nat.PortMap{
 			"80/tcp": []nat.PortBinding{
@@ -64,15 +73,27 @@ func TestPreCreateModifierHook(t *testing.T) {
 					HostPort: "",
 				},
 			},
-		}, inputHostConfig.PortBindings)
+		}, inputHostConfig.PortBindings,
+			"Host config's port bindings should be overwritten by the modifier",
+		)
 
-		assert.Equal(t, []string{"b"}, inputNetworkingConfig.EndpointsConfig["a"].Aliases)
-		assert.Equal(t, []string{"link1", "link2"}, inputNetworkingConfig.EndpointsConfig["a"].Links)
+		assert.Equal(
+			t,
+			[]string{"b"},
+			inputNetworkingConfig.EndpointsConfig["a"].Aliases,
+			"Networking config's aliases should be overwritten by the modifier",
+		)
+		assert.Equal(
+			t,
+			[]string{"link1", "link2"},
+			inputNetworkingConfig.EndpointsConfig["a"].Links,
+			"Networking config's links should be overwritten by the modifier",
+		)
 	})
 
 	t.Run("No exposed ports and network mode IsContainer", func(t *testing.T) {
 		req := ContainerRequest{
-			Image: nginxAlpineImage,
+			Image: nginxAlpineImage, // alpine image does expose port 80
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
 				hostConfig.PortBindings = nat.PortMap{
 					"80/tcp": []nat.PortBinding{
@@ -98,13 +119,22 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		// assertions
 
-		assert.Equal(t, nat.PortSet(nat.PortSet{}), inputConfig.ExposedPorts, "exposed ports should be empty")
-		assert.Equal(t, nat.PortMap{}, inputHostConfig.PortBindings, "portBinding should be empty")
+		assert.Equal(
+			t,
+			nat.PortSet(nat.PortSet{}),
+			inputConfig.ExposedPorts,
+			"Docker config's exposed ports should be empty",
+		)
+		assert.Equal(t,
+			nat.PortMap{},
+			inputHostConfig.PortBindings,
+			"Host config's portBinding should be empty",
+		)
 	})
 
 	t.Run("Nil hostConfigModifier should apply default host config modifier", func(t *testing.T) {
 		req := ContainerRequest{
-			Image:       nginxAlpineImage,
+			Image:       nginxAlpineImage, // alpine image does expose port 80
 			AutoRemove:  true,
 			CapAdd:      []string{"addFoo", "addBar"},
 			CapDrop:     []string{"dropFoo", "dropBar"},
@@ -130,12 +160,12 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		// assertions
 
-		assert.Equal(t, req.AutoRemove, inputHostConfig.AutoRemove)
-		assert.Equal(t, strslice.StrSlice(req.CapAdd), inputHostConfig.CapAdd)
-		assert.Equal(t, strslice.StrSlice(req.CapDrop), inputHostConfig.CapDrop)
-		assert.Equal(t, req.Binds, inputHostConfig.Binds)
-		assert.Equal(t, req.ExtraHosts, inputHostConfig.ExtraHosts)
-		assert.Equal(t, req.Resources, inputHostConfig.Resources)
+		assert.Equal(t, req.AutoRemove, inputHostConfig.AutoRemove, "Deprecated AutoRemove should come from the container request")
+		assert.Equal(t, strslice.StrSlice(req.CapAdd), inputHostConfig.CapAdd, "Deprecated CapAdd should come from the container request")
+		assert.Equal(t, strslice.StrSlice(req.CapDrop), inputHostConfig.CapDrop, "Deprecated CapDrop should come from the container request")
+		assert.Equal(t, req.Binds, inputHostConfig.Binds, "Deprecated Binds should come from the container request")
+		assert.Equal(t, req.ExtraHosts, inputHostConfig.ExtraHosts, "Deprecated ExtraHosts should come from the container request")
+		assert.Equal(t, req.Resources, inputHostConfig.Resources, "Deprecated Resources should come from the container request")
 	})
 
 	t.Run("Request contains more than one network including aliases", func(t *testing.T) {
@@ -152,7 +182,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		require.Nil(t, err)
 
 		req := ContainerRequest{
-			Image:    nginxAlpineImage,
+			Image:    nginxAlpineImage, // alpine image does expose port 80
 			Networks: []string{networkName, "bar"},
 			NetworkAliases: map[string][]string{
 				"foo": {"foo1"}, // network aliases are needed at the moment there is a network
@@ -175,13 +205,13 @@ func TestPreCreateModifierHook(t *testing.T) {
 			t,
 			req.NetworkAliases[networkName],
 			inputNetworkingConfig.EndpointsConfig[networkName].Aliases,
-			"aliases should come from the container request",
+			"Networking config's aliases should come from the container request",
 		)
 		assert.Equal(
 			t,
 			dockerNetwork.ID,
 			inputNetworkingConfig.EndpointsConfig[networkName].NetworkID,
-			"network ID should be retrieved from Docker",
+			"Networking config's network ID should be retrieved from Docker",
 		)
 	})
 
@@ -199,7 +229,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		require.Nil(t, err)
 
 		req := ContainerRequest{
-			Image:    nginxAlpineImage,
+			Image:    nginxAlpineImage, // alpine image does expose port 80
 			Networks: []string{networkName, "bar"},
 		}
 
@@ -218,13 +248,13 @@ func TestPreCreateModifierHook(t *testing.T) {
 		assert.Empty(
 			t,
 			inputNetworkingConfig.EndpointsConfig[networkName].Aliases,
-			"aliases should be empty",
+			"Networking config's aliases should be empty",
 		)
 		assert.Equal(
 			t,
 			dockerNetwork.ID,
 			inputNetworkingConfig.EndpointsConfig[networkName].NetworkID,
-			"network ID should be retrieved from Docker",
+			"Networking config's network ID should be retrieved from Docker",
 		)
 	})
 }
