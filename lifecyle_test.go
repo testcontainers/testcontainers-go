@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
@@ -23,6 +24,17 @@ func TestPreCreateModifierHook(t *testing.T) {
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			ConfigModifier: func(config *container.Config) {
 				config.Env = []string{"a=b"}
+			},
+			Mounts: ContainerMounts{
+				{
+					Source: DockerBindMountSource{
+						HostPath: "/var/lib/app/data",
+						BindOptions: &mount.BindOptions{
+							Propagation: mount.PropagationPrivate,
+						},
+					},
+					Target: "/data",
+				},
 			},
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
 				hostConfig.PortBindings = nat.PortMap{
@@ -64,6 +76,21 @@ func TestPreCreateModifierHook(t *testing.T) {
 			nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}),
 			inputConfig.ExposedPorts,
 			"Docker config's exposed ports should be overwritten by the modifier",
+		)
+		assert.Equal(
+			t,
+			[]mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: "/var/lib/app/data",
+					Target: "/data",
+					BindOptions: &mount.BindOptions{
+						Propagation: mount.PropagationPrivate,
+					},
+				},
+			},
+			inputHostConfig.Mounts,
+			"Host config's mounts should be mapped to Docker types",
 		)
 
 		assert.Equal(t, nat.PortMap{
