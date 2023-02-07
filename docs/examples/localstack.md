@@ -5,5 +5,5 @@
 <!--/codeinclude-->
 
 <!--codeinclude-->
-[Test for a LocalStack container](../../examples/localstack/s3_test.go)
+[Test for a LocalStack container, usinv AWS SDK v1](../../examples/localstack/v1/s3_test.go)
 <!--/codeinclude-->

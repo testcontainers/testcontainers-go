@@ -18,9 +18,9 @@ const defaultRegion = "us-east-1"
 const defaultVersion = "0.11.2"
 const hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
 
-const accessKeyID = "accesskey"
-const secretAccessKey = "secretkey"
-const token = "token"
+const AccessKeyID = "accesskey"
+const SecretAccessKey = "secretkey"
+const Token = "token"
 
 // LocalStackContainer represents the LocalStack container type used in the module
 type LocalStackContainer struct {
@@ -70,8 +70,8 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
 		WaitingFor: wait.ForLog("Ready.\n").WithOccurrence(1).WithStartupTimeout(2 * time.Minute),
 		Env: map[string]string{
-			"AWS_ACCESS_KEY_ID":     accessKeyID,
-			"AWS_SECRET_ACCESS_KEY": secretAccessKey,
+			"AWS_ACCESS_KEY_ID":     AccessKeyID,
+			"AWS_SECRET_ACCESS_KEY": SecretAccessKey,
 		},
 	}
 

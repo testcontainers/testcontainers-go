@@ -1,4 +1,4 @@
-package localstack
+package v1_test
 
 import (
 	"bytes"
@@ -14,10 +14,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/examples/localstack"
 )
 
 // awsSession returns a new AWS session for the given service
-func awsSession(ctx context.Context, l *LocalStackContainer, srv Service) (*session.Session, error) {
+func awsSession(ctx context.Context, l *localstack.LocalStackContainer, srv localstack.Service) (*session.Session, error) {
 	mappedPort, err := l.ServicePort(ctx, srv)
 	if err != nil {
 		return &session.Session{}, err
@@ -36,7 +37,7 @@ func awsSession(ctx context.Context, l *LocalStackContainer, srv Service) (*sess
 	awsConfig := &aws.Config{
 		Region:                        aws.String(l.Region),
 		CredentialsChainVerboseErrors: aws.Bool(true),
-		Credentials:                   credentials.NewStaticCredentials(accessKeyID, secretAccessKey, token),
+		Credentials:                   credentials.NewStaticCredentials(localstack.AccessKeyID, localstack.SecretAccessKey, localstack.Token),
 		S3ForcePathStyle:              aws.Bool(true),
 		Endpoint:                      aws.String(fmt.Sprintf("http://%s:%d", host, mappedPort.Int())),
 	}
@@ -47,10 +48,10 @@ func awsSession(ctx context.Context, l *LocalStackContainer, srv Service) (*sess
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := StartContainer(ctx, NoopOverrideContainerRequest, WithServices(S3, SQS, CloudWatchLogs, KMS))
+	container, err := localstack.StartContainer(ctx, localstack.NoopOverrideContainerRequest, localstack.WithServices(localstack.S3, localstack.SQS, localstack.CloudWatchLogs, localstack.KMS))
 	require.Nil(t, err)
 
-	session, err := awsSession(ctx, container, S3)
+	session, err := awsSession(ctx, container, localstack.S3)
 	require.Nil(t, err)
 
 	s3Uploader := s3manager.NewUploader(session)
