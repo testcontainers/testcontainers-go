@@ -198,15 +198,19 @@ func WithCredentials(c Credentials) func(req *LocalStackContainerRequest) {
 			req.Env = map[string]string{}
 		}
 
-		if c.AccessKeyID != "" {
-			req.Env["AWS_ACCESS_KEY_ID"] = c.AccessKeyID
+		if c.AccessKeyID == "" {
+			c.AccessKeyID = defaultAccessKeyID
 		}
-		if c.SecretAccessKey != "" {
-			req.Env["AWS_SECRET_ACCESS_KEY"] = c.SecretAccessKey
+		if c.SecretAccessKey == "" {
+			c.SecretAccessKey = defaultSecretAccessKey
 		}
-		if c.Token != "" {
-			req.Env["AWS_SESSION_TOKEN"] = c.Token
+		if c.Token == "" {
+			c.Token = defaultToken
 		}
+
+		req.Env["AWS_ACCESS_KEY_ID"] = c.AccessKeyID
+		req.Env["AWS_SECRET_ACCESS_KEY"] = c.SecretAccessKey
+		req.Env["AWS_SESSION_TOKEN"] = c.Token
 	}
 }
 

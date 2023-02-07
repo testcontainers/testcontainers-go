@@ -65,7 +65,11 @@ func TestWithCredentials(t *testing.T) {
 				SecretAccessKey: "",
 				Token:           "",
 			},
-			expected: Credentials{},
+			expected: Credentials{
+				AccessKeyID:     defaultAccessKeyID,
+				SecretAccessKey: defaultSecretAccessKey,
+				Token:           defaultToken,
+			},
 		},
 		{
 			cred: Credentials{
