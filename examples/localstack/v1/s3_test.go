@@ -48,7 +48,14 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer, srv loca
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := localstack.StartContainer(ctx, localstack.NoopOverrideContainerRequest, localstack.WithServices(localstack.S3, localstack.SQS, localstack.CloudWatchLogs, localstack.KMS))
+	container, err := localstack.StartContainer(
+		ctx,
+		localstack.NoopOverrideContainerRequest,
+		localstack.WithCredentials(localstack.Credentials{
+			AccessKeyID: "a", SecretAccessKey: "b", Token: "c",
+		}),
+		localstack.WithServices(localstack.S3, localstack.SQS, localstack.CloudWatchLogs, localstack.KMS),
+	)
 	require.Nil(t, err)
 
 	session, err := awsSession(ctx, container, localstack.S3)
