@@ -18,15 +18,22 @@ const defaultRegion = "us-east-1"
 const defaultVersion = "0.11.2"
 const hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
 
-const AccessKeyID = "accesskey"
-const SecretAccessKey = "secretkey"
-const Token = "token"
+const defaultAccessKeyID = "accesskey"
+const defaultSecretAccessKey = "secretkey"
+const defaultToken = "token"
 
 // LocalStackContainer represents the LocalStack container type used in the module
 type LocalStackContainer struct {
 	testcontainers.Container
+	Credentials     Credentials
 	Region          string
 	EnabledServices map[string]Service
+}
+
+type Credentials struct {
+	AccessKeyID     string
+	SecretAccessKey string
+	Token           string
 }
 
 // ServicePort returns the port of the given service
@@ -65,13 +72,20 @@ func runInLegacyMode(version string) bool {
 
 // StartContainer creates an instance of the LocalStack container type
 func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOption, opts ...localStackContainerOption) (*LocalStackContainer, error) {
+	credentials := Credentials{
+		AccessKeyID:     defaultAccessKeyID,
+		SecretAccessKey: defaultSecretAccessKey,
+		Token:           defaultToken,
+	}
+
 	req := testcontainers.ContainerRequest{
 		Image:      "localstack/localstack",
 		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
 		WaitingFor: wait.ForLog("Ready.\n").WithOccurrence(1).WithStartupTimeout(2 * time.Minute),
 		Env: map[string]string{
-			"AWS_ACCESS_KEY_ID":     AccessKeyID,
-			"AWS_SECRET_ACCESS_KEY": SecretAccessKey,
+			"AWS_ACCESS_KEY_ID":     credentials.AccessKeyID,
+			"AWS_SECRET_ACCESS_KEY": credentials.SecretAccessKey,
+			"AWS_SESSION_TOKEN":     credentials.Token,
 		},
 	}
 
@@ -131,6 +145,7 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 
 	c := &LocalStackContainer{
 		Container:       container,
+		Credentials:     credentials,
 		EnabledServices: enabledServices,
 		Region:          localStackReq.region,
 	}

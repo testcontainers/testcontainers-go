@@ -44,7 +44,7 @@ func s3Client(ctx context.Context, l *localstack.LocalStackContainer, srv locals
 	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(l.Region),
 		config.WithEndpointResolverWithOptions(customResolver),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(localstack.AccessKeyID, localstack.SecretAccessKey, localstack.Token)),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(l.Credentials.AccessKeyID, l.Credentials.SecretAccessKey, l.Credentials.Token)),
 	)
 	if err != nil {
 		return nil, err

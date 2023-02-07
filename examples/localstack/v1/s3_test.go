@@ -37,7 +37,7 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer, srv loca
 	awsConfig := &aws.Config{
 		Region:                        aws.String(l.Region),
 		CredentialsChainVerboseErrors: aws.Bool(true),
-		Credentials:                   credentials.NewStaticCredentials(localstack.AccessKeyID, localstack.SecretAccessKey, localstack.Token),
+		Credentials:                   credentials.NewStaticCredentials(l.Credentials.AccessKeyID, l.Credentials.SecretAccessKey, l.Credentials.Token),
 		S3ForcePathStyle:              aws.Bool(true),
 		Endpoint:                      aws.String(fmt.Sprintf("http://%s:%d", host, mappedPort.Int())),
 	}
