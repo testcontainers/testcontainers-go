@@ -39,6 +39,8 @@ func (st healthStrategyTarget) State(ctx context.Context) (*types.ContainerState
 	return &types.ContainerState{Health: st.Health}, nil
 }
 
+// TestWaitForHealthTimesOutForUnhealthy confirms that an unhealthy container will eventually
+// time out.
 func TestWaitForHealthTimesOutForUnhealthy(t *testing.T) {
 	target := healthStrategyTarget{Health: &types.Health{Status: types.Unhealthy}}
 	wg := NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
@@ -50,6 +52,7 @@ func TestWaitForHealthTimesOutForUnhealthy(t *testing.T) {
 	t.Fatal(err)
 }
 
+// TestWaitForHealthSucceeds ensures that a healthy container always succeeds.
 func TestWaitForHealthSucceeds(t *testing.T) {
 	target := healthStrategyTarget{Health: &types.Health{Status: types.Healthy}}
 	wg := NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
@@ -60,6 +63,8 @@ func TestWaitForHealthSucceeds(t *testing.T) {
 	}
 }
 
+// TestWaitForHealthWithNil checks that an initial `nil` Health will not casue a panic,
+// and if the container eventually becomes healthy, the HealthStrategy will succeed.
 func TestWaitForHealthWithNil(t *testing.T) {
 	target := &healthStrategyTarget{Health: nil}
 	wg := NewHealthStrategy().
@@ -77,4 +82,19 @@ func TestWaitForHealthWithNil(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+// TestWaitFailsForNilHealth checks that Health always nil fails (but will NOT cause a panic)
+func TestWaitFailsForNilHealth(t *testing.T) {
+	target := &healthStrategyTarget{Health: nil}
+	wg := NewHealthStrategy().
+		WithStartupTimeout(500 * time.Millisecond).
+		WithPollInterval(100 * time.Millisecond)
+
+	err := wg.WaitUntilReady(context.Background(), target)
+	if err != nil && err == context.DeadlineExceeded {
+		return
+	}
+	// Any error, or success will cause this test to fail
+	t.Fatal(err)
 }
