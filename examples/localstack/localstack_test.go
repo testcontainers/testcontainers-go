@@ -1,9 +1,11 @@
 package localstack
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestConfigure(t *testing.T) {
@@ -34,7 +36,14 @@ func TestConfigure(t *testing.T) {
 		assert.Equal(t, "foo3", req.Env[hostnameExternalEnvVar])
 	})
 
-	t.Run("HOSTNAME_EXTERNAL matches localhost because there are no aliases", func(t *testing.T) {
+	t.Run("HOSTNAME_EXTERNAL matches the daemon host because there are no aliases", func(t *testing.T) {
+		dockerProvider, err := testcontainers.NewDockerProvider()
+		assert.Nil(t, err)
+
+		// because the daemon host could be a remote one, we need to get it from the provider
+		expectedDaemonHost, err := dockerProvider.DaemonHost(context.Background())
+		assert.Nil(t, err)
+
 		req := generateContainerRequest()
 
 		req.Networks = []string{"foo", "bar", "baaz"}
@@ -43,7 +52,7 @@ func TestConfigure(t *testing.T) {
 		reason, err := configure(req)
 		assert.Nil(t, err)
 		assert.Equal(t, "to match host-routable address for container", reason)
-		assert.Equal(t, "localhost", req.Env[hostnameExternalEnvVar])
+		assert.Equal(t, expectedDaemonHost, req.Env[hostnameExternalEnvVar])
 	})
 }
 
