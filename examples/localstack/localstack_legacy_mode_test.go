@@ -17,10 +17,10 @@ func TestLegacyMode(t *testing.T) {
 	container, err := StartContainer(
 		ctx,
 		OverrideContainerRequest(testcontainers.ContainerRequest{
+			Image:      "localstack/localstack:0.11.0",
 			WaitingFor: wait.ForLog("Ready.").WithStartupTimeout(5 * time.Minute).WithOccurrence(1),
 		}),
 		WithLegacyMode,
-		WithVersion("0.11.0"),
 		WithServices(S3, SQS),
 	)
 	require.Nil(t, err)
@@ -44,7 +44,14 @@ func TestLegacyMode(t *testing.T) {
 func TestLegacyModeForVersionGreaterThan_0_11(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := StartContainer(ctx, NoopOverrideContainerRequest, WithVersion("0.12.0"), WithServices(S3, SQS), WithLegacyMode)
+	container, err := StartContainer(
+		ctx,
+		OverrideContainerRequest(testcontainers.ContainerRequest{
+			Image: "localstack/localstack:0.12.0",
+		}),
+		WithServices(S3, SQS),
+		WithLegacyMode,
+	)
 
 	t.Run("multiple services should be exposed using the same port", func(t *testing.T) {
 		require.Nil(t, err)

@@ -11,7 +11,6 @@ import (
 type LocalStackContainerRequest struct {
 	testcontainers.ContainerRequest
 	legacyMode      bool
-	version         string
 	enabledServices []Service
 }
 
@@ -226,20 +225,6 @@ func WithServices(services ...Service) func(req *LocalStackContainerRequest) {
 		}
 
 		req.ExposedPorts = exposedPorts
-	}
-}
-
-// WithDefaultVersion uses the default version for the container, which is "0.11"
-var WithDefaultVersion = WithVersion(defaultVersion)
-
-// WithVersion returns a function that can be used to configure the version of the container
-func WithVersion(v string) func(req *LocalStackContainerRequest) {
-	return func(req *LocalStackContainerRequest) {
-		if v == "" {
-			v = defaultVersion
-		}
-
-		req.version = v
 	}
 }
 

@@ -2,6 +2,7 @@ package localstack
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -72,7 +73,7 @@ func TestRunInLegacyMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
-			got := runInLegacyMode(tt.version)
+			got := runInLegacyMode(fmt.Sprintf("localstack/localstack:%s", tt.version))
 			assert.Equal(t, tt.want, got, "runInLegacyMode() = %v, want %v", got, tt.want)
 		})
 	}

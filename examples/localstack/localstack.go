@@ -44,7 +44,10 @@ func (l *LocalStackContainer) ServicePort(ctx context.Context, service EnabledSe
 	return l.MappedPort(ctx, p)
 }
 
-func runInLegacyMode(version string) bool {
+func runInLegacyMode(image string) bool {
+	parts := strings.Split(image, ":")
+	version := parts[len(parts)-1]
+
 	if version == "latest" {
 		return false
 	}
@@ -65,7 +68,7 @@ func runInLegacyMode(version string) bool {
 // StartContainer creates an instance of the LocalStack container type
 func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOption, opts ...localStackContainerOption) (*LocalStackContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:      "localstack/localstack",
+		Image:      fmt.Sprintf("localstack/localstack:%s", defaultVersion),
 		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
 		WaitingFor: wait.ForLog("Ready.\n").WithOccurrence(1).WithStartupTimeout(2 * time.Minute),
 		Env: map[string]string{
@@ -84,12 +87,6 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 		opt(&localStackReq)
 	}
 
-	if localStackReq.version == "" {
-		WithDefaultVersion(&localStackReq)
-	}
-	// use the passed version as image tag
-	localStackReq.Image = fmt.Sprintf("%s:%s", localStackReq.Image, localStackReq.version)
-
 	/*
 		Do not run in legacy mode when the version is a valid semver version greater than the v0.11 and legacyMode is false
 			| runInLegacyMode | legacyMode | result |
@@ -99,7 +96,7 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 			| true            | false      | true   |
 			| true            | true       | true   |
 	*/
-	localStackReq.legacyMode = !(!runInLegacyMode(localStackReq.version) && !localStackReq.legacyMode)
+	localStackReq.legacyMode = !(!runInLegacyMode(localStackReq.Image) && !localStackReq.legacyMode)
 
 	hostnameExternalReason, err := configure(&localStackReq)
 	if err != nil {

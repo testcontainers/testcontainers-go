@@ -136,29 +136,6 @@ func TestWithServices(t *testing.T) {
 	}
 }
 
-func TestWithVersion(t *testing.T) {
-	tests := []struct {
-		version         string
-		expectedVersion string
-	}{
-		{
-			version:         "",
-			expectedVersion: defaultVersion,
-		},
-		{
-			version:         "0.10.5",
-			expectedVersion: "0.10.5",
-		},
-	}
-
-	for _, test := range tests {
-		req := generateContainerRequest()
-
-		WithVersion(test.version)(req)
-		assert.Equal(t, test.expectedVersion, req.version)
-	}
-}
-
 func TestServicePort(t *testing.T) {
 	tests := []struct {
 		service  Service
