@@ -44,6 +44,7 @@ func TestLegacyMode(t *testing.T) {
 }
 
 func TestLegacyModeForVersionGreaterThan_0_11(t *testing.T) {
+	// forceLegacyMode {
 	ctx := context.Background()
 
 	container, err := StartContainer(
@@ -54,6 +55,7 @@ func TestLegacyModeForVersionGreaterThan_0_11(t *testing.T) {
 		WithServices(S3, SQS),
 		WithLegacyMode,
 	)
+	// }
 
 	t.Run("multiple services should be exposed using the same port", func(t *testing.T) {
 		require.Nil(t, err)

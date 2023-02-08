@@ -61,6 +61,12 @@ Testcontainers will inform Localstack of the best hostname automatically, using 
 
 ## Module reference
 
+The LocalStack module exposes one single function to create containers, and this function receives three parameters:
+
+- `context.Context`
+- `OverrideContainerRequestOption`
+- a variadic argument of `LocalStackContainerOption`
+
 ### OverrideContainerRequestOption
 
 The `OverrideContainerRequestOption` functional option represents a way to override the default LocalStack container request:
@@ -82,3 +88,55 @@ If you do not need to override the container request, you can pass `nil` or the 
 <!--codeinclude-->
 [Skip overriding the default container request](../../examples/localstack/localstack_test.go) inside_block:noopOverrideContainerRequest
 <!--/codeinclude-->
+
+### LocalStackContainerOption, variadic argument
+
+#### WithLegacyMode
+
+The `WithLegacyMode` functional option represents a way to force LocalStack to run in legacy mode.
+
+<!--codeinclude-->
+[Forcing legacy mode](../../examples/localstack/localstack_legacy_mode_test.go) inside_block:forceLegacyMode
+<!--/codeinclude-->
+
+#### WithServices
+
+The `WithServices` functional option represents a way to pass as many AWS services as needed, in a variadic manner:
+
+<!--codeinclude-->
+[Passing AWS services to LocalStack](../../examples/localstack/v1/s3_test.go) inside_block:localStackCreateContainer
+<!--/codeinclude-->
+
+Using this method will internally populate the `SERVICES` environment variable, alongside the exposed ports of each service.
+
+### Available AWS Services
+
+The LocalStack module supports the following AWS services:
+
+- APIGateway
+- CloudFormation
+- CloudWatch
+- CloudWatchLogs
+- DynamoDB
+- DynamoDBStreams
+- EC2
+- Firehose
+- IAM
+- KMS
+- Kinesis
+- Lambda
+- Redshift
+- Route53
+- S3
+- SES
+- SNS
+- SQS
+- SSM
+- STS
+- SecretsManager
+- StepFunctions
+
+!!!info
+
+	At this moment, the tests for the module include tests for the S3 service, only. They live in two different Go packages of the LocalStack module,
+    `v1` and `v2`, where it'll be easier to add more examples for the rest of services.
