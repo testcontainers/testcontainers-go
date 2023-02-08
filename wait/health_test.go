@@ -81,9 +81,7 @@ func TestWaitForHealthWithNil(t *testing.T) {
 	}(target)
 
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 }
 
 // TestWaitFailsForNilHealth checks that Health always nil fails (but will NOT cause a panic)
