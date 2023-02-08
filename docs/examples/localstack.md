@@ -58,3 +58,27 @@ Testcontainers will inform Localstack of the best hostname automatically, using 
     <!--/codeinclude-->
 
 * Other usage scenarios, such as where the Localstack container is used from both the test host and containers on a custom network are not automatically supported. If you have this use case, you should set `HOSTNAME_EXTERNAL` manually.
+
+## Module reference
+
+### OverrideContainerRequestOption
+
+The `OverrideContainerRequestOption` functional option represents a way to override the default LocalStack container request:
+
+<!--codeinclude-->
+[Default container request](../../examples/localstack/localstack.go) inside_block:defaultContainerRequest
+<!--/codeinclude-->
+
+With simply passing your own instance of an `OverrideContainerRequestOption` type to the `StartContainer` function, you'll be able to configure the LocalStack container with your own needs.
+
+In the following example you check how it's possible to set certain environment variables that are needed by the tests. Besides, the container runs in a separate Docker network with an alias:
+
+<!--codeinclude-->
+[Overriding the default container request](../../examples/localstack/localstack_test.go) inside_block:withNetwork
+<!--/codeinclude-->
+
+If you do not need to override the container request, you can pass `nil` or the `NoopOverrideContainerRequest` instance, which is exposed as a helper for this reason.
+
+<!--codeinclude-->
+[Skip overriding the default container request](../../examples/localstack/localstack_test.go) inside_block:noopOverrideContainerRequest
+<!--/codeinclude-->

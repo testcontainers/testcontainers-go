@@ -46,6 +46,7 @@ func runInLegacyMode(image string) bool {
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
 // - opts: a list of functions that can be used to configure the container, more specifically enabling AWS services, or setting the legacy mode.
 func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOption, opts ...LocalStackContainerOption) (*LocalStackContainer, error) {
+	// defaultContainerRequest {
 	req := testcontainers.ContainerRequest{
 		Image:      fmt.Sprintf("localstack/localstack:%s", defaultVersion),
 		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
@@ -57,6 +58,7 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 			"DEFAULT_REGION":        defaultRegion,
 		},
 	}
+	// }
 
 	localStackReq := LocalStackContainerRequest{
 		ContainerRequest: req,

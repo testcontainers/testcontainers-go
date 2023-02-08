@@ -80,6 +80,20 @@ func TestRunInLegacyMode(t *testing.T) {
 	}
 }
 
+func TestStartWithoutOverride(t *testing.T) {
+	// noopOverrideContainerRequest {
+	ctx := context.Background()
+
+	container, err := StartContainer(
+		ctx,
+		NoopOverrideContainerRequest,
+		WithServices(S3, SQS),
+	)
+	require.Nil(t, err)
+	assert.NotNil(t, container)
+	// }
+}
+
 func TestStartWithNetwork(t *testing.T) {
 	// withNetwork {
 	ctx := context.Background()
