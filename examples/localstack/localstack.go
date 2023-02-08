@@ -42,7 +42,9 @@ func runInLegacyMode(image string) bool {
 	return true
 }
 
-// StartContainer creates an instance of the LocalStack container type
+// StartContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
+// - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
+// - opts: a list of functions that can be used to configure the container, more specifically enabling AWS services, or setting the legacy mode.
 func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOption, opts ...LocalStackContainerOption) (*LocalStackContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:      fmt.Sprintf("localstack/localstack:%s", defaultVersion),

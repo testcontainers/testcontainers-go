@@ -32,6 +32,8 @@ func (l *LocalStackContainer) ServicePort(ctx context.Context, service EnabledSe
 	return l.MappedPort(ctx, p)
 }
 
+// LocalStackContainerRequest represents the LocalStack container request type used in the module
+// to configure the container
 type LocalStackContainerRequest struct {
 	testcontainers.ContainerRequest
 	legacyMode      bool
@@ -45,6 +47,7 @@ type EnabledService interface {
 	Port() int
 }
 
+// Service represents a LocalStack service, such as S3, SQS, etc.
 type Service struct {
 	name       string
 	legacyMode bool
@@ -66,6 +69,8 @@ func (s Service) Port() int {
 	return s.port
 }
 
+// servicePort returns the port of the service when running in legacy mode
+// but the default port when running in non-legacy mode
 func (s Service) servicePort() int {
 	if s.legacyMode {
 		return s.Port()
@@ -208,6 +213,8 @@ var StepFunctions = Service{
 	port: 4585,
 }
 
+// LocalStackContainerOption is a type that can be used to configure the LocalStack container,
+// modifying the LocalStackContainerRequest struct, and the container request that it wraps
 type LocalStackContainerOption func(req *LocalStackContainerRequest)
 
 // WithLegacyMode uses the legacy mode for the container, which exposes each service on a different port
@@ -252,14 +259,16 @@ func WithServices(services ...Service) func(req *LocalStackContainerRequest) {
 	}
 }
 
+// OverrideContainerRequestOption is a type that can be used to configure the Testcontainers container request.
+// The passed request will be merged with the default one.
 type OverrideContainerRequestOption func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest
 
-// NoopOverrideContainerRequest returns a function that can be used to be merged with the container request
+// NoopOverrideContainerRequest returns a helper function that does not override the container request
 var NoopOverrideContainerRequest = func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
 	return req
 }
 
-// OverrideContainerRequest returns a function that can be used to be merged with the container request
+// OverrideContainerRequest returns a function that can be used to merge the passed container request with one that is created by the LocalStack container
 func OverrideContainerRequest(r testcontainers.ContainerRequest) func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
 	return func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
 		if err := mergo.Merge(&req, r, mergo.WithOverride); err != nil {
