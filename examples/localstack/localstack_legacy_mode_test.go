@@ -14,6 +14,7 @@ import (
 func TestLegacyMode(t *testing.T) {
 	ctx := context.Background()
 
+	// withoutNetwork {
 	container, err := StartContainer(
 		ctx,
 		OverrideContainerRequest(testcontainers.ContainerRequest{
@@ -25,6 +26,7 @@ func TestLegacyMode(t *testing.T) {
 	)
 	require.Nil(t, err)
 	assert.NotNil(t, container)
+	// }
 
 	t.Run("multiple services should be exposed using their own port", func(t *testing.T) {
 

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -77,4 +78,35 @@ func TestRunInLegacyMode(t *testing.T) {
 			assert.Equal(t, tt.want, got, "runInLegacyMode() = %v, want %v", got, tt.want)
 		})
 	}
+}
+
+func TestStartWithNetwork(t *testing.T) {
+	// withNetwork {
+	ctx := context.Background()
+
+	nw, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
+		NetworkRequest: testcontainers.NetworkRequest{
+			Name: "localstack-network",
+		},
+	})
+	require.Nil(t, err)
+	assert.NotNil(t, nw)
+
+	container, err := StartContainer(
+		ctx,
+		OverrideContainerRequest(testcontainers.ContainerRequest{
+			Image:          "localstack/localstack:0.13.0",
+			Networks:       []string{"localstack-network"},
+			NetworkAliases: map[string][]string{"localstack-network": {"localstack"}},
+		}),
+		WithServices(S3, SQS),
+	)
+	require.Nil(t, err)
+	assert.NotNil(t, container)
+	// }
+
+	networks, err := container.Networks(ctx)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(networks))
+	require.Equal(t, "localstack-network", networks[0])
 }

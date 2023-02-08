@@ -23,6 +23,7 @@ const (
 	region    = "us-east-1"
 )
 
+// awsSDKClientV2 {
 func s3Client(ctx context.Context, l *localstack.LocalStackContainer, srv localstack.Service) (*s3.Client, error) {
 	mappedPort, err := l.ServicePort(ctx, srv)
 	if err != nil {
@@ -63,6 +64,8 @@ func s3Client(ctx context.Context, l *localstack.LocalStackContainer, srv locals
 
 	return client, nil
 }
+
+// }
 
 func TestS3(t *testing.T) {
 	ctx := context.Background()
