@@ -9,14 +9,14 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestConfigure(t *testing.T) {
+func TestConfigureDockerHost(t *testing.T) {
 
 	t.Run("HOSTNAME_EXTERNAL variable is passed as part of the request", func(t *testing.T) {
 		req := generateContainerRequest()
 
 		req.Env[hostnameExternalEnvVar] = "foo"
 
-		reason, err := configure(req)
+		reason, err := configureDockerHost(req)
 		assert.Nil(t, err)
 		assert.Equal(t, "explicitly as environment variable", reason)
 	})
@@ -31,7 +31,7 @@ func TestConfigure(t *testing.T) {
 			"baaz": {"baaz0", "baaz1", "baaz2", "baaz3"},
 		}
 
-		reason, err := configure(req)
+		reason, err := configureDockerHost(req)
 		assert.Nil(t, err)
 		assert.Equal(t, "to match last network alias on container with non-default network", reason)
 		assert.Equal(t, "foo3", req.Env[hostnameExternalEnvVar])
@@ -50,7 +50,7 @@ func TestConfigure(t *testing.T) {
 		req.Networks = []string{"foo", "bar", "baaz"}
 		req.NetworkAliases = map[string][]string{}
 
-		reason, err := configure(req)
+		reason, err := configureDockerHost(req)
 		assert.Nil(t, err)
 		assert.Equal(t, "to match host-routable address for container", reason)
 		assert.Equal(t, expectedDaemonHost, req.Env[hostnameExternalEnvVar])

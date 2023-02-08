@@ -98,7 +98,7 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 	*/
 	localStackReq.legacyMode = !(!runInLegacyMode(localStackReq.Image) && !localStackReq.legacyMode)
 
-	hostnameExternalReason, err := configure(&localStackReq)
+	hostnameExternalReason, err := configureDockerHost(&localStackReq)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 	return c, nil
 }
 
-func configure(req *LocalStackContainerRequest) (reason string, err error) {
+func configureDockerHost(req *LocalStackContainerRequest) (reason string, err error) {
 	err = nil
 	reason = ""
 
