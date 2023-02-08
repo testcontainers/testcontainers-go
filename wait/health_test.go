@@ -2,6 +2,8 @@ package wait
 
 import (
 	"context"
+	"errors"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
 	"time"
@@ -92,9 +94,6 @@ func TestWaitFailsForNilHealth(t *testing.T) {
 		WithPollInterval(100 * time.Millisecond)
 
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil && err == context.DeadlineExceeded {
-		return
-	}
-	// Any error, or success will cause this test to fail
-	t.Fatal(err)
+	assert.NotNil(t, err)
+	assert.True(t, errors.Is(err, context.DeadlineExceeded))
 }
