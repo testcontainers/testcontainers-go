@@ -57,47 +57,6 @@ func TestWithContainerRequest(t *testing.T) {
 	assert.Equal(t, wait.ForLog("foo"), merged.WaitingFor)
 }
 
-func TestWithCredentials(t *testing.T) {
-	tests := []struct {
-		cred     Credentials
-		expected Credentials
-	}{
-		{
-			cred: Credentials{
-				AccessKeyID:     "",
-				SecretAccessKey: "",
-				Token:           "",
-			},
-			expected: Credentials{
-				AccessKeyID:     defaultAccessKeyID,
-				SecretAccessKey: defaultSecretAccessKey,
-				Token:           defaultToken,
-			},
-		},
-		{
-			cred: Credentials{
-				AccessKeyID:     "foo",
-				SecretAccessKey: "bar",
-				Token:           "baz",
-			},
-			expected: Credentials{
-				AccessKeyID:     "foo",
-				SecretAccessKey: "bar",
-				Token:           "baz",
-			},
-		},
-	}
-
-	for _, test := range tests {
-		req := generateContainerRequest()
-
-		WithCredentials(test.cred)(req)
-		assert.Equal(t, test.expected.AccessKeyID, req.Env["AWS_ACCESS_KEY_ID"])
-		assert.Equal(t, test.expected.SecretAccessKey, req.Env["AWS_SECRET_ACCESS_KEY"])
-		assert.Equal(t, test.expected.Token, req.Env["AWS_SESSION_TOKEN"])
-	}
-}
-
 func TestWithRegion(t *testing.T) {
 	tests := []struct {
 		region         string

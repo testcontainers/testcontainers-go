@@ -17,6 +17,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/examples/localstack"
 )
 
+const (
+	accesskey = "a"
+	secretkey = "b"
+	token     = "c"
+)
+
 // awsSession returns a new AWS session for the given service
 func awsSession(ctx context.Context, l *localstack.LocalStackContainer, srv localstack.Service) (*session.Session, error) {
 	mappedPort, err := l.ServicePort(ctx, srv)
@@ -37,7 +43,7 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer, srv loca
 	awsConfig := &aws.Config{
 		Region:                        aws.String(l.Region),
 		CredentialsChainVerboseErrors: aws.Bool(true),
-		Credentials:                   credentials.NewStaticCredentials(l.Credentials.AccessKeyID, l.Credentials.SecretAccessKey, l.Credentials.Token),
+		Credentials:                   credentials.NewStaticCredentials(accesskey, secretkey, token),
 		S3ForcePathStyle:              aws.Bool(true),
 		Endpoint:                      aws.String(fmt.Sprintf("http://%s:%d", host, mappedPort.Int())),
 	}
@@ -50,10 +56,13 @@ func TestS3(t *testing.T) {
 
 	container, err := localstack.StartContainer(
 		ctx,
-		localstack.NoopOverrideContainerRequest,
-		localstack.WithCredentials(localstack.Credentials{
-			AccessKeyID: "a", SecretAccessKey: "b", Token: "c",
-		}),
+		localstack.OverrideContainerRequest(testcontainers.ContainerRequest{
+			Env: map[string]string{
+				"AWS_ACCESS_KEY_ID":     accesskey,
+				"AWS_SECRET_ACCESS_KEY": secretkey,
+				"AWS_SESSION_TOKEN":     token,
+			}},
+		),
 		localstack.WithServices(localstack.S3, localstack.SQS, localstack.CloudWatchLogs, localstack.KMS),
 	)
 	require.Nil(t, err)

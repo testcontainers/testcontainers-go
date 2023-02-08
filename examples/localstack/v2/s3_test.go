@@ -16,6 +16,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/examples/localstack"
 )
 
+const (
+	accesskey = "a"
+	secretkey = "b"
+	token     = "c"
+)
+
 func s3Client(ctx context.Context, l *localstack.LocalStackContainer, srv localstack.Service) (*s3.Client, error) {
 	mappedPort, err := l.ServicePort(ctx, srv)
 	if err != nil {
@@ -44,7 +50,7 @@ func s3Client(ctx context.Context, l *localstack.LocalStackContainer, srv locals
 	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(l.Region),
 		config.WithEndpointResolverWithOptions(customResolver),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(l.Credentials.AccessKeyID, l.Credentials.SecretAccessKey, l.Credentials.Token)),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accesskey, secretkey, token)),
 	)
 	if err != nil {
 		return nil, err
@@ -63,9 +69,6 @@ func TestS3(t *testing.T) {
 	container, err := localstack.StartContainer(
 		ctx,
 		localstack.NoopOverrideContainerRequest,
-		localstack.WithCredentials(localstack.Credentials{
-			AccessKeyID: "a", SecretAccessKey: "b", Token: "c",
-		}),
 		localstack.WithServices(localstack.S3, localstack.SQS, localstack.CloudWatchLogs, localstack.KMS),
 	)
 	require.Nil(t, err)

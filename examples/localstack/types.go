@@ -191,29 +191,6 @@ type localStackContainerOption func(req *LocalStackContainerRequest)
 // WithDefaultRegion uses the default region for the container, which is "us-east-1"
 var WithDefaultRegion = WithRegion(defaultRegion)
 
-// WithCredentials returns a function that can be used to configure the AWS credentials of the container
-func WithCredentials(c Credentials) func(req *LocalStackContainerRequest) {
-	return func(req *LocalStackContainerRequest) {
-		if req.Env == nil {
-			req.Env = map[string]string{}
-		}
-
-		if c.AccessKeyID == "" {
-			c.AccessKeyID = defaultAccessKeyID
-		}
-		if c.SecretAccessKey == "" {
-			c.SecretAccessKey = defaultSecretAccessKey
-		}
-		if c.Token == "" {
-			c.Token = defaultToken
-		}
-
-		req.Env["AWS_ACCESS_KEY_ID"] = c.AccessKeyID
-		req.Env["AWS_SECRET_ACCESS_KEY"] = c.SecretAccessKey
-		req.Env["AWS_SESSION_TOKEN"] = c.Token
-	}
-}
-
 // WithRegion returns a function that can be used to configure the AWS region of the container
 func WithRegion(region string) func(req *LocalStackContainerRequest) {
 	return func(req *LocalStackContainerRequest) {
