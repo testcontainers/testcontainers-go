@@ -83,6 +83,13 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 		ContainerRequest: req,
 	}
 
+	// first, when needed, we merge the user request with the default one
+	if overrideReq != nil {
+		merged := overrideReq(localStackReq.ContainerRequest)
+		localStackReq.ContainerRequest = merged
+	}
+
+	// finally we apply the options
 	for _, opt := range opts {
 		opt(&localStackReq)
 	}
@@ -103,12 +110,6 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 		return nil, err
 	}
 	fmt.Printf("Setting %s to %s (%s)\n", hostnameExternalEnvVar, req.Env[hostnameExternalEnvVar], hostnameExternalReason)
-
-	// at the end, when needed, we merge the user request with the default one
-	if overrideReq != nil {
-		merged := overrideReq(localStackReq.ContainerRequest)
-		localStackReq.ContainerRequest = merged
-	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: localStackReq.ContainerRequest,
