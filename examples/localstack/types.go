@@ -11,7 +11,6 @@ import (
 type LocalStackContainerRequest struct {
 	testcontainers.ContainerRequest
 	legacyMode      bool
-	region          string
 	version         string
 	enabledServices []Service
 }
@@ -187,25 +186,6 @@ var StepFunctions = Service{
 }
 
 type localStackContainerOption func(req *LocalStackContainerRequest)
-
-// WithDefaultRegion uses the default region for the container, which is "us-east-1"
-var WithDefaultRegion = WithRegion(defaultRegion)
-
-// WithRegion returns a function that can be used to configure the AWS region of the container
-func WithRegion(region string) func(req *LocalStackContainerRequest) {
-	return func(req *LocalStackContainerRequest) {
-		if req.Env == nil {
-			req.Env = map[string]string{}
-		}
-
-		if region == "" {
-			region = defaultRegion
-		}
-
-		req.Env["DEFAULT_REGION"] = region
-		req.region = region
-	}
-}
 
 // WithLegacyMode uses the legacy mode for the container, which exposes each service on a different port
 var WithLegacyMode = func(req *LocalStackContainerRequest) {

@@ -25,7 +25,6 @@ const defaultToken = "token"
 // LocalStackContainer represents the LocalStack container type used in the module
 type LocalStackContainer struct {
 	testcontainers.Container
-	Region          string
 	EnabledServices map[string]Service
 }
 
@@ -73,6 +72,7 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 			"AWS_ACCESS_KEY_ID":     defaultAccessKeyID,
 			"AWS_SECRET_ACCESS_KEY": defaultSecretAccessKey,
 			"AWS_SESSION_TOKEN":     defaultToken,
+			"DEFAULT_REGION":        defaultRegion,
 		},
 	}
 
@@ -100,10 +100,6 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 			| true            | true       | true   |
 	*/
 	localStackReq.legacyMode = !(!runInLegacyMode(localStackReq.version) && !localStackReq.legacyMode)
-
-	if localStackReq.region == "" {
-		WithDefaultRegion(&localStackReq)
-	}
 
 	hostnameExternalReason, err := configure(&localStackReq)
 	if err != nil {
@@ -133,7 +129,6 @@ func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOpt
 	c := &LocalStackContainer{
 		Container:       container,
 		EnabledServices: enabledServices,
-		Region:          localStackReq.region,
 	}
 	return c, nil
 }

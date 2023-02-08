@@ -57,34 +57,6 @@ func TestWithContainerRequest(t *testing.T) {
 	assert.Equal(t, wait.ForLog("foo"), merged.WaitingFor)
 }
 
-func TestWithRegion(t *testing.T) {
-	tests := []struct {
-		region         string
-		expectedRegion string
-	}{
-		{
-			region:         "",
-			expectedRegion: defaultRegion,
-		},
-		{
-			region:         "us-east-1",
-			expectedRegion: defaultRegion,
-		},
-		{
-			region:         "eu-west-1",
-			expectedRegion: "eu-west-1",
-		},
-	}
-
-	for _, test := range tests {
-		req := generateContainerRequest()
-
-		WithRegion(test.region)(req)
-		assert.Equal(t, test.expectedRegion, req.Env["DEFAULT_REGION"])
-		assert.Equal(t, test.expectedRegion, req.region)
-	}
-}
-
 func TestWithLegacyMode(t *testing.T) {
 	tests := []struct {
 		legacyMode         bool

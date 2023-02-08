@@ -21,6 +21,7 @@ const (
 	accesskey = "a"
 	secretkey = "b"
 	token     = "c"
+	region    = "us-east-1"
 )
 
 // awsSession returns a new AWS session for the given service
@@ -41,7 +42,7 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer, srv loca
 	}
 
 	awsConfig := &aws.Config{
-		Region:                        aws.String(l.Region),
+		Region:                        aws.String(region),
 		CredentialsChainVerboseErrors: aws.Bool(true),
 		Credentials:                   credentials.NewStaticCredentials(accesskey, secretkey, token),
 		S3ForcePathStyle:              aws.Bool(true),
@@ -61,6 +62,7 @@ func TestS3(t *testing.T) {
 				"AWS_ACCESS_KEY_ID":     accesskey,
 				"AWS_SECRET_ACCESS_KEY": secretkey,
 				"AWS_SESSION_TOKEN":     token,
+				"AWS_DEFAULT_REGION":    region,
 			}},
 		),
 		localstack.WithServices(localstack.S3, localstack.SQS, localstack.CloudWatchLogs, localstack.KMS),

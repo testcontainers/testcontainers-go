@@ -20,6 +20,7 @@ const (
 	accesskey = "a"
 	secretkey = "b"
 	token     = "c"
+	region    = "us-east-1"
 )
 
 func s3Client(ctx context.Context, l *localstack.LocalStackContainer, srv localstack.Service) (*s3.Client, error) {
@@ -43,12 +44,12 @@ func s3Client(ctx context.Context, l *localstack.LocalStackContainer, srv locals
 			return aws.Endpoint{
 				PartitionID:   "aws",
 				URL:           fmt.Sprintf("http://%s:%d", host, mappedPort.Int()),
-				SigningRegion: l.Region,
+				SigningRegion: region,
 			}, nil
 		})
 
 	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(l.Region),
+		config.WithRegion(region),
 		config.WithEndpointResolverWithOptions(customResolver),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accesskey, secretkey, token)),
 	)
@@ -68,7 +69,14 @@ func TestS3(t *testing.T) {
 
 	container, err := localstack.StartContainer(
 		ctx,
-		localstack.NoopOverrideContainerRequest,
+		localstack.OverrideContainerRequest(testcontainers.ContainerRequest{
+			Env: map[string]string{
+				"AWS_ACCESS_KEY_ID":     accesskey,
+				"AWS_SECRET_ACCESS_KEY": secretkey,
+				"AWS_SESSION_TOKEN":     token,
+				"AWS_DEFAULT_REGION":    region,
+			}},
+		),
 		localstack.WithServices(localstack.S3, localstack.SQS, localstack.CloudWatchLogs, localstack.KMS),
 	)
 	require.Nil(t, err)
