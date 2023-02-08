@@ -21,6 +21,7 @@ func generateContainerRequest() *LocalStackContainerRequest {
 func TestWithContainerRequest(t *testing.T) {
 	req := testcontainers.ContainerRequest{
 		Env:          map[string]string{},
+		Image:        "foo",
 		ExposedPorts: []string{},
 		SkipReaper:   false,
 		WaitingFor: wait.ForNop(
@@ -38,6 +39,7 @@ func TestWithContainerRequest(t *testing.T) {
 		Env: map[string]string{
 			"FOO": "BAR",
 		},
+		Image:    "bar",
 		Networks: []string{"foo1", "bar1"},
 		NetworkAliases: map[string][]string{
 			"foo1": {"bar"},
@@ -48,6 +50,7 @@ func TestWithContainerRequest(t *testing.T) {
 
 	assert.Equal(t, "BAR", merged.Env["FOO"])
 	assert.True(t, merged.SkipReaper)
+	assert.Equal(t, "bar", merged.Image)
 	assert.Equal(t, []string{"foo1", "bar1"}, merged.Networks)
 	assert.Equal(t, []string{"foo0", "foo1", "foo2", "foo3"}, merged.NetworkAliases["foo"])
 	assert.Equal(t, []string{"bar"}, merged.NetworkAliases["foo1"])
