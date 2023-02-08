@@ -48,10 +48,8 @@ func TestWaitForHealthTimesOutForUnhealthy(t *testing.T) {
 	wg := NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
 	err := wg.WaitUntilReady(context.Background(), target)
 
-	if err != nil && err == context.DeadlineExceeded {
-		return
-	}
-	t.Fatal(err)
+	assert.NotNil(t, err)
+	assert.True(t, errors.Is(err, context.DeadlineExceeded))
 }
 
 // TestWaitForHealthSucceeds ensures that a healthy container always succeeds.
