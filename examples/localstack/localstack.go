@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -21,28 +20,6 @@ const hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
 const defaultAccessKeyID = "accesskey"
 const defaultSecretAccessKey = "secretkey"
 const defaultToken = "token"
-
-// LocalStackContainer represents the LocalStack container type used in the module
-type LocalStackContainer struct {
-	testcontainers.Container
-	EnabledServices map[string]Service
-}
-
-// ServicePort returns the port of the given service
-func (l *LocalStackContainer) ServicePort(ctx context.Context, service EnabledService) (nat.Port, error) {
-	if _, ok := l.EnabledServices[service.Name()]; !ok {
-		return "", fmt.Errorf("service %s is not enabled", service.Name())
-	}
-
-	internalPort := l.EnabledServices[service.Name()].servicePort()
-
-	p, err := nat.NewPort("tcp", fmt.Sprintf("%d", internalPort))
-	if err != nil {
-		return "", err
-	}
-
-	return l.MappedPort(ctx, p)
-}
 
 func runInLegacyMode(image string) bool {
 	parts := strings.Split(image, ":")
