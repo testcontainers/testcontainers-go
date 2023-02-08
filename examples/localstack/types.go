@@ -208,7 +208,7 @@ var StepFunctions = Service{
 	port: 4585,
 }
 
-type localStackContainerOption func(req *LocalStackContainerRequest)
+type LocalStackContainerOption func(req *LocalStackContainerRequest)
 
 // WithLegacyMode uses the legacy mode for the container, which exposes each service on a different port
 var WithLegacyMode = func(req *LocalStackContainerRequest) {
@@ -252,7 +252,7 @@ func WithServices(services ...Service) func(req *LocalStackContainerRequest) {
 	}
 }
 
-type overrideContainerRequestOption func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest
+type OverrideContainerRequestOption func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest
 
 // NoopOverrideContainerRequest returns a function that can be used to be merged with the container request
 var NoopOverrideContainerRequest = func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {

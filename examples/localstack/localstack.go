@@ -43,7 +43,7 @@ func runInLegacyMode(image string) bool {
 }
 
 // StartContainer creates an instance of the LocalStack container type
-func StartContainer(ctx context.Context, overrideReq overrideContainerRequestOption, opts ...localStackContainerOption) (*LocalStackContainer, error) {
+func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOption, opts ...LocalStackContainerOption) (*LocalStackContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:      fmt.Sprintf("localstack/localstack:%s", defaultVersion),
 		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
