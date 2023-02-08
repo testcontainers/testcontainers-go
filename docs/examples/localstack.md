@@ -2,6 +2,14 @@
 
 The Testcontainers module for [LocalStack](http://localstack.cloud/) is _"a fully functional local AWS cloud stack"_, to develop and test your cloud and serverless apps without actually using the cloud.
 
+## Adding this module to your project dependencies
+
+Please run the following command to add the LocalStack module to your Go dependencies:
+
+```
+go get github.com/testcontainers/testcontainers-go/examples/localstack
+```
+
 ## Usage example
 
 Running LocalStack as a stand-in for multiple AWS services during a test:
@@ -50,11 +58,3 @@ Testcontainers will inform Localstack of the best hostname automatically, using 
     <!--/codeinclude-->
 
 * Other usage scenarios, such as where the Localstack container is used from both the test host and containers on a custom network are not automatically supported. If you have this use case, you should set `HOSTNAME_EXTERNAL` manually.
-
-## Adding this module to your project dependencies
-
-Please run the following command to add the LocalStack module to your Go dependencies:
-
-```
-go get github.com/testcontainers/testcontainers-go/examples/localstack
-```
