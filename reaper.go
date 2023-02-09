@@ -11,14 +11,18 @@ import (
 
 	"github.com/docker/go-connections/nat"
 
+	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
-	TestcontainerLabel          = "org.testcontainers.golang"
+	// Deprecated: it has been replaced by the internal testcontainersdocker.LabelLang
+	TestcontainerLabel = "org.testcontainers.golang"
+	// Deprecated: it has been replaced by the internal testcontainersdocker.LabelSessionID
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
-	TestcontainerLabelIsReaper  = TestcontainerLabel + ".reaper"
+	// Deprecated: it has been replaced by the internal testcontainersdocker.LabelReaper
+	TestcontainerLabelIsReaper = TestcontainerLabel + ".reaper"
 
 	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.3.4"
 )
@@ -88,7 +92,8 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 		ExposedPorts: []string{string(listeningPort)},
 		NetworkMode:  Bridge,
 		Labels: map[string]string{
-			TestcontainerLabelIsReaper: "true",
+			TestcontainerLabelIsReaper:       "true",
+			testcontainersdocker.LabelReaper: "true",
 		},
 		SkipReaper:    true,
 		RegistryCred:  reaperOpts.RegistryCredentials,
@@ -103,7 +108,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 
 	// include reaper-specific labels to the reaper container
 	for k, v := range reaper.Labels() {
-		if k == TestcontainerLabelSessionID {
+		if k == TestcontainerLabelSessionID || k == testcontainersdocker.LabelSessionID {
 			continue
 		}
 		req.Labels[k] = v
@@ -191,8 +196,11 @@ func (r *Reaper) Connect() (chan bool, error) {
 // Labels returns the container labels to use so that this Reaper cleans them up
 func (r *Reaper) Labels() map[string]string {
 	return map[string]string{
-		TestcontainerLabel:          "true",
-		TestcontainerLabelSessionID: r.SessionID,
+		TestcontainerLabel:                  "true",
+		TestcontainerLabelSessionID:         r.SessionID,
+		testcontainersdocker.LabelLang:      "go",
+		testcontainersdocker.LabelVersion:   internal.Version,
+		testcontainersdocker.LabelSessionID: r.SessionID,
 	}
 }
 
