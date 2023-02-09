@@ -58,9 +58,7 @@ func TestWaitForHealthSucceeds(t *testing.T) {
 	wg := NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
 	err := wg.WaitUntilReady(context.Background(), target)
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 }
 
 // TestWaitForHealthWithNil checks that an initial `nil` Health will not casue a panic,
