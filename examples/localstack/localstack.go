@@ -77,7 +77,7 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 
 	/*
 		Do not run in legacy mode when the version is a valid semver version greater than the v0.11 and legacyMode is false
-			| runInLegacyMode | legacyMode | result |
+			| version < 0.11 | legacyMode | result |
 			|-----------------|------------|--------|
 			| false           | false      | false  |
 			| false           | true       | true   |
