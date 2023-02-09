@@ -7,6 +7,7 @@ import (
 
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -37,8 +38,11 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		ReaperImage:  "reaperImage",
 		ExposedPorts: []string{"8080/tcp"},
 		Labels: map[string]string{
-			TestcontainerLabel:         "true",
-			TestcontainerLabelIsReaper: "true",
+			TestcontainerLabel:                "true",
+			TestcontainerLabelIsReaper:        "true",
+			testcontainersdocker.LabelReaper:  "true",
+			testcontainersdocker.LabelLang:    "go",
+			testcontainersdocker.LabelVersion: internal.Version,
 		},
 		SkipReaper:  true,
 		Mounts:      Mounts(BindMount("/var/run/docker.sock", "/var/run/docker.sock")),
