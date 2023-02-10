@@ -21,7 +21,7 @@ do
   done
 done
 
-git push --tags
+gitPushTags
 
 curlGolangProxy "${REPOSITORY}" # e.g. github.com/testcontainers/testcontainers-go/@v/v0.0.1
 
@@ -39,6 +39,10 @@ function curlGolangProxy() {
   #   github.com/testcontainers/testcontainers-go/v0.0.1
   #   github.com/testcontainers/testcontainers-go/modules/mongodb/v0.0.1
   curl "https://proxy.golang.org/${module_path}/@v/${TAG}"
+}
+
+function gitPushTags() {
+  git push --tags
 }
 
 function tagModule() {
