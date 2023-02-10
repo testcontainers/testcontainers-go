@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+readonly DRY_RUN="${DRY_RUN:-false}"
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
 
@@ -37,6 +38,11 @@ function main() {
 function curlGolangProxy() {
   local module_path="${1}"
 
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "curl -X POST https://proxy.golang.org/${module_path}/@v/${TAG}"
+    return
+  fi
+
   # e.g.:
   #   github.com/testcontainers/testcontainers-go/v0.0.1
   #   github.com/testcontainers/testcontainers-go/modules/mongodb/v0.0.1
@@ -44,11 +50,22 @@ function curlGolangProxy() {
 }
 
 function gitPushTags() {
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "git push --tags"
+    return
+  fi
+
   git push --tags
 }
 
 function tagModule() {
   local module_tag="${1}"
+
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "git tag -d ${module_tag} | true"
+    echo "git tag ${module_tag}"
+    return
+  fi
 
   git tag -d "${module_tag}" | true # do not fail if tag does not exist
   git tag "${module_tag}"
