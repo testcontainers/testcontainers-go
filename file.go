@@ -60,6 +60,9 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 			return fmt.Errorf("error getting file info header: %w", err)
 		}
 
+		// see https://pkg.go.dev/archive/tar#FileInfoHeader:
+		// Since fs.FileInfo's Name method only returns the base name of the file it describes,
+		// it may be necessary to modify Header.Name to provide the full path name of the file.
 		// keep the path relative to the parent directory
 		header.Name = filepath.ToSlash(strings.Replace(file, parentDir, "", 1))
 		header.Mode = fileMode
