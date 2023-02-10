@@ -13,6 +13,12 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /modules/localstack
+      schedule:
+        interval: weekly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /examples/bigtable
       schedule:
         interval: weekly
@@ -38,12 +44,6 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/firestore
-      schedule:
-        interval: weekly
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
-      directory: /examples/localstack
       schedule:
         interval: weekly
       open-pull-requests-limit: 3
