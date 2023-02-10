@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_IsDir(t *testing.T) {
@@ -54,6 +55,43 @@ func Test_IsDir(t *testing.T) {
 
 func Test_TarDir(t *testing.T) {
 	src := filepath.Join(".", "testresources")
+
+	buff, err := tarDir(src, 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpDir := filepath.Join(t.TempDir(), "subfolder")
+	err = untar(tmpDir, bytes.NewReader(buff.Bytes()))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	srcFiles, err := os.ReadDir(src)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, srcFile := range srcFiles {
+		if srcFile.IsDir() {
+			continue
+		}
+		srcBytes, err := os.ReadFile(filepath.Join(src, srcFile.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		untarBytes, err := os.ReadFile(filepath.Join(tmpDir, "testresources", srcFile.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, srcBytes, untarBytes)
+	}
+}
+
+func Test_TarDirWithAbsolutePath(t *testing.T) {
+	src, err := filepath.Abs(filepath.Join(".", "testresources"))
+	require.Nil(t, err)
 
 	buff, err := tarDir(src, 0755)
 	if err != nil {

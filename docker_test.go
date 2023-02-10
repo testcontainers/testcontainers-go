@@ -2109,11 +2109,23 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 	ctx := context.Background()
 	hostDirName := "testresources"
 
+	abs, err := filepath.Abs("./" + hostDirName)
+	assert.Nil(t, err)
+
 	tests := []struct {
 		name     string
 		dir      ContainerFile
 		hasError bool
 	}{
+		{
+			name: "success copy directory with full path",
+			dir: ContainerFile{
+				HostFilePath:      abs,
+				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
+				FileMode:          700,
+			},
+			hasError: false,
+		},
 		{
 			name: "success copy directory",
 			dir: ContainerFile{
