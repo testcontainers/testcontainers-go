@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func isDir(path string) (bool, error) {
@@ -39,6 +40,8 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 	zr := gzip.NewWriter(buffer)
 	tw := tar.NewWriter(zr)
 
+	parentDir, _ := filepath.Split(src)
+
 	// walk through every file in the folder
 	err := filepath.Walk(src, func(file string, fi os.FileInfo, errFn error) error {
 		if errFn != nil {
@@ -57,9 +60,8 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 			return fmt.Errorf("error getting file info header: %w", err)
 		}
 
-		// must provide real name
-		// (see https://golang.org/src/archive/tar/common.go?#L626)
-		header.Name = filepath.ToSlash(file)
+		// keep the path relative to the parent directory
+		header.Name = filepath.ToSlash(strings.Replace(file, parentDir, "", 1))
 		header.Mode = fileMode
 
 		// write header
