@@ -23,14 +23,23 @@ done
 
 git push --tags
 
-curl "https://proxy.golang.org/${REPOSITORY}/@v/${TAG}" # e.g. github.com/testcontainers/testcontainers-go/v0.0.1
+curlGolangProxy "${REPOSITORY}" # e.g. github.com/testcontainers/testcontainers-go/@v/v0.0.1
 
 for directory in "${DIRECTORIES[@]}"
 do
   module="${module%?}" # remove trailing slash
   module_path="${REPOSITORY}/${directory}/${module}/"
-  curl "https://proxy.golang.org/${module_path}/@v/${TAG}" # e.g. # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/v0.0.1
+  curlGolangProxy "${module_path}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1
 done
+
+function curlGolangProxy() {
+  local module_path="${1}"
+
+  # e.g.:
+  #   github.com/testcontainers/testcontainers-go/v0.0.1
+  #   github.com/testcontainers/testcontainers-go/modules/mongodb/v0.0.1
+  curl "https://proxy.golang.org/${module_path}/@v/${TAG}"
+}
 
 function tagModule() {
   local module_tag="${1}"
