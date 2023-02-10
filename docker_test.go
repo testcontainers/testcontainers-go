@@ -2561,10 +2561,11 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 			require.NoError(t, err)
 		}
 
+		fp := filepath.Join(containerFilePath, srcFile.Name())
 		// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
 		// paths for the container files are using Linux path separators
-		fd, err := container.CopyFileFromContainer(ctx, containerFilePath+"/"+srcFile.Name())
-		require.NoError(t, err, "Path not found in container: %s", containerFilePath+"/"+srcFile.Name())
+		fd, err := container.CopyFileFromContainer(ctx, fp)
+		require.NoError(t, err, "Path not found in container: %s", fp)
 		defer fd.Close()
 
 		targetPath := filepath.Join(tmpDir, srcFile.Name())
