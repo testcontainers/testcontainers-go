@@ -6,8 +6,7 @@ readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
 readonly REPOSITORY="github.com/testcontainers/testcontainers-go"
 readonly TAG="${1}"
 
-git tag -d "${TAG}" | true # do not fail if tag does not exist
-git tag "${TAG}"
+tagModule "${TAG}"
 
 readonly DIRECTORIES=(examples modules)
 
@@ -18,8 +17,7 @@ do
   ls -d */ | grep -v "_template" | while read -r module; do
     module="${module%?}" # remove trailing slash
     module_tag="${directory}/${module}/${TAG}" # e.g. modules/mongodb/v0.0.1
-    git tag -d "${module_tag}" | true # do not fail if tag does not exist
-    git tag "${module_tag}"
+    tagModule "${module_tag}"
   done
 done
 
@@ -33,3 +31,10 @@ do
   module_path="${REPOSITORY}/${directory}/${module}/"
   curl "https://proxy.golang.org/${module_path}/@v/${TAG}" # e.g. # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/v0.0.1
 done
+
+function tagModule() {
+  local module_tag="${1}"
+
+  git tag -d "${module_tag}" | true # do not fail if tag does not exist
+  git tag "${module_tag}"
+}
