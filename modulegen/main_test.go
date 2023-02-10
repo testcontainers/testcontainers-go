@@ -274,15 +274,10 @@ func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConf
 
 	assert.Equal(t, len(originalConfig.Updates)+1, len(examples))
 
-	parentDir := "examples"
-	if example.IsModule {
-		parentDir = "modules"
-	}
-
 	// the example should be in the dependabot updates
 	found := false
 	for _, ex := range examples {
-		directory := "/" + parentDir + "/" + example.Lower()
+		directory := "/" + example.ParentDir() + "/" + example.Lower()
 		if directory == ex.Directory {
 			found = true
 		}
@@ -390,15 +385,10 @@ func assertMkdocsExamplesNav(t *testing.T, example Example, originalConfig *MkDo
 
 	assert.Equal(t, len(originalConfig.Nav[3].Examples)+1, len(examples))
 
-	parentDir := "examples"
-	if example.IsModule {
-		parentDir = "modules"
-	}
-
 	// the example should be in the nav
 	found := false
 	for _, ex := range examples {
-		markdownExample := parentDir + "/" + example.Lower() + ".md"
+		markdownExample := example.ParentDir() + "/" + example.Lower() + ".md"
 		if markdownExample == ex {
 			found = true
 		}

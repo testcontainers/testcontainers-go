@@ -54,6 +54,14 @@ func (e *Example) LowerTitle() string {
 	return cases.Title(language.Und, cases.NoLower).String(e.Lower())
 }
 
+func (e *Example) ParentDir() string {
+	if e.IsModule {
+		return "modules"
+	}
+
+	return "examples"
+}
+
 func (e *Example) Title() string {
 	if e.TitleName != "" {
 		return e.TitleName
@@ -117,14 +125,14 @@ func main() {
 	}
 
 	cmd := exec.Command("go", "mod", "tidy")
-	cmd.Dir = filepath.Join(rootDir, "examples", example.Lower())
+	cmd.Dir = filepath.Join(rootDir, example.ParentDir(), example.Lower())
 	err = cmd.Run()
 	if err != nil {
 		fmt.Printf(">> error synchronizing the dependencies: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("Please go to", example.Lower(), "directory to check the results, where 'go mod tidy' was executed to synchronize the dependencies")
+	fmt.Println("Please go to", cmd.Dir, "directory to check the results, where 'go mod tidy' was executed to synchronize the dependencies")
 	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
 	fmt.Println("Thanks!")
 }
@@ -135,13 +143,8 @@ func generate(example Example, rootDir string) error {
 	}
 
 	githubWorkflowsDir := filepath.Join(rootDir, ".github", "workflows")
-	outputDir := filepath.Join(rootDir, "examples")
-	docsOuputDir := filepath.Join(rootDir, "docs", "examples")
-
-	if example.IsModule {
-		outputDir = filepath.Join(rootDir, "modules")
-		docsOuputDir = filepath.Join(rootDir, "docs", "modules")
-	}
+	outputDir := filepath.Join(rootDir, example.ParentDir())
+	docsOuputDir := filepath.Join(rootDir, "docs", example.ParentDir())
 
 	funcMap := template.FuncMap{
 		"ToLower":      func() string { return example.Lower() },
@@ -264,12 +267,7 @@ func generateMkdocs(rootDir string, example Example) error {
 		}
 	}
 
-	parentDir := "examples"
-	if example.IsModule {
-		parentDir = "modules"
-	}
-
-	examplesNav = append(examplesNav, parentDir+"/"+example.Lower()+".md")
+	examplesNav = append(examplesNav, example.ParentDir()+"/"+example.Lower()+".md")
 	sort.Strings(examplesNav)
 
 	// prepend the index.md file

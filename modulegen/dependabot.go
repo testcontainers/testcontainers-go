@@ -27,13 +27,8 @@ type Update struct {
 }
 
 func NewUpdate(example Example) Update {
-	parentDir := "examples"
-	if example.IsModule {
-		parentDir = "modules"
-	}
-
 	return Update{
-		Directory:             "/" + parentDir + "/" + example.Lower(),
+		Directory:             "/" + example.ParentDir() + "/" + example.Lower(),
 		OpenPullRequestsLimit: 3,
 		PackageEcosystem:      "gomod",
 		RebaseStrategy:        "disabled",
