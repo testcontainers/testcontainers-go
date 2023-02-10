@@ -24,6 +24,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 | -name | string | Yes | Name of the example, use camel-case when needed. Only alphabetical characters are allowed. |
 | -image | string | Yes | Fully-qualified name of the Docker image to be used by the example (i.e. 'docker.io/org/project:tag') |
 | -title | string | No | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphabetical characters are allowed. |
+| -as-module | bool | No | If set, the example will be generated as a Go module, under the modules directory. Otherwise, it will be generated as a subdirectory of the examples directory. |
 
 ### What is this tool not doing?
 
@@ -36,6 +37,12 @@ From the [`modulegen` directory]({{repo_url}}/tree/main/modulegen), please run:
 
 ```shell
 go run . --name ${NAME_OF_YOUR_EXAMPLE} --image "${REGISTRY}/${EXAMPLE}:${TAG}" --title ${TITLE_OF_YOUR_EXAMPLE}
+```
+
+or for creating a Go module:
+
+```shell
+go run . --name ${NAME_OF_YOUR_EXAMPLE} --image "${REGISTRY}/${EXAMPLE}:${TAG}" --title ${TITLE_OF_YOUR_EXAMPLE} --as-module
 ```
 
 ## Update Go dependencies in the examples

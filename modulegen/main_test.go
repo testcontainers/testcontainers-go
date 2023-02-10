@@ -149,6 +149,7 @@ func TestGenerate(t *testing.T) {
 	example := Example{
 		Name:      "foodb",
 		TitleName: "FooDB",
+		IsModule:  false,
 		Image:     "docker.io/example/foodb:latest",
 		TCVersion: "v0.0.0-test",
 	}
@@ -183,6 +184,78 @@ func TestGenerate(t *testing.T) {
 	assertExampleGithubWorkflowContent(t, example, exampleWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, exampleNameLower)
+	assertExampleTestContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
+	assertExampleContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
+	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))
+	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
+	assertToolsGoContent(t, example, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
+	assertMkdocsExamplesNav(t, example, originalConfig, rootTmp)
+	assertDependabotExamplesUpdates(t, example, originalDependabotConfig, rootTmp)
+}
+
+func TestGenerateModule(t *testing.T) {
+	rootTmp := t.TempDir()
+	modulesTmp := filepath.Join(rootTmp, "modules")
+	modulesDocTmp := filepath.Join(rootTmp, "docs", "modules")
+	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
+
+	err := os.MkdirAll(modulesTmp, 0777)
+	assert.Nil(t, err)
+	err = os.MkdirAll(modulesDocTmp, 0777)
+	assert.Nil(t, err)
+	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	assert.Nil(t, err)
+
+	err = copyInitialMkdocsConfig(t, rootTmp)
+	assert.Nil(t, err)
+
+	originalConfig, err := readMkdocsConfig(rootTmp)
+	assert.Nil(t, err)
+
+	err = copyInitialDependabotConfig(t, rootTmp)
+	assert.Nil(t, err)
+
+	originalDependabotConfig, err := readDependabotConfig(rootTmp)
+	assert.Nil(t, err)
+
+	example := Example{
+		Name:      "foodb",
+		TitleName: "FooDB",
+		IsModule:  true,
+		Image:     "docker.io/example/foodb:latest",
+		TCVersion: "v0.0.0-test",
+	}
+	exampleNameLower := example.Lower()
+
+	err = generate(example, rootTmp)
+	assert.Nil(t, err)
+
+	templatesDir, err := os.ReadDir(filepath.Join(".", "_template"))
+	assert.Nil(t, err)
+
+	exampleDirPath := filepath.Join(modulesTmp, exampleNameLower)
+	newExampleDir, err := os.ReadDir(exampleDirPath)
+	assert.Nil(t, err)
+
+	exampleDirFileInfo, err := os.Stat(exampleDirPath)
+	assert.Nil(t, err) // error nil implies the file exist
+	assert.True(t, exampleDirFileInfo.IsDir())
+
+	exampleDocFile := filepath.Join(modulesDocTmp, exampleNameLower+".md")
+	_, err = os.Stat(exampleDocFile)
+	assert.Nil(t, err) // error nil implies the file exist
+
+	exampleWorkflowFile := filepath.Join(githubWorkflowsTmp, exampleNameLower+"-example.yml")
+	_, err = os.Stat(exampleWorkflowFile)
+	assert.Nil(t, err) // error nil implies the file exist
+
+	// check the number of template files is equal to examples + 2 (the doc and the github workflow)
+	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
+
+	assertExampleDocContent(t, example, exampleDocFile)
+	assertExampleGithubWorkflowContent(t, example, exampleWorkflowFile)
+
+	generatedTemplatesDir := filepath.Join(modulesTmp, exampleNameLower)
 	assertExampleTestContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
 	assertExampleContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
 	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))

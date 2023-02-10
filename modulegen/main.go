@@ -17,6 +17,7 @@ import (
 	"golang.org/x/text/language"
 )
 
+var asModuleVar bool
 var nameVar string
 var nameTitleVar string
 var imageVar string
@@ -29,10 +30,12 @@ func init() {
 	flag.StringVar(&nameVar, "name", "", "Name of the example. Only alphabetical characters are allowed.")
 	flag.StringVar(&nameTitleVar, "title", "", "(Optional) Title of the example name, used to override the name in the case of mixed casing (Mongodb -> MongoDB). Use camel-case when needed. Only alphabetical characters are allowed.")
 	flag.StringVar(&imageVar, "image", "", "Fully-qualified name of the Docker image to be used by the example")
+	flag.BoolVar(&asModuleVar, "as-module", false, "If set, the example will be generated as a Go module, under the modules directory. Otherwise, it will be generated as a subdirectory of the examples directory.")
 }
 
 type Example struct {
 	Image     string // fully qualified name of the Docker image
+	IsModule  bool   // if true, the example will be generated as a Go module
 	Name      string
 	TitleName string // title of the name: e.g. "mongodb" -> "MongoDB"
 	TCVersion string // Testcontainers for Go version
@@ -101,6 +104,7 @@ func main() {
 
 	example := Example{
 		Image:     imageVar,
+		IsModule:  asModuleVar,
 		Name:      nameVar,
 		TitleName: nameTitleVar,
 		TCVersion: mkdocsConfig.Extra.LatestVersion,
@@ -131,8 +135,13 @@ func generate(example Example, rootDir string) error {
 	}
 
 	githubWorkflowsDir := filepath.Join(rootDir, ".github", "workflows")
-	examplesDir := filepath.Join(rootDir, "examples")
-	docsDir := filepath.Join(rootDir, "docs", "examples")
+	outputDir := filepath.Join(rootDir, "examples")
+	docsOuputDir := filepath.Join(rootDir, "docs", "examples")
+
+	if example.IsModule {
+		outputDir = filepath.Join(rootDir, "modules")
+		docsOuputDir = filepath.Join(rootDir, "docs", "modules")
+	}
 
 	funcMap := template.FuncMap{
 		"ToLower":      func() string { return example.Lower() },
@@ -142,7 +151,7 @@ func generate(example Example, rootDir string) error {
 	}
 
 	// create the example dir
-	err := os.MkdirAll(examplesDir, 0700)
+	err := os.MkdirAll(outputDir, 0700)
 	if err != nil {
 		return err
 	}
@@ -161,15 +170,15 @@ func generate(example Example, rootDir string) error {
 
 		if strings.EqualFold(tmpl, "docs_example.md") {
 			// docs example file will go into the docs directory
-			exampleFilePath = filepath.Join(docsDir, exampleLower+".md")
+			exampleFilePath = filepath.Join(docsOuputDir, exampleLower+".md")
 		} else if strings.EqualFold(tmpl, "ci.yml") {
 			// GitHub workflow example file will go into the .github/workflows directory
 			exampleFilePath = filepath.Join(githubWorkflowsDir, exampleLower+"-example.yml")
 		} else if strings.EqualFold(tmpl, "tools.go") {
 			// tools.go example file will go into the tools package
-			exampleFilePath = filepath.Join(examplesDir, exampleLower, "tools", tmpl)
+			exampleFilePath = filepath.Join(outputDir, exampleLower, "tools", tmpl)
 		} else {
-			exampleFilePath = filepath.Join(examplesDir, exampleLower, strings.ReplaceAll(tmpl, "example", exampleLower))
+			exampleFilePath = filepath.Join(outputDir, exampleLower, strings.ReplaceAll(tmpl, "example", exampleLower))
 		}
 
 		err = os.MkdirAll(filepath.Dir(exampleFilePath), 0777)
