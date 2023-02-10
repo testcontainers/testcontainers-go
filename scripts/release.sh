@@ -54,6 +54,7 @@ function main() {
 }
 
 # This function is used to trigger the Go proxy to fetch the module.
+# See https://pkg.go.dev/about#adding-a-package for more details.
 function curlGolangProxy() {
   local module_path="${1}"
   local module_version="${2}"
