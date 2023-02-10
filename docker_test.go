@@ -2022,18 +2022,20 @@ func TestDockerContainerCopyDirToContainer(t *testing.T) {
 		Started: true,
 	})
 
+	p := filepath.Join(".", "testresources", "Dokerfile")
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
-	err = nginxC.CopyDirToContainer(ctx, "./testresources/Dockerfile", "/tmp/testresources/Dockerfile", 700)
+	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testresources/Dockerfile", 700)
 	require.Error(t, err) // copying a file using the directory method will raise an error
 
-	err = nginxC.CopyDirToContainer(ctx, "./testresources", "/tmp/testresources", 700)
+	p = filepath.Join(".", "testresources")
+	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testresources", 700)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assertExtractedFiles(t, ctx, nginxC, "./testresources", "/tmp/testresources/")
+	assertExtractedFiles(t, ctx, nginxC, p, "/tmp/testresources/")
 }
 
 func TestDockerCreateContainerWithFiles(t *testing.T) {
@@ -2129,7 +2131,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 		{
 			name: "success copy directory",
 			dir: ContainerFile{
-				HostFilePath:      "./" + hostDirName,
+				HostFilePath:      filepath.Join("./", hostDirName),
 				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
 				FileMode:          700,
 			},
