@@ -1,4 +1,4 @@
-{{ $lower := .Name | ToLower }}{{ $title := .Name | Title }}package {{ $lower }}
+{{ $lower := ToLower }}{{ $title := Title }}package {{ $lower }}
 
 import (
 	"context"

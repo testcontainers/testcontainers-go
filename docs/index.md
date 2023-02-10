@@ -30,6 +30,7 @@ examples as well. Check it out at
 
 * [Elastic](https://www.elastic.co) - Testing of the APM Server, and E2E testing for Beats
 * [Telegraf](https://www.influxdata.com/time-series-platform/telegraf/) - Integration testing the plugin-driven server agent for collecting & reporting metrics
+* [Intel](https://intel.com/) - Reference implementation design E2E testing for microservice-based solutions
 
 ## License
 

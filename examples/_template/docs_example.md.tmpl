@@ -1,4 +1,4 @@
-{{ $lower := .Name | ToLower }}{{ $title := .Name | Title }}# {{ $title }}
+{{ $lower := ToLower }}{{ $title := Title }}# {{ $title }}
 
 {{ codeinclude "<!--codeinclude-->" }}
 [Creating a {{ $title }} container](../../examples/{{ $lower }}/{{ $lower }}.go)

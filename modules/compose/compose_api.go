@@ -118,6 +118,9 @@ type dockerCompose struct {
 	// only one strategy can be added to a service, to use multiple use wait.ForAll(...)
 	waitStrategies map[string]wait.Strategy
 
+	// used to synchronise writes to the containers map
+	containersLock sync.RWMutex
+
 	// cache for containers that are part of the stack
 	// used in ServiceContainer(...) function to avoid calls to the Docker API
 	containers map[string]*testcontainers.DockerContainer
@@ -266,6 +269,9 @@ func (d *dockerCompose) WithOsEnv() ComposeStack {
 }
 
 func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
+	d.containersLock.Lock()
+	defer d.containersLock.Unlock()
+
 	if container, ok := d.containers[svcName]; ok {
 		return container, nil
 	}

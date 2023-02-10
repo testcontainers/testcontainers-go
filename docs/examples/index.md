@@ -23,10 +23,11 @@ We have provided a command line tool to generate the scaffolding for the code of
 |------|------|----------|-------------|
 | -name | string | Yes | Name of the example, use camel-case when needed. Only alphabetical characters are allowed. |
 | -image | string | Yes | Fully-qualified name of the Docker image to be used by the example (i.e. 'docker.io/org/project:tag') |
+| -title | string | No | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphabetical characters are allowed. |
 
 ### What is this tool not doing?
 
-- If the example name does not contain alphabeticall characters, it will exit the generation.
+- If the example name does not contain alphabetical characters, it will exit the generation.
 - If the example already exists, it will exit without updating the existing files.
 
 ### How to run the tool
@@ -34,7 +35,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 From the [`examples` directory]({{repo_url}}/tree/main/examples), please run:
 
 ```shell
-go run . --name ${NAME_OF_YOUR_EXAMPLE} --image "${REGISTRY}/${EXAMPLE}:${TAG}"
+go run . --name ${NAME_OF_YOUR_EXAMPLE} --image "${REGISTRY}/${EXAMPLE}:${TAG}" --title ${TITLE_OF_YOUR_EXAMPLE}
 ```
 
 ## Update Go dependencies in the examples
