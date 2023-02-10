@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/examples/localstack"
+	"github.com/testcontainers/testcontainers-go/modules/localstack"
 )
 
 const (

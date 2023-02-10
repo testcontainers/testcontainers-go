@@ -24,15 +24,15 @@ jobs:
         uses: actions/checkout@v3
 
       - name: modVerify
-        working-directory: ./examples/localstack
+        working-directory: ./modules/localstack
         run: go mod verify
 
       - name: modTidy
-        working-directory: ./examples/localstack
+        working-directory: ./modules/localstack
         run: make tools-tidy
 
       - name: gotestsum
-        working-directory: ./examples/localstack
+        working-directory: ./modules/localstack
         run: make test-unit
 
       - name: Run checker

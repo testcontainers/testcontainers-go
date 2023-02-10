@@ -1,4 +1,4 @@
-module github.com/testcontainers/testcontainers-go/examples/localstack
+module github.com/testcontainers/testcontainers-go/modules/localstack
 
 go 1.18
 
