@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
 
+# This script is used to release a new version of the Testcontainers for Go library.
+# It creates a tag for the root module and for each module in the modules directory,
+# and then triggers the Go proxy to fetch the module.
+#
+# Usage: ./scripts/release.sh "v0.0.1"
+# where v0.0.1 is the tag to be created.
+#
+# It's possible to run the script in dry-run mode, which will print the commands that
+# would be executed, without actually executing them.
+#
+# Usage: DRY_RUN="true" ./scripts/release.sh "v0.0.1" 
+
 readonly DRY_RUN="${DRY_RUN:-false}"
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
@@ -39,6 +51,7 @@ function main() {
   done
 }
 
+# This function is used to trigger the Go proxy to fetch the module.
 function curlGolangProxy() {
   local module_path="${1}"
 
@@ -53,6 +66,7 @@ function curlGolangProxy() {
   curl "https://proxy.golang.org/${module_path}/@v/${TAG}"
 }
 
+# This function is used to push the tags to the remote repository.
 function gitPushTags() {
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo "git push --tags"
@@ -62,6 +76,7 @@ function gitPushTags() {
   git push --tags
 }
 
+# This function is used to create a tag for the module.
 function tagModule() {
   local module_tag="${1}"
 
