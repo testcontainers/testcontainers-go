@@ -15,12 +15,14 @@
 readonly DRY_RUN="${DRY_RUN:-false}"
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
+readonly VERSION_FILE="${ROOT_DIR}/internal/version.go"
 
 readonly REPOSITORY="github.com/testcontainers/testcontainers-go"
-readonly TAG="${1}"
 
 function main() {
-  tagModule "${TAG}"
+  readonly version="v$(extractCurrentVersion)"
+
+  tagModule "${version}"
 
   readonly DIRECTORIES=(examples modules)
 
@@ -30,14 +32,14 @@ function main() {
 
     ls -d */ | grep -v "_template" | while read -r module; do
       module="${module%?}" # remove trailing slash
-      module_tag="${directory}/${module}/${TAG}" # e.g. modules/mongodb/v0.0.1
+      module_tag="${directory}/${module}/${version}" # e.g. modules/mongodb/v0.0.1
       tagModule "${module_tag}"
     done
   done
 
   gitPushTags
 
-  curlGolangProxy "${REPOSITORY}" # e.g. github.com/testcontainers/testcontainers-go/@v/v0.0.1
+  curlGolangProxy "${REPOSITORY}" "${version}" # e.g. github.com/testcontainers/testcontainers-go/@v/v0.0.1
 
   for directory in "${DIRECTORIES[@]}"
   do
@@ -46,7 +48,7 @@ function main() {
     ls -d */ | grep -v "_template" | while read -r module; do
       module="${module%?}" # remove trailing slash
       module_path="${REPOSITORY}/${directory}/${module}"
-      curlGolangProxy "${module_path}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1
+      curlGolangProxy "${module_path}" "${version}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1
     done
   done
 }
@@ -54,16 +56,22 @@ function main() {
 # This function is used to trigger the Go proxy to fetch the module.
 function curlGolangProxy() {
   local module_path="${1}"
+  local module_version="${2}"
 
   if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "curl -X POST https://proxy.golang.org/${module_path}/@v/${TAG}"
+    echo "curl -X POST https://proxy.golang.org/${module_path}/@v/${module_version}"
     return
   fi
 
   # e.g.:
   #   github.com/testcontainers/testcontainers-go/v0.0.1
   #   github.com/testcontainers/testcontainers-go/modules/mongodb/v0.0.1
-  curl "https://proxy.golang.org/${module_path}/@v/${TAG}"
+  curl "https://proxy.golang.org/${module_path}/@v/${module_version}"
+}
+
+# This function reads the version.go file and extracts the current version.
+function extractCurrentVersion() {
+  cat "${VERSION_FILE}" | grep 'const Version = ' | cut -d '"' -f 2
 }
 
 # This function is used to push the tags to the remote repository.
