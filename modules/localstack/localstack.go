@@ -21,7 +21,7 @@ const defaultAccessKeyID = "accesskey"
 const defaultSecretAccessKey = "secretkey"
 const defaultToken = "token"
 
-func runInLegacyMode(image string) bool {
+func isLegacyMode(image string) bool {
 	parts := strings.Split(image, ":")
 	version := parts[len(parts)-1]
 
@@ -37,8 +37,6 @@ func runInLegacyMode(image string) bool {
 		return semver.Compare(version, "v0.11") < 0 // version < v0.11
 	}
 
-	fmt.Printf("Version %s is not a semantic version, LocalStack will run in legacy mode.\n", version)
-	fmt.Printf("Consider using \"StartContainer(ctx, NoopOverrideContainerRequest, WithLegacyMode)\" constructor if you want to enable legacy mode.")
 	return true
 }
 
@@ -75,16 +73,9 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 		opt(&localStackReq)
 	}
 
-	/*
-		Do not run in legacy mode when the version is a valid semver version greater than the v0.11 and legacyMode is false
-			| version < 0.11 | legacyMode | result |
-			|-----------------|------------|--------|
-			| false           | false      | false  |
-			| false           | true       | true   |
-			| true            | false      | true   |
-			| true            | true       | true   |
-	*/
-	localStackReq.legacyMode = !(!runInLegacyMode(localStackReq.Image) && !localStackReq.legacyMode)
+	if isLegacyMode(localStackReq.Image) {
+		return nil, fmt.Errorf("version=%s. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0", localStackReq.Image)
+	}
 
 	hostnameExternalReason, err := configureDockerHost(&localStackReq)
 	if err != nil {

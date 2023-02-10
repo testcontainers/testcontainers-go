@@ -57,32 +57,6 @@ func TestWithContainerRequest(t *testing.T) {
 	assert.Equal(t, wait.ForLog("foo"), merged.WaitingFor)
 }
 
-func TestWithLegacyMode(t *testing.T) {
-	tests := []struct {
-		legacyMode         bool
-		expectedLegacyMode bool
-	}{
-		{
-			legacyMode:         false,
-			expectedLegacyMode: false,
-		},
-		{
-			legacyMode:         true,
-			expectedLegacyMode: true,
-		},
-	}
-
-	for _, test := range tests {
-		req := generateContainerRequest()
-
-		if test.legacyMode {
-			WithLegacyMode(req)
-		}
-
-		assert.Equal(t, test.expectedLegacyMode, req.legacyMode)
-	}
-}
-
 func TestWithServices(t *testing.T) {
 	expectedNonLegacyPorts := []string{"4566/tcp"}
 
@@ -110,7 +84,6 @@ func TestWithServices(t *testing.T) {
 
 	for _, test := range tests {
 		req := generateContainerRequest()
-		req.legacyMode = false
 
 		WithServices(test.services...)(req)
 		assert.Equal(t, test.expectedServices, req.Env["SERVICES"])
@@ -121,41 +94,21 @@ func TestWithServices(t *testing.T) {
 		} else {
 			assert.Equal(t, []string{}, req.ExposedPorts)
 		}
-
-		// legacy mode
-		req = generateContainerRequest()
-		req.legacyMode = true
-
-		WithServices(test.services...)(req)
-		assert.Equal(t, test.expectedServices, req.Env["SERVICES"])
-		assert.Equal(t, len(test.services), len(req.enabledServices))
-		assert.Equal(t, len(test.expectedLegacyPorts), len(req.ExposedPorts))
-		for _, p := range test.expectedLegacyPorts {
-			assert.Contains(t, req.ExposedPorts, p)
-		}
 	}
 }
 
 func TestServicePort(t *testing.T) {
 	tests := []struct {
 		service  Service
-		legacy   bool
 		expected int
 	}{
 		{
 			service:  S3,
-			legacy:   false,
 			expected: defaultPort,
-		},
-		{
-			service:  S3,
-			legacy:   true,
-			expected: 4572,
 		},
 	}
 
 	for _, test := range tests {
-		test.service.legacyMode = test.legacy
 		assert.Equal(t, test.expected, test.service.servicePort())
 	}
 

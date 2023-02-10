@@ -36,7 +36,6 @@ func (l *LocalStackContainer) ServicePort(ctx context.Context, service EnabledSe
 // to configure the container
 type LocalStackContainerRequest struct {
 	testcontainers.ContainerRequest
-	legacyMode      bool
 	enabledServices []Service
 }
 
@@ -49,9 +48,8 @@ type EnabledService interface {
 
 // Service represents a LocalStack service, such as S3, SQS, etc.
 type Service struct {
-	name       string
-	legacyMode bool
-	port       int
+	name string
+	port int
 }
 
 // Name returns the name of the service
@@ -69,13 +67,8 @@ func (s Service) Port() int {
 	return s.port
 }
 
-// servicePort returns the port of the service when running in legacy mode
-// but the default port when running in non-legacy mode
+// servicePort returns the default port
 func (s Service) servicePort() int {
-	if s.legacyMode {
-		return s.Port()
-	}
-
 	return defaultPort
 }
 
@@ -217,11 +210,6 @@ var StepFunctions = Service{
 // modifying the LocalStackContainerRequest struct, and the container request that it wraps
 type LocalStackContainerOption func(req *LocalStackContainerRequest)
 
-// WithLegacyMode uses the legacy mode for the container, which exposes each service on a different port
-var WithLegacyMode = func(req *LocalStackContainerRequest) {
-	req.legacyMode = true
-}
-
 // WithServices returns a function that can be used to configure the container
 func WithServices(services ...Service) func(req *LocalStackContainerRequest) {
 	return func(req *LocalStackContainerRequest) {
@@ -229,10 +217,6 @@ func WithServices(services ...Service) func(req *LocalStackContainerRequest) {
 		servicesPorts := map[int]bool{} // map of unique exposed ports
 
 		for _, service := range services {
-			// automatically set legacy mode for services that require it,
-			// as it will affect how the service is exposed
-			service.legacyMode = req.legacyMode
-
 			servicePort := service.servicePort()
 
 			servicesPorts[servicePort] = true

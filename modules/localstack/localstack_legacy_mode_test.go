@@ -18,29 +18,14 @@ func TestLegacyMode(t *testing.T) {
 	container, err := StartContainer(
 		ctx,
 		OverrideContainerRequest(testcontainers.ContainerRequest{
-			Image:      "localstack/localstack:0.11.0",
+			Image:      "localstack/localstack:0.10.0",
 			WaitingFor: wait.ForLog("Ready.").WithStartupTimeout(5 * time.Minute).WithOccurrence(1),
 		}),
-		WithLegacyMode,
 		WithServices(S3, SQS),
 	)
-	require.Nil(t, err)
-	assert.NotNil(t, container)
+	require.NotNil(t, err)
+	assert.Nil(t, container)
 	// }
-
-	t.Run("multiple services should be exposed using their own port", func(t *testing.T) {
-
-		ports, err := container.Ports(ctx)
-		require.Nil(t, err)
-		assert.Greater(t, len(ports), 1) // multiple ports are exposed
-
-		s3Endpoint, err := container.ServicePort(ctx, S3)
-		require.Nil(t, err)
-		sqsEndpoint, err := container.ServicePort(ctx, SQS)
-		require.Nil(t, err)
-
-		assert.NotEqual(t, sqsEndpoint, s3Endpoint)
-	})
 }
 
 func TestLegacyModeForVersionGreaterThan_0_11(t *testing.T) {
@@ -53,7 +38,6 @@ func TestLegacyModeForVersionGreaterThan_0_11(t *testing.T) {
 			Image: "localstack/localstack:0.12.0",
 		}),
 		WithServices(S3, SQS),
-		WithLegacyMode,
 	)
 	// }
 

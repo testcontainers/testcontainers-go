@@ -58,7 +58,7 @@ func TestConfigureDockerHost(t *testing.T) {
 	})
 }
 
-func TestRunInLegacyMode(t *testing.T) {
+func TestIsLegacyMode(t *testing.T) {
 	tests := []struct {
 		version string
 		want    bool
@@ -66,6 +66,7 @@ func TestRunInLegacyMode(t *testing.T) {
 		{"foo", true},
 		{"latest", false},
 		{"0.10.0", true},
+		{"0.10.999", true},
 		{"0.11", false},
 		{"0.11.2", false},
 		{"0.12", false},
@@ -74,7 +75,7 @@ func TestRunInLegacyMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
-			got := runInLegacyMode(fmt.Sprintf("localstack/localstack:%s", tt.version))
+			got := isLegacyMode(fmt.Sprintf("localstack/localstack:%s", tt.version))
 			assert.Equal(t, tt.want, got, "runInLegacyMode() = %v, want %v", got, tt.want)
 		})
 	}

@@ -91,14 +91,6 @@ If you do not need to override the container request, you can pass `nil` or the 
 
 ### LocalStackContainerOption, variadic argument
 
-#### WithLegacyMode
-
-The `WithLegacyMode` functional option represents a way to force LocalStack to run in legacy mode.
-
-<!--codeinclude-->
-[Forcing legacy mode](../../modules/localstack/localstack_legacy_mode_test.go) inside_block:forceLegacyMode
-<!--/codeinclude-->
-
 #### WithServices
 
 The `WithServices` functional option represents a way to pass as many AWS services as needed, in a variadic manner:
