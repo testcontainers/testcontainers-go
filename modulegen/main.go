@@ -85,13 +85,13 @@ func main() {
 		}
 	}
 
-	examplesDir, err := filepath.Abs(filepath.Dir(nameVar))
+	currentDir, err := filepath.Abs(filepath.Dir("."))
 	if err != nil {
-		fmt.Printf(">> could not get the examples dir: %v\n", err)
+		fmt.Printf(">> could not get the root dir: %v\n", err)
 		os.Exit(1)
 	}
 
-	rootDir := filepath.Dir(examplesDir)
+	rootDir := filepath.Dir(currentDir)
 
 	mkdocsConfig, err := readMkdocsConfig(rootDir)
 	if err != nil {
