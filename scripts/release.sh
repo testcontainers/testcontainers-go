@@ -60,7 +60,7 @@ function curlGolangProxy() {
   local module_version="${2}"
 
   if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "curl -X POST https://proxy.golang.org/${module_path}/@v/${module_version}"
+    echo "curl https://proxy.golang.org/${module_path}/@v/${module_version}"
     return
   fi
 

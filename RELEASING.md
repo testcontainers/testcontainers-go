@@ -57,23 +57,23 @@ git tag examples/toxiproxy/v0.18.0
 git tag -d modules/compose/v0.18.0 | true
 git tag modules/compose/v0.18.0
 git push --tags
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/bigtable/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/cockroachdb/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/consul/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/datastore/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/firestore/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/localstack/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/mongodb/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/mysql/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/nginx/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/postgres/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/pubsub/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/pulsar/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/redis/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/spanner/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/toxiproxy/@v/v0.18.0
-curl -X POST https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/compose/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/bigtable/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/cockroachdb/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/consul/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/datastore/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/firestore/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/localstack/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/mongodb/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/mysql/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/nginx/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/postgres/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/pubsub/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/pulsar/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/redis/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/spanner/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/toxiproxy/@v/v0.18.0
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/compose/@v/v0.18.0
 ```
 
 Right after that, you have to:
