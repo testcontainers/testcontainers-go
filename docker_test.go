@@ -2109,7 +2109,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 	ctx := context.Background()
 	hostDirName := "testresources"
 
-	abs, err := filepath.Abs("./" + hostDirName)
+	abs, err := filepath.Abs(filepath.Join(".", hostDirName))
 	assert.Nil(t, err)
 
 	tests := []struct {
