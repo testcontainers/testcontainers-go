@@ -29,9 +29,13 @@ function main() {
 
   for directory in "${DIRECTORIES[@]}"
   do
-    module="${module%?}" # remove trailing slash
-    module_path="${REPOSITORY}/${directory}/${module}/"
-    curlGolangProxy "${module_path}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1
+    cd "${ROOT_DIR}/${directory}"
+
+    ls -d */ | grep -v "_template" | while read -r module; do
+      module="${module%?}" # remove trailing slash
+      module_path="${REPOSITORY}/${directory}/${module}/"
+      curlGolangProxy "${module_path}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1
+    done
   done
 }
 
