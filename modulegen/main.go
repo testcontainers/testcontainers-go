@@ -196,13 +196,13 @@ func generate(example Example, rootDir string) error {
 	}
 
 	// update examples in mkdocs
-	err = generateMkdocs(rootDir, exampleLower)
+	err = generateMkdocs(rootDir, example)
 	if err != nil {
 		return err
 	}
 
 	// update examples in dependabot
-	err = generateDependabotUpdates(rootDir, exampleLower)
+	err = generateDependabotUpdates(rootDir, example)
 	if err != nil {
 		return err
 	}
@@ -210,7 +210,7 @@ func generate(example Example, rootDir string) error {
 	return nil
 }
 
-func generateDependabotUpdates(rootDir string, exampleLower string) error {
+func generateDependabotUpdates(rootDir string, example Example) error {
 	// update examples in dependabot
 	dependabotConfig, err := readDependabotConfig(rootDir)
 	if err != nil {
@@ -232,7 +232,7 @@ func generateDependabotUpdates(rootDir string, exampleLower string) error {
 		}
 	}
 
-	exampleUpdates = append(exampleUpdates, NewUpdate(exampleLower))
+	exampleUpdates = append(exampleUpdates, NewUpdate(example))
 	sort.Sort(exampleUpdates)
 
 	// prepend the main and compose modules
@@ -243,7 +243,7 @@ func generateDependabotUpdates(rootDir string, exampleLower string) error {
 	return writeDependabotConfig(rootDir, dependabotConfig)
 }
 
-func generateMkdocs(rootDir string, exampleLower string) error {
+func generateMkdocs(rootDir string, example Example) error {
 	// update examples in mkdocs
 	mkdocsConfig, err := readMkdocsConfig(rootDir)
 	if err != nil {
@@ -264,7 +264,12 @@ func generateMkdocs(rootDir string, exampleLower string) error {
 		}
 	}
 
-	examplesNav = append(examplesNav, "examples/"+exampleLower+".md")
+	parentDir := "examples"
+	if example.IsModule {
+		parentDir = "modules"
+	}
+
+	examplesNav = append(examplesNav, parentDir+"/"+example.Lower()+".md")
 	sort.Strings(examplesNav)
 
 	// prepend the index.md file

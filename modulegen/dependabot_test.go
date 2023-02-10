@@ -28,6 +28,32 @@ func TestGetDependabotConfigFile(t *testing.T) {
 	assert.True(t, strings.HasSuffix(file, filepath.Join("testcontainers-go", ".github", "dependabot.yml")))
 }
 
+func TestNewUpdate(t *testing.T) {
+	tests := []struct {
+		isModule  bool
+		parentDir string
+	}{
+		{true, "/modules"},
+		{false, "/examples"},
+	}
+
+	for _, test := range tests {
+		update := NewUpdate(Example{
+			Name:      "Test",
+			IsModule:  test.isModule,
+			Image:     "test",
+			TitleName: "Test",
+			TCVersion: "v1.0.0",
+		})
+
+		assert.Equal(t, update.Directory, test.parentDir+"/test")
+		assert.Equal(t, update.PackageEcosystem, "gomod")
+		assert.Equal(t, update.OpenPullRequestsLimit, 3)
+		assert.Equal(t, update.Schedule.Interval, "weekly")
+		assert.Equal(t, update.RebaseStrategy, "disabled")
+	}
+}
+
 func TestReadDependabotConfig(t *testing.T) {
 	tmp := t.TempDir()
 
