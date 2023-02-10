@@ -6,31 +6,33 @@ readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
 readonly REPOSITORY="github.com/testcontainers/testcontainers-go"
 readonly TAG="${1}"
 
-tagModule "${TAG}"
+function main() {
+  tagModule "${TAG}"
 
-readonly DIRECTORIES=(examples modules)
+  readonly DIRECTORIES=(examples modules)
 
-for directory in "${DIRECTORIES[@]}"
-do
-  cd "${ROOT_DIR}/${directory}"
+  for directory in "${DIRECTORIES[@]}"
+  do
+    cd "${ROOT_DIR}/${directory}"
 
-  ls -d */ | grep -v "_template" | while read -r module; do
-    module="${module%?}" # remove trailing slash
-    module_tag="${directory}/${module}/${TAG}" # e.g. modules/mongodb/v0.0.1
-    tagModule "${module_tag}"
+    ls -d */ | grep -v "_template" | while read -r module; do
+      module="${module%?}" # remove trailing slash
+      module_tag="${directory}/${module}/${TAG}" # e.g. modules/mongodb/v0.0.1
+      tagModule "${module_tag}"
+    done
   done
-done
 
-gitPushTags
+  gitPushTags
 
-curlGolangProxy "${REPOSITORY}" # e.g. github.com/testcontainers/testcontainers-go/@v/v0.0.1
+  curlGolangProxy "${REPOSITORY}" # e.g. github.com/testcontainers/testcontainers-go/@v/v0.0.1
 
-for directory in "${DIRECTORIES[@]}"
-do
-  module="${module%?}" # remove trailing slash
-  module_path="${REPOSITORY}/${directory}/${module}/"
-  curlGolangProxy "${module_path}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1
-done
+  for directory in "${DIRECTORIES[@]}"
+  do
+    module="${module%?}" # remove trailing slash
+    module_path="${REPOSITORY}/${directory}/${module}/"
+    curlGolangProxy "${module_path}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1
+  done
+}
 
 function curlGolangProxy() {
   local module_path="${1}"
@@ -51,3 +53,5 @@ function tagModule() {
   git tag -d "${module_tag}" | true # do not fail if tag does not exist
   git tag "${module_tag}"
 }
+
+main "$@"
