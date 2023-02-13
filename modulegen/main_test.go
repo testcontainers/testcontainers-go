@@ -14,6 +14,7 @@ func TestExample(t *testing.T) {
 		name                  string
 		example               Example
 		expectedContainerName string
+		expectedEntrypoint    string
 		expectedTitle         string
 	}{
 		{
@@ -25,6 +26,7 @@ func TestExample(t *testing.T) {
 				TitleName: "MongoDB",
 			},
 			expectedContainerName: "MongoDBContainer",
+			expectedEntrypoint:    "StartContainer",
 			expectedTitle:         "MongoDB",
 		},
 		{
@@ -35,6 +37,7 @@ func TestExample(t *testing.T) {
 				Image:    "mongodb:latest",
 			},
 			expectedContainerName: "MongodbContainer",
+			expectedEntrypoint:    "StartContainer",
 			expectedTitle:         "Mongodb",
 		},
 		{
@@ -46,6 +49,7 @@ func TestExample(t *testing.T) {
 				TitleName: "MongoDB",
 			},
 			expectedContainerName: "mongoDBContainer",
+			expectedEntrypoint:    "startContainer",
 			expectedTitle:         "MongoDB",
 		},
 		{
@@ -56,6 +60,7 @@ func TestExample(t *testing.T) {
 				Image:    "mongodb:latest",
 			},
 			expectedContainerName: "mongodbContainer",
+			expectedEntrypoint:    "startContainer",
 			expectedTitle:         "Mongodb",
 		},
 	}
@@ -67,6 +72,7 @@ func TestExample(t *testing.T) {
 			assert.Equal(t, "mongodb", example.Lower())
 			assert.Equal(t, test.expectedTitle, example.Title())
 			assert.Equal(t, test.expectedContainerName, example.ContainerName())
+			assert.Equal(t, test.expectedEntrypoint, example.Entrypoint())
 		})
 	}
 }

@@ -65,7 +65,7 @@ func (e *Example) Entrypoint() string {
 		return "StartContainer"
 	}
 
-	return "setup" + e.Title()
+	return "startContainer"
 }
 
 func (e *Example) Lower() string {
