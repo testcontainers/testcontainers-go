@@ -1781,7 +1781,7 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 	}
 
 	// Create the volume.
-	vol, err := dockerCli.VolumeCreate(ctx, volume.CreateOptions{
+	vol, err := dockerCli.VolumeCreate(ctx, volume.VolumeCreateBody{
 		Driver: "local",
 	})
 	if err != nil {
