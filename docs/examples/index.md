@@ -16,6 +16,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 - a markdown file in the docs/examples directory including the snippets for both the creation of the container and a simple test.
 - a new Nav entry for the example in the docs site, adding it to the `mkdocs.yml` file located at the root directory of the project.
 - a GitHub workflow file in the .github/workflows directory to run the tests for the example.
+- an entry in Dependabot's configuration file, in order to receive dependency updates.
 
 ### Command line flags
 
