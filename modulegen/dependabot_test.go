@@ -79,7 +79,7 @@ func TestExamplesHasDependabotEntry(t *testing.T) {
 	require.NoError(t, err)
 
 	// we have to exclude the main and compose modules from the examples updates
-	assert.Equal(t, len(exampleUpdates)-2, len(examples))
+	assert.Equal(t, len(exampleUpdates)-3, len(examples))
 
 	// all example modules exist in the dependabot updates
 	for _, example := range examples {
