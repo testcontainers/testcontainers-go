@@ -82,17 +82,15 @@ func TestIsLegacyMode(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
-	// forceLegacyMode {
 	ctx := context.Background()
 
 	container, err := StartContainer(
 		ctx,
 		OverrideContainerRequest(testcontainers.ContainerRequest{
-			Image: "localstack/localstack:0.12.0",
+			Image: fmt.Sprintf("localstack/localstack:%s", defaultVersion),
 		}),
 		WithServices(S3, SQS, Kinesis),
 	)
-	// }
 
 	t.Run("multiple services should be exposed using the same port", func(t *testing.T) {
 		require.Nil(t, err)
