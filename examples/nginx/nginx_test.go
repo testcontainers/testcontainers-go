@@ -13,7 +13,7 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 
 	ctx := context.Background()
 
-	nginxC, err := setupNginx(ctx)
+	nginxC, err := startContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

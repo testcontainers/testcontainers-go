@@ -14,8 +14,8 @@ type consulContainer struct {
 	endpoint string
 }
 
-// setupConsul creates an instance of the consul container type
-func setupConsul(ctx context.Context) (*consulContainer, error) {
+// startContainer creates an instance of the consul container type
+func startContainer(ctx context.Context) (*consulContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "consul:latest",
 		ExposedPorts: []string{"8500/tcp", "8600/udp"},

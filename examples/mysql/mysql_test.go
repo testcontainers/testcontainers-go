@@ -13,7 +13,7 @@ import (
 func TestMysql(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := setupMysql(ctx)
+	container, err := startContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

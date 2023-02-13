@@ -3,6 +3,7 @@ package bigtable
 import (
 	"context"
 	"fmt"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -14,8 +15,8 @@ type bigtableContainer struct {
 	URI string
 }
 
-// setupBigtable creates an instance of the bigtable container type
-func setupBigtable(ctx context.Context) (*bigtableContainer, error) {
+// startContainer creates an instance of the bigtable container type
+func startContainer(ctx context.Context) (*bigtableContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
 		ExposedPorts: []string{"9000/tcp"},

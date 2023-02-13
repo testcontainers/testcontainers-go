@@ -12,7 +12,7 @@ import (
 func TestMongoDB(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := setupMongoDB(ctx)
+	container, err := startContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
