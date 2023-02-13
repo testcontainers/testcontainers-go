@@ -9,29 +9,66 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExampleWithTitle(t *testing.T) {
-	t.Run("with title", func(t *testing.T) {
-		example := Example{
-			Name:      "mongoDB",
-			Image:     "mongodb:latest",
-			TitleName: "MongoDB",
-		}
+func TestExample(t *testing.T) {
+	tests := []struct {
+		name                  string
+		example               Example
+		expectedContainerName string
+		expectedTitle         string
+	}{
+		{
+			name: "Module with title",
+			example: Example{
+				Name:      "mongoDB",
+				IsModule:  true,
+				Image:     "mongodb:latest",
+				TitleName: "MongoDB",
+			},
+			expectedContainerName: "MongoDBContainer",
+			expectedTitle:         "MongoDB",
+		},
+		{
+			name: "Module without title",
+			example: Example{
+				Name:     "mongoDB",
+				IsModule: true,
+				Image:    "mongodb:latest",
+			},
+			expectedContainerName: "MongodbContainer",
+			expectedTitle:         "Mongodb",
+		},
+		{
+			name: "Example with title",
+			example: Example{
+				Name:      "mongoDB",
+				IsModule:  false,
+				Image:     "mongodb:latest",
+				TitleName: "MongoDB",
+			},
+			expectedContainerName: "mongoDBContainer",
+			expectedTitle:         "MongoDB",
+		},
+		{
+			name: "Example without title",
+			example: Example{
+				Name:     "mongoDB",
+				IsModule: false,
+				Image:    "mongodb:latest",
+			},
+			expectedContainerName: "mongodbContainer",
+			expectedTitle:         "Mongodb",
+		},
+	}
 
-		assert.Equal(t, example.Lower(), "mongodb")
-		assert.Equal(t, example.Title(), "MongoDB")
-		assert.Equal(t, example.LowerTitle(), "mongoDB")
-	})
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			example := test.example
 
-	t.Run("without title", func(t *testing.T) {
-		example := Example{
-			Name:  "mongoDB",
-			Image: "mongodb:latest",
-		}
-
-		assert.Equal(t, example.Lower(), "mongodb")
-		assert.Equal(t, example.Title(), "Mongodb")
-		assert.Equal(t, example.LowerTitle(), "Mongodb")
-	})
+			assert.Equal(t, "mongodb", example.Lower())
+			assert.Equal(t, test.expectedTitle, example.Title())
+			assert.Equal(t, test.expectedContainerName, example.ContainerName())
+		})
+	}
 }
 
 func TestGenerateWrongExampleName(t *testing.T) {
@@ -326,17 +363,18 @@ func assertExampleContent(t *testing.T, example Example, exampleFile string) {
 	assert.Nil(t, err)
 
 	lower := example.Lower()
-	lowerTitle := example.LowerTitle()
+	containerName := example.ContainerName()
 	exampleName := example.Title()
+	entrypoint := example.Entrypoint()
 
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "package "+lower)
-	assert.Equal(t, data[8], "// "+lowerTitle+"Container represents the "+exampleName+" container type used in the module")
-	assert.Equal(t, data[9], "type "+lowerTitle+"Container struct {")
-	assert.Equal(t, data[13], "// setup"+exampleName+" creates an instance of the "+exampleName+" container type")
-	assert.Equal(t, data[14], "func setup"+exampleName+"(ctx context.Context) (*"+lowerTitle+"Container, error) {")
+	assert.Equal(t, data[8], "// "+containerName+" represents the "+exampleName+" container type used in the module")
+	assert.Equal(t, data[9], "type "+containerName+" struct {")
+	assert.Equal(t, data[13], "// "+entrypoint+" creates an instance of the "+exampleName+" container type")
+	assert.Equal(t, data[14], "func "+entrypoint+"(ctx context.Context) (*"+containerName+", error) {")
 	assert.Equal(t, data[16], "\t\tImage: \""+example.Image+"\",")
-	assert.Equal(t, data[26], "\treturn &"+lowerTitle+"Container{Container: container}, nil")
+	assert.Equal(t, data[26], "\treturn &"+containerName+"{Container: container}, nil")
 }
 
 // assert content GitHub workflow for the example

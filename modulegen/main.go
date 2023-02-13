@@ -41,17 +41,35 @@ type Example struct {
 	TCVersion string // Testcontainers for Go version
 }
 
-func (e *Example) Lower() string {
-	return strings.ToLower(e.Name)
-}
+// ContainerName returns the name of the container, which is the lower-cased title of the example
+// If the title is set, it will be used instead of the name
+func (e *Example) ContainerName() string {
+	name := e.Lower()
 
-func (e *Example) LowerTitle() string {
-	if e.TitleName != "" {
-		r, n := utf8.DecodeRuneInString(e.TitleName)
-		return string(unicode.ToLower(r)) + e.TitleName[n:]
+	if e.IsModule {
+		name = e.Title()
+	} else {
+		if e.TitleName != "" {
+			r, n := utf8.DecodeRuneInString(e.TitleName)
+			name = string(unicode.ToLower(r)) + e.TitleName[n:]
+		}
 	}
 
-	return cases.Title(language.Und, cases.NoLower).String(e.Lower())
+	return name + "Container"
+}
+
+// Entrypoint returns the name of the entrypoint function, which is the lower-cased title of the example
+// If the example is a module, the entrypoint will be "StartContainer"
+func (e *Example) Entrypoint() string {
+	if e.IsModule {
+		return "StartContainer"
+	}
+
+	return "setup" + e.Title()
+}
+
+func (e *Example) Lower() string {
+	return strings.ToLower(e.Name)
 }
 
 func (e *Example) ParentDir() string {
@@ -147,10 +165,11 @@ func generate(example Example, rootDir string) error {
 	docsOuputDir := filepath.Join(rootDir, "docs", example.ParentDir())
 
 	funcMap := template.FuncMap{
-		"ToLower":      func() string { return example.Lower() },
-		"Title":        func() string { return example.Title() },
-		"ToLowerTitle": func() string { return example.LowerTitle() },
-		"codeinclude":  func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
+		"Entrypoint":    func() string { return example.Entrypoint() },
+		"ContainerName": func() string { return example.ContainerName() },
+		"ToLower":       func() string { return example.Lower() },
+		"Title":         func() string { return example.Title() },
+		"codeinclude":   func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
 	}
 
 	// create the example dir
