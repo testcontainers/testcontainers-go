@@ -1,4 +1,4 @@
-name: LocalStack example pipeline
+name: LocalStack module pipeline
 
 on: [push, pull_request]
 
