@@ -10,6 +10,15 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
+func generateContainerRequest() *LocalStackContainerRequest {
+	return &LocalStackContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Env:          map[string]string{},
+			ExposedPorts: []string{},
+		},
+	}
+}
+
 func TestConfigureDockerHost(t *testing.T) {
 
 	t.Run("HOSTNAME_EXTERNAL variable is passed as part of the request", func(t *testing.T) {
