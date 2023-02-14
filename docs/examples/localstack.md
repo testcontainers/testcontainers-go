@@ -78,7 +78,7 @@ The `OverrideContainerRequestOption` functional option represents a way to overr
 [Default container request](../../modules/localstack/localstack.go) inside_block:defaultContainerRequest
 <!--/codeinclude-->
 
-With simply passing your own instance of an `OverrideContainerRequestOption` type to the `StartContainer` function, you'll be able to configure the LocalStack container with your own needs.
+With simply passing your own instance of an `OverrideContainerRequestOption` type to the `StartContainer` function, you'll be able to configure the LocalStack container with your own needs, as this new container request will be merged with the original one.
 
 In the following example you check how it's possible to set certain environment variables that are needed by the tests, the most important of them the AWS services you want to use. Besides, the container runs in a separate Docker network with an alias:
 
@@ -91,6 +91,15 @@ If you do not need to override the container request, you can pass `nil` or the 
 <!--codeinclude-->
 [Skip overriding the default container request](../../modules/localstack/localstack_test.go) inside_block:noopOverrideContainerRequest
 <!--/codeinclude-->
+
+## Testing the module
+
+The module includes unit and integration tests that can be run from its source code. To run the tests please execute the following command:
+
+```
+cd modules/localstack
+make test
+```
 
 !!!info
 
