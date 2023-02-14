@@ -30,6 +30,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -378,7 +379,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, container)
 
 	resp, err := client.ContainerList(ctx, types.ContainerListOptions{
-		Filters: filters.NewArgs(filters.Arg("label", fmt.Sprintf("%s=%s", TestcontainerLabelSessionID, container.SessionID()))),
+		Filters: filters.NewArgs(filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, container.SessionID()))),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -408,7 +409,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	filtersJSON := fmt.Sprintf(`{"label":{"%s":true}}`, TestcontainerLabelIsReaper)
+	filtersJSON := fmt.Sprintf(`{"label":{"%s":true}}`, testcontainersdocker.LabelReaper)
 	f, err := filters.FromJSON(filtersJSON)
 	if err != nil {
 		t.Fatal(err)

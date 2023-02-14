@@ -33,6 +33,7 @@ import (
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -1464,7 +1465,9 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 			Driver:     Bridge,
 			Attachable: true,
 			Labels: map[string]string{
-				TestcontainerLabel: "true",
+				TestcontainerLabel:                "true",
+				testcontainersdocker.LabelLang:    "go",
+				testcontainersdocker.LabelVersion: internal.Version,
 			},
 		})
 
