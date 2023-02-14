@@ -285,7 +285,10 @@ func generateMkdocs(rootDir string, example Example) error {
 		return err
 	}
 
-	mkdocsExamplesNav := mkdocsConfig.Nav[3].Examples
+	mkdocsExamplesNav := mkdocsConfig.Nav[4].Examples
+	if example.IsModule {
+		mkdocsExamplesNav = mkdocsConfig.Nav[3].Modules
+	}
 
 	// make sure the index.md is the first element in the list of examples in the nav
 	examplesNav := make([]string, len(mkdocsExamplesNav)-1)
@@ -303,9 +306,13 @@ func generateMkdocs(rootDir string, example Example) error {
 	sort.Strings(examplesNav)
 
 	// prepend the index.md file
-	examplesNav = append([]string{"examples/index.md"}, examplesNav...)
+	examplesNav = append([]string{example.ParentDir() + "/index.md"}, examplesNav...)
 
-	mkdocsConfig.Nav[3].Examples = examplesNav
+	if example.IsModule {
+		mkdocsConfig.Nav[3].Modules = examplesNav
+	} else {
+		mkdocsConfig.Nav[4].Examples = examplesNav
+	}
 
 	return writeMkdocsConfig(rootDir, mkdocsConfig)
 }

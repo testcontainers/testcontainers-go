@@ -430,9 +430,16 @@ func assertMkdocsExamplesNav(t *testing.T, example Example, originalConfig *MkDo
 	config, err := readMkdocsConfig(rootDir)
 	assert.Nil(t, err)
 
-	examples := config.Nav[3].Examples
+	parentDir := example.ParentDir()
 
-	assert.Equal(t, len(originalConfig.Nav[3].Examples)+1, len(examples))
+	examples := config.Nav[4].Examples
+	expectedEntries := originalConfig.Nav[4].Examples
+	if example.IsModule {
+		examples = config.Nav[3].Modules
+		expectedEntries = originalConfig.Nav[3].Modules
+	}
+
+	assert.Equal(t, len(expectedEntries)+1, len(examples))
 
 	// the example should be in the nav
 	found := false
@@ -446,7 +453,7 @@ func assertMkdocsExamplesNav(t *testing.T, example Example, originalConfig *MkDo
 	assert.True(t, found)
 
 	// first item is the index
-	assert.Equal(t, "examples/index.md", examples[0], examples)
+	assert.Equal(t, parentDir+"/index.md", examples[0], examples)
 }
 
 // assert content tools/tools.go
