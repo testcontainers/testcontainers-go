@@ -17,6 +17,7 @@ import (
 	"golang.org/x/text/language"
 )
 
+var asModuleVar bool
 var nameVar string
 var nameTitleVar string
 var imageVar string
@@ -29,26 +30,54 @@ func init() {
 	flag.StringVar(&nameVar, "name", "", "Name of the example. Only alphabetical characters are allowed.")
 	flag.StringVar(&nameTitleVar, "title", "", "(Optional) Title of the example name, used to override the name in the case of mixed casing (Mongodb -> MongoDB). Use camel-case when needed. Only alphabetical characters are allowed.")
 	flag.StringVar(&imageVar, "image", "", "Fully-qualified name of the Docker image to be used by the example")
+	flag.BoolVar(&asModuleVar, "as-module", false, "If set, the example will be generated as a Go module, under the modules directory. Otherwise, it will be generated as a subdirectory of the examples directory.")
 }
 
 type Example struct {
 	Image     string // fully qualified name of the Docker image
+	IsModule  bool   // if true, the example will be generated as a Go module
 	Name      string
 	TitleName string // title of the name: e.g. "mongodb" -> "MongoDB"
 	TCVersion string // Testcontainers for Go version
+}
+
+// ContainerName returns the name of the container, which is the lower-cased title of the example
+// If the title is set, it will be used instead of the name
+func (e *Example) ContainerName() string {
+	name := e.Lower()
+
+	if e.IsModule {
+		name = e.Title()
+	} else {
+		if e.TitleName != "" {
+			r, n := utf8.DecodeRuneInString(e.TitleName)
+			name = string(unicode.ToLower(r)) + e.TitleName[n:]
+		}
+	}
+
+	return name + "Container"
+}
+
+// Entrypoint returns the name of the entrypoint function, which is the lower-cased title of the example
+// If the example is a module, the entrypoint will be "StartContainer"
+func (e *Example) Entrypoint() string {
+	if e.IsModule {
+		return "StartContainer"
+	}
+
+	return "startContainer"
 }
 
 func (e *Example) Lower() string {
 	return strings.ToLower(e.Name)
 }
 
-func (e *Example) LowerTitle() string {
-	if e.TitleName != "" {
-		r, n := utf8.DecodeRuneInString(e.TitleName)
-		return string(unicode.ToLower(r)) + e.TitleName[n:]
+func (e *Example) ParentDir() string {
+	if e.IsModule {
+		return "modules"
 	}
 
-	return cases.Title(language.Und, cases.NoLower).String(e.Lower())
+	return "examples"
 }
 
 func (e *Example) Title() string {
@@ -57,6 +86,13 @@ func (e *Example) Title() string {
 	}
 
 	return cases.Title(language.Und, cases.NoLower).String(e.Lower())
+}
+
+func (e *Example) Type() string {
+	if e.IsModule {
+		return "module"
+	}
+	return "example"
 }
 
 func (e *Example) Validate() error {
@@ -85,13 +121,13 @@ func main() {
 		}
 	}
 
-	examplesDir, err := filepath.Abs(filepath.Dir(nameVar))
+	currentDir, err := filepath.Abs(filepath.Dir("."))
 	if err != nil {
-		fmt.Printf(">> could not get the examples dir: %v\n", err)
+		fmt.Printf(">> could not get the root dir: %v\n", err)
 		os.Exit(1)
 	}
 
-	rootDir := filepath.Dir(examplesDir)
+	rootDir := filepath.Dir(currentDir)
 
 	mkdocsConfig, err := readMkdocsConfig(rootDir)
 	if err != nil {
@@ -101,6 +137,7 @@ func main() {
 
 	example := Example{
 		Image:     imageVar,
+		IsModule:  asModuleVar,
 		Name:      nameVar,
 		TitleName: nameTitleVar,
 		TCVersion: mkdocsConfig.Extra.LatestVersion,
@@ -113,14 +150,14 @@ func main() {
 	}
 
 	cmd := exec.Command("go", "mod", "tidy")
-	cmd.Dir = filepath.Join(rootDir, "examples", example.Lower())
+	cmd.Dir = filepath.Join(rootDir, example.ParentDir(), example.Lower())
 	err = cmd.Run()
 	if err != nil {
 		fmt.Printf(">> error synchronizing the dependencies: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("Please go to", example.Lower(), "directory to check the results, where 'go mod tidy' was executed to synchronize the dependencies")
+	fmt.Println("Please go to", cmd.Dir, "directory to check the results, where 'go mod tidy' was executed to synchronize the dependencies")
 	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
 	fmt.Println("Thanks!")
 }
@@ -131,18 +168,20 @@ func generate(example Example, rootDir string) error {
 	}
 
 	githubWorkflowsDir := filepath.Join(rootDir, ".github", "workflows")
-	examplesDir := filepath.Join(rootDir, "examples")
-	docsDir := filepath.Join(rootDir, "docs", "examples")
+	outputDir := filepath.Join(rootDir, example.ParentDir())
+	docsOuputDir := filepath.Join(rootDir, "docs", example.ParentDir())
 
 	funcMap := template.FuncMap{
-		"ToLower":      func() string { return example.Lower() },
-		"Title":        func() string { return example.Title() },
-		"ToLowerTitle": func() string { return example.LowerTitle() },
-		"codeinclude":  func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
+		"Entrypoint":    func() string { return example.Entrypoint() },
+		"ContainerName": func() string { return example.ContainerName() },
+		"ExampleType":   func() string { return example.Type() },
+		"ToLower":       func() string { return example.Lower() },
+		"Title":         func() string { return example.Title() },
+		"codeinclude":   func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
 	}
 
 	// create the example dir
-	err := os.MkdirAll(examplesDir, 0700)
+	err := os.MkdirAll(outputDir, 0700)
 	if err != nil {
 		return err
 	}
@@ -161,15 +200,20 @@ func generate(example Example, rootDir string) error {
 
 		if strings.EqualFold(tmpl, "docs_example.md") {
 			// docs example file will go into the docs directory
-			exampleFilePath = filepath.Join(docsDir, exampleLower+".md")
+			exampleFilePath = filepath.Join(docsOuputDir, exampleLower+".md")
 		} else if strings.EqualFold(tmpl, "ci.yml") {
 			// GitHub workflow example file will go into the .github/workflows directory
-			exampleFilePath = filepath.Join(githubWorkflowsDir, exampleLower+"-example.yml")
+			fileName := exampleLower + "-example.yml"
+			if example.IsModule {
+				fileName = "module-" + exampleLower + ".yml"
+			}
+
+			exampleFilePath = filepath.Join(githubWorkflowsDir, fileName)
 		} else if strings.EqualFold(tmpl, "tools.go") {
 			// tools.go example file will go into the tools package
-			exampleFilePath = filepath.Join(examplesDir, exampleLower, "tools", tmpl)
+			exampleFilePath = filepath.Join(outputDir, exampleLower, "tools", tmpl)
 		} else {
-			exampleFilePath = filepath.Join(examplesDir, exampleLower, strings.ReplaceAll(tmpl, "example", exampleLower))
+			exampleFilePath = filepath.Join(outputDir, exampleLower, strings.ReplaceAll(tmpl, "example", exampleLower))
 		}
 
 		err = os.MkdirAll(filepath.Dir(exampleFilePath), 0777)
@@ -187,13 +231,13 @@ func generate(example Example, rootDir string) error {
 	}
 
 	// update examples in mkdocs
-	err = generateMkdocs(rootDir, exampleLower)
+	err = generateMkdocs(rootDir, example)
 	if err != nil {
 		return err
 	}
 
 	// update examples in dependabot
-	err = generateDependabotUpdates(rootDir, exampleLower)
+	err = generateDependabotUpdates(rootDir, example)
 	if err != nil {
 		return err
 	}
@@ -201,7 +245,7 @@ func generate(example Example, rootDir string) error {
 	return nil
 }
 
-func generateDependabotUpdates(rootDir string, exampleLower string) error {
+func generateDependabotUpdates(rootDir string, example Example) error {
 	// update examples in dependabot
 	dependabotConfig, err := readDependabotConfig(rootDir)
 	if err != nil {
@@ -223,7 +267,7 @@ func generateDependabotUpdates(rootDir string, exampleLower string) error {
 		}
 	}
 
-	exampleUpdates = append(exampleUpdates, NewUpdate(exampleLower))
+	exampleUpdates = append(exampleUpdates, NewUpdate(example))
 	sort.Sort(exampleUpdates)
 
 	// prepend the main and compose modules
@@ -234,14 +278,17 @@ func generateDependabotUpdates(rootDir string, exampleLower string) error {
 	return writeDependabotConfig(rootDir, dependabotConfig)
 }
 
-func generateMkdocs(rootDir string, exampleLower string) error {
+func generateMkdocs(rootDir string, example Example) error {
 	// update examples in mkdocs
 	mkdocsConfig, err := readMkdocsConfig(rootDir)
 	if err != nil {
 		return err
 	}
 
-	mkdocsExamplesNav := mkdocsConfig.Nav[3].Examples
+	mkdocsExamplesNav := mkdocsConfig.Nav[4].Examples
+	if example.IsModule {
+		mkdocsExamplesNav = mkdocsConfig.Nav[3].Modules
+	}
 
 	// make sure the index.md is the first element in the list of examples in the nav
 	examplesNav := make([]string, len(mkdocsExamplesNav)-1)
@@ -255,13 +302,17 @@ func generateMkdocs(rootDir string, exampleLower string) error {
 		}
 	}
 
-	examplesNav = append(examplesNav, "examples/"+exampleLower+".md")
+	examplesNav = append(examplesNav, example.ParentDir()+"/"+example.Lower()+".md")
 	sort.Strings(examplesNav)
 
 	// prepend the index.md file
-	examplesNav = append([]string{"examples/index.md"}, examplesNav...)
+	examplesNav = append([]string{example.ParentDir() + "/index.md"}, examplesNav...)
 
-	mkdocsConfig.Nav[3].Examples = examplesNav
+	if example.IsModule {
+		mkdocsConfig.Nav[3].Modules = examplesNav
+	} else {
+		mkdocsConfig.Nav[4].Examples = examplesNav
+	}
 
 	return writeMkdocsConfig(rootDir, mkdocsConfig)
 }

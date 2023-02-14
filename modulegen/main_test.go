@@ -9,29 +9,72 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExampleWithTitle(t *testing.T) {
-	t.Run("with title", func(t *testing.T) {
-		example := Example{
-			Name:      "mongoDB",
-			Image:     "mongodb:latest",
-			TitleName: "MongoDB",
-		}
+func TestExample(t *testing.T) {
+	tests := []struct {
+		name                  string
+		example               Example
+		expectedContainerName string
+		expectedEntrypoint    string
+		expectedTitle         string
+	}{
+		{
+			name: "Module with title",
+			example: Example{
+				Name:      "mongoDB",
+				IsModule:  true,
+				Image:     "mongodb:latest",
+				TitleName: "MongoDB",
+			},
+			expectedContainerName: "MongoDBContainer",
+			expectedEntrypoint:    "StartContainer",
+			expectedTitle:         "MongoDB",
+		},
+		{
+			name: "Module without title",
+			example: Example{
+				Name:     "mongoDB",
+				IsModule: true,
+				Image:    "mongodb:latest",
+			},
+			expectedContainerName: "MongodbContainer",
+			expectedEntrypoint:    "StartContainer",
+			expectedTitle:         "Mongodb",
+		},
+		{
+			name: "Example with title",
+			example: Example{
+				Name:      "mongoDB",
+				IsModule:  false,
+				Image:     "mongodb:latest",
+				TitleName: "MongoDB",
+			},
+			expectedContainerName: "mongoDBContainer",
+			expectedEntrypoint:    "startContainer",
+			expectedTitle:         "MongoDB",
+		},
+		{
+			name: "Example without title",
+			example: Example{
+				Name:     "mongoDB",
+				IsModule: false,
+				Image:    "mongodb:latest",
+			},
+			expectedContainerName: "mongodbContainer",
+			expectedEntrypoint:    "startContainer",
+			expectedTitle:         "Mongodb",
+		},
+	}
 
-		assert.Equal(t, example.Lower(), "mongodb")
-		assert.Equal(t, example.Title(), "MongoDB")
-		assert.Equal(t, example.LowerTitle(), "mongoDB")
-	})
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			example := test.example
 
-	t.Run("without title", func(t *testing.T) {
-		example := Example{
-			Name:  "mongoDB",
-			Image: "mongodb:latest",
-		}
-
-		assert.Equal(t, example.Lower(), "mongodb")
-		assert.Equal(t, example.Title(), "Mongodb")
-		assert.Equal(t, example.LowerTitle(), "Mongodb")
-	})
+			assert.Equal(t, "mongodb", example.Lower())
+			assert.Equal(t, test.expectedTitle, example.Title())
+			assert.Equal(t, test.expectedContainerName, example.ContainerName())
+			assert.Equal(t, test.expectedEntrypoint, example.Entrypoint())
+		})
+	}
 }
 
 func TestGenerateWrongExampleName(t *testing.T) {
@@ -149,6 +192,7 @@ func TestGenerate(t *testing.T) {
 	example := Example{
 		Name:      "foodb",
 		TitleName: "FooDB",
+		IsModule:  false,
 		Image:     "docker.io/example/foodb:latest",
 		TCVersion: "v0.0.0-test",
 	}
@@ -192,6 +236,78 @@ func TestGenerate(t *testing.T) {
 	assertDependabotExamplesUpdates(t, example, originalDependabotConfig, rootTmp)
 }
 
+func TestGenerateModule(t *testing.T) {
+	rootTmp := t.TempDir()
+	modulesTmp := filepath.Join(rootTmp, "modules")
+	modulesDocTmp := filepath.Join(rootTmp, "docs", "modules")
+	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
+
+	err := os.MkdirAll(modulesTmp, 0777)
+	assert.Nil(t, err)
+	err = os.MkdirAll(modulesDocTmp, 0777)
+	assert.Nil(t, err)
+	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	assert.Nil(t, err)
+
+	err = copyInitialMkdocsConfig(t, rootTmp)
+	assert.Nil(t, err)
+
+	originalConfig, err := readMkdocsConfig(rootTmp)
+	assert.Nil(t, err)
+
+	err = copyInitialDependabotConfig(t, rootTmp)
+	assert.Nil(t, err)
+
+	originalDependabotConfig, err := readDependabotConfig(rootTmp)
+	assert.Nil(t, err)
+
+	example := Example{
+		Name:      "foodb",
+		TitleName: "FooDB",
+		IsModule:  true,
+		Image:     "docker.io/example/foodb:latest",
+		TCVersion: "v0.0.0-test",
+	}
+	exampleNameLower := example.Lower()
+
+	err = generate(example, rootTmp)
+	assert.Nil(t, err)
+
+	templatesDir, err := os.ReadDir(filepath.Join(".", "_template"))
+	assert.Nil(t, err)
+
+	exampleDirPath := filepath.Join(modulesTmp, exampleNameLower)
+	newExampleDir, err := os.ReadDir(exampleDirPath)
+	assert.Nil(t, err)
+
+	exampleDirFileInfo, err := os.Stat(exampleDirPath)
+	assert.Nil(t, err) // error nil implies the file exist
+	assert.True(t, exampleDirFileInfo.IsDir())
+
+	exampleDocFile := filepath.Join(modulesDocTmp, exampleNameLower+".md")
+	_, err = os.Stat(exampleDocFile)
+	assert.Nil(t, err) // error nil implies the file exist
+
+	exampleWorkflowFile := filepath.Join(githubWorkflowsTmp, "module-"+exampleNameLower+".yml")
+	_, err = os.Stat(exampleWorkflowFile)
+	assert.Nil(t, err) // error nil implies the file exist
+
+	// check the number of template files is equal to examples + 2 (the doc and the github workflow)
+	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
+
+	assertExampleDocContent(t, example, exampleDocFile)
+	assertExampleGithubWorkflowContent(t, example, exampleWorkflowFile)
+
+	generatedTemplatesDir := filepath.Join(modulesTmp, exampleNameLower)
+	assertExampleTestContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
+	assertExampleContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
+	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))
+	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
+	assertToolsGoContent(t, example, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
+	assertMkdocsExamplesNav(t, example, originalConfig, rootTmp)
+	assertDependabotExamplesUpdates(t, example, originalDependabotConfig, rootTmp)
+}
+
 // assert content in the Examples nav from mkdocs.yml
 func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConfig *DependabotConfig, rootDir string) {
 	config, err := readDependabotConfig(rootDir)
@@ -204,7 +320,7 @@ func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConf
 	// the example should be in the dependabot updates
 	found := false
 	for _, ex := range examples {
-		directory := "/examples/" + example.Lower()
+		directory := "/" + example.ParentDir() + "/" + example.Lower()
 		if directory == ex.Directory {
 			found = true
 		}
@@ -214,8 +330,8 @@ func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConf
 
 	// first item is the main module
 	assert.Equal(t, "/", examples[0].Directory, examples)
-	// second item is the compose module
-	assert.Equal(t, "/modules/compose", examples[1].Directory, examples)
+	// second item is the modulegen module
+	assert.Equal(t, "/modulegen", examples[1].Directory, examples)
 }
 
 // assert content example file in the docs
@@ -253,17 +369,18 @@ func assertExampleContent(t *testing.T, example Example, exampleFile string) {
 	assert.Nil(t, err)
 
 	lower := example.Lower()
-	lowerTitle := example.LowerTitle()
+	containerName := example.ContainerName()
 	exampleName := example.Title()
+	entrypoint := example.Entrypoint()
 
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "package "+lower)
-	assert.Equal(t, data[8], "// "+lowerTitle+"Container represents the "+exampleName+" container type used in the module")
-	assert.Equal(t, data[9], "type "+lowerTitle+"Container struct {")
-	assert.Equal(t, data[13], "// setup"+exampleName+" creates an instance of the "+exampleName+" container type")
-	assert.Equal(t, data[14], "func setup"+exampleName+"(ctx context.Context) (*"+lowerTitle+"Container, error) {")
+	assert.Equal(t, data[8], "// "+containerName+" represents the "+exampleName+" container type used in the module")
+	assert.Equal(t, data[9], "type "+containerName+" struct {")
+	assert.Equal(t, data[13], "// "+entrypoint+" creates an instance of the "+exampleName+" container type")
+	assert.Equal(t, data[14], "func "+entrypoint+"(ctx context.Context) (*"+containerName+", error) {")
 	assert.Equal(t, data[16], "\t\tImage: \""+example.Image+"\",")
-	assert.Equal(t, data[26], "\treturn &"+lowerTitle+"Container{Container: container}, nil")
+	assert.Equal(t, data[26], "\treturn &"+containerName+"{Container: container}, nil")
 }
 
 // assert content GitHub workflow for the example
@@ -274,8 +391,13 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	lower := example.Lower()
 	title := example.Title()
 
+	exampleType := "example"
+	if example.IsModule {
+		exampleType = "module"
+	}
+
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, "name: "+title+" example pipeline", data[0])
+	assert.Equal(t, "name: "+title+" "+exampleType+" pipeline", data[0])
 	assert.Equal(t, "  test-"+lower+":", data[9])
 	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[19])
 	assert.Equal(t, "        working-directory: ./examples/"+lower, data[26])
@@ -308,14 +430,21 @@ func assertMkdocsExamplesNav(t *testing.T, example Example, originalConfig *MkDo
 	config, err := readMkdocsConfig(rootDir)
 	assert.Nil(t, err)
 
-	examples := config.Nav[3].Examples
+	parentDir := example.ParentDir()
 
-	assert.Equal(t, len(originalConfig.Nav[3].Examples)+1, len(examples))
+	examples := config.Nav[4].Examples
+	expectedEntries := originalConfig.Nav[4].Examples
+	if example.IsModule {
+		examples = config.Nav[3].Modules
+		expectedEntries = originalConfig.Nav[3].Modules
+	}
+
+	assert.Equal(t, len(expectedEntries)+1, len(examples))
 
 	// the example should be in the nav
 	found := false
 	for _, ex := range examples {
-		markdownExample := "examples/" + example.Lower() + ".md"
+		markdownExample := example.ParentDir() + "/" + example.Lower() + ".md"
 		if markdownExample == ex {
 			found = true
 		}
@@ -324,7 +453,7 @@ func assertMkdocsExamplesNav(t *testing.T, example Example, originalConfig *MkDo
 	assert.True(t, found)
 
 	// first item is the index
-	assert.Equal(t, "examples/index.md", examples[0], examples)
+	assert.Equal(t, parentDir+"/index.md", examples[0], examples)
 }
 
 // assert content tools/tools.go

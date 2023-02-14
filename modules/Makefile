@@ -1,9 +1,9 @@
 include ../commons-test.mk
 
-.PHONY: dependencies-scan-examples
-dependencies-scan-examples:
+.PHONY: dependencies-scan-modules
+dependencies-scan-modules:
 	@find . -type f -name Makefile -execdir make dependencies-scan \;
 
-.PHONY: tidy-examples
-tidy-examples:
+.PHONY: tidy-modules
+tidy-modules:
 	@find . -type f -name Makefile -execdir make tools-tidy \;
