@@ -36,21 +36,6 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 		}
 	}
 
-	if req.ConfigModifier != nil {
-		req.ConfigModifier(dockerInput)
-	}
-
-	if req.HostConfigModifier == nil {
-		req.HostConfigModifier = defaultHostConfigModifier(req)
-	}
-	req.HostConfigModifier(hostConfig)
-
-	if req.EnpointSettingsModifier != nil {
-		req.EnpointSettingsModifier(endpointSettings)
-	}
-
-	networkingConfig.EndpointsConfig = endpointSettings
-
 	exposedPorts := req.ExposedPorts
 	// this check must be done after the pre-creation Modifiers are called, so the network mode is already set
 	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
@@ -70,6 +55,20 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 
 	dockerInput.ExposedPorts = exposedPortSet
 	hostConfig.PortBindings = exposedPortMap
+
+	if req.ConfigModifier != nil {
+		req.ConfigModifier(dockerInput)
+	}
+
+	if req.HostConfigModifier == nil {
+		req.HostConfigModifier = defaultHostConfigModifier(req)
+	}
+	req.HostConfigModifier(hostConfig)
+
+	if req.EnpointSettingsModifier != nil {
+		req.EnpointSettingsModifier(endpointSettings)
+	}
+	networkingConfig.EndpointsConfig = endpointSettings
 
 	return nil
 }

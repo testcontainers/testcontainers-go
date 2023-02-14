@@ -96,8 +96,8 @@ func TestPreCreateModifierHook(t *testing.T) {
 		assert.Equal(t, nat.PortMap{
 			"80/tcp": []nat.PortBinding{
 				{
-					HostIP:   "",
-					HostPort: "",
+					HostIP:   "1",
+					HostPort: "2",
 				},
 			},
 		}, inputHostConfig.PortBindings,
@@ -148,15 +148,23 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		assert.Equal(
 			t,
-			nat.PortSet(nat.PortSet{}),
+			nat.PortSet{"80/tcp": struct{}{}},
 			inputConfig.ExposedPorts,
 			"Docker config's exposed ports should be empty",
 		)
 		assert.Equal(t,
-			nat.PortMap{},
+			nat.PortMap{
+				"80/tcp": []nat.PortBinding{
+					{
+						HostIP:   "1",
+						HostPort: "2",
+					},
+				},
+			},
 			inputHostConfig.PortBindings,
 			"Host config's portBinding should be empty",
 		)
+		assert.Equal(t, container.NetworkMode("container:foo"), inputHostConfig.NetworkMode, "Host config's network mode should be isContainer")
 	})
 
 	t.Run("Nil hostConfigModifier should apply default host config modifier", func(t *testing.T) {
