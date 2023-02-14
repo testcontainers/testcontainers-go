@@ -288,7 +288,7 @@ func TestGenerateModule(t *testing.T) {
 	_, err = os.Stat(exampleDocFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
-	exampleWorkflowFile := filepath.Join(githubWorkflowsTmp, exampleNameLower+"-example.yml")
+	exampleWorkflowFile := filepath.Join(githubWorkflowsTmp, "module-"+exampleNameLower+".yml")
 	_, err = os.Stat(exampleWorkflowFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
@@ -391,8 +391,13 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	lower := example.Lower()
 	title := example.Title()
 
+	exampleType := "example"
+	if example.IsModule {
+		exampleType = "module"
+	}
+
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, "name: "+title+" example pipeline", data[0])
+	assert.Equal(t, "name: "+title+" "+exampleType+" pipeline", data[0])
 	assert.Equal(t, "  test-"+lower+":", data[9])
 	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[19])
 	assert.Equal(t, "        working-directory: ./examples/"+lower, data[26])

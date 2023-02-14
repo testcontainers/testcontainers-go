@@ -88,6 +88,13 @@ func (e *Example) Title() string {
 	return cases.Title(language.Und, cases.NoLower).String(e.Lower())
 }
 
+func (e *Example) Type() string {
+	if e.IsModule {
+		return "module"
+	}
+	return "example"
+}
+
 func (e *Example) Validate() error {
 	if !regexp.MustCompile(`^[A-Za-z]+$`).MatchString(e.Name) {
 		return fmt.Errorf("invalid name: %s. Only alphabetical characters are allowed", e.Name)
@@ -167,6 +174,7 @@ func generate(example Example, rootDir string) error {
 	funcMap := template.FuncMap{
 		"Entrypoint":    func() string { return example.Entrypoint() },
 		"ContainerName": func() string { return example.ContainerName() },
+		"ExampleType":   func() string { return example.Type() },
 		"ToLower":       func() string { return example.Lower() },
 		"Title":         func() string { return example.Title() },
 		"codeinclude":   func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
@@ -195,7 +203,12 @@ func generate(example Example, rootDir string) error {
 			exampleFilePath = filepath.Join(docsOuputDir, exampleLower+".md")
 		} else if strings.EqualFold(tmpl, "ci.yml") {
 			// GitHub workflow example file will go into the .github/workflows directory
-			exampleFilePath = filepath.Join(githubWorkflowsDir, exampleLower+"-example.yml")
+			fileName := exampleLower + "-example.yml"
+			if example.IsModule {
+				fileName = "module-" + exampleLower + ".yml"
+			}
+
+			exampleFilePath = filepath.Join(githubWorkflowsDir, fileName)
 		} else if strings.EqualFold(tmpl, "tools.go") {
 			// tools.go example file will go into the tools package
 			exampleFilePath = filepath.Join(outputDir, exampleLower, "tools", tmpl)
