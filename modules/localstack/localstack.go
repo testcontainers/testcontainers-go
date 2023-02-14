@@ -47,7 +47,7 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 	req := testcontainers.ContainerRequest{
 		Image:        fmt.Sprintf("localstack/localstack:%s", defaultVersion),
 		Binds:        []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
-		WaitingFor:   wait.ForLog("Ready.\n").WithOccurrence(1).WithStartupTimeout(2 * time.Minute),
+		WaitingFor:   wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120 * time.Second),
 		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
 		Env: map[string]string{
 			"AWS_ACCESS_KEY_ID":     defaultAccessKeyID,
