@@ -75,11 +75,19 @@ func TestReadDependabotConfig(t *testing.T) {
 func TestExamplesHasDependabotEntry(t *testing.T) {
 	examples, err := getExamples()
 	require.NoError(t, err)
-	exampleUpdates, err := getDependabotUpdates()
+	dependabotUpdates, err := getDependabotUpdates()
 	require.NoError(t, err)
 
-	// we have to exclude the main and compose modules from the examples updates
-	assert.Equal(t, len(exampleUpdates)-3, len(examples))
+	exampleUpdates := []Update{}
+	// exclude the Go modules from the examples updates
+	for _, update := range dependabotUpdates {
+		if update.Directory == "/" || update.Directory == "/modulegen" || strings.HasPrefix(update.Directory, "/modules") {
+			continue
+		}
+		exampleUpdates = append(exampleUpdates, update)
+	}
+
+	assert.Equal(t, len(exampleUpdates), len(examples))
 
 	// all example modules exist in the dependabot updates
 	for _, example := range examples {
