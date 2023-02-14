@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -24,8 +25,8 @@ const (
 )
 
 // awsSDKClientV2 {
-func s3Client(ctx context.Context, l *localstack.LocalStackContainer, srv localstack.Service) (*s3.Client, error) {
-	mappedPort, err := l.ServicePort(ctx, srv)
+func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Client, error) {
+	mappedPort, err := l.MappedPort(ctx, nat.Port("4566/tcp"))
 	if err != nil {
 		return nil, err
 	}
@@ -78,13 +79,13 @@ func TestS3(t *testing.T) {
 				"AWS_SECRET_ACCESS_KEY": secretkey,
 				"AWS_SESSION_TOKEN":     token,
 				"AWS_DEFAULT_REGION":    region,
+				"SERVICES":              "s3,sqs,cloudwatchlogs,kms",
 			}},
 		),
-		localstack.WithServices(localstack.S3, localstack.SQS, localstack.CloudWatchLogs, localstack.KMS),
 	)
 	require.Nil(t, err)
 
-	s3Client, err := s3Client(ctx, container, localstack.S3)
+	s3Client, err := s3Client(ctx, container)
 	require.Nil(t, err)
 
 	t.Run("S3 operations", func(t *testing.T) {

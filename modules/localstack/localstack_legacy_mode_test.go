@@ -14,16 +14,14 @@ import (
 func TestLegacyMode(t *testing.T) {
 	ctx := context.Background()
 
-	// withoutNetwork {
 	container, err := StartContainer(
 		ctx,
 		OverrideContainerRequest(testcontainers.ContainerRequest{
 			Image:      "localstack/localstack:0.10.0",
+			Env:        map[string]string{"SERVICES": "s3,sqs"},
 			WaitingFor: wait.ForLog("Ready.").WithStartupTimeout(5 * time.Minute).WithOccurrence(1),
 		}),
-		WithServices(S3, SQS),
 	)
 	require.NotNil(t, err)
 	assert.Nil(t, container)
-	// }
 }

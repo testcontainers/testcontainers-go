@@ -42,13 +42,13 @@ func isLegacyMode(image string) bool {
 
 // StartContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
-// - opts: a list of functions that can be used to configure the container, more specifically enabling AWS services, or setting the legacy mode.
-func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOption, opts ...LocalStackContainerOption) (*LocalStackContainer, error) {
+func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOption) (*LocalStackContainer, error) {
 	// defaultContainerRequest {
 	req := testcontainers.ContainerRequest{
-		Image:      fmt.Sprintf("localstack/localstack:%s", defaultVersion),
-		Binds:      []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
-		WaitingFor: wait.ForLog("Ready.\n").WithOccurrence(1).WithStartupTimeout(2 * time.Minute),
+		Image:        fmt.Sprintf("localstack/localstack:%s", defaultVersion),
+		Binds:        []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
+		WaitingFor:   wait.ForLog("Ready.\n").WithOccurrence(1).WithStartupTimeout(2 * time.Minute),
+		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
 		Env: map[string]string{
 			"AWS_ACCESS_KEY_ID":     defaultAccessKeyID,
 			"AWS_SECRET_ACCESS_KEY": defaultSecretAccessKey,
@@ -66,11 +66,6 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 	if overrideReq != nil {
 		merged := overrideReq(localStackReq.ContainerRequest)
 		localStackReq.ContainerRequest = merged
-	}
-
-	// finally we apply the options
-	for _, opt := range opts {
-		opt(&localStackReq)
 	}
 
 	if isLegacyMode(localStackReq.Image) {
@@ -91,14 +86,8 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 		return nil, err
 	}
 
-	enabledServices := make(map[string]Service)
-	for _, service := range localStackReq.enabledServices {
-		enabledServices[service.Name()] = service
-	}
-
 	c := &LocalStackContainer{
-		Container:       container,
-		EnabledServices: enabledServices,
+		Container: container,
 	}
 	return c, nil
 }

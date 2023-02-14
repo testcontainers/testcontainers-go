@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -27,8 +28,8 @@ const (
 // awsSDKClientV1 {
 // awsSession returns a new AWS session for the given service. To retrieve the specific AWS service client, use the
 // session's client method, e.g. s3manager.NewUploader(session).
-func awsSession(ctx context.Context, l *localstack.LocalStackContainer, srv localstack.Service) (*session.Session, error) {
-	mappedPort, err := l.ServicePort(ctx, srv)
+func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*session.Session, error) {
+	mappedPort, err := l.MappedPort(ctx, nat.Port("4566/tcp"))
 	if err != nil {
 		return &session.Session{}, err
 	}
@@ -68,14 +69,14 @@ func TestS3(t *testing.T) {
 				"AWS_SECRET_ACCESS_KEY": secretkey,
 				"AWS_SESSION_TOKEN":     token,
 				"AWS_DEFAULT_REGION":    region,
+				"SERVICES":              "s3,sqs,cloudwatchlogs,kms",
 			}},
 		),
-		localstack.WithServices(localstack.S3, localstack.SQS, localstack.CloudWatchLogs, localstack.KMS),
 	)
 	require.Nil(t, err)
 	// }
 
-	session, err := awsSession(ctx, container, localstack.S3)
+	session, err := awsSession(ctx, container)
 	require.Nil(t, err)
 
 	s3Uploader := s3manager.NewUploader(session)

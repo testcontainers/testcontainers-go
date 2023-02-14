@@ -48,7 +48,7 @@ Testcontainers will inform Localstack of the best hostname automatically, using 
 * when running the Localstack container directly without a custom network defined, it is expected that all calls to the container will be from the test host. As such, the container address will be used (typically localhost or the address where the Docker daemon is running).
 
     <!--codeinclude-->
-    [Localstack container running without a custom network](../../modules/localstack/localstack_legacy_mode_test.go) inside_block:withoutNetwork
+    [Localstack container running without a custom network](../../modules/localstack/localstack_test.go) inside_block:withoutNetwork
     <!--/codeinclude-->
 
 * when running the Localstack container [with a custom network defined](/features/networking/#advanced-networking), it is expected that all calls to the container will be **from other containers on that network**. `HOSTNAME_EXTERNAL` will be set to the *last* network alias that has been configured for the Localstack container.
@@ -61,11 +61,14 @@ Testcontainers will inform Localstack of the best hostname automatically, using 
 
 ## Module reference
 
-The LocalStack module exposes one single function to create containers, and this function receives three parameters:
+The LocalStack module exposes one single function to create the LocalStack container, and this function receives two parameters:
+
+```golang
+func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOption) (*LocalStackContainer, error)
+```
 
 - `context.Context`
 - `OverrideContainerRequestOption`
-- a variadic argument of `LocalStackContainerOption`
 
 ### OverrideContainerRequestOption
 
@@ -77,7 +80,7 @@ The `OverrideContainerRequestOption` functional option represents a way to overr
 
 With simply passing your own instance of an `OverrideContainerRequestOption` type to the `StartContainer` function, you'll be able to configure the LocalStack container with your own needs.
 
-In the following example you check how it's possible to set certain environment variables that are needed by the tests. Besides, the container runs in a separate Docker network with an alias:
+In the following example you check how it's possible to set certain environment variables that are needed by the tests, the most important of them the AWS services you want to use. Besides, the container runs in a separate Docker network with an alias:
 
 <!--codeinclude-->
 [Overriding the default container request](../../modules/localstack/localstack_test.go) inside_block:withNetwork
@@ -88,45 +91,6 @@ If you do not need to override the container request, you can pass `nil` or the 
 <!--codeinclude-->
 [Skip overriding the default container request](../../modules/localstack/localstack_test.go) inside_block:noopOverrideContainerRequest
 <!--/codeinclude-->
-
-### LocalStackContainerOption, variadic argument
-
-#### WithServices
-
-The `WithServices` functional option represents a way to pass as many AWS services as needed, in a variadic manner:
-
-<!--codeinclude-->
-[Passing AWS services to LocalStack](../../modules/localstack/v1/s3_test.go) inside_block:localStackCreateContainer
-<!--/codeinclude-->
-
-Using this method will internally populate the `SERVICES` environment variable, alongside the exposed ports of each service.
-
-### Available AWS Services
-
-The LocalStack module supports the following AWS services:
-
-- APIGateway
-- CloudFormation
-- CloudWatch
-- CloudWatchLogs
-- DynamoDB
-- DynamoDBStreams
-- EC2
-- Firehose
-- IAM
-- KMS
-- Kinesis
-- Lambda
-- Redshift
-- Route53
-- S3
-- SES
-- SNS
-- SQS
-- SSM
-- STS
-- SecretsManager
-- StepFunctions
 
 !!!info
 
