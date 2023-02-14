@@ -20,6 +20,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 	require.Nil(t, err)
 
 	t.Run("No exposed ports", func(t *testing.T) {
+		// reqWithModifiers {
 		req := ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			ConfigModifier: func(config *container.Config) {
@@ -53,6 +54,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 				}
 			},
 		}
+		// }
 
 		// define empty inputs to be overwritten by the pre create hook
 		inputConfig := &container.Config{
