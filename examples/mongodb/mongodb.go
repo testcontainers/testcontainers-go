@@ -12,8 +12,8 @@ type mongodbContainer struct {
 	testcontainers.Container
 }
 
-// setupMongoDB creates an instance of the mongodb container type
-func setupMongoDB(ctx context.Context) (*mongodbContainer, error) {
+// startContainer creates an instance of the mongodb container type
+func startContainer(ctx context.Context) (*mongodbContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "mongo:6",
 		ExposedPorts: []string{"27017/tcp"},

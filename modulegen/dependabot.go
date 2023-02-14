@@ -26,9 +26,9 @@ type Update struct {
 	RebaseStrategy        string   `yaml:"rebase-strategy"`
 }
 
-func NewUpdate(example string) Update {
+func NewUpdate(example Example) Update {
 	return Update{
-		Directory:             "/examples/" + example,
+		Directory:             "/" + example.ParentDir() + "/" + example.Lower(),
 		OpenPullRequestsLimit: 3,
 		PackageEcosystem:      "gomod",
 		RebaseStrategy:        "disabled",

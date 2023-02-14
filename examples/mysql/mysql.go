@@ -12,8 +12,8 @@ type mysqlContainer struct {
 	testcontainers.Container
 }
 
-// setupMysql creates an instance of the mysql container type
-func setupMysql(ctx context.Context) (*mysqlContainer, error) {
+// startContainer creates an instance of the mysql container type
+func startContainer(ctx context.Context) (*mysqlContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "mysql:8",
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},

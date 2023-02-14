@@ -27,7 +27,7 @@ func (ec emulatorCreds) RequireTransportSecurity() bool {
 func TestFirestore(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := setupFirestore(ctx)
+	container, err := startContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

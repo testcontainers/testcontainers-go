@@ -13,7 +13,7 @@ type nginxContainer struct {
 	URI string
 }
 
-func setupNginx(ctx context.Context) (*nginxContainer, error) {
+func startContainer(ctx context.Context) (*nginxContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
