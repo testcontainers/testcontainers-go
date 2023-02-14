@@ -14,7 +14,7 @@ import (
 
 const defaultPort = 4566
 const defaultRegion = "us-east-1"
-const defaultVersion = "1.3.1"
+const defaultVersion = "1.4.0"
 const hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
 
 const defaultAccessKeyID = "accesskey"
