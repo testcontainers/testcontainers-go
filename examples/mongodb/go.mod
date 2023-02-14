@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/testcontainers/testcontainers-go v0.17.0
-	go.mongodb.org/mongo-driver v1.11.1
+	go.mongodb.org/mongo-driver v1.11.2
 	gotest.tools/gotestsum v1.9.0
 )
 
