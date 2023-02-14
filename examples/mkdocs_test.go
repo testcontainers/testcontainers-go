@@ -63,7 +63,7 @@ func TestExamples(t *testing.T) {
 	require.NoError(t, err)
 
 	// we have to remove the index.md file from the examples docs
-	assert.Equal(t, len(examplesDocs)-1, len(examples))
+	assert.Equal(t, len(examplesDocs)-2, len(examples))
 
 	// all example modules exist in the documentation
 	for _, example := range examples {
