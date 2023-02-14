@@ -14,7 +14,7 @@ type pulsarContainer struct {
 	URI string
 }
 
-func setupPulsar(ctx context.Context) (*pulsarContainer, error) {
+func startContainer(ctx context.Context) (*pulsarContainer, error) {
 	matchAdminResponse := func(r io.Reader) bool {
 		respBytes, _ := io.ReadAll(r)
 		resp := string(respBytes)

@@ -35,8 +35,8 @@ func WithInitialDatabase(user string, password string, dbName string) func(req *
 	}
 }
 
-// setupPostgres creates an instance of the postgres container type
-func setupPostgres(ctx context.Context, opts ...postgresContainerOption) (*postgresContainer, error) {
+// startContainer creates an instance of the postgres container type
+func startContainer(ctx context.Context, opts ...postgresContainerOption) (*postgresContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:11-alpine",
 		Env:          map[string]string{},

@@ -13,7 +13,7 @@ func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c, err := setupPulsar(ctx)
+	c, err := startContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

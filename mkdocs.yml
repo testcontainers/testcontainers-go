@@ -46,6 +46,9 @@ nav:
             - Log: features/wait/log.md
             - Multi: features/wait/multi.md
             - SQL: features/wait/sql.md
+    - Modules:
+        - modules/index.md
+        - modules/localstack.md
     - Examples:
         - examples/index.md
         - examples/bigtable.md
@@ -53,7 +56,6 @@ nav:
         - examples/consul.md
         - examples/datastore.md
         - examples/firestore.md
-        - examples/localstack.md
         - examples/mongodb.md
         - examples/mysql.md
         - examples/nginx.md

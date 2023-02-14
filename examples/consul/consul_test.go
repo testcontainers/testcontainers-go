@@ -11,7 +11,7 @@ import (
 func TestConsul(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := setupConsul(ctx)
+	container, err := startContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
