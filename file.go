@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func isDir(path string) (bool, error) {
@@ -31,6 +32,13 @@ func isDir(path string) (bool, error) {
 
 // tarDir compress a directory using tar + gzip algorithms
 func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
+	// always pass src as absolute path
+	abs, err := filepath.Abs(src)
+	if err != nil {
+		return &bytes.Buffer{}, fmt.Errorf("error getting absolute path: %w", err)
+	}
+	src = abs
+
 	buffer := &bytes.Buffer{}
 
 	fmt.Printf(">> creating TAR file from directory: %s\n", src)
@@ -39,8 +47,12 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 	zr := gzip.NewWriter(buffer)
 	tw := tar.NewWriter(zr)
 
+	_, baseDir := filepath.Split(src)
+	// keep the path relative to the parent directory
+	index := strings.LastIndex(src, baseDir)
+
 	// walk through every file in the folder
-	err := filepath.Walk(src, func(file string, fi os.FileInfo, errFn error) error {
+	err = filepath.Walk(src, func(file string, fi os.FileInfo, errFn error) error {
 		if errFn != nil {
 			return fmt.Errorf("error traversing the file system: %w", errFn)
 		}
@@ -57,9 +69,10 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 			return fmt.Errorf("error getting file info header: %w", err)
 		}
 
-		// must provide real name
-		// (see https://golang.org/src/archive/tar/common.go?#L626)
-		header.Name = filepath.ToSlash(file)
+		// see https://pkg.go.dev/archive/tar#FileInfoHeader:
+		// Since fs.FileInfo's Name method only returns the base name of the file it describes,
+		// it may be necessary to modify Header.Name to provide the full path name of the file.
+		header.Name = filepath.ToSlash(file[index:])
 		header.Mode = fileMode
 
 		// write header

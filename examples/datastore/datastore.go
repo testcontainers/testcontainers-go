@@ -3,6 +3,7 @@ package datastore
 import (
 	"context"
 	"fmt"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -13,8 +14,8 @@ type datastoreContainer struct {
 	URI string
 }
 
-// setupDatastore creates an instance of the datastore container type
-func setupDatastore(ctx context.Context) (*datastoreContainer, error) {
+// startContainer creates an instance of the datastore container type
+func startContainer(ctx context.Context) (*datastoreContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
 		ExposedPorts: []string{"8081/tcp"},
