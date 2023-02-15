@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -233,6 +234,13 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	if c.ContextArchive != nil {
 		return c.ContextArchive, nil
 	}
+
+	// always pass context as absolute path
+	abs, err := filepath.Abs(c.Context)
+	if err != nil {
+		return nil, fmt.Errorf("error getting absolute path: %w", err)
+	}
+	c.Context = abs
 
 	buildContext, err := archive.TarWithOptions(c.Context, &archive.TarOptions{})
 	if err != nil {

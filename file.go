@@ -32,6 +32,13 @@ func isDir(path string) (bool, error) {
 
 // tarDir compress a directory using tar + gzip algorithms
 func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
+	// always pass src as absolute path
+	abs, err := filepath.Abs(src)
+	if err != nil {
+		return &bytes.Buffer{}, fmt.Errorf("error getting absolute path: %w", err)
+	}
+	src = abs
+
 	buffer := &bytes.Buffer{}
 
 	fmt.Printf(">> creating TAR file from directory: %s\n", src)
@@ -45,7 +52,7 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 	index := strings.LastIndex(src, baseDir)
 
 	// walk through every file in the folder
-	err := filepath.Walk(src, func(file string, fi os.FileInfo, errFn error) error {
+	err = filepath.Walk(src, func(file string, fi os.FileInfo, errFn error) error {
 		if errFn != nil {
 			return fmt.Errorf("error traversing the file system: %w", errFn)
 		}
