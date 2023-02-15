@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/containerd/containerd v1.6.17
-	github.com/docker/docker v20.10.20+incompatible
+	github.com/docker/docker v23.0.0+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.5.0
 	github.com/google/uuid v1.3.0
@@ -16,8 +16,6 @@ require (
 	golang.org/x/sys v0.5.0
 	gotest.tools/gotestsum v1.9.0
 )
-
-replace github.com/docker/docker => github.com/docker/docker v20.10.3-0.20221013203545-33ab36d6b304+incompatible // 22.06 branch
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
