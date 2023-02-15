@@ -5,10 +5,10 @@ In order to create a release, we have added a shell script that performs all the
 First, it's really important that you first check that the [version.go](./internal/version.go) file is up-to-date, containing the right version you want to create. That file will be used by the automation to perform the release.
 Once the version file is correct in the repository:
 
-- Run the [release.sh](./scripts/release.sh) shell script.
-- You can run the script in dry-run mode setting `DRY_RUN=true` in the environment:
+- Run the [release.sh](./scripts/release.sh) shell script to run it in dry-run mode.
+- You can run the script without dry-run setting `DRY_RUN=false` in the environment:
 
-        DRY_RUN="true" ./scripts/release.sh
+        DRY_RUN="false" ./scripts/release.sh
 
 - The script will create a git tag with the current value of the [version.go](./internal/version.go) file, starting with `v`: e.g. `v0.18.0`, for the following Go modules:
     - the root module, representing the Testcontainers for Go library.
@@ -21,7 +21,7 @@ Once the version file is correct in the repository:
 An example execution, with dry-run mode enabled:
 
 ```
-$ DRY_RUN=true ./scripts/release.sh       
+$ DRY_RUN=false ./scripts/release.sh
 git tag -d v0.18.0 | true
 git tag v0.18.0
 git tag -d examples/bigtable/v0.18.0 | true

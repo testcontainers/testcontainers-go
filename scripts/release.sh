@@ -2,17 +2,17 @@
 
 # This script is used to release a new version of the Testcontainers for Go library.
 # It creates a tag for the root module and for each module in the modules directory,
-# and then triggers the Go proxy to fetch the module.
+# and then triggers the Go proxy to fetch the module. BY default, it will be run in
+# dry-run mode, which will print the commands that would be executed, without actually
+# executing them.
 #
-# Usage: ./scripts/release.sh "v0.0.1"
-# where v0.0.1 is the tag to be created.
+# Usage: ./scripts/release.sh
 #
-# It's possible to run the script in dry-run mode, which will print the commands that
-# would be executed, without actually executing them.
+# It's possible to run the script without dry-run mode actually executing the commands.
 #
-# Usage: DRY_RUN="true" ./scripts/release.sh "v0.0.1" 
+# Usage: DRY_RUN="false" ./scripts/release.sh
 
-readonly DRY_RUN="${DRY_RUN:-false}"
+readonly DRY_RUN="${DRY_RUN:-true}"
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
 readonly VERSION_FILE="${ROOT_DIR}/internal/version.go"
