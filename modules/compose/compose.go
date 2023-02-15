@@ -117,9 +117,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		return nil, err
 	}
 
-	if err = dockerCli.Initialize(&flags.ClientOptions{
-		Common: new(flags.CommonOptions),
-	}, command.WithInitializeClient(makeClient)); err != nil {
+	if err = dockerCli.Initialize(flags.NewClientOptions(), command.WithInitializeClient(makeClient)); err != nil {
 		return nil, err
 	}
 
