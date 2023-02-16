@@ -16,6 +16,7 @@ Once the version file is correct in the repository:
 
              "${directory}/${module_name}/${version}", e.g. "examples/mysql/v0.18.0", "modules/compose/v0.18.0"
 
+- The script will update the [mkdocs.yml](./mkdocks.yml) file, updating the `latest_version` field to the current version.
 - The script will update the [version.go](./internal/version.go) file, setting the next development version to the next **minor** version by default. For example, if the current version is `v0.18.0`, the script will update the [version.go](./internal/version.go) file with the next development version `v0.19.0`.
 - You can define the bump type, using the `BUMP_TYPE` environment variable. The default value is `minor`, but you can also use `major` or `patch` (the script will fail if the value is not one of these three):
 
@@ -67,7 +68,10 @@ git checkout main
 Producing a minor bump of the version, from v0.18.0 to 0.19.0
 sed "s/const Version = ".*"/const Version = "0.19.0"/g" /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/internal/version.go > /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/internal/version.go.tmp
 mv /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/internal/version.go.tmp /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/internal/version.go
+sed "s/latest_version: .*/latest_version: v0.18.0/g" /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/mkdocs.yml > /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/mkdocs.yml.tmp
+mv /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/mkdocs.yml.tmp /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/mkdocs.yml
 git add /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/internal/version.go
+git add /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/mkdocs.yml
 git commit -m "chore: prepare for next minor development cycle (0.19.0)"
 git push origin main --tags
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/@v/v0.18.0
@@ -90,5 +94,4 @@ curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/module
 ```
 
 Right after that, you have to:
-- Update the [mkdocs.yml](./mkdocs.yml) file with the next development version.
 - Commit those files and submit a pull request, using `chore` as Github label.

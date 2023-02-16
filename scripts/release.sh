@@ -16,6 +16,7 @@ readonly DOCKER_IMAGE_SEMVER="docker.io/mdelapenya/semver-tool:3.4.0"
 readonly DRY_RUN="${DRY_RUN:-true}"
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
+readonly MKDOCS_FILE="${ROOT_DIR}/mkdocs.yml"
 readonly VERSION_FILE="${ROOT_DIR}/internal/version.go"
 readonly BUMP_TYPE="${BUMP_TYPE:-minor}"
 
@@ -57,6 +58,7 @@ function main() {
   done
 }
 
+# This function is used to bump the version in the version.go file and in the mkdocs.yml file.
 function bumpVersion() {
   local versionToBump="${1}"
 
@@ -69,6 +71,14 @@ function bumpVersion() {
   else
     sed "s/const Version = \".*\"/const Version = \"${newVersion}\"/g" ${VERSION_FILE} > ${VERSION_FILE}.tmp
     mv ${VERSION_FILE}.tmp ${VERSION_FILE}
+  fi
+
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "sed \"s/latest_version: .*/latest_version: ${versionToBump}/g\" ${MKDOCS_FILE} > ${MKDOCS_FILE}.tmp"
+    echo "mv ${MKDOCS_FILE}.tmp ${MKDOCS_FILE}"
+  else
+    sed "s/latest_version: .*/latest_version: ${versionToBump}/g" ${MKDOCS_FILE} > ${MKDOCS_FILE}.tmp
+    mv ${MKDOCS_FILE}.tmp ${MKDOCS_FILE}
   fi
 
   gitCommitVersion "${newVersion}"
@@ -101,11 +111,13 @@ function gitCommitVersion() {
   local newVersion="${1}" 
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo "git add ${VERSION_FILE}"
+    echo "git add ${MKDOCS_FILE}"
     echo "git commit -m \"chore: prepare for next ${BUMP_TYPE} development cycle (${newVersion})\""
     return
   fi
 
   git add "${VERSION_FILE}"
+  git add "${MKDOCS_FILE}"
   git commit -m "chore: prepare for next ${BUMP_TYPE} development cycle (${newVersion})"
 }
 
