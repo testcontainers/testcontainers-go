@@ -141,15 +141,17 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			Privileged:  true,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:      nginxAlpineImage,
+			SkipReaper: true,
+			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
 			ExposedPorts: []string{
 				nginxHighPort,
 			},
+			Privileged: true,
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -209,10 +211,12 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			Networks:    []string{"new-network"},
+			Image:      nginxImage,
+			SkipReaper: true,
+			Networks:   []string{"new-network"},
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -236,11 +240,13 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort(nginxHighPort),
-			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:      nginxAlpineImage,
+			SkipReaper: true,
+			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -272,11 +278,13 @@ func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort(nginxHighPort),
-			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:      nginxAlpineImage,
+			SkipReaper: true,
+			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -309,11 +317,13 @@ func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort(nginxHighPort),
-			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:      nginxAlpineImage,
+			SkipReaper: true,
+			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -2317,8 +2327,10 @@ func TestDockerContainerResources(t *testing.T) {
 			Image:        nginxAlpineImage,
 			ExposedPorts: []string{nginxDefaultPort},
 			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-			Resources: container.Resources{
-				Ulimits: expected,
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.Resources = container.Resources{
+					Ulimits: expected,
+				}
 			},
 		},
 		Started: true,
@@ -2403,7 +2415,9 @@ func TestContainerCapAdd(t *testing.T) {
 			Image:        nginxAlpineImage,
 			ExposedPorts: []string{nginxDefaultPort},
 			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-			CapAdd:       []string{expected},
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.CapAdd = []string{expected}
+			},
 		},
 		Started: true,
 	})
@@ -2547,8 +2561,10 @@ func TestNetworkModeWithContainerReference(t *testing.T) {
 	nginxB, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			NetworkMode: container.NetworkMode(networkMode),
+			Image: nginxAlpineImage,
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.NetworkMode = container.NetworkMode(networkMode)
+			},
 		},
 		Started: true,
 	})

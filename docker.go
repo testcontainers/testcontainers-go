@@ -1056,76 +1056,30 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
-	exposedPorts := req.ExposedPorts
-	if len(exposedPorts) == 0 && !req.NetworkMode.IsContainer() {
-		image, _, err := p.client.ImageInspectWithRaw(ctx, tag)
-		if err != nil {
-			return nil, err
-		}
-		for p := range image.ContainerConfig.ExposedPorts {
-			exposedPorts = append(exposedPorts, string(p))
-		}
+	dockerInput := &container.Config{
+		Entrypoint: req.Entrypoint,
+		Image:      tag,
+		Env:        env,
+		Labels:     req.Labels,
+		Cmd:        req.Cmd,
+		Hostname:   req.Hostname,
+		User:       req.User,
 	}
 
-	exposedPortSet, exposedPortMap, err := nat.ParsePortSpecs(exposedPorts)
+	hostConfig := &container.HostConfig{
+		Privileged: req.Privileged,
+		ShmSize:    req.ShmSize,
+		Tmpfs:      req.Tmpfs,
+	}
+
+	networkingConfig := &network.NetworkingConfig{}
+
+	err = p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	dockerInput := &container.Config{
-		Entrypoint:   req.Entrypoint,
-		Image:        tag,
-		Env:          env,
-		ExposedPorts: exposedPortSet,
-		Labels:       req.Labels,
-		Cmd:          req.Cmd,
-		Hostname:     req.Hostname,
-		User:         req.User,
-	}
-
-	// prepare mounts
-	mounts := mapToDockerMounts(req.Mounts)
-
-	hostConfig := &container.HostConfig{
-		ExtraHosts:   req.ExtraHosts,
-		PortBindings: exposedPortMap,
-		Binds:        req.Binds,
-		Mounts:       mounts,
-		Tmpfs:        req.Tmpfs,
-		AutoRemove:   req.AutoRemove,
-		Privileged:   req.Privileged,
-		NetworkMode:  req.NetworkMode,
-		Resources:    req.Resources,
-		ShmSize:      req.ShmSize,
-		CapAdd:       req.CapAdd,
-		CapDrop:      req.CapDrop,
-	}
-
-	endpointConfigs := map[string]*network.EndpointSettings{}
-
-	// #248: Docker allows only one network to be specified during container creation
-	// If there is more than one network specified in the request container should be attached to them
-	// once it is created. We will take a first network if any specified in the request and use it to create container
-	if len(req.Networks) > 0 {
-		attachContainerTo := req.Networks[0]
-
-		nw, err := p.GetNetwork(ctx, NetworkRequest{
-			Name: attachContainerTo,
-		})
-		if err == nil {
-			endpointSetting := network.EndpointSettings{
-				Aliases:   req.NetworkAliases[attachContainerTo],
-				NetworkID: nw.ID,
-			}
-			endpointConfigs[attachContainerTo] = &endpointSetting
-		}
-	}
-
-	networkingConfig := network.NetworkingConfig{
-		EndpointsConfig: endpointConfigs,
-	}
-
-	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, &networkingConfig, platform, req.Name)
+	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, networkingConfig, platform, req.Name)
 	if err != nil {
 		return nil, err
 	}

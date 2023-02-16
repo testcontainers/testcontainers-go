@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go/internal"
@@ -81,6 +82,8 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 
 	listeningPort := nat.Port("8080/tcp")
 
+	tcConfig := provider.Config()
+
 	reaperOpts := containerOptions{}
 
 	for _, opt := range opts {
@@ -90,7 +93,6 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 	req := ContainerRequest{
 		Image:        reaperImage(reaperOpts.ImageName),
 		ExposedPorts: []string{string(listeningPort)},
-		NetworkMode:  Bridge,
 		Labels: map[string]string{
 			TestcontainerLabelIsReaper:       "true",
 			testcontainersdocker.LabelReaper: "true",
@@ -98,9 +100,13 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 		SkipReaper:    true,
 		RegistryCred:  reaperOpts.RegistryCredentials,
 		Mounts:        Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
-		AutoRemove:    true,
+		Privileged:    tcConfig.RyukPrivileged,
 		WaitingFor:    wait.ForListeningPort(listeningPort),
 		ReaperOptions: opts,
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.AutoRemove = true
+			hc.NetworkMode = Bridge
+		},
 	}
 
 	// keep backwards compatibility
@@ -113,9 +119,6 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 		}
 		req.Labels[k] = v
 	}
-
-	tcConfig := provider.Config()
-	req.Privileged = tcConfig.RyukPrivileged
 
 	// Attach reaper container to a requested network if it is specified
 	if p, ok := provider.(*DockerProvider); ok {

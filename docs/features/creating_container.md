@@ -87,6 +87,17 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 }
 ```
 
+### Advanced Settings
+
+The aforementioned `GenericContainer` function and the `ContainerRequest` struct represent a straightforward manner to configure the containers, but you could need to create your containers with more advance settings regarding the config, host config and endpoint settings Docker types. For those more advance settings, _Testcontainers for Go_ offers a way to fully customise the container request and those internal Docker types. These customisations, called _modifiers_, will be applied just before the internal call to the Docker client to create the container.
+
+<!--codeinclude-->
+[Using modifiers](../../lifecycle_test.go) inside_block:reqWithModifiers
+<!--/codeinclude-->
+
+!!!warning
+	The only special case where the modifiers are not applied last, is when there are no exposed ports in the container request and the container does not use a network mode from a container (e.g. `req.NetworkMode = container.NetworkMode("container:$CONTAINER_ID")`). In that case, _Testcontainers for Go_ will extract the ports from the underliying Docker image and export them.
+
 ## Reusable container
 
 With `Reuse` option you can reuse an existing container. Reusing will work only if you pass an 
