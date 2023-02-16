@@ -94,4 +94,4 @@ curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/module
 ```
 
 Right after that, you have to:
-- Commit those files and submit a pull request, using `chore` as Github label.
+- Verify that the commits are in the upstream repository, otherwise, update it with the current state of the main branch.
