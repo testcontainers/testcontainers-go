@@ -17,6 +17,7 @@ readonly DRY_RUN="${DRY_RUN:-true}"
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
 readonly VERSION_FILE="${ROOT_DIR}/internal/version.go"
+readonly BUMP_TYPE="${BUMP_TYPE:-minor}"
 
 readonly REPOSITORY="github.com/testcontainers/testcontainers-go"
 
@@ -59,8 +60,8 @@ function main() {
 function bumpVersion() {
   local versionToBump="${1}"
 
-  local newVersion=$(docker run --rm "${DOCKER_IMAGE_SEMVER}" bump minor "${versionToBump}")
-  echo "Bumping version from ${versionToBump} to ${newVersion}"
+  local newVersion=$(docker run --rm "${DOCKER_IMAGE_SEMVER}" bump "${BUMP_TYPE}" "${versionToBump}")
+  echo "Producing a ${BUMP_TYPE} bump of the version, from ${versionToBump} to ${newVersion}"
 
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo "sed \"s/const Version = \".*\"/const Version = \"${newVersion}\"/g\" ${VERSION_FILE} > ${VERSION_FILE}.tmp"
@@ -100,12 +101,12 @@ function gitCommitVersion() {
   local newVersion="${1}" 
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo "git add ${VERSION_FILE}"
-    echo "git commit -m \"chore: prepare for next development cycle (${newVersion})\""
+    echo "git commit -m \"chore: prepare for next ${BUMP_TYPE} development cycle (${newVersion})\""
     return
   fi
 
   git add "${VERSION_FILE}"
-  git commit -m "chore: prepare for next development cycle (${newVersion})"
+  git commit -m "chore: prepare for next ${BUMP_TYPE} development cycle (${newVersion})"
 }
 
 # This function is used to push the tags to the remote repository.
@@ -146,4 +147,13 @@ function tagModule() {
   git tag "${module_tag}"
 }
 
+function validate() {
+  # if bump_type is not major, minor or patch, the script will fail
+  if [[ "${BUMP_TYPE}" != "major" ]] && [[ "${BUMP_TYPE}" != "minor" ]] && [[ "${BUMP_TYPE}" != "patch" ]]; then
+    echo "BUMP_TYPE must be major, minor or patch. Current: ${BUMP_TYPE}"
+    exit 1
+  fi
+}
+
+validate
 main "$@"
