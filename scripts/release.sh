@@ -140,7 +140,7 @@ function gitState() {
 }
 
 function gitUnstash() {
-  gitFn unstash
+  gitFn stash pop
 }
 
 # This function is used to create a tag for the module.
