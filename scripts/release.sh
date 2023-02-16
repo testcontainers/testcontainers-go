@@ -43,6 +43,7 @@ function main() {
   gitState
   bumpVersion "${version}"
   gitPushTags
+  gitUnstash
 
   curlGolangProxy "${REPOSITORY}" "${version}" # e.g. github.com/testcontainers/testcontainers-go/@v/v0.0.1
 
@@ -143,6 +144,15 @@ function gitState() {
 
   git stash
   git checkout main
+}
+
+function gitUnstash() {
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "git unstash"
+    return
+  fi
+
+  git unstash
 }
 
 # This function is used to create a tag for the module.
