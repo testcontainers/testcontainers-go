@@ -12,6 +12,7 @@
 #
 # Usage: DRY_RUN="false" ./scripts/release.sh
 
+readonly DOCKER_IMAGE_SEMVER="docker.io/mdelapenya/semver-tool:3.4.0"
 readonly DRY_RUN="${DRY_RUN:-true}"
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
@@ -37,6 +38,8 @@ function main() {
     done
   done
 
+  gitState
+  bumpVersion "${version}"
   gitPushTags
 
   curlGolangProxy "${REPOSITORY}" "${version}" # e.g. github.com/testcontainers/testcontainers-go/@v/v0.0.1
@@ -51,6 +54,23 @@ function main() {
       curlGolangProxy "${module_path}" "${version}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1
     done
   done
+}
+
+function bumpVersion() {
+  local versionToBump="${1}"
+
+  local newVersion=$(docker run --rm "${DOCKER_IMAGE_SEMVER}" bump minor "${versionToBump}")
+  echo "Bumping version from ${versionToBump} to ${newVersion}"
+
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "sed \"s/const Version = \".*\"/const Version = \"${newVersion}\"/g\" ${VERSION_FILE} > ${VERSION_FILE}.tmp"
+    echo "mv ${VERSION_FILE}.tmp ${VERSION_FILE}"
+  else
+    sed "s/const Version = \".*\"/const Version = \"${newVersion}\"/g" ${VERSION_FILE} > ${VERSION_FILE}.tmp
+    mv ${VERSION_FILE}.tmp ${VERSION_FILE}
+  fi
+
+  gitCommitVersion "${newVersion}"
 }
 
 # This function is used to trigger the Go proxy to fetch the module.
@@ -75,14 +95,41 @@ function extractCurrentVersion() {
   cat "${VERSION_FILE}" | grep 'const Version = ' | cut -d '"' -f 2
 }
 
-# This function is used to push the tags to the remote repository.
-function gitPushTags() {
+# This function is used to commit the version.go file.
+function gitCommitVersion() {
+  local newVersion="${1}" 
   if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "git push --tags"
+    echo "git add ${VERSION_FILE}"
+    echo "git commit -m \"chore: prepare for next development cycle (${newVersion})\""
     return
   fi
 
-  git push --tags
+  git add "${VERSION_FILE}"
+  git commit -m "chore: prepare for next development cycle (${newVersion})"
+}
+
+# This function is used to push the tags to the remote repository.
+function gitPushTags() {
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "git push origin main --tags"
+    return
+  fi
+
+  git push origin main --tags
+}
+
+# This function is setting the git state to the next development cycle:
+# - Stashing the changes
+# - Moving to the main branch
+function gitState() {
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "git stash"
+    echo "git checkout main"
+    return
+  fi
+
+  git stash
+  git checkout main
 }
 
 # This function is used to create a tag for the module.
