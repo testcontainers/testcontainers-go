@@ -108,65 +108,47 @@ function extractCurrentVersion() {
 }
 
 # This function is used to commit the version.go file.
-function gitCommitVersion() {
-  local newVersion="${1}" 
+function gitFn() {
+  args=("$@")
   if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "git add ${VERSION_FILE}"
-    echo "git add ${MKDOCS_FILE}"
-    echo "git commit -m \"chore: prepare for next ${BUMP_TYPE} development cycle (${newVersion})\""
+    echo "git ${args[@]}"
     return
   fi
 
-  git add "${VERSION_FILE}"
-  git add "${MKDOCS_FILE}"
-  git commit -m "chore: prepare for next ${BUMP_TYPE} development cycle (${newVersion})"
+  git "${args[@]}"
+}
+
+# This function is used to commit the version.go file.
+function gitCommitVersion() {
+  local newVersion="${1}" 
+  gitFn add "${VERSION_FILE}"
+  gitFn add "${MKDOCS_FILE}"
+  gitFn commit -m "chore: prepare for next ${BUMP_TYPE} development cycle (${newVersion})"
 }
 
 # This function is used to push the tags to the remote repository.
 function gitPushTags() {
-  if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "git push origin main --tags"
-    return
-  fi
-
-  git push origin main --tags
+  gitFn push origin main --tags
 }
 
 # This function is setting the git state to the next development cycle:
 # - Stashing the changes
 # - Moving to the main branch
 function gitState() {
-  if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "git stash"
-    echo "git checkout main"
-    return
-  fi
-
-  git stash
-  git checkout main
+  gitFn stash
+  gitFn checkout main
 }
 
 function gitUnstash() {
-  if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "git unstash"
-    return
-  fi
-
-  git unstash
+  gitFn unstash
 }
 
 # This function is used to create a tag for the module.
 function tagModule() {
   local module_tag="${1}"
 
-  if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "git tag -d ${module_tag} | true"
-    echo "git tag ${module_tag}"
-    return
-  fi
-
-  git tag -d "${module_tag}" | true # do not fail if tag does not exist
-  git tag "${module_tag}"
+  gitFn tag -d "${module_tag}" | true # do not fail if tag does not exist
+  gitFn tag "${module_tag}"
 }
 
 function validate() {

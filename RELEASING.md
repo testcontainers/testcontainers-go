@@ -29,39 +29,22 @@ An example execution, with dry-run mode enabled:
 
 ```
 $ ./scripts/release.sh
-git tag -d v0.18.0 | true
 git tag v0.18.0
-git tag -d examples/bigtable/v0.18.0 | true
 git tag examples/bigtable/v0.18.0
-git tag -d examples/cockroachdb/v0.18.0 | true
 git tag examples/cockroachdb/v0.18.0
-git tag -d examples/consul/v0.18.0 | true
 git tag examples/consul/v0.18.0
-git tag -d examples/datastore/v0.18.0 | true
 git tag examples/datastore/v0.18.0
-git tag -d examples/firestore/v0.18.0 | true
 git tag examples/firestore/v0.18.0
-git tag -d examples/mongodb/v0.18.0 | true
 git tag examples/mongodb/v0.18.0
-git tag -d examples/mysql/v0.18.0 | true
 git tag examples/mysql/v0.18.0
-git tag -d examples/nginx/v0.18.0 | true
 git tag examples/nginx/v0.18.0
-git tag -d examples/postgres/v0.18.0 | true
 git tag examples/postgres/v0.18.0
-git tag -d examples/pubsub/v0.18.0 | true
 git tag examples/pubsub/v0.18.0
-git tag -d examples/pulsar/v0.18.0 | true
 git tag examples/pulsar/v0.18.0
-git tag -d examples/redis/v0.18.0 | true
 git tag examples/redis/v0.18.0
-git tag -d examples/spanner/v0.18.0 | true
 git tag examples/spanner/v0.18.0
-git tag -d examples/toxiproxy/v0.18.0 | true
 git tag examples/toxiproxy/v0.18.0
-git tag -d modules/compose/v0.18.0 | true
 git tag modules/compose/v0.18.0
-git tag -d modules/localstack/v0.18.0 | true
 git tag modules/localstack/v0.18.0
 git stash
 git checkout main
@@ -72,8 +55,9 @@ sed "s/latest_version: .*/latest_version: v0.18.0/g" /Users/mdelapenya/sourcecod
 mv /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/mkdocs.yml.tmp /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/mkdocs.yml
 git add /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/internal/version.go
 git add /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/mkdocs.yml
-git commit -m "chore: prepare for next minor development cycle (0.19.0)"
+git commit -m chore: prepare for next minor development cycle (0.19.0)
 git push origin main --tags
+git unstash
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/@v/v0.18.0
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/bigtable/@v/v0.18.0
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/cockroachdb/@v/v0.18.0
