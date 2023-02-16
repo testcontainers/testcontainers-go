@@ -97,9 +97,9 @@ function curlGolangProxy() {
   fi
 
   # e.g.:
-  #   github.com/testcontainers/testcontainers-go/v0.0.1
-  #   github.com/testcontainers/testcontainers-go/modules/mongodb/v0.0.1
-  curl "https://proxy.golang.org/${module_path}/@v/${module_version}"
+  #   github.com/testcontainers/testcontainers-go/v0.0.1.info
+  #   github.com/testcontainers/testcontainers-go/modules/mongodb/v0.0.1.info
+  curl "https://proxy.golang.org/${module_path}/@v/${module_version}.info"
 }
 
 # This function reads the version.go file and extracts the current version.
@@ -140,7 +140,7 @@ function gitState() {
 }
 
 function gitUnstash() {
-  gitFn unstash
+  gitFn stash pop
 }
 
 # This function is used to create a tag for the module.
