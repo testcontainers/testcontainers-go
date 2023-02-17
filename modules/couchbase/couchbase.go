@@ -3,6 +3,10 @@ package couchbase
 import (
 	"context"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/tidwall/gjson"
+	"io"
+	"net/http"
 )
 
 const (
@@ -57,6 +61,10 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 		return nil, err
 	}
 
+	if err := waitUntilAllNodesAreHealthy(ctx, container, config.enabledServices); err != nil {
+		return nil, err
+	}
+
 	return &CouchbaseContainer{Container: container}, nil
 }
 
@@ -66,4 +74,57 @@ func exposePorts(req *testcontainers.ContainerRequest, enabledServices []service
 	for _, service := range enabledServices {
 		req.ExposedPorts = append(req.ExposedPorts, service.ports...)
 	}
+}
+
+func waitUntilAllNodesAreHealthy(ctx context.Context, container testcontainers.Container, enabledServices []service) error {
+	var waitStrategy []wait.Strategy
+
+	waitStrategy = append(waitStrategy, wait.ForHTTP("/pools/default").
+		WithPort(MGMT_PORT).
+		WithStatusCodeMatcher(func(status int) bool {
+			return status == http.StatusOK
+		}).
+		WithResponseMatcher(func(body io.Reader) bool {
+			json, err := io.ReadAll(body)
+			if err != nil {
+				return false
+			}
+			status := gjson.Get(string(json), "nodes.0.status")
+			if status.String() != "healthy" {
+				return false
+			}
+
+			return true
+		}))
+
+	for _, service := range enabledServices {
+		var strategy wait.Strategy
+
+		switch service.identifier {
+		case query.identifier:
+			strategy = wait.ForHTTP("/admin/ping").
+				WithPort(QUERY_PORT).
+				WithStatusCodeMatcher(func(status int) bool {
+					return status == http.StatusOK
+				})
+		case analytics.identifier:
+			strategy = wait.ForHTTP("/admin/ping").
+				WithPort(ANALYTICS_PORT).
+				WithStatusCodeMatcher(func(status int) bool {
+					return status == http.StatusOK
+				})
+		case eventing.identifier:
+			strategy = wait.ForHTTP("/api/v1/config").
+				WithPort(EVENTING_PORT).
+				WithStatusCodeMatcher(func(status int) bool {
+					return status == http.StatusOK
+				})
+		}
+
+		if strategy != nil {
+			waitStrategy = append(waitStrategy, strategy)
+		}
+	}
+
+	return wait.ForAll(waitStrategy...).WaitUntilReady(ctx, container)
 }
