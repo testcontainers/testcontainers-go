@@ -48,6 +48,7 @@ nav:
             - SQL: features/wait/sql.md
     - Modules:
         - modules/index.md
+        - modules/couchbase.md
         - modules/localstack.md
     - Examples:
         - examples/index.md
