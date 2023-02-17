@@ -7,7 +7,7 @@ repository:
   name: testcontainers-go
 
   # A short description of the repository that will show up on GitHub
-  description: Testcontainers for Go is a Golang library that provides a friendly API to run Docker containers. It is designed to create a runtime testing environment to use during your automatic tests.
+  description: Testcontainers for Go is a Go package that makes it simple to create and clean up container-based dependencies for automated integration/smoke tests. The clean, easy-to-use API enables developers to programmatically define containers that should be run as part of a test and clean up those resources when the test is done.
 
   # A URL with more information about the repository
   homepage: https://golang.testcontainers.org
