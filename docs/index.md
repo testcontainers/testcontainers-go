@@ -10,6 +10,7 @@
     <a href="https://testcontainers-python.readthedocs.io/en/latest/" class="card-grid-item"><img src="language-logos/python.svg"/>Python</a>
     <a href="https://github.com/testcontainers/testcontainers-node" class="card-grid-item"><img src="language-logos/nodejs.svg"/>Node.js</a></a>
     <a href="https://docs.rs/testcontainers/latest/testcontainers/" class="card-grid-item"><img src="language-logos/rust.svg"/>Rust</a>
+    <a href="https://github.com/testcontainers/testcontainers-hs" class="card-grid-item"><img src="language-logos/haskell.svg"/>Haskell</a>
 </div>
 
 ## About Testcontainers for Go
