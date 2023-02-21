@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -28,12 +30,24 @@ func WithCmd(cmd []string) PulsarContainerOptions {
 	}
 }
 
-// WithEnv will merge the given environment variables with the default ones
-func WithEnv(env map[string]string) PulsarContainerOptions {
+// WithConfigModifier allows to override the default container config
+func WithConfigModifier(modifier func(config *container.Config)) PulsarContainerOptions {
 	return func(req *testcontainers.ContainerRequest) {
-		for k, v := range env {
-			req.Env[k] = v
-		}
+		req.ConfigModifier = modifier
+	}
+}
+
+// WithEndpointSettingsModifier allows to override the default endpoint settings
+func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) PulsarContainerOptions {
+	return func(req *testcontainers.ContainerRequest) {
+		req.EnpointSettingsModifier = modifier
+	}
+}
+
+// WithHostConfigModifier allows to override the default host config
+func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) PulsarContainerOptions {
+	return func(req *testcontainers.ContainerRequest) {
+		req.HostConfigModifier = modifier
 	}
 }
 
