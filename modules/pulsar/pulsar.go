@@ -9,12 +9,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-type pulsarContainer struct {
+type PulsarContainer struct {
 	testcontainers.Container
 	URI string
 }
 
-func startContainer(ctx context.Context) (*pulsarContainer, error) {
+func startContainer(ctx context.Context) (*PulsarContainer, error) {
 	matchAdminResponse := func(r io.Reader) bool {
 		respBytes, _ := io.ReadAll(r)
 		resp := string(respBytes)
@@ -51,7 +51,7 @@ func startContainer(ctx context.Context) (*pulsarContainer, error) {
 		return nil, err
 	}
 
-	return &pulsarContainer{
+	return &PulsarContainer{
 		Container: c,
 		URI:       fmt.Sprintf("pulsar://127.0.0.1:%v", pulsarPort.Int()),
 	}, nil
