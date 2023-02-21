@@ -1,4 +1,4 @@
-name: Pulsar example pipeline
+name: Pulsar module pipeline
 
 on: [push, pull_request]
 
