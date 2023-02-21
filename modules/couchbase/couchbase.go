@@ -74,7 +74,7 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 
 	couchbaseContainer := CouchbaseContainer{container, config}
 
-	if err = couchbaseContainer.waitUntilAllNodesAreHealthy(ctx, config.enabledServices); err != nil {
+	if err = couchbaseContainer.waitUntilAllNodesAreHealthy(ctx); err != nil {
 		return nil, err
 	}
 
@@ -109,7 +109,7 @@ func exposePorts(req *testcontainers.ContainerRequest, enabledServices []service
 	}
 }
 
-func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context, enabledServices []service) error {
+func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) error {
 	var waitStrategy []wait.Strategy
 
 	waitStrategy = append(waitStrategy, wait.ForHTTP("/pools/default").
@@ -130,33 +130,29 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context, en
 			return true
 		}))
 
-	for _, service := range enabledServices {
-		var strategy wait.Strategy
+	if contains(c.config.enabledServices, query) {
+		waitStrategy = append(waitStrategy, wait.ForHTTP("/admin/ping").
+			WithPort(QUERY_PORT).
+			WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusOK
+			}),
+		)
+	}
 
-		switch service.identifier {
-		case query.identifier:
-			strategy = wait.ForHTTP("/admin/ping").
-				WithPort(QUERY_PORT).
-				WithStatusCodeMatcher(func(status int) bool {
-					return status == http.StatusOK
-				})
-		case analytics.identifier:
-			strategy = wait.ForHTTP("/admin/ping").
-				WithPort(ANALYTICS_PORT).
-				WithStatusCodeMatcher(func(status int) bool {
-					return status == http.StatusOK
-				})
-		case eventing.identifier:
-			strategy = wait.ForHTTP("/api/v1/config").
-				WithPort(EVENTING_PORT).
-				WithStatusCodeMatcher(func(status int) bool {
-					return status == http.StatusOK
-				})
-		}
+	if contains(c.config.enabledServices, analytics) {
+		waitStrategy = append(waitStrategy, wait.ForHTTP("/admin/ping").
+			WithPort(ANALYTICS_PORT).
+			WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusOK
+			}))
+	}
 
-		if strategy != nil {
-			waitStrategy = append(waitStrategy, strategy)
-		}
+	if contains(c.config.enabledServices, eventing) {
+		waitStrategy = append(waitStrategy, wait.ForHTTP("/api/v1/config").
+			WithPort(EVENTING_PORT).
+			WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusOK
+			}))
 	}
 
 	return wait.ForAll(waitStrategy...).WaitUntilReady(ctx, c)
@@ -180,13 +176,11 @@ func (c *CouchbaseContainer) initializeIsEnterprise(ctx context.Context) error {
 	c.config.isEnterprise = gjson.Get(string(response), "isEnterprise").Bool()
 
 	if !c.config.isEnterprise {
-		for _, s := range c.config.enabledServices {
-			if s.identifier == analytics.identifier {
-				return errors.New("the Analytics Service is only supported with the Enterprise version")
-			}
-			if s.identifier == eventing.identifier {
-				return errors.New("the Eventing Service is only supported with the Enterprise version")
-			}
+		if contains(c.config.enabledServices, analytics) {
+			return errors.New("the Analytics Service is only supported with the Enterprise version")
+		}
+		if contains(c.config.enabledServices, eventing) {
+			return errors.New("the Eventing Service is only supported with the Enterprise version")
 		}
 	}
 
