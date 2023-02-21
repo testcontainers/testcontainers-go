@@ -329,7 +329,7 @@ func (c *CouchbaseContainer) doHttpRequest(ctx context.Context, port, path, meth
 		return nil, err
 	}
 
-	request, err := http.NewRequest(method, url, strings.NewReader(form.Encode()))
+	request, err := http.NewRequestWithContext(ctx, method, url, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
