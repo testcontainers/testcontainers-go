@@ -21,13 +21,12 @@ readonly VERSION_FILE="${ROOT_DIR}/internal/version.go"
 readonly BUMP_TYPE="${BUMP_TYPE:-minor}"
 
 readonly REPOSITORY="github.com/testcontainers/testcontainers-go"
+readonly DIRECTORIES=(examples modules)
 
 function main() {
   readonly version="v$(extractCurrentVersion)"
 
   tagModule "${version}"
-
-  readonly DIRECTORIES=(examples modules)
 
   for directory in "${DIRECTORIES[@]}"
   do
@@ -82,6 +81,25 @@ function bumpVersion() {
     mv ${MKDOCS_FILE}.tmp ${MKDOCS_FILE}
   fi
 
+  for directory in "${DIRECTORIES[@]}"
+  do
+    cd "${ROOT_DIR}/${directory}"
+
+    ls -d */ | grep -v "_template" | while read -r module; do
+      module="${module%?}" # remove trailing slash
+      module_mod_file="${directory}/${module}/go.mod" # e.g. modules/mongodb/go.mod
+      if [[ "${DRY_RUN}" == "true" ]]; then
+        echo "sed \"s/testcontainers-go .*/testcontainers-go ${versionToBump}/g\" ${module_mod_file} > ${module_mod_file}.tmp"
+        echo "mv ${module_mod_file}.tmp ${module_mod_file}"
+      else
+        sed "s/testcontainers-go .*/testcontainers-go ${versionToBump}/g" ${module_mod_file} > ${module_mod_file}.tmp
+        mv ${module_mod_file}.tmp ${module_mod_file}
+      fi
+    done
+
+    make "tidy-${directory}"
+  done
+
   gitCommitVersion "${newVersion}"
 }
 
@@ -123,6 +141,8 @@ function gitCommitVersion() {
   local newVersion="${1}" 
   gitFn add "${VERSION_FILE}"
   gitFn add "${MKDOCS_FILE}"
+  gitFn add "examples/**/go.*"
+  gitFn add "modules/**/go.*"
   gitFn commit -m "chore: prepare for next ${BUMP_TYPE} development cycle (${newVersion})"
 }
 
@@ -141,6 +161,17 @@ function gitState() {
 
 function gitUnstash() {
   gitFn stash pop
+}
+
+# This function is used to run Go commands.
+function goFn() {
+  args=("$@")
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "go ${args[@]}"
+    return
+  fi
+
+  go "${args[@]}"
 }
 
 # This function is used to create a tag for the module.
