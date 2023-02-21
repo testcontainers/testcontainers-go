@@ -9,6 +9,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const defaultPulsarImage = "docker.io/apachepulsar/pulsar:2.10.2"
+const defaultPulsarPort = "6650/tcp"
+const defaultPulsarAdminPort = "8080/tcp"
+
 type PulsarContainer struct {
 	testcontainers.Container
 	URI string
@@ -21,10 +25,10 @@ func StartContainer(ctx context.Context) (*PulsarContainer, error) {
 		return resp == `["standalone"]`
 	}
 	pulsarRequest := testcontainers.ContainerRequest{
-		Image:        "docker.io/apachepulsar/pulsar:2.10.2",
-		ExposedPorts: []string{"6650/tcp", "8080/tcp"},
+		Image:        defaultPulsarImage,
+		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
 		WaitingFor: wait.ForAll(
-			wait.ForHTTP("/admin/v2/clusters").WithPort("8080/tcp").WithResponseMatcher(matchAdminResponse),
+			wait.ForHTTP("/admin/v2/clusters").WithPort(defaultPulsarAdminPort).WithResponseMatcher(matchAdminResponse),
 			wait.ForLog("Successfully updated the policies on namespace public/default"),
 		),
 		Cmd: []string{
@@ -46,7 +50,7 @@ func StartContainer(ctx context.Context) (*PulsarContainer, error) {
 	lc := logConsumer{}
 	c.FollowOutput(&lc)
 
-	pulsarPort, err := c.MappedPort(ctx, "6650/tcp")
+	pulsarPort, err := c.MappedPort(ctx, defaultPulsarPort)
 	if err != nil {
 		return nil, err
 	}
