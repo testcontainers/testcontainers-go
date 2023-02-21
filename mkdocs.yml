@@ -32,6 +32,7 @@ nav:
         - features/networking.md
         - features/garbage_collector.md
         - features/build_from_dockerfile.md
+        - features/docker_auth.md
         - features/docker_compose.md
         - features/follow_logs.md
         - features/override_container_command.md

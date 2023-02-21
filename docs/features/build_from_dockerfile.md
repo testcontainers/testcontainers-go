@@ -81,3 +81,5 @@ req := ContainerRequest{
 	},
 }
 ```
+
+You can discover the credentials by reading the Docker config file. For that, please read more about it [here](./docker_auth.md).
