@@ -2,6 +2,7 @@ package couchbase
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/docker/go-connections/nat"
@@ -268,7 +269,7 @@ func (c *CouchbaseContainer) configureExternalPorts(ctx context.Context) error {
 
 	if contains(c.config.enabledServices, query) {
 		n1ql, _ := c.MappedPort(ctx, QUERY_PORT)
-		n1qlSSL, _ := c.MappedPort(ctx, KV_SSL_PORT)
+		n1qlSSL, _ := c.MappedPort(ctx, QUERY_SSL_PORT)
 
 		body["n1ql"] = string(n1ql)
 		body["n1qlSSL"] = string(n1qlSSL)
@@ -316,6 +317,47 @@ func (c *CouchbaseContainer) configureIndexer(ctx context.Context) error {
 	_, err := c.doHttpRequest(ctx, MGMT_PORT, "/settings/indexes", http.MethodPost, body, true)
 
 	return err
+}
+
+func (c *CouchbaseContainer) createBuckets(ctx context.Context) error {
+	for _, bucket := range c.config.buckets {
+		flushEnabled := "0"
+		if bucket.flushEnabled {
+			flushEnabled = "1"
+		}
+		body := map[string]string{
+			"name":          bucket.name,
+			"ramQuotaMB":    strconv.Itoa(bucket.quota),
+			"flushEnabled":  flushEnabled,
+			"replicaNumber": strconv.Itoa(bucket.numReplicas),
+		}
+
+		if _, err := c.doHttpRequest(ctx, MGMT_PORT, "/pools/default/buckets", http.MethodPost, body, true); err != nil {
+			return err
+		}
+
+		if err := wait.ForHTTP("/pools/default/b/"+bucket.name).
+			WithPort(MGMT_PORT).
+			WithBasicCredentials(c.config.username, c.config.password).
+			WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusOK
+			}).
+			WithResponseMatcher(func(body io.Reader) bool {
+				response, err := io.ReadAll(body)
+				if err != nil {
+					return false
+				}
+				return c.checkAllServicesEnabled(response)
+			}).
+			WaitUntilReady(ctx, c); err != nil {
+			return err
+		}
+
+		// TODO check query service
+		// TODO create primary index
+	}
+
+	return nil
 }
 
 func (c *CouchbaseContainer) doHttpRequest(ctx context.Context, port, path, method string, body map[string]string, auth bool) ([]byte, error) {
@@ -388,4 +430,39 @@ func contains(services []service, service service) bool {
 		}
 	}
 	return false
+}
+
+func (c *CouchbaseContainer) checkAllServicesEnabled(rawConfig []byte) bool {
+	var data map[string]interface{}
+	if err := json.Unmarshal(rawConfig, &data); err != nil {
+		return false
+	}
+
+	nodesExt, ok := data["nodesExt"].([]interface{})
+	if !ok {
+		return false
+	}
+
+	for _, node := range nodesExt {
+		services, ok := node.(map[string]interface{})["services"].(map[string]interface{})
+		if !ok {
+			return false
+		}
+
+		for _, s := range c.config.enabledServices {
+			found := false
+			for serviceName := range services {
+				if strings.HasPrefix(serviceName, s.identifier) {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				return false
+			}
+		}
+	}
+
+	return true
 }

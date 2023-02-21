@@ -34,6 +34,8 @@ type HTTPStrategy struct {
 	Method            string      // http method
 	Body              io.Reader   // http request body
 	PollInterval      time.Duration
+	Username          string
+	Password          string
 }
 
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
@@ -106,6 +108,12 @@ func (ws *HTTPStrategy) WithBody(reqdata io.Reader) *HTTPStrategy {
 // WithPollInterval can be used to override the default polling interval of 100 milliseconds
 func (ws *HTTPStrategy) WithPollInterval(pollInterval time.Duration) *HTTPStrategy {
 	ws.PollInterval = pollInterval
+	return ws
+}
+
+func (ws *HTTPStrategy) WithBasicCredentials(username, password string) *HTTPStrategy {
+	ws.Username = username
+	ws.Password = password
 	return ws
 }
 
@@ -212,6 +220,11 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 			if err != nil {
 				return err
 			}
+
+			if ws.Username != "" {
+				req.SetBasicAuth(ws.Username, ws.Password)
+			}
+
 			resp, err := client.Do(req)
 			if err != nil {
 				continue
