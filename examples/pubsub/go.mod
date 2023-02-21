@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/pubsub v1.28.0
-	github.com/testcontainers/testcontainers-go v0.17.0
+	github.com/testcontainers/testcontainers-go v0.18.0
 	google.golang.org/api v0.110.0
 	google.golang.org/grpc v1.53.0
 	gotest.tools/gotestsum v1.9.0

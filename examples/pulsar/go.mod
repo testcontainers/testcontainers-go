@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/apache/pulsar-client-go v0.9.0
-	github.com/testcontainers/testcontainers-go v0.17.0
+	github.com/testcontainers/testcontainers-go v0.18.0
 	gotest.tools/gotestsum v1.9.0
 )
 
