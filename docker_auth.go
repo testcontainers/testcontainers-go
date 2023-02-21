@@ -22,7 +22,7 @@ func AuthFromDockerConfig(registry string) (types.AuthConfig, error) {
 // GetDockerAuthConfigs returns a map with the auth configs from the docker config file
 // using the registry as the key
 func GetDockerAuthConfigs() (map[string]types.AuthConfig, error) {
-	cfg, err := dockercfg.LoadDefaultConfig()
+	cfg, err := getDockerConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -41,4 +41,15 @@ func GetDockerAuthConfigs() (map[string]types.AuthConfig, error) {
 	}
 
 	return cfgs, nil
+}
+
+// getDockerConfig returns the docker config file. It internally checks the DOCKER_CONFIG
+// environment variable and if it is not set, it will load the default config file
+func getDockerConfig() (dockercfg.Config, error) {
+	cfg, err := dockercfg.LoadDefaultConfig()
+	if err != nil {
+		return cfg, err
+	}
+
+	return cfg, nil
 }
