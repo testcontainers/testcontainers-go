@@ -7,13 +7,40 @@ import (
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
+	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c, err := StartContainer(ctx)
+	nwName := "pulsar-test"
+	_, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
+		NetworkRequest: testcontainers.NetworkRequest{
+			Name: nwName,
+		},
+	})
+	require.NoError(t, err)
+
+	c, err := StartContainer(
+		ctx,
+		WithConfigModifier(func(config *container.Config) {
+			config.Env = append(config.Env, "PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m")
+		}),
+		WithHostConfigModifier(func(hostConfig *container.HostConfig) {
+			hostConfig.Resources = container.Resources{
+				Memory: 1024 * 1024 * 1024,
+			}
+		}),
+		WithEndpointSettingsModifier(func(settings map[string]*network.EndpointSettings) {
+			settings[nwName] = &network.EndpointSettings{
+				Aliases: []string{"pulsar"},
+			}
+		}),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
