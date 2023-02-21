@@ -32,6 +32,13 @@ func WithPulsarImage(image string) PulsarContainerOptions {
 	}
 }
 
+// WithWaitingFor allows to override the default waiting strategy
+func WithWaitingFor(waitingFor wait.Strategy) PulsarContainerOptions {
+	return func(req *testcontainers.ContainerRequest) {
+		req.WaitingFor = waitingFor
+	}
+}
+
 func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*PulsarContainer, error) {
 	matchAdminResponse := func(r io.Reader) bool {
 		respBytes, _ := io.ReadAll(r)
