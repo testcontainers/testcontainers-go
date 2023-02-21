@@ -25,75 +25,100 @@ func TestPulsar(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	c, err := StartContainer(
-		ctx,
-		WithConfigModifier(func(config *container.Config) {
-			config.Env = append(config.Env, "PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m")
-		}),
-		WithHostConfigModifier(func(hostConfig *container.HostConfig) {
-			hostConfig.Resources = container.Resources{
-				Memory: 1024 * 1024 * 1024,
+	tests := []struct {
+		name string
+		opts []PulsarContainerOptions
+	}{
+		{
+			name: "default",
+		},
+		{
+			name: "with modifiers",
+			opts: []PulsarContainerOptions{
+				WithConfigModifier(func(config *container.Config) {
+					config.Env = append(config.Env, "PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m")
+				}),
+				WithHostConfigModifier(func(hostConfig *container.HostConfig) {
+					hostConfig.Resources = container.Resources{
+						Memory: 1024 * 1024 * 1024,
+					}
+				}),
+				WithEndpointSettingsModifier(func(settings map[string]*network.EndpointSettings) {
+					settings[nwName] = &network.EndpointSettings{
+						Aliases: []string{"pulsar"},
+					}
+				}),
+			},
+		},
+		{
+			name: "with functions worker",
+			opts: []PulsarContainerOptions{
+				WithFunctionsWorker(),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := StartContainer(
+				ctx,
+				tt.opts...,
+			)
+			if err != nil {
+				t.Fatal(err)
 			}
-		}),
-		WithEndpointSettingsModifier(func(settings map[string]*network.EndpointSettings) {
-			settings[nwName] = &network.EndpointSettings{
-				Aliases: []string{"pulsar"},
+
+			pc, err := pulsar.NewClient(pulsar.ClientOptions{
+				URL:               c.URI,
+				OperationTimeout:  30 * time.Second,
+				ConnectionTimeout: 30 * time.Second,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
-		}),
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
+			t.Cleanup(func() { pc.Close() })
 
-	pc, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL:               c.URI,
-		OperationTimeout:  30 * time.Second,
-		ConnectionTimeout: 30 * time.Second,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { pc.Close() })
+			consumer, err := pc.Subscribe(pulsar.ConsumerOptions{
+				Topic:            "test-topic",
+				SubscriptionName: "pulsar-test",
+				Type:             pulsar.Exclusive,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { consumer.Close() })
 
-	consumer, err := pc.Subscribe(pulsar.ConsumerOptions{
-		Topic:            "test-topic",
-		SubscriptionName: "pulsar-test",
-		Type:             pulsar.Exclusive,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { consumer.Close() })
+			msgChan := make(chan []byte)
+			go func() {
+				msg, err := consumer.Receive(ctx)
+				if err != nil {
+					fmt.Println("failed to receive message", err)
+					return
+				}
+				msgChan <- msg.Payload()
+				consumer.Ack(msg)
+			}()
 
-	msgChan := make(chan []byte)
-	go func() {
-		msg, err := consumer.Receive(ctx)
-		if err != nil {
-			fmt.Println("failed to receive message", err)
-			return
-		}
-		msgChan <- msg.Payload()
-		consumer.Ack(msg)
-	}()
+			producer, err := pc.CreateProducer(pulsar.ProducerOptions{
+				Topic: "test-topic",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	producer, err := pc.CreateProducer(pulsar.ProducerOptions{
-		Topic: "test-topic",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+			producer.Send(ctx, &pulsar.ProducerMessage{
+				Payload: []byte("hello world"),
+			})
 
-	producer.Send(ctx, &pulsar.ProducerMessage{
-		Payload: []byte("hello world"),
-	})
-
-	ticker := time.NewTicker(1 * time.Minute)
-	select {
-	case <-ticker.C:
-		t.Fatal("did not receive message in time")
-	case msg := <-msgChan:
-		if string(msg) != "hello world" {
-			t.Fatal("received unexpected message bytes")
-		}
+			ticker := time.NewTicker(1 * time.Minute)
+			select {
+			case <-ticker.C:
+				t.Fatal("did not receive message in time")
+			case msg := <-msgChan:
+				if string(msg) != "hello world" {
+					t.Fatal("received unexpected message bytes")
+				}
+			}
+		})
 	}
 }

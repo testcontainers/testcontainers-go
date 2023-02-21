@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -14,6 +15,17 @@ import (
 const defaultPulsarImage = "docker.io/apachepulsar/pulsar:2.10.2"
 const defaultPulsarPort = "6650/tcp"
 const defaultPulsarAdminPort = "8080/tcp"
+const defaultPulsarCmd = "/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone"
+const detaultPulsarCmdWithoutFunctionsWorker = "--no-functions-worker -nss"
+
+var defaultWaitStrategies = []wait.Strategy{
+	wait.ForHTTP("/admin/v2/clusters").WithPort(defaultPulsarAdminPort).WithResponseMatcher(func(r io.Reader) bool {
+		respBytes, _ := io.ReadAll(r)
+		resp := string(respBytes)
+		return resp == `["standalone"]`
+	}),
+	wait.ForLog("Successfully updated the policies on namespace public/default"),
+}
 
 type PulsarContainer struct {
 	testcontainers.Container
@@ -27,13 +39,6 @@ type PulsarContainerRequest struct {
 // PulsarContainerOptions is a function that can be used to configure the Pulsar container
 type PulsarContainerOptions func(req *PulsarContainerRequest)
 
-// WithCmd allows to override the default command for the container
-func WithCmd(cmd []string) PulsarContainerOptions {
-	return func(req *PulsarContainerRequest) {
-		req.Cmd = cmd
-	}
-}
-
 // WithConfigModifier allows to override the default container config
 func WithConfigModifier(modifier func(config *container.Config)) PulsarContainerOptions {
 	return func(req *PulsarContainerRequest) {
@@ -45,6 +50,20 @@ func WithConfigModifier(modifier func(config *container.Config)) PulsarContainer
 func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) PulsarContainerOptions {
 	return func(req *PulsarContainerRequest) {
 		req.EnpointSettingsModifier = modifier
+	}
+}
+
+// WithFunctionsWorker enables the functions worker, which will override the default pulsar command
+// and add a waiting strategy for the functions worker
+func WithFunctionsWorker() PulsarContainerOptions {
+	return func(req *PulsarContainerRequest) {
+		req.Cmd = []string{"/bin/bash", "-c", defaultPulsarCmd}
+
+		// add the waiting strategy for the functions worker
+		ws := wait.ForAll(defaultWaitStrategies...)
+		ws.Strategies = append(ws.Strategies, wait.ForLog("Function worker service started"))
+
+		req.WaitingFor = ws
 	}
 }
 
@@ -66,13 +85,6 @@ func WithPulsarImage(image string) PulsarContainerOptions {
 	}
 }
 
-// WithWaitingFor allows to override the default waiting strategy
-func WithWaitingFor(waitingFor wait.Strategy) PulsarContainerOptions {
-	return func(req *PulsarContainerRequest) {
-		req.WaitingFor = waitingFor
-	}
-}
-
 // StartContainer creates an instance of the Pulsar container type, being possible to pass a custom request and options
 // The created container will use the following defaults:
 // - image: docker.io/apachepulsar/pulsar:2.10.2
@@ -82,23 +94,11 @@ func WithWaitingFor(waitingFor wait.Strategy) PulsarContainerOptions {
 // 		- the log message "Successfully updated the policies on namespace public/default"
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
 func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*PulsarContainer, error) {
-	matchAdminResponse := func(r io.Reader) bool {
-		respBytes, _ := io.ReadAll(r)
-		resp := string(respBytes)
-		return resp == `["standalone"]`
-	}
 	req := testcontainers.ContainerRequest{
 		Image:        defaultPulsarImage,
 		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
-		WaitingFor: wait.ForAll(
-			wait.ForHTTP("/admin/v2/clusters").WithPort(defaultPulsarAdminPort).WithResponseMatcher(matchAdminResponse),
-			wait.ForLog("Successfully updated the policies on namespace public/default"),
-		),
-		Cmd: []string{
-			"/bin/bash",
-			"-c",
-			"/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss",
-		},
+		WaitingFor:   wait.ForAll(defaultWaitStrategies...),
+		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, detaultPulsarCmdWithoutFunctionsWorker}, " ")},
 	}
 
 	pulsarRequest := PulsarContainerRequest{
