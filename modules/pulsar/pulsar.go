@@ -21,6 +21,15 @@ type PulsarContainer struct {
 // PulsarContainerOptions is a function that can be used to configure the Pulsar container
 type PulsarContainerOptions func(req *testcontainers.ContainerRequest)
 
+// WithEnv will merge the given environment variables with the default ones
+func WithEnv(env map[string]string) PulsarContainerOptions {
+	return func(req *testcontainers.ContainerRequest) {
+		for k, v := range env {
+			req.Env[k] = v
+		}
+	}
+}
+
 // WithPulsarImage allows to override the default Pulsar image
 func WithPulsarImage(image string) PulsarContainerOptions {
 	return func(req *testcontainers.ContainerRequest) {
