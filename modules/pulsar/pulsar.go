@@ -21,6 +21,13 @@ type PulsarContainer struct {
 // PulsarContainerOptions is a function that can be used to configure the Pulsar container
 type PulsarContainerOptions func(req *testcontainers.ContainerRequest)
 
+// WithCmd allows to override the default command for the container
+func WithCmd(cmd []string) PulsarContainerOptions {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Cmd = cmd
+	}
+}
+
 // WithEnv will merge the given environment variables with the default ones
 func WithEnv(env map[string]string) PulsarContainerOptions {
 	return func(req *testcontainers.ContainerRequest) {
