@@ -20,40 +20,44 @@ type PulsarContainer struct {
 	URI string
 }
 
+type PulsarContainerRequest struct {
+	testcontainers.ContainerRequest
+}
+
 // PulsarContainerOptions is a function that can be used to configure the Pulsar container
-type PulsarContainerOptions func(req *testcontainers.ContainerRequest)
+type PulsarContainerOptions func(req *PulsarContainerRequest)
 
 // WithCmd allows to override the default command for the container
 func WithCmd(cmd []string) PulsarContainerOptions {
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *PulsarContainerRequest) {
 		req.Cmd = cmd
 	}
 }
 
 // WithConfigModifier allows to override the default container config
 func WithConfigModifier(modifier func(config *container.Config)) PulsarContainerOptions {
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *PulsarContainerRequest) {
 		req.ConfigModifier = modifier
 	}
 }
 
 // WithEndpointSettingsModifier allows to override the default endpoint settings
 func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) PulsarContainerOptions {
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *PulsarContainerRequest) {
 		req.EnpointSettingsModifier = modifier
 	}
 }
 
 // WithHostConfigModifier allows to override the default host config
 func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) PulsarContainerOptions {
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *PulsarContainerRequest) {
 		req.HostConfigModifier = modifier
 	}
 }
 
 // WithPulsarImage allows to override the default Pulsar image
 func WithPulsarImage(image string) PulsarContainerOptions {
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *PulsarContainerRequest) {
 		if image == "" {
 			image = defaultPulsarImage
 		}
@@ -64,7 +68,7 @@ func WithPulsarImage(image string) PulsarContainerOptions {
 
 // WithWaitingFor allows to override the default waiting strategy
 func WithWaitingFor(waitingFor wait.Strategy) PulsarContainerOptions {
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *PulsarContainerRequest) {
 		req.WaitingFor = waitingFor
 	}
 }
@@ -83,7 +87,7 @@ func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*Pulsa
 		resp := string(respBytes)
 		return resp == `["standalone"]`
 	}
-	pulsarRequest := testcontainers.ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image:        defaultPulsarImage,
 		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
 		WaitingFor: wait.ForAll(
@@ -97,12 +101,16 @@ func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*Pulsa
 		},
 	}
 
+	pulsarRequest := PulsarContainerRequest{
+		ContainerRequest: req,
+	}
+
 	for _, opt := range opts {
 		opt(&pulsarRequest)
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: pulsarRequest,
+		ContainerRequest: pulsarRequest.ContainerRequest,
 		Started:          true,
 	})
 	if err != nil {
