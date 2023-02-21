@@ -245,7 +245,62 @@ func (c *CouchbaseContainer) configureAdminUser(ctx context.Context) error {
 }
 
 func (c *CouchbaseContainer) configureExternalPorts(ctx context.Context) error {
-	panic("implement it")
+	host, _ := c.Host(ctx)
+	mgmt, _ := c.MappedPort(ctx, MGMT_PORT)
+	mgmtSSL, _ := c.MappedPort(ctx, MGMT_SSL_PORT)
+	body := map[string]string{
+		"hostname": host,
+		"mgmt":     string(mgmt),
+		"mgmtSSL":  string(mgmtSSL),
+	}
+
+	if contains(c.config.enabledServices, kv) {
+		kv, _ := c.MappedPort(ctx, KV_PORT)
+		kvSSL, _ := c.MappedPort(ctx, KV_SSL_PORT)
+		capi, _ := c.MappedPort(ctx, VIEW_PORT)
+		capiSSL, _ := c.MappedPort(ctx, VIEW_SSL_PORT)
+
+		body["kv"] = string(kv)
+		body["kvSSL"] = string(kvSSL)
+		body["capi"] = string(capi)
+		body["capiSSL"] = string(capiSSL)
+	}
+
+	if contains(c.config.enabledServices, query) {
+		n1ql, _ := c.MappedPort(ctx, QUERY_PORT)
+		n1qlSSL, _ := c.MappedPort(ctx, KV_SSL_PORT)
+
+		body["n1ql"] = string(n1ql)
+		body["n1qlSSL"] = string(n1qlSSL)
+	}
+
+	if contains(c.config.enabledServices, search) {
+		fts, _ := c.MappedPort(ctx, SEARCH_PORT)
+		ftsSSL, _ := c.MappedPort(ctx, SEARCH_SSL_PORT)
+
+		body["fts"] = string(fts)
+		body["ftsSSL"] = string(ftsSSL)
+	}
+
+	if contains(c.config.enabledServices, analytics) {
+		cbas, _ := c.MappedPort(ctx, ANALYTICS_PORT)
+		cbasSSL, _ := c.MappedPort(ctx, ANALYTICS_SSL_PORT)
+
+		body["cbas"] = string(cbas)
+		body["cbasSSL"] = string(cbasSSL)
+	}
+
+	if contains(c.config.enabledServices, eventing) {
+		eventingAdminPort, _ := c.MappedPort(ctx, EVENTING_PORT)
+		eventingSSL, _ := c.MappedPort(ctx, EVENTING_SSL_PORT)
+
+		body["eventingAdminPort"] = string(eventingAdminPort)
+		body["eventingSSL"] = string(eventingSSL)
+	}
+
+	_, err := c.doHttpRequest(ctx, MGMT_PORT, "/node/controller/setupAlternateAddresses/external", http.MethodPut, body, true)
+
+	return err
 }
 
 func (c *CouchbaseContainer) configureIndexer(ctx context.Context) error {
