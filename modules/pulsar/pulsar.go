@@ -18,7 +18,21 @@ type PulsarContainer struct {
 	URI string
 }
 
-func StartContainer(ctx context.Context) (*PulsarContainer, error) {
+// PulsarContainerOptions is a function that can be used to configure the Pulsar container
+type PulsarContainerOptions func(req *testcontainers.ContainerRequest)
+
+// WithPulsarImage allows to override the default Pulsar image
+func WithPulsarImage(image string) PulsarContainerOptions {
+	return func(req *testcontainers.ContainerRequest) {
+		if image == "" {
+			image = defaultPulsarImage
+		}
+
+		req.Image = image
+	}
+}
+
+func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*PulsarContainer, error) {
 	matchAdminResponse := func(r io.Reader) bool {
 		respBytes, _ := io.ReadAll(r)
 		resp := string(respBytes)
@@ -37,6 +51,11 @@ func StartContainer(ctx context.Context) (*PulsarContainer, error) {
 			"/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss",
 		},
 	}
+
+	for _, opt := range opts {
+		opt(&pulsarRequest)
+	}
+
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: pulsarRequest,
 		Started:          true,
