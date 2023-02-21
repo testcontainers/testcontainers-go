@@ -163,17 +163,6 @@ function gitUnstash() {
   gitFn stash pop
 }
 
-# This function is used to run Go commands.
-function goFn() {
-  args=("$@")
-  if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "go ${args[@]}"
-    return
-  fi
-
-  go "${args[@]}"
-}
-
 # This function is used to create a tag for the module.
 function tagModule() {
   local module_tag="${1}"
