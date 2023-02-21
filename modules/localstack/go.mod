@@ -11,7 +11,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/imdario/mergo v0.3.13
 	github.com/stretchr/testify v1.8.1
-	github.com/testcontainers/testcontainers-go v0.17.0
+	github.com/testcontainers/testcontainers-go v0.18.0
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
 	gotest.tools/gotestsum v1.9.0
 )

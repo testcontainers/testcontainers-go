@@ -6,7 +6,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/lib/pq v0.0.0-20150723085316-0dad96c0b94f
 	github.com/stretchr/testify v1.8.1
-	github.com/testcontainers/testcontainers-go v0.17.0
+	github.com/testcontainers/testcontainers-go v0.18.0
 	gotest.tools/gotestsum v1.9.0
 )
 

@@ -6,7 +6,7 @@ require (
 	github.com/Shopify/toxiproxy/v2 v2.5.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.0
-	github.com/testcontainers/testcontainers-go v0.17.0
+	github.com/testcontainers/testcontainers-go v0.18.0
 	gotest.tools/gotestsum v1.9.0
 )
 
