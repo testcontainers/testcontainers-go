@@ -125,7 +125,7 @@ function extractCurrentVersion() {
   cat "${VERSION_FILE}" | grep 'const Version = ' | cut -d '"' -f 2
 }
 
-# This function is used to commit the version.go file.
+# This function is used to run git commands
 function gitFn() {
   args=("$@")
   if [[ "${DRY_RUN}" == "true" ]]; then
