@@ -6,6 +6,10 @@ type service struct {
 	ports          []string
 }
 
+func (s service) hasQuota() bool {
+	return s.minimumQuotaMb > 0
+}
+
 var (
 	kv = service{
 		identifier:     "kv",
