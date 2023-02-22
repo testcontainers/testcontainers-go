@@ -34,14 +34,14 @@ func TestPulsar(t *testing.T) {
 
 	tests := []struct {
 		name string
-		opts []testcontainerspulsar.PulsarContainerOptions
+		opts []testcontainerspulsar.ContainerOptions
 	}{
 		{
 			name: "default",
 		},
 		{
 			name: "with modifiers",
-			opts: []testcontainerspulsar.PulsarContainerOptions{
+			opts: []testcontainerspulsar.ContainerOptions{
 				testcontainerspulsar.WithConfigModifier(func(config *container.Config) {
 					config.Env = append(config.Env, "PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m")
 				}),
@@ -59,19 +59,19 @@ func TestPulsar(t *testing.T) {
 		},
 		{
 			name: "with functions worker",
-			opts: []testcontainerspulsar.PulsarContainerOptions{
+			opts: []testcontainerspulsar.ContainerOptions{
 				testcontainerspulsar.WithFunctionsWorker(),
 			},
 		},
 		{
 			name: "with transactions",
-			opts: []testcontainerspulsar.PulsarContainerOptions{
+			opts: []testcontainerspulsar.ContainerOptions{
 				testcontainerspulsar.WithTransactions(),
 			},
 		},
 		{
 			name: "with log consumers",
-			opts: []testcontainerspulsar.PulsarContainerOptions{
+			opts: []testcontainerspulsar.ContainerOptions{
 				testcontainerspulsar.WithLogConsumers(&testLogConsumer{}),
 			},
 		},

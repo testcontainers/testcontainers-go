@@ -28,38 +28,38 @@ var defaultWaitStrategies = wait.ForAll(
 	wait.ForLog("Successfully updated the policies on namespace public/default"),
 )
 
-type PulsarContainer struct {
+type Container struct {
 	testcontainers.Container
 	LogConsumers []testcontainers.LogConsumer // Needs to be exported to control the stop from the caller
 	URI          string
 }
 
-type PulsarContainerRequest struct {
+type ContainerRequest struct {
 	testcontainers.ContainerRequest
 	logConsumers []testcontainers.LogConsumer
 }
 
-// PulsarContainerOptions is a function that can be used to configure the Pulsar container
-type PulsarContainerOptions func(req *PulsarContainerRequest)
+// ContainerOptions is a function that can be used to configure the Pulsar container
+type ContainerOptions func(req *ContainerRequest)
 
 // WithConfigModifier allows to override the default container config
-func WithConfigModifier(modifier func(config *container.Config)) PulsarContainerOptions {
-	return func(req *PulsarContainerRequest) {
+func WithConfigModifier(modifier func(config *container.Config)) ContainerOptions {
+	return func(req *ContainerRequest) {
 		req.ConfigModifier = modifier
 	}
 }
 
 // WithEndpointSettingsModifier allows to override the default endpoint settings
-func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) PulsarContainerOptions {
-	return func(req *PulsarContainerRequest) {
+func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) ContainerOptions {
+	return func(req *ContainerRequest) {
 		req.EnpointSettingsModifier = modifier
 	}
 }
 
 // WithFunctionsWorker enables the functions worker, which will override the default pulsar command
 // and add a waiting strategy for the functions worker
-func WithFunctionsWorker() PulsarContainerOptions {
-	return func(req *PulsarContainerRequest) {
+func WithFunctionsWorker() ContainerOptions {
+	return func(req *ContainerRequest) {
 		req.Cmd = []string{"/bin/bash", "-c", defaultPulsarCmd}
 
 		// add the waiting strategy for the functions worker
@@ -73,23 +73,23 @@ func WithFunctionsWorker() PulsarContainerOptions {
 }
 
 // WithHostConfigModifier allows to override the default host config
-func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) PulsarContainerOptions {
-	return func(req *PulsarContainerRequest) {
+func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) ContainerOptions {
+	return func(req *ContainerRequest) {
 		req.HostConfigModifier = modifier
 	}
 }
 
 // WithLogConsumer allows to add log consumers to the container. They will be automatically started and stopped by the StartContainer function
 // but it's a responsibility of the caller to stop them calling StopLogProducer
-func WithLogConsumers(consumer ...testcontainers.LogConsumer) PulsarContainerOptions {
-	return func(req *PulsarContainerRequest) {
+func WithLogConsumers(consumer ...testcontainers.LogConsumer) ContainerOptions {
+	return func(req *ContainerRequest) {
 		req.logConsumers = append(req.logConsumers, consumer...)
 	}
 }
 
 // WithPulsarImage allows to override the default Pulsar image
-func WithPulsarImage(image string) PulsarContainerOptions {
-	return func(req *PulsarContainerRequest) {
+func WithPulsarImage(image string) ContainerOptions {
+	return func(req *ContainerRequest) {
 		if image == "" {
 			image = defaultPulsarImage
 		}
@@ -98,8 +98,8 @@ func WithPulsarImage(image string) PulsarContainerOptions {
 	}
 }
 
-func WithTransactions() PulsarContainerOptions {
-	return func(req *PulsarContainerRequest) {
+func WithTransactions() ContainerOptions {
+	return func(req *ContainerRequest) {
 		req.ContainerRequest.Env["PULSAR_PREFIX_transactionCoordinatorEnabled"] = "true"
 
 		// add the waiting strategy for the transaction topic
@@ -122,7 +122,7 @@ func WithTransactions() PulsarContainerOptions {
 //		- the Pulsar admin API ("/admin/v2/clusters") to be ready on port 8080/tcp and return the response `["standalone"]`
 // 		- the log message "Successfully updated the policies on namespace public/default"
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
-func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*PulsarContainer, error) {
+func StartContainer(ctx context.Context, opts ...ContainerOptions) (*Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultPulsarImage,
 		Env:          map[string]string{},
@@ -131,7 +131,7 @@ func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*Pulsa
 		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, detaultPulsarCmdWithoutFunctionsWorker}, " ")},
 	}
 
-	pulsarRequest := PulsarContainerRequest{
+	pulsarRequest := ContainerRequest{
 		ContainerRequest: req,
 		logConsumers:     []testcontainers.LogConsumer{},
 	}
@@ -153,7 +153,7 @@ func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*Pulsa
 		return nil, err
 	}
 
-	pc := &PulsarContainer{
+	pc := &Container{
 		Container:    c,
 		LogConsumers: pulsarRequest.logConsumers,
 		URI:          fmt.Sprintf("pulsar://127.0.0.1:%v", pulsarPort.Int()),
