@@ -56,6 +56,12 @@ func TestPulsar(t *testing.T) {
 				WithFunctionsWorker(),
 			},
 		},
+		{
+			name: "with transactions",
+			opts: []PulsarContainerOptions{
+				WithTransactions(),
+			},
+		},
 	}
 
 	for _, tt := range tests {

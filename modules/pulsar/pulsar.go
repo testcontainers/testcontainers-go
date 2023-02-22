@@ -17,15 +17,16 @@ const defaultPulsarPort = "6650/tcp"
 const defaultPulsarAdminPort = "8080/tcp"
 const defaultPulsarCmd = "/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone"
 const detaultPulsarCmdWithoutFunctionsWorker = "--no-functions-worker -nss"
+const transactionTopicEndpoint = "/admin/v2/persistent/pulsar/system/transaction_coordinator_assign/partitions"
 
-var defaultWaitStrategies = []wait.Strategy{
+var defaultWaitStrategies = wait.ForAll(
 	wait.ForHTTP("/admin/v2/clusters").WithPort(defaultPulsarAdminPort).WithResponseMatcher(func(r io.Reader) bool {
 		respBytes, _ := io.ReadAll(r)
 		resp := string(respBytes)
 		return resp == `["standalone"]`
 	}),
 	wait.ForLog("Successfully updated the policies on namespace public/default"),
-}
+)
 
 type PulsarContainer struct {
 	testcontainers.Container
@@ -60,10 +61,12 @@ func WithFunctionsWorker() PulsarContainerOptions {
 		req.Cmd = []string{"/bin/bash", "-c", defaultPulsarCmd}
 
 		// add the waiting strategy for the functions worker
-		ws := wait.ForAll(defaultWaitStrategies...)
-		ws.Strategies = append(ws.Strategies, wait.ForLog("Function worker service started"))
+		defaultWaitStrategies.Strategies = append(
+			defaultWaitStrategies.Strategies,
+			wait.ForLog("Function worker service started"),
+		)
 
-		req.WaitingFor = ws
+		req.WaitingFor = defaultWaitStrategies
 	}
 }
 
@@ -85,6 +88,26 @@ func WithPulsarImage(image string) PulsarContainerOptions {
 	}
 }
 
+func WithTransactions() PulsarContainerOptions {
+	return func(req *PulsarContainerRequest) {
+		if req.Env == nil {
+			req.Env = make(map[string]string)
+		}
+
+		req.ContainerRequest.Env["PULSAR_PREFIX_transactionCoordinatorEnabled"] = "true"
+
+		// add the waiting strategy for the transaction topic
+		defaultWaitStrategies.Strategies = append(
+			defaultWaitStrategies.Strategies,
+			wait.ForHTTP(transactionTopicEndpoint).WithPort(defaultPulsarAdminPort).WithStatusCodeMatcher(func(statusCode int) bool {
+				return statusCode == 200
+			}),
+		)
+
+		req.WaitingFor = defaultWaitStrategies
+	}
+}
+
 // StartContainer creates an instance of the Pulsar container type, being possible to pass a custom request and options
 // The created container will use the following defaults:
 // - image: docker.io/apachepulsar/pulsar:2.10.2
@@ -97,7 +120,7 @@ func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*Pulsa
 	req := testcontainers.ContainerRequest{
 		Image:        defaultPulsarImage,
 		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
-		WaitingFor:   wait.ForAll(defaultWaitStrategies...),
+		WaitingFor:   defaultWaitStrategies,
 		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, detaultPulsarCmdWithoutFunctionsWorker}, " ")},
 	}
 
