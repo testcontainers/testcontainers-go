@@ -24,15 +24,15 @@ jobs:
         uses: actions/checkout@v3
 
       - name: modVerify
-        working-directory: ./examples/pulsar
+        working-directory: ./modules/pulsar
         run: go mod verify
 
       - name: modTidy
-        working-directory: ./examples/pulsar
+        working-directory: ./modules/pulsar
         run: make tools-tidy
 
       - name: gotestsum
-        working-directory: ./examples/pulsar
+        working-directory: ./modules/pulsar
         run: make test-unit
 
       - name: Run checker
