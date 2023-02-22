@@ -2,7 +2,10 @@ package pulsar_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -139,9 +142,11 @@ func TestPulsar(t *testing.T) {
 			}
 			t.Cleanup(func() { pc.Close() })
 
+			subscriptionName := "pulsar-test"
+
 			consumer, err := pc.Subscribe(pulsar.ConsumerOptions{
 				Topic:            "test-topic",
-				SubscriptionName: "pulsar-test",
+				SubscriptionName: subscriptionName,
 				Type:             pulsar.Exclusive,
 			})
 			if err != nil {
@@ -180,6 +185,31 @@ func TestPulsar(t *testing.T) {
 					t.Fatal("received unexpected message bytes")
 				}
 			}
+
+			// get topic statistics using the Admin endpoint
+			httpClient := http.Client{
+				Timeout: 30 * time.Second,
+			}
+
+			resp, err := httpClient.Get(serviceURL + "/admin/v2/persistent/public/default/test-topic/stats")
+			require.Nil(t, err)
+			defer resp.Body.Close()
+
+			body, err := io.ReadAll(resp.Body)
+			require.Nil(t, err)
+
+			var stats map[string]interface{}
+			err = json.Unmarshal(body, &stats)
+			require.Nil(t, err)
+
+			subscriptions := stats["subscriptions"]
+			require.NotNil(t, subscriptions)
+
+			subscriptionsMap := subscriptions.(map[string]interface{})
+
+			// check that the subscription exists
+			_, ok := subscriptionsMap[subscriptionName]
+			assert.True(t, ok)
 		})
 	}
 }
