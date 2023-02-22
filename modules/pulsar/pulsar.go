@@ -30,11 +30,13 @@ var defaultWaitStrategies = wait.ForAll(
 
 type PulsarContainer struct {
 	testcontainers.Container
-	URI string
+	logConsumers []testcontainers.LogConsumer
+	URI          string
 }
 
 type PulsarContainerRequest struct {
 	testcontainers.ContainerRequest
+	logConsumers []testcontainers.LogConsumer
 }
 
 // PulsarContainerOptions is a function that can be used to configure the Pulsar container
@@ -74,6 +76,13 @@ func WithFunctionsWorker() PulsarContainerOptions {
 func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) PulsarContainerOptions {
 	return func(req *PulsarContainerRequest) {
 		req.HostConfigModifier = modifier
+	}
+}
+
+// WithLogConsumer allows to add log consumers to the container
+func WithLogConsumers(consumer ...testcontainers.LogConsumer) PulsarContainerOptions {
+	return func(req *PulsarContainerRequest) {
+		req.logConsumers = append(req.logConsumers, consumer...)
 	}
 }
 
@@ -126,6 +135,7 @@ func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*Pulsa
 
 	pulsarRequest := PulsarContainerRequest{
 		ContainerRequest: req,
+		logConsumers:     []testcontainers.LogConsumer{},
 	}
 
 	for _, opt := range opts {
@@ -140,24 +150,23 @@ func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*Pulsa
 		return nil, err
 	}
 
-	c.StartLogProducer(ctx)
-	defer c.StopLogProducer()
-	lc := logConsumer{}
-	c.FollowOutput(&lc)
-
 	pulsarPort, err := c.MappedPort(ctx, defaultPulsarPort)
 	if err != nil {
 		return nil, err
 	}
 
-	return &PulsarContainer{
-		Container: c,
-		URI:       fmt.Sprintf("pulsar://127.0.0.1:%v", pulsarPort.Int()),
-	}, nil
-}
+	pc := &PulsarContainer{
+		Container:    c,
+		logConsumers: pulsarRequest.logConsumers,
+		URI:          fmt.Sprintf("pulsar://127.0.0.1:%v", pulsarPort.Int()),
+	}
 
-type logConsumer struct{}
+	if len(pc.logConsumers) > 0 {
+		c.StartLogProducer(ctx)
+	}
+	for _, lc := range pc.logConsumers {
+		c.FollowOutput(lc)
+	}
 
-func (lc *logConsumer) Accept(l testcontainers.Log) {
-	fmt.Print(string(l.Content))
+	return pc, nil
 }

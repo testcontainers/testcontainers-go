@@ -13,6 +13,12 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
+type testLogConsumer struct{}
+
+func (lc *testLogConsumer) Accept(l testcontainers.Log) {
+	fmt.Print(string(l.Content))
+}
+
 func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -62,6 +68,12 @@ func TestPulsar(t *testing.T) {
 				WithTransactions(),
 			},
 		},
+		{
+			name: "with log consumers",
+			opts: []PulsarContainerOptions{
+				WithLogConsumers(&testLogConsumer{}),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -72,6 +84,10 @@ func TestPulsar(t *testing.T) {
 			)
 			if err != nil {
 				t.Fatal(err)
+			}
+
+			if len(c.logConsumers) > 0 {
+				defer c.StopLogProducer()
 			}
 
 			pc, err := pulsar.NewClient(pulsar.ClientOptions{
