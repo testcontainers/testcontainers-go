@@ -109,9 +109,7 @@ func TestPulsar(t *testing.T) {
 				tt.opts...,
 			)
 			// }
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.Nil(t, err)
 
 			if len(c.LogConsumers) > 0 {
 				defer c.StopLogProducer()
@@ -119,14 +117,10 @@ func TestPulsar(t *testing.T) {
 
 			// getPulsarURLs {
 			brokerURL, err := c.BrokerURL(ctx)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.Nil(t, err)
 
 			serviceURL, err := c.HTTPServiceURL(ctx)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.Nil(t, err)
 			// }
 
 			assert.True(t, strings.HasPrefix(brokerURL, "pulsar://"))
@@ -137,9 +131,7 @@ func TestPulsar(t *testing.T) {
 				OperationTimeout:  30 * time.Second,
 				ConnectionTimeout: 30 * time.Second,
 			})
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.Nil(t, err)
 			t.Cleanup(func() { pc.Close() })
 
 			subscriptionName := "pulsar-test"
@@ -149,9 +141,7 @@ func TestPulsar(t *testing.T) {
 				SubscriptionName: subscriptionName,
 				Type:             pulsar.Exclusive,
 			})
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.Nil(t, err)
 			t.Cleanup(func() { consumer.Close() })
 
 			msgChan := make(chan []byte)
@@ -168,9 +158,7 @@ func TestPulsar(t *testing.T) {
 			producer, err := pc.CreateProducer(pulsar.ProducerOptions{
 				Topic: "test-topic",
 			})
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.Nil(t, err)
 
 			producer.Send(ctx, &pulsar.ProducerMessage{
 				Payload: []byte("hello world"),
