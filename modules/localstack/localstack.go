@@ -49,12 +49,7 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 		Binds:        []string{fmt.Sprintf("%s:/var/run/docker.sock", testcontainersdocker.ExtractDockerHost(ctx))},
 		WaitingFor:   wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120 * time.Second),
 		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
-		Env: map[string]string{
-			"AWS_ACCESS_KEY_ID":     defaultAccessKeyID,
-			"AWS_SECRET_ACCESS_KEY": defaultSecretAccessKey,
-			"AWS_SESSION_TOKEN":     defaultToken,
-			"DEFAULT_REGION":        defaultRegion,
-		},
+		Env:          map[string]string{},
 	}
 	// }
 
