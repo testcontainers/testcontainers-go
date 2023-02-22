@@ -98,7 +98,6 @@ func TestStart(t *testing.T) {
 		ctx,
 		OverrideContainerRequest(testcontainers.ContainerRequest{
 			Image: fmt.Sprintf("localstack/localstack:%s", defaultVersion),
-			Env:   map[string]string{"SERVICES": "s3,sqs,kinesis"},
 		}),
 	)
 	// }
