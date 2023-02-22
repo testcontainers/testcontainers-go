@@ -99,10 +99,6 @@ func WithPulsarImage(image string) PulsarContainerOptions {
 
 func WithTransactions() PulsarContainerOptions {
 	return func(req *PulsarContainerRequest) {
-		if req.Env == nil {
-			req.Env = make(map[string]string)
-		}
-
 		req.ContainerRequest.Env["PULSAR_PREFIX_transactionCoordinatorEnabled"] = "true"
 
 		// add the waiting strategy for the transaction topic
@@ -128,6 +124,7 @@ func WithTransactions() PulsarContainerOptions {
 func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*PulsarContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultPulsarImage,
+		Env:          map[string]string{},
 		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
 		WaitingFor:   defaultWaitStrategies,
 		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, detaultPulsarCmdWithoutFunctionsWorker}, " ")},
