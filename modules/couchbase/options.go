@@ -8,6 +8,7 @@ type Config struct {
 	password        string
 	isEnterprise    bool
 	buckets         []bucket
+	imageName       string
 }
 
 func WithEventingService() Option {
@@ -30,7 +31,13 @@ func WithCredentials(username, password string) Option {
 }
 
 func WithBucket(bucket bucket) Option {
-	return func(config *Config) {
-		config.buckets = append(config.buckets, bucket)
+	return func(c *Config) {
+		c.buckets = append(c.buckets, bucket)
+	}
+}
+
+func WithImageName(imageName string) Option {
+	return func(c *Config) {
+		c.imageName = imageName
 	}
 }

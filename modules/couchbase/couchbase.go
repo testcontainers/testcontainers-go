@@ -54,6 +54,7 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 		enabledServices: []service{kv, query, search, index},
 		username:        "Administrator",
 		password:        "password",
+		imageName:       "couchbase:6.5.1",
 	}
 
 	for _, opt := range opts {
@@ -61,7 +62,7 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 	}
 
 	req := testcontainers.ContainerRequest{
-		Image: "couchbase:6.5.1",
+		Image: config.imageName,
 	}
 
 	exposePorts(&req, config.enabledServices)
