@@ -16,11 +16,16 @@ import (
 	testcontainerspulsar "github.com/testcontainers/testcontainers-go/modules/pulsar"
 )
 
+// logConsumerForTesting {
+// logConsumer is a testcontainers.LogConsumer that prints the log to stdout
 type testLogConsumer struct{}
 
+// Accept prints the log to stdout
 func (lc *testLogConsumer) Accept(l testcontainers.Log) {
 	fmt.Print(string(l.Content))
 }
+
+// }
 
 func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -44,9 +49,13 @@ func TestPulsar(t *testing.T) {
 		{
 			name: "with modifiers",
 			opts: []testcontainerspulsar.ContainerOptions{
+				// setPulsarImage {
+				testcontainerspulsar.WithPulsarImage("docker.io/apachepulsar/pulsar:2.10.2"),
+				// }
 				// addPulsarEnv {
 				testcontainerspulsar.WithPulsarEnv("brokerDeduplicationEnabled", "true"),
 				// }
+				// advancedDockerSettings {
 				testcontainerspulsar.WithConfigModifier(func(config *container.Config) {
 					config.Env = append(config.Env, "PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m")
 				}),
@@ -60,6 +69,7 @@ func TestPulsar(t *testing.T) {
 						Aliases: []string{"pulsar"},
 					}
 				}),
+				// }
 			},
 		},
 		{
@@ -81,7 +91,9 @@ func TestPulsar(t *testing.T) {
 		{
 			name: "with log consumers",
 			opts: []testcontainerspulsar.ContainerOptions{
+				// withLogConsumers {
 				testcontainerspulsar.WithLogConsumers(&testLogConsumer{}),
+				// }
 			},
 		},
 	}
