@@ -119,6 +119,13 @@ func WithLogConsumers(consumer ...testcontainers.LogConsumer) ContainerOptions {
 	}
 }
 
+// WithPulsarEnv allows to use the native APIs and set each variable with PULSAR_PREFIX_ as prefix.
+func WithPulsarEnv(configVar string, configValue string) ContainerOptions {
+	return func(req *ContainerRequest) {
+		req.ContainerRequest.Env["PULSAR_PREFIX_"+configVar] = configValue
+	}
+}
+
 // WithPulsarImage allows to override the default Pulsar image
 func WithPulsarImage(image string) ContainerOptions {
 	return func(req *ContainerRequest) {
@@ -132,7 +139,7 @@ func WithPulsarImage(image string) ContainerOptions {
 
 func WithTransactions() ContainerOptions {
 	return func(req *ContainerRequest) {
-		req.ContainerRequest.Env["PULSAR_PREFIX_transactionCoordinatorEnabled"] = "true"
+		WithPulsarEnv("transactionCoordinatorEnabled", "true")(req)
 
 		// add the waiting strategy for the transaction topic
 		defaultWaitStrategies.Strategies = append(
