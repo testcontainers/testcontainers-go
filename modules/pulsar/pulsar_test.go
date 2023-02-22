@@ -91,8 +91,13 @@ func TestPulsar(t *testing.T) {
 				defer c.StopLogProducer()
 			}
 
+			brokerURL, err := c.BrokerURL(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			pc, err := pulsar.NewClient(pulsar.ClientOptions{
-				URL:               c.URI,
+				URL:               brokerURL,
 				OperationTimeout:  30 * time.Second,
 				ConnectionTimeout: 30 * time.Second,
 			})

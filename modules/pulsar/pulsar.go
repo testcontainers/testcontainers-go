@@ -8,6 +8,7 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -31,7 +32,38 @@ var defaultWaitStrategies = wait.ForAll(
 type Container struct {
 	testcontainers.Container
 	LogConsumers []testcontainers.LogConsumer // Needs to be exported to control the stop from the caller
-	URI          string
+}
+
+func (c *Container) BrokerURL(ctx context.Context) (string, error) {
+	return c.resolveURL(ctx, defaultPulsarPort)
+}
+
+func (c *Container) HTTPServiceURL(ctx context.Context) (string, error) {
+	return c.resolveURL(ctx, defaultPulsarAdminPort)
+}
+
+func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, error) {
+	provider, err := testcontainers.NewDockerProvider()
+	if err != nil {
+		return "", err
+	}
+
+	host, err := provider.DaemonHost(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	pulsarPort, err := c.MappedPort(ctx, port)
+	if err != nil {
+		return "", err
+	}
+
+	proto := "pulsar"
+	if port == defaultPulsarAdminPort {
+		proto = "http"
+	}
+
+	return fmt.Sprintf("%s://%s:%v", proto, host, pulsarPort.Int()), nil
 }
 
 type ContainerRequest struct {
@@ -148,15 +180,9 @@ func StartContainer(ctx context.Context, opts ...ContainerOptions) (*Container, 
 		return nil, err
 	}
 
-	pulsarPort, err := c.MappedPort(ctx, defaultPulsarPort)
-	if err != nil {
-		return nil, err
-	}
-
 	pc := &Container{
 		Container:    c,
 		LogConsumers: pulsarRequest.logConsumers,
-		URI:          fmt.Sprintf("pulsar://127.0.0.1:%v", pulsarPort.Int()),
 	}
 
 	if len(pc.LogConsumers) > 0 {
