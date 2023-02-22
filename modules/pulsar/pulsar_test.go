@@ -3,12 +3,14 @@ package pulsar_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	testcontainerspulsar "github.com/testcontainers/testcontainers-go/modules/pulsar"
@@ -42,6 +44,9 @@ func TestPulsar(t *testing.T) {
 		{
 			name: "with modifiers",
 			opts: []testcontainerspulsar.ContainerOptions{
+				// addPulsarEnv {
+				testcontainerspulsar.WithPulsarEnv("brokerDeduplicationEnabled", "true"),
+				// }
 				testcontainerspulsar.WithConfigModifier(func(config *container.Config) {
 					config.Env = append(config.Env, "PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m")
 				}),
@@ -60,13 +65,17 @@ func TestPulsar(t *testing.T) {
 		{
 			name: "with functions worker",
 			opts: []testcontainerspulsar.ContainerOptions{
+				// withFunctionsWorker {
 				testcontainerspulsar.WithFunctionsWorker(),
+				// }
 			},
 		},
 		{
 			name: "with transactions",
 			opts: []testcontainerspulsar.ContainerOptions{
+				// withTransactions {
 				testcontainerspulsar.WithTransactions(),
+				// }
 			},
 		},
 		{
@@ -79,10 +88,12 @@ func TestPulsar(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// startPulsarContainer {
 			c, err := testcontainerspulsar.StartContainer(
 				ctx,
 				tt.opts...,
 			)
+			// }
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -91,10 +102,20 @@ func TestPulsar(t *testing.T) {
 				defer c.StopLogProducer()
 			}
 
+			// getPulsarURLs {
 			brokerURL, err := c.BrokerURL(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
+
+			serviceURL, err := c.HTTPServiceURL(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// }
+
+			assert.True(t, strings.HasPrefix(brokerURL, "pulsar://"))
+			assert.True(t, strings.HasPrefix(serviceURL, "http://"))
 
 			pc, err := pulsar.NewClient(pulsar.ClientOptions{
 				URL:               brokerURL,
