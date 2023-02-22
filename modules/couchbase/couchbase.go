@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -99,6 +100,11 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 		}
 	}
 
+	err = couchbaseContainer.createBuckets(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &couchbaseContainer, nil
 }
 
@@ -119,11 +125,11 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 			return status == http.StatusOK
 		}).
 		WithResponseMatcher(func(body io.Reader) bool {
-			json, err := io.ReadAll(body)
+			response, err := io.ReadAll(body)
 			if err != nil {
 				return false
 			}
-			status := gjson.Get(string(json), "nodes.0.status")
+			status := gjson.Get(string(response), "nodes.0.status")
 			if status.String() != "healthy" {
 				return false
 			}
@@ -321,43 +327,132 @@ func (c *CouchbaseContainer) configureIndexer(ctx context.Context) error {
 
 func (c *CouchbaseContainer) createBuckets(ctx context.Context) error {
 	for _, bucket := range c.config.buckets {
-		flushEnabled := "0"
-		if bucket.flushEnabled {
-			flushEnabled = "1"
-		}
-		body := map[string]string{
-			"name":          bucket.name,
-			"ramQuotaMB":    strconv.Itoa(bucket.quota),
-			"flushEnabled":  flushEnabled,
-			"replicaNumber": strconv.Itoa(bucket.numReplicas),
-		}
-
-		if _, err := c.doHttpRequest(ctx, MGMT_PORT, "/pools/default/buckets", http.MethodPost, body, true); err != nil {
+		err := c.createBucket(ctx, bucket)
+		if err != nil {
 			return err
 		}
 
-		if err := wait.ForHTTP("/pools/default/b/"+bucket.name).
-			WithPort(MGMT_PORT).
-			WithBasicCredentials(c.config.username, c.config.password).
-			WithStatusCodeMatcher(func(status int) bool {
-				return status == http.StatusOK
-			}).
-			WithResponseMatcher(func(body io.Reader) bool {
-				response, err := io.ReadAll(body)
-				if err != nil {
-					return false
-				}
-				return c.checkAllServicesEnabled(response)
-			}).
-			WaitUntilReady(ctx, c); err != nil {
+		err = c.waitForAllServicesEnabled(ctx, bucket)
+		if err != nil {
 			return err
 		}
+		if contains(c.config.enabledServices, query) {
+			err = c.isQueryKeyspacePresent(ctx, bucket)
+			if err != nil {
+				return err
+			}
+		}
 
-		// TODO check query service
-		// TODO create primary index
+		if bucket.queryPrimaryIndex {
+			if !contains(c.config.enabledServices, query) {
+				return fmt.Errorf("primary index creation for bucket %s ignored, since QUERY service is not present", bucket.name)
+			}
+
+			err = c.createPrimaryIndex(ctx, bucket)
+			if err != nil {
+				return err
+			}
+
+			err = c.isPrimaryIndexOnline(ctx, bucket, err)
+			if err != nil {
+				return err
+			}
+
+		}
 	}
 
 	return nil
+}
+
+func (c *CouchbaseContainer) isPrimaryIndexOnline(ctx context.Context, bucket bucket, err error) error {
+	body := map[string]string{
+		"statement": "SELECT count(*) > 0 AS online FROM system:indexes where keyspace_id = \"" +
+			bucket.name +
+			"\" and is_primary = true and state = \"online\"",
+	}
+
+	err = backoff.Retry(func() error {
+		response, err := c.doHttpRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body, true)
+		if err != nil {
+			return err
+		}
+
+		online := gjson.Get(string(response), "results.0.online").Bool()
+		if !online {
+			return errors.New("primary index state is not online")
+		}
+
+		return nil
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+
+	return err
+}
+
+func (c *CouchbaseContainer) createPrimaryIndex(ctx context.Context, bucket bucket) error {
+	body := map[string]string{
+		"statement": "CREATE PRIMARY INDEX on `" + bucket.name + "`",
+	}
+
+	_, err := c.doHttpRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body, true)
+
+	return err
+}
+
+func (c *CouchbaseContainer) isQueryKeyspacePresent(ctx context.Context, bucket bucket) error {
+	body := map[string]string{
+		"statement": "SELECT COUNT(*) > 0 as present FROM system:keyspaces WHERE name = \"" + bucket.name + "\"",
+	}
+
+	err := backoff.Retry(func() error {
+		response, err := c.doHttpRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body, true)
+		if err != nil {
+			return err
+		}
+		present := gjson.Get(string(response), "results.0.present").Bool()
+		if !present {
+			return errors.New("query namespace is not present")
+		}
+
+		return nil
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+
+	return err
+}
+
+func (c *CouchbaseContainer) waitForAllServicesEnabled(ctx context.Context, bucket bucket) error {
+	err := wait.ForHTTP("/pools/default/b/"+bucket.name).
+		WithPort(MGMT_PORT).
+		WithBasicCredentials(c.config.username, c.config.password).
+		WithStatusCodeMatcher(func(status int) bool {
+			return status == http.StatusOK
+		}).
+		WithResponseMatcher(func(body io.Reader) bool {
+			response, err := io.ReadAll(body)
+			if err != nil {
+				return false
+			}
+			return c.checkAllServicesEnabled(response)
+		}).
+		WaitUntilReady(ctx, c)
+
+	return err
+}
+
+func (c *CouchbaseContainer) createBucket(ctx context.Context, bucket bucket) error {
+	flushEnabled := "0"
+	if bucket.flushEnabled {
+		flushEnabled = "1"
+	}
+	body := map[string]string{
+		"name":          bucket.name,
+		"ramQuotaMB":    strconv.Itoa(bucket.quota),
+		"flushEnabled":  flushEnabled,
+		"replicaNumber": strconv.Itoa(bucket.numReplicas),
+	}
+
+	_, err := c.doHttpRequest(ctx, MGMT_PORT, "/pools/default/buckets", http.MethodPost, body, true)
+
+	return err
 }
 
 func (c *CouchbaseContainer) doHttpRequest(ctx context.Context, port, path, method string, body map[string]string, auth bool) ([]byte, error) {
