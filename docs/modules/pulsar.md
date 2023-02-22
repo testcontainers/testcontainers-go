@@ -28,7 +28,7 @@ Then you can retrieve the broker and the admin url:
 [Get broker and admin urls](../../modules/pulsar/pulsar_test.go) inside_block:getPulsarURLs
 <!--/codeinclude-->
 
-## Options
+## Container Options
 
 When starting the Pulsar container, you can pass options in a variadic way to configure it.
 
