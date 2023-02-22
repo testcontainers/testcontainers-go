@@ -1,4 +1,4 @@
-package pulsar
+package pulsar_test
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	testcontainerspulsar "github.com/testcontainers/testcontainers-go/modules/pulsar"
 )
 
 type testLogConsumer struct{}
@@ -33,23 +34,23 @@ func TestPulsar(t *testing.T) {
 
 	tests := []struct {
 		name string
-		opts []PulsarContainerOptions
+		opts []testcontainerspulsar.PulsarContainerOptions
 	}{
 		{
 			name: "default",
 		},
 		{
 			name: "with modifiers",
-			opts: []PulsarContainerOptions{
-				WithConfigModifier(func(config *container.Config) {
+			opts: []testcontainerspulsar.PulsarContainerOptions{
+				testcontainerspulsar.WithConfigModifier(func(config *container.Config) {
 					config.Env = append(config.Env, "PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m")
 				}),
-				WithHostConfigModifier(func(hostConfig *container.HostConfig) {
+				testcontainerspulsar.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 					hostConfig.Resources = container.Resources{
 						Memory: 1024 * 1024 * 1024,
 					}
 				}),
-				WithEndpointSettingsModifier(func(settings map[string]*network.EndpointSettings) {
+				testcontainerspulsar.WithEndpointSettingsModifier(func(settings map[string]*network.EndpointSettings) {
 					settings[nwName] = &network.EndpointSettings{
 						Aliases: []string{"pulsar"},
 					}
@@ -58,27 +59,27 @@ func TestPulsar(t *testing.T) {
 		},
 		{
 			name: "with functions worker",
-			opts: []PulsarContainerOptions{
-				WithFunctionsWorker(),
+			opts: []testcontainerspulsar.PulsarContainerOptions{
+				testcontainerspulsar.WithFunctionsWorker(),
 			},
 		},
 		{
 			name: "with transactions",
-			opts: []PulsarContainerOptions{
-				WithTransactions(),
+			opts: []testcontainerspulsar.PulsarContainerOptions{
+				testcontainerspulsar.WithTransactions(),
 			},
 		},
 		{
 			name: "with log consumers",
-			opts: []PulsarContainerOptions{
-				WithLogConsumers(&testLogConsumer{}),
+			opts: []testcontainerspulsar.PulsarContainerOptions{
+				testcontainerspulsar.WithLogConsumers(&testLogConsumer{}),
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := StartContainer(
+			c, err := testcontainerspulsar.StartContainer(
 				ctx,
 				tt.opts...,
 			)
@@ -86,7 +87,7 @@ func TestPulsar(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if len(c.logConsumers) > 0 {
+			if len(c.LogConsumers) > 0 {
 				defer c.StopLogProducer()
 			}
 

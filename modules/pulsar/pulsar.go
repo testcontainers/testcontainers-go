@@ -30,7 +30,7 @@ var defaultWaitStrategies = wait.ForAll(
 
 type PulsarContainer struct {
 	testcontainers.Container
-	logConsumers []testcontainers.LogConsumer
+	LogConsumers []testcontainers.LogConsumer // Needs to be exported to control the stop from the caller
 	URI          string
 }
 
@@ -79,7 +79,8 @@ func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) Pul
 	}
 }
 
-// WithLogConsumer allows to add log consumers to the container
+// WithLogConsumer allows to add log consumers to the container. They will be automatically started and stopped by the StartContainer function
+// but it's a responsibility of the caller to stop them calling StopLogProducer
 func WithLogConsumers(consumer ...testcontainers.LogConsumer) PulsarContainerOptions {
 	return func(req *PulsarContainerRequest) {
 		req.logConsumers = append(req.logConsumers, consumer...)
@@ -154,14 +155,14 @@ func StartContainer(ctx context.Context, opts ...PulsarContainerOptions) (*Pulsa
 
 	pc := &PulsarContainer{
 		Container:    c,
-		logConsumers: pulsarRequest.logConsumers,
+		LogConsumers: pulsarRequest.logConsumers,
 		URI:          fmt.Sprintf("pulsar://127.0.0.1:%v", pulsarPort.Int()),
 	}
 
-	if len(pc.logConsumers) > 0 {
+	if len(pc.LogConsumers) > 0 {
 		c.StartLogProducer(ctx)
 	}
-	for _, lc := range pc.logConsumers {
+	for _, lc := range pc.LogConsumers {
 		c.FollowOutput(lc)
 	}
 
