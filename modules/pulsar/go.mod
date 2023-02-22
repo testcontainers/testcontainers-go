@@ -1,4 +1,4 @@
-module github.com/testcontainers/testcontainers-go/examples/pulsar
+module github.com/testcontainers/testcontainers-go/modules/pulsar
 
 go 1.18
 
