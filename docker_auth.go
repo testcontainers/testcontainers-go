@@ -1,6 +1,9 @@
 package testcontainers
 
 import (
+	"encoding/json"
+	"os"
+
 	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types"
 )
@@ -43,13 +46,30 @@ func GetDockerAuthConfigs() (map[string]types.AuthConfig, error) {
 	return cfgs, nil
 }
 
-// getDockerConfig returns the docker config file. It internally checks the DOCKER_CONFIG
-// environment variable and if it is not set, it will load the default config file
+// getDockerConfig returns the docker config file. It will internally check, in this particular order:
+// 1. the DOCKER_AUTH_CONFIG environment variable, unmarshalling it into a dockercfg.Config
+// 2. the DOCKER_CONFIG environment variable, as the path to the config file
+// 3. else it will load the default config file, which is ~/.docker/config.json
 func getDockerConfig() (dockercfg.Config, error) {
+	dockerAuthConfig := os.Getenv("DOCKER_AUTH_CONFIG")
+	if dockerAuthConfig != "" {
+		cfg := dockercfg.Config{}
+		err := loadFromReader([]byte(dockerAuthConfig), &cfg)
+		if err == nil {
+			return cfg, nil
+		}
+
+	}
+
 	cfg, err := dockercfg.LoadDefaultConfig()
 	if err != nil {
 		return cfg, err
 	}
 
 	return cfg, nil
+}
+
+// loadFromReader loads config from the specified path into cfg
+func loadFromReader(config []byte, cfg *dockercfg.Config) error {
+	return json.Unmarshal(config, &cfg)
 }
