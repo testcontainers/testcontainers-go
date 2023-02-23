@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/spanner v1.44.0
-	github.com/testcontainers/testcontainers-go v0.17.0
+	github.com/testcontainers/testcontainers-go v0.18.0
 	google.golang.org/api v0.110.0
 	google.golang.org/genproto v0.0.0-20230209215440-0dfe4f8abfcc
 	google.golang.org/grpc v1.53.0
@@ -70,7 +70,4 @@ require (
 	gotest.tools/v3 v3.4.0 // indirect
 )
 
-replace (
-	github.com/docker/docker => github.com/docker/docker v20.10.3-0.20221013203545-33ab36d6b304+incompatible // 22.06 branch
-	github.com/testcontainers/testcontainers-go => ../..
-)
+replace github.com/testcontainers/testcontainers-go => ../..

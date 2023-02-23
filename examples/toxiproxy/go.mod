@@ -6,7 +6,7 @@ require (
 	github.com/Shopify/toxiproxy/v2 v2.5.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.0
-	github.com/testcontainers/testcontainers-go v0.17.0
+	github.com/testcontainers/testcontainers-go v0.18.0
 	gotest.tools/gotestsum v1.9.0
 )
 
@@ -52,7 +52,4 @@ require (
 	gotest.tools/v3 v3.4.0 // indirect
 )
 
-replace (
-	github.com/docker/docker => github.com/docker/docker v20.10.3-0.20221013203545-33ab36d6b304+incompatible // 22.06 branch
-	github.com/testcontainers/testcontainers-go => ../..
-)
+replace github.com/testcontainers/testcontainers-go => ../..

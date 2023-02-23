@@ -4,14 +4,11 @@ go 1.18
 
 require (
 	github.com/apache/pulsar-client-go v0.9.0
-	github.com/testcontainers/testcontainers-go v0.17.0
+	github.com/testcontainers/testcontainers-go v0.18.0
 	gotest.tools/gotestsum v1.9.0
 )
 
-replace (
-	github.com/docker/docker => github.com/docker/docker v20.10.3-0.20221013203545-33ab36d6b304+incompatible // 22.06 branch
-	github.com/testcontainers/testcontainers-go => ../..
-)
+replace github.com/testcontainers/testcontainers-go => ../..
 
 require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
