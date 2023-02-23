@@ -8,6 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const exampleAuth = "https://example-auth.com"
+const indexDockerIO = "https://index.docker.io/v1/"
+
+var testDockerConfigDirPath = filepath.Join("testresources", ".docker")
+
 func TestGetDockerConfig(t *testing.T) {
 	t.Run("without DOCKER_CONFIG env var retrieves default", func(t *testing.T) {
 		cfg, err := getDockerConfig()
@@ -18,13 +23,13 @@ func TestGetDockerConfig(t *testing.T) {
 
 		authCfgs := cfg.AuthConfigs
 
-		if _, ok := authCfgs["https://index.docker.io/v1/"]; !ok {
-			t.Errorf("Expected to find https://index.docker.io/v1/ in auth configs")
+		if _, ok := authCfgs[indexDockerIO]; !ok {
+			t.Errorf("Expected to find %s in auth configs", indexDockerIO)
 		}
 	})
 
 	t.Run("with DOCKER_CONFIG env var pointing to a non-existing file raises error", func(t *testing.T) {
-		t.Setenv("DOCKER_CONFIG", filepath.Join("testresources", ".docker", "non-existing"))
+		t.Setenv("DOCKER_CONFIG", filepath.Join(testDockerConfigDirPath, "non-existing"))
 
 		cfg, err := getDockerConfig()
 		require.NotNil(t, err)
@@ -32,7 +37,7 @@ func TestGetDockerConfig(t *testing.T) {
 	})
 
 	t.Run("with DOCKER_CONFIG env var", func(t *testing.T) {
-		t.Setenv("DOCKER_CONFIG", filepath.Join("testresources", ".docker"))
+		t.Setenv("DOCKER_CONFIG", testDockerConfigDirPath)
 
 		cfg, err := getDockerConfig()
 		require.Nil(t, err)
@@ -42,8 +47,8 @@ func TestGetDockerConfig(t *testing.T) {
 
 		authCfgs := cfg.AuthConfigs
 
-		if _, ok := authCfgs["https://index.docker.io/v1/"]; !ok {
-			t.Errorf("Expected to find https://index.docker.io/v1/ in auth configs")
+		if _, ok := authCfgs[indexDockerIO]; !ok {
+			t.Errorf("Expected to find %s in auth configs", indexDockerIO)
 		}
 		if _, ok := authCfgs["https://example.com"]; !ok {
 			t.Errorf("Expected to find https://example.com in auth configs")
@@ -56,11 +61,11 @@ func TestGetDockerConfig(t *testing.T) {
 	t.Run("DOCKER_AUTH_CONFIG env var takes precedence", func(t *testing.T) {
 		t.Setenv("DOCKER_AUTH_CONFIG", `{
 			"auths": {
-					"https://example-auth.com": {}
+					"`+exampleAuth+`": {}
 			},
 			"credsStore": "desktop"
 		}`)
-		t.Setenv("DOCKER_CONFIG", filepath.Join("testresources", ".docker"))
+		t.Setenv("DOCKER_CONFIG", testDockerConfigDirPath)
 
 		cfg, err := getDockerConfig()
 		require.Nil(t, err)
@@ -70,11 +75,11 @@ func TestGetDockerConfig(t *testing.T) {
 
 		authCfgs := cfg.AuthConfigs
 
-		if _, ok := authCfgs["https://index.docker.io/v1/"]; ok {
-			t.Errorf("Not expected to find https://index.docker.io/v1/ in auth configs")
+		if _, ok := authCfgs[indexDockerIO]; ok {
+			t.Errorf("Not expected to find %s in auth configs", indexDockerIO)
 		}
-		if _, ok := authCfgs["https://example-auth.com"]; !ok {
-			t.Errorf("Expected to find https://example-auth.com in auth configs")
+		if _, ok := authCfgs[exampleAuth]; !ok {
+			t.Errorf("Expected to find %s in auth configs", exampleAuth)
 		}
 	})
 
@@ -83,12 +88,12 @@ func TestGetDockerConfig(t *testing.T) {
 
 		t.Setenv("DOCKER_AUTH_CONFIG", `{
 			"auths": {
-					"https://example-auth.com": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
+					"`+exampleAuth+`": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
 			},
 			"credsStore": "desktop"
 		}`)
 
-		cfg, err := AuthFromDockerConfig("https://example-auth.com")
+		cfg, err := AuthFromDockerConfig(exampleAuth)
 		require.Nil(t, err)
 		require.NotNil(t, cfg)
 
