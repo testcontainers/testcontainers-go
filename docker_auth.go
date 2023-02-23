@@ -18,17 +18,6 @@ func AuthFromDockerConfig(registry string) (types.AuthConfig, error) {
 	}
 
 	if cfg, ok := cfgs[registry]; ok {
-		if cfg.Username == "" && cfg.Password == "" {
-			u, p, err := dockercfg.GetRegistryCredentials(registry)
-			if err != nil {
-				return types.AuthConfig{}, err
-			}
-			cfg.Username = u
-			cfg.Password = p
-		}
-
-		cfg.Auth = base64.StdEncoding.EncodeToString([]byte(cfg.Username + ":" + cfg.Password))
-
 		return cfg, nil
 	}
 
@@ -45,7 +34,7 @@ func GetDockerAuthConfigs() (map[string]types.AuthConfig, error) {
 
 	cfgs := map[string]types.AuthConfig{}
 	for k, v := range cfg.AuthConfigs {
-		cfgs[k] = types.AuthConfig{
+		ac := types.AuthConfig{
 			Auth:          v.Auth,
 			Email:         v.Email,
 			IdentityToken: v.IdentityToken,
@@ -54,6 +43,16 @@ func GetDockerAuthConfigs() (map[string]types.AuthConfig, error) {
 			ServerAddress: v.ServerAddress,
 			Username:      v.Username,
 		}
+
+		if v.Username == "" && v.Password == "" {
+			u, p, _ := dockercfg.GetRegistryCredentials(k)
+			v.Username = u
+			v.Password = p
+		}
+
+		v.Auth = base64.StdEncoding.EncodeToString([]byte(v.Username + ":" + v.Password))
+
+		cfgs[k] = ac
 	}
 
 	return cfgs, nil
