@@ -12,7 +12,7 @@ import (
 // AuthFromDockerConfig returns the auth config for the given registry, using the credential helpers
 // to extract the information from the docker config file
 func AuthFromDockerConfig(registry string) (types.AuthConfig, error) {
-	cfgs, err := GetDockerAuthConfigs()
+	cfgs, err := getDockerAuthConfigs()
 	if err != nil {
 		return types.AuthConfig{}, err
 	}
@@ -24,9 +24,9 @@ func AuthFromDockerConfig(registry string) (types.AuthConfig, error) {
 	return types.AuthConfig{}, dockercfg.ErrCredentialsNotFound
 }
 
-// GetDockerAuthConfigs returns a map with the auth configs from the docker config file
+// getDockerAuthConfigs returns a map with the auth configs from the docker config file
 // using the registry as the key
-func GetDockerAuthConfigs() (map[string]types.AuthConfig, error) {
+func getDockerAuthConfigs() (map[string]types.AuthConfig, error) {
 	cfg, err := getDockerConfig()
 	if err != nil {
 		return nil, err
