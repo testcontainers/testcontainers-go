@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"os"
 
@@ -8,7 +9,8 @@ import (
 	"github.com/docker/docker/api/types"
 )
 
-// AuthFromDockerConfig returns the Base64 auth string for a registry from the docker config file
+// AuthFromDockerConfig returns the auth config for the given registry, using the credential helpers
+// to extract the information from the docker config file
 func AuthFromDockerConfig(registry string) (types.AuthConfig, error) {
 	cfgs, err := GetDockerAuthConfigs()
 	if err != nil {
@@ -16,6 +18,17 @@ func AuthFromDockerConfig(registry string) (types.AuthConfig, error) {
 	}
 
 	if cfg, ok := cfgs[registry]; ok {
+		if cfg.Username == "" && cfg.Password == "" {
+			u, p, err := dockercfg.GetRegistryCredentials(registry)
+			if err != nil {
+				return types.AuthConfig{}, err
+			}
+			cfg.Username = u
+			cfg.Password = p
+		}
+
+		cfg.Auth = base64.StdEncoding.EncodeToString([]byte(cfg.Username + ":" + cfg.Password))
+
 		return cfg, nil
 	}
 

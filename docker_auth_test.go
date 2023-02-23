@@ -79,9 +79,11 @@ func TestGetDockerConfig(t *testing.T) {
 	})
 
 	t.Run("retrieve auth with DOCKER_AUTH_CONFIG env var", func(t *testing.T) {
+		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
+
 		t.Setenv("DOCKER_AUTH_CONFIG", `{
 			"auths": {
-					"https://example-auth.com": { "username": "gopher", "password": "secret", "auth": "foobar" }
+					"https://example-auth.com": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
 			},
 			"credsStore": "desktop"
 		}`)
@@ -92,6 +94,6 @@ func TestGetDockerConfig(t *testing.T) {
 
 		assert.Equal(t, "gopher", cfg.Username)
 		assert.Equal(t, "secret", cfg.Password)
-		assert.Equal(t, "foobar", cfg.Auth)
+		assert.Equal(t, base64, cfg.Auth)
 	})
 }
