@@ -67,7 +67,7 @@ func getDockerConfig() (dockercfg.Config, error) {
 	dockerAuthConfig := os.Getenv("DOCKER_AUTH_CONFIG")
 	if dockerAuthConfig != "" {
 		cfg := dockercfg.Config{}
-		err := loadFromReader([]byte(dockerAuthConfig), &cfg)
+		err := json.Unmarshal([]byte(dockerAuthConfig), &cfg)
 		if err == nil {
 			return cfg, nil
 		}
@@ -80,9 +80,4 @@ func getDockerConfig() (dockercfg.Config, error) {
 	}
 
 	return cfg, nil
-}
-
-// loadFromReader loads config from the specified path into cfg
-func loadFromReader(config []byte, cfg *dockercfg.Config) error {
-	return json.Unmarshal(config, &cfg)
 }
