@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types"
 )
+
+const indexDockerIO = "https://index.docker.io/v1/"
 
 // AuthFromDockerConfig returns the auth config for the given registry, using the credential helpers
 // to extract the information from the docker config file
@@ -22,6 +25,27 @@ func AuthFromDockerConfig(registry string) (types.AuthConfig, error) {
 	}
 
 	return types.AuthConfig{}, dockercfg.ErrCredentialsNotFound
+}
+
+// DefaultRegistryAuthFromDockerConfig returns the auth config for the default registry, using the credential helpers
+// to extract the information from the docker config file
+func DefaultRegistryAuthFromDockerConfig(ctx context.Context) (types.AuthConfig, error) {
+	return AuthFromDockerConfig(getDefaultRegistry(ctx))
+}
+
+// getDefaultRegistry returns the default registry to use when pulling images
+func getDefaultRegistry(ctx context.Context) string {
+	p, err := NewDockerProvider()
+	if err != nil {
+		return indexDockerIO
+	}
+
+	info, err := p.client.Info(ctx)
+	if err != nil {
+		return indexDockerIO
+	}
+
+	return info.IndexServerAddress
 }
 
 // getDockerAuthConfigs returns a map with the auth configs from the docker config file

@@ -9,7 +9,6 @@ import (
 )
 
 const exampleAuth = "https://example-auth.com"
-const indexDockerIO = "https://index.docker.io/v1/"
 
 var testDockerConfigDirPath = filepath.Join("testresources", ".docker")
 
