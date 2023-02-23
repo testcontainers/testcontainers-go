@@ -19,7 +19,7 @@ replace (
 
 require (
 	github.com/compose-spec/compose-go v1.9.0
-	github.com/docker/cli v23.0.0+incompatible
+	github.com/docker/cli v23.0.1+incompatible
 	github.com/docker/compose/v2 v2.16.0
 	github.com/docker/docker v23.0.1+incompatible
 	github.com/google/uuid v1.3.0
