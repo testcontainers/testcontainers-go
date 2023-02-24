@@ -69,11 +69,11 @@ func getDockerAuthConfigs() (map[string]types.AuthConfig, error) {
 
 		if v.Username == "" && v.Password == "" {
 			u, p, _ := dockercfg.GetRegistryCredentials(k)
-			v.Username = u
-			v.Password = p
+			ac.Username = u
+			ac.Password = p
 		}
 
-		v.Auth = base64.StdEncoding.EncodeToString([]byte(v.Username + ":" + v.Password))
+		ac.Auth = base64.StdEncoding.EncodeToString([]byte(ac.Username + ":" + ac.Password))
 
 		cfgs[k] = ac
 	}
