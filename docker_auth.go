@@ -12,9 +12,9 @@ import (
 
 const indexDockerIO = "https://index.docker.io/v1/"
 
-// AuthFromDockerConfig returns the auth config for the given registry, using the credential helpers
+// RegistryAuth returns the auth config for the given registry, using the credential helpers
 // to extract the information from the docker config file
-func AuthFromDockerConfig(registry string) (types.AuthConfig, error) {
+func RegistryAuth(registry string) (types.AuthConfig, error) {
 	cfgs, err := getDockerAuthConfigs()
 	if err != nil {
 		return types.AuthConfig{}, err
@@ -27,14 +27,16 @@ func AuthFromDockerConfig(registry string) (types.AuthConfig, error) {
 	return types.AuthConfig{}, dockercfg.ErrCredentialsNotFound
 }
 
-// DefaultRegistryAuthFromDockerConfig returns the auth config for the default registry, using the credential helpers
+// DefaultRegistryAuth returns the auth config for the default registry, using the credential helpers
 // to extract the information from the docker config file
-func DefaultRegistryAuthFromDockerConfig(ctx context.Context) (types.AuthConfig, error) {
-	return AuthFromDockerConfig(getDefaultRegistry(ctx))
+func DefaultRegistryAuth(ctx context.Context) (types.AuthConfig, error) {
+	return RegistryAuth(defaultRegistry(ctx))
 }
 
-// getDefaultRegistry returns the default registry to use when pulling images
-func getDefaultRegistry(ctx context.Context) string {
+// defaultRegistry returns the default registry to use when pulling images
+// It will use the docker daemon to get the default registry, returning "https://index.docker.io/v1/" if
+// it fails to get the information from the daemon
+func defaultRegistry(ctx context.Context) string {
 	p, err := NewDockerProvider()
 	if err != nil {
 		return indexDockerIO

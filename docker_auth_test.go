@@ -92,7 +92,7 @@ func TestGetDockerConfig(t *testing.T) {
 			"credsStore": "desktop"
 		}`)
 
-		cfg, err := AuthFromDockerConfig(exampleAuth)
+		cfg, err := RegistryAuth(exampleAuth)
 		require.Nil(t, err)
 		require.NotNil(t, cfg)
 
