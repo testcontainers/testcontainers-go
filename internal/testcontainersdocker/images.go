@@ -1,7 +1,9 @@
 package testcontainersdocker
 
 import (
+	"bufio"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -22,6 +24,43 @@ const (
 )
 
 var rxURL = regexp.MustCompile(URL)
+
+func ExtractImagesFromDockerfile(dockerfile string) ([]string, error) {
+	var images []string
+
+	file, err := os.Open(dockerfile)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if scanner.Err() != nil {
+		return nil, scanner.Err()
+	}
+
+	// extract images from dockerfile
+	for _, line := range lines {
+		if !strings.HasPrefix(strings.ToUpper(line), "FROM") {
+			continue
+		}
+
+		// remove FROM
+		line = strings.TrimPrefix(line, "FROM")
+		parts := strings.Split(strings.TrimSpace(line), " ")
+		if len(parts) == 0 {
+			continue
+		}
+
+		images = append(images, parts[0])
+	}
+
+	return images, nil
+}
 
 // ExtractRegistry extracts the registry from the image name, using a regular expression to extract the registry from the image name.
 // regular expression to extract the registry from the image name

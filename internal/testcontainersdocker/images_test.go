@@ -1,10 +1,49 @@
 package testcontainersdocker
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestExtractImagesFromDockerfile(t *testing.T) {
+	tests := []struct {
+		name          string
+		dockerfile    string
+		expected      []string
+		expectedError bool
+	}{
+		{
+			name:          "Wrong file",
+			dockerfile:    "",
+			expected:      []string{},
+			expectedError: true,
+		},
+		{
+			name:       "Single Image",
+			dockerfile: filepath.Join("testresources", "Dockerfile"),
+			expected:   []string{"nginx:${tag}"},
+		},
+		{
+			name:       "Multiple Images",
+			dockerfile: filepath.Join("testresources", "Dockerfile.multistage"),
+			expected:   []string{"nginx:a", "nginx:b", "nginx:c", "scratch"},
+		},
+	}
+
+	for _, tt := range tests {
+		images, err := ExtractImagesFromDockerfile(tt.dockerfile)
+		if tt.expectedError {
+			require.Error(t, err)
+			assert.Empty(t, images)
+		} else {
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, images)
+		}
+	}
+}
 
 func TestExtractRegistry(t *testing.T) {
 	tests := []struct {
