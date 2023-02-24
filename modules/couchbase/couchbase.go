@@ -75,99 +75,41 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 
 	couchbaseContainer := CouchbaseContainer{container, config}
 
-	clusterInitFunc := []clusterInit{
-		couchbaseContainer.waitUntilNodeIsOnline,
-		couchbaseContainer.initializeIsEnterprise,
-		couchbaseContainer.renameNode,
-		couchbaseContainer.initializeServices,
-		couchbaseContainer.setMemoryQuotas,
-		couchbaseContainer.configureAdminUser,
-		couchbaseContainer.configureExternalPorts,
+	if err = couchbaseContainer.initCluster(ctx); err != nil {
+		return nil, err
 	}
 
-	if contains(config.enabledServices, index) {
-		clusterInitFunc = append(clusterInitFunc, couchbaseContainer.configureIndexer)
-	}
-
-	clusterInitFunc = append(clusterInitFunc, couchbaseContainer.waitUntilAllNodesAreHealthy)
-
-	for _, fn := range clusterInitFunc {
-		if err = fn(ctx); err != nil {
-			return nil, err
-		}
-	}
-
-	err = couchbaseContainer.createBuckets(ctx)
-	if err != nil {
+	if err = couchbaseContainer.createBuckets(ctx); err != nil {
 		return nil, err
 	}
 
 	return &couchbaseContainer, nil
 }
 
-func exposePorts(enabledServices []service) []string {
-	exposedPorts := []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"}
+func (c *CouchbaseContainer) initCluster(ctx context.Context) error {
+	clusterInitFunc := []clusterInit{
+		c.waitUntilNodeIsOnline,
+		c.initializeIsEnterprise,
+		c.renameNode,
+		c.initializeServices,
+		c.setMemoryQuotas,
+		c.configureAdminUser,
+		c.configureExternalPorts,
+	}
 
-	for _, service := range enabledServices {
-		for _, port := range service.ports {
-			exposedPorts = append(exposedPorts, port+"/tcp")
+	if contains(c.config.enabledServices, index) {
+		clusterInitFunc = append(clusterInitFunc, c.configureIndexer)
+	}
+
+	clusterInitFunc = append(clusterInitFunc, c.waitUntilAllNodesAreHealthy)
+
+	for _, fn := range clusterInitFunc {
+		if err := fn(ctx); err != nil {
+			return err
 		}
 	}
 
-	return exposedPorts
-}
-
-func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) error {
-	var waitStrategy []wait.Strategy
-
-	waitStrategy = append(waitStrategy, wait.ForHTTP("/pools/default").
-		WithPort(MGMT_PORT).
-		WithBasicCredentials(c.config.username, c.config.password).
-		WithStatusCodeMatcher(func(status int) bool {
-			return status == http.StatusOK
-		}).
-		WithResponseMatcher(func(body io.Reader) bool {
-			response, err := io.ReadAll(body)
-			if err != nil {
-				return false
-			}
-			status := gjson.Get(string(response), "nodes.0.status")
-			if status.String() != "healthy" {
-				return false
-			}
-
-			return true
-		}))
-
-	if contains(c.config.enabledServices, query) {
-		waitStrategy = append(waitStrategy, wait.ForHTTP("/admin/ping").
-			WithPort(QUERY_PORT).
-			WithBasicCredentials(c.config.username, c.config.password).
-			WithStatusCodeMatcher(func(status int) bool {
-				return status == http.StatusOK
-			}),
-		)
-	}
-
-	if contains(c.config.enabledServices, analytics) {
-		waitStrategy = append(waitStrategy, wait.ForHTTP("/admin/ping").
-			WithPort(ANALYTICS_PORT).
-			WithBasicCredentials(c.config.username, c.config.password).
-			WithStatusCodeMatcher(func(status int) bool {
-				return status == http.StatusOK
-			}))
-	}
-
-	if contains(c.config.enabledServices, eventing) {
-		waitStrategy = append(waitStrategy, wait.ForHTTP("/api/v1/config").
-			WithPort(EVENTING_PORT).
-			WithBasicCredentials(c.config.username, c.config.password).
-			WithStatusCodeMatcher(func(status int) bool {
-				return status == http.StatusOK
-			}))
-	}
-
-	return wait.ForAll(waitStrategy...).WaitUntilReady(ctx, c)
+	return nil
 }
 
 func (c *CouchbaseContainer) waitUntilNodeIsOnline(ctx context.Context) error {
@@ -328,6 +270,59 @@ func (c *CouchbaseContainer) configureIndexer(ctx context.Context) error {
 	_, err := c.doHttpRequest(ctx, MGMT_PORT, "/settings/indexes", http.MethodPost, body, true)
 
 	return err
+}
+
+func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) error {
+	var waitStrategy []wait.Strategy
+
+	waitStrategy = append(waitStrategy, wait.ForHTTP("/pools/default").
+		WithPort(MGMT_PORT).
+		WithBasicCredentials(c.config.username, c.config.password).
+		WithStatusCodeMatcher(func(status int) bool {
+			return status == http.StatusOK
+		}).
+		WithResponseMatcher(func(body io.Reader) bool {
+			response, err := io.ReadAll(body)
+			if err != nil {
+				return false
+			}
+			status := gjson.Get(string(response), "nodes.0.status")
+			if status.String() != "healthy" {
+				return false
+			}
+
+			return true
+		}))
+
+	if contains(c.config.enabledServices, query) {
+		waitStrategy = append(waitStrategy, wait.ForHTTP("/admin/ping").
+			WithPort(QUERY_PORT).
+			WithBasicCredentials(c.config.username, c.config.password).
+			WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusOK
+			}),
+		)
+	}
+
+	if contains(c.config.enabledServices, analytics) {
+		waitStrategy = append(waitStrategy, wait.ForHTTP("/admin/ping").
+			WithPort(ANALYTICS_PORT).
+			WithBasicCredentials(c.config.username, c.config.password).
+			WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusOK
+			}))
+	}
+
+	if contains(c.config.enabledServices, eventing) {
+		waitStrategy = append(waitStrategy, wait.ForHTTP("/api/v1/config").
+			WithPort(EVENTING_PORT).
+			WithBasicCredentials(c.config.username, c.config.password).
+			WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusOK
+			}))
+	}
+
+	return wait.ForAll(waitStrategy...).WaitUntilReady(ctx, c)
 }
 
 func (c *CouchbaseContainer) createBuckets(ctx context.Context) error {
@@ -524,15 +519,6 @@ func (c *CouchbaseContainer) getEnabledServices() string {
 	return strings.Join(identifiers, ",")
 }
 
-func contains(services []service, service service) bool {
-	for _, s := range services {
-		if s.identifier == service.identifier {
-			return true
-		}
-	}
-	return false
-}
-
 func (c *CouchbaseContainer) checkAllServicesEnabled(rawConfig []byte) bool {
 	nodeExt := gjson.Get(string(rawConfig), "nodesExt")
 	if !nodeExt.Exists() {
@@ -560,4 +546,25 @@ func (c *CouchbaseContainer) checkAllServicesEnabled(rawConfig []byte) bool {
 	}
 
 	return true
+}
+
+func exposePorts(enabledServices []service) []string {
+	exposedPorts := []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"}
+
+	for _, service := range enabledServices {
+		for _, port := range service.ports {
+			exposedPorts = append(exposedPorts, port+"/tcp")
+		}
+	}
+
+	return exposedPorts
+}
+
+func contains(services []service, service service) bool {
+	for _, s := range services {
+		if s.identifier == service.identifier {
+			return true
+		}
+	}
+	return false
 }
