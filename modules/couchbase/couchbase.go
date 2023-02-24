@@ -354,7 +354,7 @@ func (c *CouchbaseContainer) createBuckets(ctx context.Context) error {
 				return err
 			}
 
-			err = c.isPrimaryIndexOnline(ctx, bucket, err)
+			err = c.isPrimaryIndexOnline(ctx, bucket)
 			if err != nil {
 				return err
 			}
@@ -365,14 +365,14 @@ func (c *CouchbaseContainer) createBuckets(ctx context.Context) error {
 	return nil
 }
 
-func (c *CouchbaseContainer) isPrimaryIndexOnline(ctx context.Context, bucket bucket, err error) error {
+func (c *CouchbaseContainer) isPrimaryIndexOnline(ctx context.Context, bucket bucket) error {
 	body := map[string]string{
 		"statement": "SELECT count(*) > 0 AS online FROM system:indexes where keyspace_id = \"" +
 			bucket.name +
 			"\" and is_primary = true and state = \"online\"",
 	}
 
-	err = backoff.Retry(func() error {
+	err := backoff.Retry(func() error {
 		response, err := c.doHttpRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body, true)
 		if err != nil {
 			return err

@@ -8,8 +8,8 @@ type bucket struct {
 	numReplicas       int
 }
 
-func NewBucket(name string) *bucket {
-	return &bucket{
+func NewBucket(name string) bucket {
+	return bucket{
 		name:              name,
 		flushEnabled:      false,
 		queryPrimaryIndex: true,
@@ -18,7 +18,7 @@ func NewBucket(name string) *bucket {
 	}
 }
 
-func (b *bucket) WithReplicas(numReplicas int) *bucket {
+func (b bucket) WithReplicas(numReplicas int) bucket {
 	if numReplicas < 0 {
 		numReplicas = 0
 	} else if numReplicas > 3 {
@@ -29,12 +29,12 @@ func (b *bucket) WithReplicas(numReplicas int) *bucket {
 	return b
 }
 
-func (b *bucket) WithFlushEnabled(flushEnabled bool) *bucket {
+func (b bucket) WithFlushEnabled(flushEnabled bool) bucket {
 	b.flushEnabled = flushEnabled
 	return b
 }
 
-func (b *bucket) WithQuota(quota int) *bucket {
+func (b bucket) WithQuota(quota int) bucket {
 	if quota < 100 {
 		quota = 100
 	}
@@ -43,7 +43,7 @@ func (b *bucket) WithQuota(quota int) *bucket {
 	return b
 }
 
-func (b *bucket) WithPrimaryIndex(primaryIndex bool) *bucket {
+func (b bucket) WithPrimaryIndex(primaryIndex bool) bucket {
 	b.queryPrimaryIndex = primaryIndex
 	return b
 }
