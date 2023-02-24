@@ -15,22 +15,22 @@ func TestExtractRegistry(t *testing.T) {
 		{
 			name:     "Repository + Image + Tag",
 			image:    "testcontainers/ryuk:latest",
-			expected: "",
+			expected: IndexDockerIO,
 		},
 		{
 			name:     "Repository + Image",
 			image:    "testcontainers/ryuk",
-			expected: "",
+			expected: IndexDockerIO,
 		},
 		{
 			name:     "Image + Tag",
 			image:    "nginx:latest",
-			expected: "",
+			expected: IndexDockerIO,
 		},
 		{
 			name:     "Image",
 			image:    "nginx",
-			expected: "",
+			expected: IndexDockerIO,
 		},
 		{
 			name:     "Local Registry with Port + Repository + Image + Tag",

@@ -51,7 +51,7 @@ func ExtractRegistry(image string) string {
 		return registry
 	}
 
-	return ""
+	return IndexDockerIO
 }
 
 // IsURL checks if the string is an URL.
