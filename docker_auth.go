@@ -11,9 +11,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
-// RegistryAuth returns the auth config for the given registry, using the credential helpers
-// to extract the information from the docker config file
-func RegistryAuth(registry string) (types.AuthConfig, error) {
+// DockerImageAuth returns the auth config for the given Docker image, extracting first its Docker registry.
+// Finally, it will use the credential helpers to extract the information from the docker config file
+// for that registry, if it exists.
+func DockerImageAuth(ctx context.Context, image string) (types.AuthConfig, error) {
+	defaultRegistry := defaultRegistry(ctx)
+	registry := testcontainersdocker.ExtractRegistry(image, defaultRegistry)
+
 	cfgs, err := getDockerAuthConfigs()
 	if err != nil {
 		return types.AuthConfig{}, err
@@ -24,12 +28,6 @@ func RegistryAuth(registry string) (types.AuthConfig, error) {
 	}
 
 	return types.AuthConfig{}, dockercfg.ErrCredentialsNotFound
-}
-
-// DefaultRegistryAuth returns the auth config for the default registry, using the credential helpers
-// to extract the information from the docker config file
-func DefaultRegistryAuth(ctx context.Context) (types.AuthConfig, error) {
-	return RegistryAuth(defaultRegistry(ctx))
 }
 
 // defaultRegistry returns the default registry to use when pulling images

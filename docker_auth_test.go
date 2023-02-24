@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -95,7 +96,7 @@ func TestGetDockerConfig(t *testing.T) {
 			"credsStore": "desktop"
 		}`)
 
-		cfg, err := RegistryAuth(exampleAuth)
+		cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
 		require.Nil(t, err)
 		require.NotNil(t, cfg)
 
