@@ -1,4 +1,4 @@
-module github.com/testcontainers/testcontainers-go/examples/couchbase
+module github.com/testcontainers/testcontainers-go/modules/couchbase
 
 go 1.18
 
