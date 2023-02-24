@@ -13,6 +13,21 @@ func TestExtractRegistry(t *testing.T) {
 		expected string
 	}{
 		{
+			name:     "Empty",
+			image:    "",
+			expected: "",
+		},
+		{
+			name:     "Numbers",
+			image:    "1234567890",
+			expected: IndexDockerIO,
+		},
+		{
+			name:     "Malformed Image",
+			image:    "--malformed--",
+			expected: IndexDockerIO,
+		},
+		{
 			name:     "Repository + Image + Tag",
 			image:    "testcontainers/ryuk:latest",
 			expected: IndexDockerIO,
@@ -96,7 +111,7 @@ func TestExtractRegistry(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := ExtractRegistry(test.image)
+			actual := ExtractRegistry(test.image, IndexDockerIO)
 			assert.Equal(t, test.expected, actual, "expected %s, got %s", test.expected, actual)
 		})
 	}

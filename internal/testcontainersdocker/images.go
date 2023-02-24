@@ -39,7 +39,7 @@ var rxURL = regexp.MustCompile(URL)
 // - registry:port/image:tag
 // - registry:port/image
 // Once extracted the registry, it is validated to check if it is a valid URL or an IP address.
-func ExtractRegistry(image string) string {
+func ExtractRegistry(image string, fallback string) string {
 	exp := regexp.MustCompile(`^(?:(?P<registry>[^/]+)(?::(?P<port>\d+))?/)?(?:(?P<repository>[^/]+)/)?(?P<image>[^:]+)(?::(?P<tag>.+))?$`).FindStringSubmatch(image)
 	if len(exp) == 0 {
 		return ""
@@ -51,7 +51,7 @@ func ExtractRegistry(image string) string {
 		return registry
 	}
 
-	return IndexDockerIO
+	return fallback
 }
 
 // IsURL checks if the string is an URL.
