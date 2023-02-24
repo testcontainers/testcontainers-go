@@ -1091,7 +1091,8 @@ func Test_BuildContainerFromDockerfile(t *testing.T) {
 }
 
 func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfigs(t *testing.T) {
-	prepareLocalRegistryWithAuth(t)
+	port := prepareLocalRegistryWithAuth(t)
+
 	defer func() {
 		ctx := context.Background()
 		testcontainersClient, err := client.NewClientWithOpts(client.WithVersion(daemonMaxVersion))
@@ -1099,7 +1100,7 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfig
 			t.Log("could not create client to cleanup registry: ", err)
 		}
 
-		_, err = testcontainersClient.ImageRemove(ctx, "localhost:5000/redis:5.0-alpine", types.ImageRemoveOptions{
+		_, err = testcontainersClient.ImageRemove(ctx, "localhost:"+port+"/redis:5.0-alpine", types.ImageRemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
@@ -1116,8 +1117,11 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfig
 		FromDockerfile: FromDockerfile{
 			Context:    "./testresources",
 			Dockerfile: "auth.Dockerfile",
+			BuildArgs: map[string]*string{
+				"PORT": &port,
+			},
 			AuthConfigs: map[string]types.AuthConfig{
-				"localhost:5000": {
+				"localhost:" + port: {
 					Username: "testuser",
 					Password: "testpassword",
 				},
@@ -1134,7 +1138,7 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfig
 }
 
 func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithoutAuthConfigs(t *testing.T) {
-	prepareLocalRegistryWithAuth(t)
+	port := prepareLocalRegistryWithAuth(t)
 
 	t.Log("getting context")
 	ctx := context.Background()
@@ -1143,6 +1147,9 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithoutAuthConfig
 		FromDockerfile: FromDockerfile{
 			Context:    "./testresources",
 			Dockerfile: "auth.Dockerfile",
+			BuildArgs: map[string]*string{
+				"PORT": &port,
+			},
 		},
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("Ready to accept connections"),
@@ -1153,13 +1160,13 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithoutAuthConfig
 	terminateContainerOnEnd(t, ctx, redisC)
 }
 
-func prepareLocalRegistryWithAuth(t *testing.T) {
+func prepareLocalRegistryWithAuth(t *testing.T) string {
 	ctx := context.Background()
 	wd, err := os.Getwd()
 	assert.NoError(t, err)
 	req := ContainerRequest{
 		Image:        "registry:2",
-		ExposedPorts: []string{"5000:5000/tcp"},
+		ExposedPorts: []string{"5000/tcp"},
 		Env: map[string]string{
 			"REGISTRY_AUTH":                             "htpasswd",
 			"REGISTRY_AUTH_HTPASSWD_REALM":              "Registry",
@@ -1192,7 +1199,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 	t.Log("creating registry container")
 
 	registryC, err := GenericContainer(ctx, genContainerReq)
-	assert.NoError(t, err)
+	require.Nil(t, err)
 
 	t.Cleanup(func() {
 		assert.NoError(t, registryC.Terminate(context.Background()))
@@ -1200,6 +1207,11 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 
 	_, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
+
+	registryPort, err := registryC.MappedPort(ctx, "5000/tcp")
+	require.Nil(t, err)
+
+	return registryPort.Port()
 }
 
 func prepareRedisImage(ctx context.Context, req ContainerRequest, t *testing.T) (Container, error) {

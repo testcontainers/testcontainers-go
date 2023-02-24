@@ -1,1 +1,2 @@
-FROM localhost:5000/redis:5.0-alpine
+ARG PORT=5000
+FROM localhost:${PORT}/redis:5.0-alpine
