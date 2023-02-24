@@ -98,7 +98,6 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 			testcontainersdocker.LabelReaper: "true",
 		},
 		SkipReaper:    true,
-		RegistryCred:  reaperOpts.RegistryCredentials,
 		Mounts:        Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
 		Privileged:    tcConfig.RyukPrivileged,
 		WaitingFor:    wait.ForListeningPort(listeningPort),

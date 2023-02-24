@@ -104,7 +104,7 @@ type ContainerRequest struct {
 	Labels                  map[string]string
 	Mounts                  ContainerMounts
 	Tmpfs                   map[string]string
-	RegistryCred            string
+	RegistryCred            string // Deprecated: Testcontainers will detect registry credentials automatically
 	WaitingFor              wait.Strategy
 	Name                    string // for specifying container name
 	Hostname                string
@@ -158,7 +158,7 @@ func (f GenericProviderOptionFunc) ApplyGenericTo(opts *GenericProviderOptions) 
 // containerOptions functional options for a container
 type containerOptions struct {
 	ImageName           string
-	RegistryCredentials string
+	RegistryCredentials string // Deprecated: Testcontainers will detect registry credentials automatically
 }
 
 // functional option for setting the reaper image
@@ -171,6 +171,7 @@ func WithImageName(imageName string) ContainerOption {
 	}
 }
 
+// Deprecated: Testcontainers will detect registry credentials automatically
 // WithRegistryCredentials sets the reaper registry credentials
 func WithRegistryCredentials(registryCredentials string) ContainerOption {
 	return func(o *containerOptions) {

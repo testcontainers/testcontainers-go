@@ -13,14 +13,7 @@ To understand how the Docker credential helpers work, please refer to the [offic
 !!! info
 	_Testcontainers for Go_ uses [https://github.com/cpuguy83/dockercfg](https://github.com/cpuguy83/dockercfg) to retrieve the authentication from the credential helpers.
 
-To retrieve the credentials for a given registry, _Testcontainers for Go_ exposes the `AuthFromDockerConfig` function, which takes the registry name as a parameter and returns the authentication for that registry:
-
-```go
-auth, err := testcontainers.AuthFromDockerConfig("myregistry.com")
-if err != nil {
-	// do something with err
-}
-```
+_Testcontainers for Go_ will automatically discover the credentials for a given Docker image from the Docker config, as described above. For that, it will extract the Docker registry from the image name, and for that registry will try to locate the authentication in the Docker config, returning an empty string if the registry is not found. As a consequence, all the fields to pass credentials to the container request will be deprecated.
 
 Once you have the authentication, you can use it to build a container request for an image living in a private registry, simply passing the
 credentials in the `RegistryCred` field of the container request:
