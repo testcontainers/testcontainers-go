@@ -2,7 +2,6 @@ package couchbase
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/cenkalti/backoff/v4"
@@ -62,10 +61,9 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 	}
 
 	req := testcontainers.ContainerRequest{
-		Image: config.imageName,
+		Image:        config.imageName,
+		ExposedPorts: exposePorts(config.enabledServices),
 	}
-
-	exposePorts(&req, config.enabledServices)
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -76,10 +74,6 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 	}
 
 	couchbaseContainer := CouchbaseContainer{container, config}
-
-	if err = couchbaseContainer.waitUntilAllNodesAreHealthy(ctx); err != nil {
-		return nil, err
-	}
 
 	clusterInitFunc := []clusterInit{
 		couchbaseContainer.waitUntilNodeIsOnline,
@@ -95,6 +89,8 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 		clusterInitFunc = append(clusterInitFunc, couchbaseContainer.configureIndexer)
 	}
 
+	clusterInitFunc = append(clusterInitFunc, couchbaseContainer.waitUntilAllNodesAreHealthy)
+
 	for _, fn := range clusterInitFunc {
 		if err = fn(ctx); err != nil {
 			return nil, err
@@ -109,12 +105,16 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 	return &couchbaseContainer, nil
 }
 
-func exposePorts(req *testcontainers.ContainerRequest, enabledServices []service) {
-	req.ExposedPorts = append(req.ExposedPorts, MGMT_PORT, MGMT_SSL_PORT)
+func exposePorts(enabledServices []service) []string {
+	exposedPorts := []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"}
 
 	for _, service := range enabledServices {
-		req.ExposedPorts = append(req.ExposedPorts, service.ports...)
+		for _, port := range service.ports {
+			exposedPorts = append(exposedPorts, port+"/tcp")
+		}
 	}
+
+	return exposedPorts
 }
 
 func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) error {
@@ -122,6 +122,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 
 	waitStrategy = append(waitStrategy, wait.ForHTTP("/pools/default").
 		WithPort(MGMT_PORT).
+		WithBasicCredentials(c.config.username, c.config.password).
 		WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusOK
 		}).
@@ -141,6 +142,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 	if contains(c.config.enabledServices, query) {
 		waitStrategy = append(waitStrategy, wait.ForHTTP("/admin/ping").
 			WithPort(QUERY_PORT).
+			WithBasicCredentials(c.config.username, c.config.password).
 			WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}),
@@ -150,6 +152,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 	if contains(c.config.enabledServices, analytics) {
 		waitStrategy = append(waitStrategy, wait.ForHTTP("/admin/ping").
 			WithPort(ANALYTICS_PORT).
+			WithBasicCredentials(c.config.username, c.config.password).
 			WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}))
@@ -158,6 +161,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 	if contains(c.config.enabledServices, eventing) {
 		waitStrategy = append(waitStrategy, wait.ForHTTP("/api/v1/config").
 			WithPort(EVENTING_PORT).
+			WithBasicCredentials(c.config.username, c.config.password).
 			WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}))
@@ -337,6 +341,7 @@ func (c *CouchbaseContainer) createBuckets(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+
 		if contains(c.config.enabledServices, query) {
 			err = c.isQueryKeyspacePresent(ctx, bucket)
 			if err != nil {
@@ -498,22 +503,22 @@ func (c *CouchbaseContainer) getUrl(ctx context.Context, port, path string) (str
 		return "", err
 	}
 
-	return fmt.Sprintf("http://%s:%s%s", host, mappedPort, path), nil
+	return fmt.Sprintf("http://%s:%d%s", host, mappedPort.Int(), path), nil
 }
 
 func (c *CouchbaseContainer) getInternalIPAddress(ctx context.Context) (string, error) {
-	networks, err := c.Networks(ctx)
+	networks, err := c.ContainerIP(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	return networks[0], nil
+	return networks, nil
 }
 
 func (c *CouchbaseContainer) getEnabledServices() string {
 	identifiers := make([]string, len(c.config.enabledServices))
-	for _, v := range c.config.enabledServices {
-		identifiers = append(identifiers, v.identifier)
+	for i, v := range c.config.enabledServices {
+		identifiers[i] = v.identifier
 	}
 
 	return strings.Join(identifiers, ",")
@@ -529,28 +534,22 @@ func contains(services []service, service service) bool {
 }
 
 func (c *CouchbaseContainer) checkAllServicesEnabled(rawConfig []byte) bool {
-	var data map[string]interface{}
-	if err := json.Unmarshal(rawConfig, &data); err != nil {
+	nodeExt := gjson.Get(string(rawConfig), "nodesExt")
+	if !nodeExt.Exists() {
 		return false
 	}
 
-	nodesExt, ok := data["nodesExt"].([]interface{})
-	if !ok {
-		return false
-	}
-
-	for _, node := range nodesExt {
-		services, ok := node.(map[string]interface{})["services"].(map[string]interface{})
-		if !ok {
+	for _, node := range nodeExt.Array() {
+		services := node.Map()["services"]
+		if !services.Exists() {
 			return false
 		}
 
 		for _, s := range c.config.enabledServices {
 			found := false
-			for serviceName := range services {
+			for serviceName := range services.Map() {
 				if strings.HasPrefix(serviceName, s.identifier) {
 					found = true
-					break
 				}
 			}
 
