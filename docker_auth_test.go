@@ -6,11 +6,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
 const exampleAuth = "https://example-auth.com"
 
 var testDockerConfigDirPath = filepath.Join("testresources", ".docker")
+
+var indexDockerIO = testcontainersdocker.IndexDockerIO
 
 func TestGetDockerConfig(t *testing.T) {
 	t.Run("without DOCKER_CONFIG env var retrieves default", func(t *testing.T) {

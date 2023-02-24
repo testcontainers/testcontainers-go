@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	IndexDockerIO   = "https://index.docker.io/v1/"
 	maxURLRuneCount = 2083
 	minURLRuneCount = 3
 	URLSchema       = `((ftp|tcp|udp|wss?|https?):\/\/)`

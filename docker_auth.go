@@ -8,9 +8,8 @@ import (
 
 	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
-
-const indexDockerIO = "https://index.docker.io/v1/"
 
 // RegistryAuth returns the auth config for the given registry, using the credential helpers
 // to extract the information from the docker config file
@@ -39,12 +38,12 @@ func DefaultRegistryAuth(ctx context.Context) (types.AuthConfig, error) {
 func defaultRegistry(ctx context.Context) string {
 	p, err := NewDockerProvider()
 	if err != nil {
-		return indexDockerIO
+		return testcontainersdocker.IndexDockerIO
 	}
 
 	info, err := p.client.Info(ctx)
 	if err != nil {
-		return indexDockerIO
+		return testcontainersdocker.IndexDockerIO
 	}
 
 	return info.IndexServerAddress
