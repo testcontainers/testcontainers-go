@@ -68,6 +68,26 @@ func TestExtractRegistry(t *testing.T) {
 			expected: "localhost:5000",
 		},
 		{
+			name:     "Local Registry with Protocol and Port + Repository + Image + Tag",
+			image:    "http://localhost:5000/testcontainers/ryuk:latest",
+			expected: "http://localhost:5000",
+		},
+		{
+			name:     "Local Registry with Protocol and Port + Repository + Image",
+			image:    "http://localhost:5000/testcontainers/ryuk",
+			expected: "http://localhost:5000",
+		},
+		{
+			name:     "Local Registry with Protocol and Port + Image + Tag",
+			image:    "http://localhost:5000/ryuk:latest",
+			expected: "http://localhost:5000",
+		},
+		{
+			name:     "Local Registry with Protocol and Port + Image",
+			image:    "http://localhost:5000/nginx",
+			expected: "http://localhost:5000",
+		},
+		{
 			name:     "IP Registry with Port + Repository + Image + Tag",
 			image:    "127.0.0.1:5000/testcontainers/ryuk:latest",
 			expected: "127.0.0.1:5000",
@@ -86,6 +106,26 @@ func TestExtractRegistry(t *testing.T) {
 			name:     "IP Registry with Port + Image",
 			image:    "127.0.0.1:5000/nginx",
 			expected: "127.0.0.1:5000",
+		},
+		{
+			name:     "IP Registry with Protocol and Port + Repository + Image + Tag",
+			image:    "http://127.0.0.1:5000/testcontainers/ryuk:latest",
+			expected: "http://127.0.0.1:5000",
+		},
+		{
+			name:     "IP Registry with Protocol and Port + Repository + Image",
+			image:    "http://127.0.0.1:5000/testcontainers/ryuk",
+			expected: "http://127.0.0.1:5000",
+		},
+		{
+			name:     "IP Registry with Protocol and Port + Image + Tag",
+			image:    "http://127.0.0.1:5000/ryuk:latest",
+			expected: "http://127.0.0.1:5000",
+		},
+		{
+			name:     "IP Registry with Protocol and Port + Image",
+			image:    "http://127.0.0.1:5000/nginx",
+			expected: "http://127.0.0.1:5000",
 		},
 		{
 			name:     "DNS Registry + Repository + Image + Tag",
