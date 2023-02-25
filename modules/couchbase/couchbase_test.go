@@ -2,9 +2,10 @@ package couchbase
 
 import (
 	"context"
-	"github.com/couchbase/gocb/v2"
 	"testing"
 	"time"
+
+	"github.com/couchbase/gocb/v2"
 )
 
 func TestCouchbase(t *testing.T) {
