@@ -86,6 +86,28 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 	return &couchbaseContainer, nil
 }
 
+func (c *CouchbaseContainer) ConnectionString(ctx context.Context) (string, error) {
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	port, err := c.MappedPort(ctx, KV_PORT)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("couchbase://%s:%d", host, port.Int()), nil
+}
+
+func (c *CouchbaseContainer) Username() string {
+	return c.config.username
+}
+
+func (c *CouchbaseContainer) Password() string {
+	return c.config.password
+}
+
 func (c *CouchbaseContainer) initCluster(ctx context.Context) error {
 	clusterInitFunc := []clusterInit{
 		c.waitUntilNodeIsOnline,
@@ -204,8 +226,8 @@ func (c *CouchbaseContainer) configureExternalPorts(ctx context.Context) error {
 	mgmtSSL, _ := c.MappedPort(ctx, MGMT_SSL_PORT)
 	body := map[string]string{
 		"hostname": host,
-		"mgmt":     string(mgmt),
-		"mgmtSSL":  string(mgmtSSL),
+		"mgmt":     mgmt.Port(),
+		"mgmtSSL":  mgmtSSL.Port(),
 	}
 
 	if contains(c.config.enabledServices, kv) {
@@ -214,42 +236,42 @@ func (c *CouchbaseContainer) configureExternalPorts(ctx context.Context) error {
 		capi, _ := c.MappedPort(ctx, VIEW_PORT)
 		capiSSL, _ := c.MappedPort(ctx, VIEW_SSL_PORT)
 
-		body["kv"] = string(kv)
-		body["kvSSL"] = string(kvSSL)
-		body["capi"] = string(capi)
-		body["capiSSL"] = string(capiSSL)
+		body["kv"] = kv.Port()
+		body["kvSSL"] = kvSSL.Port()
+		body["capi"] = capi.Port()
+		body["capiSSL"] = capiSSL.Port()
 	}
 
 	if contains(c.config.enabledServices, query) {
 		n1ql, _ := c.MappedPort(ctx, QUERY_PORT)
 		n1qlSSL, _ := c.MappedPort(ctx, QUERY_SSL_PORT)
 
-		body["n1ql"] = string(n1ql)
-		body["n1qlSSL"] = string(n1qlSSL)
+		body["n1ql"] = n1ql.Port()
+		body["n1qlSSL"] = n1qlSSL.Port()
 	}
 
 	if contains(c.config.enabledServices, search) {
 		fts, _ := c.MappedPort(ctx, SEARCH_PORT)
 		ftsSSL, _ := c.MappedPort(ctx, SEARCH_SSL_PORT)
 
-		body["fts"] = string(fts)
-		body["ftsSSL"] = string(ftsSSL)
+		body["fts"] = fts.Port()
+		body["ftsSSL"] = ftsSSL.Port()
 	}
 
 	if contains(c.config.enabledServices, analytics) {
 		cbas, _ := c.MappedPort(ctx, ANALYTICS_PORT)
 		cbasSSL, _ := c.MappedPort(ctx, ANALYTICS_SSL_PORT)
 
-		body["cbas"] = string(cbas)
-		body["cbasSSL"] = string(cbasSSL)
+		body["cbas"] = cbas.Port()
+		body["cbasSSL"] = cbasSSL.Port()
 	}
 
 	if contains(c.config.enabledServices, eventing) {
 		eventingAdminPort, _ := c.MappedPort(ctx, EVENTING_PORT)
 		eventingSSL, _ := c.MappedPort(ctx, EVENTING_SSL_PORT)
 
-		body["eventingAdminPort"] = string(eventingAdminPort)
-		body["eventingSSL"] = string(eventingSSL)
+		body["eventingAdminPort"] = eventingAdminPort.Port()
+		body["eventingSSL"] = eventingSSL.Port()
 	}
 
 	_, err := c.doHttpRequest(ctx, MGMT_PORT, "/node/controller/setupAlternateAddresses/external", http.MethodPut, body, true)
