@@ -1091,6 +1091,15 @@ func Test_BuildContainerFromDockerfile(t *testing.T) {
 }
 
 func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfigs(t *testing.T) {
+	// using the same credentials as in the Docker Registry
+	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
+	t.Setenv("DOCKER_AUTH_CONFIG", `{
+		"auths": {
+				"localhost:5000": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
+		},
+		"credsStore": "desktop"
+	}`)
+
 	prepareLocalRegistryWithAuth(t)
 	defer func() {
 		ctx := context.Background()
@@ -1127,7 +1136,16 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfig
 	terminateContainerOnEnd(t, ctx, redisC)
 }
 
-func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithoutAuthConfigs(t *testing.T) {
+func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithWrongAuthConfigs(t *testing.T) {
+	// using different credentials than in the Docker Registry
+	base64 := "Zm9vOmJhcg==" // foo:bar
+	t.Setenv("DOCKER_AUTH_CONFIG", `{
+		"auths": {
+			"localhost:5000": { "username": "foo", "password": "bar", "auth": "`+base64+`" }
+		},
+		"credsStore": "desktop"
+	}`)
+
 	prepareLocalRegistryWithAuth(t)
 
 	t.Log("getting context")
@@ -1148,14 +1166,6 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithoutAuthConfig
 }
 
 func prepareLocalRegistryWithAuth(t *testing.T) {
-	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
-	t.Setenv("DOCKER_AUTH_CONFIG", `{
-		"auths": {
-				"localhost:5000": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
-		},
-		"credsStore": "desktop"
-	}`)
-
 	ctx := context.Background()
 	wd, err := os.Getwd()
 	assert.NoError(t, err)
