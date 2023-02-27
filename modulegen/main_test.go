@@ -345,10 +345,10 @@ func assertExampleDocContent(t *testing.T, example Example, exampleDocFile strin
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "# "+title)
 	assert.Equal(t, data[2], "<!--codeinclude-->")
-	assert.Equal(t, data[3], "[Creating a "+title+" container](../../examples/"+lower+"/"+lower+".go)")
+	assert.Equal(t, data[3], "[Creating a "+title+" container](../../"+example.ParentDir()+"/"+lower+"/"+lower+".go)")
 	assert.Equal(t, data[4], "<!--/codeinclude-->")
 	assert.Equal(t, data[6], "<!--codeinclude-->")
-	assert.Equal(t, data[7], "[Test for a "+title+" container](../../examples/"+lower+"/"+lower+"_test.go)")
+	assert.Equal(t, data[7], "[Test for a "+title+" container](../../"+example.ParentDir()+"/"+lower+"/"+lower+"_test.go)")
 	assert.Equal(t, data[8], "<!--/codeinclude-->")
 }
 
@@ -391,18 +391,13 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	lower := example.Lower()
 	title := example.Title()
 
-	exampleType := "example"
-	if example.IsModule {
-		exampleType = "module"
-	}
-
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, "name: "+title+" "+exampleType+" pipeline", data[0])
+	assert.Equal(t, "name: "+title+" "+example.Type()+" pipeline", data[0])
 	assert.Equal(t, "  test-"+lower+":", data[9])
 	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[19])
-	assert.Equal(t, "        working-directory: ./examples/"+lower, data[26])
-	assert.Equal(t, "        working-directory: ./examples/"+lower, data[30])
-	assert.Equal(t, "        working-directory: ./examples/"+lower, data[34])
+	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[26])
+	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[30])
+	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[34])
 	assert.Equal(t, "          paths: \"**/TEST-"+lower+"*.xml\"", data[44])
 }
 
@@ -462,6 +457,6 @@ func assertToolsGoContent(t *testing.T, example Example, tools string) {
 	assert.Nil(t, err)
 
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[3], "// This package contains the tool dependencies of the "+example.Title()+" example.")
+	assert.Equal(t, data[3], "// This package contains the tool dependencies of the "+example.Title()+" "+example.Type()+".")
 	assert.Equal(t, data[5], "package tools")
 }
