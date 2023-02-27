@@ -23,7 +23,7 @@ require (
 	github.com/docker/compose/v2 v2.16.0
 	github.com/docker/docker v23.0.1+incompatible
 	github.com/google/uuid v1.3.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.18.0
 	golang.org/x/sync v0.1.0
 	gopkg.in/yaml.v3 v3.0.1
