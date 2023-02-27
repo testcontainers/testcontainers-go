@@ -1154,6 +1154,14 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithoutAuthConfig
 }
 
 func prepareLocalRegistryWithAuth(t *testing.T) {
+	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
+	t.Setenv("DOCKER_AUTH_CONFIG", `{
+		"auths": {
+				"localhost:5000": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
+		},
+		"credsStore": "desktop"
+	}`)
+
 	ctx := context.Background()
 	wd, err := os.Getwd()
 	assert.NoError(t, err)
