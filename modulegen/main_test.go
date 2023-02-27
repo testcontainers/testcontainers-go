@@ -457,6 +457,6 @@ func assertToolsGoContent(t *testing.T, example Example, tools string) {
 	assert.Nil(t, err)
 
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[3], "// This package contains the tool dependencies of the "+example.Title()+" example.")
+	assert.Equal(t, data[3], "// This package contains the tool dependencies of the "+example.Title()+" "+example.Type()+".")
 	assert.Equal(t, data[5], "package tools")
 }
