@@ -8,6 +8,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	localhost5000     = "localhost:5000"
+	httpLocalhost5000 = "http://" + localhost5000
+	loopback5000      = "127.0.0.1:5000"
+	httpLoopback5000  = "http://" + loopback5000
+	dockerElasticCo   = "docker.elastic.co"
+)
+
 func TestExtractImagesFromDockerfile(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -89,102 +97,102 @@ func TestExtractRegistry(t *testing.T) {
 		{
 			name:     "Local Registry with Port + Repository + Image + Tag",
 			image:    "localhost:5000/testcontainers/ryuk:latest",
-			expected: "localhost:5000",
+			expected: localhost5000,
 		},
 		{
 			name:     "Local Registry with Port + Repository + Image",
 			image:    "localhost:5000/testcontainers/ryuk",
-			expected: "localhost:5000",
+			expected: localhost5000,
 		},
 		{
 			name:     "Local Registry with Port + Image + Tag",
 			image:    "localhost:5000/ryuk:latest",
-			expected: "localhost:5000",
+			expected: localhost5000,
 		},
 		{
 			name:     "Local Registry with Port + Image",
 			image:    "localhost:5000/nginx",
-			expected: "localhost:5000",
+			expected: localhost5000,
 		},
 		{
 			name:     "Local Registry with Protocol and Port + Repository + Image + Tag",
 			image:    "http://localhost:5000/testcontainers/ryuk:latest",
-			expected: "http://localhost:5000",
+			expected: httpLocalhost5000,
 		},
 		{
 			name:     "Local Registry with Protocol and Port + Repository + Image",
 			image:    "http://localhost:5000/testcontainers/ryuk",
-			expected: "http://localhost:5000",
+			expected: httpLocalhost5000,
 		},
 		{
 			name:     "Local Registry with Protocol and Port + Image + Tag",
 			image:    "http://localhost:5000/ryuk:latest",
-			expected: "http://localhost:5000",
+			expected: httpLocalhost5000,
 		},
 		{
 			name:     "Local Registry with Protocol and Port + Image",
 			image:    "http://localhost:5000/nginx",
-			expected: "http://localhost:5000",
+			expected: httpLocalhost5000,
 		},
 		{
 			name:     "IP Registry with Port + Repository + Image + Tag",
 			image:    "127.0.0.1:5000/testcontainers/ryuk:latest",
-			expected: "127.0.0.1:5000",
+			expected: loopback5000,
 		},
 		{
 			name:     "IP Registry with Port + Repository + Image",
 			image:    "127.0.0.1:5000/testcontainers/ryuk",
-			expected: "127.0.0.1:5000",
+			expected: loopback5000,
 		},
 		{
 			name:     "IP Registry with Port + Image + Tag",
 			image:    "127.0.0.1:5000/ryuk:latest",
-			expected: "127.0.0.1:5000",
+			expected: loopback5000,
 		},
 		{
 			name:     "IP Registry with Port + Image",
 			image:    "127.0.0.1:5000/nginx",
-			expected: "127.0.0.1:5000",
+			expected: loopback5000,
 		},
 		{
 			name:     "IP Registry with Protocol and Port + Repository + Image + Tag",
 			image:    "http://127.0.0.1:5000/testcontainers/ryuk:latest",
-			expected: "http://127.0.0.1:5000",
+			expected: httpLoopback5000,
 		},
 		{
 			name:     "IP Registry with Protocol and Port + Repository + Image",
 			image:    "http://127.0.0.1:5000/testcontainers/ryuk",
-			expected: "http://127.0.0.1:5000",
+			expected: httpLoopback5000,
 		},
 		{
 			name:     "IP Registry with Protocol and Port + Image + Tag",
 			image:    "http://127.0.0.1:5000/ryuk:latest",
-			expected: "http://127.0.0.1:5000",
+			expected: httpLoopback5000,
 		},
 		{
 			name:     "IP Registry with Protocol and Port + Image",
 			image:    "http://127.0.0.1:5000/nginx",
-			expected: "http://127.0.0.1:5000",
+			expected: httpLoopback5000,
 		},
 		{
 			name:     "DNS Registry + Repository + Image + Tag",
 			image:    "docker.elastic.co/elasticsearch/elasticsearch:8.6.2",
-			expected: "docker.elastic.co",
+			expected: dockerElasticCo,
 		},
 		{
 			name:     "DNS Registry + Repository + Image",
 			image:    "docker.elastic.co/elasticsearch/elasticsearch",
-			expected: "docker.elastic.co",
+			expected: dockerElasticCo,
 		},
 		{
 			name:     "DNS Registry + Image + Tag",
 			image:    "docker.elastic.co/elasticsearch:latest",
-			expected: "docker.elastic.co",
+			expected: dockerElasticCo,
 		},
 		{
 			name:     "DNS Registry + Image",
 			image:    "docker.elastic.co/elasticsearch",
-			expected: "docker.elastic.co",
+			expected: dockerElasticCo,
 		},
 	}
 
