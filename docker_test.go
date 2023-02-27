@@ -1165,6 +1165,34 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithWrongAuthConf
 	terminateContainerOnEnd(t, ctx, redisC)
 }
 
+func TestBuildContainerFromPrivateDockerHub(t *testing.T) {
+	// using the same credentials as in the Docker Registry
+	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
+	t.Setenv("DOCKER_AUTH_CONFIG", `{
+		"auths": {
+				"localhost:5000": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
+		},
+		"credsStore": "desktop"
+	}`)
+
+	prepareLocalRegistryWithAuth(t)
+
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:           "localhost:5000/redis:5.0-alpine",
+		AlwaysPullImage: true, // make sure the authentication takes place
+		ExposedPorts:    []string{"6379/tcp"},
+		WaitingFor:      wait.ForLog("Ready to accept connections"),
+	}
+
+	redisContainer, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	terminateContainerOnEnd(t, ctx, redisContainer)
+}
+
 func prepareLocalRegistryWithAuth(t *testing.T) {
 	ctx := context.Background()
 	wd, err := os.Getwd()
