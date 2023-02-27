@@ -391,18 +391,13 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	lower := example.Lower()
 	title := example.Title()
 
-	exampleType := "example"
-	if example.IsModule {
-		exampleType = "module"
-	}
-
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, "name: "+title+" "+exampleType+" pipeline", data[0])
+	assert.Equal(t, "name: "+title+" "+example.Type()+" pipeline", data[0])
 	assert.Equal(t, "  test-"+lower+":", data[9])
 	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[19])
-	assert.Equal(t, "        working-directory: ./examples/"+lower, data[26])
-	assert.Equal(t, "        working-directory: ./examples/"+lower, data[30])
-	assert.Equal(t, "        working-directory: ./examples/"+lower, data[34])
+	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[26])
+	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[30])
+	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[34])
 	assert.Equal(t, "          paths: \"**/TEST-"+lower+"*.xml\"", data[44])
 }
 
