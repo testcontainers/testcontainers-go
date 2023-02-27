@@ -1090,7 +1090,7 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, redisC)
 }
 
-func TestBuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfigs(t *testing.T) {
+func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 	// using the same credentials as in the Docker Registry
 	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -1136,7 +1136,7 @@ func TestBuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfigs
 	terminateContainerOnEnd(t, ctx, redisC)
 }
 
-func TestBuildContainerFromDockerfileWithAuthConfig_ShouldFailWithWrongAuthConfigs(t *testing.T) {
+func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *testing.T) {
 	// using different credentials than in the Docker Registry
 	base64 := "Zm9vOmJhcg==" // foo:bar
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -1165,7 +1165,7 @@ func TestBuildContainerFromDockerfileWithAuthConfig_ShouldFailWithWrongAuthConfi
 	terminateContainerOnEnd(t, ctx, redisC)
 }
 
-func TestBuildContainerFromPrivateRegistry(t *testing.T) {
+func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 	// using the same credentials as in the Docker Registry
 	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
