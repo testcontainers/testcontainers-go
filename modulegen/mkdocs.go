@@ -12,8 +12,9 @@ type MkDocsConfig struct {
 	SiteName string   `yaml:"site_name"`
 	Plugins  []string `yaml:"plugins"`
 	Theme    struct {
-		Name    string `yaml:"name"`
-		Palette struct {
+		Name      string `yaml:"name"`
+		CustomDir string `yaml:"custom_dir"`
+		Palette   struct {
 			Scheme string `yaml:"scheme"`
 		} `yaml:"palette"`
 		Font struct {
