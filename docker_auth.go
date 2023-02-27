@@ -14,20 +14,20 @@ import (
 // DockerImageAuth returns the auth config for the given Docker image, extracting first its Docker registry.
 // Finally, it will use the credential helpers to extract the information from the docker config file
 // for that registry, if it exists.
-func DockerImageAuth(ctx context.Context, image string) (types.AuthConfig, error) {
+func DockerImageAuth(ctx context.Context, image string) (string, types.AuthConfig, error) {
 	defaultRegistry := defaultRegistry(ctx)
 	registry := testcontainersdocker.ExtractRegistry(image, defaultRegistry)
 
 	cfgs, err := getDockerAuthConfigs()
 	if err != nil {
-		return types.AuthConfig{}, err
+		return registry, types.AuthConfig{}, err
 	}
 
 	if cfg, ok := cfgs[registry]; ok {
-		return cfg, nil
+		return registry, cfg, nil
 	}
 
-	return types.AuthConfig{}, dockercfg.ErrCredentialsNotFound
+	return registry, types.AuthConfig{}, dockercfg.ErrCredentialsNotFound
 }
 
 // defaultRegistry returns the default registry to use when pulling images

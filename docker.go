@@ -1047,9 +1047,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			}
 
 			var registryCred string
-			imageAuth, err := DockerImageAuth(ctx, req.Image)
+			registry, imageAuth, err := DockerImageAuth(ctx, req.Image)
 			if err != nil {
-				p.Logger.Printf("Failed to get image auth. Setting empty credentials for the image: %s. Error is:%s", req.Image, err)
+				p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, req.Image, err)
 				registryCred = ""
 			} else {
 				registryCred = imageAuth.Auth

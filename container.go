@@ -280,8 +280,7 @@ func (c *ContainerRequest) GetAuthConfigs() map[string]types.AuthConfig {
 
 	authConfigs := map[string]types.AuthConfig{}
 	for _, image := range images {
-		registry := testcontainersdocker.ExtractRegistry(image, testcontainersdocker.IndexDockerIO)
-		authConfig, err := DockerImageAuth(context.Background(), image)
+		registry, authConfig, err := DockerImageAuth(context.Background(), image)
 		if err != nil {
 			continue
 		}

@@ -96,10 +96,11 @@ func TestGetDockerConfig(t *testing.T) {
 			"credsStore": "desktop"
 		}`)
 
-		cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
+		registry, cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
 		require.Nil(t, err)
 		require.NotNil(t, cfg)
 
+		assert.Equal(t, exampleAuth, registry)
 		assert.Equal(t, "gopher", cfg.Username)
 		assert.Equal(t, "secret", cfg.Password)
 		assert.Equal(t, base64, cfg.Auth)
