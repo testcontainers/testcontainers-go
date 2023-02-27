@@ -1,9 +1,9 @@
 # Couchbase
 
 <!--codeinclude-->
-[Creating a Couchbase container](../../examples/couchbase/couchbase.go)
+[Creating a Couchbase container](../../modules/couchbase/couchbase.go)
 <!--/codeinclude-->
 
 <!--codeinclude-->
-[Test for a Couchbase container](../../examples/couchbase/couchbase_test.go)
+[Test for a Couchbase container](../../modules/couchbase/couchbase_test.go)
 <!--/codeinclude-->
