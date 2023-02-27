@@ -1116,12 +1116,6 @@ func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfig
 		FromDockerfile: FromDockerfile{
 			Context:    "./testresources",
 			Dockerfile: "auth.Dockerfile",
-			AuthConfigs: map[string]types.AuthConfig{
-				"localhost:5000": {
-					Username: "testuser",
-					Password: "testpassword",
-				},
-			},
 		},
 
 		ExposedPorts: []string{"6379/tcp"},

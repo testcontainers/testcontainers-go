@@ -27,16 +27,13 @@ req := ContainerRequest{
 }
 ```
 
-In the case you are building an image from the Dockerfile, you can also pass the authentication in the `AuthConfigs` field of the `FromDockerfile` struct:
+In the case you are building an image from the Dockerfile, the authentication will be automatically retrieved from the Docker config, so you don't need to pass it explicitly:
 
 ```go
 req := ContainerRequest{
 	FromDockerfile: testcontainers.FromDockerfile{
 		Context: "/path/to/build/context",
 		Dockerfile: "CustomDockerfile",
-		AuthConfigs: map[string]types.AuthConfig{
-			"myregistry.com": auth,
-		},
 		BuildArgs: map[string]*string {
 			"FOO": "BAR",
 		},
