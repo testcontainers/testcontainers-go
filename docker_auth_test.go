@@ -22,6 +22,8 @@ var testDockerConfigDirPath = filepath.Join("testresources", ".docker")
 var indexDockerIO = testcontainersdocker.IndexDockerIO
 
 func TestGetDockerConfig(t *testing.T) {
+	const expectedErrorMessage = "Expected to find %s in auth configs"
+
 	t.Run("without DOCKER_CONFIG env var retrieves default", func(t *testing.T) {
 		cfg, err := getDockerConfig()
 		require.Nil(t, err)
@@ -32,7 +34,7 @@ func TestGetDockerConfig(t *testing.T) {
 		authCfgs := cfg.AuthConfigs
 
 		if _, ok := authCfgs[indexDockerIO]; !ok {
-			t.Errorf("Expected to find %s in auth configs", indexDockerIO)
+			t.Errorf(expectedErrorMessage, indexDockerIO)
 		}
 	})
 
@@ -56,13 +58,13 @@ func TestGetDockerConfig(t *testing.T) {
 		authCfgs := cfg.AuthConfigs
 
 		if _, ok := authCfgs[indexDockerIO]; !ok {
-			t.Errorf("Expected to find %s in auth configs", indexDockerIO)
+			t.Errorf(expectedErrorMessage, indexDockerIO)
 		}
 		if _, ok := authCfgs["https://example.com"]; !ok {
-			t.Errorf("Expected to find https://example.com in auth configs")
+			t.Errorf(expectedErrorMessage, "https://example.com")
 		}
 		if _, ok := authCfgs["https://my.private.registry"]; !ok {
-			t.Errorf("Expected to find https://my.private.registry in auth configs")
+			t.Errorf(expectedErrorMessage, "https://my.private.registry")
 		}
 	})
 
@@ -87,7 +89,7 @@ func TestGetDockerConfig(t *testing.T) {
 			t.Errorf("Not expected to find %s in auth configs", indexDockerIO)
 		}
 		if _, ok := authCfgs[exampleAuth]; !ok {
-			t.Errorf("Expected to find %s in auth configs", exampleAuth)
+			t.Errorf(expectedErrorMessage, exampleAuth)
 		}
 	})
 
