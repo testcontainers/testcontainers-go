@@ -17,32 +17,53 @@ const (
 )
 
 func TestExtractImagesFromDockerfile(t *testing.T) {
+	var baseImage string = "scratch"
+	var registryHost string = "localhost"
+	var registryPort string = "5000"
+	var nginxImage string = "nginx:latest"
+
 	tests := []struct {
 		name          string
 		dockerfile    string
+		buildArgs     map[string]*string
 		expected      []string
 		expectedError bool
 	}{
 		{
 			name:          "Wrong file",
 			dockerfile:    "",
+			buildArgs:     nil,
 			expected:      []string{},
 			expectedError: true,
 		},
 		{
 			name:       "Single Image",
 			dockerfile: filepath.Join("testresources", "Dockerfile"),
+			buildArgs:  nil,
 			expected:   []string{"nginx:${tag}"},
 		},
 		{
 			name:       "Multiple Images",
 			dockerfile: filepath.Join("testresources", "Dockerfile.multistage"),
+			buildArgs:  nil,
 			expected:   []string{"nginx:a", "nginx:b", "nginx:c", "scratch"},
+		},
+		{
+			name:       "Multiple Images with one build arg",
+			dockerfile: filepath.Join("testresources", "Dockerfile.multistage.singleBuildArgs"),
+			buildArgs:  map[string]*string{"BASE_IMAGE": &baseImage},
+			expected:   []string{"nginx:a", "nginx:b", "nginx:c", "scratch"},
+		},
+		{
+			name:       "Multiple Images with multiple build args",
+			dockerfile: filepath.Join("testresources", "Dockerfile.multistage.multiBuildArgs"),
+			buildArgs:  map[string]*string{"BASE_IMAGE": &baseImage, "REGISTRY_HOST": &registryHost, "REGISTRY_PORT": &registryPort, "NGINX_IMAGE": &nginxImage},
+			expected:   []string{"nginx:latest", "localhost:5000/nginx:latest", "scratch"},
 		},
 	}
 
 	for _, tt := range tests {
-		images, err := ExtractImagesFromDockerfile(tt.dockerfile)
+		images, err := ExtractImagesFromDockerfile(tt.dockerfile, tt.buildArgs)
 		if tt.expectedError {
 			require.Error(t, err)
 			assert.Empty(t, images)

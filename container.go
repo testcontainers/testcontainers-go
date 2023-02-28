@@ -273,7 +273,7 @@ func (c *ContainerRequest) GetDockerfile() string {
 
 // GetAuthConfigs returns the auth configs to be able to pull from an authenticated docker registry
 func (c *ContainerRequest) GetAuthConfigs() map[string]types.AuthConfig {
-	images, err := testcontainersdocker.ExtractImagesFromDockerfile(filepath.Join(c.Context, c.GetDockerfile()))
+	images, err := testcontainersdocker.ExtractImagesFromDockerfile(filepath.Join(c.Context, c.GetDockerfile()), c.GetBuildArgs())
 	if err != nil {
 		return map[string]types.AuthConfig{}
 	}

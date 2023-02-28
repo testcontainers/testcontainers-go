@@ -25,7 +25,7 @@ const (
 
 var rxURL = regexp.MustCompile(URL)
 
-func ExtractImagesFromDockerfile(dockerfile string) ([]string, error) {
+func ExtractImagesFromDockerfile(dockerfile string, buildArgs map[string]*string) ([]string, error) {
 	var images []string
 
 	file, err := os.Open(dockerfile)
@@ -56,6 +56,12 @@ func ExtractImagesFromDockerfile(dockerfile string) ([]string, error) {
 			continue
 		}
 
+		// interpolate build args
+		for k, v := range buildArgs {
+			if v != nil {
+				parts[0] = strings.Replace(parts[0], "${"+k+"}", *v, -1)
+			}
+		}
 		images = append(images, parts[0])
 	}
 
