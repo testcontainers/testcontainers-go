@@ -5,31 +5,32 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 
+	"github.com/testcontainers/testcontainers-go/internal"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
-	TestcontainerLabel          = "org.testcontainers.golang"
+	// Deprecated: it has been replaced by the internal testcontainersdocker.LabelLang
+	TestcontainerLabel = "org.testcontainers.golang"
+	// Deprecated: it has been replaced by the internal testcontainersdocker.LabelSessionID
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
-	TestcontainerLabelIsReaper  = TestcontainerLabel + ".reaper"
+	// Deprecated: it has been replaced by the internal testcontainersdocker.LabelReaper
+	TestcontainerLabelIsReaper = TestcontainerLabel + ".reaper"
 
 	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.3.4"
 )
 
-type reaperContextKey string
-
 var (
-	dockerHostContextKey = reaperContextKey("docker_host")
-	reaper               *Reaper // We would like to create reaper only once
-	mutex                sync.Mutex
+	reaperInstance *Reaper // We would like to create reaper only once
+	mutex          sync.Mutex
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
@@ -40,44 +41,84 @@ type ReaperProvider interface {
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
+// Deprecated: it's not possible to create a reaper anymore.
 func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
+	return reuseOrCreateReaper(ctx, sessionID, provider, WithImageName(reaperImageName))
+}
+
+// reuseOrCreateReaper returns an existing Reaper instance if it exists and is running. Otherwise, a new Reaper instance
+// will be created with a sessionID to identify containers and a provider to use
+func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	// If reaper already exists re-use it
-	if reaper != nil {
-		return reaper, nil
+	// If reaper already exists and healthy, re-use it
+	if reaperInstance != nil {
+		// Verify this instance is still running by checking state.
+		// Can't use Container.IsRunning because the bool is not updated when Reaper is terminated
+		state, err := reaperInstance.container.State(ctx)
+		if err == nil && state.Running {
+			return reaperInstance, nil
+		}
 	}
 
-	dockerHost := extractDockerHost(ctx)
+	r, err := newReaper(ctx, sessionID, provider, opts...)
+	if err != nil {
+		return nil, err
+	}
 
-	// Otherwise create a new one
-	reaper = &Reaper{
+	reaperInstance = r
+	return reaperInstance, nil
+}
+
+// newReaper creates a Reaper with a sessionID to identify containers and a provider to use
+// Should only be used internally and instead use reuseOrCreateReaper to prefer reusing an existing Reaper instance
+func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
+	dockerHost := testcontainersdocker.ExtractDockerHost(ctx)
+
+	reaper := &Reaper{
 		Provider:  provider,
 		SessionID: sessionID,
 	}
 
 	listeningPort := nat.Port("8080/tcp")
 
-	req := ContainerRequest{
-		Image:        reaperImage(reaperImageName),
-		ExposedPorts: []string{string(listeningPort)},
-		NetworkMode:  Bridge,
-		Labels: map[string]string{
-			TestcontainerLabelIsReaper: "true",
-		},
-		SkipReaper: true,
-		Mounts:     Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
-		AutoRemove: true,
-		WaitingFor: wait.ForListeningPort(listeningPort),
+	tcConfig := provider.Config()
+
+	reaperOpts := containerOptions{}
+
+	for _, opt := range opts {
+		opt(&reaperOpts)
 	}
+
+	req := ContainerRequest{
+		Image:        reaperImage(reaperOpts.ImageName),
+		ExposedPorts: []string{string(listeningPort)},
+		Labels: map[string]string{
+			TestcontainerLabelIsReaper:       "true",
+			testcontainersdocker.LabelReaper: "true",
+		},
+		SkipReaper:    true,
+		RegistryCred:  reaperOpts.RegistryCredentials,
+		Mounts:        Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
+		Privileged:    tcConfig.RyukPrivileged,
+		WaitingFor:    wait.ForListeningPort(listeningPort),
+		ReaperOptions: opts,
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.AutoRemove = true
+			hc.NetworkMode = Bridge
+		},
+	}
+
+	// keep backwards compatibility
+	req.ReaperImage = req.Image
 
 	// include reaper-specific labels to the reaper container
 	for k, v := range reaper.Labels() {
+		if k == TestcontainerLabelSessionID || k == testcontainersdocker.LabelSessionID {
+			continue
+		}
 		req.Labels[k] = v
 	}
-
-	tcConfig := provider.Config()
-	req.Privileged = tcConfig.RyukPrivileged
 
 	// Attach reaper container to a requested network if it is specified
 	if p, ok := provider.(*DockerProvider); ok {
@@ -88,6 +129,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 	if err != nil {
 		return nil, err
 	}
+	reaper.container = c
 
 	endpoint, err := c.PortEndpoint(ctx, "8080", "")
 	if err != nil {
@@ -103,6 +145,7 @@ type Reaper struct {
 	Provider  ReaperProvider
 	SessionID string
 	Endpoint  string
+	container Container
 }
 
 // Connect runs a goroutine which can be terminated by sending true into the returned channel
@@ -156,36 +199,11 @@ func (r *Reaper) Connect() (chan bool, error) {
 // Labels returns the container labels to use so that this Reaper cleans them up
 func (r *Reaper) Labels() map[string]string {
 	return map[string]string{
-		TestcontainerLabel:          "true",
-		TestcontainerLabelSessionID: r.SessionID,
-	}
-}
-
-func extractDockerHost(ctx context.Context) (dockerHostPath string) {
-	if dockerHostPath = os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"); dockerHostPath != "" {
-		return dockerHostPath
-	}
-
-	dockerHostPath = "/var/run/docker.sock"
-
-	var hostRawURL string
-	if h, ok := ctx.Value(dockerHostContextKey).(string); !ok || h == "" {
-		return dockerHostPath
-	} else {
-		hostRawURL = h
-	}
-	var hostURL *url.URL
-	if u, err := url.Parse(hostRawURL); err != nil {
-		return dockerHostPath
-	} else {
-		hostURL = u
-	}
-
-	switch hostURL.Scheme {
-	case "unix":
-		return hostURL.Path
-	default:
-		return dockerHostPath
+		TestcontainerLabel:                  "true",
+		TestcontainerLabelSessionID:         r.SessionID,
+		testcontainersdocker.LabelLang:      "go",
+		testcontainersdocker.LabelVersion:   internal.Version,
+		testcontainersdocker.LabelSessionID: r.SessionID,
 	}
 }
 

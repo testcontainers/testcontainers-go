@@ -2,6 +2,10 @@ name: Main pipeline
 
 on: [push, pull_request]
 
+concurrency:
+  group: "${{ github.workflow }}-${{ github.head_ref || github.sha }}"
+  cancel-in-progress: true
+
 jobs:
   test:
     strategy:
@@ -24,7 +28,7 @@ jobs:
         run: go mod verify
 
       - name: modTidy
-        run: go mod tidy
+        run: make tools-tidy
 
       - name: ensure compilation
         env:
@@ -39,13 +43,9 @@ jobs:
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-unit
 
-      - name: modTidy e2e tests
+      - name: Run module generator tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make -C e2e tools-tidy
-
-      - name: Run e2e tests
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make test-e2e
+        run: make -C modulegen test-unit
 
       - name: Run checker
         run: |

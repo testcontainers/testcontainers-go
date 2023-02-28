@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 
@@ -94,35 +96,39 @@ type ContainerFile struct {
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
 	FromDockerfile
-	Image           string
-	Entrypoint      []string
-	Env             map[string]string
-	ExposedPorts    []string // allow specifying protocol info
-	Cmd             []string
-	Labels          map[string]string
-	Mounts          ContainerMounts
-	Tmpfs           map[string]string
-	RegistryCred    string
-	WaitingFor      wait.Strategy
-	Name            string // for specifying container name
-	Hostname        string
-	ExtraHosts      []string
-	Privileged      bool                // for starting privileged container
-	Networks        []string            // for specifying network names
-	NetworkAliases  map[string][]string // for specifying network aliases
-	NetworkMode     container.NetworkMode
-	Resources       container.Resources
-	Files           []ContainerFile // files which will be copied when container starts
-	User            string          // for specifying uid:gid
-	SkipReaper      bool            // indicates whether we skip setting up a reaper for this
-	ReaperImage     string          // alternative reaper image
-	AutoRemove      bool            // if set to true, the container will be removed from the host when stopped
-	AlwaysPullImage bool            // Always pull image
-	ImagePlatform   string          // ImagePlatform describes the platform which the image runs on.
-	Binds           []string
-	ShmSize         int64    // Amount of memory shared with the host (in bytes)
-	CapAdd          []string // Add Linux capabilities
-	CapDrop         []string // Drop Linux capabilities
+	Image                   string
+	Entrypoint              []string
+	Env                     map[string]string
+	ExposedPorts            []string // allow specifying protocol info
+	Cmd                     []string
+	Labels                  map[string]string
+	Mounts                  ContainerMounts
+	Tmpfs                   map[string]string
+	RegistryCred            string
+	WaitingFor              wait.Strategy
+	Name                    string // for specifying container name
+	Hostname                string
+	ExtraHosts              []string                                   // Deprecated: Use HostConfigModifier instead
+	Privileged              bool                                       // For starting privileged container
+	Networks                []string                                   // for specifying network names
+	NetworkAliases          map[string][]string                        // for specifying network aliases
+	NetworkMode             container.NetworkMode                      // Deprecated: Use HostConfigModifier instead
+	Resources               container.Resources                        // Deprecated: Use HostConfigModifier instead
+	Files                   []ContainerFile                            // files which will be copied when container starts
+	User                    string                                     // for specifying uid:gid
+	SkipReaper              bool                                       // indicates whether we skip setting up a reaper for this
+	ReaperImage             string                                     // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image
+	ReaperOptions           []ContainerOption                          // options for the reaper
+	AutoRemove              bool                                       // Deprecated: Use HostConfigModifier instead. If set to true, the container will be removed from the host when stopped
+	AlwaysPullImage         bool                                       // Always pull image
+	ImagePlatform           string                                     // ImagePlatform describes the platform which the image runs on.
+	Binds                   []string                                   // Deprecated: Use HostConfigModifier instead
+	ShmSize                 int64                                      // Amount of memory shared with the host (in bytes)
+	CapAdd                  []string                                   // Deprecated: Use HostConfigModifier instead. Add Linux capabilities
+	CapDrop                 []string                                   // Deprecated: Use HostConfigModifier instead. Drop Linux capabilities
+	ConfigModifier          func(*container.Config)                    // Modifier for the config before container creation
+	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
+	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 }
 
 type (
@@ -147,6 +153,29 @@ type (
 
 func (f GenericProviderOptionFunc) ApplyGenericTo(opts *GenericProviderOptions) {
 	f(opts)
+}
+
+// containerOptions functional options for a container
+type containerOptions struct {
+	ImageName           string
+	RegistryCredentials string
+}
+
+// functional option for setting the reaper image
+type ContainerOption func(*containerOptions)
+
+// WithImageName sets the reaper image name
+func WithImageName(imageName string) ContainerOption {
+	return func(o *containerOptions) {
+		o.ImageName = imageName
+	}
+}
+
+// WithRegistryCredentials sets the reaper registry credentials
+func WithRegistryCredentials(registryCredentials string) ContainerOption {
+	return func(o *containerOptions) {
+		o.RegistryCredentials = registryCredentials
+	}
 }
 
 // possible provider types
@@ -209,6 +238,13 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	if c.ContextArchive != nil {
 		return c.ContextArchive, nil
 	}
+
+	// always pass context as absolute path
+	abs, err := filepath.Abs(c.Context)
+	if err != nil {
+		return nil, fmt.Errorf("error getting absolute path: %w", err)
+	}
+	c.Context = abs
 
 	buildContext, err := archive.TarWithOptions(c.Context, &archive.TarOptions{})
 	if err != nil {

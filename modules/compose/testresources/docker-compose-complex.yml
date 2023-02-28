@@ -1,0 +1,13 @@
+version: '3'
+services:
+  nginx:
+    image: docker.io/nginx:stable-alpine
+    ports:
+     - "9080:80"
+  mysql:
+    image: docker.io/mysql:8
+    environment:
+      - MYSQL_DATABASE=db
+      - MYSQL_ROOT_PASSWORD=my-secret-pw
+    ports:
+     - "13306:3306"

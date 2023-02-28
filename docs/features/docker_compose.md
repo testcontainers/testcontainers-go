@@ -9,6 +9,29 @@ dependent upon.
 
 ## Using `docker-compose` directly
 
+```
+go get github.com/testcontainers/testcontainers-go/modules/compose
+```
+
+!!!warning
+
+	Given the version includes the Compose dependency, and the Docker folks added [a replace directive until the upcoming Docker 22.06 release is out](https://github.com/docker/compose/issues/9946#issuecomment-1288923912),
+	we were forced to add it too, causing consumers of _Testcontainers for Go_ to add the following replace directive to their `go.mod` files.
+	We expect this to be removed in the next releases of _Testcontainers for Go_.
+
+	```
+	replace (
+		// For k8s dependencies, we use a replace directive, to prevent them being
+		// upgraded to the version specified in containerd, which is not relevant to the
+		// version needed.
+		// See https://github.com/docker/buildx/pull/948 for details.
+		// https://github.com/docker/buildx/blob/v0.8.1/go.mod#L62-L64
+		k8s.io/api => k8s.io/api v0.22.4
+		k8s.io/apimachinery => k8s.io/apimachinery v0.22.4
+		k8s.io/client-go => k8s.io/client-go v0.22.4
+	)
+	```
+
 Because `docker-compose` v2 is implemented in Go it's possible for _Testcontainers for Go_ to
 use [`github.com/docker/compose`](https://github.com/docker/compose) directly and skip any process execution/_docker-compose-in-a-container_ scenario.
 The `ComposeStack` API exposes this variant of using `docker-compose` in an easy way.
@@ -26,7 +49,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	tc "github.com/testcontainers/testcontainers-go"
+	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
 func TestSomething(t *testing.T) {
@@ -56,7 +79,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	tc "github.com/testcontainers/testcontainers-go"
+	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
 func TestSomethingElse(t *testing.T) {
@@ -104,7 +127,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	tc "github.com/testcontainers/testcontainers-go"
+	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 

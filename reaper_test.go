@@ -5,20 +5,38 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go/internal"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 type mockReaperProvider struct {
-	req    ContainerRequest
-	config TestContainersConfig
+	req             ContainerRequest
+	hostConfig      *container.HostConfig
+	enpointSettings map[string]*network.EndpointSettings
+	config          TestContainersConfig
 }
 
 var errExpected = errors.New("expected")
 
 func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	m.req = req
+
+	m.hostConfig = &container.HostConfig{}
+	m.enpointSettings = map[string]*network.EndpointSettings{}
+
+	if req.HostConfigModifier == nil {
+		req.HostConfigModifier = defaultHostConfigModifier(req)
+	}
+	req.HostConfigModifier(m.hostConfig)
+
+	if req.EnpointSettingsModifier != nil {
+		req.EnpointSettingsModifier(m.enpointSettings)
+	}
 
 	// we're only interested in the request, so instead of mocking the Docker client
 	// we'll error out here
@@ -33,17 +51,21 @@ func (m *mockReaperProvider) Config() TestContainersConfig {
 func createContainerRequest(customize func(ContainerRequest) ContainerRequest) ContainerRequest {
 	req := ContainerRequest{
 		Image:        "reaperImage",
+		ReaperImage:  "reaperImage",
 		ExposedPorts: []string{"8080/tcp"},
 		Labels: map[string]string{
-			TestcontainerLabel:          "true",
-			TestcontainerLabelIsReaper:  "true",
-			TestcontainerLabelSessionID: "sessionId",
+			TestcontainerLabel:                "true",
+			TestcontainerLabelIsReaper:        "true",
+			testcontainersdocker.LabelReaper:  "true",
+			testcontainersdocker.LabelLang:    "go",
+			testcontainersdocker.LabelVersion: internal.Version,
 		},
-		SkipReaper:  true,
-		Mounts:      Mounts(BindMount("/var/run/docker.sock", "/var/run/docker.sock")),
-		AutoRemove:  true,
-		WaitingFor:  wait.ForListeningPort(nat.Port("8080/tcp")),
-		NetworkMode: "bridge",
+		SkipReaper: true,
+		Mounts:     Mounts(BindMount("/var/run/docker.sock", "/var/run/docker.sock")),
+		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
+		ReaperOptions: []ContainerOption{
+			WithImageName("reaperImage"),
+		},
 	}
 	if customize == nil {
 		return req
@@ -53,7 +75,6 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 }
 
 func Test_NewReaper(t *testing.T) {
-
 	type cases struct {
 		name   string
 		req    ContainerRequest
@@ -84,14 +105,22 @@ func Test_NewReaper(t *testing.T) {
 				return req
 			}),
 			config: TestContainersConfig{},
-			ctx:    context.WithValue(context.TODO(), dockerHostContextKey, "unix:///value/in/context.sock"),
+			ctx:    context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, "unix:///value/in/context.sock"),
+		},
+		{
+			name: "with registry credentials",
+			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
+				creds := "registry-creds"
+				req.RegistryCred = creds
+				req.ReaperOptions = append(req.ReaperOptions, WithRegistryCredentials(creds))
+				return req
+			}),
+			config: TestContainersConfig{},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// make sure we re-initialize the singleton
-			reaper = nil
 			provider := &mockReaperProvider{
 				config: test.config,
 			}
@@ -100,50 +129,73 @@ func Test_NewReaper(t *testing.T) {
 				test.ctx = context.TODO()
 			}
 
-			_, err := NewReaper(test.ctx, "sessionId", provider, "reaperImage")
+			_, err := newReaper(test.ctx, "sessionId", provider, test.req.ReaperOptions...)
 			// we should have errored out see mockReaperProvider.RunContainer
 			assert.EqualError(t, err, "expected")
 
-			assert.Equal(t, test.req, provider.req, "expected ContainerRequest doesn't match the submitted request")
+			assert.Equal(t, test.req.Image, provider.req.Image, "expected image doesn't match the submitted request")
+			assert.Equal(t, test.req.ExposedPorts, provider.req.ExposedPorts, "expected exposed ports don't match the submitted request")
+			assert.Equal(t, test.req.Labels, provider.req.Labels, "expected labels don't match the submitted request")
+			assert.Equal(t, test.req.SkipReaper, provider.req.SkipReaper, "expected skipReaper doesn't match the submitted request")
+			assert.Equal(t, test.req.Mounts, provider.req.Mounts, "expected mounts don't match the submitted request")
+			assert.Equal(t, test.req.WaitingFor, provider.req.WaitingFor, "expected waitingFor don't match the submitted request")
+
+			// checks for reaper's preCreationCallback fields
+			assert.Equal(t, container.NetworkMode(Bridge), provider.hostConfig.NetworkMode, "expected networkMode doesn't match the submitted request")
+			assert.Equal(t, true, provider.hostConfig.AutoRemove, "expected networkMode doesn't match the submitted request")
 		})
 	}
 }
 
-func Test_ExtractDockerHost(t *testing.T) {
-	t.Run("Docker Host as environment variable", func(t *testing.T) {
-		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
-		host := extractDockerHost(context.Background())
+func Test_ReaperForNetwork(t *testing.T) {
+	ctx := context.Background()
 
-		assert.Equal(t, "/path/to/docker.sock", host)
-	})
+	networkName := "test-network-with-custom-reaper"
 
-	t.Run("Default Docker Host", func(t *testing.T) {
-		host := extractDockerHost(context.Background())
+	req := GenericNetworkRequest{
+		NetworkRequest: NetworkRequest{
+			Name:           networkName,
+			CheckDuplicate: true,
+			ReaperOptions: []ContainerOption{
+				WithRegistryCredentials("credentials"),
+				WithImageName("reaperImage"),
+			},
+		},
+	}
 
-		assert.Equal(t, "/var/run/docker.sock", host)
-	})
+	provider := &mockReaperProvider{
+		config: TestContainersConfig{},
+	}
 
-	t.Run("Malformed Docker Host is passed in context", func(t *testing.T) {
-		ctx := context.Background()
+	_, err := newReaper(ctx, "sessionId", provider, req.ReaperOptions...)
+	assert.EqualError(t, err, "expected")
 
-		host := extractDockerHost(context.WithValue(ctx, dockerHostContextKey, "path-to-docker-sock"))
+	assert.Equal(t, "credentials", provider.req.RegistryCred)
+	assert.Equal(t, "reaperImage", provider.req.Image)
+	assert.Equal(t, "reaperImage", provider.req.ReaperImage)
+}
 
-		assert.Equal(t, "/var/run/docker.sock", host)
-	})
+func Test_ReaperReusedIfHealthy(t *testing.T) {
+	SkipIfProviderIsNotHealthy(&testing.T{})
 
-	t.Run("Malformed Schema Docker Host is passed in context", func(t *testing.T) {
-		ctx := context.Background()
+	ctx := context.Background()
+	// As other integration tests run with the (shared) Reaper as well, re-use the instance to not interrupt other tests
+	wasReaperRunning := reaperInstance != nil
 
-		host := extractDockerHost(context.WithValue(ctx, dockerHostContextKey, "http://path to docker sock"))
+	provider, _ := ProviderDocker.GetProvider()
+	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), "sessionId", provider)
+	assert.NoError(t, err, "creating the Reaper should not error")
 
-		assert.Equal(t, "/var/run/docker.sock", host)
-	})
+	reaperReused, _ := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), "sessionId", provider)
+	assert.Same(t, reaper, reaperReused, "expecting the same reaper instance is returned if running and healthy")
 
-	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
-		ctx := context.Background()
+	terminate, err := reaper.Connect()
+	defer func(term chan bool) {
+		term <- true
+	}(terminate)
+	assert.NoError(t, err, "connecting to Reaper should be successful")
 
-		host := extractDockerHost(context.WithValue(ctx, dockerHostContextKey, "unix:///this/is/a/sample.sock"))
-
-		assert.Equal(t, "/this/is/a/sample.sock", host)
-	})
+	if !wasReaperRunning {
+		terminateContainerOnEnd(t, ctx, reaper.container)
+	}
 }
