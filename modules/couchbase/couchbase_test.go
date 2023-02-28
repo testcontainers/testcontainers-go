@@ -8,11 +8,16 @@ import (
 	"github.com/couchbase/gocb/v2"
 )
 
-func TestCouchbase(t *testing.T) {
+const (
+	enterpriseEdition = "couchbase:enterprise-7.1.3"
+	communityEdition  = "couchbase:community-7.1.1"
+)
+
+func TestCouchbaseWithCommunityContainer(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	container, err := StartContainer(ctx, WithImageName("couchbase:7.1.3"), WithBucket(NewBucket(bucketName)))
+	container, err := StartContainer(ctx, WithImageName(communityEdition), WithBucket(NewBucket(bucketName)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,9 +34,63 @@ func TestCouchbase(t *testing.T) {
 		t.Fatalf("could not connect couchbase: %s", err)
 	}
 
-	bucket := cluster.Bucket(bucketName)
+	testBucketUsage(t, cluster.Bucket(bucketName))
+}
 
-	err = bucket.WaitUntilReady(5*time.Second, nil)
+func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
+	ctx := context.Background()
+
+	bucketName := "testBucket"
+	container, err := StartContainer(ctx, WithImageName(enterpriseEdition), WithBucket(NewBucket(bucketName)))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Clean up the container after the test is complete
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	cluster, err := connectCluster(ctx, container)
+	if err != nil {
+		t.Fatalf("could not connect couchbase: %s", err)
+	}
+
+	testBucketUsage(t, cluster.Bucket(bucketName))
+}
+
+func TestAnalyticsServiceWithCommunityContainer(t *testing.T) {
+	ctx := context.Background()
+
+	bucketName := "testBucket"
+	_, err := StartContainer(ctx,
+		WithImageName(communityEdition),
+		WithAnalyticsService(),
+		WithBucket(NewBucket(bucketName)))
+
+	if err == nil {
+		t.Errorf("Expected error to be [%v] , got nil", err)
+	}
+}
+
+func TestEventingServiceWithCommunityContainer(t *testing.T) {
+	ctx := context.Background()
+
+	bucketName := "testBucket"
+	_, err := StartContainer(ctx,
+		WithImageName(communityEdition),
+		WithAnalyticsService(),
+		WithBucket(NewBucket(bucketName)))
+
+	if err == nil {
+		t.Errorf("Expected error to be [%v] , got nil", err)
+	}
+}
+
+func testBucketUsage(t *testing.T, bucket *gocb.Bucket) {
+	err := bucket.WaitUntilReady(5*time.Second, nil)
 	if err != nil {
 		t.Fatalf("could not connect bucket: %s", err)
 	}

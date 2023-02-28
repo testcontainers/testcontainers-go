@@ -14,11 +14,11 @@ require (
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
-	github.com/containerd/containerd v1.6.17 // indirect
+	github.com/containerd/containerd v1.6.18 // indirect
 	github.com/couchbase/gocbcore/v10 v10.2.1 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v23.0.0+incompatible // indirect
+	github.com/docker/docker v23.0.1+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
@@ -43,10 +43,10 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 // indirect
+	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect
 	google.golang.org/grpc v1.47.0 // indirect
