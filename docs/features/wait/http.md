@@ -11,6 +11,7 @@ The HTTP wait strategy will check the result of an HTTP(S) request against the c
 - the TLS config to be used for HTTPS.
 - the startup timeout to be used in seconds, default is 60 seconds.
 - the poll interval to be used in milliseconds, default is 100 milliseconds.
+- the basic auth credentials to be used.
 
 Variations on the HTTP wait strategy are supported, including:
 
@@ -21,6 +22,16 @@ req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"8086/tcp"},
 		WaitingFor: wait.ForHTTP("/ping").WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
+	}
+```
+
+## Match an HTTP method with Basic Auth
+
+```golang
+req := ContainerRequest{
+		Image:        "docker.io/nginx:alpine",
+		ExposedPorts: []string{"8086/tcp"},
+		WaitingFor: wait.ForHTTP("/auth-ping").WithMethod(http.MethodPost).WithBasicAuth("username", "password").WithBody(bytes.NewReader([]byte("ping"))),
 	}
 ```
 
