@@ -113,9 +113,7 @@ func TestGetDockerConfig(t *testing.T) {
 }
 
 func TestBuildContainerFromDockerfile(t *testing.T) {
-	t.Log("getting context")
 	ctx := context.Background()
-	t.Log("got context, creating container request")
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
 			Context: "./testresources",
@@ -157,9 +155,8 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 
 	}()
 
-	t.Log("getting context")
 	ctx := context.Background()
-	t.Log("got context, creating container request")
+
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
 			Context:    "./testresources",
@@ -187,9 +184,8 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 
 	prepareLocalRegistryWithAuth(t)
 
-	t.Log("getting context")
 	ctx := context.Background()
-	t.Log("got context, creating container request")
+
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
 			Context:    "./testresources",
@@ -268,8 +264,6 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 		Started:          true,
 	}
 
-	t.Log("creating registry container")
-
 	registryC, err := GenericContainer(ctx, genContainerReq)
 	assert.NoError(t, err)
 
@@ -288,11 +282,7 @@ func prepareRedisImage(ctx context.Context, req ContainerRequest, t *testing.T) 
 		Started:          true,
 	}
 
-	t.Log("creating redis container")
-
 	redisC, err := GenericContainer(ctx, genContainerReq)
-
-	t.Log("created redis container")
 
 	return redisC, err
 }
