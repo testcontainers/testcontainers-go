@@ -300,7 +300,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 
 	waitStrategy = append(waitStrategy, wait.ForHTTP("/pools/default").
 		WithPort(MGMT_PORT).
-		WithBasicCredentials(c.config.username, c.config.password).
+		WithBasicAuth(c.config.username, c.config.password).
 		WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusOK
 		}).
@@ -320,7 +320,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 	if contains(c.config.enabledServices, query) {
 		waitStrategy = append(waitStrategy, wait.ForHTTP("/admin/ping").
 			WithPort(QUERY_PORT).
-			WithBasicCredentials(c.config.username, c.config.password).
+			WithBasicAuth(c.config.username, c.config.password).
 			WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}),
@@ -330,7 +330,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 	if contains(c.config.enabledServices, analytics) {
 		waitStrategy = append(waitStrategy, wait.ForHTTP("/admin/ping").
 			WithPort(ANALYTICS_PORT).
-			WithBasicCredentials(c.config.username, c.config.password).
+			WithBasicAuth(c.config.username, c.config.password).
 			WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}))
@@ -339,7 +339,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 	if contains(c.config.enabledServices, eventing) {
 		waitStrategy = append(waitStrategy, wait.ForHTTP("/api/v1/config").
 			WithPort(EVENTING_PORT).
-			WithBasicCredentials(c.config.username, c.config.password).
+			WithBasicAuth(c.config.username, c.config.password).
 			WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}))
@@ -446,7 +446,7 @@ func (c *CouchbaseContainer) isQueryKeyspacePresent(ctx context.Context, bucket 
 func (c *CouchbaseContainer) waitForAllServicesEnabled(ctx context.Context, bucket bucket) error {
 	err := wait.ForHTTP("/pools/default/b/"+bucket.name).
 		WithPort(MGMT_PORT).
-		WithBasicCredentials(c.config.username, c.config.password).
+		WithBasicAuth(c.config.username, c.config.password).
 		WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusOK
 		}).
