@@ -24,15 +24,15 @@ jobs:
         uses: actions/checkout@v3
 
       - name: modVerify
-        working-directory: ./examples/{{ $lower }}
+        working-directory: ./{{ ParentDir }}/{{ $lower }}
         run: go mod verify
 
       - name: modTidy
-        working-directory: ./examples/{{ $lower }}
+        working-directory: ./{{ ParentDir }}/{{ $lower }}
         run: make tools-tidy
 
       - name: gotestsum
-        working-directory: ./examples/{{ $lower }}
+        working-directory: ./{{ ParentDir }}/{{ $lower }}
         run: make test-unit
 
       - name: Run checker

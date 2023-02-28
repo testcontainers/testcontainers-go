@@ -4,15 +4,15 @@ go 1.18
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0
-	github.com/containerd/containerd v1.6.17
-	github.com/docker/docker v23.0.0+incompatible
+	github.com/containerd/containerd v1.6.18
+	github.com/docker/docker v23.0.1+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.5.0
 	github.com/google/uuid v1.3.0
 	github.com/magiconair/properties v1.8.7
 	github.com/moby/term v0.0.0-20221128092401-c43b287e0e0f
 	github.com/opencontainers/image-spec v1.1.0-rc2
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	golang.org/x/sys v0.5.0
 	gotest.tools/gotestsum v1.9.0
 )
@@ -44,10 +44,9 @@ require (
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 // indirect
-	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect

@@ -11,6 +11,9 @@ categories:
   - title: ⚠️ Breaking Changes
     labels:
       - 'breaking change'
+  - title: 🔒 Security
+    labels:
+      - 'security'
   - title: 🐛 Bug Fixes
     labels:
       - 'bug'

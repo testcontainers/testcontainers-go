@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -34,8 +35,7 @@ type HTTPStrategy struct {
 	Method            string      // http method
 	Body              io.Reader   // http request body
 	PollInterval      time.Duration
-	Username          string
-	Password          string
+	UserInfo          *url.Userinfo
 }
 
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
@@ -50,6 +50,7 @@ func NewHTTPStrategy(path string) *HTTPStrategy {
 		Method:            http.MethodGet,
 		Body:              nil,
 		PollInterval:      defaultPollInterval(),
+		UserInfo:          nil,
 	}
 }
 
@@ -105,15 +106,14 @@ func (ws *HTTPStrategy) WithBody(reqdata io.Reader) *HTTPStrategy {
 	return ws
 }
 
-// WithPollInterval can be used to override the default polling interval of 100 milliseconds
-func (ws *HTTPStrategy) WithPollInterval(pollInterval time.Duration) *HTTPStrategy {
-	ws.PollInterval = pollInterval
+func (ws *HTTPStrategy) WithBasicAuth(username, password string) *HTTPStrategy {
+	ws.UserInfo = url.UserPassword(username, password)
 	return ws
 }
 
-func (ws *HTTPStrategy) WithBasicCredentials(username, password string) *HTTPStrategy {
-	ws.Username = username
-	ws.Password = password
+// WithPollInterval can be used to override the default polling interval of 100 milliseconds
+func (ws *HTTPStrategy) WithPollInterval(pollInterval time.Duration) *HTTPStrategy {
+	ws.PollInterval = pollInterval
 	return ws
 }
 
@@ -200,7 +200,16 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 
 	client := http.Client{Transport: tripper, Timeout: time.Second}
 	address := net.JoinHostPort(ipAddress, strconv.Itoa(port.Int()))
-	endpoint := fmt.Sprintf("%s://%s%s", proto, address, ws.Path)
+
+	endpoint := url.URL{
+		Scheme: proto,
+		Host:   address,
+		Path:   ws.Path,
+	}
+
+	if ws.UserInfo != nil {
+		endpoint.User = ws.UserInfo
+	}
 
 	// cache the body into a byte-slice so that it can be iterated over multiple times
 	var body []byte
@@ -216,15 +225,10 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(ws.PollInterval):
-			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint, bytes.NewReader(body))
+			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint.String(), bytes.NewReader(body))
 			if err != nil {
 				return err
 			}
-
-			if ws.Username != "" {
-				req.SetBasicAuth(ws.Username, ws.Password)
-			}
-
 			resp, err := client.Do(req)
 			if err != nil {
 				continue

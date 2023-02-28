@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/bigtable v1.18.1
-	github.com/testcontainers/testcontainers-go v0.17.0
+	github.com/testcontainers/testcontainers-go v0.18.0
 	google.golang.org/api v0.110.0
 	google.golang.org/grpc v1.53.0
 	gotest.tools/gotestsum v1.9.0
@@ -23,10 +23,10 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cncf/udpa/go v0.0.0-20220112060539-c52dc94e7fbe // indirect
 	github.com/cncf/xds/go v0.0.0-20230105202645-06c439db220b // indirect
-	github.com/containerd/containerd v1.6.17 // indirect
+	github.com/containerd/containerd v1.6.18 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v20.10.20+incompatible // indirect
+	github.com/docker/docker v23.0.0+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/envoyproxy/go-control-plane v0.10.3 // indirect
@@ -56,7 +56,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.5.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
@@ -70,7 +70,4 @@ require (
 	gotest.tools/v3 v3.4.0 // indirect
 )
 
-replace (
-	github.com/docker/docker => github.com/docker/docker v20.10.3-0.20221013203545-33ab36d6b304+incompatible // 22.06 branch
-	github.com/testcontainers/testcontainers-go => ../..
-)
+replace github.com/testcontainers/testcontainers-go => ../..
