@@ -21,6 +21,34 @@ import (
 
 // https://github.com/testcontainers/testcontainers-go/issues/183
 func ExampleHTTPStrategy() {
+	// waitForHTTP {
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "nginx:latest",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForHTTP("/").WithPort("80/tcp"),
+	}
+
+	gogs, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		panic(err)
+	}
+	// }
+
+	defer func() {
+		if err := gogs.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
+
+	// Here you have a running container
+}
+
+func ExampleHTTPStrategy_WithBasicAuth() {
+	// waitForBasicAuth {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "gogs/gogs:0.11.91",
@@ -35,6 +63,7 @@ func ExampleHTTPStrategy() {
 	if err != nil {
 		panic(err)
 	}
+	// }
 
 	defer func() {
 		if err := gogs.Terminate(ctx); err != nil {
@@ -147,6 +176,7 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 		return
 	}
 
+	// waitForHTTPStatusCode {
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
 	var i int
 	dockerReq := testcontainers.ContainerRequest{
@@ -166,6 +196,7 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 			}).
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
 	}
+	// }
 
 	ctx := context.Background()
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})

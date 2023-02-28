@@ -17,56 +17,18 @@ Variations on the HTTP wait strategy are supported, including:
 
 ## Match an HTTP method
 
-```golang
-req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"8086/tcp"},
-		WaitingFor: wait.ForHTTP("/ping").WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
-	}
-```
+<!--codeinclude-->
+[Waiting for an HTTP endpoint](../../../wait/http_test.go) inside_block:waitForHTTP
+<!--/codeinclude-->
 
 ## Match an HTTP method with Basic Auth
 
-```golang
-req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"8086/tcp"},
-		WaitingFor: wait.ForHTTP("/auth-ping").WithMethod(http.MethodPost).WithBasicAuth("username", "password").WithBody(bytes.NewReader([]byte("ping"))),
-	}
-```
-
-## Match an HTTP status code
-
-```golang
-req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"8086/tcp"},
-		WaitingFor: wait.ForHTTP("/ping").WithPort("8086/tcp").WithStatusCodeMatcher(
-            func(status int) bool {
-                return status == http.StatusNoContent
-            },
-        ),
-	}
-```
+<!--codeinclude-->
+[Waiting for an HTTP endpoint with Basic Auth](../../../wait/http_test.go) inside_block:waitForBasicAuth
+<!--/codeinclude-->
 
 ## Match an HTTPS status code and a response matcher
 
-```golang
-req := testcontainers.ContainerRequest{
-    FromDockerfile: testcontainers.FromDockerfile{
-        Context: workdir + "/testdata",
-    },
-    ExposedPorts: []string{"80/tcp"},
-    WaitingFor: wait.NewHTTPStrategy("/ping").
-        WithStartupTimeout(time.Second * 10).WithPort("80/tcp").
-        WithResponseMatcher(func(body io.Reader) bool {
-            data, _ := io.ReadAll(body)
-            return bytes.Equal(data, []byte("pong"))
-        }).
-        WithStatusCodeMatcher(func(status int) bool {
-            i++ // always fail the first try in order to force the polling loop to be re-run
-            return i > 1 && status == 200
-        }).
-        WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
-}
-```
+<!--codeinclude-->
+[Waiting for an HTTP endpoint matching an HTTP status code](../../../wait/http_test.go) inside_block:waitForHTTPStatusCode
+<!--/codeinclude-->
