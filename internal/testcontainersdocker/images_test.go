@@ -63,14 +63,16 @@ func TestExtractImagesFromDockerfile(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		images, err := ExtractImagesFromDockerfile(tt.dockerfile, tt.buildArgs)
-		if tt.expectedError {
-			require.Error(t, err)
-			assert.Empty(t, images)
-		} else {
-			require.NoError(t, err)
-			assert.Equal(t, tt.expected, images)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			images, err := ExtractImagesFromDockerfile(tt.dockerfile, tt.buildArgs)
+			if tt.expectedError {
+				require.Error(t, err)
+				assert.Empty(t, images)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expected, images)
+			}
+		})
 	}
 }
 

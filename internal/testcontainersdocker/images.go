@@ -45,6 +45,7 @@ func ExtractImagesFromDockerfile(dockerfile string, buildArgs map[string]*string
 
 	// extract images from dockerfile
 	for _, line := range lines {
+		line = strings.TrimSpace(line)
 		if !strings.HasPrefix(strings.ToUpper(line), "FROM") {
 			continue
 		}
