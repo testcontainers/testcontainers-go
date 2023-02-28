@@ -175,6 +175,7 @@ func generate(example Example, rootDir string) error {
 		"Entrypoint":    func() string { return example.Entrypoint() },
 		"ContainerName": func() string { return example.ContainerName() },
 		"ExampleType":   func() string { return example.Type() },
+		"ParentDir":     func() string { return example.ParentDir() },
 		"ToLower":       func() string { return example.Lower() },
 		"Title":         func() string { return example.Title() },
 		"codeinclude":   func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude

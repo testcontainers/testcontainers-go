@@ -71,18 +71,7 @@ func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Clien
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := localstack.StartContainer(
-		ctx,
-		localstack.OverrideContainerRequest(testcontainers.ContainerRequest{
-			Env: map[string]string{
-				"AWS_ACCESS_KEY_ID":     accesskey,
-				"AWS_SECRET_ACCESS_KEY": secretkey,
-				"AWS_SESSION_TOKEN":     token,
-				"AWS_DEFAULT_REGION":    region,
-				"SERVICES":              "s3,sqs,cloudwatchlogs,kms",
-			}},
-		),
-	)
+	container, err := localstack.StartContainer(ctx, localstack.NoopOverrideContainerRequest)
 	require.Nil(t, err)
 
 	s3Client, err := s3Client(ctx, container)

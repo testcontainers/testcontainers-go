@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/examples/consul
 go 1.18
 
 require (
-	github.com/hashicorp/consul/api v1.18.0
+	github.com/hashicorp/consul/api v1.19.1
 	github.com/testcontainers/testcontainers-go v0.18.0
 	gotest.tools/gotestsum v1.9.0
 )
@@ -16,7 +16,7 @@ require (
 	github.com/containerd/containerd v1.6.18 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v23.0.0+incompatible // indirect
+	github.com/docker/docker v23.0.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
