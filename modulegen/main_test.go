@@ -330,8 +330,6 @@ func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConf
 
 	// first item is the main module
 	assert.Equal(t, "/", examples[0].Directory, examples)
-	// second item is the modulegen module
-	assert.Equal(t, "/modulegen", examples[1].Directory, examples)
 }
 
 // assert content example file in the docs
@@ -407,8 +405,8 @@ func assertGoModContent(t *testing.T, example Example, goModFile string) {
 	assert.Nil(t, err)
 
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, "module github.com/testcontainers/testcontainers-go/examples/"+example.Lower(), data[0])
-	assert.Equal(t, "\tgithub.com/testcontainers/testcontainers-go v"+example.TCVersion, data[5])
+	assert.Equal(t, "module github.com/testcontainers/testcontainers-go/"+example.ParentDir()+"/"+example.Lower(), data[0])
+	assert.Equal(t, "\tgithub.com/testcontainers/testcontainers-go "+example.TCVersion, data[5])
 }
 
 // assert content Makefile

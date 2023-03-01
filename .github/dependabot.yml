@@ -7,24 +7,6 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
-      directory: /modulegen
-      schedule:
-        interval: weekly
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
-      directory: /modules/compose
-      schedule:
-        interval: weekly
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
-      directory: /modules/localstack
-      schedule:
-        interval: weekly
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
       directory: /examples/bigtable
       schedule:
         interval: weekly
@@ -104,6 +86,24 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/toxiproxy
+      schedule:
+        interval: weekly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modulegen
+      schedule:
+        interval: weekly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/compose
+      schedule:
+        interval: weekly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/localstack
       schedule:
         interval: weekly
       open-pull-requests-limit: 3
