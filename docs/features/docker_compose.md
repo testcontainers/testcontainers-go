@@ -22,7 +22,7 @@ go get github.com/testcontainers/testcontainers-go/modules/compose
 	```
 	replace (
 
-            github.com/cucumber/godog => github.com/laurazard/godog v0.0.0-20220922095256-4c4b17abdae7
+		github.com/cucumber/godog => github.com/laurazard/godog v0.0.0-20220922095256-4c4b17abdae7
 
 		// For k8s dependencies, we use a replace directive, to prevent them being
 		// upgraded to the version specified in containerd, which is not relevant to the
