@@ -406,7 +406,7 @@ func assertGoModContent(t *testing.T, example Example, goModFile string) {
 
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, "module github.com/testcontainers/testcontainers-go/"+example.ParentDir()+"/"+example.Lower(), data[0])
-	assert.Equal(t, "\tgithub.com/testcontainers/testcontainers-go v"+example.TCVersion, data[5])
+	assert.Equal(t, "\tgithub.com/testcontainers/testcontainers-go "+example.TCVersion, data[5])
 }
 
 // assert content Makefile
