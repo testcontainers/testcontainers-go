@@ -49,7 +49,7 @@ func TestNewUpdate(t *testing.T) {
 		assert.Equal(t, update.Directory, test.parentDir+"/test")
 		assert.Equal(t, update.PackageEcosystem, "gomod")
 		assert.Equal(t, update.OpenPullRequestsLimit, 3)
-		assert.Equal(t, update.Schedule.Interval, "weekly")
+		assert.Equal(t, update.Schedule.Interval, updateSchedule)
 		assert.Equal(t, update.RebaseStrategy, "disabled")
 	}
 }
@@ -95,7 +95,7 @@ func TestExamplesHasDependabotEntry(t *testing.T) {
 		for _, exampleUpdate := range exampleUpdates {
 			dependabotDir := "/examples/" + strings.ToLower(example.Name())
 
-			assert.Equal(t, exampleUpdate.Schedule.Interval, "weekly")
+			assert.Equal(t, exampleUpdate.Schedule.Interval, updateSchedule)
 
 			if dependabotDir == exampleUpdate.Directory {
 				found = true
