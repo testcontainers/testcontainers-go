@@ -7,6 +7,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const updateSchedule = "monthly"
+
 type Updates []Update
 
 type DependabotConfig struct {
@@ -33,7 +35,7 @@ func NewUpdate(example Example) Update {
 		PackageEcosystem:      "gomod",
 		RebaseStrategy:        "disabled",
 		Schedule: Schedule{
-			Interval: "weekly",
+			Interval: updateSchedule,
 		},
 	}
 }
