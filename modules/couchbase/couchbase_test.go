@@ -81,7 +81,7 @@ func TestEventingServiceWithCommunityContainer(t *testing.T) {
 	bucketName := "testBucket"
 	_, err := StartContainer(ctx,
 		WithImageName(communityEdition),
-		WithAnalyticsService(),
+		WithEventingService(),
 		WithBucket(NewBucket(bucketName)))
 
 	if err == nil {
