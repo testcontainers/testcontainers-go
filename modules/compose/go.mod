@@ -3,6 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/compose
 go 1.18
 
 replace (
+	github.com/cucumber/godog => github.com/laurazard/godog v0.0.0-20220922095256-4c4b17abdae7
 	github.com/testcontainers/testcontainers-go => ../..
 
 	golang.org/x/oauth2 => golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
@@ -18,7 +19,7 @@ replace (
 )
 
 require (
-	github.com/compose-spec/compose-go v1.11.0
+	github.com/compose-spec/compose-go v1.12.0
 	github.com/docker/cli v23.0.1+incompatible
 	github.com/docker/compose/v2 v2.16.0
 	github.com/docker/docker v23.0.1+incompatible
