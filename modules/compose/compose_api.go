@@ -50,7 +50,7 @@ func (io IgnoreOrphans) applyToStackUp(co *api.CreateOptions, _ *api.StartOption
 	co.IgnoreOrphans = bool(io)
 }
 
-// RemoveOrphans will cleanup containers that are not declared on the compose model but own the same labels
+// RemoveOrphans will clean up containers that are not declared on the compose model but own the same labels
 type RemoveOrphans bool
 
 func (ro RemoveOrphans) applyToStackUp(o *stackUpOptions) {
@@ -66,6 +66,12 @@ type Wait bool
 
 func (w Wait) applyToStackUp(o *stackUpOptions) {
 	o.Wait = bool(w)
+}
+
+type RemoveVolumes bool
+
+func (ro RemoveVolumes) applyToStackDown(o *stackDownOptions) {
+	o.Volumes = bool(ro)
 }
 
 // RemoveImages used by services

@@ -3,6 +3,8 @@ package compose
 import (
 	"context"
 	"fmt"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/google/uuid"
 	"hash/fnv"
 	"testing"
 	"time"
@@ -363,6 +365,29 @@ func TestDockerComposeAPIWithVolume(t *testing.T) {
 
 	err = compose.Up(ctx, Wait(true))
 	assert.NoError(t, err, "compose.Up()")
+}
+
+func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
+	identifier := uuid.New().String()
+	stackFiles := WithStackFiles("./testresources/docker-compose-volume.yml")
+	compose, err := NewDockerComposeWith(stackFiles, StackIdentifier(identifier))
+	assert.NoError(t, err, "NewDockerCompose()")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.Up(ctx, Wait(true))
+	assert.NoError(t, err, "compose.Up()")
+
+	err = compose.Down(context.Background(), RemoveOrphans(true), RemoveVolumes(true), RemoveImagesLocal)
+	assert.NoError(t, err, "compose.Down()")
+
+	volumeListFilters := filters.NewArgs()
+	volumeListFilters.Add("name", fmt.Sprintf("%s_mydata", identifier))
+	volumeList, err := compose.dockerClient.VolumeList(ctx, volumeListFilters)
+	assert.NoError(t, err, "compose.dockerClient.VolumeList()")
+
+	assert.Equal(t, 0, len(volumeList.Volumes), "Volumes are not cleaned up")
 }
 
 func TestDockerComposeAPIWithBuild(t *testing.T) {
