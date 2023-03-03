@@ -25,7 +25,7 @@ const (
 	// Deprecated: it has been replaced by the internal testcontainersdocker.LabelReaper
 	TestcontainerLabelIsReaper = TestcontainerLabel + ".reaper"
 
-	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.3.4"
+	ReaperDefaultImage = "registry.testcontainers.com/testcontainers/ryuk:0.3.4"
 )
 
 var (
