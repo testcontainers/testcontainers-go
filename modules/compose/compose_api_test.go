@@ -399,6 +399,7 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 	assert.NoError(t, err, "compose.Down()")
 
 	volumeListFilters := filters.NewArgs()
+	// the "mydata" identifier comes from the "testresources/docker-compose-volume.yml" file
 	volumeListFilters.Add("name", fmt.Sprintf("%s_mydata", identifier))
 	volumeList, err := compose.dockerClient.VolumeList(ctx, volumeListFilters)
 	assert.NoError(t, err, "compose.dockerClient.VolumeList()")
