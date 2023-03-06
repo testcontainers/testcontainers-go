@@ -6,7 +6,7 @@ It's based on the official Apache Pulsar docker image, so it is recommended to r
 
 ## Adding this module to your project dependencies
 
-Please run the following command to add the LocalStack module to your Go dependencies:
+Please run the following command to add the Apache Pulsar module to your Go dependencies:
 
 ```
 go get github.com/testcontainers/testcontainers-go/modules/pulsar
@@ -86,7 +86,7 @@ If you want to know more about LogConsumers, please check the [Following Contain
 
 ## Advanced configuration
 
-In the case you need a more advanced settings regarding the config, host config and endpoint settings Docker types, you can leverage the modifier functions that are available in
+In the case you need a more advanced configuration regarding the config, host config and endpoint settings Docker types, you can leverage the modifier functions that are available in
 the ContainerRequest. The Pulsar container exposes a way to interact with those modifiers in a simple manner, using the aforementioned options in the `StartContainer` function:
 
 <!--codeinclude-->
