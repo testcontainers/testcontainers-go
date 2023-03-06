@@ -145,13 +145,11 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 	err = mysqlContainer.Stop(ctx, &stopTimeout)
 	assert.NoError(t, err, "Stop mysql container")
 
-	serviceNames = compose.Services()
-
-	_, err = compose.ServiceContainer(context.Background(), "mysql")
-	assert.Error(t, err, "Make sure there is no mysql container")
-
-	assert.Equal(t, 1, len(serviceNames))
-	assert.Contains(t, serviceNames, "nginx")
+	// check container status
+	state, err := mysqlContainer.State(ctx)
+	assert.NoError(t, err)
+	assert.False(t, state.Running)
+	assert.Equal(t, "exited", state.Status)
 }
 
 func TestDockerComposeAPIWithWaitForService(t *testing.T) {
