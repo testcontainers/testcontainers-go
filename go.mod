@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0
-	github.com/containerd/containerd v1.6.18
+	github.com/containerd/containerd v1.6.19
 	github.com/cpuguy83/dockercfg v0.3.1
 	github.com/docker/docker v23.0.1+incompatible
 	github.com/docker/go-connections v0.4.0
@@ -13,7 +13,7 @@ require (
 	github.com/magiconair/properties v1.8.7
 	github.com/moby/term v0.0.0-20221128092401-c43b287e0e0f
 	github.com/opencontainers/image-spec v1.1.0-rc2
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	golang.org/x/sys v0.5.0
 	gotest.tools/gotestsum v1.9.0
 )

@@ -1,9 +1,9 @@
-{{ $lower := ToLower }}module github.com/testcontainers/testcontainers-go/examples/{{ $lower }}
+{{ $lower := ToLower }}module github.com/testcontainers/testcontainers-go/{{ ParentDir }}/{{ $lower }}
 
 go 1.18
 
 require (
-	github.com/testcontainers/testcontainers-go v{{ .TCVersion }}
+	github.com/testcontainers/testcontainers-go {{ .TCVersion }}
 	gotest.tools/gotestsum v1.8.2
 )
 

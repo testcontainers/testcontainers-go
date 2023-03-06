@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -34,6 +35,7 @@ type HTTPStrategy struct {
 	Method            string      // http method
 	Body              io.Reader   // http request body
 	PollInterval      time.Duration
+	UserInfo          *url.Userinfo
 }
 
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
@@ -48,6 +50,7 @@ func NewHTTPStrategy(path string) *HTTPStrategy {
 		Method:            http.MethodGet,
 		Body:              nil,
 		PollInterval:      defaultPollInterval(),
+		UserInfo:          nil,
 	}
 }
 
@@ -100,6 +103,11 @@ func (ws *HTTPStrategy) WithMethod(method string) *HTTPStrategy {
 
 func (ws *HTTPStrategy) WithBody(reqdata io.Reader) *HTTPStrategy {
 	ws.Body = reqdata
+	return ws
+}
+
+func (ws *HTTPStrategy) WithBasicAuth(username, password string) *HTTPStrategy {
+	ws.UserInfo = url.UserPassword(username, password)
 	return ws
 }
 
@@ -192,7 +200,16 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 
 	client := http.Client{Transport: tripper, Timeout: time.Second}
 	address := net.JoinHostPort(ipAddress, strconv.Itoa(port.Int()))
-	endpoint := fmt.Sprintf("%s://%s%s", proto, address, ws.Path)
+
+	endpoint := url.URL{
+		Scheme: proto,
+		Host:   address,
+		Path:   ws.Path,
+	}
+
+	if ws.UserInfo != nil {
+		endpoint.User = ws.UserInfo
+	}
 
 	// cache the body into a byte-slice so that it can be iterated over multiple times
 	var body []byte
@@ -208,7 +225,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(ws.PollInterval):
-			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint, bytes.NewReader(body))
+			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint.String(), bytes.NewReader(body))
 			if err != nil {
 				return err
 			}
