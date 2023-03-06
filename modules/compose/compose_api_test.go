@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -116,7 +117,9 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithStopServices(t *testing.T) {
-	compose, err := NewDockerCompose("./testresources/docker-compose-complex.yml")
+	compose, err := NewDockerComposeWith(
+		WithStackFiles("./testresources/docker-compose-complex.yml"),
+		WithLogger(testcontainers.TestLogger(t)))
 	assert.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
