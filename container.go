@@ -15,6 +15,7 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -84,7 +85,7 @@ type FromDockerfile struct {
 	Dockerfile     string                      // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
 	BuildArgs      map[string]*string          // enable user to pass build args to docker daemon
 	PrintBuildLog  bool                        // enable user to print build log
-	AuthConfigs    map[string]types.AuthConfig // enable auth configs to be able to pull from an authenticated docker registry
+	AuthConfigs    map[string]types.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Enable auth configs to be able to pull from an authenticated docker registry
 }
 
 type ContainerFile struct {
@@ -104,7 +105,7 @@ type ContainerRequest struct {
 	Labels                  map[string]string
 	Mounts                  ContainerMounts
 	Tmpfs                   map[string]string
-	RegistryCred            string
+	RegistryCred            string // Deprecated: Testcontainers will detect registry credentials automatically
 	WaitingFor              wait.Strategy
 	Name                    string // for specifying container name
 	Hostname                string
@@ -158,7 +159,7 @@ func (f GenericProviderOptionFunc) ApplyGenericTo(opts *GenericProviderOptions) 
 // containerOptions functional options for a container
 type containerOptions struct {
 	ImageName           string
-	RegistryCredentials string
+	RegistryCredentials string // Deprecated: Testcontainers will detect registry credentials automatically
 }
 
 // functional option for setting the reaper image
@@ -171,6 +172,7 @@ func WithImageName(imageName string) ContainerOption {
 	}
 }
 
+// Deprecated: Testcontainers will detect registry credentials automatically
 // WithRegistryCredentials sets the reaper registry credentials
 func WithRegistryCredentials(registryCredentials string) ContainerOption {
 	return func(o *containerOptions) {
@@ -271,7 +273,22 @@ func (c *ContainerRequest) GetDockerfile() string {
 
 // GetAuthConfigs returns the auth configs to be able to pull from an authenticated docker registry
 func (c *ContainerRequest) GetAuthConfigs() map[string]types.AuthConfig {
-	return c.FromDockerfile.AuthConfigs
+	images, err := testcontainersdocker.ExtractImagesFromDockerfile(filepath.Join(c.Context, c.GetDockerfile()), c.GetBuildArgs())
+	if err != nil {
+		return map[string]types.AuthConfig{}
+	}
+
+	authConfigs := map[string]types.AuthConfig{}
+	for _, image := range images {
+		registry, authConfig, err := DockerImageAuth(context.Background(), image)
+		if err != nil {
+			continue
+		}
+
+		authConfigs[registry] = authConfig
+	}
+
+	return authConfigs
 }
 
 func (c *ContainerRequest) ShouldBuildImage() bool {

@@ -5,7 +5,9 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -1046,8 +1048,17 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				Platform: req.ImagePlatform, // may be empty
 			}
 
-			if req.RegistryCred != "" {
-				pullOpt.RegistryAuth = req.RegistryCred
+			registry, imageAuth, err := DockerImageAuth(ctx, req.Image)
+			if err != nil {
+				p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, req.Image, err)
+			} else {
+				// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
+				encodedJSON, err := json.Marshal(imageAuth)
+				if err != nil {
+					p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", req.Image, err)
+				} else {
+					pullOpt.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
+				}
 			}
 
 			if err := p.attemptToPullImage(ctx, tag, pullOpt); err != nil {
