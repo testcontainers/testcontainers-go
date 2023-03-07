@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
@@ -23,6 +24,12 @@ var indexDockerIO = testcontainersdocker.IndexDockerIO
 
 func TestGetDockerConfig(t *testing.T) {
 	const expectedErrorMessage = "Expected to find %s in auth configs"
+
+	// Verify that the default docker config file exists before any test in this suite runs.
+	// Then, we can safely run the tests that rely on it.
+	cfg, err := dockercfg.LoadDefaultConfig()
+	require.Nil(t, err)
+	require.NotNil(t, cfg)
 
 	t.Run("without DOCKER_CONFIG env var retrieves default", func(t *testing.T) {
 		cfg, err := getDockerConfig()
