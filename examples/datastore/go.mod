@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/examples/datastore
 
-go 1.18
+go 1.19
 
 require (
 	cloud.google.com/go/datastore v1.10.0

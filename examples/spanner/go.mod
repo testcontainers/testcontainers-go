@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/examples/spanner
 
-go 1.18
+go 1.19
 
 require (
 	cloud.google.com/go/spanner v1.44.0

@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/examples/nginx
 
-go 1.18
+go 1.19
 
 require (
 	github.com/testcontainers/testcontainers-go v0.18.0
