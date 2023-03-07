@@ -20,16 +20,16 @@ We have provided a command line tool to generate the scaffolding for the code of
 
 ### Command line flags
 
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| -name | string | Yes | Name of the module, use camel-case when needed. Only alphabetical characters are allowed. |
-| -image | string | Yes | Fully-qualified name of the Docker image to be used by the module (i.e. 'docker.io/org/project:tag') |
-| -title | string | No | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphabetical characters are allowed. |
-| -as-module | bool | No | If set, the module will be generated as a Go module, under the modules directory. Otherwise, it will be generated as a subdirectory of the examples directory. |
+| Flag       | Type   | Required | Description                                                                                                                                                    |
+|------------|--------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -name      | string | Yes      | Name of the module, use camel-case when needed. Only alphanumerical characters are allowed (leading character must be a letter).                               |
+| -image     | string | Yes      | Fully-qualified name of the Docker image to be used by the module (i.e. 'docker.io/org/project:tag')                                                           |
+| -title     | string | No       | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphanumerical characters are allowed (leading character must be a letter).               |
+| -as-module | bool   | No       | If set, the module will be generated as a Go module, under the modules directory. Otherwise, it will be generated as a subdirectory of the examples directory. |
 
 ### What is this tool not doing?
 
-- If the module name does not contain alphabetical characters, it will exit the generation.
+- If the module name or title does not contain alphanumerical characters, it will exit the generation.
 - If the module already exists, it will exit without updating the existing files.
 
 ### How to run the tool
