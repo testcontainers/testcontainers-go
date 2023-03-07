@@ -51,6 +51,7 @@ nav:
     - Modules:
         - modules/index.md
         - modules/localstack.md
+        - modules/pulsar.md
     - Examples:
         - examples/index.md
         - examples/bigtable.md
@@ -63,7 +64,6 @@ nav:
         - examples/nginx.md
         - examples/postgres.md
         - examples/pubsub.md
-        - examples/pulsar.md
         - examples/redis.md
         - examples/spanner.md
         - examples/toxiproxy.md
