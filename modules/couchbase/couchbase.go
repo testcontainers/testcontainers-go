@@ -87,6 +87,8 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 	return &couchbaseContainer, nil
 }
 
+// ConnectionString returns the connection string to connect to the Couchbase container instance.
+// It returns a string with the format couchbase://<host>:<port>
 func (c *CouchbaseContainer) ConnectionString(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
@@ -101,10 +103,12 @@ func (c *CouchbaseContainer) ConnectionString(ctx context.Context) (string, erro
 	return fmt.Sprintf("couchbase://%s:%d", host, port.Int()), nil
 }
 
+// Username returns the username of the Couchbase administrator.
 func (c *CouchbaseContainer) Username() string {
 	return c.config.username
 }
 
+// Password returns the password of the Couchbase administrator.
 func (c *CouchbaseContainer) Password() string {
 	return c.config.password
 }
