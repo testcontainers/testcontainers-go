@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -123,50 +122,6 @@ func Test_GetDockerfile(t *testing.T) {
 			if n != testCase.ExpectedDockerfileName {
 				t.Fatalf("expected Dockerfile name: %s, received: %s", testCase.ExpectedDockerfileName, n)
 			}
-		})
-	}
-}
-
-func Test_GetAuthConfigs(t *testing.T) {
-	type TestCase struct {
-		name                string
-		ExpectedAuthConfigs map[string]types.AuthConfig
-		ContainerRequest    ContainerRequest
-	}
-
-	testTable := []TestCase{
-		{
-			name:                "defaults to no auth",
-			ExpectedAuthConfigs: nil,
-			ContainerRequest: ContainerRequest{
-				FromDockerfile: FromDockerfile{},
-			},
-		},
-		{
-			name: "will specify credentials",
-			ExpectedAuthConfigs: map[string]types.AuthConfig{
-				"https://myregistry.com/": {
-					Username: "username",
-					Password: "password",
-				},
-			},
-			ContainerRequest: ContainerRequest{
-				FromDockerfile: FromDockerfile{
-					AuthConfigs: map[string]types.AuthConfig{
-						"https://myregistry.com/": {
-							Username: "username",
-							Password: "password",
-						},
-					},
-				},
-			},
-		},
-	}
-
-	for _, testCase := range testTable {
-		t.Run(testCase.name, func(t *testing.T) {
-			cfgs := testCase.ContainerRequest.GetAuthConfigs()
-			assert.Equal(t, testCase.ExpectedAuthConfigs, cfgs)
 		})
 	}
 }

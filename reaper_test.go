@@ -107,16 +107,6 @@ func Test_NewReaper(t *testing.T) {
 			config: TestContainersConfig{},
 			ctx:    context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, "unix:///value/in/context.sock"),
 		},
-		{
-			name: "with registry credentials",
-			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
-				creds := "registry-creds"
-				req.RegistryCred = creds
-				req.ReaperOptions = append(req.ReaperOptions, WithRegistryCredentials(creds))
-				return req
-			}),
-			config: TestContainersConfig{},
-		},
 	}
 
 	for _, test := range tests {
@@ -157,7 +147,6 @@ func Test_ReaperForNetwork(t *testing.T) {
 			Name:           networkName,
 			CheckDuplicate: true,
 			ReaperOptions: []ContainerOption{
-				WithRegistryCredentials("credentials"),
 				WithImageName("reaperImage"),
 			},
 		},
@@ -170,7 +159,6 @@ func Test_ReaperForNetwork(t *testing.T) {
 	_, err := newReaper(ctx, "sessionId", provider, req.ReaperOptions...)
 	assert.EqualError(t, err, "expected")
 
-	assert.Equal(t, "credentials", provider.req.RegistryCred)
 	assert.Equal(t, "reaperImage", provider.req.Image)
 	assert.Equal(t, "reaperImage", provider.req.ReaperImage)
 }
