@@ -113,7 +113,7 @@ func TestExample_Validate(outer *testing.T) {
 				Name:      "Amazing DB 4 The Win",
 				TitleName: "AmazingDB",
 			},
-			expectedErr: errors.New("invalid name: Amazing DB 4 The Win. Only alphanumerical characters are allowed"),
+			expectedErr: errors.New("invalid name: Amazing DB 4 The Win. Only alphanumerical characters are allowed (leading character must be a letter)"),
 		},
 		{
 			name: "non-alphanumerical characters in title",
@@ -121,7 +121,23 @@ func TestExample_Validate(outer *testing.T) {
 				Name:      "AmazingDB",
 				TitleName: "Amazing DB 4 The Win",
 			},
-			expectedErr: errors.New("invalid title: Amazing DB 4 The Win. Only alphanumerical characters are allowed"),
+			expectedErr: errors.New("invalid title: Amazing DB 4 The Win. Only alphanumerical characters are allowed (leading character must be a letter)"),
+		},
+		{
+			name: "leading numerical character in name",
+			example: Example{
+				Name:      "1AmazingDB",
+				TitleName: "AmazingDB",
+			},
+			expectedErr: errors.New("invalid name: 1AmazingDB. Only alphanumerical characters are allowed (leading character must be a letter)"),
+		},
+		{
+			name: "leading numerical character in title",
+			example: Example{
+				Name:      "AmazingDB",
+				TitleName: "1AmazingDB",
+			},
+			expectedErr: errors.New("invalid title: 1AmazingDB. Only alphanumerical characters are allowed (leading character must be a letter)"),
 		},
 	}
 
