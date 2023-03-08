@@ -13,6 +13,7 @@
 # Usage: DRY_RUN="false" ./scripts/release.sh
 
 readonly DOCKER_IMAGE_SEMVER="docker.io/mdelapenya/semver-tool:3.4.0"
+readonly COMMIT="${COMMIT:-false}"
 readonly DRY_RUN="${DRY_RUN:-true}"
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
@@ -111,7 +112,7 @@ function curlGolangProxy() {
   local module_path="${1}"
   local module_version="${2}"
 
-  if [[ "${DRY_RUN}" == "true" ]]; then
+  if [[ "${DRY_RUN}" == "true" || "${COMMIT}" == "false" ]]; then
     echo "curl https://proxy.golang.org/${module_path}/@v/${module_version}"
     return
   fi
@@ -130,7 +131,7 @@ function extractCurrentVersion() {
 # This function is used to run git commands
 function gitFn() {
   args=("$@")
-  if [[ "${DRY_RUN}" == "true" ]]; then
+  if [[ "${DRY_RUN}" == "true" || "${COMMIT}" == "false" ]]; then
     echo "git ${args[@]}"
     return
   fi

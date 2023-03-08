@@ -6,9 +6,15 @@ First, it's really important that you first check that the [version.go](./intern
 Once the version file is correct in the repository:
 
 - Run the [release.sh](./scripts/release.sh) shell script to run it in dry-run mode.
-- You can run the script without dry-run setting `DRY_RUN=false` in the environment:
+- You can use the `DRY_RUN`variable to enable or disable the dry-run mode. By default, it's enabled.
+- You can use the `COMMIT` variable to enable or disable the commit creation. By default, it's disabled.
+- To update the _Testcontainers for Go_ dependency for all the modules and examples, without performing any Git operation, nor creating a release:
 
-        DRY_RUN="false" ./scripts/release.sh
+        DRY_RUN="false" COMMIT="false" ./scripts/release.sh
+
+- To perform a release:
+
+        DRY_RUN="false" COMMIT="true" ./scripts/release.sh
 
 - The script will create a git tag with the current value of the [version.go](./internal/version.go) file, starting with `v`: e.g. `v0.18.0`, for the following Go modules:
     - the root module, representing the Testcontainers for Go library.
@@ -23,8 +29,8 @@ Once the version file is correct in the repository:
         BUMP_TYPE="major" ./scripts/release.sh
 
 - The script will update the `go.mod` files for each Go modules and example modules under the examples and modules directories, updating the version of the testcontainers-go dependency to the recently created tag.
-- The script will create a commit in the **main** branch.
-- The script will push the git the main branch including the tags to the upstream repository, https://github.com/testcontainers/testcontainers-go
+- The script will create a commit in the **main** branch if the `COMMIT` variable is set to `true`.
+- The script will push the git the main branch including the tags to the upstream repository, https://github.com/testcontainers/testcontainers-go, if the `COMMIT` variable is set to `true`.
 
 An example execution, with dry-run mode enabled:
 
