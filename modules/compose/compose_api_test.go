@@ -3,13 +3,13 @@ package compose
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/google/uuid"
 	"hash/fnv"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/filters"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -117,8 +117,9 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithStopServices(t *testing.T) {
+	path := filepath.Join(testResourcesPackage, complexCompose)
 	compose, err := NewDockerComposeWith(
-		WithStackFiles("./testresources/docker-compose-complex.yml"),
+		WithStackFiles(path),
 		WithLogger(testcontainers.TestLogger(t)))
 	assert.NoError(t, err, "NewDockerCompose()")
 
