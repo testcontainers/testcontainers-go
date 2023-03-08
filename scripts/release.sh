@@ -142,6 +142,9 @@ function gitFn() {
 # This function is used to commit the version.go file.
 function gitCommitVersion() {
   local newVersion="${1}" 
+
+  cd "${ROOT_DIR}"
+
   gitFn add "${VERSION_FILE}"
   gitFn add "${MKDOCS_FILE}"
   gitFn add "examples/**/go.*"
