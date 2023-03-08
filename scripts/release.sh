@@ -24,9 +24,10 @@ readonly REPOSITORY="github.com/testcontainers/testcontainers-go"
 readonly DIRECTORIES=(examples modules)
 
 function main() {
-  readonly version="v$(extractCurrentVersion)"
+  readonly version="$(extractCurrentVersion)"
+  readonly vVersion="v${version}"
 
-  tagModule "${version}"
+  tagModule "${vVersion}"
 
   for directory in "${DIRECTORIES[@]}"
   do
@@ -34,7 +35,7 @@ function main() {
 
     ls -d */ | grep -v "_template" | while read -r module; do
       module="${module%?}" # remove trailing slash
-      module_tag="${directory}/${module}/${version}" # e.g. modules/mongodb/v0.0.1
+      module_tag="${directory}/${module}/${vVersion}" # e.g. modules/mongodb/v0.0.1
       tagModule "${module_tag}"
     done
   done
@@ -44,7 +45,7 @@ function main() {
   gitPushTags
   gitUnstash
 
-  curlGolangProxy "${REPOSITORY}" "${version}" # e.g. github.com/testcontainers/testcontainers-go/@v/v0.0.1
+  curlGolangProxy "${REPOSITORY}" "${vVersion}" # e.g. github.com/testcontainers/testcontainers-go/@v/v0.0.1
 
   for directory in "${DIRECTORIES[@]}"
   do
@@ -53,14 +54,15 @@ function main() {
     ls -d */ | grep -v "_template" | while read -r module; do
       module="${module%?}" # remove trailing slash
       module_path="${REPOSITORY}/${directory}/${module}"
-      curlGolangProxy "${module_path}" "${version}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1
+      curlGolangProxy "${module_path}" "${vVersion}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1
     done
   done
 }
 
 # This function is used to bump the version in the version.go file and in the mkdocs.yml file.
 function bumpVersion() {
-  local versionToBump="${1}"
+  local versionToBumpWithoutV="${1}"
+  local versionToBump="v${versionToBumpWithoutV}"
 
   local newVersion=$(docker run --rm "${DOCKER_IMAGE_SEMVER}" bump "${BUMP_TYPE}" "${versionToBump}")
   echo "Producing a ${BUMP_TYPE} bump of the version, from ${versionToBump} to ${newVersion}"
@@ -87,12 +89,12 @@ function bumpVersion() {
 
     ls -d */ | grep -v "_template" | while read -r module; do
       module="${module%?}" # remove trailing slash
-      module_mod_file="${directory}/${module}/go.mod" # e.g. modules/mongodb/go.mod
+      module_mod_file="${module}/go.mod" # e.g. modules/mongodb/go.mod
       if [[ "${DRY_RUN}" == "true" ]]; then
-        echo "sed \"s/testcontainers-go .*/testcontainers-go ${versionToBump}/g\" ${module_mod_file} > ${module_mod_file}.tmp"
+        echo "sed \"s/testcontainers-go v.*/testcontainers-go v${versionToBumpWithoutV}/g\" ${module_mod_file} > ${module_mod_file}.tmp"
         echo "mv ${module_mod_file}.tmp ${module_mod_file}"
       else
-        sed "s/testcontainers-go .*/testcontainers-go ${versionToBump}/g" ${module_mod_file} > ${module_mod_file}.tmp
+        sed "s/testcontainers-go v.*/testcontainers-go v${versionToBumpWithoutV}/g" ${module_mod_file} > ${module_mod_file}.tmp
         mv ${module_mod_file}.tmp ${module_mod_file}
       fi
     done
