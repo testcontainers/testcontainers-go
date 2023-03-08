@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	cloud.google.com/go/datastore v1.10.0
-	github.com/testcontainers/testcontainers-go v0.18.0
+	github.com/testcontainers/testcontainers-go v0.19.0
 	google.golang.org/api v0.111.0
 	google.golang.org/grpc v1.53.0
 	gotest.tools/gotestsum v1.9.0
