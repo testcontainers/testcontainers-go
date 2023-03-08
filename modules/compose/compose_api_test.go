@@ -3,15 +3,16 @@ package compose
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/google/uuid"
 	"hash/fnv"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/filters"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -113,6 +114,43 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 
 	assert.Equal(t, 1, len(serviceNames))
 	assert.Contains(t, serviceNames, "nginx")
+}
+
+func TestDockerComposeAPIWithStopServices(t *testing.T) {
+	path := filepath.Join(testResourcesPackage, complexCompose)
+	compose, err := NewDockerComposeWith(
+		WithStackFiles(path),
+		WithLogger(testcontainers.TestLogger(t)))
+	assert.NoError(t, err, "NewDockerCompose()")
+
+	t.Cleanup(func() {
+		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	assert.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
+
+	serviceNames := compose.Services()
+
+	assert.Equal(t, 2, len(serviceNames))
+	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "mysql")
+
+	// close mysql container in purpose
+	mysqlContainer, err := compose.ServiceContainer(context.Background(), "mysql")
+	assert.NoError(t, err, "Get mysql container")
+
+	stopTimeout := 10 * time.Second
+	err = mysqlContainer.Stop(ctx, &stopTimeout)
+	assert.NoError(t, err, "Stop mysql container")
+
+	// check container status
+	state, err := mysqlContainer.State(ctx)
+	assert.NoError(t, err)
+	assert.False(t, state.Running)
+	assert.Equal(t, "exited", state.Status)
 }
 
 func TestDockerComposeAPIWithWaitForService(t *testing.T) {

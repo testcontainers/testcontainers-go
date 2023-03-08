@@ -93,6 +93,10 @@ func (o ComposeLoggerOption) ApplyToLocalCompose(opts *LocalDockerComposeOptions
 	opts.Logger = o.logger
 }
 
+func (o ComposeLoggerOption) applyToComposeStack(opts *composeStackOptions) {
+	opts.Logger = o.logger
+}
+
 func (f LocalDockerComposeOptionsFunc) ApplyToLocalCompose(opts *LocalDockerComposeOptions) {
 	f(opts)
 }

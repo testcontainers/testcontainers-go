@@ -120,6 +120,9 @@ type dockerCompose struct {
 	// paths to stack files that will be considered when compiling the final compose project
 	configs []string
 
+	// used to set logger in DockerContainer
+	logger testcontainers.Logging
+
 	// wait strategies that are applied per service when starting the stack
 	// only one strategy can be added to a service, to use multiple use wait.ForAll(...)
 	waitStrategies map[string]wait.Strategy
@@ -301,8 +304,10 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 
 	containerInstance := containers[0]
 	container := &testcontainers.DockerContainer{
-		ID: containerInstance.ID,
+		ID:    containerInstance.ID,
+		Image: containerInstance.Image,
 	}
+	container.SetLogger(d.logger)
 
 	dockerProvider := &testcontainers.DockerProvider{}
 	dockerProvider.SetClient(d.dockerClient)
