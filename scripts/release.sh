@@ -89,7 +89,7 @@ function bumpVersion() {
 
     ls -d */ | grep -v "_template" | while read -r module; do
       module="${module%?}" # remove trailing slash
-      module_mod_file="${directory}/${module}/go.mod" # e.g. modules/mongodb/go.mod
+      module_mod_file="${module}/go.mod" # e.g. modules/mongodb/go.mod
       if [[ "${DRY_RUN}" == "true" ]]; then
         echo "sed \"s/testcontainers-go v.*/testcontainers-go v${versionToBumpWithoutV}/g\" ${module_mod_file} > ${module_mod_file}.tmp"
         echo "mv ${module_mod_file}.tmp ${module_mod_file}"
