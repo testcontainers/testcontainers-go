@@ -51,10 +51,11 @@ type CouchbaseContainer struct {
 // StartContainer creates an instance of the Couchbase container type
 func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, error) {
 	config := &Config{
-		enabledServices: []service{kv, query, search, index},
-		username:        "Administrator",
-		password:        "password",
-		imageName:       "couchbase:6.5.1",
+		enabledServices:  []service{kv, query, search, index},
+		username:         "Administrator",
+		password:         "password",
+		imageName:        "couchbase:6.5.1",
+		indexStorageMode: MemoryOptimized,
 	}
 
 	for _, opt := range opts {
@@ -285,13 +286,16 @@ func (c *CouchbaseContainer) configureExternalPorts(ctx context.Context) error {
 }
 
 func (c *CouchbaseContainer) configureIndexer(ctx context.Context) error {
-	storageMode := "forestdb"
 	if c.config.isEnterprise {
-		storageMode = "memory_optimized"
+		if c.config.indexStorageMode == ForestDB {
+			c.config.indexStorageMode = MemoryOptimized
+		}
+	} else {
+		c.config.indexStorageMode = ForestDB
 	}
 
 	body := map[string]string{
-		"storageMode": storageMode,
+		"storageMode": string(c.config.indexStorageMode),
 	}
 
 	_, err := c.doHttpRequest(ctx, MGMT_PORT, "/settings/indexes", http.MethodPost, body, true)

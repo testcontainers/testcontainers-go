@@ -3,12 +3,13 @@ package couchbase
 type Option func(*Config)
 
 type Config struct {
-	enabledServices []service
-	username        string
-	password        string
-	isEnterprise    bool
-	buckets         []bucket
-	imageName       string
+	enabledServices  []service
+	username         string
+	password         string
+	isEnterprise     bool
+	buckets          []bucket
+	imageName        string
+	indexStorageMode indexStorageMode
 }
 
 func WithEventingService() Option {
@@ -39,5 +40,11 @@ func WithBucket(bucket bucket) Option {
 func WithImageName(imageName string) Option {
 	return func(c *Config) {
 		c.imageName = imageName
+	}
+}
+
+func WithIndexStorageMode(indexStorageMode indexStorageMode) Option {
+	return func(c *Config) {
+		c.indexStorageMode = indexStorageMode
 	}
 }
