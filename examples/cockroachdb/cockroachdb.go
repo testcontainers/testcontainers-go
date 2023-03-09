@@ -14,7 +14,7 @@ type cockroachDBContainer struct {
 	URI string
 }
 
-func setupCockroachDB(ctx context.Context) (*cockroachDBContainer, error) {
+func startContainer(ctx context.Context) (*cockroachDBContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "cockroachdb/cockroach:latest-v21.1",
 		ExposedPorts: []string{"26257/tcp", "8080/tcp"},

@@ -1,5 +1,0 @@
-{{ $lower := .Name | ToLower }}include ../../commons-test.mk
-
-.PHONY: test
-test:
-	$(MAKE) test-{{ $lower }}

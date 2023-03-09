@@ -3,13 +3,16 @@ package pubsub
 import (
 	"cloud.google.com/go/pubsub"
 	"context"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"testing"
 )
 
 func TestPubsub(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := setupPubsub(ctx)
+	container, err := startContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,8 +24,12 @@ func TestPubsub(t *testing.T) {
 		}
 	})
 
-	t.Setenv("PUBSUB_EMULATOR_HOST", container.URI)
-	client, err := pubsub.NewClient(ctx, "my-project-id")
+	conn, err := grpc.Dial(container.URI, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	options := []option.ClientOption{option.WithGRPCConn(conn)}
+	client, err := pubsub.NewClient(ctx, "my-project-id", options...)
 	if err != nil {
 		t.Fatal(err)
 	}

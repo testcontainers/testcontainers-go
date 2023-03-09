@@ -5,14 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -82,7 +85,7 @@ type FromDockerfile struct {
 	Dockerfile     string                      // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
 	BuildArgs      map[string]*string          // enable user to pass build args to docker daemon
 	PrintBuildLog  bool                        // enable user to print build log
-	AuthConfigs    map[string]types.AuthConfig // enable auth configs to be able to pull from an authenticated docker registry
+	AuthConfigs    map[string]types.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Enable auth configs to be able to pull from an authenticated docker registry
 }
 
 type ContainerFile struct {
@@ -94,35 +97,39 @@ type ContainerFile struct {
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
 	FromDockerfile
-	Image           string
-	Entrypoint      []string
-	Env             map[string]string
-	ExposedPorts    []string // allow specifying protocol info
-	Cmd             []string
-	Labels          map[string]string
-	Mounts          ContainerMounts
-	Tmpfs           map[string]string
-	RegistryCred    string
-	WaitingFor      wait.Strategy
-	Name            string // for specifying container name
-	Hostname        string
-	ExtraHosts      []string
-	Privileged      bool                // for starting privileged container
-	Networks        []string            // for specifying network names
-	NetworkAliases  map[string][]string // for specifying network aliases
-	NetworkMode     container.NetworkMode
-	Resources       container.Resources
-	Files           []ContainerFile // files which will be copied when container starts
-	User            string          // for specifying uid:gid
-	SkipReaper      bool            // indicates whether we skip setting up a reaper for this
-	ReaperImage     string          // alternative reaper image
-	AutoRemove      bool            // if set to true, the container will be removed from the host when stopped
-	AlwaysPullImage bool            // Always pull image
-	ImagePlatform   string          // ImagePlatform describes the platform which the image runs on.
-	Binds           []string
-	ShmSize         int64    // Amount of memory shared with the host (in bytes)
-	CapAdd          []string // Add Linux capabilities
-	CapDrop         []string // Drop Linux capabilities
+	Image                   string
+	Entrypoint              []string
+	Env                     map[string]string
+	ExposedPorts            []string // allow specifying protocol info
+	Cmd                     []string
+	Labels                  map[string]string
+	Mounts                  ContainerMounts
+	Tmpfs                   map[string]string
+	RegistryCred            string // Deprecated: Testcontainers will detect registry credentials automatically
+	WaitingFor              wait.Strategy
+	Name                    string // for specifying container name
+	Hostname                string
+	ExtraHosts              []string                                   // Deprecated: Use HostConfigModifier instead
+	Privileged              bool                                       // For starting privileged container
+	Networks                []string                                   // for specifying network names
+	NetworkAliases          map[string][]string                        // for specifying network aliases
+	NetworkMode             container.NetworkMode                      // Deprecated: Use HostConfigModifier instead
+	Resources               container.Resources                        // Deprecated: Use HostConfigModifier instead
+	Files                   []ContainerFile                            // files which will be copied when container starts
+	User                    string                                     // for specifying uid:gid
+	SkipReaper              bool                                       // indicates whether we skip setting up a reaper for this
+	ReaperImage             string                                     // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image
+	ReaperOptions           []ContainerOption                          // options for the reaper
+	AutoRemove              bool                                       // Deprecated: Use HostConfigModifier instead. If set to true, the container will be removed from the host when stopped
+	AlwaysPullImage         bool                                       // Always pull image
+	ImagePlatform           string                                     // ImagePlatform describes the platform which the image runs on.
+	Binds                   []string                                   // Deprecated: Use HostConfigModifier instead
+	ShmSize                 int64                                      // Amount of memory shared with the host (in bytes)
+	CapAdd                  []string                                   // Deprecated: Use HostConfigModifier instead. Add Linux capabilities
+	CapDrop                 []string                                   // Deprecated: Use HostConfigModifier instead. Drop Linux capabilities
+	ConfigModifier          func(*container.Config)                    // Modifier for the config before container creation
+	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
+	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 }
 
 type (
@@ -147,6 +154,30 @@ type (
 
 func (f GenericProviderOptionFunc) ApplyGenericTo(opts *GenericProviderOptions) {
 	f(opts)
+}
+
+// containerOptions functional options for a container
+type containerOptions struct {
+	ImageName           string
+	RegistryCredentials string // Deprecated: Testcontainers will detect registry credentials automatically
+}
+
+// functional option for setting the reaper image
+type ContainerOption func(*containerOptions)
+
+// WithImageName sets the reaper image name
+func WithImageName(imageName string) ContainerOption {
+	return func(o *containerOptions) {
+		o.ImageName = imageName
+	}
+}
+
+// Deprecated: Testcontainers will detect registry credentials automatically
+// WithRegistryCredentials sets the reaper registry credentials
+func WithRegistryCredentials(registryCredentials string) ContainerOption {
+	return func(o *containerOptions) {
+		o.RegistryCredentials = registryCredentials
+	}
 }
 
 // possible provider types
@@ -210,6 +241,13 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 		return c.ContextArchive, nil
 	}
 
+	// always pass context as absolute path
+	abs, err := filepath.Abs(c.Context)
+	if err != nil {
+		return nil, fmt.Errorf("error getting absolute path: %w", err)
+	}
+	c.Context = abs
+
 	buildContext, err := archive.TarWithOptions(c.Context, &archive.TarOptions{})
 	if err != nil {
 		return nil, err
@@ -235,7 +273,22 @@ func (c *ContainerRequest) GetDockerfile() string {
 
 // GetAuthConfigs returns the auth configs to be able to pull from an authenticated docker registry
 func (c *ContainerRequest) GetAuthConfigs() map[string]types.AuthConfig {
-	return c.FromDockerfile.AuthConfigs
+	images, err := testcontainersdocker.ExtractImagesFromDockerfile(filepath.Join(c.Context, c.GetDockerfile()), c.GetBuildArgs())
+	if err != nil {
+		return map[string]types.AuthConfig{}
+	}
+
+	authConfigs := map[string]types.AuthConfig{}
+	for _, image := range images {
+		registry, authConfig, err := DockerImageAuth(context.Background(), image)
+		if err != nil {
+			continue
+		}
+
+		authConfigs[registry] = authConfig
+	}
+
+	return authConfigs
 }
 
 func (c *ContainerRequest) ShouldBuildImage() bool {

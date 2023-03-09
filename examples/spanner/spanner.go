@@ -3,6 +3,7 @@ package spanner
 import (
 	"context"
 	"fmt"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -14,8 +15,8 @@ type spannerContainer struct {
 	GRPCEndpoint string
 }
 
-// setupSpanner creates an instance of the spanner container type
-func setupSpanner(ctx context.Context) (*spannerContainer, error) {
+// startContainer creates an instance of the spanner container type
+func startContainer(ctx context.Context) (*spannerContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "gcr.io/cloud-spanner-emulator/emulator:1.4.0",
 		ExposedPorts: []string{"9010/tcp"},

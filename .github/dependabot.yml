@@ -1,14 +1,116 @@
 version: 2
 updates:
-- package-ecosystem: gomod
-  directory: "/"
-  schedule:
-    interval: daily
-  open-pull-requests-limit: 3
-  rebase-strategy: disabled
-- package-ecosystem: gomod
-  directory: "/e2e"
-  schedule:
-    interval: daily
-  open-pull-requests-limit: 3
-  rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/bigtable
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/cockroachdb
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/consul
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/datastore
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/firestore
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/mongodb
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/mysql
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/nginx
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/postgres
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/pubsub
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/redis
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/spanner
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /examples/toxiproxy
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modulegen
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/compose
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/couchbase
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/localstack
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/pulsar
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled

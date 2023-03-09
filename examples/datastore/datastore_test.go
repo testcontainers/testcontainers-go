@@ -3,6 +3,9 @@ package datastore
 import (
 	"cloud.google.com/go/datastore"
 	"context"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"testing"
 )
 
@@ -13,7 +16,7 @@ type Task struct {
 func TestDatastore(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := setupDatastore(ctx)
+	container, err := startContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,8 +28,12 @@ func TestDatastore(t *testing.T) {
 		}
 	})
 
-	t.Setenv("DATASTORE_EMULATOR_HOST", container.URI)
-	dsClient, err := datastore.NewClient(ctx, "test-project")
+	options := []option.ClientOption{
+		option.WithEndpoint(container.URI),
+		option.WithoutAuthentication(),
+		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
+	}
+	dsClient, err := datastore.NewClient(ctx, "test-project", options...)
 	if err != nil {
 		t.Fatal(err)
 	}

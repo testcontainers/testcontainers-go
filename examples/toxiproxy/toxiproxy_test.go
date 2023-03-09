@@ -25,7 +25,7 @@ func TestToxiproxy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	toxiproxyContainer, err := setupToxiproxy(ctx, "newNetwork", []string{"toxiproxy"})
+	toxiproxyContainer, err := startContainer(ctx, "newNetwork", []string{"toxiproxy"})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -3,6 +3,7 @@ package pubsub
 import (
 	"context"
 	"fmt"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -13,8 +14,8 @@ type pubsubContainer struct {
 	URI string
 }
 
-// setupPubsub creates an instance of the pubsub container type
-func setupPubsub(ctx context.Context) (*pubsubContainer, error) {
+// startContainer creates an instance of the pubsub container type
+func startContainer(ctx context.Context) (*pubsubContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
 		ExposedPorts: []string{"8085/tcp"},
