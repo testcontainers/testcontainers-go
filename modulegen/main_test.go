@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -73,6 +74,76 @@ func TestExample(t *testing.T) {
 			assert.Equal(t, test.expectedTitle, example.Title())
 			assert.Equal(t, test.expectedContainerName, example.ContainerName())
 			assert.Equal(t, test.expectedEntrypoint, example.Entrypoint())
+		})
+	}
+}
+
+func TestExample_Validate(outer *testing.T) {
+	outer.Parallel()
+
+	tests := []struct {
+		name        string
+		example     Example
+		expectedErr error
+	}{
+		{
+			name: "only alphabetical characters in name/title",
+			example: Example{
+				Name:      "AmazingDB",
+				TitleName: "AmazingDB",
+			},
+		},
+		{
+			name: "alphanumerical characters in name",
+			example: Example{
+				Name:      "AmazingDB4tw",
+				TitleName: "AmazingDB",
+			},
+		},
+		{
+			name: "alphanumerical characters in title",
+			example: Example{
+				Name:      "AmazingDB",
+				TitleName: "AmazingDB4tw",
+			},
+		},
+		{
+			name: "non-alphanumerical characters in name",
+			example: Example{
+				Name:      "Amazing DB 4 The Win",
+				TitleName: "AmazingDB",
+			},
+			expectedErr: errors.New("invalid name: Amazing DB 4 The Win. Only alphanumerical characters are allowed (leading character must be a letter)"),
+		},
+		{
+			name: "non-alphanumerical characters in title",
+			example: Example{
+				Name:      "AmazingDB",
+				TitleName: "Amazing DB 4 The Win",
+			},
+			expectedErr: errors.New("invalid title: Amazing DB 4 The Win. Only alphanumerical characters are allowed (leading character must be a letter)"),
+		},
+		{
+			name: "leading numerical character in name",
+			example: Example{
+				Name:      "1AmazingDB",
+				TitleName: "AmazingDB",
+			},
+			expectedErr: errors.New("invalid name: 1AmazingDB. Only alphanumerical characters are allowed (leading character must be a letter)"),
+		},
+		{
+			name: "leading numerical character in title",
+			example: Example{
+				Name:      "AmazingDB",
+				TitleName: "1AmazingDB",
+			},
+			expectedErr: errors.New("invalid title: 1AmazingDB. Only alphanumerical characters are allowed (leading character must be a letter)"),
+		},
+	}
+
+	for _, test := range tests {
+		outer.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expectedErr, test.example.Validate())
 		})
 	}
 }
@@ -190,8 +261,8 @@ func TestGenerate(t *testing.T) {
 	assert.Nil(t, err)
 
 	example := Example{
-		Name:      "foodb",
-		TitleName: "FooDB",
+		Name:      "foodb4tw",
+		TitleName: "FooDB4TheWin",
 		IsModule:  false,
 		Image:     "docker.io/example/foodb:latest",
 		TCVersion: "v0.0.0-test",

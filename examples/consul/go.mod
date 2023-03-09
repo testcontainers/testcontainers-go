@@ -1,10 +1,10 @@
 module github.com/testcontainers/testcontainers-go/examples/consul
 
-go 1.18
+go 1.19
 
 require (
 	github.com/hashicorp/consul/api v1.19.1
-	github.com/testcontainers/testcontainers-go v0.18.0
+	github.com/testcontainers/testcontainers-go v0.19.0
 	gotest.tools/gotestsum v1.9.0
 )
 
@@ -14,6 +14,7 @@ require (
 	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/containerd/containerd v1.6.19 // indirect
+	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v23.0.1+incompatible // indirect

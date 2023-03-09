@@ -1,10 +1,10 @@
 module github.com/testcontainers/testcontainers-go/examples/bigtable
 
-go 1.18
+go 1.19
 
 require (
 	cloud.google.com/go/bigtable v1.18.1
-	github.com/testcontainers/testcontainers-go v0.18.0
+	github.com/testcontainers/testcontainers-go v0.19.0
 	google.golang.org/api v0.111.0
 	google.golang.org/grpc v1.53.0
 	gotest.tools/gotestsum v1.9.0
@@ -24,6 +24,7 @@ require (
 	github.com/cncf/udpa/go v0.0.0-20220112060539-c52dc94e7fbe // indirect
 	github.com/cncf/xds/go v0.0.0-20230105202645-06c439db220b // indirect
 	github.com/containerd/containerd v1.6.19 // indirect
+	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v23.0.1+incompatible // indirect

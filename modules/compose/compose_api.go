@@ -50,7 +50,7 @@ func (io IgnoreOrphans) applyToStackUp(co *api.CreateOptions, _ *api.StartOption
 	co.IgnoreOrphans = bool(io)
 }
 
-// RemoveOrphans will cleanup containers that are not declared on the compose model but own the same labels
+// RemoveOrphans will clean up containers that are not declared on the compose model but own the same labels
 type RemoveOrphans bool
 
 func (ro RemoveOrphans) applyToStackUp(o *stackUpOptions) {
@@ -66,6 +66,12 @@ type Wait bool
 
 func (w Wait) applyToStackUp(o *stackUpOptions) {
 	o.Wait = bool(w)
+}
+
+type RemoveVolumes bool
+
+func (ro RemoveVolumes) applyToStackDown(o *stackDownOptions) {
+	o.Volumes = bool(ro)
 }
 
 // RemoveImages used by services
@@ -113,6 +119,9 @@ type dockerCompose struct {
 
 	// paths to stack files that will be considered when compiling the final compose project
 	configs []string
+
+	// used to set logger in DockerContainer
+	logger testcontainers.Logging
 
 	// wait strategies that are applied per service when starting the stack
 	// only one strategy can be added to a service, to use multiple use wait.ForAll(...)
@@ -295,8 +304,10 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 
 	containerInstance := containers[0]
 	container := &testcontainers.DockerContainer{
-		ID: containerInstance.ID,
+		ID:    containerInstance.ID,
+		Image: containerInstance.Image,
 	}
+	container.SetLogger(d.logger)
 
 	dockerProvider := &testcontainers.DockerProvider{}
 	dockerProvider.SetClient(d.dockerClient)

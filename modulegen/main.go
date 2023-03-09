@@ -96,12 +96,12 @@ func (e *Example) Type() string {
 }
 
 func (e *Example) Validate() error {
-	if !regexp.MustCompile(`^[A-Za-z]+$`).MatchString(e.Name) {
-		return fmt.Errorf("invalid name: %s. Only alphabetical characters are allowed", e.Name)
+	if !regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*$`).MatchString(e.Name) {
+		return fmt.Errorf("invalid name: %s. Only alphanumerical characters are allowed (leading character must be a letter)", e.Name)
 	}
 
-	if !regexp.MustCompile(`^[A-Za-z]+$`).MatchString(e.TitleName) {
-		return fmt.Errorf("invalid title: %s. Only alphabetical characters are allowed", e.TitleName)
+	if !regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*$`).MatchString(e.TitleName) {
+		return fmt.Errorf("invalid title: %s. Only alphanumerical characters are allowed (leading character must be a letter)", e.TitleName)
 	}
 
 	return nil
