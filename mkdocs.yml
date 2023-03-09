@@ -55,6 +55,7 @@ nav:
         - modules/localstack.md
         - modules/mysql.md
         - modules/postgres.md
+        - modules/neo4j.md
         - modules/pulsar.md
         - modules/vault.md
     - Examples:

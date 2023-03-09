@@ -109,6 +109,12 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /modules/neo4j
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /modules/pulsar
       schedule:
         interval: monthly
