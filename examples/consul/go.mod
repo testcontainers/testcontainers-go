@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/examples/consul
 go 1.19
 
 require (
-	github.com/hashicorp/consul/api v1.19.1
+	github.com/hashicorp/consul/api v1.20.0
 	github.com/testcontainers/testcontainers-go v0.19.0
 	gotest.tools/gotestsum v1.9.0
 )
