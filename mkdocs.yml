@@ -53,6 +53,7 @@ nav:
         - modules/couchbase.md
         - modules/localstack.md
         - modules/pulsar.md
+        - modules/vault.md
     - Examples:
         - examples/index.md
         - examples/bigtable.md
