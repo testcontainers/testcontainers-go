@@ -765,7 +765,7 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 
 	host = tcConfig.Host
 
-	opts := []client.Opt{client.FromEnv}
+	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
 	if host != "" {
 		opts = append(opts, client.WithHost(host))
 
@@ -795,8 +795,6 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 		return nil, "", TestContainersConfig{}, err
 	}
 
-	cli.NegotiateAPIVersion(context.Background())
-
 	return cli, host, tcConfig, nil
 }
 
@@ -820,13 +818,12 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 	_, err = c.Ping(context.TODO())
 	if err != nil {
 		// fallback to environment
-		c, err = client.NewClientWithOpts(client.FromEnv)
+		c, err = client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	c.NegotiateAPIVersion(context.Background())
 	p := &DockerProvider{
 		DockerProviderOptions: o,
 		host:                  host,

@@ -231,13 +231,11 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		t.Fatal("get endpoint:", err)
 	}
 
-	client, err := client.NewClientWithOpts(client.WithHost(remoteDocker))
+	client, err := client.NewClientWithOpts(client.WithHost(remoteDocker), client.WithAPIVersionNegotiation())
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer client.Close()
-
-	client.NegotiateAPIVersion(ctx)
 
 	provider := &DockerProvider{client: client, DockerProviderOptions: &DockerProviderOptions{GenericProviderOptions: &GenericProviderOptions{Logger: TestLogger(t)}}}
 

@@ -367,11 +367,11 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv)
+	client, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		t.Fatal(err)
 	}
-	client.NegotiateAPIVersion(ctx)
+
 	var container Container
 	container, err = GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
@@ -401,11 +401,11 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv)
+	client, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		t.Fatal(err)
 	}
-	client.NegotiateAPIVersion(ctx)
+
 	_, err = GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -639,11 +639,11 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	t.Run("if not built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := client.NewClientWithOpts(client.FromEnv)
+		client, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
 			t.Fatal(err)
 		}
-		client.NegotiateAPIVersion(ctx)
+
 		container, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
@@ -670,11 +670,11 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 	t.Run("if built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := client.NewClientWithOpts(client.FromEnv)
+		client, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		if err != nil {
 			t.Fatal(err)
 		}
-		client.NegotiateAPIVersion(ctx)
+
 		req := ContainerRequest{
 			FromDockerfile: FromDockerfile{
 				Context: "./testresources",
@@ -1799,7 +1799,6 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		dockerCli, _, _, err := NewDockerClient()
 		require.NoError(t, err)
 
-		dockerCli.NegotiateAPIVersion(ctx)
 		ctr, err := dockerCli.ContainerInspect(ctx, c.GetContainerID())
 		assert.NoError(t, err)
 
@@ -2194,10 +2193,9 @@ func TestDockerContainerResources(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
-	c, err := client.NewClientWithOpts(client.FromEnv)
+	c, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	require.NoError(t, err)
 
-	c.NegotiateAPIVersion(ctx)
 	containerID := nginxC.GetContainerID()
 
 	resp, err := c.ContainerInspect(ctx, containerID)

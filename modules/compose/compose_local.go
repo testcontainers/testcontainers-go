@@ -125,12 +125,10 @@ func (dc *LocalDockerCompose) containerNameFromServiceName(service, separator st
 }
 
 func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return err
 	}
-
-	cli.NegotiateAPIVersion(context.Background())
 
 	for k := range dc.WaitStrategyMap {
 		containerName := dc.containerNameFromServiceName(k.service, "_")
