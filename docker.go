@@ -195,6 +195,7 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
+	defer c.provider.Close()
 
 	// if a Wait Strategy has been specified, wait before returning
 	if c.WaitingFor != nil {
@@ -231,6 +232,7 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	if err := c.provider.client.ContainerStop(ctx, c.ID, options); err != nil {
 		return err
 	}
+	defer c.provider.Close()
 
 	c.logger.Printf("Container is stopped id: %s image: %s", shortID, c.Image)
 	c.isRunning = false
@@ -277,6 +279,8 @@ func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.Conta
 	if err != nil {
 		return nil, err
 	}
+	defer c.provider.Close()
+
 	c.raw = &inspect
 	return c.raw, nil
 }
@@ -286,6 +290,7 @@ func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.Containe
 	if err != nil {
 		return nil, err
 	}
+	defer c.provider.Close()
 
 	return &inspect, nil
 }
@@ -305,6 +310,7 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer c.provider.Close()
 
 	pr, pw := io.Pipe()
 	r := bufio.NewReader(rc)
@@ -512,6 +518,8 @@ func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, filePath st
 	if err != nil {
 		return nil, err
 	}
+	defer c.provider.Close()
+
 	tarReader := tar.NewReader(r)
 
 	// if we got here we have exactly one file in the TAR-stream
@@ -550,7 +558,13 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 	// create the directory under its parent
 	parent := filepath.Dir(containerParentPath)
 
-	return c.provider.client.CopyToContainer(ctx, c.ID, parent, buff, types.CopyToContainerOptions{})
+	err = c.provider.client.CopyToContainer(ctx, c.ID, parent, buff, types.CopyToContainerOptions{})
+	if err != nil {
+		return err
+	}
+	defer c.provider.Close()
+
+	return nil
 }
 
 func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
@@ -577,7 +591,13 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 		return err
 	}
 
-	return c.provider.client.CopyToContainer(ctx, c.ID, filepath.Dir(containerFilePath), buffer, types.CopyToContainerOptions{})
+	err = c.provider.client.CopyToContainer(ctx, c.ID, filepath.Dir(containerFilePath), buffer, types.CopyToContainerOptions{})
+	if err != nil {
+		return err
+	}
+	defer c.provider.Close()
+
+	return nil
 }
 
 // StartLogProducer will start a concurrent process that will continuously read logs
@@ -603,6 +623,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 			// from within this goroutine
 			panic(err)
 		}
+		defer c.provider.Close()
 
 		for {
 			select {
@@ -685,7 +706,14 @@ func (n *DockerNetwork) Remove(ctx context.Context) error {
 	case n.terminationSignal <- true:
 	default:
 	}
-	return n.provider.client.NetworkRemove(ctx, n.ID)
+
+	err := n.provider.client.NetworkRemove(ctx, n.ID)
+	if err != nil {
+		return err
+	}
+	defer n.provider.Close()
+
+	return nil
 }
 
 // DockerProvider implements the ContainerProvider interface
@@ -700,6 +728,15 @@ type DockerProvider struct {
 // Client gets the docker client used by the provider
 func (p *DockerProvider) Client() client.APIClient {
 	return p.client
+}
+
+// Close closes the docker client used by the provider
+func (p *DockerProvider) Close() error {
+	if p.client == nil {
+		return nil
+	}
+
+	return p.client.Close()
 }
 
 // SetClient sets the docker client to be used by the provider
@@ -821,6 +858,8 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 			Logger.Printf("Failed to build image: %s, will retry", err)
 			return err
 		}
+		defer p.Close()
+
 		return nil
 	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 	if err != nil {
@@ -851,6 +890,9 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 // CreateContainer fulfills a request for a container without starting it
 func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	var err error
+
+	// defer the close of the Docker client connection the soonest
+	defer p.Close()
 
 	// Make sure that bridge network exists
 	// In case it is disabled we will create reaper_default network
@@ -1060,6 +1102,8 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 	if err != nil {
 		return nil, err
 	}
+	defer p.Close()
+
 	if len(containers) > 0 {
 		return &containers[0], nil
 	}
@@ -1120,6 +1164,8 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 			Logger.Printf("Failed to pull image: %s, will retry", err)
 			return err
 		}
+		defer p.Close()
+
 		return nil
 	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 	if err != nil {
@@ -1136,7 +1182,9 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 // docker-client ping endpoint to see if the daemon is reachable.
 func (p *DockerProvider) Health(ctx context.Context) (err error) {
 	_, err = p.client.Ping(ctx)
-	return
+	defer p.Close()
+
+	return err
 }
 
 // RunContainer takes a RequestContainer as input and it runs a container via the docker sdk
@@ -1182,6 +1230,7 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer p.Close()
 
 	switch url.Scheme {
 	case "http", "https", "tcp":
@@ -1209,6 +1258,9 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 // CreateNetwork returns the object representing a new network identified by its name
 func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) (Network, error) {
 	var err error
+
+	// defer the close of the Docker client connection the soonest
+	defer p.Close()
 
 	// Make sure that bridge network exists
 	// In case it is disabled we will create reaper_default network

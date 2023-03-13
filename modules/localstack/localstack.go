@@ -111,6 +111,7 @@ func configureDockerHost(req *LocalStackContainerRequest) (reason string, err er
 	if err != nil {
 		return
 	}
+	defer dockerProvider.Close()
 
 	var daemonHost string
 	daemonHost, err = dockerProvider.DaemonHost(context.Background())

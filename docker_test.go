@@ -2399,6 +2399,7 @@ func TestProviderHasConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer provider.Close()
 
 	assert.NotNil(t, provider.Config(), "expecting DockerProvider to provide the configuration")
 }
@@ -2505,6 +2506,7 @@ func TestDockerProviderFindContainerByName(t *testing.T) {
 	ctx := context.Background()
 	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
 	require.NoError(t, err)
+	defer provider.Close()
 
 	c1, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,

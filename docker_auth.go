@@ -38,6 +38,7 @@ func defaultRegistry(ctx context.Context) string {
 	if err != nil {
 		return testcontainersdocker.IndexDockerIO
 	}
+	defer p.Close()
 
 	info, err := p.client.Info(ctx)
 	if err != nil {

@@ -18,6 +18,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 	provider, err := NewDockerProvider()
 	require.Nil(t, err)
+	defer provider.Close()
 
 	t.Run("No exposed ports", func(t *testing.T) {
 		// reqWithModifiers {

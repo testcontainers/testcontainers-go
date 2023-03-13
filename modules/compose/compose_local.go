@@ -158,6 +158,8 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 		if err != nil {
 			return fmt.Errorf("unable to create new Docker Provider: %w", err)
 		}
+		defer dockerProvider.Close()
+
 		dockercontainer := &testcontainers.DockerContainer{ID: container.ID, WaitingFor: strategy}
 		dockercontainer.SetLogger(dc.Logger)
 		dockercontainer.SetProvider(dockerProvider)
