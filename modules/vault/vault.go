@@ -2,6 +2,7 @@ package vault
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -12,9 +13,19 @@ type vaultContainer struct {
 }
 
 // StartContainer creates an instance of the vault container type
-func StartContainer(ctx context.Context) (*vaultContainer, error) {
+func StartContainer(ctx context.Context, opts ...Option) (*vaultContainer, error) {
+	config := &Config{
+		imageName: "vault:latest",
+		port:      8200,
+	}
+
+	for _, opt := range opts {
+		opt(config)
+	}
+
 	req := testcontainers.ContainerRequest{
-		Image: "vault:latest",
+		Image:        config.imageName,
+		ExposedPorts: []string{fmt.Sprintf("%d/tcp", config.port)},
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
