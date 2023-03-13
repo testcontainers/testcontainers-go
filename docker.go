@@ -717,49 +717,6 @@ type TestContainersConfig struct {
 	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
 }
 
-type (
-	// DockerProviderOptions defines options applicable to DockerProvider
-	DockerProviderOptions struct {
-		defaultBridgeNetworkName string
-		*GenericProviderOptions
-	}
-
-	// DockerProviderOption defines a common interface to modify DockerProviderOptions
-	// These can be passed to NewDockerProvider in a variadic way to customize the returned DockerProvider instance
-	DockerProviderOption interface {
-		ApplyDockerTo(opts *DockerProviderOptions)
-	}
-
-	// DockerProviderOptionFunc is a shorthand to implement the DockerProviderOption interface
-	DockerProviderOptionFunc func(opts *DockerProviderOptions)
-)
-
-func (f DockerProviderOptionFunc) ApplyDockerTo(opts *DockerProviderOptions) {
-	f(opts)
-}
-
-func Generic2DockerOptions(opts ...GenericProviderOption) []DockerProviderOption {
-	converted := make([]DockerProviderOption, 0, len(opts))
-	for _, o := range opts {
-		switch c := o.(type) {
-		case DockerProviderOption:
-			converted = append(converted, c)
-		default:
-			converted = append(converted, DockerProviderOptionFunc(func(opts *DockerProviderOptions) {
-				o.ApplyGenericTo(opts.GenericProviderOptions)
-			}))
-		}
-	}
-
-	return converted
-}
-
-func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
-	return DockerProviderOptionFunc(func(opts *DockerProviderOptions) {
-		opts.defaultBridgeNetworkName = bridgeNetworkName
-	})
-}
-
 func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainersConfig, err error) {
 	tcConfig = configureTC()
 
@@ -796,48 +753,6 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 	}
 
 	return cli, host, tcConfig, nil
-}
-
-// NewDockerProvider creates a Docker provider with the EnvClient
-func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error) {
-	o := &DockerProviderOptions{
-		GenericProviderOptions: &GenericProviderOptions{
-			Logger: Logger,
-		},
-	}
-
-	for idx := range provOpts {
-		provOpts[idx].ApplyDockerTo(o)
-	}
-
-	c, host, tcConfig, err := NewDockerClient()
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = c.Ping(context.TODO())
-	if err != nil {
-		// fallback to environment
-		c, err = testcontainersdocker.NewClient(context.Background())
-		if err != nil {
-			return nil, err
-		}
-		defer c.Close()
-	}
-
-	p := &DockerProvider{
-		DockerProviderOptions: o,
-		host:                  host,
-		client:                c,
-		config:                tcConfig,
-	}
-
-	// log docker server info only once
-	logOnce.Do(func() {
-		LogDockerServerInfo(context.Background(), p.client, p.Logger)
-	})
-
-	return p, nil
 }
 
 // configureTC reads from testcontainers properties file, if it exists
