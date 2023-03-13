@@ -818,7 +818,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 	_, err = c.Ping(context.TODO())
 	if err != nil {
 		// fallback to environment
-		c, err = client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+		c, err = testcontainersdocker.NewClient(context.Background())
 		if err != nil {
 			return nil, err
 		}

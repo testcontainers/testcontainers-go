@@ -28,7 +28,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
 
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -367,7 +366,7 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	client, err := testcontainersdocker.NewClient(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -401,7 +400,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	client, err := testcontainersdocker.NewClient(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -639,7 +638,7 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	t.Run("if not built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+		client, err := testcontainersdocker.NewClient(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -670,7 +669,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 	t.Run("if built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+		client, err := testcontainersdocker.NewClient(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -2193,7 +2192,7 @@ func TestDockerContainerResources(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
-	c, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	c, err := testcontainersdocker.NewClient(ctx)
 	require.NoError(t, err)
 
 	containerID := nginxC.GetContainerID()
@@ -2244,7 +2243,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 
 	containerId := nginxC.GetContainerID()
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := testcontainersdocker.NewClient(ctx)
 	assert.Nil(t, err)
 	cnt, err := cli.ContainerInspect(ctx, containerId)
 	assert.Nil(t, err)
@@ -2277,7 +2276,7 @@ func TestContainerCapAdd(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginx)
 
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := testcontainersdocker.NewClient(ctx)
 	require.NoError(t, err)
 	defer dockerClient.Close()
 
