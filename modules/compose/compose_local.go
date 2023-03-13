@@ -129,6 +129,7 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 	if err != nil {
 		return err
 	}
+	defer cli.Close()
 
 	for k := range dc.WaitStrategyMap {
 		containerName := dc.containerNameFromServiceName(k.service, "_")

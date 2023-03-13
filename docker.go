@@ -822,6 +822,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		if err != nil {
 			return nil, err
 		}
+		defer c.Close()
 	}
 
 	p := &DockerProvider{

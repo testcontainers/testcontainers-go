@@ -370,6 +370,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer client.Close()
 
 	var container Container
 	container, err = GenericContainer(ctx, GenericContainerRequest{
@@ -404,6 +405,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer client.Close()
 
 	_, err = GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
@@ -642,6 +644,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer client.Close()
 
 		container, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
@@ -673,6 +676,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer client.Close()
 
 		req := ContainerRequest{
 			FromDockerfile: FromDockerfile{
@@ -2194,6 +2198,7 @@ func TestDockerContainerResources(t *testing.T) {
 
 	c, err := testcontainersdocker.NewClient(ctx)
 	require.NoError(t, err)
+	defer c.Close()
 
 	containerID := nginxC.GetContainerID()
 
@@ -2245,6 +2250,8 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 
 	cli, err := testcontainersdocker.NewClient(ctx)
 	assert.Nil(t, err)
+	defer cli.Close()
+
 	cnt, err := cli.ContainerInspect(ctx, containerId)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(cnt.NetworkSettings.Networks))
