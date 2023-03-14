@@ -1,4 +1,4 @@
-name: Main pipeline
+name: Reaper-Off pipeline
 
 on: [push, pull_request]
 
@@ -7,12 +7,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v3
+      - name: Run ShellCheck
+        run: |
+          shellcheck scripts/*.sh
+      - name: Run gofmt
+        run: |
+          ./scripts/checks.sh
   test:
     strategy:
       matrix:
         go-version: [1.19.x, 1.x]
-        platform: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
     steps:
 
       - name: Set up Go
@@ -30,33 +40,28 @@ jobs:
       - name: modTidy
         run: make tools-tidy
 
+      - name: vet
+        run: go vet ./...
+
       - name: ensure compilation
         env:
           GOOS: linux
         run: go build
 
-      - name: Enable Ryuk at properties side
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
+      - name: Disable Ryuk at properties side
         run:  |
           set -x
-          echo 'ryuk.disabled=false' >> ${HOME}/.testcontainers.properties
-
+          echo 'ryuk.disabled=true' >> ${HOME}/.testcontainers.properties
       - name: gotestsum
         # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
         # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-unit
-
-      - name: Run module generator tests
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make -C modulegen test-unit
 
       - name: Run checker
         run: |
           ./scripts/check_environment.sh
-
       - name: Test Summary
         uses: test-summary/action@4ee9ece4bca777a38f05c8fc578ac2007fe266f7
         with:
