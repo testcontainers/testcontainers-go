@@ -15,6 +15,7 @@ import (
 
 	"github.com/docker/docker/client"
 
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -231,13 +232,13 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		t.Fatal("get endpoint:", err)
 	}
 
-	client, err := client.NewClientWithOpts(client.WithHost(remoteDocker))
+	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
+
+	client, err := testcontainersdocker.NewClient(ctx, opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer client.Close()
-
-	client.NegotiateAPIVersion(ctx)
 
 	provider := &DockerProvider{client: client, DockerProviderOptions: &DockerProviderOptions{GenericProviderOptions: &GenericProviderOptions{Logger: TestLogger(t)}}}
 

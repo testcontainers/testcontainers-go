@@ -28,15 +28,6 @@ type DeprecatedContainer interface {
 	Terminate(ctx context.Context) error
 }
 
-// ContainerProvider allows the creation of containers on an arbitrary system
-type ContainerProvider interface {
-	CreateContainer(context.Context, ContainerRequest) (Container, error)        // create a container without starting it
-	ReuseOrCreateContainer(context.Context, ContainerRequest) (Container, error) // reuses a container if it exists or creates a container without starting
-	RunContainer(context.Context, ContainerRequest) (Container, error)           // create a container and start it
-	Health(context.Context) error
-	Config() TestContainersConfig
-}
-
 // Container allows getting info about and controlling a single container instance
 type Container interface {
 	GetContainerID() string                                         // get the container id from the provider
@@ -132,30 +123,6 @@ type ContainerRequest struct {
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 }
 
-type (
-	// ProviderType is an enum for the possible providers
-	ProviderType int
-
-	// GenericProviderOptions defines options applicable to all providers
-	GenericProviderOptions struct {
-		Logger         Logging
-		DefaultNetwork string
-	}
-
-	// GenericProviderOption defines a common interface to modify GenericProviderOptions
-	// These options can be passed to GetProvider in a variadic way to customize the returned GenericProvider instance
-	GenericProviderOption interface {
-		ApplyGenericTo(opts *GenericProviderOptions)
-	}
-
-	// GenericProviderOptionFunc is a shorthand to implement the GenericProviderOption interface
-	GenericProviderOptionFunc func(opts *GenericProviderOptions)
-)
-
-func (f GenericProviderOptionFunc) ApplyGenericTo(opts *GenericProviderOptions) {
-	f(opts)
-}
-
 // containerOptions functional options for a container
 type containerOptions struct {
 	ImageName           string
@@ -178,41 +145,6 @@ func WithRegistryCredentials(registryCredentials string) ContainerOption {
 	return func(o *containerOptions) {
 		o.RegistryCredentials = registryCredentials
 	}
-}
-
-// possible provider types
-const (
-	ProviderDocker ProviderType = iota // Docker is default = 0
-	ProviderPodman
-)
-
-// GetProvider provides the provider implementation for a certain type
-func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvider, error) {
-	opt := &GenericProviderOptions{
-		Logger: Logger,
-	}
-
-	for _, o := range opts {
-		o.ApplyGenericTo(opt)
-	}
-
-	switch t {
-	case ProviderDocker:
-		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Bridge))
-		provider, err := NewDockerProvider(providerOptions...)
-		if err != nil {
-			return nil, fmt.Errorf("%w, failed to create Docker provider", err)
-		}
-		return provider, nil
-	case ProviderPodman:
-		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Podman))
-		provider, err := NewDockerProvider(providerOptions...)
-		if err != nil {
-			return nil, fmt.Errorf("%w, failed to create Docker provider", err)
-		}
-		return provider, nil
-	}
-	return nil, errors.New("unknown provider")
 }
 
 // Validate ensures that the ContainerRequest does not have invalid parameters configured to it

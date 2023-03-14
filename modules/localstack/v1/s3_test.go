@@ -38,6 +38,7 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*sessio
 	if err != nil {
 		return &session.Session{}, err
 	}
+	defer provider.Close()
 
 	host, err := provider.DaemonHost(ctx)
 	if err != nil {

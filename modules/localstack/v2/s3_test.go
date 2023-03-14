@@ -35,6 +35,7 @@ func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Clien
 	if err != nil {
 		return nil, err
 	}
+	defer provider.Close()
 
 	host, err := provider.DaemonHost(ctx)
 	if err != nil {
