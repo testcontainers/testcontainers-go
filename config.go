@@ -15,9 +15,9 @@ type TestContainersConfig struct {
 	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
 }
 
-// configureTC reads from testcontainers properties file, if it exists
+// readConfig reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
-func configureTC() TestContainersConfig {
+func readConfig() TestContainersConfig {
 	config := TestContainersConfig{}
 
 	applyEnvironmentConfiguration := func(config TestContainersConfig) TestContainersConfig {

@@ -9,11 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReadTCPropsFile(t *testing.T) {
+func TestReadTCConfig(t *testing.T) {
 	t.Run("HOME is not set", func(t *testing.T) {
 		t.Setenv("HOME", "")
 
-		config := configureTC()
+		config := readConfig()
 
 		assert.Empty(t, config, "TC props file should not exist")
 	})
@@ -22,7 +22,7 @@ func TestReadTCPropsFile(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
-		config := configureTC()
+		config := readConfig()
 
 		expected := TestContainersConfig{}
 		expected.RyukPrivileged = true
@@ -34,7 +34,7 @@ func TestReadTCPropsFile(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("HOME", tmpDir)
 
-		config := configureTC()
+		config := readConfig()
 
 		assert.Empty(t, config, "TC props file should not exist")
 	})
@@ -44,7 +44,7 @@ func TestReadTCPropsFile(t *testing.T) {
 		t.Setenv("HOME", tmpDir)
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
-		config := configureTC()
+		config := readConfig()
 		expected := TestContainersConfig{}
 		expected.RyukPrivileged = true
 
@@ -257,7 +257,7 @@ func TestReadTCPropsFile(t *testing.T) {
 					return
 				}
 
-				config := configureTC()
+				config := readConfig()
 
 				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
 
