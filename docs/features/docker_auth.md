@@ -23,14 +23,7 @@ req := ContainerRequest{
 
 In the case you are building an image from the Dockerfile, the authentication will be automatically retrieved from the Docker config, so you don't need to pass it explicitly:
 
-```go
-req := ContainerRequest{
-	FromDockerfile: testcontainers.FromDockerfile{
-		Context: "/path/to/build/context",
-		Dockerfile: "CustomDockerfile",
-		BuildArgs: map[string]*string {
-			"FOO": "BAR",
-		},
-	},
-}
-```
+<!--codeinclude-->
+[Building From a Dockerfile does not need Auth credentials anymore](../../docker_test.go) inside_block:fromDockerfile
+<!--/codeinclude-->
+

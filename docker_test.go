@@ -1131,6 +1131,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	ctx := context.Background()
 	t.Log("got ctx, creating container request")
 
+	// fromDockerfile {
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
 			Context:       "./testresources",
@@ -1138,6 +1139,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 			PrintBuildLog: true,
 		},
 	}
+	// }
 
 	genContainerReq := GenericContainerRequest{
 		ProviderType:     providerType,
