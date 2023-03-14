@@ -784,10 +784,19 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 	)
 
 	cli, err = client.NewClientWithOpts(opts...)
-
 	if err != nil {
 		return nil, "", TestContainersConfig{}, err
 	}
+
+	_, err = cli.Ping(context.TODO())
+	if err != nil {
+		// fallback to environment
+		cli, err = testcontainersdocker.NewClient(context.Background())
+		if err != nil {
+			return nil, "", TestContainersConfig{}, err
+		}
+	}
+	defer cli.Close()
 
 	return cli, host, tcConfig, nil
 }

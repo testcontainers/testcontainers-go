@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
 // possible provider types
@@ -133,16 +131,6 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 	c, host, tcConfig, err := NewDockerClient()
 	if err != nil {
 		return nil, err
-	}
-
-	_, err = c.Ping(context.TODO())
-	if err != nil {
-		// fallback to environment
-		c, err = testcontainersdocker.NewClient(context.Background())
-		if err != nil {
-			return nil, err
-		}
-		defer c.Close()
 	}
 
 	p := &DockerProvider{
