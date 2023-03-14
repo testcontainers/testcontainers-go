@@ -721,7 +721,7 @@ type DockerProvider struct {
 	client    client.APIClient
 	host      string
 	hostCache string
-	config    TestContainersConfig
+	config    TestcontainersConfig
 }
 
 // Client gets the docker client used by the provider
@@ -745,7 +745,7 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 
 var _ ContainerProvider = (*DockerProvider)(nil)
 
-func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainersConfig, err error) {
+func NewDockerClient() (cli *client.Client, host string, tcConfig TestcontainersConfig, err error) {
 	tcConfig = readConfig()
 
 	host = tcConfig.Host
@@ -776,7 +776,7 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 
 	cli, err = client.NewClientWithOpts(opts...)
 	if err != nil {
-		return nil, "", TestContainersConfig{}, err
+		return nil, "", TestcontainersConfig{}, err
 	}
 
 	_, err = cli.Ping(context.TODO())
@@ -784,7 +784,7 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 		// fallback to environment
 		cli, err = testcontainersdocker.NewClient(context.Background())
 		if err != nil {
-			return nil, "", TestContainersConfig{}, err
+			return nil, "", TestcontainersConfig{}, err
 		}
 	}
 	defer cli.Close()
@@ -1167,9 +1167,9 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 	return c, nil
 }
 
-// Config provides the TestContainersConfig read from $HOME/.testcontainers.properties or
+// Config provides the TestcontainersConfig read from $HOME/.testcontainers.properties or
 // the environment variables
-func (p *DockerProvider) Config() TestContainersConfig {
+func (p *DockerProvider) Config() TestcontainersConfig {
 	return p.config
 }
 

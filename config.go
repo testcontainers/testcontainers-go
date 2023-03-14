@@ -8,7 +8,8 @@ import (
 	"github.com/magiconair/properties"
 )
 
-type TestContainersConfig struct {
+// TestcontainersConfig represents the configuration for Testcontainers
+type TestcontainersConfig struct {
 	Host           string `properties:"docker.host,default="`
 	TLSVerify      int    `properties:"docker.tls.verify,default=0"`
 	CertPath       string `properties:"docker.cert.path,default="`
@@ -17,10 +18,10 @@ type TestContainersConfig struct {
 
 // readConfig reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
-func readConfig() TestContainersConfig {
-	config := TestContainersConfig{}
+func readConfig() TestcontainersConfig {
+	config := TestcontainersConfig{}
 
-	applyEnvironmentConfiguration := func(config TestContainersConfig) TestContainersConfig {
+	applyEnvironmentConfiguration := func(config TestcontainersConfig) TestcontainersConfig {
 		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
 		if ryukPrivilegedEnv != "" {
 			config.RyukPrivileged = ryukPrivilegedEnv == "true"
