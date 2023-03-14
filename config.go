@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/magiconair/properties"
 )
@@ -13,6 +14,7 @@ type TestcontainersConfig struct {
 	Host           string `properties:"docker.host,default="`
 	TLSVerify      int    `properties:"docker.tls.verify,default=0"`
 	CertPath       string `properties:"docker.cert.path,default="`
+	RyukDisabled   bool   `properties:"ryuk.disabled,default=false"`
 	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
 }
 
@@ -22,8 +24,13 @@ func readConfig() TestcontainersConfig {
 	config := TestcontainersConfig{}
 
 	applyEnvironmentConfiguration := func(config TestcontainersConfig) TestcontainersConfig {
+		ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
+		if parseBool(ryukDisabledEnv) {
+			config.RyukDisabled = ryukDisabledEnv == "true"
+		}
+
 		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
-		if ryukPrivilegedEnv != "" {
+		if parseBool(ryukPrivilegedEnv) {
 			config.RyukPrivileged = ryukPrivilegedEnv == "true"
 		}
 
@@ -48,4 +55,11 @@ func readConfig() TestcontainersConfig {
 	}
 
 	return applyEnvironmentConfiguration(config)
+}
+
+func parseBool(input string) bool {
+	if _, err := strconv.ParseBool(input); err == nil {
+		return true
+	}
+	return false
 }

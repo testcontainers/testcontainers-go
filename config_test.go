@@ -20,11 +20,13 @@ func TestReadTCConfig(t *testing.T) {
 
 	t.Run("HOME is not set - TESTCONTAINERS_ env is set", func(t *testing.T) {
 		t.Setenv("HOME", "")
+		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := readConfig()
 
 		expected := TestcontainersConfig{}
+		expected.RyukDisabled = true
 		expected.RyukPrivileged = true
 
 		assert.Equal(t, expected, config)
@@ -42,10 +44,12 @@ func TestReadTCConfig(t *testing.T) {
 	t.Run("HOME does not contain TC props file - TESTCONTAINERS_ env is set", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("HOME", tmpDir)
+		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := readConfig()
 		expected := TestcontainersConfig{}
+		expected.RyukDisabled = true
 		expected.RyukPrivileged = true
 
 		assert.Equal(t, expected, config)
@@ -150,6 +154,17 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"With Ryuk disabled using properties",
+				`ryuk.disabled=true`,
+				map[string]string{},
+				TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: true,
+				},
+			},
+			{
 				"With Ryuk container privileged using properties",
 				`ryuk.container.privileged=true`,
 				map[string]string{},
@@ -158,6 +173,19 @@ func TestReadTCConfig(t *testing.T) {
 					TLSVerify:      0,
 					CertPath:       "",
 					RyukPrivileged: true,
+				},
+			},
+			{
+				"With Ryuk disabled using an env var",
+				``,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_DISABLED": "true",
+				},
+				TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: true,
 				},
 			},
 			{
@@ -171,6 +199,58 @@ func TestReadTCConfig(t *testing.T) {
 					TLSVerify:      0,
 					CertPath:       "",
 					RyukPrivileged: true,
+				},
+			},
+			{
+				"With Ryuk disabled using an env var and properties. Env var wins (0)",
+				`ryuk.disabled=true`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_DISABLED": "true",
+				},
+				TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: true,
+				},
+			},
+			{
+				"With Ryuk disabled using an env var and properties. Env var wins (1)",
+				`ryuk.disabled=false`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_DISABLED": "true",
+				},
+				TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: true,
+				},
+			},
+			{
+				"With Ryuk disabled using an env var and properties. Env var wins (2)",
+				`ryuk.disabled=true`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_DISABLED": "false",
+				},
+				TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: false,
+				},
+			},
+			{
+				"With Ryuk disabled using an env var and properties. Env var wins (3)",
+				`ryuk.disabled=false`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_DISABLED": "false",
+				},
+				TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: false,
 				},
 			},
 			{
@@ -230,13 +310,28 @@ func TestReadTCConfig(t *testing.T) {
 				`ryuk.container.privileged=false
 				docker.tls.verify = ERROR`,
 				map[string]string{
+					"TESTCONTAINERS_RYUK_DISABLED":             "true",
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				TestcontainersConfig{
 					Host:           "",
 					TLSVerify:      0,
 					CertPath:       "",
+					RyukDisabled:   true,
 					RyukPrivileged: true,
+				},
+			},
+			{
+				"With Ryuk disabled using an env var and properties. Env var does not win because it's not a boolean value",
+				`ryuk.disabled=false`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_DISABLED": "foo",
+				},
+				TestcontainersConfig{
+					Host:         "",
+					TLSVerify:    0,
+					CertPath:     "",
+					RyukDisabled: false,
 				},
 			},
 			{
