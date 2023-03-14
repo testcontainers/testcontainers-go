@@ -17,9 +17,7 @@ _Testcontainers for Go_ will automatically discover the credentials for a given 
 
 ```go
 req := ContainerRequest{
-	FromDockerfile: testcontainers.FromDockerfile{
-		Image: "myregistry.com/myimage:latest",
-	},
+	Image: "myregistry.com/myimage:latest",
 }
 ```
 
