@@ -53,11 +53,13 @@ func TestReadTCConfig(t *testing.T) {
 
 	t.Run("HOME contains TC properties file", func(t *testing.T) {
 		tests := []struct {
+			name     string
 			content  string
 			env      map[string]string
 			expected TestcontainersConfig
 		}{
 			{
+				"Single Docker host with spaces",
 				"docker.host = tcp://127.0.0.1:33293",
 				map[string]string{},
 				TestcontainersConfig{
@@ -67,15 +69,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				"docker.host = tcp://127.0.0.1:33293",
-				map[string]string{},
-				TestcontainersConfig{
-					Host:      "tcp://127.0.0.1:33293",
-					TLSVerify: 0,
-					CertPath:  "",
-				},
-			},
-			{
+				"Multiple docker host entries, last one wins",
 				`docker.host = tcp://127.0.0.1:33293
 	docker.host = tcp://127.0.0.1:4711
 	`,
@@ -87,6 +81,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"Multiple docker host entries, last one wins, with TLS",
 				`docker.host = tcp://127.0.0.1:33293
 	docker.host = tcp://127.0.0.1:4711
 	docker.host = tcp://127.0.0.1:1234
@@ -100,6 +95,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"Empty file",
 				"",
 				map[string]string{},
 				TestcontainersConfig{
@@ -109,6 +105,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"Non-valid properties are ignored",
 				`foo = bar
 	docker.host = tcp://127.0.0.1:1234
 			`,
@@ -120,6 +117,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"Single Docker host without spaces",
 				"docker.host=tcp://127.0.0.1:33293",
 				map[string]string{},
 				TestcontainersConfig{
@@ -129,6 +127,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"Comments are ignored",
 				`#docker.host=tcp://127.0.0.1:33293`,
 				map[string]string{},
 				TestcontainersConfig{
@@ -138,6 +137,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"Multiple docker host entries, last one wins, with TLS and cert path",
 				`#docker.host = tcp://127.0.0.1:33293
 	docker.host = tcp://127.0.0.1:4711
 	docker.host = tcp://127.0.0.1:1234
@@ -150,6 +150,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"With Ryuk container privileged using properties",
 				`ryuk.container.privileged=true`,
 				map[string]string{},
 				TestcontainersConfig{
@@ -160,6 +161,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"With Ryuk container privileged using an env var",
 				``,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
@@ -172,6 +174,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"With Ryuk container privileged using an env var and properties. Env var wins (0)",
 				`ryuk.container.privileged=true`,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
@@ -184,6 +187,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"With Ryuk container privileged using an env var and properties. Env var wins (1)",
 				`ryuk.container.privileged=false`,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
@@ -196,6 +200,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"With Ryuk container privileged using an env var and properties. Env var wins (2)",
 				`ryuk.container.privileged=true`,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
@@ -208,6 +213,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"With Ryuk container privileged using an env var and properties. Env var wins (3)",
 				`ryuk.container.privileged=false`,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
@@ -220,6 +226,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"With TLS verify using properties when value is wrong",
 				`ryuk.container.privileged=false
 				docker.tls.verify = ERROR`,
 				map[string]string{
@@ -233,6 +240,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"With Ryuk container privileged using an env var and properties. Env var does not win because it's not a boolean value",
 				`ryuk.container.privileged=false`,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "foo",
@@ -245,8 +253,8 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 		}
-		for i, tt := range tests {
-			t.Run(fmt.Sprintf("[%d]", i), func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(fmt.Sprintf(tt.name), func(t *testing.T) {
 				tmpDir := t.TempDir()
 				t.Setenv("HOME", tmpDir)
 				for k, v := range tt.env {
