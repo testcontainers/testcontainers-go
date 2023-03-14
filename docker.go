@@ -67,7 +67,6 @@ type DockerContainer struct {
 	provider          *DockerProvider
 	sessionID         uuid.UUID
 	terminationSignal chan bool
-	skipReaper        bool
 	consumers         []LogConsumer
 	raw               *types.ContainerJSON
 	stopProducer      chan bool
@@ -902,10 +901,12 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		opt(&reaperOpts)
 	}
 
+	tcConfig := p.Config()
+
 	var termSignal chan bool
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.EqualFold(req.Image, reaperImage(reaperOpts.ImageName))
-	if !req.SkipReaper && !isReaperContainer {
+	if !tcConfig.RyukDisabled && !isReaperContainer {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
@@ -1042,7 +1043,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		sessionID:         testcontainerssession.ID(),
 		provider:          p,
 		terminationSignal: termSignal,
-		skipReaper:        req.SkipReaper,
 		stopProducer:      make(chan bool),
 		logger:            p.Logger,
 	}
@@ -1085,8 +1085,10 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		return p.CreateContainer(ctx, req)
 	}
 
+	tcConfig := p.Config()
+
 	var termSignal chan bool
-	if !req.SkipReaper {
+	if !tcConfig.RyukDisabled {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
@@ -1105,7 +1107,6 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		sessionID:         testcontainerssession.ID(),
 		provider:          p,
 		terminationSignal: termSignal,
-		skipReaper:        req.SkipReaper,
 		stopProducer:      make(chan bool),
 		logger:            p.Logger,
 		isRunning:         c.State == "running",
@@ -1240,6 +1241,8 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		req.Labels = make(map[string]string)
 	}
 
+	tcConfig := p.Config()
+
 	nc := types.NetworkCreate{
 		Driver:         req.Driver,
 		CheckDuplicate: req.CheckDuplicate,
@@ -1251,7 +1254,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	}
 
 	var termSignal chan bool
-	if !req.SkipReaper {
+	if !tcConfig.RyukDisabled {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)

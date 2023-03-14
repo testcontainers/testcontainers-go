@@ -140,9 +140,8 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:      nginxAlpineImage,
-			SkipReaper: true,
-			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:  nginxAlpineImage,
+			Mounts: Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
 			ExposedPorts: []string{
 				nginxHighPort,
 			},
@@ -181,7 +180,6 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 		ContainerRequest: ContainerRequest{
 			Image:      "nginx",
 			Privileged: true,
-			SkipReaper: true,
 			WaitingFor: wait.ForExposedPort(),
 		},
 		Started: true,
@@ -210,9 +208,8 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:      nginxImage,
-			SkipReaper: true,
-			Networks:   []string{"new-network"},
+			Image:    nginxImage,
+			Networks: []string{"new-network"},
 			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.NetworkMode = "host"
 			},
@@ -240,7 +237,6 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:      nginxAlpineImage,
-			SkipReaper: true,
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
 			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
 			HostConfigModifier: func(hc *container.HostConfig) {
@@ -278,7 +274,6 @@ func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:      nginxAlpineImage,
-			SkipReaper: true,
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
 			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
 			HostConfigModifier: func(hc *container.HostConfig) {
@@ -317,7 +312,6 @@ func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:      nginxAlpineImage,
-			SkipReaper: true,
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
 			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
 			HostConfigModifier: func(hc *container.HostConfig) {
@@ -365,6 +359,11 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 }
 
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
+	tcConfig := readConfig()
+	if !tcConfig.RyukDisabled {
+		t.Skip("Ryuk is enabled, skipping test")
+	}
+
 	ctx := context.Background()
 	client, err := testcontainersdocker.NewClient(ctx)
 	if err != nil {
@@ -380,7 +379,6 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			SkipReaper: true,
 		},
 		Started: true,
 	})
@@ -437,6 +435,11 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 }
 
 func TestContainerTerminationResetsState(t *testing.T) {
+	tcConfig := readConfig()
+	if !tcConfig.RyukDisabled {
+		t.Skip("Ryuk is enabled, skipping test")
+	}
+
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
@@ -446,7 +449,6 @@ func TestContainerTerminationResetsState(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			SkipReaper: true,
 		},
 		Started: true,
 	})
@@ -602,6 +604,11 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
+	tcConfig := readConfig()
+	if !tcConfig.RyukDisabled {
+		t.Skip("Ryuk is enabled, skipping test")
+	}
+
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
@@ -611,7 +618,6 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			SkipReaper: true,
 		},
 		Started: true,
 	})
@@ -653,7 +659,6 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 				ExposedPorts: []string{
 					nginxDefaultPort,
 				},
-				SkipReaper: true,
 			},
 			Started: true,
 		})
@@ -1473,8 +1478,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 	t.Run("if the image not found don't propagate the error", func(t *testing.T) {
 		_, err := GenericContainer(context.Background(), GenericContainerRequest{
 			ContainerRequest: ContainerRequest{
-				Image:      "postgres:nonexistent-version",
-				SkipReaper: true,
+				Image: "postgres:nonexistent-version",
 			},
 			Started: true,
 		})
@@ -1488,18 +1492,19 @@ func TestContainerNonExistentImage(t *testing.T) {
 	t.Run("the context cancellation is propagated to container creation", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		_, err := GenericContainer(ctx, GenericContainerRequest{
+		c, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
 				Image:      "docker.io/postgres:12",
 				WaitingFor: wait.ForLog("log"),
-				SkipReaper: true,
 			},
 			Started: true,
 		})
 		if !errors.Is(err, ctx.Err()) {
 			t.Fatalf("err should be a ctx cancelled error %v", err)
 		}
+
+		terminateContainerOnEnd(t, ctx, c)
 	})
 }
 
@@ -1516,7 +1521,6 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
 				Image:         "docker.io/redis:latest",
-				SkipReaper:    true,
 				ImagePlatform: nonExistentPlatform,
 			},
 			Started: false,
@@ -1535,7 +1539,6 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
 				Image:         "docker.io/mysql:5.7",
-				SkipReaper:    true,
 				ImagePlatform: "linux/amd64",
 			},
 			Started: false,

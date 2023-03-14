@@ -60,7 +60,6 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 			testcontainersdocker.LabelLang:    "go",
 			testcontainersdocker.LabelVersion: internal.Version,
 		},
-		SkipReaper: true,
 		Mounts:     Mounts(BindMount("/var/run/docker.sock", "/var/run/docker.sock")),
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
 		ReaperOptions: []ContainerOption{
@@ -126,7 +125,6 @@ func Test_NewReaper(t *testing.T) {
 			assert.Equal(t, test.req.Image, provider.req.Image, "expected image doesn't match the submitted request")
 			assert.Equal(t, test.req.ExposedPorts, provider.req.ExposedPorts, "expected exposed ports don't match the submitted request")
 			assert.Equal(t, test.req.Labels, provider.req.Labels, "expected labels don't match the submitted request")
-			assert.Equal(t, test.req.SkipReaper, provider.req.SkipReaper, "expected skipReaper doesn't match the submitted request")
 			assert.Equal(t, test.req.Mounts, provider.req.Mounts, "expected mounts don't match the submitted request")
 			assert.Equal(t, test.req.WaitingFor, provider.req.WaitingFor, "expected waitingFor don't match the submitted request")
 
