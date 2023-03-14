@@ -9,6 +9,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestReadTCConfig(t *testing.T) {
+	t.Run("Config is read just once", func(t *testing.T) {
+		t.Setenv("HOME", "")
+		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
+
+		config := readConfig()
+
+		expected := TestcontainersConfig{
+			RyukDisabled: true,
+		}
+
+		assert.Equal(t, expected, config)
+
+		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "false")
+		config = readConfig()
+		assert.Equal(t, expected, config)
+	})
+}
+
 func TestDoReadTCConfig(t *testing.T) {
 	t.Run("HOME is not set", func(t *testing.T) {
 		t.Setenv("HOME", "")

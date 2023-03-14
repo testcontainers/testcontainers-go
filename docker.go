@@ -746,7 +746,7 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 var _ ContainerProvider = (*DockerProvider)(nil)
 
 func NewDockerClient() (cli *client.Client, host string, tcConfig TestcontainersConfig, err error) {
-	tcConfig = doReadConfig()
+	tcConfig = readConfig()
 
 	host = tcConfig.Host
 

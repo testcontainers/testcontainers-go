@@ -5,9 +5,13 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 
 	"github.com/magiconair/properties"
 )
+
+var tcConfig TestcontainersConfig
+var tcConfigOnce sync.Once
 
 // TestcontainersConfig represents the configuration for Testcontainers
 type TestcontainersConfig struct {
@@ -16,6 +20,16 @@ type TestcontainersConfig struct {
 	CertPath       string `properties:"docker.cert.path,default="`
 	RyukDisabled   bool   `properties:"ryuk.disabled,default=false"`
 	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
+}
+
+// readConfig reads from testcontainers properties file, storing the result in a singleton instance
+// of the TestcontainersConfig struct
+func readConfig() TestcontainersConfig {
+	tcConfigOnce.Do(func() {
+		tcConfig = doReadConfig()
+	})
+
+	return tcConfig
 }
 
 // doReadConfig reads from testcontainers properties file, if it exists
