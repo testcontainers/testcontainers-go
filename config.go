@@ -84,6 +84,8 @@ func readConfig() TestcontainersConfig {
 		return applyEnvironmentConfiguration(config)
 	}
 
+	fmt.Printf("Testcontainers properties file has been found: %s\n", tcProp)
+
 	return applyEnvironmentConfiguration(config)
 }
 
