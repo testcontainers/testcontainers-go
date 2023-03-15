@@ -16,7 +16,16 @@ const (
 	tcpDockerHost4711  = "tcp://127.0.0.1:4711"
 )
 
+// unset environment variables to avoid side effects
+// exectute this function before each test
+func resetTestEnv(t *testing.T) {
+	t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "")
+	t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "")
+}
+
 func TestReadConfig(t *testing.T) {
+	resetTestEnv(t)
+
 	t.Run("Config is read just once", func(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
@@ -37,6 +46,8 @@ func TestReadConfig(t *testing.T) {
 }
 
 func TestReadTCConfig(t *testing.T) {
+	resetTestEnv(t)
+
 	t.Run("HOME is not set", func(t *testing.T) {
 		t.Setenv("HOME", "")
 
@@ -410,7 +421,6 @@ func TestReadTCConfig(t *testing.T) {
 				config := readConfig()
 
 				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
-
 			})
 		}
 	})
