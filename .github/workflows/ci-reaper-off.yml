@@ -7,17 +7,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  static-analysis:
-    runs-on: ubuntu-latest
-    steps:
-
-      - uses: actions/checkout@v3
-      - name: Run ShellCheck
-        run: |
-          shellcheck scripts/*.sh
-      - name: Run gofmt
-        run: |
-          ./scripts/checks.sh
   test-reaper-off:
     strategy:
       matrix:
