@@ -11,7 +11,7 @@ import (
 )
 
 var tcConfig TestcontainersConfig
-var tcConfigOnce sync.Once
+var tcConfigOnce *sync.Once = new(sync.Once)
 
 // TestcontainersConfig represents the configuration for Testcontainers
 type TestcontainersConfig struct {
@@ -35,6 +35,7 @@ Ryuk has been disabled for the current execution. This can cause unexpected beha
 More on this: https://golang.testcontainers.org/features/garbage_collector/
 **********************************************************************************************`
 			Logger.Printf(ryukDisabledMessage)
+			Logger.Printf("\n%+v", tcConfig)
 		}
 	})
 
