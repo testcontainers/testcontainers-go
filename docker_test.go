@@ -444,12 +444,6 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 }
 
 func TestContainerTerminationResetsState(t *testing.T) {
-	tcConfigOnce = new(sync.Once) // reset the config
-	tcConfig := ReadConfig()
-	if !tcConfig.RyukDisabled {
-		t.Skip("Ryuk is enabled, skipping test")
-	}
-
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
@@ -538,6 +532,12 @@ func TestContainerStateAfterTermination(t *testing.T) {
 }
 
 func TestContainerStopWithReaper(t *testing.T) {
+	tcConfigOnce = new(sync.Once) // reset the config
+	tcConfig := ReadConfig()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
@@ -580,6 +580,12 @@ func TestContainerStopWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithReaper(t *testing.T) {
+	tcConfigOnce = new(sync.Once) // reset the config
+	tcConfig := ReadConfig()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
