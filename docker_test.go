@@ -1054,15 +1054,16 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 		},
 		WaitingFor: wait.ForLog("test context timeout").WithStartupTimeout(1 * time.Second),
 	}
-	_, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err == nil {
 		t.Error("Expected timeout")
 	}
+
+	terminateContainerOnEnd(t, ctx, c)
 }
 
 func TestContainerCreationWaitsForLog(t *testing.T) {
@@ -1189,15 +1190,16 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 			wait.ForListeningPort("3306/tcp"),
 		),
 	}
-	_, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err == nil {
 		t.Fatal("Expected timeout")
 	}
+
+	terminateContainerOnEnd(t, ctx, c)
 }
 
 func TestContainerCreationWaitingForHostPort(t *testing.T) {
