@@ -359,7 +359,7 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 }
 
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
-	tcConfig := readConfig()
+	tcConfig := ReadConfig()
 	if !tcConfig.RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
@@ -435,7 +435,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 }
 
 func TestContainerTerminationResetsState(t *testing.T) {
-	tcConfig := readConfig()
+	tcConfig := ReadConfig()
 	if !tcConfig.RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
@@ -604,7 +604,7 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
-	tcConfig := readConfig()
+	tcConfig := ReadConfig()
 	if !tcConfig.RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}

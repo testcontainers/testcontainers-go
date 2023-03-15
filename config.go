@@ -22,11 +22,11 @@ type TestcontainersConfig struct {
 	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
 }
 
-// readConfig reads from testcontainers properties file, storing the result in a singleton instance
+// ReadConfig reads from testcontainers properties file, storing the result in a singleton instance
 // of the TestcontainersConfig struct
-func readConfig() TestcontainersConfig {
+func ReadConfig() TestcontainersConfig {
 	tcConfigOnce.Do(func() {
-		tcConfig = doReadConfig()
+		tcConfig = readConfig()
 
 		if tcConfig.RyukDisabled {
 			ryukDisabledMessage := `
@@ -41,9 +41,9 @@ More on this: https://golang.testcontainers.org/features/garbage_collector/
 	return tcConfig
 }
 
-// doReadConfig reads from testcontainers properties file, if it exists
+// readConfig reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
-func doReadConfig() TestcontainersConfig {
+func readConfig() TestcontainersConfig {
 	config := TestcontainersConfig{}
 
 	applyEnvironmentConfiguration := func(config TestcontainersConfig) TestcontainersConfig {

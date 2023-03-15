@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReadTCConfig(t *testing.T) {
+func TestReadConfig(t *testing.T) {
 	t.Run("Config is read just once", func(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 
-		config := readConfig()
+		config := ReadConfig()
 
 		expected := TestcontainersConfig{
 			RyukDisabled: true,
@@ -23,16 +23,16 @@ func TestReadTCConfig(t *testing.T) {
 		assert.Equal(t, expected, config)
 
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "false")
-		config = readConfig()
+		config = ReadConfig()
 		assert.Equal(t, expected, config)
 	})
 }
 
-func TestDoReadTCConfig(t *testing.T) {
+func TestReadTCConfig(t *testing.T) {
 	t.Run("HOME is not set", func(t *testing.T) {
 		t.Setenv("HOME", "")
 
-		config := doReadConfig()
+		config := readConfig()
 
 		assert.Empty(t, config, "TC props file should not exist")
 	})
@@ -42,7 +42,7 @@ func TestDoReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
-		config := doReadConfig()
+		config := readConfig()
 
 		expected := TestcontainersConfig{}
 		expected.RyukDisabled = true
@@ -55,7 +55,7 @@ func TestDoReadTCConfig(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("HOME", tmpDir)
 
-		config := doReadConfig()
+		config := readConfig()
 
 		assert.Empty(t, config, "TC props file should not exist")
 	})
@@ -66,7 +66,7 @@ func TestDoReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
-		config := doReadConfig()
+		config := readConfig()
 		expected := TestcontainersConfig{}
 		expected.RyukDisabled = true
 		expected.RyukPrivileged = true
@@ -379,7 +379,7 @@ func TestDoReadTCConfig(t *testing.T) {
 					return
 				}
 
-				config := doReadConfig()
+				config := readConfig()
 
 				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
 
