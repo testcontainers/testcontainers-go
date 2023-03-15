@@ -398,6 +398,11 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 }
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
+	tcConfig := ReadConfig()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
 	ctx := context.Background()
 	client, err := testcontainersdocker.NewClient(ctx)
 	if err != nil {
