@@ -35,7 +35,10 @@ func TestReadTCConfig(t *testing.T) {
 
 		config := readConfig()
 
-		assert.Empty(t, config, "TC props file should not exist")
+		expected := TestcontainersConfig{}
+		expected.Host = "unix:///var/run/docker.sock"
+
+		assert.Equal(t, expected, config)
 	})
 
 	t.Run("HOME is not set - TESTCONTAINERS_ env is set", func(t *testing.T) {
@@ -48,6 +51,7 @@ func TestReadTCConfig(t *testing.T) {
 		expected := TestcontainersConfig{}
 		expected.RyukDisabled = true
 		expected.RyukPrivileged = true
+		expected.Host = "unix:///var/run/docker.sock"
 
 		assert.Equal(t, expected, config)
 	})
@@ -58,7 +62,10 @@ func TestReadTCConfig(t *testing.T) {
 
 		config := readConfig()
 
-		assert.Empty(t, config, "TC props file should not exist")
+		expected := TestcontainersConfig{}
+		expected.Host = "unix:///var/run/docker.sock"
+
+		assert.Equal(t, expected, config)
 	})
 
 	t.Run("HOME does not contain TC props file - DOCKER_HOST env is set", func(t *testing.T) {
@@ -83,6 +90,7 @@ func TestReadTCConfig(t *testing.T) {
 		expected := TestcontainersConfig{}
 		expected.RyukDisabled = true
 		expected.RyukPrivileged = true
+		expected.Host = "unix:///var/run/docker.sock"
 
 		assert.Equal(t, expected, config)
 	})
@@ -135,7 +143,7 @@ func TestReadTCConfig(t *testing.T) {
 				"",
 				map[string]string{},
 				TestcontainersConfig{
-					Host:      "",
+					Host:      "unix:///var/run/docker.sock",
 					TLSVerify: 0,
 					CertPath:  "",
 				},
@@ -167,7 +175,7 @@ func TestReadTCConfig(t *testing.T) {
 				`#docker.host=tcp://127.0.0.1:33293`,
 				map[string]string{},
 				TestcontainersConfig{
-					Host:      "",
+					Host:      "unix:///var/run/docker.sock",
 					TLSVerify: 0,
 					CertPath:  "",
 				},
@@ -190,7 +198,7 @@ func TestReadTCConfig(t *testing.T) {
 				`ryuk.disabled=true`,
 				map[string]string{},
 				TestcontainersConfig{
-					Host:         "",
+					Host:         "unix:///var/run/docker.sock",
 					TLSVerify:    0,
 					CertPath:     "",
 					RyukDisabled: true,
@@ -201,7 +209,7 @@ func TestReadTCConfig(t *testing.T) {
 				`ryuk.container.privileged=true`,
 				map[string]string{},
 				TestcontainersConfig{
-					Host:           "",
+					Host:           "unix:///var/run/docker.sock",
 					TLSVerify:      0,
 					CertPath:       "",
 					RyukPrivileged: true,
@@ -214,7 +222,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
 				TestcontainersConfig{
-					Host:         "",
+					Host:         "unix:///var/run/docker.sock",
 					TLSVerify:    0,
 					CertPath:     "",
 					RyukDisabled: true,
@@ -227,7 +235,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				TestcontainersConfig{
-					Host:           "",
+					Host:           "unix:///var/run/docker.sock",
 					TLSVerify:      0,
 					CertPath:       "",
 					RyukPrivileged: true,
@@ -240,7 +248,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
 				TestcontainersConfig{
-					Host:         "",
+					Host:         "unix:///var/run/docker.sock",
 					TLSVerify:    0,
 					CertPath:     "",
 					RyukDisabled: true,
@@ -253,7 +261,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
 				TestcontainersConfig{
-					Host:         "",
+					Host:         "unix:///var/run/docker.sock",
 					TLSVerify:    0,
 					CertPath:     "",
 					RyukDisabled: true,
@@ -266,7 +274,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "false",
 				},
 				TestcontainersConfig{
-					Host:         "",
+					Host:         "unix:///var/run/docker.sock",
 					TLSVerify:    0,
 					CertPath:     "",
 					RyukDisabled: false,
@@ -279,7 +287,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "false",
 				},
 				TestcontainersConfig{
-					Host:         "",
+					Host:         "unix:///var/run/docker.sock",
 					TLSVerify:    0,
 					CertPath:     "",
 					RyukDisabled: false,
@@ -292,7 +300,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				TestcontainersConfig{
-					Host:           "",
+					Host:           "unix:///var/run/docker.sock",
 					TLSVerify:      0,
 					CertPath:       "",
 					RyukPrivileged: true,
@@ -305,7 +313,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				TestcontainersConfig{
-					Host:           "",
+					Host:           "unix:///var/run/docker.sock",
 					TLSVerify:      0,
 					CertPath:       "",
 					RyukPrivileged: true,
@@ -318,7 +326,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
 				},
 				TestcontainersConfig{
-					Host:           "",
+					Host:           "unix:///var/run/docker.sock",
 					TLSVerify:      0,
 					CertPath:       "",
 					RyukPrivileged: false,
@@ -331,7 +339,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
 				},
 				TestcontainersConfig{
-					Host:           "",
+					Host:           "unix:///var/run/docker.sock",
 					TLSVerify:      0,
 					CertPath:       "",
 					RyukPrivileged: false,
@@ -346,7 +354,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				TestcontainersConfig{
-					Host:           "",
+					Host:           "unix:///var/run/docker.sock",
 					TLSVerify:      0,
 					CertPath:       "",
 					RyukDisabled:   true,
@@ -360,7 +368,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "foo",
 				},
 				TestcontainersConfig{
-					Host:         "",
+					Host:         "unix:///var/run/docker.sock",
 					TLSVerify:    0,
 					CertPath:     "",
 					RyukDisabled: false,
@@ -373,7 +381,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "foo",
 				},
 				TestcontainersConfig{
-					Host:           "",
+					Host:           "unix:///var/run/docker.sock",
 					TLSVerify:      0,
 					CertPath:       "",
 					RyukPrivileged: false,
