@@ -744,7 +744,7 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 
 var _ ContainerProvider = (*DockerProvider)(nil)
 
-func NewDockerClient() (cli *client.Client, host string, tcConfig TestcontainersConfig, err error) {
+func NewDockerClient() (cli *client.Client, host string, err error) {
 	tcConfig = ReadConfig()
 
 	host = tcConfig.Host
@@ -775,7 +775,7 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig Testcontainers
 
 	cli, err = client.NewClientWithOpts(opts...)
 	if err != nil {
-		return nil, "", TestcontainersConfig{}, err
+		return nil, "", err
 	}
 
 	_, err = cli.Ping(context.TODO())
@@ -783,12 +783,12 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig Testcontainers
 		// fallback to environment
 		cli, err = testcontainersdocker.NewClient(context.Background())
 		if err != nil {
-			return nil, "", TestcontainersConfig{}, err
+			return nil, "", err
 		}
 	}
 	defer cli.Close()
 
-	return cli, host, tcConfig, nil
+	return cli, host, nil
 }
 
 // BuildImage will build and image from context and Dockerfile, then return the tag

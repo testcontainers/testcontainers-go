@@ -128,10 +128,12 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		provOpts[idx].ApplyDockerTo(o)
 	}
 
-	c, host, tcConfig, err := NewDockerClient()
+	c, host, err := NewDockerClient()
 	if err != nil {
 		return nil, err
 	}
+
+	tcConfig := ReadConfig()
 
 	p := &DockerProvider{
 		DockerProviderOptions: o,

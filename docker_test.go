@@ -1393,7 +1393,7 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cnl()
 	// Create a Docker client.
-	dockerCli, _, _, err := NewDockerClient()
+	dockerCli, _, err := NewDockerClient()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1547,7 +1547,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		require.NoError(t, err)
 		terminateContainerOnEnd(t, ctx, c)
 
-		dockerCli, _, _, err := NewDockerClient()
+		dockerCli, _, err := NewDockerClient()
 		require.NoError(t, err)
 
 		ctr, err := dockerCli.ContainerInspect(ctx, c.GetContainerID())
@@ -1584,7 +1584,7 @@ func TestContainerWithCustomHostname(t *testing.T) {
 }
 
 func readHostname(tb testing.TB, containerId string) string {
-	containerClient, _, _, err := NewDockerClient()
+	containerClient, _, err := NewDockerClient()
 	if err != nil {
 		tb.Fatalf("Failed to create Docker client: %v", err)
 	}

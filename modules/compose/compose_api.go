@@ -371,7 +371,7 @@ func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
 }
 
 func makeClient(*command.DockerCli) (client.APIClient, error) {
-	dockerClient, _, _, err := testcontainers.NewDockerClient()
+	dockerClient, _, err := testcontainers.NewDockerClient()
 	if err != nil {
 		return nil, err
 	}
