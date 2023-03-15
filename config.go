@@ -44,13 +44,14 @@ More on this: https://golang.testcontainers.org/features/garbage_collector/
 // readConfig reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
 func readConfig() TestcontainersConfig {
-	config := TestcontainersConfig{
-		Host: "unix:///var/run/docker.sock",
-	}
+	config := TestcontainersConfig{}
 
 	applyEnvironmentConfiguration := func(config TestcontainersConfig) TestcontainersConfig {
 		if dockerHostEnv := os.Getenv("DOCKER_HOST"); dockerHostEnv != "" {
 			config.Host = dockerHostEnv
+		}
+		if config.Host == "" {
+			config.Host = "unix:///var/run/docker.sock"
 		}
 
 		ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
