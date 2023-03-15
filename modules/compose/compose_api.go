@@ -309,7 +309,11 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 	}
 	container.SetLogger(d.logger)
 
-	dockerProvider := &testcontainers.DockerProvider{}
+	dockerProvider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(d.logger))
+	if err != nil {
+		return nil, err
+	}
+
 	dockerProvider.SetClient(d.dockerClient)
 
 	container.SetProvider(dockerProvider)
