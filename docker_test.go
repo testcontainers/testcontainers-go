@@ -34,12 +34,13 @@ import (
 )
 
 const (
-	mysqlImage       = "docker.io/mysql:8.0.30"
-	nginxImage       = "docker.io/nginx"
-	nginxAlpineImage = "docker.io/nginx:alpine"
-	nginxDefaultPort = "80/tcp"
-	nginxHighPort    = "8080/tcp"
-	daemonMaxVersion = "1.41"
+	mysqlImage        = "docker.io/mysql:8.0.30"
+	nginxDelayedImage = "docker.io/menedev/delayed-nginx:1.15.2"
+	nginxImage        = "docker.io/nginx"
+	nginxAlpineImage  = "docker.io/nginx:alpine"
+	nginxDefaultPort  = "80/tcp"
+	nginxHighPort     = "8080/tcp"
+	daemonMaxVersion  = "1.41"
 )
 
 var providerType = ProviderDocker
@@ -942,7 +943,7 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "docker.io/menedev/delayed-nginx:1.15.2",
+			Image: nginxDelayedImage,
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
@@ -973,7 +974,7 @@ func TestContainerCreationTimesOut(t *testing.T) {
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "docker.io/menedev/delayed-nginx:1.15.2",
+			Image: nginxDelayedImage,
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
@@ -981,12 +982,11 @@ func TestContainerCreationTimesOut(t *testing.T) {
 		},
 		Started: true,
 	})
+
+	terminateContainerOnEnd(t, ctx, nginxC)
+
 	if err == nil {
 		t.Error("Expected timeout")
-		err := nginxC.Terminate(ctx)
-		if err != nil {
-			t.Fatal(err)
-		}
 	}
 }
 
@@ -1028,7 +1028,7 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "docker.io/menedev/delayed-nginx:1.15.2",
+			Image: nginxDelayedImage,
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
