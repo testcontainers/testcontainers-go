@@ -18,6 +18,7 @@ func TestReadConfig(t *testing.T) {
 
 		expected := TestcontainersConfig{
 			RyukDisabled: true,
+			Host:         "unix:///var/run/docker.sock",
 		}
 
 		assert.Equal(t, expected, config)
@@ -58,6 +59,18 @@ func TestReadTCConfig(t *testing.T) {
 		config := readConfig()
 
 		assert.Empty(t, config, "TC props file should not exist")
+	})
+
+	t.Run("HOME does not contain TC props file - DOCKER_HOST env is set", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
+		t.Setenv("DOCKER_HOST", "tcp://127.0.0.1:33293")
+
+		config := readConfig()
+		expected := TestcontainersConfig{}
+		expected.Host = "tcp://127.0.0.1:33293"
+
+		assert.Equal(t, expected, config)
 	})
 
 	t.Run("HOME does not contain TC props file - TESTCONTAINERS_ env is set", func(t *testing.T) {

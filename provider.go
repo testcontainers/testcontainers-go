@@ -128,7 +128,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		provOpts[idx].ApplyDockerTo(o)
 	}
 
-	c, host, err := NewDockerClient()
+	c, err := NewDockerClient()
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 
 	p := &DockerProvider{
 		DockerProviderOptions: o,
-		host:                  host,
+		host:                  tcConfig.Host,
 		client:                c,
 		config:                tcConfig,
 	}

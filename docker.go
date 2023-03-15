@@ -744,10 +744,10 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 
 var _ ContainerProvider = (*DockerProvider)(nil)
 
-func NewDockerClient() (cli *client.Client, host string, err error) {
+func NewDockerClient() (cli *client.Client, err error) {
 	tcConfig = ReadConfig()
 
-	host = tcConfig.Host
+	host := tcConfig.Host
 
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
 	if host != "" {
@@ -761,10 +761,6 @@ func NewDockerClient() (cli *client.Client, host string, err error) {
 
 			opts = append(opts, client.WithTLSClientConfig(cacertPath, certPath, keyPath))
 		}
-	} else if dockerHostEnv := os.Getenv("DOCKER_HOST"); dockerHostEnv != "" {
-		host = dockerHostEnv
-	} else {
-		host = "unix:///var/run/docker.sock"
 	}
 
 	opts = append(opts, client.WithHTTPHeaders(
@@ -775,7 +771,7 @@ func NewDockerClient() (cli *client.Client, host string, err error) {
 
 	cli, err = client.NewClientWithOpts(opts...)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	_, err = cli.Ping(context.TODO())
@@ -783,12 +779,12 @@ func NewDockerClient() (cli *client.Client, host string, err error) {
 		// fallback to environment
 		cli, err = testcontainersdocker.NewClient(context.Background())
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 	}
 	defer cli.Close()
 
-	return cli, host, nil
+	return cli, nil
 }
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
