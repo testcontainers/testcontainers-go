@@ -17,7 +17,7 @@ const (
 )
 
 // unset environment variables to avoid side effects
-// exectute this function before each test
+// execute this function before each test
 func resetTestEnv(t *testing.T) {
 	t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "")
 	t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "")
