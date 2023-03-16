@@ -23,6 +23,7 @@ func StartContainer(ctx context.Context, opts ...Option) (*vaultContainer, error
 	config := &Config{
 		imageName: "vault:1.13.0",
 		port:      8200,
+		logLevel:  Info,
 		secrets:   map[string][]string{},
 	}
 
