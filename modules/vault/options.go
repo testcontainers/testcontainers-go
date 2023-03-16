@@ -1,5 +1,7 @@
 package vault
 
+import "fmt"
+
 // Option is a function type for modifying a Vault configuration
 type Option func(*Config)
 
@@ -11,6 +13,20 @@ type Config struct {
 	secrets      map[string][]string // A map of secret paths to their respective secret values
 	initCommands []string            // A list of commands to execute on Vault initialization
 	logLevel     LogLevel            // The level of logging to use for the Vault
+}
+
+func (c *Config) exportEnv() map[string]string {
+	env := make(map[string]string)
+
+	env["VAULT_ADDR"] = fmt.Sprintf("http://0.0.0.0:%d", c.port)
+	env["VAULT_LOG_LEVEL"] = string(c.logLevel)
+
+	if c.token != "" {
+		env["VAULT_DEV_ROOT_TOKEN_ID"] = c.token
+		env["VAULT_TOKEN"] = c.token
+	}
+
+	return env
 }
 
 // WithImageName is an option function that sets the Docker image name for the Vault
