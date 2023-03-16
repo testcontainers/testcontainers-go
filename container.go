@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
+	"github.com/imdario/mergo"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
@@ -131,6 +132,22 @@ type containerOptions struct {
 
 // functional option for setting the reaper image
 type ContainerOption func(*containerOptions)
+
+// CustomizeContainerRequestOption is a type that can be used to configure the Testcontainers container request.
+// The passed request will be merged with the default one.
+type CustomizeContainerRequestOption func(req ContainerRequest) ContainerRequest
+
+// CustomizeContainerRequest returns a function that can be used to merge the passed container request with the one that is used by the container
+func CustomizeContainerRequest(r ContainerRequest) CustomizeContainerRequestOption {
+	return func(req ContainerRequest) ContainerRequest {
+		if err := mergo.Merge(&req, r, mergo.WithOverride); err != nil {
+			fmt.Printf("error merging container request, keeping the original one. Error: %v", err)
+			return req
+		}
+
+		return req
+	}
+}
 
 // WithImageName sets the reaper image name
 func WithImageName(imageName string) ContainerOption {
