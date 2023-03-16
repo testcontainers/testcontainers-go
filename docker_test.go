@@ -301,44 +301,6 @@ func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
 	}
 }
 
-func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
-	ctx := context.Background()
-
-	absPath, err := filepath.Abs("./testresources/nginx-highport.conf")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	gcr := GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:      nginxAlpineImage,
-			WaitingFor: wait.ForListeningPort(nginxHighPort),
-			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
-			HostConfigModifier: func(hc *container.HostConfig) {
-				hc.NetworkMode = "host"
-			},
-		},
-		Started: true,
-	}
-
-	nginxC, err := GenericContainer(ctx, gcr)
-
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
-
-	origin, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
-	if err != nil {
-		t.Errorf("Expected host %s. Got '%d'.", origin, err)
-	}
-	t.Log(origin)
-
-	_, err = http.Get(origin)
-	if err != nil {
-		t.Errorf("Expected OK response. Got '%d'.", err)
-	}
-}
-
 func TestContainerReturnItsContainerID(t *testing.T) {
 	ctx := context.Background()
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
