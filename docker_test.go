@@ -411,7 +411,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	}
 	defer client.Close()
 
-	_, err = GenericContainer(ctx, GenericContainerRequest{
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
@@ -424,6 +424,8 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	terminateContainerOnEnd(t, ctx, c)
+
 	filtersJSON := fmt.Sprintf(`{"label":{"%s":true}}`, testcontainersdocker.LabelReaper)
 	f, err := filters.FromJSON(filtersJSON)
 	if err != nil {
