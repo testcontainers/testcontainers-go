@@ -28,7 +28,7 @@ const (
 // awsSDKClientV1 {
 // awsSession returns a new AWS session for the given service. To retrieve the specific AWS service client, use the
 // session's client method, e.g. s3manager.NewUploader(session).
-func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*session.Session, error) {
+func awsSession(ctx context.Context, l *localstack.Container) (*session.Session, error) {
 	mappedPort, err := l.MappedPort(ctx, nat.Port("4566/tcp"))
 	if err != nil {
 		return &session.Session{}, err
@@ -62,7 +62,7 @@ func TestS3(t *testing.T) {
 	ctx := context.Background()
 
 	// localStackCreateContainer {
-	container, err := localstack.StartContainer(ctx, localstack.NoopOverrideContainerRequest)
+	container, err := localstack.RunContainer(ctx)
 	require.Nil(t, err)
 	// }
 

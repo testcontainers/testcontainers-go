@@ -1,40 +1,43 @@
 package localstack
 
 import (
-	"fmt"
-
-	"github.com/imdario/mergo"
 	"github.com/testcontainers/testcontainers-go"
 )
 
-// LocalStackContainer represents the LocalStack container type used in the module
-type LocalStackContainer struct {
+// Container represents the LocalStack container type used in the module
+type Container struct {
 	testcontainers.Container
 }
 
-// LocalStackContainerRequest represents the LocalStack container request type used in the module
+// Deprecated: use Container instead
+type LocalStackContainer struct {
+	Container
+}
+
+// ContainerRequest represents the LocalStack container request type used in the module
 // to configure the container
-type LocalStackContainerRequest struct {
+type ContainerRequest struct {
 	testcontainers.ContainerRequest
+}
+
+// Deprecated: use ContainerRequest instead
+type LocalStackContainerRequest struct {
+	ContainerRequest
 }
 
 // OverrideContainerRequestOption is a type that can be used to configure the Testcontainers container request.
 // The passed request will be merged with the default one.
+// Deprecated: use testcontainers.CustomizeContainerRequestOption instead
 type OverrideContainerRequestOption func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest
 
 // NoopOverrideContainerRequest returns a helper function that does not override the container request
+// Deprecated
 var NoopOverrideContainerRequest = func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
 	return req
 }
 
 // OverrideContainerRequest returns a function that can be used to merge the passed container request with one that is created by the LocalStack container
+// Deprecated: use testcontainers.CustomizeContainerRequestOption instead
 func OverrideContainerRequest(r testcontainers.ContainerRequest) func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
-	return func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
-		if err := mergo.Merge(&req, r, mergo.WithOverride); err != nil {
-			fmt.Printf("error merging container request %v. Keeping the default one: %v", err, req)
-			return req
-		}
-
-		return req
-	}
+	return testcontainers.CustomizeContainerRequest(r)
 }

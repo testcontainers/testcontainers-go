@@ -10,8 +10,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func generateContainerRequest() *LocalStackContainerRequest {
-	return &LocalStackContainerRequest{
+func generateContainerRequest() *ContainerRequest {
+	return &ContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Env:          map[string]string{},
 			ExposedPorts: []string{},
@@ -91,13 +91,13 @@ func TestIsLegacyMode(t *testing.T) {
 	}
 }
 
-func TestStart(t *testing.T) {
+func TestRunContainer(t *testing.T) {
 	ctx := context.Background()
 
 	// withoutNetwork {
-	container, err := StartContainer(
+	container, err := RunContainer(
 		ctx,
-		OverrideContainerRequest(testcontainers.ContainerRequest{
+		testcontainers.CustomizeContainerRequest(testcontainers.ContainerRequest{
 			Image: fmt.Sprintf("localstack/localstack:%s", defaultVersion),
 		}),
 	)
@@ -122,20 +122,15 @@ func TestStart(t *testing.T) {
 	})
 }
 
-func TestStartWithoutOverride(t *testing.T) {
-	// noopOverrideContainerRequest {
+func TestRunContainerWithoutOverride(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := StartContainer(
-		ctx,
-		NoopOverrideContainerRequest,
-	)
+	container, err := RunContainer(ctx)
 	require.Nil(t, err)
 	assert.NotNil(t, container)
-	// }
 }
 
-func TestStartWithNetwork(t *testing.T) {
+func TestRunContainerWithNetwork(t *testing.T) {
 	// withNetwork {
 	ctx := context.Background()
 
@@ -147,9 +142,9 @@ func TestStartWithNetwork(t *testing.T) {
 	require.Nil(t, err)
 	assert.NotNil(t, nw)
 
-	container, err := StartContainer(
+	container, err := RunContainer(
 		ctx,
-		OverrideContainerRequest(testcontainers.ContainerRequest{
+		testcontainers.CustomizeContainerRequest(testcontainers.ContainerRequest{
 			Image:          "localstack/localstack:0.13.0",
 			Env:            map[string]string{"SERVICES": "s3,sqs"},
 			Networks:       []string{"localstack-network"},

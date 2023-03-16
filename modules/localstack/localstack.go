@@ -40,9 +40,9 @@ func isLegacyMode(image string) bool {
 	return true
 }
 
-// StartContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
+// RunContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
-func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOption) (*LocalStackContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeContainerRequestOption) (*Container, error) {
 	// defaultContainerRequest {
 	req := testcontainers.ContainerRequest{
 		Image:        fmt.Sprintf("localstack/localstack:%s", defaultVersion),
@@ -53,14 +53,13 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 	}
 	// }
 
-	localStackReq := LocalStackContainerRequest{
+	localStackReq := ContainerRequest{
 		ContainerRequest: req,
 	}
 
 	// first, when needed, we merge the user request with the default one
-	if overrideReq != nil {
-		merged := overrideReq(localStackReq.ContainerRequest)
-		localStackReq.ContainerRequest = merged
+	for _, opt := range opts {
+		localStackReq.ContainerRequest = opt(localStackReq.ContainerRequest)
 	}
 
 	if isLegacyMode(localStackReq.Image) {
@@ -81,13 +80,20 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 		return nil, err
 	}
 
-	c := &LocalStackContainer{
+	c := &Container{
 		Container: container,
 	}
 	return c, nil
 }
 
-func configureDockerHost(req *LocalStackContainerRequest) (reason string, err error) {
+// StartContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
+// - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
+// Deprecated use RunContainer instead
+func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOption) (*Container, error) {
+	return RunContainer(ctx, testcontainers.CustomizeContainerRequestOption(overrideReq))
+}
+
+func configureDockerHost(req *ContainerRequest) (reason string, err error) {
 	err = nil
 	reason = ""
 
