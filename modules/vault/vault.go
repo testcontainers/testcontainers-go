@@ -4,17 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/go-connections/nat"
-	"io"
 	"strconv"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-)
-
-const (
-	errorAddSecret = "failed to add secrets %v to Vault via exec command: %w"
 )
 
 // vaultContainer represents the vault container type used in the module
@@ -28,6 +23,7 @@ func StartContainer(ctx context.Context, opts ...Option) (*vaultContainer, error
 	config := &Config{
 		imageName: "vault:1.13.0",
 		port:      8200,
+		secrets:   map[string][]string{},
 	}
 
 	for _, opt := range opts {
@@ -65,27 +61,32 @@ func StartContainer(ctx context.Context, opts ...Option) (*vaultContainer, error
 	return &v, nil
 }
 
+func (v *vaultContainer) HttpHostAddress(ctx context.Context) (string, error) {
+	host, err := v.Host(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	port, err := v.MappedPort(ctx, nat.Port(strconv.Itoa(v.config.port)))
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("http://%s:%d", host, port.Int()), nil
+}
+
 func (v *vaultContainer) addSecrets(ctx context.Context) error {
 	if len(v.config.secrets) == 0 {
 		return nil
 	}
 
-	code, reader, err := v.Exec(ctx, buildExecCommand(v.config.secrets))
-	if err != nil || code != 0 {
+	code, _, err := v.Exec(ctx, buildExecCommand(v.config.secrets))
+	if err != nil {
 		return err
 	}
 
 	if code != 0 {
-		return fmt.Errorf(errorAddSecret, v.config.secrets, err)
-	}
-
-	out, err := io.ReadAll(reader)
-	if err != nil {
-		return fmt.Errorf(errorAddSecret, v.config.secrets, err)
-	}
-
-	if !strings.Contains(string(out), "Success") {
-		return fmt.Errorf(errorAddSecret, v.config.secrets, err)
+		return fmt.Errorf("failed to add secrets %v to Vault via exec command: %d", v.config.secrets, code)
 	}
 
 	return nil
@@ -102,13 +103,13 @@ func (v *vaultContainer) runInitCommands(ctx context.Context) error {
 	}
 	fullCommand := []string{"/bin/sh", "-c", strings.Join(commands, " && ")}
 
-	code, stdout, err := v.Exec(ctx, fullCommand)
+	code, _, err := v.Exec(ctx, fullCommand)
 	if err != nil {
 		return err
 	}
 
 	if code != 0 {
-		return fmt.Errorf("failed to execute init commands: exit code %d, stdout %s", code, stdout)
+		return fmt.Errorf("failed to execute init commands: exit code %d", code)
 	}
 
 	return nil
