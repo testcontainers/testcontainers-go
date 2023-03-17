@@ -40,7 +40,7 @@ func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
 // StartContainer creates an instance of the Neo4j container type
 func StartContainer(ctx context.Context, options ...Option) (*Neo4jContainer, error) {
 	settings := config{
-		imageCoordinates: fmt.Sprintf("%s:%s", defaultImageName, defaultTag),
+		imageCoordinates: fmt.Sprintf("docker.io/%s:%s", defaultImageName, defaultTag),
 		adminPassword:    "password",
 	}
 	for _, option := range options {
