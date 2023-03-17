@@ -14,10 +14,10 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
 	"gopkg.in/yaml.v3"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -125,12 +125,11 @@ func (dc *LocalDockerCompose) containerNameFromServiceName(service, separator st
 }
 
 func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := testcontainersdocker.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
-
-	cli.NegotiateAPIVersion(context.Background())
+	defer cli.Close()
 
 	for k := range dc.WaitStrategyMap {
 		containerName := dc.containerNameFromServiceName(k.service, "_")
@@ -159,6 +158,8 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 		if err != nil {
 			return fmt.Errorf("unable to create new Docker Provider: %w", err)
 		}
+		defer dockerProvider.Close()
+
 		dockercontainer := &testcontainers.DockerContainer{ID: container.ID, WaitingFor: strategy}
 		dockercontainer.SetLogger(dc.Logger)
 		dockercontainer.SetProvider(dockerProvider)

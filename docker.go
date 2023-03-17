@@ -195,6 +195,7 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
+	defer c.provider.Close()
 
 	// if a Wait Strategy has been specified, wait before returning
 	if c.WaitingFor != nil {
@@ -231,6 +232,7 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	if err := c.provider.client.ContainerStop(ctx, c.ID, options); err != nil {
 		return err
 	}
+	defer c.provider.Close()
 
 	c.logger.Printf("Container is stopped id: %s image: %s", shortID, c.Image)
 	c.isRunning = false
@@ -277,6 +279,8 @@ func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.Conta
 	if err != nil {
 		return nil, err
 	}
+	defer c.provider.Close()
+
 	c.raw = &inspect
 	return c.raw, nil
 }
@@ -286,6 +290,7 @@ func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.Containe
 	if err != nil {
 		return nil, err
 	}
+	defer c.provider.Close()
 
 	return &inspect, nil
 }
@@ -305,6 +310,7 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer c.provider.Close()
 
 	pr, pw := io.Pipe()
 	r := bufio.NewReader(rc)
@@ -512,6 +518,8 @@ func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, filePath st
 	if err != nil {
 		return nil, err
 	}
+	defer c.provider.Close()
+
 	tarReader := tar.NewReader(r)
 
 	// if we got here we have exactly one file in the TAR-stream
@@ -550,7 +558,13 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 	// create the directory under its parent
 	parent := filepath.Dir(containerParentPath)
 
-	return c.provider.client.CopyToContainer(ctx, c.ID, parent, buff, types.CopyToContainerOptions{})
+	err = c.provider.client.CopyToContainer(ctx, c.ID, parent, buff, types.CopyToContainerOptions{})
+	if err != nil {
+		return err
+	}
+	defer c.provider.Close()
+
+	return nil
 }
 
 func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
@@ -577,7 +591,13 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 		return err
 	}
 
-	return c.provider.client.CopyToContainer(ctx, c.ID, filepath.Dir(containerFilePath), buffer, types.CopyToContainerOptions{})
+	err = c.provider.client.CopyToContainer(ctx, c.ID, filepath.Dir(containerFilePath), buffer, types.CopyToContainerOptions{})
+	if err != nil {
+		return err
+	}
+	defer c.provider.Close()
+
+	return nil
 }
 
 // StartLogProducer will start a concurrent process that will continuously read logs
@@ -603,6 +623,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 			// from within this goroutine
 			panic(err)
 		}
+		defer c.provider.Close()
 
 		for {
 			select {
@@ -685,7 +706,14 @@ func (n *DockerNetwork) Remove(ctx context.Context) error {
 	case n.terminationSignal <- true:
 	default:
 	}
-	return n.provider.client.NetworkRemove(ctx, n.ID)
+
+	err := n.provider.client.NetworkRemove(ctx, n.ID)
+	if err != nil {
+		return err
+	}
+	defer n.provider.Close()
+
+	return nil
 }
 
 // DockerProvider implements the ContainerProvider interface
@@ -700,6 +728,15 @@ type DockerProvider struct {
 // Client gets the docker client used by the provider
 func (p *DockerProvider) Client() client.APIClient {
 	return p.client
+}
+
+// Close closes the docker client used by the provider
+func (p *DockerProvider) Close() error {
+	if p.client == nil {
+		return nil
+	}
+
+	return p.client.Close()
 }
 
 // SetClient sets the docker client to be used by the provider
@@ -717,55 +754,12 @@ type TestContainersConfig struct {
 	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
 }
 
-type (
-	// DockerProviderOptions defines options applicable to DockerProvider
-	DockerProviderOptions struct {
-		defaultBridgeNetworkName string
-		*GenericProviderOptions
-	}
-
-	// DockerProviderOption defines a common interface to modify DockerProviderOptions
-	// These can be passed to NewDockerProvider in a variadic way to customize the returned DockerProvider instance
-	DockerProviderOption interface {
-		ApplyDockerTo(opts *DockerProviderOptions)
-	}
-
-	// DockerProviderOptionFunc is a shorthand to implement the DockerProviderOption interface
-	DockerProviderOptionFunc func(opts *DockerProviderOptions)
-)
-
-func (f DockerProviderOptionFunc) ApplyDockerTo(opts *DockerProviderOptions) {
-	f(opts)
-}
-
-func Generic2DockerOptions(opts ...GenericProviderOption) []DockerProviderOption {
-	converted := make([]DockerProviderOption, 0, len(opts))
-	for _, o := range opts {
-		switch c := o.(type) {
-		case DockerProviderOption:
-			converted = append(converted, c)
-		default:
-			converted = append(converted, DockerProviderOptionFunc(func(opts *DockerProviderOptions) {
-				o.ApplyGenericTo(opts.GenericProviderOptions)
-			}))
-		}
-	}
-
-	return converted
-}
-
-func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
-	return DockerProviderOptionFunc(func(opts *DockerProviderOptions) {
-		opts.defaultBridgeNetworkName = bridgeNetworkName
-	})
-}
-
 func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainersConfig, err error) {
 	tcConfig = configureTC()
 
 	host = tcConfig.Host
 
-	opts := []client.Opt{client.FromEnv}
+	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
 	if host != "" {
 		opts = append(opts, client.WithHost(host))
 
@@ -790,56 +784,21 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 	)
 
 	cli, err = client.NewClientWithOpts(opts...)
-
 	if err != nil {
 		return nil, "", TestContainersConfig{}, err
 	}
 
-	cli.NegotiateAPIVersion(context.Background())
-
-	return cli, host, tcConfig, nil
-}
-
-// NewDockerProvider creates a Docker provider with the EnvClient
-func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error) {
-	o := &DockerProviderOptions{
-		GenericProviderOptions: &GenericProviderOptions{
-			Logger: Logger,
-		},
-	}
-
-	for idx := range provOpts {
-		provOpts[idx].ApplyDockerTo(o)
-	}
-
-	c, host, tcConfig, err := NewDockerClient()
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = c.Ping(context.TODO())
+	_, err = cli.Ping(context.TODO())
 	if err != nil {
 		// fallback to environment
-		c, err = client.NewClientWithOpts(client.FromEnv)
+		cli, err = testcontainersdocker.NewClient(context.Background())
 		if err != nil {
-			return nil, err
+			return nil, "", TestContainersConfig{}, err
 		}
 	}
+	defer cli.Close()
 
-	c.NegotiateAPIVersion(context.Background())
-	p := &DockerProvider{
-		DockerProviderOptions: o,
-		host:                  host,
-		client:                c,
-		config:                tcConfig,
-	}
-
-	// log docker server info only once
-	logOnce.Do(func() {
-		LogDockerServerInfo(context.Background(), p.client, p.Logger)
-	})
-
-	return p, nil
+	return cli, host, tcConfig, nil
 }
 
 // configureTC reads from testcontainers properties file, if it exists
@@ -908,6 +867,8 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 			Logger.Printf("Failed to build image: %s, will retry", err)
 			return err
 		}
+		defer p.Close()
+
 		return nil
 	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 	if err != nil {
@@ -938,6 +899,9 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 // CreateContainer fulfills a request for a container without starting it
 func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	var err error
+
+	// defer the close of the Docker client connection the soonest
+	defer p.Close()
 
 	// Make sure that bridge network exists
 	// In case it is disabled we will create reaper_default network
@@ -1147,6 +1111,8 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 	if err != nil {
 		return nil, err
 	}
+	defer p.Close()
+
 	if len(containers) > 0 {
 		return &containers[0], nil
 	}
@@ -1207,6 +1173,8 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 			Logger.Printf("Failed to pull image: %s, will retry", err)
 			return err
 		}
+		defer p.Close()
+
 		return nil
 	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 	if err != nil {
@@ -1223,7 +1191,9 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 // docker-client ping endpoint to see if the daemon is reachable.
 func (p *DockerProvider) Health(ctx context.Context) (err error) {
 	_, err = p.client.Ping(ctx)
-	return
+	defer p.Close()
+
+	return err
 }
 
 // RunContainer takes a RequestContainer as input and it runs a container via the docker sdk
@@ -1269,6 +1239,7 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer p.Close()
 
 	switch url.Scheme {
 	case "http", "https", "tcp":
@@ -1296,6 +1267,9 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 // CreateNetwork returns the object representing a new network identified by its name
 func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) (Network, error) {
 	var err error
+
+	// defer the close of the Docker client connection the soonest
+	defer p.Close()
 
 	// Make sure that bridge network exists
 	// In case it is disabled we will create reaper_default network

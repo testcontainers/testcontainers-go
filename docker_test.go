@@ -28,7 +28,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
 
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -367,11 +366,12 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv)
+	client, err := testcontainersdocker.NewClient(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	client.NegotiateAPIVersion(ctx)
+	defer client.Close()
+
 	var container Container
 	container, err = GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
@@ -401,11 +401,12 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv)
+	client, err := testcontainersdocker.NewClient(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	client.NegotiateAPIVersion(ctx)
+	defer client.Close()
+
 	_, err = GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -639,11 +640,12 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	t.Run("if not built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := client.NewClientWithOpts(client.FromEnv)
+		client, err := testcontainersdocker.NewClient(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
-		client.NegotiateAPIVersion(ctx)
+		defer client.Close()
+
 		container, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
@@ -670,11 +672,12 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 	t.Run("if built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := client.NewClientWithOpts(client.FromEnv)
+		client, err := testcontainersdocker.NewClient(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
-		client.NegotiateAPIVersion(ctx)
+		defer client.Close()
+
 		req := ContainerRequest{
 			FromDockerfile: FromDockerfile{
 				Context: "./testresources",
@@ -1131,6 +1134,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	ctx := context.Background()
 	t.Log("got ctx, creating container request")
 
+	// fromDockerfile {
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
 			Context:       "./testresources",
@@ -1138,6 +1142,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 			PrintBuildLog: true,
 		},
 	}
+	// }
 
 	genContainerReq := GenericContainerRequest{
 		ProviderType:     providerType,
@@ -1799,7 +1804,6 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		dockerCli, _, _, err := NewDockerClient()
 		require.NoError(t, err)
 
-		dockerCli.NegotiateAPIVersion(ctx)
 		ctr, err := dockerCli.ContainerInspect(ctx, c.GetContainerID())
 		assert.NoError(t, err)
 
@@ -2194,10 +2198,10 @@ func TestDockerContainerResources(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
-	c, err := client.NewClientWithOpts(client.FromEnv)
+	c, err := testcontainersdocker.NewClient(ctx)
 	require.NoError(t, err)
+	defer c.Close()
 
-	c.NegotiateAPIVersion(ctx)
 	containerID := nginxC.GetContainerID()
 
 	resp, err := c.ContainerInspect(ctx, containerID)
@@ -2246,8 +2250,10 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 
 	containerId := nginxC.GetContainerID()
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := testcontainersdocker.NewClient(ctx)
 	assert.Nil(t, err)
+	defer cli.Close()
+
 	cnt, err := cli.ContainerInspect(ctx, containerId)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(cnt.NetworkSettings.Networks))
@@ -2279,7 +2285,7 @@ func TestContainerCapAdd(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginx)
 
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := testcontainersdocker.NewClient(ctx)
 	require.NoError(t, err)
 	defer dockerClient.Close()
 
@@ -2395,6 +2401,7 @@ func TestProviderHasConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer provider.Close()
 
 	assert.NotNil(t, provider.Config(), "expecting DockerProvider to provide the configuration")
 }
@@ -2501,6 +2508,7 @@ func TestDockerProviderFindContainerByName(t *testing.T) {
 	ctx := context.Background()
 	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
 	require.NoError(t, err)
+	defer provider.Close()
 
 	c1, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,

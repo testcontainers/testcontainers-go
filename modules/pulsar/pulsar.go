@@ -47,6 +47,7 @@ func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, erro
 	if err != nil {
 		return "", err
 	}
+	defer provider.Close()
 
 	host, err := provider.DaemonHost(ctx)
 	if err != nil {
