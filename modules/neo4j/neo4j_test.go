@@ -3,6 +3,7 @@ package neo4j_test
 import (
 	"context"
 	neo "github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 	"testing"
 )
@@ -12,10 +13,7 @@ const testPassword = "letmein!"
 func TestNeo4j(outer *testing.T) {
 	ctx := context.Background()
 
-	container, err := setupNeo4j(ctx)
-	if err != nil {
-		outer.Fatal(err)
-	}
+	container := setupNeo4j(ctx, outer)
 
 	outer.Cleanup(func() {
 		if err := container.Terminate(ctx); err != nil {
@@ -26,7 +24,7 @@ func TestNeo4j(outer *testing.T) {
 	outer.Run("connects via Bolt", func(t *testing.T) {
 		driver := createDriver(t, ctx, container)
 
-		err = driver.VerifyConnectivity(ctx)
+		err := driver.VerifyConnectivity(ctx)
 
 		if err != nil {
 			t.Fatalf("should have successfully connected to server but did not: %s", err)
@@ -50,11 +48,15 @@ func TestNeo4j(outer *testing.T) {
 
 }
 
-func setupNeo4j(ctx context.Context) (*neo4j.Neo4jContainer, error) {
-	return neo4j.StartContainer(ctx,
+func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Neo4jContainer {
+	// neo4jCreateContainer {
+	container, err := neo4j.StartContainer(ctx,
 		neo4j.WithAdminPassword(testPassword),
 		neo4j.WithLabsPlugin(neo4j.Apoc),
 	)
+	// }
+	require.Nil(t, err)
+	return container
 }
 
 func createDriver(t *testing.T, ctx context.Context, container *neo4j.Neo4jContainer) neo.DriverWithContext {
