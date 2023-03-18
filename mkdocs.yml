@@ -62,7 +62,6 @@ nav:
         - examples/datastore.md
         - examples/firestore.md
         - examples/mongodb.md
-        - examples/mysql.md
         - examples/nginx.md
         - examples/postgres.md
         - examples/pubsub.md
