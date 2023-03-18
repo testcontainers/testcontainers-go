@@ -52,6 +52,7 @@ nav:
         - modules/index.md
         - modules/couchbase.md
         - modules/localstack.md
+        - modules/mysql.md
         - modules/pulsar.md
     - Examples:
         - examples/index.md
