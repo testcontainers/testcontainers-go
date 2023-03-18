@@ -57,7 +57,7 @@ func TestMySQL(t *testing.T) {
 func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := StartContainer(ctx, "mysql:8", withDatabase("foo"), WithUsername("test"), withPassword(""))
+	_, err := StartContainer(ctx, "mysql:8", WithDatabase("foo"), WithUsername("test"), WithPassword(""))
 	if err.Error() != "empty password can be used only with the root user" {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := StartContainer(ctx, "mysql:8", withDatabase("foo"), WithUsername("root"), withPassword(""))
+	container, err := StartContainer(ctx, "mysql:8", WithDatabase("foo"), WithUsername("root"), WithPassword(""))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 //func TestMySQLWithConfigFile(t *testing.T) {
 //	ctx := context.Background()
 //
-//	container, err := StartContainer(ctx, "mysql:5.6.51", withConfigFile("./conf.d/my.cnf"))
+//	container, err := StartContainer(ctx, "mysql:5.6.51", WithConfigFile("./conf.d/my.cnf"))
 //	if err != nil {
 //		t.Fatal(err)
 //	}

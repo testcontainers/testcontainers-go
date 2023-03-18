@@ -15,19 +15,19 @@ func WithUsername(username string) Option {
 	}
 }
 
-func withPassword(password string) Option {
+func WithPassword(password string) Option {
 	return func(config *Config) {
 		config.password = password
 	}
 }
 
-func withDatabase(database string) Option {
+func WithDatabase(database string) Option {
 	return func(config *Config) {
 		config.database = database
 	}
 }
 
-func withConfigFile(configFile string) Option {
+func WithConfigFile(configFile string) Option {
 	return func(config *Config) {
 		config.configFile = configFile
 	}
