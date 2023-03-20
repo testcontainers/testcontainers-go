@@ -28,10 +28,11 @@ func TestMain(m *testing.M) {
 	var err error
 	// StartContainer {
 	vault, err = StartContainer(ctx,
+		WithLogLevel(Debug),
 		WithToken(token),
-		WithSecrets("secret/test1", "foo1=bar1"),
-		WithSecrets("secret/test2", "foo2=bar2", "foo3=bar3"),
-		WithInitCommands("secrets enable transit", "write -f transit/keys/my-key"))
+		WithInitCommand("secrets enable transit", "write -f transit/keys/my-key"),
+		WithInitCommand("kv put secret/test1 foo1=bar1"),
+		WithInitCommand("kv put secret/test2 foo2=bar2 foo3=bar3"))
 	// }
 	if err != nil {
 		log.Fatal(err)

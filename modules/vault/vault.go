@@ -3,42 +3,42 @@ package vault
 import (
 	"context"
 	"fmt"
-	"github.com/docker/go-connections/nat"
-	"strconv"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+const (
+	defaultPort      = "8200"
+	defaultImageName = "vault:1.13.0"
+)
+
+// ContainerOptions is a function that can be used to configure the Vault container
+type ContainerOptions func(req *testcontainers.ContainerRequest)
 
 // vaultContainer represents the vault container type used in the module
 type vaultContainer struct {
 	testcontainers.Container
-	config *Config
 }
 
 // StartContainer creates an instance of the vault container type
-func StartContainer(ctx context.Context, opts ...Option) (*vaultContainer, error) {
-	config := &Config{
-		imageName: "vault:1.13.0",
-		port:      8200,
-		logLevel:  Info,
-		secrets:   map[string][]string{},
-	}
-
-	for _, opt := range opts {
-		opt(config)
-	}
-
+func StartContainer(ctx context.Context, opts ...ContainerOptions) (*vaultContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        config.imageName,
-		ExposedPorts: []string{fmt.Sprintf("%d/tcp", config.port)},
+		Image:        defaultImageName,
+		ExposedPorts: []string{defaultPort + "/tcp"},
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.CapAdd = []string{"IPC_LOCK"}
 		},
-		WaitingFor: wait.ForHTTP("/v1/sys/health").WithPort(nat.Port(strconv.Itoa(config.port))),
-		Env:        config.exportEnv(),
+		WaitingFor: wait.ForHTTP("/v1/sys/health").WithPort(defaultPort),
+		Env: map[string]string{
+			"VAULT_ADDR": "http://0.0.0.0:" + defaultPort,
+		},
+	}
+
+	for _, opt := range opts {
+		opt(&req)
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -49,89 +49,56 @@ func StartContainer(ctx context.Context, opts ...Option) (*vaultContainer, error
 		return nil, err
 	}
 
-	v := vaultContainer{container, config}
-
-	if err = v.addSecrets(ctx); err != nil {
-		return nil, err
-	}
-
-	if err = v.runInitCommands(ctx); err != nil {
-		return nil, err
-	}
-
-	return &v, nil
+	return &vaultContainer{container}, nil
 }
 
+// WithImageName is an option function that sets the Docker image name for the Vault
+func WithImageName(imageName string) ContainerOptions {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Image = imageName
+	}
+}
+
+// WithToken is a container option function that sets the root token for the Vault
+func WithToken(token string) ContainerOptions {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Env["VAULT_DEV_ROOT_TOKEN_ID"] = token
+		req.Env["VAULT_TOKEN"] = token
+	}
+}
+
+// WithLogLevel is an option function that sets the logging level for the Vault
+func WithLogLevel(logLevel LogLevel) ContainerOptions {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Env["VAULT_LOG_LEVEL"] = string(logLevel)
+	}
+}
+
+// WithInitCommand is an option function that adds a set of initialization commands to the Vault's configuration
+func WithInitCommand(commands ...string) ContainerOptions {
+	return func(req *testcontainers.ContainerRequest) {
+		commandsList := make([]string, 0, len(commands))
+		for _, command := range commands {
+			commandsList = append(commandsList, "vault "+command)
+		}
+		cmd := []string{"/bin/sh", "-c", strings.Join(commandsList, " && ")}
+
+		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForExec(cmd))
+	}
+}
+
+// HttpHostAddress returns the http host address of Vault.
+// It returns a string with the format http://<host>:<port>
 func (v *vaultContainer) HttpHostAddress(ctx context.Context) (string, error) {
 	host, err := v.Host(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	port, err := v.MappedPort(ctx, nat.Port(strconv.Itoa(v.config.port)))
+	port, err := v.MappedPort(ctx, defaultPort)
 	if err != nil {
 		return "", err
 	}
 
 	return fmt.Sprintf("http://%s:%d", host, port.Int()), nil
-}
-
-func (v *vaultContainer) addSecrets(ctx context.Context) error {
-	if len(v.config.secrets) == 0 {
-		return nil
-	}
-
-	code, _, err := v.Exec(ctx, buildExecCommand(v.config.secrets))
-	if err != nil {
-		return err
-	}
-
-	if code != 0 {
-		return fmt.Errorf("failed to add secrets %v to Vault via exec command: %d", v.config.secrets, code)
-	}
-
-	return nil
-}
-
-func (v *vaultContainer) runInitCommands(ctx context.Context) error {
-	if len(v.config.initCommands) == 0 {
-		return nil
-	}
-
-	commands := make([]string, 0, len(v.config.initCommands))
-	for _, command := range v.config.initCommands {
-		commands = append(commands, "vault "+command)
-	}
-	fullCommand := []string{"/bin/sh", "-c", strings.Join(commands, " && ")}
-
-	code, _, err := v.Exec(ctx, fullCommand)
-	if err != nil {
-		return err
-	}
-
-	if code != 0 {
-		return fmt.Errorf("failed to execute init commands: exit code %d", code)
-	}
-
-	return nil
-}
-
-func buildExecCommand(secretsMap map[string][]string) []string {
-	var commandParts []string
-
-	// Loop over the secrets map and build the command string
-	for path, secrets := range secretsMap {
-		commandParts = append(commandParts, "vault", "kv", "put", path)
-		commandParts = append(commandParts, secrets...)
-		commandParts = append(commandParts, "&&")
-	}
-
-	if len(commandParts) > 0 {
-		commandParts = commandParts[:len(commandParts)-1]
-	}
-
-	// Prepend the command with "/bin/sh -c" to execute the command in a shell
-	commandParts = append([]string{"/bin/sh", "-c"}, strings.Join(commandParts, " "))
-
-	return commandParts
 }
