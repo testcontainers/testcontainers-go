@@ -14,6 +14,7 @@ var tcConfig TestcontainersConfig
 var tcConfigOnce *sync.Once = new(sync.Once)
 
 // TestcontainersConfig represents the configuration for Testcontainers
+// testcontainersConfig {
 type TestcontainersConfig struct {
 	Host           string `properties:"docker.host,default="`
 	TLSVerify      int    `properties:"docker.tls.verify,default=0"`
@@ -21,6 +22,8 @@ type TestcontainersConfig struct {
 	RyukDisabled   bool   `properties:"ryuk.disabled,default=false"`
 	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
 }
+
+// }
 
 // ReadConfig reads from testcontainers properties file, storing the result in a singleton instance
 // of the TestcontainersConfig struct
