@@ -18,7 +18,7 @@ type mockReaperProvider struct {
 	req             ContainerRequest
 	hostConfig      *container.HostConfig
 	enpointSettings map[string]*network.EndpointSettings
-	config          TestContainersConfig
+	config          TestcontainersConfig
 }
 
 var errExpected = errors.New("expected")
@@ -43,7 +43,7 @@ func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequ
 	return nil, errExpected
 }
 
-func (m *mockReaperProvider) Config() TestContainersConfig {
+func (m *mockReaperProvider) Config() TestcontainersConfig {
 	return m.config
 }
 
@@ -60,7 +60,6 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 			testcontainersdocker.LabelLang:    "go",
 			testcontainersdocker.LabelVersion: internal.Version,
 		},
-		SkipReaper: true,
 		Mounts:     Mounts(BindMount("/var/run/docker.sock", "/var/run/docker.sock")),
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
 		ReaperOptions: []ContainerOption{
@@ -78,7 +77,7 @@ func Test_NewReaper(t *testing.T) {
 	type cases struct {
 		name   string
 		req    ContainerRequest
-		config TestContainersConfig
+		config TestcontainersConfig
 		ctx    context.Context
 	}
 
@@ -86,7 +85,7 @@ func Test_NewReaper(t *testing.T) {
 		{
 			name:   "non-privileged",
 			req:    createContainerRequest(nil),
-			config: TestContainersConfig{},
+			config: TestcontainersConfig{},
 		},
 		{
 			name: "privileged",
@@ -94,7 +93,7 @@ func Test_NewReaper(t *testing.T) {
 				req.Privileged = true
 				return req
 			}),
-			config: TestContainersConfig{
+			config: TestcontainersConfig{
 				RyukPrivileged: true,
 			},
 		},
@@ -104,7 +103,7 @@ func Test_NewReaper(t *testing.T) {
 				req.Mounts = Mounts(BindMount("/value/in/context.sock", "/var/run/docker.sock"))
 				return req
 			}),
-			config: TestContainersConfig{},
+			config: TestcontainersConfig{},
 			ctx:    context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, "unix:///value/in/context.sock"),
 		},
 	}
@@ -126,7 +125,6 @@ func Test_NewReaper(t *testing.T) {
 			assert.Equal(t, test.req.Image, provider.req.Image, "expected image doesn't match the submitted request")
 			assert.Equal(t, test.req.ExposedPorts, provider.req.ExposedPorts, "expected exposed ports don't match the submitted request")
 			assert.Equal(t, test.req.Labels, provider.req.Labels, "expected labels don't match the submitted request")
-			assert.Equal(t, test.req.SkipReaper, provider.req.SkipReaper, "expected skipReaper doesn't match the submitted request")
 			assert.Equal(t, test.req.Mounts, provider.req.Mounts, "expected mounts don't match the submitted request")
 			assert.Equal(t, test.req.WaitingFor, provider.req.WaitingFor, "expected waitingFor don't match the submitted request")
 
@@ -153,7 +151,7 @@ func Test_ReaperForNetwork(t *testing.T) {
 	}
 
 	provider := &mockReaperProvider{
-		config: TestContainersConfig{},
+		config: TestcontainersConfig{},
 	}
 
 	_, err := newReaper(ctx, "sessionId", provider, req.ReaperOptions...)

@@ -1,4 +1,4 @@
-name: Main pipeline
+name: Reaper-Off pipeline
 
 on: [push, pull_request]
 
@@ -7,16 +7,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  test-reaper-off:
     strategy:
       matrix:
         go-version: [1.19.x, 1.x]
-        platform: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
     env:
-      TESTCONTAINERS_RYUK_DISABLED: "false"
-    steps:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
 
+    steps:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
@@ -26,28 +25,12 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
 
-      - name: modVerify
-        run: go mod verify
-
-      - name: modTidy
-        run: make tools-tidy
-
-      - name: ensure compilation
-        env:
-          GOOS: linux
-        run: go build
-
       - name: gotestsum
         # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
         # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-unit
-
-      - name: Run module generator tests
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make -C modulegen test-unit
 
       - name: Run checker
         run: |

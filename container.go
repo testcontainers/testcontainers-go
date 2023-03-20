@@ -108,7 +108,7 @@ type ContainerRequest struct {
 	Resources               container.Resources                        // Deprecated: Use HostConfigModifier instead
 	Files                   []ContainerFile                            // files which will be copied when container starts
 	User                    string                                     // for specifying uid:gid
-	SkipReaper              bool                                       // indicates whether we skip setting up a reaper for this
+	SkipReaper              bool                                       // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
 	ReaperImage             string                                     // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image
 	ReaperOptions           []ContainerOption                          // options for the reaper
 	AutoRemove              bool                                       // Deprecated: Use HostConfigModifier instead. If set to true, the container will be removed from the host when stopped
