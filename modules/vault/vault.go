@@ -18,13 +18,13 @@ const (
 // ContainerOptions is a function that can be used to configure the Vault container
 type ContainerOptions func(req *testcontainers.ContainerRequest)
 
-// vaultContainer represents the vault container type used in the module
-type vaultContainer struct {
+// VaultContainer represents the vault container type used in the module
+type VaultContainer struct {
 	testcontainers.Container
 }
 
 // StartContainer creates an instance of the vault container type
-func StartContainer(ctx context.Context, opts ...ContainerOptions) (*vaultContainer, error) {
+func StartContainer(ctx context.Context, opts ...ContainerOptions) (*VaultContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImageName,
 		ExposedPorts: []string{defaultPort + "/tcp"},
@@ -49,7 +49,7 @@ func StartContainer(ctx context.Context, opts ...ContainerOptions) (*vaultContai
 		return nil, err
 	}
 
-	return &vaultContainer{container}, nil
+	return &VaultContainer{container}, nil
 }
 
 // WithImageName is an option function that sets the Docker image name for the Vault
@@ -89,7 +89,7 @@ func WithInitCommand(commands ...string) ContainerOptions {
 
 // HttpHostAddress returns the http host address of Vault.
 // It returns a string with the format http://<host>:<port>
-func (v *vaultContainer) HttpHostAddress(ctx context.Context) (string, error) {
+func (v *VaultContainer) HttpHostAddress(ctx context.Context) (string, error) {
 	host, err := v.Host(ctx)
 	if err != nil {
 		return "", err
