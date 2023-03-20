@@ -15,8 +15,6 @@ Note that when using environment variables, configuration property names should 
 case with underscore separators, preceded by `TESTCONTAINERS_` - e.g. `ryuk.disabled` becomes 
 `TESTCONTAINERS_RYUK_DISABLED`.
 
-If any keys conflict, the value will be taken on the basis of the first value found in:
-
 ### Supported properties
 
 _Testcontainers for Go_ provides a struct type to represent the configuration:
