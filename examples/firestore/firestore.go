@@ -3,6 +3,7 @@ package firestore
 import (
 	"context"
 	"fmt"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -14,8 +15,8 @@ type firestoreContainer struct {
 	URI string
 }
 
-// setupFirestore creates an instance of the firestore container type
-func setupFirestore(ctx context.Context) (*firestoreContainer, error) {
+// startContainer creates an instance of the firestore container type
+func startContainer(ctx context.Context) (*firestoreContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
 		ExposedPorts: []string{"8080/tcp"},

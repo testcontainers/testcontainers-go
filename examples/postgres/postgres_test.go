@@ -25,7 +25,7 @@ func TestPostgres(t *testing.T) {
 	port, err := nat.NewPort("tcp", "5432")
 	require.NoError(t, err)
 
-	container, err := setupPostgres(ctx,
+	container, err := startContainer(ctx,
 		WithPort(port.Port()),
 		WithInitialDatabase(user, password, dbname),
 		WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
@@ -62,4 +62,43 @@ func TestPostgres(t *testing.T) {
 	result, err = db.Exec("INSERT INTO test (id, name) VALUES (1, 'test');")
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
+}
+
+func TestContainerWithWaitForSQL(t *testing.T) {
+	const dbname = "test-db"
+	const user = "postgres"
+	const password = "password"
+
+	ctx := context.Background()
+
+	var port = "5432/tcp"
+	dbURL := func(host string, port nat.Port) string {
+		return fmt.Sprintf("postgres://postgres:password@%s:%s/%s?sslmode=disable", host, port.Port(), dbname)
+	}
+
+	t.Run("default query", func(t *testing.T) {
+		container, err := startContainer(ctx, WithPort(port), WithInitialDatabase("postgres", "password", dbname), WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)))
+		require.NoError(t, err)
+		require.NotNil(t, container)
+	})
+	t.Run("custom query", func(t *testing.T) {
+		container, err := startContainer(
+			ctx,
+			WithPort(port),
+			WithInitialDatabase(user, password, dbname),
+			WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
+		)
+		require.NoError(t, err)
+		require.NotNil(t, container)
+	})
+	t.Run("custom bad query", func(t *testing.T) {
+		container, err := startContainer(
+			ctx,
+			WithPort(port),
+			WithInitialDatabase(user, password, dbname),
+			WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
+		)
+		require.Error(t, err)
+		require.Nil(t, container)
+	})
 }

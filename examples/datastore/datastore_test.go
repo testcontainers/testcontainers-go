@@ -16,7 +16,7 @@ type Task struct {
 func TestDatastore(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := setupDatastore(ctx)
+	container, err := startContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

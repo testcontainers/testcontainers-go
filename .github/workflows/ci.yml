@@ -10,7 +10,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.18.x, 1.x]
+        go-version: [1.19.x, 1.x]
         platform: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -43,17 +43,9 @@ jobs:
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-unit
 
-      - name: modTidy e2e tests
+      - name: Run module generator tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make -C e2e tools-tidy
-
-      - name: Run example generator tests
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make -C examples test-unit
-
-      - name: Run e2e tests
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make test-e2e
+        run: make -C modulegen test-unit
 
       - name: Run checker
         run: |

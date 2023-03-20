@@ -19,7 +19,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-units"
-	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -29,8 +28,8 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
 
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -141,15 +140,17 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			Privileged:  true,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:      nginxAlpineImage,
+			SkipReaper: true,
+			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
 			ExposedPorts: []string{
 				nginxHighPort,
 			},
+			Privileged: true,
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -209,10 +210,12 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			Networks:    []string{"new-network"},
+			Image:      nginxImage,
+			SkipReaper: true,
+			Networks:   []string{"new-network"},
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -236,11 +239,13 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort(nginxHighPort),
-			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:      nginxAlpineImage,
+			SkipReaper: true,
+			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -272,11 +277,13 @@ func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort(nginxHighPort),
-			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:      nginxAlpineImage,
+			SkipReaper: true,
+			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -309,11 +316,13 @@ func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			SkipReaper:  true,
-			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort(nginxHighPort),
-			Mounts:      Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image:      nginxAlpineImage,
+			SkipReaper: true,
+			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.NetworkMode = "host"
+			},
 		},
 		Started: true,
 	}
@@ -357,11 +366,12 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv)
+	client, err := testcontainersdocker.NewClient(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	client.NegotiateAPIVersion(ctx)
+	defer client.Close()
+
 	var container Container
 	container, err = GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
@@ -379,7 +389,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, container)
 
 	resp, err := client.ContainerList(ctx, types.ContainerListOptions{
-		Filters: filters.NewArgs(filters.Arg("label", fmt.Sprintf("%s=%s", TestcontainerLabelSessionID, container.SessionID()))),
+		Filters: filters.NewArgs(filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, container.SessionID()))),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -391,11 +401,12 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.NewClientWithOpts(client.FromEnv)
+	client, err := testcontainersdocker.NewClient(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	client.NegotiateAPIVersion(ctx)
+	defer client.Close()
+
 	_, err = GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -409,7 +420,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	filtersJSON := fmt.Sprintf(`{"label":{"%s":true}}`, TestcontainerLabelIsReaper)
+	filtersJSON := fmt.Sprintf(`{"label":{"%s":true}}`, testcontainersdocker.LabelReaper)
 	f, err := filters.FromJSON(filtersJSON)
 	if err != nil {
 		t.Fatal(err)
@@ -629,11 +640,12 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	t.Run("if not built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := client.NewClientWithOpts(client.FromEnv)
+		client, err := testcontainersdocker.NewClient(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
-		client.NegotiateAPIVersion(ctx)
+		defer client.Close()
+
 		container, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
@@ -660,11 +672,12 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 	t.Run("if built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := client.NewClientWithOpts(client.FromEnv)
+		client, err := testcontainersdocker.NewClient(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
-		client.NegotiateAPIVersion(ctx)
+		defer client.Close()
+
 		req := ContainerRequest{
 			FromDockerfile: FromDockerfile{
 				Context: "./testresources",
@@ -1063,182 +1076,6 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, mysqlC)
 }
 
-func Test_BuildContainerFromDockerfile(t *testing.T) {
-	t.Log("getting context")
-	ctx := context.Background()
-	t.Log("got context, creating container request")
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context: "./testresources",
-		},
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("Ready to accept connections"),
-	}
-
-	redisC, err := prepareRedisImage(ctx, req, t)
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, redisC)
-
-	checkSuccessfulRedisImage(ctx, redisC, t)
-
-}
-
-func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldSucceedWithAuthConfigs(t *testing.T) {
-	prepareLocalRegistryWithAuth(t)
-	defer func() {
-		ctx := context.Background()
-		testcontainersClient, err := client.NewClientWithOpts(client.WithVersion(daemonMaxVersion))
-		if err != nil {
-			t.Log("could not create client to cleanup registry: ", err)
-		}
-
-		_, err = testcontainersClient.ImageRemove(ctx, "localhost:5000/redis:5.0-alpine", types.ImageRemoveOptions{
-			Force:         true,
-			PruneChildren: true,
-		})
-		if err != nil {
-			t.Log("could not remove image: ", err)
-		}
-
-	}()
-
-	t.Log("getting context")
-	ctx := context.Background()
-	t.Log("got context, creating container request")
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "./testresources",
-			Dockerfile: "auth.Dockerfile",
-			AuthConfigs: map[string]types.AuthConfig{
-				"localhost:5000": {
-					Username: "testuser",
-					Password: "testpassword",
-				},
-			},
-		},
-
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("Ready to accept connections"),
-	}
-
-	redisC, err := prepareRedisImage(ctx, req, t)
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, redisC)
-
-	checkSuccessfulRedisImage(ctx, redisC, t)
-}
-
-func Test_BuildContainerFromDockerfileWithAuthConfig_ShouldFailWithoutAuthConfigs(t *testing.T) {
-	prepareLocalRegistryWithAuth(t)
-
-	t.Log("getting context")
-	ctx := context.Background()
-	t.Log("got context, creating container request")
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "./testresources",
-			Dockerfile: "auth.Dockerfile",
-		},
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("Ready to accept connections"),
-	}
-
-	redisC, err := prepareRedisImage(ctx, req, t)
-	require.Error(t, err)
-	terminateContainerOnEnd(t, ctx, redisC)
-}
-
-func prepareLocalRegistryWithAuth(t *testing.T) {
-	ctx := context.Background()
-	wd, err := os.Getwd()
-	assert.NoError(t, err)
-	req := ContainerRequest{
-		Image:        "registry:2",
-		ExposedPorts: []string{"5000:5000/tcp"},
-		Env: map[string]string{
-			"REGISTRY_AUTH":                             "htpasswd",
-			"REGISTRY_AUTH_HTPASSWD_REALM":              "Registry",
-			"REGISTRY_AUTH_HTPASSWD_PATH":               "/auth/htpasswd",
-			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY": "/data",
-		},
-		Mounts: ContainerMounts{
-			ContainerMount{
-				Source: GenericBindMountSource{
-					HostPath: fmt.Sprintf("%s/testresources/auth", wd),
-				},
-				Target: "/auth",
-			},
-			ContainerMount{
-				Source: GenericBindMountSource{
-					HostPath: fmt.Sprintf("%s/testresources/data", wd),
-				},
-				Target: "/data",
-			},
-		},
-		WaitingFor: wait.ForExposedPort(),
-	}
-
-	genContainerReq := GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	t.Log("creating registry container")
-
-	registryC, err := GenericContainer(ctx, genContainerReq)
-	assert.NoError(t, err)
-
-	t.Cleanup(func() {
-		assert.NoError(t, registryC.Terminate(context.Background()))
-	})
-
-	_, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-}
-
-func prepareRedisImage(ctx context.Context, req ContainerRequest, t *testing.T) (Container, error) {
-	genContainerReq := GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	t.Log("creating redis container")
-
-	redisC, err := GenericContainer(ctx, genContainerReq)
-
-	t.Log("created redis container")
-
-	return redisC, err
-}
-
-func checkSuccessfulRedisImage(ctx context.Context, redisC Container, t *testing.T) {
-	t.Log("created redis container")
-
-	t.Log("getting redis container endpoint")
-	endpoint, err := redisC.Endpoint(ctx, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Log("retrieved redis container endpoint")
-
-	redisClient := redis.NewClient(&redis.Options{
-		Addr: endpoint,
-	})
-
-	t.Log("pinging redis")
-	pong, err := redisClient.Ping(ctx).Result()
-	require.NoError(t, err)
-
-	t.Log("received response from redis")
-
-	if pong != "PONG" {
-		t.Fatalf("received unexpected response from redis: %s", pong)
-	}
-}
-
 func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	t.Log("getting ctx")
 	ctx := context.Background()
@@ -1297,6 +1134,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	ctx := context.Background()
 	t.Log("got ctx, creating container request")
 
+	// fromDockerfile {
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
 			Context:       "./testresources",
@@ -1304,6 +1142,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 			PrintBuildLog: true,
 		},
 	}
+	// }
 
 	genContainerReq := GenericContainerRequest{
 		ProviderType:     providerType,
@@ -1965,7 +1804,6 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		dockerCli, _, _, err := NewDockerClient()
 		require.NoError(t, err)
 
-		dockerCli.NegotiateAPIVersion(ctx)
 		ctr, err := dockerCli.ContainerInspect(ctx, c.GetContainerID())
 		assert.NoError(t, err)
 
@@ -2053,18 +1891,20 @@ func TestDockerContainerCopyDirToContainer(t *testing.T) {
 		Started: true,
 	})
 
+	p := filepath.Join(".", "testresources", "Dokerfile")
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
-	err = nginxC.CopyDirToContainer(ctx, "./testresources/Dockerfile", "/tmp/testresources/Dockerfile", 700)
+	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testresources/Dockerfile", 700)
 	require.Error(t, err) // copying a file using the directory method will raise an error
 
-	err = nginxC.CopyDirToContainer(ctx, "./testresources", "/tmp/testresources", 700)
+	p = filepath.Join(".", "testresources")
+	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testresources", 700)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assertExtractedFiles(t, ctx, nginxC, "./testresources", "/tmp/testresources/")
+	assertExtractedFiles(t, ctx, nginxC, p, "/tmp/testresources/")
 }
 
 func TestDockerCreateContainerWithFiles(t *testing.T) {
@@ -2140,15 +1980,27 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 	ctx := context.Background()
 	hostDirName := "testresources"
 
+	abs, err := filepath.Abs(filepath.Join(".", hostDirName))
+	assert.Nil(t, err)
+
 	tests := []struct {
 		name     string
 		dir      ContainerFile
 		hasError bool
 	}{
 		{
+			name: "success copy directory with full path",
+			dir: ContainerFile{
+				HostFilePath:      abs,
+				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
+				FileMode:          700,
+			},
+			hasError: false,
+		},
+		{
 			name: "success copy directory",
 			dir: ContainerFile{
-				HostFilePath:      "./" + hostDirName,
+				HostFilePath:      filepath.Join("./", hostDirName),
 				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
 				FileMode:          700,
 			},
@@ -2334,8 +2186,10 @@ func TestDockerContainerResources(t *testing.T) {
 			Image:        nginxAlpineImage,
 			ExposedPorts: []string{nginxDefaultPort},
 			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-			Resources: container.Resources{
-				Ulimits: expected,
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.Resources = container.Resources{
+					Ulimits: expected,
+				}
 			},
 		},
 		Started: true,
@@ -2344,10 +2198,10 @@ func TestDockerContainerResources(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
-	c, err := client.NewClientWithOpts(client.FromEnv)
+	c, err := testcontainersdocker.NewClient(ctx)
 	require.NoError(t, err)
+	defer c.Close()
 
-	c.NegotiateAPIVersion(ctx)
 	containerID := nginxC.GetContainerID()
 
 	resp, err := c.ContainerInspect(ctx, containerID)
@@ -2396,8 +2250,10 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 
 	containerId := nginxC.GetContainerID()
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := testcontainersdocker.NewClient(ctx)
 	assert.Nil(t, err)
+	defer cli.Close()
+
 	cnt, err := cli.ContainerInspect(ctx, containerId)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(cnt.NetworkSettings.Networks))
@@ -2420,14 +2276,16 @@ func TestContainerCapAdd(t *testing.T) {
 			Image:        nginxAlpineImage,
 			ExposedPorts: []string{nginxDefaultPort},
 			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-			CapAdd:       []string{expected},
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.CapAdd = []string{expected}
+			},
 		},
 		Started: true,
 	})
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginx)
 
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := testcontainersdocker.NewClient(ctx)
 	require.NoError(t, err)
 	defer dockerClient.Close()
 
@@ -2543,6 +2401,7 @@ func TestProviderHasConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer provider.Close()
 
 	assert.NotNil(t, provider.Config(), "expecting DockerProvider to provide the configuration")
 }
@@ -2564,8 +2423,10 @@ func TestNetworkModeWithContainerReference(t *testing.T) {
 	nginxB, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:       nginxAlpineImage,
-			NetworkMode: container.NetworkMode(networkMode),
+			Image: nginxAlpineImage,
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.NetworkMode = container.NetworkMode(networkMode)
+			},
 		},
 		Started: true,
 	})
@@ -2592,10 +2453,11 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 			require.NoError(t, err)
 		}
 
+		fp := filepath.Join(containerFilePath, srcFile.Name())
 		// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
 		// paths for the container files are using Linux path separators
-		fd, err := container.CopyFileFromContainer(ctx, containerFilePath+"/"+srcFile.Name())
-		require.NoError(t, err, "Path not found in container: %s", containerFilePath+"/"+srcFile.Name())
+		fd, err := container.CopyFileFromContainer(ctx, fp)
+		require.NoError(t, err, "Path not found in container: %s", fp)
 		defer fd.Close()
 
 		targetPath := filepath.Join(tmpDir, srcFile.Name())
@@ -2646,6 +2508,7 @@ func TestDockerProviderFindContainerByName(t *testing.T) {
 	ctx := context.Background()
 	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
 	require.NoError(t, err)
+	defer provider.Close()
 
 	c1, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,

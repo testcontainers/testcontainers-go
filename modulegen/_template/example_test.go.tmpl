@@ -1,0 +1,24 @@
+{{ $lower := ToLower }}{{ $title := Title }}package {{ $lower }}
+
+import (
+	"context"
+	"testing"
+)
+
+func Test{{ $title }}(t *testing.T) {
+	ctx := context.Background()
+
+	container, err := setup{{ $title }}(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Clean up the container after the test is complete
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	// perform assertions
+}

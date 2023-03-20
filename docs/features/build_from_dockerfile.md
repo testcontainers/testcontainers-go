@@ -64,20 +64,14 @@ in to `Context`.
 ## Images requiring auth
 
 If you are building a local Docker image that is fetched from a Docker image in a registry requiring authentication
-(e.g., assuming you are fetching from a custom registry such as `myregistry.com`), you will need to specify the
-credentials to succeed, as follows:
+(e.g., assuming you are fetching from a custom registry such as `myregistry.com`), _Testcontainers for Go_ will automatically
+discover the credentials for the given Docker image from the Docker config, as described [here](./docker_auth.md).
 
 ```go
 req := ContainerRequest{
     FromDockerfile: testcontainers.FromDockerfile{
         Context: "/path/to/build/context",
         Dockerfile: "CustomDockerfile",
-		AuthConfigs:   map[string]types.AuthConfig{
-            "https://myregistry.com": {
-                Username: "myusername",
-                Password: "mypassword",
-            },
-        },
 	},
 }
 ```

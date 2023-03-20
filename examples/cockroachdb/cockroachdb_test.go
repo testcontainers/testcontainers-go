@@ -48,7 +48,7 @@ func TestIntegrationDBInsertSelect(t *testing.T) {
 
 	ctx := context.Background()
 
-	cdbContainer, err := setupCockroachDB(ctx)
+	cdbContainer, err := startContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

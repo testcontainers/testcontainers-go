@@ -4,13 +4,16 @@ template: |
     # What's Changed
     $CHANGES
 categories:
+  - title: ⚠️ Breaking Changes
+    labels:
+      - 'breaking change'
+  - title: 🔒 Security
+    labels:
+      - 'security'
   - title: 🚀 Features
     labels:
       - 'enhancement'
       - 'feature'
-  - title: ⚠️ Breaking Changes
-    labels:
-      - 'breaking change'
   - title: 🐛 Bug Fixes
     labels:
       - 'bug'
