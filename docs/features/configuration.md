@@ -55,7 +55,7 @@ For advanced users, the Docker host connection can be configured **via configura
 The example below illustrates usage:
 
 ```properties
-docker.host=tcp\://my.docker.host\:1234     # Equivalent to the DOCKER_HOST environment variable. Colons should be escaped.
+docker.host=tcp://my.docker.host:1234       # Equivalent to the DOCKER_HOST environment variable.
 docker.tls.verify=1                         # Equivalent to the DOCKER_TLS_VERIFY environment variable
 docker.cert.path=/some/path                 # Equivalent to the DOCKER_CERT_PATH environment variable
 ```
