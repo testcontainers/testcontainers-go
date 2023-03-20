@@ -309,7 +309,11 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 	}
 	container.SetLogger(d.logger)
 
-	dockerProvider := &testcontainers.DockerProvider{}
+	dockerProvider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(d.logger))
+	if err != nil {
+		return nil, err
+	}
+
 	dockerProvider.SetClient(d.dockerClient)
 
 	container.SetProvider(dockerProvider)
@@ -371,7 +375,7 @@ func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
 }
 
 func makeClient(*command.DockerCli) (client.APIClient, error) {
-	dockerClient, _, _, err := testcontainers.NewDockerClient()
+	dockerClient, err := testcontainers.NewDockerClient()
 	if err != nil {
 		return nil, err
 	}
