@@ -87,6 +87,9 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 		case <-ctx.Done():
 			return fmt.Errorf("%s:%w", ctx.Err(), err)
 		case <-ticker.C:
+			if err := checkTarget(ctx, target); err != nil {
+				return err
+			}
 			port, err = target.MappedPort(ctx, w.Port)
 		}
 	}
@@ -101,7 +104,9 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-
+			if err := checkTarget(ctx, target); err != nil {
+				return err
+			}
 			if _, err := db.ExecContext(ctx, w.query); err != nil {
 				continue
 			}

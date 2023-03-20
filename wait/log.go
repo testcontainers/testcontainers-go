@@ -87,6 +87,8 @@ LOOP:
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
+			checkErr := checkTarget(ctx, target)
+
 			reader, err := target.Logs(ctx)
 			if err != nil {
 				time.Sleep(ws.PollInterval)
@@ -100,7 +102,9 @@ LOOP:
 			}
 
 			logs := string(b)
-			if strings.Count(logs, ws.Log) >= ws.Occurrence {
+			if logs == "" && checkErr != nil {
+				return checkErr
+			} else if strings.Count(logs, ws.Log) >= ws.Occurrence {
 				break LOOP
 			} else {
 				time.Sleep(ws.PollInterval)
