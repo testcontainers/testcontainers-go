@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"path/filepath"
 	"strings"
 )
 
@@ -49,14 +50,28 @@ func StartContainer(ctx context.Context, image string, opts ...Option) (*MySQLCo
 		Image:        image,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env:          mysqlEnv,
-		WaitingFor:   wait.ForLog("port: 3306  MySQL Community Server - GPL"),
+		WaitingFor:   wait.ForLog("port: 3306  MySQL Community Server"),
 	}
 
-	//if config.configFile != "" {
-	//	req.Files = []testcontainers.ContainerFile{
-	//		{HostFilePath: config.configFile, ContainerFilePath: "/etc/mysql/conf.d/my.cnf", FileMode: 700},
-	//	}
-	//}
+	if config.configFile != "" {
+		cf := testcontainers.ContainerFile{
+			HostFilePath:      config.configFile,
+			ContainerFilePath: "/etc/mysql/conf.d/my.cnf",
+			FileMode:          0755,
+		}
+		req.Files = append(req.Files, cf)
+	}
+
+	var initScripts []testcontainers.ContainerFile
+	for _, script := range config.scripts {
+		cf := testcontainers.ContainerFile{
+			HostFilePath:      script,
+			ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
+			FileMode:          0755,
+		}
+		initScripts = append(initScripts, cf)
+	}
+	req.Files = append(req.Files, initScripts...)
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,

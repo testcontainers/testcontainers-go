@@ -7,6 +7,7 @@ type Config struct {
 	password   string
 	database   string
 	configFile string
+	scripts    []string
 }
 
 func WithUsername(username string) Option {
@@ -30,5 +31,11 @@ func WithDatabase(database string) Option {
 func WithConfigFile(configFile string) Option {
 	return func(config *Config) {
 		config.configFile = configFile
+	}
+}
+
+func WithScripts(scripts ...string) Option {
+	return func(config *Config) {
+		config.scripts = scripts
 	}
 }
