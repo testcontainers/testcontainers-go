@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -125,4 +126,43 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 		require.Error(t, err)
 		require.Nil(t, container)
 	})
+}
+
+func TestWithInitScript(t *testing.T) {
+	ctx := context.Background()
+
+	const dbname = "test-db"
+	const user = "postgres"
+	const password = "password"
+
+	// withInitScripts {
+	container, err := StartContainer(ctx,
+		WithImage("docker.io/postgres:15.2-alpine"),
+		WithInitScripts(filepath.Join("testresources", "init-user-db.sh")),
+		WithInitialDatabase(user, password, dbname),
+		WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// }
+
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	connStr, err := container.ConnectionString(ctx)
+	assert.NoError(t, err)
+
+	db, err := sql.Open("postgres", connStr)
+	assert.NoError(t, err)
+	assert.NotNil(t, db)
+	defer db.Close()
+
+	// database created in init script. See testresources/init-user-db.sh
+	result, err := db.Exec("SELECT * FROM testdb;")
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
 }

@@ -45,6 +45,21 @@ If you need to set a different database, and its credentials, you can use the `W
 [Set Initial database](../../modules/postgres/postgres_test.go) inside_block:withInitialDatabase
 <!--/codeinclude-->
 
+### Init Scripts
+
+If you would like to do additional initialization in the Postgres container, add one or more `*.sql`, `*.sql.gz`, or `*.sh` scripts to the container request.
+Those files will be copied after the container is created but before it's started under `/docker-entrypoint-initdb.d`. According to Postgres Docker image,
+it will run any `*.sql` files, run any executable `*.sh` scripts, and source any non-executable `*.sh` scripts found in that directory to do further
+initialization before starting the service.
+
+<!--codeinclude-->
+[Include init scripts](../../modules/postgres/postgres_test.go) inside_block:withInitScripts
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Init script content](../../modules/postgres/testresources/init-user-db.sh)
+<!--/codeinclude-->
+
 ### InitDB arguments
 
 This optional function can be used to send arguments to postgres initdb. The value is a space separated string of arguments as postgres initdb would expect them.

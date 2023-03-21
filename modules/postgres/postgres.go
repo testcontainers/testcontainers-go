@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -73,6 +74,22 @@ func WithInitialDatabase(user string, password string, dbName string) func(req *
 func WithInitDBArgs(args string) func(req *testcontainers.ContainerRequest) {
 	return func(req *testcontainers.ContainerRequest) {
 		req.Env["POSTGRES_INITDB_ARGS"] = args
+	}
+}
+
+// WithInitScripts sets the init scripts to be run when the container starts
+func WithInitScripts(scripts ...string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		initScripts := []testcontainers.ContainerFile{}
+		for _, script := range scripts {
+			cf := testcontainers.ContainerFile{
+				HostFilePath:      script,
+				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
+				FileMode:          0755,
+			}
+			initScripts = append(initScripts, cf)
+		}
+		req.Files = append(req.Files, initScripts...)
 	}
 }
 
