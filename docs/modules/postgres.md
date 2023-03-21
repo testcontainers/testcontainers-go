@@ -16,7 +16,7 @@ go get github.com/testcontainers/testcontainers-go/modules/postgres
 
 ## Module reference
 
-The Postgres module exposes one single function to create the Postgres container, and this function receives two parameters:
+The Postgres module exposes one entrypoint function to create the Postgres container, and this function receives two parameters:
 
 ```golang
 func StartContainer(ctx context.Context, opts ...PostgresContainerOption) (*PostgresContainer, error)
@@ -57,4 +57,14 @@ the Postgres container exposes a `WithWaitStrategy` option to set a custom wait 
 
 <!--codeinclude-->
 [Set Wait Strategy](../../modules/postgres/postgres_test.go) inside_block:withWaitStrategy
+<!--/codeinclude-->
+
+## Container Methods
+
+### ConnectionString
+
+This method returns the connection string to connect to the Postgres container, using the default `5432` port.
+
+<!--codeinclude-->
+[Get connection string](../../modules/postgres/postgres_test.go) inside_block:connectionString
 <!--/codeinclude-->

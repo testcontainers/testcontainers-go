@@ -15,16 +15,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// postgresCreateContainer {
 func TestPostgres(t *testing.T) {
 	ctx := context.Background()
 
+	// postgresCreateContainer {
 	const dbname = "test-db"
 	const user = "postgres"
 	const password = "password"
-
-	port, err := nat.NewPort("tcp", "5432")
-	require.NoError(t, err)
 
 	container, err := StartContainer(ctx,
 		WithImage("docker.io/postgres:15.2-alpine"),
@@ -34,6 +31,7 @@ func TestPostgres(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
@@ -42,13 +40,10 @@ func TestPostgres(t *testing.T) {
 		}
 	})
 
-	containerPort, err := container.MappedPort(ctx, port)
+	// connectionString {
+	connStr, err := container.ConnectionString(ctx)
 	assert.NoError(t, err)
-
-	host, err := container.Host(ctx)
-	assert.NoError(t, err)
-
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, containerPort.Port(), user, password, dbname)
+	// }
 
 	// perform assertions
 	db, err := sql.Open("postgres", connStr)
@@ -64,8 +59,6 @@ func TestPostgres(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 }
-
-// }
 
 func TestContainerWithWaitForSQL(t *testing.T) {
 	const dbname = "test-db"
