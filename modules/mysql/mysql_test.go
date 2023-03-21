@@ -58,7 +58,10 @@ func TestMySQL(t *testing.T) {
 func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := StartContainer(ctx, "mysql:8", WithDatabase("foo"), WithUsername("test"), WithPassword(""))
+	_, err := StartContainer(ctx, "mysql:8",
+		WithDatabase("foo"),
+		WithUsername("test"),
+		WithPassword(""))
 	if err.Error() != "empty password can be used only with the root user" {
 		t.Fatal(err)
 	}
@@ -67,10 +70,15 @@ func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := StartContainer(ctx, "mysql:8", WithDatabase("foo"), WithUsername("root"), WithPassword(""))
+	// customInitialization {
+	container, err := StartContainer(ctx, "mysql:8",
+		WithDatabase("foo"),
+		WithUsername("root"),
+		WithPassword(""))
 	if err != nil {
 		t.Fatal(err)
 	}
+	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
@@ -111,10 +119,13 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 func TestMySQLWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := StartContainer(ctx, "mysql:5.6.51", WithConfigFile("./testresources/my.cnf"))
+	// withConfigFile {
+	container, err := StartContainer(ctx, "mysql:5.6.51",
+		WithConfigFile("./testresources/my.cnf"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
@@ -161,10 +172,13 @@ func TestMySQLWithConfigFile(t *testing.T) {
 func TestMySQLWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := StartContainer(ctx, "mysql:8", WithScripts(filepath.Join("testresources", "schema.sql")))
+	// withScripts {
+	container, err := StartContainer(ctx, "mysql:8",
+		WithScripts(filepath.Join("testresources", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
 	}
+	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
