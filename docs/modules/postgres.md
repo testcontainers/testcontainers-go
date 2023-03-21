@@ -68,3 +68,15 @@ This method returns the connection string to connect to the Postgres container, 
 <!--codeinclude-->
 [Get connection string](../../modules/postgres/postgres_test.go) inside_block:connectionString
 <!--/codeinclude-->
+
+## Postgres variants
+
+It's possible to use the Postgres container with Timescale or Postgis, to name a few. You simply need to update the image name and the wait strategy.
+
+<!--codeinclude-->
+[Image for Timescale](../../modules/postgres/postgres_test.go) inside_block:timescale
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Image for Postgis](../../modules/postgres/postgres_test.go) inside_block:postgis
+<!--/codeinclude-->

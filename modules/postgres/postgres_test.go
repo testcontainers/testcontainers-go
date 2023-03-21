@@ -18,46 +18,72 @@ import (
 func TestPostgres(t *testing.T) {
 	ctx := context.Background()
 
-	// postgresCreateContainer {
 	const dbname = "test-db"
 	const user = "postgres"
 	const password = "password"
 
-	container, err := StartContainer(ctx,
-		WithImage("docker.io/postgres:15.2-alpine"),
-		WithInitialDatabase(user, password, dbname),
-		WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
-	)
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name  string
+		image string
+	}{
+		{
+			name:  "Postgres",
+			image: "docker.io/postgres:15.2-alpine",
+		},
+		{
+			name: "Timescale",
+			// timescale {
+			image: "docker.io/timescale/timescaledb:2.1.0-pg11",
+			// }
+		},
+		{
+			name: "Postgis",
+			// postgis {
+			image: "docker.io/postgis/postgis:12-3.0",
+			// }
+		},
 	}
-	// }
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// postgresCreateContainer {
+			container, err := StartContainer(ctx,
+				WithImage(tt.image),
+				WithInitialDatabase(user, password, dbname),
+				WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// }
 
-	// connectionString {
-	connStr, err := container.ConnectionString(ctx)
-	assert.NoError(t, err)
-	// }
+			// Clean up the container after the test is complete
+			t.Cleanup(func() {
+				if err := container.Terminate(ctx); err != nil {
+					t.Fatalf("failed to terminate container: %s", err)
+				}
+			})
 
-	// perform assertions
-	db, err := sql.Open("postgres", connStr)
-	assert.NoError(t, err)
-	assert.NotNil(t, db)
-	defer db.Close()
+			// connectionString {
+			connStr, err := container.ConnectionString(ctx)
+			assert.NoError(t, err)
+			// }
 
-	result, err := db.Exec("CREATE TABLE IF NOT EXISTS test (id int, name varchar(255));")
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
+			// perform assertions
+			db, err := sql.Open("postgres", connStr)
+			assert.NoError(t, err)
+			assert.NotNil(t, db)
+			defer db.Close()
 
-	result, err = db.Exec("INSERT INTO test (id, name) VALUES (1, 'test');")
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
+			result, err := db.Exec("CREATE TABLE IF NOT EXISTS test (id int, name varchar(255));")
+			assert.NoError(t, err)
+			assert.NotNil(t, result)
+
+			result, err = db.Exec("INSERT INTO test (id, name) VALUES (1, 'test');")
+			assert.NoError(t, err)
+			assert.NotNil(t, result)
+		})
+	}
 }
 
 func TestContainerWithWaitForSQL(t *testing.T) {
