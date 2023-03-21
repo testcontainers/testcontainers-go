@@ -8,12 +8,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// postgresContainer represents the postgres container type used in the module
-type postgresContainer struct {
+// PostgresContainer represents the postgres container type used in the module
+type PostgresContainer struct {
 	testcontainers.Container
 }
 
-type postgresContainerOption func(req *testcontainers.ContainerRequest)
+type PostgresContainerOption func(req *testcontainers.ContainerRequest)
 
 func WithWaitStrategy(strategies ...wait.Strategy) func(req *testcontainers.ContainerRequest) {
 	return func(req *testcontainers.ContainerRequest) {
@@ -35,8 +35,8 @@ func WithInitialDatabase(user string, password string, dbName string) func(req *
 	}
 }
 
-// startContainer creates an instance of the postgres container type
-func startContainer(ctx context.Context, opts ...postgresContainerOption) (*postgresContainer, error) {
+// StartContainer creates an instance of the postgres container type
+func StartContainer(ctx context.Context, opts ...PostgresContainerOption) (*PostgresContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:11-alpine",
 		Env:          map[string]string{},
@@ -56,5 +56,5 @@ func startContainer(ctx context.Context, opts ...postgresContainerOption) (*post
 		return nil, err
 	}
 
-	return &postgresContainer{Container: container}, nil
+	return &PostgresContainer{Container: container}, nil
 }
