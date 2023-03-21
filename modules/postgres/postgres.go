@@ -13,14 +13,17 @@ type PostgresContainer struct {
 	testcontainers.Container
 }
 
+// PostgresContainerOption is a function that configures the postgres container, affecting the container request
 type PostgresContainerOption func(req *testcontainers.ContainerRequest)
 
+// WithWaitStrategy sets the wait strategy for the postgres container
 func WithWaitStrategy(strategies ...wait.Strategy) func(req *testcontainers.ContainerRequest) {
 	return func(req *testcontainers.ContainerRequest) {
 		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(1 * time.Minute)
 	}
 }
 
+// WithInitialDatabase sets the initial database to be created when the container starts, including the user and password
 func WithInitialDatabase(user string, password string, dbName string) func(req *testcontainers.ContainerRequest) {
 	return func(req *testcontainers.ContainerRequest) {
 		req.Env["POSTGRES_USER"] = user
