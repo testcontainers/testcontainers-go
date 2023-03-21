@@ -39,8 +39,10 @@ for more than 10 seconds, it will be killed.
 
 !!!warning
 
-    This feature can be disabled when creating a container or a network,
-    but it can cause **unexpected behavior** in your environment.
+    This feature can be disabled in two different manners, but it can cause **unexpected behavior** in your environment:
+
+    1. adding `ryuk.disabled=true` to the `.testcontainers.properties` file.
+    2. setting the `TESTCONTAINERS_RYUK_DISABLED=true` environment variable. This manner takes precedence over the properties file.
 
     We recommend using it only for Continuous Integration services that have their
     own mechanism to clean up resources.

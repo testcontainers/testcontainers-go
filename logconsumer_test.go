@@ -307,7 +307,15 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	}
 	defer client.Close()
 
-	provider := &DockerProvider{client: client, DockerProviderOptions: &DockerProviderOptions{GenericProviderOptions: &GenericProviderOptions{Logger: TestLogger(t)}}}
+	provider := &DockerProvider{
+		client: client,
+		config: ReadConfig(),
+		DockerProviderOptions: &DockerProviderOptions{
+			GenericProviderOptions: &GenericProviderOptions{
+				Logger: TestLogger(t),
+			},
+		},
+	}
 
 	nginx, err := provider.CreateContainer(ctx, ContainerRequest{Image: "nginx", ExposedPorts: []string{"80/tcp"}})
 	if err != nil {

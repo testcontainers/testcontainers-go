@@ -30,7 +30,6 @@ import (
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
-	"github.com/magiconair/properties"
 	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
@@ -68,7 +67,6 @@ type DockerContainer struct {
 	provider          *DockerProvider
 	sessionID         uuid.UUID
 	terminationSignal chan bool
-	skipReaper        bool
 	consumers         []LogConsumer
 	raw               *types.ContainerJSON
 	stopProducer      chan bool
@@ -730,7 +728,7 @@ type DockerProvider struct {
 	client    client.APIClient
 	host      string
 	hostCache string
-	config    TestContainersConfig
+	config    TestcontainersConfig
 }
 
 // Client gets the docker client used by the provider
@@ -754,18 +752,10 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 
 var _ ContainerProvider = (*DockerProvider)(nil)
 
-// or through Decode
-type TestContainersConfig struct {
-	Host           string `properties:"docker.host,default="`
-	TLSVerify      int    `properties:"docker.tls.verify,default=0"`
-	CertPath       string `properties:"docker.cert.path,default="`
-	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
-}
+func NewDockerClient() (cli *client.Client, err error) {
+	tcConfig = ReadConfig()
 
-func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainersConfig, err error) {
-	tcConfig = configureTC()
-
-	host = tcConfig.Host
+	host := tcConfig.Host
 
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
 	if host != "" {
@@ -779,10 +769,6 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 
 			opts = append(opts, client.WithTLSClientConfig(cacertPath, certPath, keyPath))
 		}
-	} else if dockerHostEnv := os.Getenv("DOCKER_HOST"); dockerHostEnv != "" {
-		host = dockerHostEnv
-	} else {
-		host = "unix:///var/run/docker.sock"
 	}
 
 	opts = append(opts, client.WithHTTPHeaders(
@@ -793,7 +779,7 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 
 	cli, err = client.NewClientWithOpts(opts...)
 	if err != nil {
-		return nil, "", TestContainersConfig{}, err
+		return nil, err
 	}
 
 	_, err = cli.Ping(context.TODO())
@@ -801,46 +787,12 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 		// fallback to environment
 		cli, err = testcontainersdocker.NewClient(context.Background())
 		if err != nil {
-			return nil, "", TestContainersConfig{}, err
+			return nil, err
 		}
 	}
 	defer cli.Close()
 
-	return cli, host, tcConfig, nil
-}
-
-// configureTC reads from testcontainers properties file, if it exists
-// it is possible that certain values get overridden when set as environment variables
-func configureTC() TestContainersConfig {
-	config := TestContainersConfig{}
-
-	applyEnvironmentConfiguration := func(config TestContainersConfig) TestContainersConfig {
-		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
-		if ryukPrivilegedEnv != "" {
-			config.RyukPrivileged = ryukPrivilegedEnv == "true"
-		}
-
-		return config
-	}
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return applyEnvironmentConfiguration(config)
-	}
-
-	tcProp := filepath.Join(home, ".testcontainers.properties")
-	// init from a file
-	properties, err := properties.LoadFile(tcProp, properties.UTF8)
-	if err != nil {
-		return applyEnvironmentConfiguration(config)
-	}
-
-	if err := properties.Decode(&config); err != nil {
-		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
-		return applyEnvironmentConfiguration(config)
-	}
-
-	return applyEnvironmentConfiguration(config)
+	return cli, nil
 }
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
@@ -953,10 +905,12 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		opt(&reaperOpts)
 	}
 
+	tcConfig := p.Config()
+
 	var termSignal chan bool
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.EqualFold(req.Image, reaperImage(reaperOpts.ImageName))
-	if !req.SkipReaper && !isReaperContainer {
+	if !tcConfig.RyukDisabled && !isReaperContainer {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
@@ -970,8 +924,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				req.Labels[k] = v
 			}
 		}
-	} else if !isReaperContainer {
-		p.printReaperBanner("container")
 	}
 
 	if err = req.Validate(); err != nil {
@@ -1093,7 +1045,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		sessionID:         testcontainerssession.ID(),
 		provider:          p,
 		terminationSignal: termSignal,
-		skipReaper:        req.SkipReaper,
 		stopProducer:      nil,
 		logger:            p.Logger,
 	}
@@ -1136,8 +1087,10 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		return p.CreateContainer(ctx, req)
 	}
 
+	tcConfig := p.Config()
+
 	var termSignal chan bool
-	if !req.SkipReaper {
+	if !tcConfig.RyukDisabled {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
@@ -1146,9 +1099,8 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		if err != nil {
 			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
 		}
-	} else {
-		p.printReaperBanner("container")
 	}
+
 	dc := &DockerContainer{
 		ID:                c.ID,
 		WaitingFor:        req.WaitingFor,
@@ -1156,7 +1108,6 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		sessionID:         testcontainerssession.ID(),
 		provider:          p,
 		terminationSignal: termSignal,
-		skipReaper:        req.SkipReaper,
 		stopProducer:      make(chan bool),
 		logger:            p.Logger,
 		isRunning:         c.State == "running",
@@ -1218,9 +1169,9 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 	return c, nil
 }
 
-// Config provides the TestContainersConfig read from $HOME/.testcontainers.properties or
+// Config provides the TestcontainersConfig read from $HOME/.testcontainers.properties or
 // the environment variables
-func (p *DockerProvider) Config() TestContainersConfig {
+func (p *DockerProvider) Config() TestcontainersConfig {
 	return p.config
 }
 
@@ -1291,6 +1242,8 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		req.Labels = make(map[string]string)
 	}
 
+	tcConfig := p.Config()
+
 	nc := types.NetworkCreate{
 		Driver:         req.Driver,
 		CheckDuplicate: req.CheckDuplicate,
@@ -1302,7 +1255,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	}
 
 	var termSignal chan bool
-	if !req.SkipReaper {
+	if !tcConfig.RyukDisabled {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
@@ -1316,8 +1269,6 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 				req.Labels[k] = v
 			}
 		}
-	} else {
-		p.printReaperBanner("network")
 	}
 
 	response, err := p.client.NetworkCreate(ctx, req.Name, nc)
@@ -1374,15 +1325,6 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	}
 
 	return ip, nil
-}
-
-func (p *DockerProvider) printReaperBanner(resource string) {
-	ryukDisabledMessage := `
-	**********************************************************************************************
-	Ryuk has been disabled for the ` + resource + `. This can cause unexpected behavior in your environment.
-	More on this: https://golang.testcontainers.org/features/garbage_collector/
-	**********************************************************************************************`
-	p.Logger.Printf(ryukDisabledMessage)
 }
 
 func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APIClient) (string, error) {
