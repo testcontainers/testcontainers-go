@@ -27,6 +27,7 @@ func TestPostgres(t *testing.T) {
 	require.NoError(t, err)
 
 	container, err := StartContainer(ctx,
+		WithImage("docker.io/postgres:15.2-alpine"),
 		WithInitialDatabase(user, password, dbname),
 		WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
 	)

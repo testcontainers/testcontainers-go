@@ -8,6 +8,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const defaultPostgresImage = "docker.io/postgres:11-alpine"
+
 // PostgresContainer represents the postgres container type used in the module
 type PostgresContainer struct {
 	testcontainers.Container
@@ -20,6 +22,17 @@ type PostgresContainerOption func(req *testcontainers.ContainerRequest)
 func WithWaitStrategy(strategies ...wait.Strategy) func(req *testcontainers.ContainerRequest) {
 	return func(req *testcontainers.ContainerRequest) {
 		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(1 * time.Minute)
+	}
+}
+
+// WithImage sets the image to be used for the postgres container
+func WithImage(image string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		if image == "" {
+			image = defaultPostgresImage
+		}
+
+		req.Image = image
 	}
 }
 
@@ -43,7 +56,7 @@ func WithInitDBArgs(args string) func(req *testcontainers.ContainerRequest) {
 // StartContainer creates an instance of the postgres container type
 func StartContainer(ctx context.Context, opts ...PostgresContainerOption) (*PostgresContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "postgres:11-alpine",
+		Image:        defaultPostgresImage,
 		Env:          map[string]string{},
 		ExposedPorts: []string{},
 		Cmd:          []string{"postgres", "-c", "fsync=off"},

@@ -29,6 +29,11 @@ func StartContainer(ctx context.Context, opts ...PostgresContainerOption) (*Post
 
 When starting the Postgres container, you can pass options in a variadic way to configure it.
 
+### Image
+
+If you need to set a different Postgres Docker image, you can use `WithImage` with a valid Docker image
+for Postgres. E.g. `WithImage("docker.io/postgres:9.6")`.
+
 ### Initial Database
 
 If you need to set a different database, and its credentials, you can use the `WithInitialDatabase`.
