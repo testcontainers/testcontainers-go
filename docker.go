@@ -1108,7 +1108,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		sessionID:         testcontainerssession.ID(),
 		provider:          p,
 		terminationSignal: termSignal,
-		stopProducer:      make(chan bool),
+		stopProducer:      nil,
 		logger:            p.Logger,
 		isRunning:         c.State == "running",
 	}
