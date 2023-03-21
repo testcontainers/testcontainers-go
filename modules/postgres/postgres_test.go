@@ -16,12 +16,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const dbname = "test-db"
+const user = "postgres"
+const password = "password"
+
 func TestPostgres(t *testing.T) {
 	ctx := context.Background()
-
-	const dbname = "test-db"
-	const user = "postgres"
-	const password = "password"
 
 	tests := []struct {
 		name  string
@@ -88,10 +88,6 @@ func TestPostgres(t *testing.T) {
 }
 
 func TestContainerWithWaitForSQL(t *testing.T) {
-	const dbname = "test-db"
-	const user = "postgres"
-	const password = "password"
-
 	ctx := context.Background()
 
 	var port = "5432/tcp"
@@ -130,10 +126,6 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 
 func TestWithInitScript(t *testing.T) {
 	ctx := context.Background()
-
-	const dbname = "test-db"
-	const user = "postgres"
-	const password = "password"
 
 	// withInitScripts {
 	container, err := StartContainer(ctx,
