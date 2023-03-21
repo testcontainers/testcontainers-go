@@ -21,12 +21,6 @@ func WithWaitStrategy(strategies ...wait.Strategy) func(req *testcontainers.Cont
 	}
 }
 
-func WithPort(port string) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
-		req.ExposedPorts = append(req.ExposedPorts, port)
-	}
-}
-
 func WithInitialDatabase(user string, password string, dbName string) func(req *testcontainers.ContainerRequest) {
 	return func(req *testcontainers.ContainerRequest) {
 		req.Env["POSTGRES_USER"] = user
