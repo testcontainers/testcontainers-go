@@ -45,3 +45,8 @@ the Postgres container exposes a `WithWaitStrategy` option to set a custom wait 
 <!--codeinclude-->
 [Set Wait Strategy](../../modules/postgres/postgres_test.go) inside_block:withWaitStrategy
 <!--/codeinclude-->
+
+### InitDB arguments
+
+This optional function can be used to send arguments to postgres initdb. The value is a space separated string of arguments as postgres initdb would expect them.
+This is useful for adding functionality like data page checksums: `WithInitDBArgs("--data-checksums")`.
