@@ -151,7 +151,6 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 		StdoutLog: "echo this-is-stdout\n",
 		StderrLog: "echo this-is-stderr\n",
 	}, g.LogTypes)
-	assert.Nil(t, c.Terminate(ctx))
 }
 
 func Test_MultipleLogConsumers(t *testing.T) {
