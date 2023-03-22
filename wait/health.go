@@ -2,8 +2,9 @@ package wait
 
 import (
 	"context"
-	"github.com/docker/docker/api/types"
 	"time"
+
+	"github.com/docker/docker/api/types"
 )
 
 // Implement interface
@@ -75,6 +76,9 @@ func (ws *HealthStrategy) WaitUntilReady(ctx context.Context, target StrategyTar
 		default:
 			state, err := target.State(ctx)
 			if err != nil {
+				return err
+			}
+			if err := checkState(state); err != nil {
 				return err
 			}
 			if state.Health == nil || state.Health.Status != types.Healthy {

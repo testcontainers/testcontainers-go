@@ -113,6 +113,9 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		case <-ctx.Done():
 			return fmt.Errorf("%s:%w", ctx.Err(), err)
 		case <-time.After(waitInterval):
+			if err := checkTarget(ctx, target); err != nil {
+				return err
+			}
 			port, err = target.MappedPort(ctx, internalPort)
 			if err != nil {
 				fmt.Printf("(%d) [%s] %s\n", i, port, err)
@@ -128,6 +131,9 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	dialer := net.Dialer{}
 	address := net.JoinHostPort(ipAddress, portString)
 	for {
+		if err := checkTarget(ctx, target); err != nil {
+			return err
+		}
 		conn, err := dialer.DialContext(ctx, proto, address)
 		if err != nil {
 			if v, ok := err.(*net.OpError); ok {
@@ -150,6 +156,9 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
+		}
+		if err := checkTarget(ctx, target); err != nil {
+			return err
 		}
 		exitCode, _, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
 		if err != nil {
