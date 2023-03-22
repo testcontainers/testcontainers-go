@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -23,8 +24,10 @@ type PostgresContainer struct {
 }
 
 // ConnectionString returns the connection string for the postgres container, using the default 5432 port, and
-// obtaining the host and exposed port from the container.
-func (c *PostgresContainer) ConnectionString(ctx context.Context) (string, error) {
+// obtaining the host and exposed port from the container. It also accepts a variadic list of extra arguments
+// which will be appended to the connection string. The format of the extra arguments is the same as the
+// connection string format, e.g. "connect_timeout=10" or "application_name=myapp"
+func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "5432/tcp")
 	if err != nil {
 		return "", err
@@ -35,7 +38,15 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context) (string, error
 		return "", err
 	}
 
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, containerPort.Port(), c.user, c.password, c.dbName)
+	extraArgs := ""
+	for _, arg := range args {
+		if strings.HasPrefix(arg, "sslmode=") {
+			continue
+		}
+		extraArgs += " " + arg
+	}
+
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable %s", host, containerPort.Port(), c.user, c.password, c.dbName, extraArgs)
 	return connStr, nil
 }
 
