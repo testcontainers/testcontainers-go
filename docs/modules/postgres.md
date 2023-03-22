@@ -78,7 +78,8 @@ the Postgres container exposes a `WithWaitStrategy` option to set a custom wait 
 
 ### ConnectionString
 
-This method returns the connection string to connect to the Postgres container, using the default `5432` port.
+This method returns the connection string to connect to the Postgres container, using the default `5432` port and SSL disabled.
+It's possible to pass extra parameters to the connection string, e.g. `application_name=myapp`, in a variadic way.
 
 <!--codeinclude-->
 [Get connection string](../../modules/postgres/postgres_test.go) inside_block:connectionString
