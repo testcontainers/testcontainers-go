@@ -26,21 +26,25 @@ func TestPostgres(t *testing.T) {
 	tests := []struct {
 		name  string
 		image string
+		wait  wait.Strategy
 	}{
 		{
 			name:  "Postgres",
 			image: "docker.io/postgres:15.2-alpine",
+			wait:  wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5 * time.Second),
 		},
 		{
 			name: "Timescale",
 			// timescale {
 			image: "docker.io/timescale/timescaledb:2.1.0-pg11",
+			wait:  wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5 * time.Second),
 			// }
 		},
 		{
 			name: "Postgis",
 			// postgis {
 			image: "docker.io/postgis/postgis:12-3.0",
+			wait:  wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(30 * time.Second),
 			// }
 		},
 	}
@@ -51,7 +55,7 @@ func TestPostgres(t *testing.T) {
 			container, err := StartContainer(ctx,
 				WithImage(tt.image),
 				WithInitialDatabase(user, password, dbname),
-				WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+				WithWaitStrategy(tt.wait),
 			)
 			if err != nil {
 				t.Fatal(err)
@@ -66,7 +70,7 @@ func TestPostgres(t *testing.T) {
 			})
 
 			// connectionString {
-			connStr, err := container.ConnectionString(ctx)
+			connStr, err := container.ConnectionString(ctx, "application_name=test")
 			assert.NoError(t, err)
 			// }
 
