@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -245,5 +247,214 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("status code isn't ok: %s", resp.Status)
 		return
+	}
+}
+
+func TestHttpStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
+	var mappedPortCount int
+	target := &wait.MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			defer func() { mappedPortCount++ }()
+			if mappedPortCount == 0 {
+				return "", wait.ErrPortNotFound
+			}
+			return "49152", nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				OOMKilled: true,
+			}, nil
+		},
+	}
+
+	wg := wait.ForHTTP("/").
+		WithStartupTimeout(500 * time.Millisecond).
+		WithPollInterval(100 * time.Millisecond)
+
+	{
+		err := wg.WaitUntilReady(context.Background(), target)
+		if err == nil {
+			t.Fatal("no error")
+		}
+
+		expected := "container crashed with out-of-memory (OOMKilled)"
+		if err.Error() != expected {
+			t.Fatalf("expected %q, got %q", expected, err.Error())
+		}
+	}
+}
+
+func TestHttpStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
+	var mappedPortCount int
+	target := &wait.MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			defer func() { mappedPortCount++ }()
+			if mappedPortCount == 0 {
+				return "", wait.ErrPortNotFound
+			}
+			return "49152", nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				Status:   "exited",
+				ExitCode: 1,
+			}, nil
+		},
+	}
+
+	wg := wait.ForHTTP("/").
+		WithStartupTimeout(500 * time.Millisecond).
+		WithPollInterval(100 * time.Millisecond)
+
+	{
+		err := wg.WaitUntilReady(context.Background(), target)
+		if err == nil {
+			t.Fatal("no error")
+		}
+
+		expected := "container exited with code 1"
+		if err.Error() != expected {
+			t.Fatalf("expected %q, got %q", expected, err.Error())
+		}
+	}
+}
+
+func TestHttpStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *testing.T) {
+	var mappedPortCount int
+	target := &wait.MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			defer func() { mappedPortCount++ }()
+			if mappedPortCount == 0 {
+				return "", wait.ErrPortNotFound
+			}
+			return "49152", nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				Status: "dead",
+			}, nil
+		},
+	}
+
+	wg := wait.ForHTTP("/").
+		WithStartupTimeout(500 * time.Millisecond).
+		WithPollInterval(100 * time.Millisecond)
+
+	{
+		err := wg.WaitUntilReady(context.Background(), target)
+		if err == nil {
+			t.Fatal("no error")
+		}
+
+		expected := "unexpected container status \"dead\""
+		if err.Error() != expected {
+			t.Fatalf("expected %q, got %q", expected, err.Error())
+		}
+	}
+}
+
+func TestHTTPStrategyFailsWhileRequestSendingDueToOOMKilledContainer(t *testing.T) {
+	target := &wait.MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			return "49152", nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				OOMKilled: true,
+			}, nil
+		},
+	}
+
+	wg := wait.ForHTTP("/").
+		WithStartupTimeout(500 * time.Millisecond).
+		WithPollInterval(100 * time.Millisecond)
+
+	{
+		err := wg.WaitUntilReady(context.Background(), target)
+		if err == nil {
+			t.Fatal("no error")
+		}
+
+		expected := "container crashed with out-of-memory (OOMKilled)"
+		if err.Error() != expected {
+			t.Fatalf("expected %q, got %q", expected, err.Error())
+		}
+	}
+}
+
+func TestHttpStrategyFailsWhileRequestSendingDueToExitedContainer(t *testing.T) {
+	target := &wait.MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			return "49152", nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				Status:   "exited",
+				ExitCode: 1,
+			}, nil
+		},
+	}
+
+	wg := wait.ForHTTP("/").
+		WithStartupTimeout(500 * time.Millisecond).
+		WithPollInterval(100 * time.Millisecond)
+
+	{
+		err := wg.WaitUntilReady(context.Background(), target)
+		if err == nil {
+			t.Fatal("no error")
+		}
+
+		expected := "container exited with code 1"
+		if err.Error() != expected {
+			t.Fatalf("expected %q, got %q", expected, err.Error())
+		}
+	}
+}
+
+func TestHttpStrategyFailsWhileRequestSendingDueToUnexpectedContainerStatus(t *testing.T) {
+	target := &wait.MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			return "49152", nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				Status: "dead",
+			}, nil
+		},
+	}
+
+	wg := wait.ForHTTP("/").
+		WithStartupTimeout(500 * time.Millisecond).
+		WithPollInterval(100 * time.Millisecond)
+
+	{
+		err := wg.WaitUntilReady(context.Background(), target)
+		if err == nil {
+			t.Fatal("no error")
+		}
+
+		expected := "unexpected container status \"dead\""
+		if err.Error() != expected {
+			t.Fatalf("expected %q, got %q", expected, err.Error())
+		}
 	}
 }
