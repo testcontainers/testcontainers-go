@@ -81,6 +81,23 @@ you can pass the bucket name.
 [Adding a new bucket](../../modules/couchbase/couchbase_test.go) inside_block:withBucket
 <!--/codeinclude-->
 
+It's possible to customize a newly created bucket, using the following options:
+
+- `WithQuota`: sets the bucket quota in megabytes. The minimum value is 100 MB.
+- `WithReplicas`: sets the number of replicas for this bucket. The minimum value is 0 and the maximum value is 3.
+- `WithFlushEnabled`: sets whether the bucket should be flushed when the container is stopped.
+- `WithPrimaryIndex`: sets whether the primary index should be created for this bucket.
+
+```go
+bucket := NewBucket(
+	"bucketName",
+	WithQuota(100),
+	WithReplicas(1),
+	WithFlushEnabled(true),
+	WithPrimaryIndex(true),
+)
+```
+
 #### Index Storage
 
 It's possible to set the storage mode to be used for all global secondary indexes in the cluster.
