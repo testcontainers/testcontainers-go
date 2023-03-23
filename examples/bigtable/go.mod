@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/bigtable v1.18.1
 	github.com/testcontainers/testcontainers-go v0.19.0
 	google.golang.org/api v0.114.0
-	google.golang.org/grpc v1.53.0
+	google.golang.org/grpc v1.54.0
 	gotest.tools/gotestsum v1.9.0
 )
 
