@@ -1,4 +1,4 @@
-name: Postgres example pipeline
+name: Postgres module pipeline
 
 on: [push, pull_request]
 
@@ -24,15 +24,15 @@ jobs:
         uses: actions/checkout@v3
 
       - name: modVerify
-        working-directory: ./examples/postgres
+        working-directory: ./modules/postgres
         run: go mod verify
 
       - name: modTidy
-        working-directory: ./examples/postgres
+        working-directory: ./modules/postgres
         run: make tools-tidy
 
       - name: gotestsum
-        working-directory: ./examples/postgres
+        working-directory: ./modules/postgres
         run: make test-unit
 
       - name: Run checker

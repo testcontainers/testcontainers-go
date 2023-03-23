@@ -1,4 +1,4 @@
-module github.com/testcontainers/testcontainers-go/examples/postgres
+module github.com/testcontainers/testcontainers-go/modules/postgres
 
 go 1.19
 
