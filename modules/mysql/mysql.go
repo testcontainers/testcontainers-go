@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"path/filepath"
 	"strings"
 )
 
@@ -12,6 +13,7 @@ const rootUser = "root"
 const defaultUser = "test"
 const defaultPassword = "test"
 const defaultDatabaseName = "test"
+const defaultImage = "mysql:8"
 
 // MySQLContainer represents the MySQL container type used in the module
 type MySQLContainer struct {
@@ -24,9 +26,9 @@ type MySQLContainer struct {
 type MySQLContainerOption func(req *testcontainers.ContainerRequest)
 
 // StartContainer creates an instance of the MySQL container type
-func StartContainer(ctx context.Context, image string, opts ...MySQLContainerOption) (*MySQLContainer, error) {
+func StartContainer(ctx context.Context, opts ...MySQLContainerOption) (*MySQLContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        image,
+		Image:        defaultImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MYSQL_USER":     defaultUser,
@@ -87,4 +89,59 @@ func (c *MySQLContainer) Password() string {
 
 func (c *MySQLContainer) Database() string {
 	return c.database
+}
+
+// WithImage sets the image to be used for the mysql container
+func WithImage(image string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		if image == "" {
+			image = "mysql:8"
+		}
+
+		req.Image = image
+	}
+}
+
+func WithUsername(username string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Env["MYSQL_USER"] = username
+	}
+}
+
+func WithPassword(password string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Env["MYSQL_PASSWORD"] = password
+	}
+}
+
+func WithDatabase(database string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Env["MYSQL_DATABASE"] = database
+	}
+}
+
+func WithConfigFile(configFile string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		cf := testcontainers.ContainerFile{
+			HostFilePath:      configFile,
+			ContainerFilePath: "/etc/mysql/conf.d/my.cnf",
+			FileMode:          0755,
+		}
+		req.Files = append(req.Files, cf)
+	}
+}
+
+func WithScripts(scripts ...string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		var initScripts []testcontainers.ContainerFile
+		for _, script := range scripts {
+			cf := testcontainers.ContainerFile{
+				HostFilePath:      script,
+				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
+				FileMode:          0755,
+			}
+			initScripts = append(initScripts, cf)
+		}
+		req.Files = append(req.Files, initScripts...)
+	}
 }
