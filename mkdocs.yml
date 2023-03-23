@@ -55,6 +55,7 @@ nav:
         - modules/localstack.md
         - modules/postgres.md
         - modules/pulsar.md
+        - modules/vault.md
     - Examples:
         - examples/index.md
         - examples/bigtable.md
