@@ -111,8 +111,11 @@ It's possible to set the storage mode to be used for all global secondary indexe
 
 #### Services
 
-When running the Enterprise Edition of Couchbase Server, you can enable or disable services. Only for that case, the module provides two functions to enable or disable services:
-`WithAnalyticsService` and `WithEventingService`. Else, it will throw an error and the container won't be created.
+By default, the container will start with the following services: `kv`, `n1ql`, `fts` and `index`.
+
+!!!warning
+	When running the Enterprise Edition of Couchbase Server, the module provides two functions to enable or disable services:
+	`WithAnalyticsService` and `WithEventingService`. Else, it will throw an error and the container won't be created.
 
 <!--codeinclude-->
 [Docker images](../../modules/couchbase/couchbase_test.go) inside_block:dockerImages
