@@ -17,7 +17,7 @@ type consulContainer struct {
 // startContainer creates an instance of the consul container type
 func startContainer(ctx context.Context) (*consulContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "consul:latest",
+		Image:        "hashicorp/consul:latest",
 		ExposedPorts: []string{"8500/tcp", "8600/udp"},
 		Name:         "badger",
 		Cmd:          []string{"agent", "-server", "-ui", "-node=server-1", "-bootstrap-expect=1", "-client=0.0.0.0"},
