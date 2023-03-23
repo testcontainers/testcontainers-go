@@ -30,6 +30,10 @@ It takes a context and zero or more Option values to configure the container.
 <!--/codeinclude-->
 
 ### Use client library to read data from Vault container:
+Add Vault Client module to your Go dependencies:
+```
+go get -u github.com/hashicorp/vault-client-go
+```
 <!--codeinclude-->
 [Use library to read data](../../modules/vault/vault_test.go) inside_block:TestVaultGetSecretPathWithClient
 <!--/codeinclude-->
@@ -39,7 +43,11 @@ It takes a context and zero or more Option values to configure the container.
 You can set below options to create Vault container.
 
 ### Image 
-If you need to set a different Vault image, you can use the `WithImageName`. Default image name is `vault:1.13.0`
+If you need to set a different Vault image, you can use the `WithImageName`. 
+
+!!!info
+    Default image name is `hashicorp/vault:1.13.0`.
+
 <!--codeinclude-->
 [Set image name](../../modules/vault/vault_test.go) inside_block:WithImageName
 <!--/codeinclude-->
@@ -48,12 +56,6 @@ If you need to set a different Vault image, you can use the `WithImageName`. Def
 If you need to add token authentication, you can use the `WithToken`.
 <!--codeinclude-->
 [Add token authentication](../../modules/vault/vault_test.go) inside_block:WithToken
-<!--/codeinclude-->
-
-### Log Level
-If you need to change log level, you can use the `WithLogLevel`. Default log level is `info`
-<!--codeinclude-->
-[Change log level](../../modules/vault/vault_test.go) inside_block:WithLogLevel
 <!--/codeinclude-->
 
 ### Command

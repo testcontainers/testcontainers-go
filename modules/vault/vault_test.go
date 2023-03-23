@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 	var err error
 	opts := []testcontainervault.ContainerOptions{
 		// WithImageName {
-		testcontainervault.WithImageName("vault:1.13.0"),
+		testcontainervault.WithImageName("hashicorp/vault:1.13.0"),
 		// }
 		// WithToken {
 		testcontainervault.WithToken(token),
