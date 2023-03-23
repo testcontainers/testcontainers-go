@@ -80,14 +80,6 @@ func WithInitialDatabase(user string, password string, dbName string) func(req *
 	}
 }
 
-// WithInitDBArgs sets the initdb arguments for the postgres container.
-// The value is a space separated string of arguments as postgres initdb would expect them
-func WithInitDBArgs(args string) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
-		req.Env["POSTGRES_INITDB_ARGS"] = args
-	}
-}
-
 // WithInitScripts sets the init scripts to be run when the container starts
 func WithInitScripts(scripts ...string) func(req *testcontainers.ContainerRequest) {
 	return func(req *testcontainers.ContainerRequest) {

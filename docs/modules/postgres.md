@@ -60,11 +60,6 @@ initialization before starting the service.
 [Init script content](../../modules/postgres/testresources/init-user-db.sh)
 <!--/codeinclude-->
 
-### InitDB arguments
-
-This optional function can be used to send arguments to postgres initdb. The value is a space separated string of arguments as postgres initdb would expect them.
-This is useful for adding functionality like data page checksums: `WithInitDBArgs("--data-checksums")`.
-
 ### Wait Strategies
 
 Given you could need to wait for different conditions, in particular using a wait.ForSQL strategy,
