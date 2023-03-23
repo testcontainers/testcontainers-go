@@ -71,11 +71,11 @@ func WithImage(image string) func(req *testcontainers.ContainerRequest) {
 	}
 }
 
-// WithInitialDatabase sets the initial database to be created when the container starts, including the user and password
-func WithInitialDatabase(user string, password string, dbName string) func(req *testcontainers.ContainerRequest) {
+// WithDatabase sets the initial database to be created when the container starts
+// It can be used to define a different name for the default database that is created when the image is first started.
+// If it is not specified, then the value of WithUser will be used.
+func WithDatabase(dbName string) func(req *testcontainers.ContainerRequest) {
 	return func(req *testcontainers.ContainerRequest) {
-		req.Env["POSTGRES_USER"] = user
-		req.Env["POSTGRES_PASSWORD"] = password
 		req.Env["POSTGRES_DB"] = dbName
 	}
 }
@@ -93,6 +93,29 @@ func WithInitScripts(scripts ...string) func(req *testcontainers.ContainerReques
 			initScripts = append(initScripts, cf)
 		}
 		req.Files = append(req.Files, initScripts...)
+	}
+}
+
+// WithPassword sets the initial password of the user to be created when the container starts
+// It is required for you to use the PostgreSQL image. It must not be empty or undefined.
+// This environment variable sets the superuser password for PostgreSQL.
+func WithPassword(password string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Env["POSTGRES_PASSWORD"] = password
+	}
+}
+
+// WithUsername sets the initial username to be created when the container starts
+// It is used in conjunction with WithPassword to set a user and its password.
+// It will create the specified user with superuser power and a database with the same name.
+// If it is not specified, then the default user of postgres will be used.
+func WithUsername(user string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		if user == "" {
+			user = defaultUser
+		}
+
+		req.Env["POSTGRES_USER"] = user
 	}
 }
 

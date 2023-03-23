@@ -54,7 +54,9 @@ func TestPostgres(t *testing.T) {
 			// postgresCreateContainer {
 			container, err := StartContainer(ctx,
 				WithImage(tt.image),
-				WithInitialDatabase(user, password, dbname),
+				WithDatabase(dbname),
+				WithUsername(user),
+				WithPassword(password),
 				WithWaitStrategy(tt.wait),
 			)
 			if err != nil {
@@ -101,7 +103,13 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 
 	t.Run("default query", func(t *testing.T) {
 		// withInitialDatabase {
-		container, err := StartContainer(ctx, WithInitialDatabase("postgres", "password", dbname), WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)))
+		container, err := StartContainer(
+			ctx,
+			WithDatabase(dbname),
+			WithUsername(user),
+			WithPassword(password),
+			WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
+		)
 		require.NoError(t, err)
 		require.NotNil(t, container)
 		// }
@@ -110,7 +118,9 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 		// withWaitStrategy {
 		container, err := StartContainer(
 			ctx,
-			WithInitialDatabase(user, password, dbname),
+			WithDatabase(dbname),
+			WithUsername(user),
+			WithPassword(password),
 			WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
 		)
 		require.NoError(t, err)
@@ -120,7 +130,9 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	t.Run("custom bad query", func(t *testing.T) {
 		container, err := StartContainer(
 			ctx,
-			WithInitialDatabase(user, password, dbname),
+			WithDatabase(dbname),
+			WithUsername(user),
+			WithPassword(password),
 			WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
 		)
 		require.Error(t, err)
@@ -135,7 +147,9 @@ func TestWithInitScript(t *testing.T) {
 	container, err := StartContainer(ctx,
 		WithImage("docker.io/postgres:15.2-alpine"),
 		WithInitScripts(filepath.Join("testresources", "init-user-db.sh")),
-		WithInitialDatabase(user, password, dbname),
+		WithDatabase(dbname),
+		WithUsername(user),
+		WithPassword(password),
 		WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
 	)
 	if err != nil {
