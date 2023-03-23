@@ -21,7 +21,7 @@ type MySQLContainer struct {
 	database string
 }
 
-type PostgresContainerOption func(req *testcontainers.ContainerRequest)
+type MySQLContainerOption func(req *testcontainers.ContainerRequest)
 
 // StartContainer creates an instance of the MySQL container type
 func StartContainer(ctx context.Context, image string, opts ...PostgresContainerOption) (*MySQLContainer, error) {
