@@ -122,6 +122,7 @@ func testBucketUsage(t *testing.T, bucket *gocb.Bucket) {
 	}
 }
 
+// connectToCluster {
 func connectCluster(ctx context.Context, container *tccouchbase.CouchbaseContainer) (*gocb.Cluster, error) {
 	connectionString, err := container.ConnectionString(ctx)
 	if err != nil {
@@ -133,3 +134,5 @@ func connectCluster(ctx context.Context, container *tccouchbase.CouchbaseContain
 		Password: container.Password(),
 	})
 }
+
+// }
