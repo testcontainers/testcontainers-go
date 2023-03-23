@@ -9,19 +9,24 @@ import (
 	tccouchbase "github.com/testcontainers/testcontainers-go/modules/couchbase"
 )
 
+// dockerImages {
 const (
 	enterpriseEdition = "couchbase:enterprise-7.1.3"
 	communityEdition  = "couchbase:community-7.1.1"
 )
 
+// }
+
 func TestCouchbaseWithCommunityContainer(t *testing.T) {
 	ctx := context.Background()
 
+	// withBucket {
 	bucketName := "testBucket"
 	container, err := tccouchbase.StartContainer(ctx, tccouchbase.WithImageName(communityEdition), tccouchbase.WithBucket(tccouchbase.NewBucket(bucketName)))
 	if err != nil {
 		t.Fatal(err)
 	}
+	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {

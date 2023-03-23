@@ -5,6 +5,7 @@ package couchbase
 // using the Community Edition, the only value allowed is forestdb.
 type indexStorageMode string
 
+// storageTypes {
 const (
 	// MemoryOptimized sets the cluster-wide index storage mode to use memory optimized global
 	// secondary indexes which can perform index maintenance and index scan faster at in-memory speeds.
@@ -20,3 +21,5 @@ const (
 	// for the community edition.
 	ForestDB indexStorageMode = "forestdb"
 )
+
+// }

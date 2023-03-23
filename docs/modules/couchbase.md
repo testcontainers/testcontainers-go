@@ -38,3 +38,66 @@ cluster, err := gocb.Connect(connectionString, gocb.ClusterOptions{
 	Password: container.Password(),
 })
 ```
+
+## Module Reference
+
+The Couchbase module exposes one entrypoint function to create the Couchbase container, and this function receives two parameters:
+
+```golang
+func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, error)
+```
+
+- `context.Context`, the Go context.
+- `Option`, a variad argument for passing options.
+
+### Container Options
+
+When starting the Couchbase container, you can pass options in a variadic way to configure it.
+
+#### Image
+
+If you need to set a different Couchbase Docker image, you can use `WithImageName` with a valid Docker image
+for Couchbase. E.g. `WithImageName("docker.io/couchbase:6.5.1")`.
+
+By default, the container will use the following Docker image:
+
+<!--codeinclude-->
+[Default Docker image](../../modules/couchbase/couchbase.go) inside_block:defaultImage
+<!--/codeinclude-->
+
+#### Credentials
+
+If you need to change the default credentials for the admin user, you can use `WithCredentials(user, password)` with a valid username and password.
+
+!!!info
+	The default username is `Administrator` and the default password is `password`.
+
+#### Bucket
+
+When creating a new Couchbase container, you can create one or more buckets. The module provides a `NewBucket` function to create a new bucket, where
+you can pass the bucket name.
+
+<!--codeinclude-->
+[Adding a new bucket](../../modules/couchbase/couchbase_test.go) inside_block:withBucket
+<!--/codeinclude-->
+
+#### Index Storage
+
+It's possible to set the storage mode to be used for all global secondary indexes in the cluster.
+
+!!!warning
+	Please note: `plasma` and `memory optimized` are options in the **Enterprise Edition** of Couchbase Server. If you are using the Community Edition, the only value allowed is `forestdb`.
+
+<!--codeinclude-->
+[Storage types](../../modules/couchbase/storage_mode.go) inside_block:storageTypes
+<!--/codeinclude-->
+
+#### Services
+
+When running the Enterprise Edition of Couchbase Server, you can enable or disable services. Only for that case, the module provides two functions to enable or disable services:
+`WithAnalyticsService` and `WithEventingService`. Else, it will throw an error and the container won't be created.
+
+<!--codeinclude-->
+[Docker images](../../modules/couchbase/couchbase_test.go) inside_block:dockerImages
+<!--/codeinclude-->
+
