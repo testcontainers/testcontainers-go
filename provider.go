@@ -84,7 +84,7 @@ type ContainerProvider interface {
 	ReuseOrCreateContainer(context.Context, ContainerRequest) (Container, error) // reuses a container if it exists or creates a container without starting
 	RunContainer(context.Context, ContainerRequest) (Container, error)           // create a container and start it
 	Health(context.Context) error
-	Config() TestContainersConfig
+	Config() TestcontainersConfig
 }
 
 // GetProvider provides the provider implementation for a certain type
@@ -128,14 +128,16 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		provOpts[idx].ApplyDockerTo(o)
 	}
 
-	c, host, tcConfig, err := NewDockerClient()
+	c, err := NewDockerClient()
 	if err != nil {
 		return nil, err
 	}
 
+	tcConfig := ReadConfig()
+
 	p := &DockerProvider{
 		DockerProviderOptions: o,
-		host:                  host,
+		host:                  tcConfig.Host,
 		client:                c,
 		config:                tcConfig,
 	}

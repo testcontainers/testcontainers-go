@@ -1,13 +1,13 @@
-name: Postgres example pipeline
+name: vault module pipeline
 
 on: [push, pull_request]
 
 concurrency:
-  group: "${{ github.workflow }}-${{ github.head_ref || github.sha }}"
+  group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
   cancel-in-progress: true
 
 jobs:
-  test-postgres:
+  test-vault:
     strategy:
       matrix:
         go-version: [1.19.x, 1.x]
@@ -24,15 +24,15 @@ jobs:
         uses: actions/checkout@v3
 
       - name: modVerify
-        working-directory: ./examples/postgres
+        working-directory: ./modules/vault
         run: go mod verify
 
       - name: modTidy
-        working-directory: ./examples/postgres
+        working-directory: ./modules/vault
         run: make tools-tidy
 
       - name: gotestsum
-        working-directory: ./examples/postgres
+        working-directory: ./modules/vault
         run: make test-unit
 
       - name: Run checker
@@ -42,5 +42,5 @@ jobs:
       - name: Test Summary
         uses: test-summary/action@4ee9ece4bca777a38f05c8fc578ac2007fe266f7
         with:
-          paths: "**/TEST-postgres*.xml"
+          paths: "**/TEST-vault*.xml"
         if: always()

@@ -13,6 +13,8 @@ jobs:
         go-version: [1.19.x, 1.x]
         platform: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
+    env:
+      TESTCONTAINERS_RYUK_DISABLED: "false"
     steps:
 
       - name: Set up Go

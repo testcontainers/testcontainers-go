@@ -2,6 +2,8 @@ package wait
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -27,6 +29,28 @@ type StrategyTarget interface {
 	Logs(context.Context) (io.ReadCloser, error)
 	Exec(context.Context, []string, ...exec.ProcessOption) (int, io.Reader, error)
 	State(context.Context) (*types.ContainerState, error)
+}
+
+func checkTarget(ctx context.Context, target StrategyTarget) error {
+	state, err := target.State(ctx)
+	if err != nil {
+		return err
+	}
+
+	return checkState(state)
+}
+
+func checkState(state *types.ContainerState) error {
+	switch {
+	case state.Running:
+		return nil
+	case state.OOMKilled:
+		return errors.New("container crashed with out-of-memory (OOMKilled)")
+	case state.Status == "exited":
+		return fmt.Errorf("container exited with code %d", state.ExitCode)
+	default:
+		return fmt.Errorf("unexpected container status %q", state.Status)
+	}
 }
 
 func defaultStartupTimeout() time.Duration {

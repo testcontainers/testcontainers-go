@@ -24,6 +24,7 @@ func echoHandler(destination *os.File) http.HandlerFunc {
 		l := log.New(destination, "echo ", 0)
 
 		l.Println(echo)
+		_ = destination.Sync()
 
 		rw.WriteHeader(http.StatusAccepted)
 	}

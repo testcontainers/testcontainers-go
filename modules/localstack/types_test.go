@@ -14,7 +14,6 @@ func TestOverrideContainerRequest(t *testing.T) {
 		Env:          map[string]string{},
 		Image:        "foo",
 		ExposedPorts: []string{},
-		SkipReaper:   false,
 		WaitingFor: wait.ForNop(
 			func(ctx context.Context, target wait.StrategyTarget) error {
 				return nil
@@ -37,11 +36,9 @@ func TestOverrideContainerRequest(t *testing.T) {
 			"foo1": {"bar"},
 		},
 		WaitingFor: wait.ForLog("foo"),
-		SkipReaper: true,
 	})(req)
 
 	assert.Equal(t, "BAR", merged.Env["FOO"])
-	assert.True(t, merged.SkipReaper)
 	assert.Equal(t, "bar", merged.Image)
 	assert.Equal(t, []string{"12345/tcp"}, merged.ExposedPorts)
 	assert.Equal(t, []string{"foo1", "bar1"}, merged.Networks)
