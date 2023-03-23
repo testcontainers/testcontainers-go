@@ -1,7 +1,7 @@
 //go:build tools
 // +build tools
 
-// This package contains the tool dependencies of the mysql example.
+// This package contains the tool dependencies of the MySQL module.
 
 package tools
 

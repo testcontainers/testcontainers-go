@@ -43,12 +43,6 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
-      directory: /examples/mysql
-      schedule:
-        interval: monthly
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
       directory: /examples/nginx
       schedule:
         interval: monthly
@@ -98,6 +92,12 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/localstack
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/mysql
       schedule:
         interval: monthly
       open-pull-requests-limit: 3

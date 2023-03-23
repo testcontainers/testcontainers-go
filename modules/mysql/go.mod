@@ -1,4 +1,4 @@
-module github.com/testcontainers/testcontainers-go/examples/mysql
+module github.com/testcontainers/testcontainers-go/modules/mysql
 
 go 1.19
 

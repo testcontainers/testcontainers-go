@@ -53,6 +53,7 @@ nav:
         - modules/index.md
         - modules/couchbase.md
         - modules/localstack.md
+        - modules/mysql.md
         - modules/postgres.md
         - modules/pulsar.md
         - modules/vault.md
@@ -64,7 +65,6 @@ nav:
         - examples/datastore.md
         - examples/firestore.md
         - examples/mongodb.md
-        - examples/mysql.md
         - examples/nginx.md
         - examples/pubsub.md
         - examples/redis.md
