@@ -67,13 +67,6 @@ func WithToken(token string) ContainerOptions {
 	}
 }
 
-// WithLogLevel is an option function that sets the logging level for the Vault
-func WithLogLevel(logLevel LogLevel) ContainerOptions {
-	return func(req *testcontainers.ContainerRequest) {
-		req.Env["VAULT_LOG_LEVEL"] = string(logLevel)
-	}
-}
-
 // WithInitCommand is an option function that adds a set of initialization commands to the Vault's configuration
 func WithInitCommand(commands ...string) ContainerOptions {
 	return func(req *testcontainers.ContainerRequest) {
