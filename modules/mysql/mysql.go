@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"path/filepath"
 	"strings"
 )
 
@@ -17,61 +16,53 @@ const defaultDatabaseName = "test"
 // MySQLContainer represents the MySQL container type used in the module
 type MySQLContainer struct {
 	testcontainers.Container
-	config *Config
+	username string
+	password string
+	database string
 }
 
+type PostgresContainerOption func(req *testcontainers.ContainerRequest)
+
 // StartContainer creates an instance of the MySQL container type
-func StartContainer(ctx context.Context, image string, opts ...Option) (*MySQLContainer, error) {
-	config := &Config{
-		username: defaultUser,
-		password: defaultPassword,
-		database: defaultDatabaseName,
-	}
-
-	for _, opt := range opts {
-		opt(config)
-	}
-
-	mysqlEnv := map[string]string{}
-	mysqlEnv["MYSQL_DATABASE"] = config.database
-	if !strings.EqualFold(rootUser, config.username) {
-		mysqlEnv["MYSQL_USER"] = config.username
-	}
-	if len(config.password) != 0 && config.password != "" {
-		mysqlEnv["MYSQL_PASSWORD"] = config.password
-		mysqlEnv["MYSQL_ROOT_PASSWORD"] = config.password
-	} else if strings.EqualFold(rootUser, config.username) {
-		mysqlEnv["MYSQL_ALLOW_EMPTY_PASSWORD"] = "yes"
-	} else {
-		return nil, fmt.Errorf("empty password can be used only with the root user")
-	}
-
+func StartContainer(ctx context.Context, image string, opts ...PostgresContainerOption) (*MySQLContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        image,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
-		Env:          mysqlEnv,
-		WaitingFor:   wait.ForLog("port: 3306  MySQL Community Server"),
+		Env: map[string]string{
+			"MYSQL_USER":     defaultUser,
+			"MYSQL_PASSWORD": defaultPassword,
+			"MYSQL_DATABASE": defaultDatabaseName,
+		},
+		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server"),
 	}
 
-	if config.configFile != "" {
-		cf := testcontainers.ContainerFile{
-			HostFilePath:      config.configFile,
-			ContainerFilePath: "/etc/mysql/conf.d/my.cnf",
-			FileMode:          0755,
+	opts = append(opts, func(req *testcontainers.ContainerRequest) {
+		username := req.Env["MYSQL_USER"]
+		password := req.Env["MYSQL_PASSWORD"]
+		if strings.EqualFold(rootUser, username) {
+			delete(req.Env, "MYSQL_USER")
 		}
-		req.Files = append(req.Files, cf)
+		if len(password) != 0 && password != "" {
+			req.Env["MYSQL_ROOT_PASSWORD"] = password
+		} else if strings.EqualFold(rootUser, username) {
+			req.Env["MYSQL_ALLOW_EMPTY_PASSWORD"] = "yes"
+			delete(req.Env, "MYSQL_PASSWORD")
+		}
+	})
+
+	for _, opt := range opts {
+		opt(&req)
 	}
 
-	var initScripts []testcontainers.ContainerFile
-	for _, script := range config.scripts {
-		cf := testcontainers.ContainerFile{
-			HostFilePath:      script,
-			ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
-			FileMode:          0755,
-		}
-		initScripts = append(initScripts, cf)
+	username, ok := req.Env["MYSQL_USER"]
+	if !ok {
+		username = rootUser
 	}
-	req.Files = append(req.Files, initScripts...)
+	password := req.Env["MYSQL_PASSWORD"]
+
+	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
+		return nil, fmt.Errorf("empty password can be used only with the root user")
+	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -81,17 +72,19 @@ func StartContainer(ctx context.Context, image string, opts ...Option) (*MySQLCo
 		return nil, err
 	}
 
-	return &MySQLContainer{container, config}, nil
+	database := req.Env["MYSQL_DATABASE"]
+
+	return &MySQLContainer{container, username, password, database}, nil
 }
 
 func (c *MySQLContainer) Username() string {
-	return c.config.username
+	return c.username
 }
 
 func (c *MySQLContainer) Password() string {
-	return c.config.password
+	return c.password
 }
 
 func (c *MySQLContainer) Database() string {
-	return c.config.database
+	return c.database
 }

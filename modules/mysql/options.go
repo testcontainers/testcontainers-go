@@ -1,41 +1,50 @@
 package mysql
 
-type Option func(*Config)
+import (
+	"github.com/testcontainers/testcontainers-go"
+	"path/filepath"
+)
 
-type Config struct {
-	username   string
-	password   string
-	database   string
-	configFile string
-	scripts    []string
-}
-
-func WithUsername(username string) Option {
-	return func(config *Config) {
-		config.username = username
+func WithUsername(username string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Env["MYSQL_USER"] = username
 	}
 }
 
-func WithPassword(password string) Option {
-	return func(config *Config) {
-		config.password = password
+func WithPassword(password string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Env["MYSQL_PASSWORD"] = password
 	}
 }
 
-func WithDatabase(database string) Option {
-	return func(config *Config) {
-		config.database = database
+func WithDatabase(database string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Env["MYSQL_DATABASE"] = database
 	}
 }
 
-func WithConfigFile(configFile string) Option {
-	return func(config *Config) {
-		config.configFile = configFile
+func WithConfigFile(configFile string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		cf := testcontainers.ContainerFile{
+			HostFilePath:      configFile,
+			ContainerFilePath: "/etc/mysql/conf.d/my.cnf",
+			FileMode:          0755,
+		}
+		req.Files = append(req.Files, cf)
 	}
 }
 
-func WithScripts(scripts ...string) Option {
-	return func(config *Config) {
-		config.scripts = scripts
+func WithScripts(scripts ...string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		var initScripts []testcontainers.ContainerFile
+		for _, script := range scripts {
+			cf := testcontainers.ContainerFile{
+				HostFilePath:      script,
+				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
+				FileMode:          0755,
+			}
+			initScripts = append(initScripts, cf)
+		}
+		req.Files = append(req.Files, initScripts...)
 	}
 }
