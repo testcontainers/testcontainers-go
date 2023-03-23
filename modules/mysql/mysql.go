@@ -24,7 +24,7 @@ type MySQLContainer struct {
 type MySQLContainerOption func(req *testcontainers.ContainerRequest)
 
 // StartContainer creates an instance of the MySQL container type
-func StartContainer(ctx context.Context, image string, opts ...PostgresContainerOption) (*MySQLContainer, error) {
+func StartContainer(ctx context.Context, image string, opts ...MySQLContainerOption) (*MySQLContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        image,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
