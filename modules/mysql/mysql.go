@@ -79,16 +79,19 @@ func StartContainer(ctx context.Context, opts ...MySQLContainerOption) (*MySQLCo
 	return &MySQLContainer{container, username, password, database}, nil
 }
 
-func (c *MySQLContainer) Username() string {
-	return c.username
-}
+func (c *MySQLContainer) ConnectionString(ctx context.Context) (string, error) {
+	containerPort, err := c.MappedPort(ctx, "3306/tcp")
+	if err != nil {
+		return "", err
+	}
 
-func (c *MySQLContainer) Password() string {
-	return c.password
-}
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", err
+	}
 
-func (c *MySQLContainer) Database() string {
-	return c.database
+	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", c.username, c.password, host, containerPort.Port(), c.database)
+	return connectionString, nil
 }
 
 // WithImage sets the image to be used for the mysql container

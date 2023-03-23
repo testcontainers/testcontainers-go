@@ -3,7 +3,6 @@ package mysql
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -27,14 +26,7 @@ func TestMySQL(t *testing.T) {
 	})
 
 	// perform assertions
-
-	host, _ := container.Host(ctx)
-
-	p, _ := container.MappedPort(ctx, "3306/tcp")
-	port := p.Int()
-
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?tls=skip-verify",
-		container.Username(), container.Password(), host, port, container.Database())
+	connectionString, _ := container.ConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -88,14 +80,7 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 	})
 
 	// perform assertions
-
-	host, _ := container.Host(ctx)
-
-	p, _ := container.MappedPort(ctx, "3306/tcp")
-	port := p.Int()
-
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?tls=skip-verify",
-		container.Username(), container.Password(), host, port, container.Database())
+	connectionString, _ := container.ConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -135,14 +120,7 @@ func TestMySQLWithConfigFile(t *testing.T) {
 	})
 
 	// perform assertions
-
-	host, _ := container.Host(ctx)
-
-	p, _ := container.MappedPort(ctx, "3306/tcp")
-	port := p.Int()
-
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
-		container.Username(), container.Password(), host, port, container.Database())
+	connectionString, _ := container.ConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -188,14 +166,7 @@ func TestMySQLWithScripts(t *testing.T) {
 	})
 
 	// perform assertions
-
-	host, _ := container.Host(ctx)
-
-	p, _ := container.MappedPort(ctx, "3306/tcp")
-	port := p.Int()
-
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?tls=skip-verify",
-		container.Username(), container.Password(), host, port, container.Database())
+	connectionString, _ := container.ConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
