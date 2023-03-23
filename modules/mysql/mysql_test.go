@@ -26,7 +26,7 @@ func TestMySQL(t *testing.T) {
 	})
 
 	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
+	connectionString, _ := container.ConnectionString(ctx, "tls=skip-verify")
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
