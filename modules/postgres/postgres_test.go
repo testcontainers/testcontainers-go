@@ -72,7 +72,8 @@ func TestPostgres(t *testing.T) {
 			})
 
 			// connectionString {
-			connStr, err := container.ConnectionString(ctx, "application_name=test")
+			// explicitly set sslmode=disable because the container is not configured to use TLS
+			connStr, err := container.ConnectionString(ctx, "sslmode=disable", "application_name=test")
 			assert.NoError(t, err)
 			// }
 
@@ -162,7 +163,8 @@ func TestWithConfigFile(t *testing.T) {
 		}
 	})
 
-	connStr, err := container.ConnectionString(ctx)
+	// explicitly set sslmode=disable because the container is not configured to use TLS
+	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
 	assert.NoError(t, err)
 
 	db, err := sql.Open("postgres", connStr)
@@ -194,7 +196,8 @@ func TestWithInitScript(t *testing.T) {
 		}
 	})
 
-	connStr, err := container.ConnectionString(ctx)
+	// explicitly set sslmode=disable because the container is not configured to use TLS
+	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
 	assert.NoError(t, err)
 
 	db, err := sql.Open("postgres", connStr)

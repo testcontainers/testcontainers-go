@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -40,13 +39,10 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string
 
 	extraArgs := ""
 	for _, arg := range args {
-		if strings.HasPrefix(arg, "sslmode=") {
-			continue
-		}
 		extraArgs += " " + arg
 	}
 
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable %s", host, containerPort.Port(), c.user, c.password, c.dbName, extraArgs)
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s %s", host, containerPort.Port(), c.user, c.password, c.dbName, extraArgs)
 	return connStr, nil
 }
 
