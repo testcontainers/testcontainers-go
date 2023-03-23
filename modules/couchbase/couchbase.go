@@ -51,10 +51,12 @@ type CouchbaseContainer struct {
 // StartContainer creates an instance of the Couchbase container type
 func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, error) {
 	config := &Config{
-		enabledServices:  []service{kv, query, search, index},
-		username:         "Administrator",
-		password:         "password",
-		imageName:        "couchbase:6.5.1",
+		enabledServices: []service{kv, query, search, index},
+		username:        "Administrator",
+		password:        "password",
+		// defaultImage {
+		imageName: "couchbase:6.5.1",
+		// }
 		indexStorageMode: MemoryOptimized,
 	}
 
