@@ -12,7 +12,7 @@ import (
 
 const (
 	defaultPort      = "8200"
-	defaultImageName = "vault:1.13.0"
+	defaultImageName = "hashicorp/vault:1.13.0"
 )
 
 // ContainerOptions is a function that can be used to configure the Vault container
