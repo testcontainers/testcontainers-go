@@ -2,7 +2,7 @@
 
 ## Adding this module to your project dependencies
 
-Please run the following command to add the Postgres module to your Go dependencies:
+Please run the following command to add the MySQL module to your Go dependencies:
 
 ```
 go get github.com/testcontainers/testcontainers-go/modules/mysql
