@@ -71,6 +71,23 @@ func WithImage(image string) func(req *testcontainers.ContainerRequest) {
 	}
 }
 
+// WithConfigFile sets the config file to be used for the postgres container
+// It will also set the "config_file" parameter to the path of the config file
+// as a command line argument to the container
+func WithConfigFile(cfg string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		cfgFile := testcontainers.ContainerFile{
+			HostFilePath:      cfg,
+			ContainerFilePath: "/etc/postgresql.conf",
+			FileMode:          0755,
+		}
+
+		req.Files = append(req.Files, cfgFile)
+		req.Cmd = append(req.Cmd, "-c", "config_file=/etc/postgresql.conf")
+	}
+
+}
+
 // WithDatabase sets the initial database to be created when the container starts
 // It can be used to define a different name for the default database that is created when the image is first started.
 // If it is not specified, then the value of WithUser will be used.

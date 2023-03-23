@@ -140,6 +140,37 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	})
 }
 
+func TestWithConfigFile(t *testing.T) {
+	ctx := context.Background()
+
+	// withConfigFile {
+	container, err := StartContainer(ctx,
+		WithConfigFile(filepath.Join("testresources", "my-postgres.conf")),
+		WithDatabase(dbname),
+		WithUsername(user),
+		WithPassword(password),
+		WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// }
+
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	connStr, err := container.ConnectionString(ctx)
+	assert.NoError(t, err)
+
+	db, err := sql.Open("postgres", connStr)
+	assert.NoError(t, err)
+	assert.NotNil(t, db)
+	defer db.Close()
+}
+
 func TestWithInitScript(t *testing.T) {
 	ctx := context.Background()
 
