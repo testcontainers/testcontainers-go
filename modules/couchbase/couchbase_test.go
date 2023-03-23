@@ -117,6 +117,10 @@ func testBucketUsage(t *testing.T, bucket *gocb.Bucket) {
 
 	var resultData map[string]string
 	err = result.Content(&resultData)
+	if err != nil {
+		t.Fatalf("could not asign content: %s", err)
+	}
+
 	if resultData["key"] != "value" {
 		t.Errorf("Expected value to be [%s], got %s", "value", resultData["key"])
 	}
