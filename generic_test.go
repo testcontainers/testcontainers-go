@@ -32,7 +32,7 @@ func TestGenericReusableContainer(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, n1)
 
 	copiedFileName := "hello_copy.sh"
-	err = n1.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
+	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
 	require.NoError(t, err)
 
 	tests := []struct {

@@ -14,7 +14,7 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		Started: true,
 	})
 
-nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/hello_copy.sh", 700)
+nginxC.CopyFileToContainer(ctx, "./testdata/hello.sh", "/hello_copy.sh", 700)
 ```
 
 Or you can add a list of files in the `ContainerRequest` initialization, which can be copied before the container starts:
@@ -29,7 +29,7 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 			WaitingFor:   wait.ForListeningPort("80/tcp"),
 			Files: []ContainerFile{
 				{
-					HostFilePath:      "./testresources/hello.sh",
+					HostFilePath:      "./testdata/hello.sh",
 					ContainerFilePath: "/copies-hello.sh",
 					FileMode:          700,
 				},
@@ -58,8 +58,8 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 			WaitingFor:   wait.ForListeningPort("80/tcp"),
 			Files: []ContainerFile{
 				{
-					HostFilePath:      "./testresources",    // a directory
-					ContainerFilePath: "/tmp/testresources", // important! its parent already exists
+					HostFilePath:      "./testdata",    // a directory
+					ContainerFilePath: "/tmp/testdata", // important! its parent already exists
 					FileMode:          700,
 				},
 			},
@@ -92,8 +92,8 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 			WaitingFor:   wait.ForListeningPort("80/tcp"),
 			Files: []ContainerFile{
 				{
-					HostFilePath:      "./testresources",    // a directory
-					ContainerFilePath: "/tmp/testresources", // important! its parent already exists
+					HostFilePath:      "./testdata",    // a directory
+					ContainerFilePath: "/tmp/testdata", // important! its parent already exists
 					FileMode:          700,
 				},
 			},

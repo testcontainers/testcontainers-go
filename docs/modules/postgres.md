@@ -57,7 +57,7 @@ initialization before starting the service.
 <!--/codeinclude-->
 
 <!--codeinclude-->
-[Init script content](../../modules/postgres/testresources/init-user-db.sh)
+[Init script content](../../modules/postgres/testdata/init-user-db.sh)
 <!--/codeinclude-->
 
 #### Database configuration

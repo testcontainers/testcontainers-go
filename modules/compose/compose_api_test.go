@@ -20,7 +20,7 @@ const (
 	simpleCompose        = "docker-compose-simple.yml"
 	complexCompose       = "docker-compose-complex.yml"
 	composeWithVolume    = "docker-compose-volume.yml"
-	testResourcesPackage = "testresources"
+	testResourcesPackage = "testdata"
 )
 
 func TestDockerComposeAPI(t *testing.T) {
@@ -444,7 +444,7 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 	assert.NoError(t, err, "compose.Down()")
 
 	volumeListFilters := filters.NewArgs()
-	// the "mydata" identifier comes from the "testresources/docker-compose-volume.yml" file
+	// the "mydata" identifier comes from the "testdata/docker-compose-volume.yml" file
 	volumeListFilters.Add("name", fmt.Sprintf("%s_mydata", identifier))
 	volumeList, err := compose.dockerClient.VolumeList(ctx, volumeListFilters)
 	assert.NoError(t, err, "compose.dockerClient.VolumeList()")
