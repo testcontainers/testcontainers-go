@@ -13,10 +13,12 @@ import (
 func TestMySQL(t *testing.T) {
 	ctx := context.Background()
 
+	// createMysqlContainer {
 	container, err := StartContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
