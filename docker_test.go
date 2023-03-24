@@ -1731,7 +1731,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 		{
 			name: "host dir not found",
 			dir: ContainerFile{
-				HostFilePath:      "./testresources123",  // does not exist
+				HostFilePath:      "./testdata123",       // does not exist
 				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
 				FileMode:          700,
 			},
@@ -1741,7 +1741,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			name: "container dir not found",
 			dir: ContainerFile{
 				HostFilePath:      "./" + hostDirName,
-				ContainerFilePath: "/parent-does-not-exist/testresources123", // does not exist
+				ContainerFilePath: "/parent-does-not-exist/testdata123", // does not exist
 				FileMode:          700,
 			},
 			hasError: true,
