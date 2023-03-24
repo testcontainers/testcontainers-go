@@ -17,14 +17,14 @@ import (
 )
 
 const (
-	simpleCompose        = "docker-compose-simple.yml"
-	complexCompose       = "docker-compose-complex.yml"
-	composeWithVolume    = "docker-compose-volume.yml"
-	testResourcesPackage = "testresources"
+	simpleCompose     = "docker-compose-simple.yml"
+	complexCompose    = "docker-compose-complex.yml"
+	composeWithVolume = "docker-compose-volume.yml"
+	testdataPackage   = "testdata"
 )
 
 func TestDockerComposeAPI(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, simpleCompose)
+	path := filepath.Join(testdataPackage, simpleCompose)
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -39,7 +39,7 @@ func TestDockerComposeAPI(t *testing.T) {
 }
 
 func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, simpleCompose)
+	path := filepath.Join(testdataPackage, simpleCompose)
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -65,7 +65,7 @@ func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, complexCompose)
+	path := filepath.Join(testdataPackage, complexCompose)
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -90,7 +90,7 @@ func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithRunServices(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, complexCompose)
+	path := filepath.Join(testdataPackage, complexCompose)
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -117,7 +117,7 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithStopServices(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, complexCompose)
+	path := filepath.Join(testdataPackage, complexCompose)
 	compose, err := NewDockerComposeWith(
 		WithStackFiles(path),
 		WithLogger(testcontainers.TestLogger(t)))
@@ -154,7 +154,7 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitForService(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, simpleCompose)
+	path := filepath.Join(testdataPackage, simpleCompose)
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -181,7 +181,7 @@ func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, simpleCompose)
+	path := filepath.Join(testdataPackage, simpleCompose)
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -208,7 +208,7 @@ func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithContainerName(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, "docker-compose-container-name.yml")
+	path := filepath.Join(testdataPackage, "docker-compose-container-name.yml")
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -235,7 +235,7 @@ func TestDockerComposeAPIWithContainerName(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, "docker-compose-no-exposed-ports.yml")
+	path := filepath.Join(testdataPackage, "docker-compose-no-exposed-ports.yml")
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -259,7 +259,7 @@ func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, complexCompose)
+	path := filepath.Join(testdataPackage, complexCompose)
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -285,7 +285,7 @@ func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, simpleCompose)
+	path := filepath.Join(testdataPackage, simpleCompose)
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -314,7 +314,7 @@ func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIComplex(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, complexCompose)
+	path := filepath.Join(testdataPackage, complexCompose)
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -337,7 +337,7 @@ func TestDockerComposeAPIComplex(t *testing.T) {
 func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 	identifier := testNameHash(t.Name())
 
-	path := filepath.Join(testResourcesPackage, simpleCompose)
+	path := filepath.Join(testdataPackage, simpleCompose)
 
 	compose, err := NewDockerComposeWith(WithStackFiles(path), identifier)
 	assert.NoError(t, err, "NewDockerCompose()")
@@ -371,9 +371,9 @@ func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 
 func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 	composeFiles := ComposeStackFiles{
-		filepath.Join(testResourcesPackage, simpleCompose),
-		filepath.Join(testResourcesPackage, "docker-compose-postgres.yml"),
-		filepath.Join(testResourcesPackage, "docker-compose-override.yml"),
+		filepath.Join(testdataPackage, simpleCompose),
+		filepath.Join(testdataPackage, "docker-compose-postgres.yml"),
+		filepath.Join(testdataPackage, "docker-compose-override.yml"),
 	}
 
 	identifier := testNameHash(t.Name())
@@ -412,7 +412,7 @@ func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithVolume(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, composeWithVolume)
+	path := filepath.Join(testdataPackage, composeWithVolume)
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -428,7 +428,7 @@ func TestDockerComposeAPIWithVolume(t *testing.T) {
 }
 
 func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, composeWithVolume)
+	path := filepath.Join(testdataPackage, composeWithVolume)
 	identifier := uuid.New().String()
 	stackFiles := WithStackFiles(path)
 	compose, err := NewDockerComposeWith(stackFiles, StackIdentifier(identifier))
@@ -444,7 +444,7 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 	assert.NoError(t, err, "compose.Down()")
 
 	volumeListFilters := filters.NewArgs()
-	// the "mydata" identifier comes from the "testresources/docker-compose-volume.yml" file
+	// the "mydata" identifier comes from the "testdata/docker-compose-volume.yml" file
 	volumeListFilters.Add("name", fmt.Sprintf("%s_mydata", identifier))
 	volumeList, err := compose.dockerClient.VolumeList(ctx, volumeListFilters)
 	assert.NoError(t, err, "compose.dockerClient.VolumeList()")
@@ -453,7 +453,7 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithBuild(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, "docker-compose-build.yml")
+	path := filepath.Join(testdataPackage, "docker-compose-build.yml")
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 
@@ -472,7 +472,7 @@ func TestDockerComposeAPIWithBuild(t *testing.T) {
 }
 
 func TestDockerComposeApiWithWaitForShortLifespanService(t *testing.T) {
-	path := filepath.Join(testResourcesPackage, "docker-compose-short-lifespan.yml")
+	path := filepath.Join(testdataPackage, "docker-compose-short-lifespan.yml")
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
 

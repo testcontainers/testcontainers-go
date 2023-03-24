@@ -106,7 +106,7 @@ func TestMySQLWithConfigFile(t *testing.T) {
 
 	// withConfigFile {
 	container, err := StartContainer(ctx, WithImage("mysql:5.6.51"),
-		WithConfigFile("./testresources/my.cnf"))
+		WithConfigFile("./testdata/my.cnf"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func TestMySQLWithScripts(t *testing.T) {
 
 	// withScripts {
 	container, err := StartContainer(ctx,
-		WithScripts(filepath.Join("testresources", "schema.sql")))
+		WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
 	}

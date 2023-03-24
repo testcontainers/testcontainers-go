@@ -24,7 +24,7 @@ func Test_IsDir(t *testing.T) {
 
 	tests := []cases{
 		{
-			filepath: "testresources",
+			filepath: "testdata",
 			expected: true,
 			err:      nil,
 		},
@@ -54,7 +54,7 @@ func Test_IsDir(t *testing.T) {
 }
 
 func Test_TarDir(t *testing.T) {
-	originalSrc := filepath.Join(".", "testresources")
+	originalSrc := filepath.Join(".", "testdata")
 	tests := []struct {
 		abs bool
 	}{
@@ -101,7 +101,7 @@ func Test_TarDir(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				untarBytes, err := os.ReadFile(filepath.Join(tmpDir, "testresources", srcFile.Name()))
+				untarBytes, err := os.ReadFile(filepath.Join(tmpDir, "testdata", srcFile.Name()))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -112,7 +112,7 @@ func Test_TarDir(t *testing.T) {
 }
 
 func Test_TarFile(t *testing.T) {
-	b, err := os.ReadFile(filepath.Join(".", "testresources", "Dockerfile"))
+	b, err := os.ReadFile(filepath.Join(".", "testdata", "Dockerfile"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -18,8 +18,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var complexComposeTestFile string = filepath.Join("testresources", "docker-compose-complex.yml")
-var simpleComposeTestFile string = filepath.Join("testresources", "docker-compose-simple.yml")
+var complexComposeTestFile string = filepath.Join("testdata", "docker-compose-complex.yml")
+var simpleComposeTestFile string = filepath.Join("testdata", "docker-compose-simple.yml")
 
 func ExampleNewLocalDockerCompose() {
 	path := "/path/to/docker-compose.yml"
@@ -188,7 +188,7 @@ func TestDockerComposeWithWaitForService(t *testing.T) {
 }
 
 func TestDockerComposeWithWaitForShortLifespanService(t *testing.T) {
-	path := filepath.Join("testresources", "docker-compose-short-lifespan.yml")
+	path := filepath.Join("testdata", "docker-compose-short-lifespan.yml")
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -238,7 +238,7 @@ func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 }
 
 func TestDockerComposeWithContainerName(t *testing.T) {
-	path := filepath.Join("testresources", "docker-compose-container-name.yml")
+	path := filepath.Join("testdata", "docker-compose-container-name.yml")
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -263,7 +263,7 @@ func TestDockerComposeWithContainerName(t *testing.T) {
 }
 
 func TestDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
-	path := filepath.Join("testresources", "docker-compose-no-exposed-ports.yml")
+	path := filepath.Join("testdata", "docker-compose-no-exposed-ports.yml")
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -390,8 +390,8 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 	composeFiles := []string{
 		simpleComposeTestFile,
-		filepath.Join("testresources", "docker-compose-postgres.yml"),
-		filepath.Join("testresources", "docker-compose-override.yml"),
+		filepath.Join("testdata", "docker-compose-postgres.yml"),
+		filepath.Join("testdata", "docker-compose-override.yml"),
 	}
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -426,7 +426,7 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 }
 
 func TestLocalDockerComposeWithVolume(t *testing.T) {
-	path := filepath.Join("testresources", "docker-compose-volume.yml")
+	path := filepath.Join("testdata", "docker-compose-volume.yml")
 
 	identifier := strings.ToLower(uuid.New().String())
 
