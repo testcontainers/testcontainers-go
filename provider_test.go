@@ -5,8 +5,11 @@ import (
 	"testing"
 )
 
-// TestProviderType_GetProvider_autodetect should NOT be run in parallel as it sets environment variables.
-func TestProviderType_GetProvider_autodetect(t *testing.T) {
+// TestProviderTypeGetProviderAutodetect should NOT be run in parallel as it sets environment variables.
+func TestProviderTypeGetProviderAutodetect(t *testing.T) {
+	const dockerSocket = "unix:///var/run/docker.sock"
+	const podmanSocket = "unix://$XDG_RUNTIME_DIR/podman/podman.sock"
+
 	tests := []struct {
 		name       string
 		tr         ProviderType
@@ -17,38 +20,38 @@ func TestProviderType_GetProvider_autodetect(t *testing.T) {
 		{
 			name:       "default provider without podman.socket",
 			tr:         ProviderDefault,
-			DockerHost: "unix:///var/run/docker.sock",
+			DockerHost: dockerSocket,
 			want:       Bridge,
 		},
 		{
 			name:       "default provider with podman.socket",
 			tr:         ProviderDefault,
-			DockerHost: "unix://$XDG_RUNTIME_DIR/podman/podman.sock",
+			DockerHost: podmanSocket,
 			want:       Podman,
 		},
 		{
 			name:       "docker provider without podman.socket",
 			tr:         ProviderDocker,
-			DockerHost: "unix:///var/run/docker.sock",
+			DockerHost: dockerSocket,
 			want:       Bridge,
 		},
 		{
 			// Explicitly setting Docker provider should not be overridden by auto-detect
 			name:       "docker provider with podman.socket",
 			tr:         ProviderDocker,
-			DockerHost: "unix://$XDG_RUNTIME_DIR/podman/podman.sock",
+			DockerHost: podmanSocket,
 			want:       Bridge,
 		},
 		{
 			name:       "Podman provider without podman.socket",
 			tr:         ProviderPodman,
-			DockerHost: "unix:///var/run/docker.sock",
+			DockerHost: dockerSocket,
 			want:       Podman,
 		},
 		{
 			name:       "Podman provider with podman.socket",
 			tr:         ProviderPodman,
-			DockerHost: "unix://$XDG_RUNTIME_DIR/podman/podman.sock",
+			DockerHost: podmanSocket,
 			want:       Podman,
 		},
 	}
