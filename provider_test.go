@@ -1,11 +1,9 @@
 package testcontainers
 
 import (
-	"os"
 	"testing"
 )
 
-// TestProviderTypeGetProviderAutodetect should NOT be run in parallel as it sets environment variables.
 func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 	const dockerSocket = "unix:///var/run/docker.sock"
 	const podmanSocket = "unix://$XDG_RUNTIME_DIR/podman/podman.sock"
@@ -57,12 +55,7 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			env := os.Getenv("DOCKER_HOST")
-			defer os.Setenv("DOCKER_HOST", env)
-
-			if err := os.Setenv("DOCKER_HOST", tt.DockerHost); err != nil {
-				t.Fatalf("os.Setenv() = %v", err)
-			}
+			t.Setenv("DOCKER_HOST", tt.DockerHost)
 
 			got, err := tt.tr.GetProvider()
 			if (err != nil) != tt.wantErr {
