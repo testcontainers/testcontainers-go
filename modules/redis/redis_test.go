@@ -19,9 +19,7 @@ func TestIntegrationSetGet(t *testing.T) {
 	ctx := context.Background()
 
 	redisContainer, err := StartContainer(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
@@ -35,9 +33,8 @@ func TestIntegrationSetGet(t *testing.T) {
 	// interface to aid in unit testing and limit lock-in throughtout your
 	// codebase but that's out of scope for this example
 	options, err := redis.ParseURL(uri)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	client := redis.NewClient(options)
 	defer flushRedis(ctx, *client)
 
@@ -56,15 +53,12 @@ func TestIntegrationSetGet(t *testing.T) {
 	value := "Cabbage Biscuits"
 	ttl, _ := time.ParseDuration("2h")
 	err = client.Set(ctx, key, value, ttl).Err()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// Get data
 	savedValue, err := client.Get(ctx, key).Result()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	if savedValue != value {
 		t.Fatalf("Expected value %s. Got %s.", savedValue, value)
 	}
