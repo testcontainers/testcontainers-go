@@ -84,12 +84,12 @@ func WithConfigFile(configFile string) func(req *testcontainers.ContainerRequest
 			return
 		}
 
-		// prepend the command to run the redis server with the config file
+		// prepend the command to run the redis server with the config file, which must be the first argument of the redis server process
 		if req.Cmd[0] == redisServerProcess {
-			// redis server is already set as the first argument, so just append the config file
+			// just insert the config file, then the rest of the args
 			req.Cmd = append([]string{redisServerProcess, defaultConfigFile}, req.Cmd[1:]...)
 		} else if req.Cmd[0] != redisServerProcess {
-			// redis server is not set as the first argument, so prepend it alongside the config file
+			// prepend the redis server and the confif file, then the rest of the args
 			req.Cmd = append([]string{redisServerProcess, defaultConfigFile}, req.Cmd...)
 		}
 	}
@@ -107,22 +107,24 @@ func WithSnapshotting(seconds int, changedKeys int) func(req *testcontainers.Con
 		seconds = 1
 	}
 
-	args := []string{"--save", fmt.Sprintf("%d", seconds), fmt.Sprintf("%d", changedKeys)}
-
 	return func(req *testcontainers.ContainerRequest) {
-		if len(req.Cmd) == 0 {
-			req.Cmd = append([]string{redisServerProcess}, args...)
-			return
-		}
+		processRedisServerArgs(req, []string{"--save", fmt.Sprintf("%d", seconds), fmt.Sprintf("%d", changedKeys)})
+	}
+}
 
-		// prepend the command to run the redis server with the config file
-		if req.Cmd[0] == redisServerProcess {
-			// redis server is already set as the first argument, so just append the config file
-			req.Cmd = append(req.Cmd, args...)
-		} else if req.Cmd[0] != redisServerProcess {
-			// redis server is not set as the first argument, so prepend it alongside the config file
-			req.Cmd = append([]string{redisServerProcess}, req.Cmd...)
-			req.Cmd = append(req.Cmd, args...)
-		}
+func processRedisServerArgs(req *testcontainers.ContainerRequest, args []string) {
+	if len(req.Cmd) == 0 {
+		req.Cmd = append([]string{redisServerProcess}, args...)
+		return
+	}
+
+	// prepend the command to run the redis server with the config file
+	if req.Cmd[0] == redisServerProcess {
+		// redis server is already set as the first argument, so just append the config file
+		req.Cmd = append(req.Cmd, args...)
+	} else if req.Cmd[0] != redisServerProcess {
+		// redis server is not set as the first argument, so prepend it alongside the config file
+		req.Cmd = append([]string{redisServerProcess}, req.Cmd...)
+		req.Cmd = append(req.Cmd, args...)
 	}
 }
