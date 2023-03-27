@@ -16,13 +16,60 @@ go get github.com/testcontainers/testcontainers-go/modules/redis
 
 ## Module Reference
 
-The Redis module exposes one entrypoint function to create the container, and this function receives one parameter:
+The Redis module exposes one entrypoint function to create the containerr, and this function receives two parameters:
 
 ```golang
-func StartContainer(ctx context.Context) (*RedisContainer, error) {
+func StartContainer(ctx context.Context, opts ...RedisContainerOption) (*RedisContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `RedisContainerOption`, a variad argument for passing options.
+
+### Container Options
+
+When starting the Redis container, you can pass options in a variadic way to configure it.
+
+!!!tip
+    You can find all the available configuration and environment variables for the Redis Docker image on [Docker Hub](https://hub.docker.com/_/redis).
+
+#### Image
+
+If you need to set a different Redis Docker image, you can use `WithImage` with a valid Docker image
+for Postgres. E.g. `WithImage("docker.io/redis:7")`.
+
+<!--codeinclude-->
+[Use a different image](../../modules/redis/redis_test.go) inside_block:withImage
+<!--/codeinclude-->
+
+#### Snapshotting
+
+By default Redis saves snapshots of the dataset on disk, in a binary file called dump.rdb. You can configure Redis to have it save the dataset every N seconds if there are at least M changes in the dataset.
+
+!!!tip
+    Please check [Redis docs on persistence](https://redis.io/docs/management/persistence/#snapshotting) for more information.
+
+<!--codeinclude-->
+[Saving snapshots](../../modules/redis/redis_test.go) inside_block:withSnapshotting
+<!--/codeinclude-->
+
+#### Log Level
+
+By default Redis saves snapshots of the dataset on disk, in a binary file called dump.rdb. You can configure Redis to have it save the dataset every N seconds if there are at least M changes in the dataset.
+
+!!!tip
+    Please check [Redis docs on logging](https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log) for more information.
+
+<!--codeinclude-->
+[Changing the log level](../../modules/redis/redis_test.go) inside_block:withLogLevel 
+<!--/codeinclude-->
+
+#### Redis configuration
+
+In the case you have a custom config file for Redis, it's possible to copy that file into the container before it's started.
+
+<!--codeinclude-->
+[Include custom configuration file](../../modules/redis/redis_test.go) inside_block:withConfigFile
+<!--/codeinclude-->
 
 ### Container Methods
 
