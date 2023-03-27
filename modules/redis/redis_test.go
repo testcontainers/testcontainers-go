@@ -26,7 +26,7 @@ func TestIntegrationSetGet(t *testing.T) {
 	})
 	// }
 
-	assertSetGet(t, ctx, redisContainer)
+	assertSetsGets(t, ctx, redisContainer, 1)
 }
 
 func TestRedisWithConfigFile(t *testing.T) {
@@ -42,7 +42,7 @@ func TestRedisWithConfigFile(t *testing.T) {
 	})
 	// }
 
-	assertSetGet(t, ctx, redisContainer)
+	assertSetsGets(t, ctx, redisContainer, 1)
 }
 
 func TestRedisWithImage(t *testing.T) {
@@ -58,10 +58,26 @@ func TestRedisWithImage(t *testing.T) {
 	})
 	// }
 
-	assertSetGet(t, ctx, redisContainer)
+	assertSetsGets(t, ctx, redisContainer, 1)
 }
 
-func assertSetGet(t *testing.T, ctx context.Context, redisContainer *RedisContainer) {
+func TestRedisWithSnapshotting(t *testing.T) {
+	ctx := context.Background()
+
+	// withSnapshotting {
+	redisContainer, err := StartContainer(ctx, WithSnapshotting(10, 1))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := redisContainer.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+	// }
+
+	assertSetsGets(t, ctx, redisContainer, 10)
+}
+
+func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *RedisContainer, keyCount int) {
 	// connectionString {
 	uri, err := redisContainer.ConnectionString(ctx)
 	require.NoError(t, err)
@@ -86,19 +102,22 @@ func assertSetGet(t *testing.T, ctx context.Context, redisContainer *RedisContai
 		t.Fatalf("received unexpected response from redis: %s", pong)
 	}
 
-	// Set data
-	key := fmt.Sprintf("{user.%s}.favoritefood", uuid.NewString())
-	value := "Cabbage Biscuits"
-	ttl, _ := time.ParseDuration("2h")
-	err = client.Set(ctx, key, value, ttl).Err()
-	require.NoError(t, err)
+	for i := 0; i < keyCount; i++ {
+		// Set data
+		key := fmt.Sprintf("{user.%s}.favoritefood.%d", uuid.NewString(), i)
+		value := fmt.Sprintf("Cabbage Biscuits %d", i)
 
-	// Get data
-	savedValue, err := client.Get(ctx, key).Result()
-	require.NoError(t, err)
+		ttl, _ := time.ParseDuration("2h")
+		err = client.Set(ctx, key, value, ttl).Err()
+		require.NoError(t, err)
 
-	if savedValue != value {
-		t.Fatalf("Expected value %s. Got %s.", savedValue, value)
+		// Get data
+		savedValue, err := client.Get(ctx, key).Result()
+		require.NoError(t, err)
+
+		if savedValue != value {
+			t.Fatalf("Expected value %s. Got %s.", savedValue, value)
+		}
 	}
 }
 
@@ -115,17 +134,17 @@ func TestWithConfigFile(t *testing.T) {
 		{
 			name:         "no existing command",
 			cmds:         []string{},
-			expectedCmds: []string{"redis-server", "/usr/local/redis.conf"},
+			expectedCmds: []string{redisServerProcess, "/usr/local/redis.conf"},
 		},
 		{
 			name:         "existing redis-server command as first argument",
-			cmds:         []string{"redis-server", "a", "b", "c"},
-			expectedCmds: []string{"redis-server", "/usr/local/redis.conf", "a", "b", "c"},
+			cmds:         []string{redisServerProcess, "a", "b", "c"},
+			expectedCmds: []string{redisServerProcess, "/usr/local/redis.conf", "a", "b", "c"},
 		},
 		{
 			name:         "non existing redis-server command",
 			cmds:         []string{"a", "b", "c"},
-			expectedCmds: []string{"redis-server", "/usr/local/redis.conf", "a", "b", "c"},
+			expectedCmds: []string{redisServerProcess, "/usr/local/redis.conf", "a", "b", "c"},
 		},
 	}
 
@@ -136,6 +155,57 @@ func TestWithConfigFile(t *testing.T) {
 			}
 
 			WithConfigFile("redis.conf")(req)
+
+			require.Equal(t, tt.expectedCmds, req.Cmd)
+		})
+	}
+}
+
+func TestWithSnapshotting(t *testing.T) {
+	tests := []struct {
+		name         string
+		cmds         []string
+		expectedCmds []string
+		seconds      int
+		changedKeys  int
+	}{
+		{
+			name:         "no existing command",
+			cmds:         []string{},
+			seconds:      60,
+			changedKeys:  100,
+			expectedCmds: []string{redisServerProcess, "--save", "60", "100"},
+		},
+		{
+			name:         "existing redis-server command as first argument",
+			cmds:         []string{redisServerProcess, "a", "b", "c"},
+			seconds:      60,
+			changedKeys:  100,
+			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--save", "60", "100"},
+		},
+		{
+			name:         "non existing redis-server command",
+			cmds:         []string{"a", "b", "c"},
+			seconds:      60,
+			changedKeys:  100,
+			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--save", "60", "100"},
+		},
+		{
+			name:         "existing redis-server command as first argument",
+			cmds:         []string{redisServerProcess, "a", "b", "c"},
+			seconds:      0,
+			changedKeys:  0,
+			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--save", "1", "1"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := &testcontainers.ContainerRequest{
+				Cmd: tt.cmds,
+			}
+
+			WithSnapshotting(tt.seconds, tt.changedKeys)(req)
 
 			require.Equal(t, tt.expectedCmds, req.Cmd)
 		})
