@@ -8,13 +8,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-type redisContainer struct {
+type RedisContainer struct {
 	testcontainers.Container
 	URI string
 }
 
 // StartContainer creates an instance of the Redis container type
-func StartContainer(ctx context.Context) (*redisContainer, error) {
+func StartContainer(ctx context.Context) (*RedisContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "redis:6",
 		ExposedPorts: []string{"6379/tcp"},
@@ -40,5 +40,5 @@ func StartContainer(ctx context.Context) (*redisContainer, error) {
 
 	uri := fmt.Sprintf("redis://%s:%s", hostIP, mappedPort.Port())
 
-	return &redisContainer{Container: container, URI: uri}, nil
+	return &RedisContainer{Container: container, URI: uri}, nil
 }
