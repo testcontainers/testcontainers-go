@@ -4,7 +4,7 @@ The Testcontainers module for [Neo4j](https://neo4j.com/), the leading graph pla
 
 ## Adding this module to your project dependencies
 
-Please run the following command to add the LocalStack module to your Go dependencies:
+Please run the following command to add the Neo4j module to your Go dependencies:
 
 ```
 go get github.com/testcontainers/testcontainers-go/modules/neo4j
