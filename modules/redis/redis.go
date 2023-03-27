@@ -8,6 +8,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// defaultImage is the default image used for the redis container
+const defaultImage = "docker.io/redis:7"
+
 type RedisContainer struct {
 	testcontainers.Container
 }
@@ -30,7 +33,7 @@ func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
 // StartContainer creates an instance of the Redis container type
 func StartContainer(ctx context.Context, opts ...RedisContainerOption) (*RedisContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "redis:6",
+		Image:        defaultImage,
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("* Ready to accept connections"),
 	}
@@ -52,6 +55,13 @@ func StartContainer(ctx context.Context, opts ...RedisContainerOption) (*RedisCo
 
 // RedisContainerOption is a function that configures the redis container, affecting the container request
 type RedisContainerOption func(req *testcontainers.ContainerRequest)
+
+// WithImage sets the image to be used for the redis container
+func WithImage(image string) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Image = image
+	}
+}
 
 // WithConfigFile sets the config file to be used for the redis container, and sets the command to run the redis server
 // using the passed config file

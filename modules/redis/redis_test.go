@@ -14,10 +14,6 @@ import (
 )
 
 func TestIntegrationSetGet(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test")
-	}
-
 	ctx := context.Background()
 
 	// createRedisContainer {
@@ -34,14 +30,26 @@ func TestIntegrationSetGet(t *testing.T) {
 }
 
 func TestRedisWithConfigFile(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test")
-	}
-
 	ctx := context.Background()
 
 	// withConfigFile {
-	redisContainer, err := StartContainer(ctx, WithConfigFile(filepath.Join("testdata", "redis6.conf")))
+	redisContainer, err := StartContainer(ctx, WithConfigFile(filepath.Join("testdata", "redis7.conf")))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := redisContainer.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+	// }
+
+	assertSetGet(t, ctx, redisContainer)
+}
+
+func TestRedisWithImage(t *testing.T) {
+	ctx := context.Background()
+
+	// withImage {
+	redisContainer, err := StartContainer(ctx, WithImage("docker.io/redis:6"), WithConfigFile(filepath.Join("testdata", "redis6.conf")))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
