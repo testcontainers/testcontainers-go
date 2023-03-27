@@ -80,3 +80,15 @@ This method returns the connection string to connect to the Redis container, usi
 <!--codeinclude-->
 [Get connection string](../../modules/redis/redis_test.go) inside_block:connectionString
 <!--/codeinclude-->
+
+### Redis variants
+
+It's possible to use the Redis container with Redis-Stack. You simply need to update the image name.
+
+<!--codeinclude-->
+[Image for Redis-Stack](../../modules/redis/redis_test.go) inside_block:redisStackImage
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Image for Redis-Stack Server](../../modules/redis/redis_test.go) inside_block:redisStackServerImage
+<!--/codeinclude-->

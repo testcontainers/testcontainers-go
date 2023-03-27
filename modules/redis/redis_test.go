@@ -48,17 +48,47 @@ func TestRedisWithConfigFile(t *testing.T) {
 func TestRedisWithImage(t *testing.T) {
 	ctx := context.Background()
 
-	// withImage {
-	redisContainer, err := StartContainer(ctx, WithImage("docker.io/redis:6"), WithConfigFile(filepath.Join("testdata", "redis6.conf")))
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := redisContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-	// }
+	tests := []struct {
+		name  string
+		image string
+	}{
+		{
+			name:  "Redis6",
+			image: "docker.io/redis:6",
+		},
+		{
+			name:  "Redis7",
+			image: "docker.io/redis:7",
+		},
+		{
+			name: "Redis Stack",
+			// redisStackImage {
+			image: "docker.io/redis/redis-stack:latest",
+			// }
+		},
+		{
+			name: "Redis Stack Server",
+			// redisStackServerImage {
+			image: "docker.io/redis/redis-stack-server:latest",
+			// }
+		},
+	}
 
-	assertSetsGets(t, ctx, redisContainer, 1)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// withImage {
+			redisContainer, err := StartContainer(ctx, WithImage(tt.image), WithConfigFile(filepath.Join("testdata", "redis6.conf")))
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				if err := redisContainer.Terminate(ctx); err != nil {
+					t.Fatalf("failed to terminate container: %s", err)
+				}
+			})
+			// }
+
+			assertSetsGets(t, ctx, redisContainer, 1)
+		})
+	}
 }
 
 func TestRedisWithLogLevel(t *testing.T) {
