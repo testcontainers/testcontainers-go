@@ -1,4 +1,4 @@
-name: Redis example pipeline
+name: Redis module pipeline
 
 on: [push, pull_request]
 
@@ -24,15 +24,15 @@ jobs:
         uses: actions/checkout@v3
 
       - name: modVerify
-        working-directory: ./examples/redis
+        working-directory: ./modules/redis
         run: go mod verify
 
       - name: modTidy
-        working-directory: ./examples/redis
+        working-directory: ./modules/redis
         run: make tools-tidy
 
       - name: gotestsum
-        working-directory: ./examples/redis
+        working-directory: ./modules/redis
         run: make test-unit
 
       - name: Run checker
