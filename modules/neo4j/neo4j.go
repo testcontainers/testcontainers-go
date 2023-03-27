@@ -6,6 +6,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"net/http"
+	"os"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -42,6 +43,8 @@ func StartContainer(ctx context.Context, options ...Option) (*Neo4jContainer, er
 	settings := config{
 		imageCoordinates: fmt.Sprintf("docker.io/%s:%s", defaultImageName, defaultTag),
 		adminPassword:    "password",
+		neo4jSettings:    map[string]string{},
+		stderr:           os.Stderr,
 	}
 	for _, option := range options {
 		option(&settings)
