@@ -1,5 +1,15 @@
 {{ $lower := ToLower }}{{ $title := Title }}# {{ $title }}
 
+## Adding this module to your project dependencies
+
+Please run the following command to add the {{ $title }} module to your Go dependencies:
+
+```
+go get github.com/testcontainers/testcontainers-go/{{ ParentDir }}/{{ $lower }}
+```
+
+## Usage example
+
 {{ codeinclude "<!--codeinclude-->" }}
 [Creating a {{ $title }} container](../../{{ ParentDir }}/{{ $lower }}/{{ $lower }}.go)
 {{ codeinclude "<!--/codeinclude-->" }}
