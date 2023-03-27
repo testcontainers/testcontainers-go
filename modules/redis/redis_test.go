@@ -18,7 +18,7 @@ func TestIntegrationSetGet(t *testing.T) {
 
 	ctx := context.Background()
 
-	redisContainer, err := startContainer(ctx)
+	redisContainer, err := StartContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

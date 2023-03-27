@@ -13,7 +13,8 @@ type redisContainer struct {
 	URI string
 }
 
-func startContainer(ctx context.Context) (*redisContainer, error) {
+// StartContainer creates an instance of the Redis container type
+func StartContainer(ctx context.Context) (*redisContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "redis:6",
 		ExposedPorts: []string{"6379/tcp"},
