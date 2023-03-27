@@ -61,6 +61,22 @@ func TestRedisWithImage(t *testing.T) {
 	assertSetsGets(t, ctx, redisContainer, 1)
 }
 
+func TestRedisWithLogLevel(t *testing.T) {
+	ctx := context.Background()
+
+	// withLogLevel {
+	redisContainer, err := StartContainer(ctx, WithLogLevel(LogLevelVerbose))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := redisContainer.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+	// }
+
+	assertSetsGets(t, ctx, redisContainer, 10)
+}
+
 func TestRedisWithSnapshotting(t *testing.T) {
 	ctx := context.Background()
 
@@ -155,6 +171,42 @@ func TestWithConfigFile(t *testing.T) {
 			}
 
 			WithConfigFile("redis.conf")(req)
+
+			require.Equal(t, tt.expectedCmds, req.Cmd)
+		})
+	}
+}
+
+func TestWithLogLevel(t *testing.T) {
+	tests := []struct {
+		name         string
+		cmds         []string
+		expectedCmds []string
+	}{
+		{
+			name:         "no existing command",
+			cmds:         []string{},
+			expectedCmds: []string{redisServerProcess, "--loglevel", "debug"},
+		},
+		{
+			name:         "existing redis-server command as first argument",
+			cmds:         []string{redisServerProcess, "a", "b", "c"},
+			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--loglevel", "debug"},
+		},
+		{
+			name:         "non existing redis-server command",
+			cmds:         []string{"a", "b", "c"},
+			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--loglevel", "debug"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := &testcontainers.ContainerRequest{
+				Cmd: tt.cmds,
+			}
+
+			WithLogLevel(LogLevelDebug)(req)
 
 			require.Equal(t, tt.expectedCmds, req.Cmd)
 		})

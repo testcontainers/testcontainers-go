@@ -14,6 +14,19 @@ const defaultImage = "docker.io/redis:7"
 // redisServerProcess is the name of the redis server process
 const redisServerProcess = "redis-server"
 
+type LogLevel string
+
+const (
+	// LogLevelDebug is the debug log level
+	LogLevelDebug LogLevel = "debug"
+	// LogLevelVerbose is the verbose log level
+	LogLevelVerbose LogLevel = "verbose"
+	// LogLevelNotice is the notice log level
+	LogLevelNotice LogLevel = "notice"
+	// LogLevelWarning is the warning log level
+	LogLevelWarning LogLevel = "warning"
+)
+
 type RedisContainer struct {
 	testcontainers.Container
 }
@@ -92,6 +105,14 @@ func WithConfigFile(configFile string) func(req *testcontainers.ContainerRequest
 			// prepend the redis server and the confif file, then the rest of the args
 			req.Cmd = append([]string{redisServerProcess, defaultConfigFile}, req.Cmd...)
 		}
+	}
+}
+
+// WithLogLevel sets the log level for the redis server process
+// See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
+func WithLogLevel(level LogLevel) func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.ContainerRequest) {
+		processRedisServerArgs(req, []string{"--loglevel", string(level)})
 	}
 }
 
