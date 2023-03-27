@@ -18,6 +18,7 @@ func TestIntegrationSetGet(t *testing.T) {
 
 	ctx := context.Background()
 
+	// createRedisContainer {
 	redisContainer, err := StartContainer(ctx)
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -25,9 +26,12 @@ func TestIntegrationSetGet(t *testing.T) {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
+	// }
 
+	// connectionString {
 	uri, err := redisContainer.ConnectionString(ctx)
 	require.NoError(t, err)
+	// }
 
 	// You will likely want to wrap your Redis package of choice in an
 	// interface to aid in unit testing and limit lock-in throughtout your
