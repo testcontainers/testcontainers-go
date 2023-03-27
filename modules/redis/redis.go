@@ -10,7 +10,21 @@ import (
 
 type RedisContainer struct {
 	testcontainers.Container
-	URI string
+}
+
+func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
+	mappedPort, err := c.MappedPort(ctx, "6379/tcp")
+	if err != nil {
+		return "", err
+	}
+
+	hostIP, err := c.Host(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	uri := fmt.Sprintf("redis://%s:%s", hostIP, mappedPort.Port())
+	return uri, nil
 }
 
 // StartContainer creates an instance of the Redis container type
@@ -28,17 +42,5 @@ func StartContainer(ctx context.Context) (*RedisContainer, error) {
 		return nil, err
 	}
 
-	mappedPort, err := container.MappedPort(ctx, "6379")
-	if err != nil {
-		return nil, err
-	}
-
-	hostIP, err := container.Host(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	uri := fmt.Sprintf("redis://%s:%s", hostIP, mappedPort.Port())
-
-	return &RedisContainer{Container: container, URI: uri}, nil
+	return &RedisContainer{Container: container}, nil
 }

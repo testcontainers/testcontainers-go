@@ -28,10 +28,13 @@ func TestIntegrationSetGet(t *testing.T) {
 		}
 	})
 
+	uri, err := redisContainer.ConnectionString(ctx)
+	require.NoError(t, err)
+
 	// You will likely want to wrap your Redis package of choice in an
 	// interface to aid in unit testing and limit lock-in throughtout your
 	// codebase but that's out of scope for this example
-	options, err := redis.ParseURL(redisContainer.URI)
+	options, err := redis.ParseURL(uri)
 	if err != nil {
 		t.Fatal(err)
 	}
