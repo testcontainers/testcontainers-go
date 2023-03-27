@@ -1,4 +1,4 @@
-module github.com/testcontainers/testcontainers-go/examples/redis
+module github.com/testcontainers/testcontainers-go/modules/redis
 
 go 1.19
 
