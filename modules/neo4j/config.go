@@ -62,7 +62,7 @@ func WithLabsPlugin(plugins ...LabsPlugin) Option {
 
 // WithNeo4jSetting adds Neo4j a single configuration setting to the container.
 // The setting can be added as in the official Neo4j configuration, the function automatically translates the setting
-// name (e.g. ) into the format required by the Neo4j container.
+// name (e.g. dbms.tx_log.rotation.size) into the format required by the Neo4j container.
 // This function can be called multiple times. A warning is emitted if a key is overwritten.
 // See WithNeo4jSettings to add multiple settings at once
 // Note: credentials must be configured with WithAdminPassword
@@ -74,7 +74,7 @@ func WithNeo4jSetting(key, value string) Option {
 
 // WithNeo4jSettings adds multiple Neo4j configuration settings to the container.
 // The settings can be added as in the official Neo4j configuration, the function automatically translates each setting
-// name (e.g. ) into the format required by the Neo4j container.
+// name (e.g. dbms.tx_log.rotation.size) into the format required by the Neo4j container.
 // This function can be called multiple times. A warning is emitted if a key is overwritten.
 // See WithNeo4jSetting to add a single setting
 // Note: credentials must be configured with WithAdminPassword
