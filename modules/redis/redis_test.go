@@ -3,12 +3,14 @@ package redis
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestIntegrationSetGet(t *testing.T) {
@@ -28,6 +30,30 @@ func TestIntegrationSetGet(t *testing.T) {
 	})
 	// }
 
+	assertSetGet(t, ctx, redisContainer)
+}
+
+func TestRedisWithConfigFile(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	// withConfigFile {
+	redisContainer, err := StartContainer(ctx, WithConfigFile(filepath.Join("testdata", "redis6.conf")))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := redisContainer.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+	// }
+
+	assertSetGet(t, ctx, redisContainer)
+}
+
+func assertSetGet(t *testing.T, ctx context.Context, redisContainer *RedisContainer) {
 	// connectionString {
 	uri, err := redisContainer.ConnectionString(ctx)
 	require.NoError(t, err)
@@ -70,4 +96,40 @@ func TestIntegrationSetGet(t *testing.T) {
 
 func flushRedis(ctx context.Context, client redis.Client) error {
 	return client.FlushAll(ctx).Err()
+}
+
+func TestWithConfigFile(t *testing.T) {
+	tests := []struct {
+		name         string
+		cmds         []string
+		expectedCmds []string
+	}{
+		{
+			name:         "no existing command",
+			cmds:         []string{},
+			expectedCmds: []string{"redis-server", "/usr/local/redis.conf"},
+		},
+		{
+			name:         "existing redis-server command as first argument",
+			cmds:         []string{"redis-server", "a", "b", "c"},
+			expectedCmds: []string{"redis-server", "/usr/local/redis.conf", "a", "b", "c"},
+		},
+		{
+			name:         "non existing redis-server command",
+			cmds:         []string{"a", "b", "c"},
+			expectedCmds: []string{"redis-server", "/usr/local/redis.conf", "a", "b", "c"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := &testcontainers.ContainerRequest{
+				Cmd: tt.cmds,
+			}
+
+			WithConfigFile("redis.conf")(req)
+
+			require.Equal(t, tt.expectedCmds, req.Cmd)
+		})
+	}
 }
