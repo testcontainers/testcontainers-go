@@ -413,12 +413,15 @@ func assertExampleDocContent(t *testing.T, example Example, exampleDocFile strin
 
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "# "+title)
-	assert.Equal(t, data[2], "<!--codeinclude-->")
-	assert.Equal(t, data[3], "[Creating a "+title+" container](../../"+example.ParentDir()+"/"+lower+"/"+lower+".go)")
-	assert.Equal(t, data[4], "<!--/codeinclude-->")
-	assert.Equal(t, data[6], "<!--codeinclude-->")
-	assert.Equal(t, data[7], "[Test for a "+title+" container](../../"+example.ParentDir()+"/"+lower+"/"+lower+"_test.go)")
-	assert.Equal(t, data[8], "<!--/codeinclude-->")
+	assert.Equal(t, data[2], "## Adding this module to your project dependencies")
+	assert.Equal(t, data[4], "Please run the following command to add the "+title+" module to your Go dependencies:")
+	assert.Equal(t, data[7], "go get github.com/testcontainers/testcontainers-go/"+example.ParentDir()+"/"+lower)
+	assert.Equal(t, data[12], "<!--codeinclude-->")
+	assert.Equal(t, data[13], "[Creating a "+title+" container](../../"+example.ParentDir()+"/"+lower+"/"+lower+".go)")
+	assert.Equal(t, data[14], "<!--/codeinclude-->")
+	assert.Equal(t, data[16], "<!--codeinclude-->")
+	assert.Equal(t, data[17], "[Test for a "+title+" container](../../"+example.ParentDir()+"/"+lower+"/"+lower+"_test.go)")
+	assert.Equal(t, data[18], "<!--/codeinclude-->")
 }
 
 // assert content example test
