@@ -39,7 +39,7 @@ The `ProviderPodman` configures the `DockerProvider` with the correct default ne
 
 ## Podman socket activation
 
-The reaper container needs to connect to the docker daemon to reape containers, so the podman socket service must be started:
+The reaper container needs to connect to the docker daemon to reap containers, so the podman socket service must be started:
 ```shell
 > systemctl --user start podman.socket
 ```
