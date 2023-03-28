@@ -149,6 +149,18 @@ func CustomizeContainerRequest(r ContainerRequest) CustomizeContainerRequestOpti
 	}
 }
 
+// WithWaitStrategy sets the wait strategy for a container, using 1 minute as deadline
+func WithWaitStrategy(strategies ...wait.Strategy) func(req *ContainerRequest) {
+	return WithWaitStrategyAndDuration(1*time.Minute, strategies...)
+}
+
+// WithWaitStrategy sets the wait strategy for a container, including deadline
+func WithWaitStrategyAndDuration(deadline time.Duration, strategies ...wait.Strategy) func(req *ContainerRequest) {
+	return func(req *ContainerRequest) {
+		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
+	}
+}
+
 // WithImageName sets the reaper image name
 func WithImageName(imageName string) ContainerOption {
 	return func(o *containerOptions) {
