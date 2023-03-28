@@ -1,8 +1,10 @@
-package neo4j
+package neo4j_test
 
 import (
 	"context"
+	"fmt"
 	neo "github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 	"io"
 	"strings"
 	"testing"
@@ -63,9 +65,9 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	ctx := context.Background()
 
 	outer.Run("ignores auth setting outside WithAdminPassword", func(t *testing.T) {
-		container, err := StartContainer(ctx,
-			WithAdminPassword(testPassword),
-			WithNeo4jSetting("AUTH", "neo4j/thisisgonnabeignored"),
+		container, err := neo4j.StartContainer(ctx,
+			neo4j.WithAdminPassword(testPassword),
+			neo4j.WithNeo4jSetting("AUTH", "neo4j/thisisgonnabeignored"),
 		)
 		if err != nil {
 			t.Fatalf("expected env to successfully run but did not: %s", err)
@@ -84,15 +86,13 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	})
 
 	outer.Run("warns about overwrites of setting keys", func(t *testing.T) {
-		fakeStderr := strings.Builder{}
-		container, err := StartContainer(ctx,
-			func(c *config) { // needs to go before WithNeo4jSetting and WithNeo4jSettings
-				c.stderr = &fakeStderr
-			},
-			WithAdminPassword(testPassword),
-			WithNeo4jSetting("some.key", "value1"),
-			WithNeo4jSettings(map[string]string{"some.key": "value2"}),
-			WithNeo4jSetting("some.key", "value3"),
+		logger := &inMemoryLogger{}
+		container, err := neo4j.StartContainer(ctx,
+			neo4j.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
+			neo4j.WithAdminPassword(testPassword),
+			neo4j.WithNeo4jSetting("some.key", "value1"),
+			neo4j.WithNeo4jSettings(map[string]string{"some.key": "value2"}),
+			neo4j.WithNeo4jSetting("some.key", "value3"),
 		)
 		if err != nil {
 			t.Fatalf("expected env to successfully run but did not: %s", err)
@@ -103,23 +103,34 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 			}
 		})
 
-		errorLogs := fakeStderr.String()
-		if !strings.Contains(errorLogs, `setting "some.key" with value "value1" is now overwritten with value "value2"`+"\n") ||
-			!strings.Contains(errorLogs, `setting "some.key" with value "value2" is now overwritten with value "value3"`+"\n") {
+		errorLogs := logger.Logs()
+		if !Contains(errorLogs, `setting "some.key" with value "value1" is now overwritten with value "value2"`+"\n") ||
+			!Contains(errorLogs, `setting "some.key" with value "value2" is now overwritten with value "value3"`+"\n") {
 			t.Fatalf("expected setting overwrites to be logged")
 		}
 		if !strings.Contains(getContainerEnv(t, ctx, container), "NEO4J_some_key=value3") {
 			t.Fatalf("expected custom setting to be set with last value")
 		}
 	})
+
+	outer.Run("rejects nil logger", func(t *testing.T) {
+		container, err := neo4j.StartContainer(ctx, neo4j.WithLogger(nil))
+
+		if container != nil {
+			t.Fatalf("container must not be created with nil logger")
+		}
+		if err == nil || err.Error() != "nil logger is not permitted" {
+			t.Fatalf("expected config validation error but got no error")
+		}
+	})
 }
 
-func setupNeo4j(ctx context.Context, t *testing.T) *Neo4jContainer {
+func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Neo4jContainer {
 	// neo4jCreateContainer {
-	container, err := StartContainer(ctx,
-		WithAdminPassword(testPassword),
-		WithLabsPlugin(Apoc),
-		WithNeo4jSetting("dbms.tx_log.rotation.size", "42M"),
+	container, err := neo4j.StartContainer(ctx,
+		neo4j.WithAdminPassword(testPassword),
+		neo4j.WithLabsPlugin(neo4j.Apoc),
+		neo4j.WithNeo4jSetting("dbms.tx_log.rotation.size", "42M"),
 	)
 	// }
 	if err != nil {
@@ -128,7 +139,7 @@ func setupNeo4j(ctx context.Context, t *testing.T) *Neo4jContainer {
 	return container
 }
 
-func createDriver(t *testing.T, ctx context.Context, container *Neo4jContainer) neo.DriverWithContext {
+func createDriver(t *testing.T, ctx context.Context, container *neo4j.Neo4jContainer) neo.DriverWithContext {
 	boltUrl, err := container.BoltUrl(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -145,7 +156,7 @@ func createDriver(t *testing.T, ctx context.Context, container *Neo4jContainer) 
 	return driver
 }
 
-func getContainerEnv(t *testing.T, ctx context.Context, container *Neo4jContainer) string {
+func getContainerEnv(t *testing.T, ctx context.Context, container *neo4j.Neo4jContainer) string {
 	exec, reader, err := container.Exec(ctx, []string{"env"})
 
 	if err != nil {
@@ -159,4 +170,19 @@ func getContainerEnv(t *testing.T, ctx context.Context, container *Neo4jContaine
 		t.Fatalf("expected to read all bytes from env output but did not: %s", err)
 	}
 	return string(envVars)
+}
+
+const logSeparator = "---$$$---"
+
+type inMemoryLogger struct {
+	buffer strings.Builder
+}
+
+func (iml *inMemoryLogger) Printf(msg string, args ...interface{}) {
+	iml.buffer.Write([]byte(fmt.Sprintf(msg, args...)))
+	iml.buffer.Write([]byte(logSeparator))
+}
+
+func (iml *inMemoryLogger) Logs() []string {
+	return strings.Split(iml.buffer.String(), logSeparator)
 }

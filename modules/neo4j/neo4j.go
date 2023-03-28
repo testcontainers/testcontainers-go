@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/go-connections/nat"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"net/http"
-	"os"
-
-	"github.com/testcontainers/testcontainers-go"
 )
 
 const defaultImageName = "neo4j"
@@ -40,14 +38,18 @@ func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
 
 // StartContainer creates an instance of the Neo4j container type
 func StartContainer(ctx context.Context, options ...Option) (*Neo4jContainer, error) {
-	settings := config{
+	settings := &config{
 		imageCoordinates: fmt.Sprintf("docker.io/%s:%s", defaultImageName, defaultTag),
 		adminPassword:    "password",
 		neo4jSettings:    map[string]string{},
-		stderr:           os.Stderr,
+		logger:           testcontainers.Logger,
 	}
 	for _, option := range options {
-		option(&settings)
+		option(settings)
+	}
+
+	if err := settings.validate(); err != nil {
+		return nil, err
 	}
 
 	httpPort, _ := nat.NewPort("tcp", defaultHttpPort)
@@ -72,6 +74,7 @@ func StartContainer(ctx context.Context, options ...Option) (*Neo4jContainer, er
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: request,
 		Started:          true,
+		Logger:           settings.logger,
 	})
 	if err != nil {
 		return nil, err

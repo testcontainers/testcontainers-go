@@ -1,8 +1,9 @@
 package neo4j
 
 import (
+	"errors"
 	"fmt"
-	"io"
+	"github.com/testcontainers/testcontainers-go"
 	"strings"
 )
 
@@ -13,7 +14,7 @@ type config struct {
 	adminPassword    string
 	labsPlugins      []string
 	neo4jSettings    map[string]string
-	stderr           io.Writer
+	logger           testcontainers.Logging
 }
 
 type LabsPlugin string
@@ -86,6 +87,13 @@ func WithNeo4jSettings(settings map[string]string) Option {
 	}
 }
 
+// WithLogger sets a custom logger to be used by the container
+func WithLogger(logger testcontainers.Logging) Option {
+	return func(c *config) {
+		c.logger = logger
+	}
+}
+
 func (c *config) exportEnv() map[string]string {
 	env := c.neo4jSettings // set this first to ensure it has the lowest precedence
 	env["NEO4J_AUTH"] = c.authEnvVar()
@@ -109,17 +117,20 @@ func (c *config) labsPluginsEnvVar() string {
 func (c *config) addSetting(key string, newVal string) {
 	normalizedKey := formatNeo4jConfig(key)
 	if oldVal, found := c.neo4jSettings[normalizedKey]; found {
-		c.logError("setting %q with value %q is now overwritten with value %q\n", key, oldVal, newVal)
+		c.logger.Printf("setting %q with value %q is now overwritten with value %q\n", []any{key, oldVal, newVal}...)
 	}
 	c.neo4jSettings[normalizedKey] = newVal
+}
+
+func (c *config) validate() error {
+	if c.logger == nil {
+		return errors.New("nil logger is not permitted")
+	}
+	return nil
 }
 
 func formatNeo4jConfig(name string) string {
 	result := strings.ReplaceAll(name, "_", "__")
 	result = strings.ReplaceAll(result, ".", "_")
 	return fmt.Sprintf("NEO4J_%s", result)
-}
-
-func (c *config) logError(msg string, args ...any) {
-	_, _ = c.stderr.Write([]byte(fmt.Sprintf(msg, args...)))
 }
