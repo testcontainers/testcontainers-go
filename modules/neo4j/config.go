@@ -88,6 +88,7 @@ func WithNeo4jSettings(settings map[string]string) Option {
 }
 
 // WithLogger sets a custom logger to be used by the container
+// Consider calling this before other "With functions" as these may generate logs
 func WithLogger(logger testcontainers.Logging) Option {
 	return func(c *config) {
 		c.logger = logger
