@@ -35,7 +35,7 @@ When starting the MySQL container, you can pass options in a variadic way to con
 
 ### Set Image
 
-By default, the image used is `mysql:8`.  If you need to use a different image, you can use `WithImage` option.
+By default, the image used is `mysql:8`.  If you need to use a different image, you can use `testcontainers.WithImage` option.
 
 <!--codeinclude-->
 [Custom Image](../../modules/mysql/mysql_test.go) inside_block:withConfigFile

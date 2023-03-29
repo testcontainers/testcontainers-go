@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -53,7 +54,7 @@ func TestPostgres(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// postgresCreateContainer {
 			container, err := StartContainer(ctx,
-				WithImage(tt.image),
+				testcontainers.WithImage(tt.image),
 				WithDatabase(dbname),
 				WithUsername(user),
 				WithPassword(password),
@@ -178,7 +179,7 @@ func TestWithInitScript(t *testing.T) {
 
 	// withInitScripts {
 	container, err := StartContainer(ctx,
-		WithImage("docker.io/postgres:15.2-alpine"),
+		testcontainers.WithImage("docker.io/postgres:15.2-alpine"),
 		WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		WithDatabase(dbname),
 		WithUsername(user),

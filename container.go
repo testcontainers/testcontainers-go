@@ -150,6 +150,13 @@ func CustomizeContainerRequest(r ContainerRequest) CustomizeContainerRequestOpti
 	}
 }
 
+// WithImage sets the image for a container
+func WithImage(image string) func(req *ContainerRequest) {
+	return func(req *ContainerRequest) {
+		req.Image = image
+	}
+}
+
 // WithWaitStrategy sets the wait strategy for a container, using 1 minute as deadline
 func WithWaitStrategy(strategies ...wait.Strategy) func(req *ContainerRequest) {
 	return WithWaitStrategyAndDuration(1*time.Minute, strategies...)

@@ -3,10 +3,11 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"path/filepath"
 	"strings"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const rootUser = "root"
@@ -103,14 +104,12 @@ func (c *MySQLContainer) ConnectionString(ctx context.Context, args ...string) (
 }
 
 // WithImage sets the image to be used for the mysql container
+// Deprecated: use testcontainers.WithImage instead
 func WithImage(image string) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
-		if image == "" {
-			image = "mysql:8"
-		}
-
-		req.Image = image
+	if image == "" {
+		image = "mysql:8"
 	}
+	return testcontainers.WithImage(image)
 }
 
 func WithUsername(username string) func(req *testcontainers.ContainerRequest) {

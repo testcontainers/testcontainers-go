@@ -57,14 +57,12 @@ func WithWaitStrategy(strategies ...wait.Strategy) func(req *testcontainers.Cont
 }
 
 // WithImage sets the image to be used for the postgres container
+// Deprecated: use testcontainers.WithImage instead
 func WithImage(image string) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
-		if image == "" {
-			image = defaultPostgresImage
-		}
-
-		req.Image = image
+	if image == "" {
+		image = defaultPostgresImage
 	}
+	return testcontainers.WithImage(image)
 }
 
 // WithConfigFile sets the config file to be used for the postgres container

@@ -8,6 +8,7 @@ import (
 
 	// Import mysql into the scope of this package (required)
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestMySQL(t *testing.T) {
@@ -107,7 +108,7 @@ func TestMySQLWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	// withConfigFile {
-	container, err := StartContainer(ctx, WithImage("mysql:5.6.51"),
+	container, err := StartContainer(ctx, testcontainers.WithImage("mysql:5.6.51"),
 		WithConfigFile("./testdata/my.cnf"))
 	if err != nil {
 		t.Fatal(err)
