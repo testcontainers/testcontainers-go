@@ -58,7 +58,7 @@ func TestPostgres(t *testing.T) {
 				WithDatabase(dbname),
 				WithUsername(user),
 				WithPassword(password),
-				WithWaitStrategy(tt.wait),
+				testcontainers.WithWaitStrategy(tt.wait),
 			)
 			if err != nil {
 				t.Fatal(err)
@@ -110,7 +110,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			WithDatabase(dbname),
 			WithUsername(user),
 			WithPassword(password),
-			WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
+			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
 		)
 		require.NoError(t, err)
 		require.NotNil(t, container)
@@ -123,7 +123,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			WithDatabase(dbname),
 			WithUsername(user),
 			WithPassword(password),
-			WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
+			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
 		)
 		require.NoError(t, err)
 		require.NotNil(t, container)
@@ -135,7 +135,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			WithDatabase(dbname),
 			WithUsername(user),
 			WithPassword(password),
-			WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
+			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
 		)
 		require.Error(t, err)
 		require.Nil(t, container)
@@ -151,7 +151,7 @@ func TestWithConfigFile(t *testing.T) {
 		WithDatabase(dbname),
 		WithUsername(user),
 		WithPassword(password),
-		WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -184,7 +184,7 @@ func TestWithInitScript(t *testing.T) {
 		WithDatabase(dbname),
 		WithUsername(user),
 		WithPassword(password),
-		WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
 	)
 	if err != nil {
 		t.Fatal(err)

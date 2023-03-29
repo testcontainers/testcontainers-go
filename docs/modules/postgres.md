@@ -74,7 +74,7 @@ In the case you have a custom config file for Postgres, it's possible to copy th
 #### Wait Strategies
 
 Given you could need to wait for different conditions, in particular using a wait.ForSQL strategy,
-the Postgres container exposes a `WithWaitStrategy` option to set a custom wait strategy.
+the Postgres container exposes a `testcontainers.WithWaitStrategy` option to set a custom wait strategy.
 
 <!--codeinclude-->
 [Set Wait Strategy](../../modules/postgres/postgres_test.go) inside_block:withWaitStrategy

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -50,10 +49,9 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string
 type PostgresContainerOption func(req *testcontainers.ContainerRequest)
 
 // WithWaitStrategy sets the wait strategy for the postgres container
+// Deprecated: use testcontainers.WithWaitStrategy instead
 func WithWaitStrategy(strategies ...wait.Strategy) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
-		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(1 * time.Minute)
-	}
+	return testcontainers.WithWaitStrategy(strategies...)
 }
 
 // WithImage sets the image to be used for the postgres container
