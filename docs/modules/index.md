@@ -2,6 +2,17 @@
 
 In this section you'll discover how to create Go modules for _Testcontainers for Go_.
 
+## Interested in converting an example into a module?
+
+The steps to convert an existing example, aka `${THE_EXAMPLE}`, into a module are the following:
+
+1. Rename the module path at the `go.mod`file for your example.
+1. Move the `examples/${THE_EXAMPLE}` directory to `modules/${THE_EXAMPLE}`.
+1. Move the `${THE_EXAMPLE}` dependabot config from the examples section to the modules one, which is located at the bottom.
+1. In the `mkdocs.yml` file, move the entry for `${THE_EXAMPLE}` from examples to modules.
+1. Move `docs/examples${THE_EXAMPLE}.md` file to `docs/modules/${THE_EXAMPLE}`, updating the references to the source code paths.
+1. Update the Github workflow for `${THE_EXAMPLE}`, modifying names and paths.
+
 ## Interested in adding a new module?
 
 We have provided a command line tool to generate the scaffolding for the code of the example you are interested in. This tool will generate:
@@ -45,6 +56,31 @@ or for creating a Go module:
 ```shell
 go run . --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE} --as-module
 ```
+
+## Adding types and methods to the module
+
+We are going to propose a set of steps to follow when adding types and methods to the module:
+
+!!!warning
+    The `StartContainer` function will be eventually deprecated and replaced with `RunContainer`. We are keeping it in certain modules for backwards compatibility, but they will be removed in the future.
+
+- Make sure a public `Container` type exists for the module. This type have to use composition to embed the `testcontainers.Container` type, inheriting all the methods from it.
+- Make sure a `RunContainer` function exists and is public. This function is the entrypoint to the module and will define the initial values for a `testcontainers.ContainerRequest` struct, including the image, the default exposed ports, wait strategies, etc. Therefore, the function must initialise the container request with the default values.
+- Define container options for the module. We consider that a best practice for the options is to return a function that returns a modified `testcontainers.ContainerRequest` type, and for that, the library already provides with a `testcontainers.CustomizeContainerRequestOption` type representing this function signature.
+- The options will be passed to the `RunContainer` function as variadic arguments after the Go context, and they will be processed right after defining the initial `testcontainers.ContainerRequest` struct using a for loop.
+
+```golang
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeContainerRequestOption) (*Container, error) {...}
+```
+
+- If needed, define public methods to extract information from the running container, using the `Container` type as receiver. E.g. a connection string to access a database:
+
+```golang
+func (c *Container) ConnectionString(ctx context.Context) (string, error) {...}
+```
+
+- Document the public API with Go comments.
+- Extend the docs to describe the new API of the module. We usually define a parent `Module reference` section, including a `Container options` subsection; within the `Container options` subsection, we define a subsection for each option.
 
 ## Update Go dependencies in the modules
 
