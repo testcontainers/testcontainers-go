@@ -25,7 +25,7 @@ const (
 )
 
 // awsSDKClientV2 {
-func s3Client(ctx context.Context, l *localstack.Container) (*s3.Client, error) {
+func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Client, error) {
 	mappedPort, err := l.MappedPort(ctx, nat.Port("4566/tcp"))
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func s3Client(ctx context.Context, l *localstack.Container) (*s3.Client, error) 
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := localstack.RunContainer(ctx)
+	container, err := localstack.StartContainer(ctx, localstack.NoopOverrideContainerRequest)
 	require.Nil(t, err)
 
 	s3Client, err := s3Client(ctx, container)
