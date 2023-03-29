@@ -137,10 +137,11 @@ type ContainerOption func(*containerOptions)
 // The passed request will be merged with the default one.
 type CustomizeContainerRequestOption func(req ContainerRequest) ContainerRequest
 
-// CustomizeContainerRequest returns a function that can be used to merge the passed container request with the one that is used by the container
+// CustomizeContainerRequest returns a function that can be used to merge the passed container request with the one that is used by the container.
+// Slices and Maps will be appended.
 func CustomizeContainerRequest(r ContainerRequest) CustomizeContainerRequestOption {
 	return func(req ContainerRequest) ContainerRequest {
-		if err := mergo.Merge(&req, r, mergo.WithOverride); err != nil {
+		if err := mergo.Merge(&req, r, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
 			fmt.Printf("error merging container request, keeping the original one. Error: %v", err)
 			return req
 		}

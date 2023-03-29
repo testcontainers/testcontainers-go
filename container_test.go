@@ -419,3 +419,44 @@ func TestVolumeMount(t *testing.T) {
 		})
 	}
 }
+
+func TestOverrideContainerRequest(t *testing.T) {
+	req := ContainerRequest{
+		Env: map[string]string{
+			"BAR": "BAR",
+		},
+		Image:        "foo",
+		ExposedPorts: []string{"12345/tcp"},
+		WaitingFor: wait.ForNop(
+			func(ctx context.Context, target wait.StrategyTarget) error {
+				return nil
+			},
+		),
+		Networks: []string{"foo", "bar", "baaz"},
+		NetworkAliases: map[string][]string{
+			"foo": {"foo0", "foo1", "foo2", "foo3"},
+		},
+	}
+
+	merged := CustomizeContainerRequest(ContainerRequest{
+		Env: map[string]string{
+			"FOO": "FOO",
+		},
+		Image:        "bar",
+		ExposedPorts: []string{"67890/tcp"},
+		Networks:     []string{"foo1", "bar1"},
+		NetworkAliases: map[string][]string{
+			"foo1": {"bar"},
+		},
+		WaitingFor: wait.ForLog("foo"),
+	})(req)
+
+	assert.Equal(t, "FOO", merged.Env["FOO"])
+	assert.Equal(t, "BAR", merged.Env["BAR"])
+	assert.Equal(t, "bar", merged.Image)
+	assert.Equal(t, []string{"12345/tcp", "67890/tcp"}, merged.ExposedPorts)
+	assert.Equal(t, []string{"foo", "bar", "baaz", "foo1", "bar1"}, merged.Networks)
+	assert.Equal(t, []string{"foo0", "foo1", "foo2", "foo3"}, merged.NetworkAliases["foo"])
+	assert.Equal(t, []string{"bar"}, merged.NetworkAliases["foo1"])
+	assert.Equal(t, wait.ForLog("foo"), merged.WaitingFor)
+}
