@@ -45,9 +45,6 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string
 	return connStr, nil
 }
 
-// PostgresContainerOption is a function that configures the postgres container, affecting the container request
-type PostgresContainerOption func(req *testcontainers.ContainerRequest)
-
 // WithWaitStrategy sets the wait strategy for the postgres container
 // Deprecated: use testcontainers.WithWaitStrategy instead
 func WithWaitStrategy(strategies ...wait.Strategy) func(req *testcontainers.ContainerRequest) {
@@ -129,7 +126,7 @@ func WithUsername(user string) func(req *testcontainers.ContainerRequest) {
 }
 
 // StartContainer creates an instance of the postgres container type
-func StartContainer(ctx context.Context, opts ...PostgresContainerOption) (*PostgresContainer, error) {
+func StartContainer(ctx context.Context, opts ...testcontainers.CustomizeContainerRequestOption) (*PostgresContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image: defaultPostgresImage,
 		Env: map[string]string{
