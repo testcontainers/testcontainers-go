@@ -108,7 +108,7 @@ func TestMySQLWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	// withConfigFile {
-	container, err := StartContainer(ctx, testcontainers.WithImage("mysql:5.6.51"),
+	container, err := StartContainer(ctx, testcontainers.WithImage("mysql:5.6"),
 		WithConfigFile("./testdata/my.cnf"))
 	if err != nil {
 		t.Fatal(err)
