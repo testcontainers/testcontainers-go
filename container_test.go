@@ -233,7 +233,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 		},
 		{
 			Name:               "test buildling from a context on the filesystem",
-			ContextPath:        "./testresources",
+			ContextPath:        "./testdata",
 			Dockerfile:         "echo.Dockerfile",
 			ExpectedEchoOutput: "this is from the echo test Dockerfile",
 			ContextArchive: func() (io.Reader, error) {

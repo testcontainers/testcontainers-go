@@ -146,7 +146,7 @@ func TestWithConfigFile(t *testing.T) {
 
 	// withConfigFile {
 	container, err := StartContainer(ctx,
-		WithConfigFile(filepath.Join("testresources", "my-postgres.conf")),
+		WithConfigFile(filepath.Join("testdata", "my-postgres.conf")),
 		WithDatabase(dbname),
 		WithUsername(user),
 		WithPassword(password),
@@ -179,7 +179,7 @@ func TestWithInitScript(t *testing.T) {
 	// withInitScripts {
 	container, err := StartContainer(ctx,
 		WithImage("docker.io/postgres:15.2-alpine"),
-		WithInitScripts(filepath.Join("testresources", "init-user-db.sh")),
+		WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		WithDatabase(dbname),
 		WithUsername(user),
 		WithPassword(password),
@@ -205,7 +205,7 @@ func TestWithInitScript(t *testing.T) {
 	assert.NotNil(t, db)
 	defer db.Close()
 
-	// database created in init script. See testresources/init-user-db.sh
+	// database created in init script. See testdata/init-user-db.sh
 	result, err := db.Exec("SELECT * FROM testdb;")
 	assert.NoError(t, err)
 	assert.NotNil(t, result)

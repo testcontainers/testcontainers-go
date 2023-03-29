@@ -10,8 +10,8 @@ go get github.com/testcontainers/testcontainers-go/modules/mysql
 
 ## Usage example
 
-<!--codeinclude-->
-[Creating a MySQL container](../../modules/mysql/mysql.go)
+<!--codeinclude--> 
+[Creating a MySQL container](../../modules/mysql/mysql_test.go) inside_block:createMysqlContainer
 <!--/codeinclude-->
 
 ## Module Reference

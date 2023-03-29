@@ -40,7 +40,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:    "./testresources/",
+			Context:    "./testdata/",
 			Dockerfile: "echoserver.Dockerfile",
 		},
 		ExposedPorts: []string{"8080/tcp"},
@@ -106,7 +106,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:    "./testresources/",
+			Context:    "./testdata/",
 			Dockerfile: "echoserver.Dockerfile",
 		},
 		ExposedPorts: []string{"8080/tcp"},
@@ -157,7 +157,7 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:    "./testresources/",
+			Context:    "./testdata/",
 			Dockerfile: "echoserver.Dockerfile",
 		},
 		ExposedPorts: []string{"8080/tcp"},
@@ -203,7 +203,7 @@ func Test_StartStop(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:    "./testresources/",
+			Context:    "./testdata/",
 			Dockerfile: "echoserver.Dockerfile",
 		},
 		ExposedPorts: []string{"8080/tcp"},

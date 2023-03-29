@@ -56,7 +56,7 @@ import (
 )
 
 func TestSomething(t *testing.T) {
-	compose, err := tc.NewDockerCompose("testresources/docker-compose.yml")
+	compose, err := tc.NewDockerCompose("testdata/docker-compose.yml")
 	assert.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
@@ -87,7 +87,7 @@ import (
 
 func TestSomethingElse(t *testing.T) {
 	identifier := tc.StackIdentifier("some_ident")
-	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("./testresources/docker-compose-simple.yml"), identifier)
+	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("./testdata/docker-compose-simple.yml"), identifier)
 	assert.NoError(t, err, "NewDockerComposeAPIWith()")
 
 	t.Cleanup(func() {
@@ -136,7 +136,7 @@ import (
 
 func TestSomethingWithWaiting(t *testing.T) {
 	identifier := tc.StackIdentifier("some_ident")
-	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("./testresources/docker-compose-simple.yml"), identifier)
+	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("./testdata/docker-compose-simple.yml"), identifier)
 	assert.NoError(t, err, "NewDockerComposeAPIWith()")
 
 	t.Cleanup(func() {
@@ -182,7 +182,7 @@ that Docker Compose needs to be present on dev and CI machines.
 ### Examples
 
 ```go
-composeFilePaths := []string {"testresources/docker-compose.yml"}
+composeFilePaths := []string {"testdata/docker-compose.yml"}
 identifier := strings.ToLower(uuid.New().String())
 
 compose := tc.NewLocalDockerCompose(composeFilePaths, identifier)
@@ -208,7 +208,7 @@ In the following example, we demonstrate how to stop a Docker Compose created pr
 convenient `Down` method.
 
 ```go
-composeFilePaths := []string{"testresources/docker-compose.yml"}
+composeFilePaths := []string{"testdata/docker-compose.yml"}
 
 compose := tc.NewLocalDockerCompose(composeFilePaths, identifierFromExistingRunningCompose)
 execError := compose.Down()

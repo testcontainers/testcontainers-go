@@ -18,7 +18,7 @@ import (
 
 const exampleAuth = "https://example-auth.com"
 
-var testDockerConfigDirPath = filepath.Join("testresources", ".docker")
+var testDockerConfigDirPath = filepath.Join("testdata", ".docker")
 
 var indexDockerIO = testcontainersdocker.IndexDockerIO
 
@@ -125,7 +125,7 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context: "./testresources",
+			Context: "./testdata",
 		},
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("Ready to accept connections"),
@@ -168,7 +168,7 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:    "./testresources",
+			Context:    "./testdata",
 			Dockerfile: "auth.Dockerfile",
 		},
 
@@ -197,7 +197,7 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:    "./testresources",
+			Context:    "./testdata",
 			Dockerfile: "auth.Dockerfile",
 		},
 		ExposedPorts: []string{"6379/tcp"},
@@ -253,13 +253,13 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 		Mounts: ContainerMounts{
 			ContainerMount{
 				Source: GenericBindMountSource{
-					HostPath: fmt.Sprintf("%s/testresources/auth", wd),
+					HostPath: fmt.Sprintf("%s/testdata/auth", wd),
 				},
 				Target: "/auth",
 			},
 			ContainerMount{
 				Source: GenericBindMountSource{
-					HostPath: fmt.Sprintf("%s/testresources/data", wd),
+					HostPath: fmt.Sprintf("%s/testdata/data", wd),
 				},
 				Target: "/data",
 			},

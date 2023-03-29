@@ -13,10 +13,12 @@ import (
 func TestMySQL(t *testing.T) {
 	ctx := context.Background()
 
+	// createMysqlContainer {
 	container, err := StartContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
@@ -106,7 +108,7 @@ func TestMySQLWithConfigFile(t *testing.T) {
 
 	// withConfigFile {
 	container, err := StartContainer(ctx, WithImage("mysql:5.6.51"),
-		WithConfigFile("./testresources/my.cnf"))
+		WithConfigFile("./testdata/my.cnf"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +154,7 @@ func TestMySQLWithScripts(t *testing.T) {
 
 	// withScripts {
 	container, err := StartContainer(ctx,
-		WithScripts(filepath.Join("testresources", "schema.sql")))
+		WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
 	}
