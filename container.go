@@ -135,18 +135,16 @@ type ContainerOption func(*containerOptions)
 
 // CustomizeContainerRequestOption is a type that can be used to configure the Testcontainers container request.
 // The passed request will be merged with the default one.
-type CustomizeContainerRequestOption func(req ContainerRequest) ContainerRequest
+type CustomizeContainerRequestOption func(req *ContainerRequest)
 
 // CustomizeContainerRequest returns a function that can be used to merge the passed container request with the one that is used by the container.
 // Slices and Maps will be appended.
-func CustomizeContainerRequest(r ContainerRequest) CustomizeContainerRequestOption {
-	return func(req ContainerRequest) ContainerRequest {
-		if err := mergo.Merge(&req, r, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
+func CustomizeContainerRequest(src ContainerRequest) CustomizeContainerRequestOption {
+	return func(req *ContainerRequest) {
+		if err := mergo.Merge(req, &src, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
 			fmt.Printf("error merging container request, keeping the original one. Error: %v", err)
-			return req
+			return
 		}
-
-		return req
 	}
 }
 
