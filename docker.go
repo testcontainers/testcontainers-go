@@ -188,7 +188,7 @@ func (c *DockerContainer) SessionID() string {
 // Start will start an already created container
 func (c *DockerContainer) Start(ctx context.Context) error {
 	shortID := c.ID[:12]
-	c.logger.Printf("Starting container id: %s image: %s", shortID, c.Image)
+	c.logger.Printf("🐳 Starting container id: %s image: %s", shortID, c.Image)
 
 	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
@@ -197,12 +197,12 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 
 	// if a Wait Strategy has been specified, wait before returning
 	if c.WaitingFor != nil {
-		c.logger.Printf("Waiting for container id %s image: %s", shortID, c.Image)
+		c.logger.Printf("🚧 Waiting for container id %s image: %s", shortID, c.Image)
 		if err := c.WaitingFor.WaitUntilReady(ctx, c); err != nil {
 			return err
 		}
 	}
-	c.logger.Printf("Container is ready id: %s image: %s", shortID, c.Image)
+	c.logger.Printf("✅ Container is ready id: %s image: %s", shortID, c.Image)
 	c.isRunning = true
 	return nil
 }
