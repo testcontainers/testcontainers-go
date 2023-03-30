@@ -190,7 +190,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 	localstack, err := StartContainer(
 		ctx,
 		OverrideContainerRequest(testcontainers.ContainerRequest{
-			Image:          "localstack/localstack:latest",
+			Image:          "localstack/localstack:2.0.0",
 			Networks:       []string{"localstack-network"},
 			NetworkAliases: map[string][]string{"localstack-network": {"localstack"}},
 		}),
