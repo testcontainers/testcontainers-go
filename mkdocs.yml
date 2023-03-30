@@ -57,6 +57,7 @@ nav:
         - modules/postgres.md
         - modules/neo4j.md
         - modules/pulsar.md
+        - modules/redis.md
         - modules/vault.md
     - Examples:
         - examples/index.md
@@ -68,7 +69,6 @@ nav:
         - examples/mongodb.md
         - examples/nginx.md
         - examples/pubsub.md
-        - examples/redis.md
         - examples/spanner.md
         - examples/toxiproxy.md
     - System Requirements:

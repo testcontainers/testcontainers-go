@@ -116,4 +116,4 @@ You can run the test via `go test ./...`
 
 ## 6. Want to go deeper with Redis?
 
-You can find a more elaborated Redis example in our examples section. Please check it out [here](./examples/redis.md).
+You can find a more elaborated Redis example in our examples section. Please check it out [here](./modules/redis.md).
