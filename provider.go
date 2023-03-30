@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 )
 
 // possible provider types
 const (
-	ProviderDocker ProviderType = iota // Docker is default = 0
+	ProviderDefault ProviderType = iota // default will auto-detect provider from DOCKER_HOST environment variable
+	ProviderDocker
 	ProviderPodman
 )
 
@@ -97,8 +100,13 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 		o.ApplyGenericTo(opt)
 	}
 
-	switch t {
-	case ProviderDocker:
+	pt := t
+	if pt == ProviderDefault && strings.Contains(os.Getenv("DOCKER_HOST"), "podman.sock") {
+		pt = ProviderPodman
+	}
+
+	switch pt {
+	case ProviderDefault, ProviderDocker:
 		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Bridge))
 		provider, err := NewDockerProvider(providerOptions...)
 		if err != nil {
