@@ -24,10 +24,8 @@ type MySQLContainer struct {
 	database string
 }
 
-type MySQLContainerOption func(req *testcontainers.ContainerRequest)
-
 // StartContainer creates an instance of the MySQL container type
-func StartContainer(ctx context.Context, opts ...MySQLContainerOption) (*MySQLContainer, error) {
+func StartContainer(ctx context.Context, opts ...testcontainers.CustomizeContainerRequestOption) (*MySQLContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
