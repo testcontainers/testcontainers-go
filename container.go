@@ -149,19 +149,19 @@ func CustomizeContainerRequest(src ContainerRequest) CustomizeContainerRequestOp
 }
 
 // WithImage sets the image for a container
-func WithImage(image string) func(req *ContainerRequest) {
+func WithImage(image string) CustomizeContainerRequestOption {
 	return func(req *ContainerRequest) {
 		req.Image = image
 	}
 }
 
 // WithWaitStrategy sets the wait strategy for a container, using 1 minute as deadline
-func WithWaitStrategy(strategies ...wait.Strategy) func(req *ContainerRequest) {
+func WithWaitStrategy(strategies ...wait.Strategy) CustomizeContainerRequestOption {
 	return WithWaitStrategyAndDuration(1*time.Minute, strategies...)
 }
 
 // WithWaitStrategy sets the wait strategy for a container, including deadline
-func WithWaitStrategyAndDuration(deadline time.Duration, strategies ...wait.Strategy) func(req *ContainerRequest) {
+func WithWaitStrategyAndDuration(deadline time.Duration, strategies ...wait.Strategy) CustomizeContainerRequestOption {
 	return func(req *ContainerRequest) {
 		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
 	}

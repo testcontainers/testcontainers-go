@@ -101,34 +101,25 @@ func (c *MySQLContainer) ConnectionString(ctx context.Context, args ...string) (
 	return connectionString, nil
 }
 
-// WithImage sets the image to be used for the mysql container
-// Deprecated: use testcontainers.WithImage instead
-func WithImage(image string) func(req *testcontainers.ContainerRequest) {
-	if image == "" {
-		image = "mysql:8"
-	}
-	return testcontainers.WithImage(image)
-}
-
-func WithUsername(username string) func(req *testcontainers.ContainerRequest) {
+func WithUsername(username string) testcontainers.CustomizeContainerRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		req.Env["MYSQL_USER"] = username
 	}
 }
 
-func WithPassword(password string) func(req *testcontainers.ContainerRequest) {
+func WithPassword(password string) testcontainers.CustomizeContainerRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		req.Env["MYSQL_PASSWORD"] = password
 	}
 }
 
-func WithDatabase(database string) func(req *testcontainers.ContainerRequest) {
+func WithDatabase(database string) testcontainers.CustomizeContainerRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		req.Env["MYSQL_DATABASE"] = database
 	}
 }
 
-func WithConfigFile(configFile string) func(req *testcontainers.ContainerRequest) {
+func WithConfigFile(configFile string) testcontainers.CustomizeContainerRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
@@ -139,7 +130,7 @@ func WithConfigFile(configFile string) func(req *testcontainers.ContainerRequest
 	}
 }
 
-func WithScripts(scripts ...string) func(req *testcontainers.ContainerRequest) {
+func WithScripts(scripts ...string) testcontainers.CustomizeContainerRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		var initScripts []testcontainers.ContainerFile
 		for _, script := range scripts {

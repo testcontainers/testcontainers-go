@@ -77,7 +77,7 @@ func TestRedisWithImage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// withImage {
-			redisContainer, err := StartContainer(ctx, WithImage(tt.image), WithConfigFile(filepath.Join("testdata", "redis6.conf")))
+			redisContainer, err := StartContainer(ctx, testcontainers.WithImage(tt.image), WithConfigFile(filepath.Join("testdata", "redis6.conf")))
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				if err := redisContainer.Terminate(ctx); err != nil {

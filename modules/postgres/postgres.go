@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const defaultUser = "postgres"
@@ -45,25 +44,10 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string
 	return connStr, nil
 }
 
-// WithWaitStrategy sets the wait strategy for the postgres container
-// Deprecated: use testcontainers.WithWaitStrategy instead
-func WithWaitStrategy(strategies ...wait.Strategy) func(req *testcontainers.ContainerRequest) {
-	return testcontainers.WithWaitStrategy(strategies...)
-}
-
-// WithImage sets the image to be used for the postgres container
-// Deprecated: use testcontainers.WithImage instead
-func WithImage(image string) func(req *testcontainers.ContainerRequest) {
-	if image == "" {
-		image = defaultPostgresImage
-	}
-	return testcontainers.WithImage(image)
-}
-
 // WithConfigFile sets the config file to be used for the postgres container
 // It will also set the "config_file" parameter to the path of the config file
 // as a command line argument to the container
-func WithConfigFile(cfg string) func(req *testcontainers.ContainerRequest) {
+func WithConfigFile(cfg string) testcontainers.CustomizeContainerRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		cfgFile := testcontainers.ContainerFile{
 			HostFilePath:      cfg,
@@ -80,14 +64,14 @@ func WithConfigFile(cfg string) func(req *testcontainers.ContainerRequest) {
 // WithDatabase sets the initial database to be created when the container starts
 // It can be used to define a different name for the default database that is created when the image is first started.
 // If it is not specified, then the value of WithUser will be used.
-func WithDatabase(dbName string) func(req *testcontainers.ContainerRequest) {
+func WithDatabase(dbName string) testcontainers.CustomizeContainerRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		req.Env["POSTGRES_DB"] = dbName
 	}
 }
 
 // WithInitScripts sets the init scripts to be run when the container starts
-func WithInitScripts(scripts ...string) func(req *testcontainers.ContainerRequest) {
+func WithInitScripts(scripts ...string) testcontainers.CustomizeContainerRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		initScripts := []testcontainers.ContainerFile{}
 		for _, script := range scripts {
