@@ -54,7 +54,7 @@ func isVersion2(image string) bool {
 	}
 
 	if semver.IsValid(version) {
-		return semver.Compare(version, "v2.0") > 0 // version < v0.11
+		return semver.Compare(version, "v2.0") > 0 // version >= v2.0
 	}
 
 	return true
