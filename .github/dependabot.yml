@@ -55,6 +55,12 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /examples/rabbitmq
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /examples/spanner
       schedule:
         interval: monthly

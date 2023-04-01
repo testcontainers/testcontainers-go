@@ -69,6 +69,7 @@ nav:
         - examples/mongodb.md
         - examples/nginx.md
         - examples/pubsub.md
+        - examples/rabbitmq.md
         - examples/spanner.md
         - examples/toxiproxy.md
     - System Requirements:
