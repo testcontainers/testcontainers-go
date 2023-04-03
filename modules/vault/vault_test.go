@@ -12,6 +12,7 @@ import (
 	vaultClient "github.com/hashicorp/vault-client-go"
 	"github.com/hashicorp/vault-client-go/schema"
 	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go"
 	testcontainervault "github.com/testcontainers/testcontainers-go/modules/vault"
 	"github.com/tidwall/gjson"
 )
@@ -27,9 +28,9 @@ var (
 
 func TestMain(m *testing.M) {
 	var err error
-	opts := []testcontainervault.ContainerOptions{
+	opts := []testcontainers.CustomizeRequestOption{
 		// WithImageName {
-		testcontainervault.WithImageName("hashicorp/vault:1.13.0"),
+		testcontainers.WithImage("hashicorp/vault:1.13.0"),
 		// }
 		// WithToken {
 		testcontainervault.WithToken(token),
@@ -40,8 +41,8 @@ func TestMain(m *testing.M) {
 		// }
 	}
 
-	// StartContainer {
-	vault, err = testcontainervault.StartContainer(ctx, opts...)
+	// RunContainer {
+	vault, err = testcontainervault.RunContainer(ctx, opts...)
 	// }
 	if err != nil {
 		log.Fatal(err)

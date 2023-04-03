@@ -13,10 +13,10 @@ go get github.com/testcontainers/testcontainers-go/modules/vault
 ```
 
 ## Usage example
-The **StartContainer** function is the main entry point to create a new VaultContainer instance. 
+The **RunContainer** function is the main entry point to create a new VaultContainer instance. 
 It takes a context and zero or more Option values to configure the container.
 <!--codeinclude-->
-[Creating a Vault container](../../modules/vault/vault_test.go) inside_block:StartContainer
+[Creating a Vault container](../../modules/vault/vault_test.go) inside_block:RunContainer
 <!--/codeinclude-->
 
 ### Use CLI to read data from Vault container:
@@ -43,7 +43,7 @@ go get -u github.com/hashicorp/vault-client-go
 You can set below options to create Vault container.
 
 ### Image 
-If you need to set a different Vault image, you can use the `WithImageName`. 
+If you need to set a different Vault image, you can use the `testcontainers.WithImage`. 
 
 !!!info
     Default image name is `hashicorp/vault:1.13.0`.
