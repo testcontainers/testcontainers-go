@@ -65,10 +65,6 @@ func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, erro
 	return fmt.Sprintf("%s://%s:%v", proto, host, pulsarPort.Int()), nil
 }
 
-type ContainerRequest struct {
-	testcontainers.ContainerRequest
-}
-
 // WithFunctionsWorker enables the functions worker, which will override the default pulsar command
 // and add a waiting strategy for the functions worker
 func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
