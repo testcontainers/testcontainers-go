@@ -69,30 +69,26 @@ func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, erro
 
 type ContainerRequest struct {
 	testcontainers.ContainerRequest
-	logConsumers []testcontainers.LogConsumer
 }
 
-// ContainerOptions is a function that can be used to configure the Pulsar container
-type ContainerOptions func(req *ContainerRequest)
-
 // WithConfigModifier allows to override the default container config
-func WithConfigModifier(modifier func(config *container.Config)) ContainerOptions {
-	return func(req *ContainerRequest) {
+func WithConfigModifier(modifier func(config *container.Config)) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.ContainerRequest) {
 		req.ConfigModifier = modifier
 	}
 }
 
 // WithEndpointSettingsModifier allows to override the default endpoint settings
-func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) ContainerOptions {
-	return func(req *ContainerRequest) {
+func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.ContainerRequest) {
 		req.EnpointSettingsModifier = modifier
 	}
 }
 
 // WithFunctionsWorker enables the functions worker, which will override the default pulsar command
 // and add a waiting strategy for the functions worker
-func WithFunctionsWorker() ContainerOptions {
-	return func(req *ContainerRequest) {
+func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.ContainerRequest) {
 		req.Cmd = []string{"/bin/bash", "-c", defaultPulsarCmd}
 
 		// add the waiting strategy for the functions worker
@@ -106,40 +102,33 @@ func WithFunctionsWorker() ContainerOptions {
 }
 
 // WithHostConfigModifier allows to override the default host config
-func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) ContainerOptions {
-	return func(req *ContainerRequest) {
+func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.ContainerRequest) {
 		req.HostConfigModifier = modifier
 	}
 }
 
-// WithLogConsumer allows to add log consumers to the container. They will be automatically started and stopped by the StartContainer function
+// WithLogConsumers allows to add log consumers to the container.
+// They will be automatically started and they will follow the container logs,
 // but it's a responsibility of the caller to stop them calling StopLogProducer
-func WithLogConsumers(consumer ...testcontainers.LogConsumer) ContainerOptions {
-	return func(req *ContainerRequest) {
-		req.logConsumers = append(req.logConsumers, consumer...)
+func (c *Container) WithLogConsumers(ctx context.Context, consumer ...testcontainers.LogConsumer) {
+	if len(c.LogConsumers) > 0 {
+		c.StartLogProducer(ctx)
+	}
+	for _, lc := range c.LogConsumers {
+		c.FollowOutput(lc)
 	}
 }
 
 // WithPulsarEnv allows to use the native APIs and set each variable with PULSAR_PREFIX_ as prefix.
-func WithPulsarEnv(configVar string, configValue string) ContainerOptions {
-	return func(req *ContainerRequest) {
-		req.ContainerRequest.Env["PULSAR_PREFIX_"+configVar] = configValue
+func WithPulsarEnv(configVar string, configValue string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.ContainerRequest) {
+		req.Env["PULSAR_PREFIX_"+configVar] = configValue
 	}
 }
 
-// WithPulsarImage allows to override the default Pulsar image
-func WithPulsarImage(image string) ContainerOptions {
-	return func(req *ContainerRequest) {
-		if image == "" {
-			image = defaultPulsarImage
-		}
-
-		req.Image = image
-	}
-}
-
-func WithTransactions() ContainerOptions {
-	return func(req *ContainerRequest) {
+func WithTransactions() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.ContainerRequest) {
 		WithPulsarEnv("transactionCoordinatorEnabled", "true")(req)
 
 		// add the waiting strategy for the transaction topic
@@ -154,7 +143,7 @@ func WithTransactions() ContainerOptions {
 	}
 }
 
-// StartContainer creates an instance of the Pulsar container type, being possible to pass a custom request and options
+// RunContainer creates an instance of the Pulsar container type, being possible to pass a custom request and options
 // The created container will use the following defaults:
 // - image: docker.io/apachepulsar/pulsar:2.10.2
 // - exposed ports: 6650/tcp, 8080/tcp
@@ -162,8 +151,8 @@ func WithTransactions() ContainerOptions {
 //		- the Pulsar admin API ("/admin/v2/clusters") to be ready on port 8080/tcp and return the response `["standalone"]`
 // 		- the log message "Successfully updated the policies on namespace public/default"
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
-func StartContainer(ctx context.Context, opts ...ContainerOptions) (*Container, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*Container, error) {
+	req := &testcontainers.ContainerRequest{
 		Image:        defaultPulsarImage,
 		Env:          map[string]string{},
 		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
@@ -172,12 +161,11 @@ func StartContainer(ctx context.Context, opts ...ContainerOptions) (*Container, 
 	}
 
 	pulsarRequest := ContainerRequest{
-		ContainerRequest: req,
-		logConsumers:     []testcontainers.LogConsumer{},
+		ContainerRequest: *req,
 	}
 
 	for _, opt := range opts {
-		opt(&pulsarRequest)
+		opt(req)
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -189,15 +177,7 @@ func StartContainer(ctx context.Context, opts ...ContainerOptions) (*Container, 
 	}
 
 	pc := &Container{
-		Container:    c,
-		LogConsumers: pulsarRequest.logConsumers,
-	}
-
-	if len(pc.LogConsumers) > 0 {
-		c.StartLogProducer(ctx)
-	}
-	for _, lc := range pc.LogConsumers {
-		c.FollowOutput(lc)
+		Container: c,
 	}
 
 	return pc, nil

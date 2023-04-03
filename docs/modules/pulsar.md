@@ -33,7 +33,7 @@ Then you can retrieve the broker and the admin url:
 When starting the Pulsar container, you can pass options in a variadic way to configure it.
 
 ### Pulsar Image
-If you need to set a different Pulsar image you can use the `WithPulsarImage`.
+If you need to set a different Pulsar image you can use the `testcontainers.WithImage`.
 
 <!--codeinclude-->
 [Set Pulsar image](../../modules/pulsar/pulsar_test.go) inside_block:setPulsarImage
