@@ -27,7 +27,7 @@ func TestExample(t *testing.T) {
 				TitleName: "MongoDB",
 			},
 			expectedContainerName: "MongoDBContainer",
-			expectedEntrypoint:    "StartContainer",
+			expectedEntrypoint:    "RunContainer",
 			expectedTitle:         "MongoDB",
 		},
 		{
@@ -38,7 +38,7 @@ func TestExample(t *testing.T) {
 				Image:    "mongodb:latest",
 			},
 			expectedContainerName: "MongodbContainer",
-			expectedEntrypoint:    "StartContainer",
+			expectedEntrypoint:    "RunContainer",
 			expectedTitle:         "Mongodb",
 		},
 		{
@@ -50,7 +50,7 @@ func TestExample(t *testing.T) {
 				TitleName: "MongoDB",
 			},
 			expectedContainerName: "mongoDBContainer",
-			expectedEntrypoint:    "startContainer",
+			expectedEntrypoint:    "runContainer",
 			expectedTitle:         "MongoDB",
 		},
 		{
@@ -61,7 +61,7 @@ func TestExample(t *testing.T) {
 				Image:    "mongodb:latest",
 			},
 			expectedContainerName: "mongodbContainer",
-			expectedEntrypoint:    "startContainer",
+			expectedEntrypoint:    "runContainer",
 			expectedTitle:         "Mongodb",
 		},
 	}
@@ -450,9 +450,9 @@ func assertExampleContent(t *testing.T, example Example, exampleFile string) {
 	assert.Equal(t, data[8], "// "+containerName+" represents the "+exampleName+" container type used in the module")
 	assert.Equal(t, data[9], "type "+containerName+" struct {")
 	assert.Equal(t, data[13], "// "+entrypoint+" creates an instance of the "+exampleName+" container type")
-	assert.Equal(t, data[14], "func "+entrypoint+"(ctx context.Context) (*"+containerName+", error) {")
+	assert.Equal(t, data[14], "func "+entrypoint+"(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*"+containerName+", error) {")
 	assert.Equal(t, data[16], "\t\tImage: \""+example.Image+"\",")
-	assert.Equal(t, data[26], "\treturn &"+containerName+"{Container: container}, nil")
+	assert.Equal(t, data[31], "\treturn &"+containerName+"{Container: container}, nil")
 }
 
 // assert content GitHub workflow for the example
