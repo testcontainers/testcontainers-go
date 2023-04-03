@@ -424,6 +424,7 @@ func assertExampleDocContent(t *testing.T, example Example, exampleDocFile strin
 	assert.Equal(t, data[18], "<!--/codeinclude-->")
 	assert.Equal(t, data[22], "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives two parameters:")
 	assert.True(t, strings.HasSuffix(data[25], "(*"+title+"Container, error)"))
+	assert.Equal(t, "for "+title+". E.g. `testcontainers.WithImage(\""+example.Image+"\")`.", data[38])
 }
 
 // assert content example test
