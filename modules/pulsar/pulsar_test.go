@@ -60,15 +60,15 @@ func TestPulsar(t *testing.T) {
 				testcontainerspulsar.WithPulsarEnv("brokerDeduplicationEnabled", "true"),
 				// }
 				// advancedDockerSettings {
-				testcontainerspulsar.WithConfigModifier(func(config *container.Config) {
+				testcontainers.WithConfigModifier(func(config *container.Config) {
 					config.Env = append(config.Env, "PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m")
 				}),
-				testcontainerspulsar.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
+				testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 					hostConfig.Resources = container.Resources{
 						Memory: 1024 * 1024 * 1024,
 					}
 				}),
-				testcontainerspulsar.WithEndpointSettingsModifier(func(settings map[string]*network.EndpointSettings) {
+				testcontainers.WithEndpointSettingsModifier(func(settings map[string]*network.EndpointSettings) {
 					settings[nwName] = &network.EndpointSettings{
 						Aliases: []string{"pulsar"},
 					}

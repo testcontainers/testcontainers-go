@@ -155,6 +155,27 @@ func WithImage(image string) CustomizeRequestOption {
 	}
 }
 
+// WithConfigModifier allows to override the default container config
+func WithConfigModifier(modifier func(config *container.Config)) CustomizeRequestOption {
+	return func(req *ContainerRequest) {
+		req.ConfigModifier = modifier
+	}
+}
+
+// WithEndpointSettingsModifier allows to override the default endpoint settings
+func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) CustomizeRequestOption {
+	return func(req *ContainerRequest) {
+		req.EnpointSettingsModifier = modifier
+	}
+}
+
+// WithHostConfigModifier allows to override the default host config
+func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) CustomizeRequestOption {
+	return func(req *ContainerRequest) {
+		req.HostConfigModifier = modifier
+	}
+}
+
 // WithWaitStrategy sets the wait strategy for a container, using 1 minute as deadline
 func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
 	return WithWaitStrategyAndDuration(1*time.Minute, strategies...)

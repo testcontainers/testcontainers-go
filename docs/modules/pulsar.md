@@ -87,7 +87,7 @@ If you want to know more about LogConsumers, please check the [Following Contain
 ## Advanced configuration
 
 In the case you need a more advanced configuration regarding the config, host config and endpoint settings Docker types, you can leverage the modifier functions that are available in
-the ContainerRequest. The Pulsar container exposes a way to interact with those modifiers in a simple manner, using the aforementioned options in the `StartContainer` function:
+the ContainerRequest. The Pulsar container exposes a way to interact with those modifiers in a simple manner, using the aforementioned options in the `RunContainer` function:
 
 <!--codeinclude-->
 [Advanced Docker settings](../../modules/pulsar/pulsar_test.go) inside_block:advancedDockerSettings

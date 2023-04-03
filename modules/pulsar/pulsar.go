@@ -6,8 +6,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -71,20 +69,6 @@ type ContainerRequest struct {
 	testcontainers.ContainerRequest
 }
 
-// WithConfigModifier allows to override the default container config
-func WithConfigModifier(modifier func(config *container.Config)) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.ContainerRequest) {
-		req.ConfigModifier = modifier
-	}
-}
-
-// WithEndpointSettingsModifier allows to override the default endpoint settings
-func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.ContainerRequest) {
-		req.EnpointSettingsModifier = modifier
-	}
-}
-
 // WithFunctionsWorker enables the functions worker, which will override the default pulsar command
 // and add a waiting strategy for the functions worker
 func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
@@ -98,13 +82,6 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 		)
 
 		req.WaitingFor = defaultWaitStrategies
-	}
-}
-
-// WithHostConfigModifier allows to override the default host config
-func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.ContainerRequest) {
-		req.HostConfigModifier = modifier
 	}
 }
 
