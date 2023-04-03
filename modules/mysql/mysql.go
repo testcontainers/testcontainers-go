@@ -24,8 +24,8 @@ type MySQLContainer struct {
 	database string
 }
 
-// StartContainer creates an instance of the MySQL container type
-func StartContainer(ctx context.Context, opts ...testcontainers.CustomizeContainerRequestOption) (*MySQLContainer, error) {
+// RunContainer creates an instance of the MySQL container type
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*MySQLContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
@@ -101,25 +101,25 @@ func (c *MySQLContainer) ConnectionString(ctx context.Context, args ...string) (
 	return connectionString, nil
 }
 
-func WithUsername(username string) testcontainers.CustomizeContainerRequestOption {
+func WithUsername(username string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		req.Env["MYSQL_USER"] = username
 	}
 }
 
-func WithPassword(password string) testcontainers.CustomizeContainerRequestOption {
+func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		req.Env["MYSQL_PASSWORD"] = password
 	}
 }
 
-func WithDatabase(database string) testcontainers.CustomizeContainerRequestOption {
+func WithDatabase(database string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		req.Env["MYSQL_DATABASE"] = database
 	}
 }
 
-func WithConfigFile(configFile string) testcontainers.CustomizeContainerRequestOption {
+func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
@@ -130,7 +130,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeContainerRequestO
 	}
 }
 
-func WithScripts(scripts ...string) testcontainers.CustomizeContainerRequestOption {
+func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		var initScripts []testcontainers.ContainerFile
 		for _, script := range scripts {

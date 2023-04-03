@@ -452,7 +452,7 @@ func TestOverrideContainerRequest(t *testing.T) {
 	}
 
 	// the toBeMergedRequest should be merged into the req
-	CustomizeContainerRequest(toBeMergedRequest)(&req)
+	CustomizeRequest(toBeMergedRequest)(&req)
 
 	// toBeMergedRequest should not be changed
 	assert.Equal(t, "", toBeMergedRequest.Env["BAR"])

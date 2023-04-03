@@ -47,7 +47,7 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string
 // WithConfigFile sets the config file to be used for the postgres container
 // It will also set the "config_file" parameter to the path of the config file
 // as a command line argument to the container
-func WithConfigFile(cfg string) testcontainers.CustomizeContainerRequestOption {
+func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		cfgFile := testcontainers.ContainerFile{
 			HostFilePath:      cfg,
@@ -64,14 +64,14 @@ func WithConfigFile(cfg string) testcontainers.CustomizeContainerRequestOption {
 // WithDatabase sets the initial database to be created when the container starts
 // It can be used to define a different name for the default database that is created when the image is first started.
 // If it is not specified, then the value of WithUser will be used.
-func WithDatabase(dbName string) testcontainers.CustomizeContainerRequestOption {
+func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		req.Env["POSTGRES_DB"] = dbName
 	}
 }
 
 // WithInitScripts sets the init scripts to be run when the container starts
-func WithInitScripts(scripts ...string) testcontainers.CustomizeContainerRequestOption {
+func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		initScripts := []testcontainers.ContainerFile{}
 		for _, script := range scripts {
@@ -109,8 +109,8 @@ func WithUsername(user string) func(req *testcontainers.ContainerRequest) {
 	}
 }
 
-// StartContainer creates an instance of the postgres container type
-func StartContainer(ctx context.Context, opts ...testcontainers.CustomizeContainerRequestOption) (*PostgresContainer, error) {
+// RunContainer creates an instance of the postgres container type
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*PostgresContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image: defaultPostgresImage,
 		Env: map[string]string{

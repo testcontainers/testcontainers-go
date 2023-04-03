@@ -53,7 +53,7 @@ func TestPostgres(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// postgresCreateContainer {
-			container, err := StartContainer(ctx,
+			container, err := RunContainer(ctx,
 				testcontainers.WithImage(tt.image),
 				WithDatabase(dbname),
 				WithUsername(user),
@@ -105,7 +105,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 
 	t.Run("default query", func(t *testing.T) {
 		// withInitialDatabase {
-		container, err := StartContainer(
+		container, err := RunContainer(
 			ctx,
 			WithDatabase(dbname),
 			WithUsername(user),
@@ -118,7 +118,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	})
 	t.Run("custom query", func(t *testing.T) {
 		// withWaitStrategy {
-		container, err := StartContainer(
+		container, err := RunContainer(
 			ctx,
 			WithDatabase(dbname),
 			WithUsername(user),
@@ -130,7 +130,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 		// }
 	})
 	t.Run("custom bad query", func(t *testing.T) {
-		container, err := StartContainer(
+		container, err := RunContainer(
 			ctx,
 			WithDatabase(dbname),
 			WithUsername(user),
@@ -146,7 +146,7 @@ func TestWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	// withConfigFile {
-	container, err := StartContainer(ctx,
+	container, err := RunContainer(ctx,
 		WithConfigFile(filepath.Join("testdata", "my-postgres.conf")),
 		WithDatabase(dbname),
 		WithUsername(user),
@@ -178,7 +178,7 @@ func TestWithInitScript(t *testing.T) {
 	ctx := context.Background()
 
 	// withInitScripts {
-	container, err := StartContainer(ctx,
+	container, err := RunContainer(ctx,
 		testcontainers.WithImage("docker.io/postgres:15.2-alpine"),
 		WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		WithDatabase(dbname),

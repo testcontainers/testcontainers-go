@@ -47,7 +47,7 @@ func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
 }
 
 // StartContainer creates an instance of the Redis container type
-func StartContainer(ctx context.Context, opts ...testcontainers.CustomizeContainerRequestOption) (*RedisContainer, error) {
+func StartContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*RedisContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImage,
 		ExposedPorts: []string{"6379/tcp"},
@@ -71,7 +71,7 @@ func StartContainer(ctx context.Context, opts ...testcontainers.CustomizeContain
 
 // WithConfigFile sets the config file to be used for the redis container, and sets the command to run the redis server
 // using the passed config file
-func WithConfigFile(configFile string) testcontainers.CustomizeContainerRequestOption {
+func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	const defaultConfigFile = "/usr/local/redis.conf"
 
 	return func(req *testcontainers.ContainerRequest) {
@@ -100,7 +100,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeContainerRequestO
 
 // WithLogLevel sets the log level for the redis server process
 // See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
-func WithLogLevel(level LogLevel) testcontainers.CustomizeContainerRequestOption {
+func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.ContainerRequest) {
 		processRedisServerArgs(req, []string{"--loglevel", string(level)})
 	}
@@ -110,7 +110,7 @@ func WithLogLevel(level LogLevel) testcontainers.CustomizeContainerRequestOption
 // save the dataset every N seconds if there are at least M changes in the dataset.
 // This method allows Redis to benefit from copy-on-write semantics.
 // See https://redis.io/docs/management/persistence/#snapshotting for more information.
-func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeContainerRequestOption {
+func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequestOption {
 	if changedKeys < 1 {
 		changedKeys = 1
 	}

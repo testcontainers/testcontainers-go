@@ -66,11 +66,11 @@ We are going to propose a set of steps to follow when adding types and methods t
 
 - Make sure a public `Container` type exists for the module. This type have to use composition to embed the `testcontainers.Container` type, inheriting all the methods from it.
 - Make sure a `RunContainer` function exists and is public. This function is the entrypoint to the module and will define the initial values for a `testcontainers.ContainerRequest` struct, including the image, the default exposed ports, wait strategies, etc. Therefore, the function must initialise the container request with the default values.
-- Define container options for the module. We consider that a best practice for the options is to return a function that returns a modified `testcontainers.ContainerRequest` type, and for that, the library already provides with a `testcontainers.CustomizeContainerRequestOption` type representing this function signature.
+- Define container options for the module. We consider that a best practice for the options is to return a function that returns a modified `testcontainers.ContainerRequest` type, and for that, the library already provides with a `testcontainers.CustomizeRequestOption` type representing this function signature.
 - The options will be passed to the `RunContainer` function as variadic arguments after the Go context, and they will be processed right after defining the initial `testcontainers.ContainerRequest` struct using a for loop.
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeContainerRequestOption) (*Container, error) {...}
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*Container, error) {...}
 ```
 
 - If needed, define public methods to extract information from the running container, using the `Container` type as receiver. E.g. a connection string to access a database:

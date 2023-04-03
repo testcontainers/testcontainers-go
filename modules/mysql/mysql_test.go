@@ -15,7 +15,7 @@ func TestMySQL(t *testing.T) {
 	ctx := context.Background()
 
 	// createMysqlContainer {
-	container, err := StartContainer(ctx)
+	container, err := RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestMySQL(t *testing.T) {
 func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := StartContainer(ctx,
+	_, err := RunContainer(ctx,
 		WithDatabase("foo"),
 		WithUsername("test"),
 		WithPassword(""))
@@ -66,7 +66,7 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
 	// customInitialization {
-	container, err := StartContainer(ctx,
+	container, err := RunContainer(ctx,
 		WithDatabase("foo"),
 		WithUsername("root"),
 		WithPassword(""))
@@ -108,7 +108,7 @@ func TestMySQLWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	// withConfigFile {
-	container, err := StartContainer(ctx, testcontainers.WithImage("mysql:5.6"),
+	container, err := RunContainer(ctx, testcontainers.WithImage("mysql:5.6"),
 		WithConfigFile("./testdata/my.cnf"))
 	if err != nil {
 		t.Fatal(err)
@@ -154,7 +154,7 @@ func TestMySQLWithScripts(t *testing.T) {
 	ctx := context.Background()
 
 	// withScripts {
-	container, err := StartContainer(ctx,
+	container, err := RunContainer(ctx,
 		WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)

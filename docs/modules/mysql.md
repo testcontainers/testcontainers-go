@@ -19,11 +19,11 @@ go get github.com/testcontainers/testcontainers-go/modules/mysql
 The MySQL module exposes one entrypoint function to create the container, and this function receives two parameters:
 
 ```golang
-func StartContainer(ctx context.Context, opts ...Option) (*MySQLContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*MySQLContainer, error) {
 ```
 
 - `context.Context`, the Go context.
-- `Option`, a variad argument for passing options.
+- `testcontainers.CustomizeRequestOption`, a variad argument for passing options.
 
 ## Container Options
 
