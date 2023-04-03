@@ -46,8 +46,8 @@ func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
 	return uri, nil
 }
 
-// StartContainer creates an instance of the Redis container type
-func StartContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*RedisContainer, error) {
+// RunContainer creates an instance of the Redis container type
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*RedisContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImage,
 		ExposedPorts: []string{"6379/tcp"},
