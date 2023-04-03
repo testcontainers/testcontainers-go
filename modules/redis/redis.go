@@ -54,14 +54,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOp
 		WaitingFor:   wait.ForLog("* Ready to accept connections"),
 	}
 
-	for _, opt := range opts {
-		opt(&req)
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
-	})
+	}
+
+	for _, opt := range opts {
+		opt(&genericContainerReq)
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +76,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOp
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	const defaultConfigFile = "/usr/local/redis.conf"
 
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: defaultConfigFile,
@@ -101,7 +103,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // WithLogLevel sets the log level for the redis server process
 // See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
 func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) {
 		processRedisServerArgs(req, []string{"--loglevel", string(level)})
 	}
 }
@@ -118,12 +120,12 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 		seconds = 1
 	}
 
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) {
 		processRedisServerArgs(req, []string{"--save", fmt.Sprintf("%d", seconds), fmt.Sprintf("%d", changedKeys)})
 	}
 }
 
-func processRedisServerArgs(req *testcontainers.ContainerRequest, args []string) {
+func processRedisServerArgs(req *testcontainers.GenericContainerRequest, args []string) {
 	if len(req.Cmd) == 0 {
 		req.Cmd = append([]string{redisServerProcess}, args...)
 		return

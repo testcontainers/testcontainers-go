@@ -68,7 +68,7 @@ func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, erro
 // WithFunctionsWorker enables the functions worker, which will override the default pulsar command
 // and add a waiting strategy for the functions worker
 func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) {
 		req.Cmd = []string{"/bin/bash", "-c", defaultPulsarCmd}
 
 		// add the waiting strategy for the functions worker
@@ -95,13 +95,13 @@ func (c *Container) WithLogConsumers(ctx context.Context, consumer ...testcontai
 
 // WithPulsarEnv allows to use the native APIs and set each variable with PULSAR_PREFIX_ as prefix.
 func WithPulsarEnv(configVar string, configValue string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) {
 		req.Env["PULSAR_PREFIX_"+configVar] = configValue
 	}
 }
 
 func WithTransactions() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) {
 		WithPulsarEnv("transactionCoordinatorEnabled", "true")(req)
 
 		// add the waiting strategy for the transaction topic
@@ -133,14 +133,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOp
 		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, detaultPulsarCmdWithoutFunctionsWorker}, " ")},
 	}
 
-	for _, opt := range opts {
-		opt(&req)
-	}
-
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
-	})
+	}
+
+	for _, opt := range opts {
+		opt(&genericContainerReq)
+	}
+
+	c, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
 	}

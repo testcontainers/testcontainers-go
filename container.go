@@ -13,7 +13,6 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
-	"github.com/imdario/mergo"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
@@ -132,61 +131,6 @@ type containerOptions struct {
 
 // functional option for setting the reaper image
 type ContainerOption func(*containerOptions)
-
-// CustomizeRequestOption is a type that can be used to configure the Testcontainers container request.
-// The passed request will be merged with the default one.
-type CustomizeRequestOption func(req *ContainerRequest)
-
-// CustomizeRequest returns a function that can be used to merge the passed container request with the one that is used by the container.
-// Slices and Maps will be appended.
-func CustomizeRequest(src ContainerRequest) CustomizeRequestOption {
-	return func(req *ContainerRequest) {
-		if err := mergo.Merge(req, &src, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
-			fmt.Printf("error merging container request, keeping the original one. Error: %v", err)
-			return
-		}
-	}
-}
-
-// WithImage sets the image for a container
-func WithImage(image string) CustomizeRequestOption {
-	return func(req *ContainerRequest) {
-		req.Image = image
-	}
-}
-
-// WithConfigModifier allows to override the default container config
-func WithConfigModifier(modifier func(config *container.Config)) CustomizeRequestOption {
-	return func(req *ContainerRequest) {
-		req.ConfigModifier = modifier
-	}
-}
-
-// WithEndpointSettingsModifier allows to override the default endpoint settings
-func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) CustomizeRequestOption {
-	return func(req *ContainerRequest) {
-		req.EnpointSettingsModifier = modifier
-	}
-}
-
-// WithHostConfigModifier allows to override the default host config
-func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) CustomizeRequestOption {
-	return func(req *ContainerRequest) {
-		req.HostConfigModifier = modifier
-	}
-}
-
-// WithWaitStrategy sets the wait strategy for a container, using 60 seconds as deadline
-func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
-	return WithWaitStrategyAndDeadline(60*time.Second, strategies...)
-}
-
-// WithWaitStrategyAndDeadline sets the wait strategy for a container, including deadline
-func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Strategy) CustomizeRequestOption {
-	return func(req *ContainerRequest) {
-		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
-	}
-}
 
 // WithImageName sets the reaper image name
 func WithImageName(imageName string) ContainerOption {
