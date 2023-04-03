@@ -25,6 +25,8 @@ markdown_extensions:
     - pymdownx.tabbed:
         alternate_style: true
     - pymdownx.snippets
+    - toc:
+        permalink: true
 nav:
     - Home: index.md
     - Quickstart: quickstart.md
