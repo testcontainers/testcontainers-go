@@ -129,7 +129,7 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 // 		- the log message "Successfully updated the policies on namespace public/default"
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
 func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*Container, error) {
-	req := &testcontainers.ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image:        defaultPulsarImage,
 		Env:          map[string]string{},
 		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
@@ -137,16 +137,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOp
 		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, detaultPulsarCmdWithoutFunctionsWorker}, " ")},
 	}
 
-	pulsarRequest := ContainerRequest{
-		ContainerRequest: *req,
-	}
-
 	for _, opt := range opts {
-		opt(req)
+		opt(&req)
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: pulsarRequest.ContainerRequest,
+		ContainerRequest: req,
 		Started:          true,
 	})
 	if err != nil {
