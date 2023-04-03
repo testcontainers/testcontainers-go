@@ -80,7 +80,7 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {...}
 ```
 
 - Document the public API with Go comments.
-- Extend the docs to describe the new API of the module. We usually define a parent `Module reference` section, including a `Container options` subsection; within the `Container options` subsection, we define a subsection for each option.
+- Extend the docs to describe the new API of the module. We usually define a parent `Module reference` section, including a `Container options` and a `Container methods` subsections; within each subsection, we define a nested subsection for each option and method, respectively.
 
 ## Update Go dependencies in the modules
 
