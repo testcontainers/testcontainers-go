@@ -17,3 +17,14 @@ go get github.com/testcontainers/testcontainers-go/{{ ParentDir }}/{{ $lower }}
 {{ codeinclude "<!--codeinclude-->" }}
 [Test for a {{ $title }} container](../../{{ ParentDir }}/{{ $lower }}/{{ $lower }}_test.go)
 {{ codeinclude "<!--/codeinclude-->" }}
+
+## Module reference
+
+The {{ $title }} module exposes one entrypoint function to create the {{ $title }} container, and this function receives two parameters:
+
+```golang
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*{{ $title }}Container, error)
+```
+
+- `context.Context`, the Go context.
+- `testcontainers.CustomizeRequestOption`, a variadic argument for passing options.
