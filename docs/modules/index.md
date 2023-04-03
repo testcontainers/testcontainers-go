@@ -82,6 +82,18 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {...}
 - Document the public API with Go comments.
 - Extend the docs to describe the new API of the module. We usually define a parent `Module reference` section, including a `Container options` and a `Container methods` subsections; within each subsection, we define a nested subsection for each option and method, respectively.
 
+### ContainerRequest options
+
+`Testcontainers for Go` provides with a set of default options to customise the container request for a given module, in order to simplify the creation of the container. These options are:
+
+- `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customising the container request.
+- `testcontainers.WithImage`: a function that sets the image for the container request.
+- `testcontainers.WithConfigModifier`: a function that sets the config Docker type for the container request.
+- `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request.
+- `testcontainers.WithHostConfigModifier`: a function that sets the host config Docker type for the container request.
+- `testcontainers.WithWaitStrategy`: a function that sets the wait strategy for the container request.
+- `testcontainers.WithWaitStrategyAndDeadline`
+
 ## Update Go dependencies in the modules
 
 To update the Go dependencies in the modules, please run:

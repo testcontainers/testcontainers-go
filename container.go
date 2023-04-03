@@ -178,11 +178,11 @@ func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) Cus
 
 // WithWaitStrategy sets the wait strategy for a container, using 1 minute as deadline
 func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
-	return WithWaitStrategyAndDuration(1*time.Minute, strategies...)
+	return WithWaitStrategyAndDeadline(1*time.Minute, strategies...)
 }
 
-// WithWaitStrategy sets the wait strategy for a container, including deadline
-func WithWaitStrategyAndDuration(deadline time.Duration, strategies ...wait.Strategy) CustomizeRequestOption {
+// WithWaitStrategyAndDeadline sets the wait strategy for a container, including deadline
+func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Strategy) CustomizeRequestOption {
 	return func(req *ContainerRequest) {
 		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
 	}
