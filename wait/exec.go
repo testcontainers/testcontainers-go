@@ -2,7 +2,10 @@ package wait
 
 import (
 	"context"
+	"io"
 	"time"
+
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 
 // Implement interface
@@ -16,6 +19,7 @@ type ExecStrategy struct {
 
 	// additional properties
 	ExitCodeMatcher func(exitCode int) bool
+	ResponseMatcher func(body io.Reader) bool
 	PollInterval    time.Duration
 }
 
@@ -24,6 +28,7 @@ func NewExecStrategy(cmd []string) *ExecStrategy {
 	return &ExecStrategy{
 		cmd:             cmd,
 		ExitCodeMatcher: defaultExitCodeMatcher,
+		ResponseMatcher: func(body io.Reader) bool { return true },
 		PollInterval:    defaultPollInterval(),
 	}
 }
@@ -40,6 +45,11 @@ func (ws *ExecStrategy) WithStartupTimeout(startupTimeout time.Duration) *ExecSt
 
 func (ws *ExecStrategy) WithExitCodeMatcher(exitCodeMatcher func(exitCode int) bool) *ExecStrategy {
 	ws.ExitCodeMatcher = exitCodeMatcher
+	return ws
+}
+
+func (ws *ExecStrategy) WithResponseMatcher(matcher func(body io.Reader) bool) *ExecStrategy {
+	ws.ResponseMatcher = matcher
 	return ws
 }
 
@@ -72,11 +82,14 @@ func (ws *ExecStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(ws.PollInterval):
-			exitCode, _, err := target.Exec(ctx, ws.cmd)
+			exitCode, resp, err := target.Exec(ctx, ws.cmd, tcexec.Multiplexed())
 			if err != nil {
 				return err
 			}
 			if !ws.ExitCodeMatcher(exitCode) {
+				continue
+			}
+			if ws.ResponseMatcher != nil && !ws.ResponseMatcher(resp) {
 				continue
 			}
 
