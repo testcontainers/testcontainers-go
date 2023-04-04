@@ -54,10 +54,11 @@ nav:
     - Modules:
         - modules/index.md
         - modules/couchbase.md
+        - modules/kafka.md
         - modules/localstack.md
         - modules/mysql.md
-        - modules/postgres.md
         - modules/neo4j.md
+        - modules/postgres.md
         - modules/pulsar.md
         - modules/redis.md
         - modules/vault.md
