@@ -46,22 +46,24 @@ func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
 	return uri, nil
 }
 
-// StartContainer creates an instance of the Redis container type
-func StartContainer(ctx context.Context, opts ...RedisContainerOption) (*RedisContainer, error) {
+// RunContainer creates an instance of the Redis container type
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*RedisContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImage,
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("* Ready to accept connections"),
 	}
 
-	for _, opt := range opts {
-		opt(&req)
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
-	})
+	}
+
+	for _, opt := range opts {
+		opt(&genericContainerReq)
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
 	}
@@ -69,22 +71,12 @@ func StartContainer(ctx context.Context, opts ...RedisContainerOption) (*RedisCo
 	return &RedisContainer{Container: container}, nil
 }
 
-// RedisContainerOption is a function that configures the redis container, affecting the container request
-type RedisContainerOption func(req *testcontainers.ContainerRequest)
-
-// WithImage sets the image to be used for the redis container
-func WithImage(image string) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
-		req.Image = image
-	}
-}
-
 // WithConfigFile sets the config file to be used for the redis container, and sets the command to run the redis server
 // using the passed config file
-func WithConfigFile(configFile string) func(req *testcontainers.ContainerRequest) {
+func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	const defaultConfigFile = "/usr/local/redis.conf"
 
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: defaultConfigFile,
@@ -110,8 +102,8 @@ func WithConfigFile(configFile string) func(req *testcontainers.ContainerRequest
 
 // WithLogLevel sets the log level for the redis server process
 // See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
-func WithLogLevel(level LogLevel) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
+func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
 		processRedisServerArgs(req, []string{"--loglevel", string(level)})
 	}
 }
@@ -120,7 +112,7 @@ func WithLogLevel(level LogLevel) func(req *testcontainers.ContainerRequest) {
 // save the dataset every N seconds if there are at least M changes in the dataset.
 // This method allows Redis to benefit from copy-on-write semantics.
 // See https://redis.io/docs/management/persistence/#snapshotting for more information.
-func WithSnapshotting(seconds int, changedKeys int) func(req *testcontainers.ContainerRequest) {
+func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequestOption {
 	if changedKeys < 1 {
 		changedKeys = 1
 	}
@@ -128,12 +120,12 @@ func WithSnapshotting(seconds int, changedKeys int) func(req *testcontainers.Con
 		seconds = 1
 	}
 
-	return func(req *testcontainers.ContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) {
 		processRedisServerArgs(req, []string{"--save", fmt.Sprintf("%d", seconds), fmt.Sprintf("%d", changedKeys)})
 	}
 }
 
-func processRedisServerArgs(req *testcontainers.ContainerRequest, args []string) {
+func processRedisServerArgs(req *testcontainers.GenericContainerRequest, args []string) {
 	if len(req.Cmd) == 0 {
 		req.Cmd = append([]string{redisServerProcess}, args...)
 		return

@@ -3,8 +3,9 @@ package vault
 import (
 	"context"
 	"fmt"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"strings"
+
+	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/testcontainers/testcontainers-go"
@@ -15,16 +16,13 @@ const (
 	defaultImageName = "hashicorp/vault:1.13.0"
 )
 
-// ContainerOptions is a function that can be used to configure the Vault container
-type ContainerOptions func(req *testcontainers.ContainerRequest)
-
 // VaultContainer represents the vault container type used in the module
 type VaultContainer struct {
 	testcontainers.Container
 }
 
-// StartContainer creates an instance of the vault container type
-func StartContainer(ctx context.Context, opts ...ContainerOptions) (*VaultContainer, error) {
+// RunContainer creates an instance of the vault container type
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*VaultContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImageName,
 		ExposedPorts: []string{defaultPort + "/tcp"},
@@ -37,14 +35,16 @@ func StartContainer(ctx context.Context, opts ...ContainerOptions) (*VaultContai
 		},
 	}
 
-	for _, opt := range opts {
-		opt(&req)
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
-	})
+	}
+
+	for _, opt := range opts {
+		opt(&genericContainerReq)
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
 	}
@@ -52,24 +52,17 @@ func StartContainer(ctx context.Context, opts ...ContainerOptions) (*VaultContai
 	return &VaultContainer{container}, nil
 }
 
-// WithImageName is an option function that sets the Docker image name for the Vault
-func WithImageName(imageName string) ContainerOptions {
-	return func(req *testcontainers.ContainerRequest) {
-		req.Image = imageName
-	}
-}
-
 // WithToken is a container option function that sets the root token for the Vault
-func WithToken(token string) ContainerOptions {
-	return func(req *testcontainers.ContainerRequest) {
+func WithToken(token string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
 		req.Env["VAULT_DEV_ROOT_TOKEN_ID"] = token
 		req.Env["VAULT_TOKEN"] = token
 	}
 }
 
 // WithInitCommand is an option function that adds a set of initialization commands to the Vault's configuration
-func WithInitCommand(commands ...string) ContainerOptions {
-	return func(req *testcontainers.ContainerRequest) {
+func WithInitCommand(commands ...string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
 		commandsList := make([]string, 0, len(commands))
 		for _, command := range commands {
 			commandsList = append(commandsList, "vault "+command)

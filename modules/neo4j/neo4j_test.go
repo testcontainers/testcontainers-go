@@ -3,11 +3,12 @@ package neo4j_test
 import (
 	"context"
 	"fmt"
-	neo "github.com/neo4j/neo4j-go-driver/v5/neo4j"
-	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 	"io"
 	"strings"
 	"testing"
+
+	neo "github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 )
 
 const testPassword = "letmein!"
@@ -64,8 +65,20 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 
 	ctx := context.Background()
 
+	outer.Run("without authentication", func(t *testing.T) {
+		container, err := neo4j.RunContainer(ctx)
+		if err != nil {
+			t.Fatalf("expected env to successfully run but did not: %s", err)
+		}
+		t.Cleanup(func() {
+			if err := container.Terminate(ctx); err != nil {
+				outer.Fatalf("failed to terminate container: %s", err)
+			}
+		})
+	})
+
 	outer.Run("ignores auth setting outside WithAdminPassword", func(t *testing.T) {
-		container, err := neo4j.StartContainer(ctx,
+		container, err := neo4j.RunContainer(ctx,
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("AUTH", "neo4j/thisisgonnabeignored"),
 		)
@@ -87,7 +100,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 
 	outer.Run("warns about overwrites of setting keys", func(t *testing.T) {
 		logger := &inMemoryLogger{}
-		container, err := neo4j.StartContainer(ctx,
+		container, err := neo4j.RunContainer(ctx,
 			neo4j.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("some.key", "value1"),
@@ -114,7 +127,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	})
 
 	outer.Run("rejects nil logger", func(t *testing.T) {
-		container, err := neo4j.StartContainer(ctx, neo4j.WithLogger(nil))
+		container, err := neo4j.RunContainer(ctx, neo4j.WithLogger(nil))
 
 		if container != nil {
 			t.Fatalf("container must not be created with nil logger")
@@ -127,7 +140,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 
 func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Neo4jContainer {
 	// neo4jCreateContainer {
-	container, err := neo4j.StartContainer(ctx,
+	container, err := neo4j.RunContainer(ctx,
 		neo4j.WithAdminPassword(testPassword),
 		neo4j.WithLabsPlugin(neo4j.Apoc),
 		neo4j.WithNeo4jSetting("dbms.tx_log.rotation.size", "42M"),

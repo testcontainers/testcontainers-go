@@ -19,11 +19,11 @@ go get github.com/testcontainers/testcontainers-go/modules/redis
 The Redis module exposes one entrypoint function to create the containerr, and this function receives two parameters:
 
 ```golang
-func StartContainer(ctx context.Context, opts ...RedisContainerOption) (*RedisContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*RedisContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `RedisContainerOption`, a variad argument for passing options.
+- `testcontainers.CustomizeRequestOption`, a variad argument for passing options.
 
 ### Container Options
 
@@ -34,8 +34,8 @@ When starting the Redis container, you can pass options in a variadic way to con
 
 #### Image
 
-If you need to set a different Redis Docker image, you can use `WithImage` with a valid Docker image
-for Postgres. E.g. `WithImage("docker.io/redis:7")`.
+If you need to set a different Redis Docker image, you can use `testcontainers.WithImage` with a valid Docker image
+for Postgres. E.g. `testcontainers.WithImage("docker.io/redis:7")`.
 
 <!--codeinclude-->
 [Use a different image](../../modules/redis/redis_test.go) inside_block:withImage

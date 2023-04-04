@@ -3,10 +3,11 @@ package neo4j
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"net/http"
 )
 
 const defaultImageName = "neo4j"
@@ -36,26 +37,14 @@ func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
 	return fmt.Sprintf("neo4j://%s:%d", host, mappedPort.Int()), nil
 }
 
-// StartContainer creates an instance of the Neo4j container type
-func StartContainer(ctx context.Context, options ...Option) (*Neo4jContainer, error) {
-	settings := &config{
-		imageCoordinates: fmt.Sprintf("docker.io/%s:%s", defaultImageName, defaultTag),
-		adminPassword:    "password",
-		neo4jSettings:    map[string]string{},
-		logger:           testcontainers.Logger,
-	}
-	for _, option := range options {
-		option(settings)
-	}
-
-	if err := settings.validate(); err != nil {
-		return nil, err
-	}
-
+// RunContainer creates an instance of the Neo4j container type
+func RunContainer(ctx context.Context, options ...testcontainers.CustomizeRequestOption) (*Neo4jContainer, error) {
 	httpPort, _ := nat.NewPort("tcp", defaultHttpPort)
 	request := testcontainers.ContainerRequest{
-		Image: settings.imageCoordinates,
-		Env:   settings.exportEnv(),
+		Image: fmt.Sprintf("docker.io/%s:%s", defaultImageName, defaultTag),
+		Env: map[string]string{
+			"NEO4J_AUTH": "none",
+		},
 		ExposedPorts: []string{
 			fmt.Sprintf("%s/tcp", defaultBoltPort),
 			fmt.Sprintf("%s/tcp", defaultHttpPort),
@@ -71,10 +60,29 @@ func StartContainer(ctx context.Context, options ...Option) (*Neo4jContainer, er
 			},
 		},
 	}
+
+	genericContainerReq := testcontainers.GenericContainerRequest{
+		ContainerRequest: request,
+		Logger:           testcontainers.Logger,
+		Started:          true,
+	}
+
+	if len(options) == 0 {
+		options = append(options, WithoutAuthentication())
+	}
+
+	for _, option := range options {
+		option(&genericContainerReq)
+	}
+
+	err := validate(&genericContainerReq)
+	if err != nil {
+		return nil, err
+	}
+
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: request,
 		Started:          true,
-		Logger:           settings.logger,
 	})
 	if err != nil {
 		return nil, err

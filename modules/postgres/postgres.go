@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"time"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const defaultUser = "postgres"
@@ -46,32 +44,11 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string
 	return connStr, nil
 }
 
-// PostgresContainerOption is a function that configures the postgres container, affecting the container request
-type PostgresContainerOption func(req *testcontainers.ContainerRequest)
-
-// WithWaitStrategy sets the wait strategy for the postgres container
-func WithWaitStrategy(strategies ...wait.Strategy) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
-		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(1 * time.Minute)
-	}
-}
-
-// WithImage sets the image to be used for the postgres container
-func WithImage(image string) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
-		if image == "" {
-			image = defaultPostgresImage
-		}
-
-		req.Image = image
-	}
-}
-
 // WithConfigFile sets the config file to be used for the postgres container
 // It will also set the "config_file" parameter to the path of the config file
 // as a command line argument to the container
-func WithConfigFile(cfg string) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
+func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
 		cfgFile := testcontainers.ContainerFile{
 			HostFilePath:      cfg,
 			ContainerFilePath: "/etc/postgresql.conf",
@@ -87,15 +64,15 @@ func WithConfigFile(cfg string) func(req *testcontainers.ContainerRequest) {
 // WithDatabase sets the initial database to be created when the container starts
 // It can be used to define a different name for the default database that is created when the image is first started.
 // If it is not specified, then the value of WithUser will be used.
-func WithDatabase(dbName string) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
+func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
 		req.Env["POSTGRES_DB"] = dbName
 	}
 }
 
 // WithInitScripts sets the init scripts to be run when the container starts
-func WithInitScripts(scripts ...string) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
+func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
 		initScripts := []testcontainers.ContainerFile{}
 		for _, script := range scripts {
 			cf := testcontainers.ContainerFile{
@@ -112,8 +89,8 @@ func WithInitScripts(scripts ...string) func(req *testcontainers.ContainerReques
 // WithPassword sets the initial password of the user to be created when the container starts
 // It is required for you to use the PostgreSQL image. It must not be empty or undefined.
 // This environment variable sets the superuser password for PostgreSQL.
-func WithPassword(password string) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
+func WithPassword(password string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
 		req.Env["POSTGRES_PASSWORD"] = password
 	}
 }
@@ -122,8 +99,8 @@ func WithPassword(password string) func(req *testcontainers.ContainerRequest) {
 // It is used in conjunction with WithPassword to set a user and its password.
 // It will create the specified user with superuser power and a database with the same name.
 // If it is not specified, then the default user of postgres will be used.
-func WithUsername(user string) func(req *testcontainers.ContainerRequest) {
-	return func(req *testcontainers.ContainerRequest) {
+func WithUsername(user string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
 		if user == "" {
 			user = defaultUser
 		}
@@ -132,8 +109,8 @@ func WithUsername(user string) func(req *testcontainers.ContainerRequest) {
 	}
 }
 
-// StartContainer creates an instance of the postgres container type
-func StartContainer(ctx context.Context, opts ...PostgresContainerOption) (*PostgresContainer, error) {
+// RunContainer creates an instance of the postgres container type
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*PostgresContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image: defaultPostgresImage,
 		Env: map[string]string{
@@ -145,14 +122,16 @@ func StartContainer(ctx context.Context, opts ...PostgresContainerOption) (*Post
 		Cmd:          []string{"postgres", "-c", "fsync=off"},
 	}
 
-	for _, opt := range opts {
-		opt(&req)
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
-	})
+	}
+
+	for _, opt := range opts {
+		opt(&genericContainerReq)
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
 	}

@@ -19,11 +19,11 @@ go get github.com/testcontainers/testcontainers-go/modules/mysql
 The MySQL module exposes one entrypoint function to create the container, and this function receives two parameters:
 
 ```golang
-func StartContainer(ctx context.Context, opts ...Option) (*MySQLContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*MySQLContainer, error) {
 ```
 
 - `context.Context`, the Go context.
-- `Option`, a variad argument for passing options.
+- `testcontainers.CustomizeRequestOption`, a variad argument for passing options.
 
 ## Container Options
 
@@ -35,7 +35,7 @@ When starting the MySQL container, you can pass options in a variadic way to con
 
 ### Set Image
 
-By default, the image used is `mysql:8`.  If you need to use a different image, you can use `WithImage` option.
+By default, the image used is `mysql:8`.  If you need to use a different image, you can use `testcontainers.WithImage` option.
 
 <!--codeinclude-->
 [Custom Image](../../modules/mysql/mysql_test.go) inside_block:withConfigFile

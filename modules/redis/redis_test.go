@@ -17,7 +17,7 @@ func TestIntegrationSetGet(t *testing.T) {
 	ctx := context.Background()
 
 	// createRedisContainer {
-	redisContainer, err := StartContainer(ctx)
+	redisContainer, err := RunContainer(ctx)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
@@ -33,7 +33,7 @@ func TestRedisWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	// withConfigFile {
-	redisContainer, err := StartContainer(ctx, WithConfigFile(filepath.Join("testdata", "redis7.conf")))
+	redisContainer, err := RunContainer(ctx, WithConfigFile(filepath.Join("testdata", "redis7.conf")))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
@@ -77,7 +77,7 @@ func TestRedisWithImage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// withImage {
-			redisContainer, err := StartContainer(ctx, WithImage(tt.image), WithConfigFile(filepath.Join("testdata", "redis6.conf")))
+			redisContainer, err := RunContainer(ctx, testcontainers.WithImage(tt.image), WithConfigFile(filepath.Join("testdata", "redis6.conf")))
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				if err := redisContainer.Terminate(ctx); err != nil {
@@ -95,7 +95,7 @@ func TestRedisWithLogLevel(t *testing.T) {
 	ctx := context.Background()
 
 	// withLogLevel {
-	redisContainer, err := StartContainer(ctx, WithLogLevel(LogLevelVerbose))
+	redisContainer, err := RunContainer(ctx, WithLogLevel(LogLevelVerbose))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
@@ -111,7 +111,7 @@ func TestRedisWithSnapshotting(t *testing.T) {
 	ctx := context.Background()
 
 	// withSnapshotting {
-	redisContainer, err := StartContainer(ctx, WithSnapshotting(10, 1))
+	redisContainer, err := RunContainer(ctx, WithSnapshotting(10, 1))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
@@ -196,8 +196,10 @@ func TestWithConfigFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := &testcontainers.ContainerRequest{
-				Cmd: tt.cmds,
+			req := &testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Cmd: tt.cmds,
+				},
 			}
 
 			WithConfigFile("redis.conf")(req)
@@ -232,8 +234,10 @@ func TestWithLogLevel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := &testcontainers.ContainerRequest{
-				Cmd: tt.cmds,
+			req := &testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Cmd: tt.cmds,
+				},
 			}
 
 			WithLogLevel(LogLevelDebug)(req)
@@ -283,8 +287,10 @@ func TestWithSnapshotting(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := &testcontainers.ContainerRequest{
-				Cmd: tt.cmds,
+			req := &testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Cmd: tt.cmds,
+				},
 			}
 
 			WithSnapshotting(tt.seconds, tt.changedKeys)(req)
