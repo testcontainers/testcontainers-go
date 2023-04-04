@@ -65,6 +65,16 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 
 	ctx := context.Background()
 
+	outer.Run("without authentication", func(t *testing.T) {
+		container, err := neo4j.RunContainer(ctx)
+		if err != nil {
+			t.Fatalf("expected env to successfully run but did not: %s", err)
+		}
+		if container != nil {
+			t.Fatalf("container must not be created with nil logger")
+		}
+	})
+
 	outer.Run("ignores auth setting outside WithAdminPassword", func(t *testing.T) {
 		container, err := neo4j.RunContainer(ctx,
 			neo4j.WithAdminPassword(testPassword),

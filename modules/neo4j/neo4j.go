@@ -67,6 +67,10 @@ func RunContainer(ctx context.Context, options ...testcontainers.CustomizeReques
 		Started:          true,
 	}
 
+	if len(options) == 0 {
+		options = append(options, WithoutAuthentication())
+	}
+
 	for _, option := range options {
 		option(&genericContainerReq)
 	}
