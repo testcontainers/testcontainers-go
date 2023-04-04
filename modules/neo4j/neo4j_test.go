@@ -70,9 +70,11 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 		if err != nil {
 			t.Fatalf("expected env to successfully run but did not: %s", err)
 		}
-		if container != nil {
-			t.Fatalf("container must not be created with nil logger")
-		}
+		t.Cleanup(func() {
+			if err := container.Terminate(ctx); err != nil {
+				outer.Fatalf("failed to terminate container: %s", err)
+			}
+		})
 	})
 
 	outer.Run("ignores auth setting outside WithAdminPassword", func(t *testing.T) {
