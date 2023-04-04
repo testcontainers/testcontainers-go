@@ -421,34 +421,38 @@ func TestVolumeMount(t *testing.T) {
 }
 
 func TestOverrideContainerRequest(t *testing.T) {
-	req := ContainerRequest{
-		Env: map[string]string{
-			"BAR": "BAR",
-		},
-		Image:        "foo",
-		ExposedPorts: []string{"12345/tcp"},
-		WaitingFor: wait.ForNop(
-			func(ctx context.Context, target wait.StrategyTarget) error {
-				return nil
+	req := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Env: map[string]string{
+				"BAR": "BAR",
 			},
-		),
-		Networks: []string{"foo", "bar", "baaz"},
-		NetworkAliases: map[string][]string{
-			"foo": {"foo0", "foo1", "foo2", "foo3"},
+			Image:        "foo",
+			ExposedPorts: []string{"12345/tcp"},
+			WaitingFor: wait.ForNop(
+				func(ctx context.Context, target wait.StrategyTarget) error {
+					return nil
+				},
+			),
+			Networks: []string{"foo", "bar", "baaz"},
+			NetworkAliases: map[string][]string{
+				"foo": {"foo0", "foo1", "foo2", "foo3"},
+			},
 		},
 	}
 
-	toBeMergedRequest := ContainerRequest{
-		Env: map[string]string{
-			"FOO": "FOO",
+	toBeMergedRequest := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Env: map[string]string{
+				"FOO": "FOO",
+			},
+			Image:        "bar",
+			ExposedPorts: []string{"67890/tcp"},
+			Networks:     []string{"foo1", "bar1"},
+			NetworkAliases: map[string][]string{
+				"foo1": {"bar"},
+			},
+			WaitingFor: wait.ForLog("foo"),
 		},
-		Image:        "bar",
-		ExposedPorts: []string{"67890/tcp"},
-		Networks:     []string{"foo1", "bar1"},
-		NetworkAliases: map[string][]string{
-			"foo1": {"bar"},
-		},
-		WaitingFor: wait.ForLog("foo"),
 	}
 
 	// the toBeMergedRequest should be merged into the req
