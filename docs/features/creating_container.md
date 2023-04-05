@@ -87,6 +87,25 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 }
 ```
 
+### Lifecycle hooks
+
+_Testcontainers for Go_ allows you to define your own lifecycle hooks for better control over your containers. You just need to define functions that return an error and receive the Go context as first argument, and a `ContainerRequest` for the `Creating` hook, and a `Container` for the rest of them. The `testcontainers.ContainerLifecycleHooks` struct has the following methods:
+
+* `Creating` - called before the container is created
+* `Created` - called after the container is created
+* `Starting` - called before the container is started
+* `Started` - called after the container is started
+* `Stopping` - called before the container is stopped
+* `Stopped` - called after the container is stopped
+* `Terminating` - called before the container is terminated
+* `Terminated` - called after the container is terminated
+
+In the following example, we are going to create a container using all the lifecycle hooks, all of them printing a message when any of the lifecycle hooks is called:
+
+<!--codeinclude-->
+[Extending container with life cycle hooks](../../lifecycle_test.go) inside_block:reqWithLifecycleHooks
+<!--/codeinclude-->
+
 ### Advanced Settings
 
 The aforementioned `GenericContainer` function and the `ContainerRequest` struct represent a straightforward manner to configure the containers, but you could need to create your containers with more advance settings regarding the config, host config and endpoint settings Docker types. For those more advance settings, _Testcontainers for Go_ offers a way to fully customize the container request and those internal Docker types. These customisations, called _modifiers_, will be applied just before the internal call to the Docker client to create the container.
