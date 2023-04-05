@@ -89,23 +89,25 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 
 ### Lifecycle hooks
 
-_Testcontainers for Go_ allows you to define your own lifecycle hooks for better control over your containers. You just need to define functions that return an error and receive the Go context as first argument, and a `ContainerRequest` for the `Creating` hook, and a `Container` for the rest of them. You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an array of `testcontainers.ContainerLifecycleHooks`.
+_Testcontainers for Go_ allows you to define your own lifecycle hooks for better control over your containers. You just need to define functions that return an error and receive the Go context as first argument, and a `ContainerRequest` for the `Creating` hook, and a `Container` for the rest of them as second argument.
 
-The `testcontainers.ContainerLifecycleHooks` struct has the following methods:
+You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an array of `testcontainers.ContainerLifecycleHooks`, which will be processed one by one in the order they are passed.
 
-* `Creating` - called before the container is created
-* `Created` - called after the container is created
-* `Starting` - called before the container is started
-* `Started` - called after the container is started
-* `Stopping` - called before the container is stopped
-* `Stopped` - called after the container is stopped
-* `Terminating` - called before the container is terminated
-* `Terminated` - called after the container is terminated
+The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecycle hooks, each of them backed by an array of functions representing the hooks:
+
+* `PreCreates` - hooks that are executed before the container is created
+* `PostCreates` - hooks that are executed after the container is created
+* `PreStarts` - hooks that are executed before the container is started
+* `PostStarts` - hooks that are executed after the container is started
+* `PreStops` - hooks that are executed before the container is stopped
+* `PostStops` - hooks that are executed after the container is stopped
+* `PreTerminates` - hooks that are executed before the container is terminated
+* `PostTerminates` - hooks that are executed after the container is terminated
 
 In the following example, we are going to create a container using all the lifecycle hooks, all of them printing a message when any of the lifecycle hooks is called:
 
 <!--codeinclude-->
-[Extending container with life cycle hooks](../../lifecycle_test.go) inside_block:reqWithLifecycleHooks
+[Extending container with lifecycle hooks](../../lifecycle_test.go) inside_block:reqWithLifecycleHooks
 <!--/codeinclude-->
 
 #### Default Logging Hook

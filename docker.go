@@ -1046,6 +1046,19 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 					return p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
 				},
 			},
+			PostCreates: []ContainerHook{
+				// copy files to container after it's created
+				func(ctx context.Context, c Container) error {
+					for _, f := range req.Files {
+						err := c.CopyFileToContainer(ctx, f.HostFilePath, f.ContainerFilePath, f.FileMode)
+						if err != nil {
+							return fmt.Errorf("can't copy %s to container %s: %w", f.HostFilePath, c.GetContainerID(), err)
+						}
+					}
+
+					return nil
+				},
+			},
 		},
 	}
 
@@ -1091,13 +1104,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		stopProducer:      nil,
 		logger:            p.Logger,
 		lifecycleHooks:    req.LifecycleHooks,
-	}
-
-	for _, f := range req.Files {
-		err := c.CopyFileToContainer(ctx, f.HostFilePath, f.ContainerFilePath, f.FileMode)
-		if err != nil {
-			return nil, fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
-		}
 	}
 
 	err = c.createdHook(ctx)
