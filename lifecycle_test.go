@@ -402,9 +402,11 @@ func TestLifecycleHooks(t *testing.T) {
 	require.NotNil(t, c)
 
 	duration := 1 * time.Second
-	c.Stop(ctx, &duration)
+	err = c.Stop(ctx, &duration)
+	require.Nil(t, err)
 
-	c.Start(ctx)
+	err = c.Start(ctx)
+	require.Nil(t, err)
 
 	err = c.Terminate(ctx)
 	require.Nil(t, err)
