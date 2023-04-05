@@ -23,6 +23,9 @@ type HostPortStrategy struct {
 	// all WaitStrategies should have a startupTimeout to avoid waiting infinitely
 	timeout      *time.Duration
 	PollInterval time.Duration
+	// internalCheckDisabled is a flag to disable internal port check
+	// This is useful when waiting for containers that don't have a shell as the internal check will fail as it will try to run a command on the container
+	internalCheckDisabled bool
 }
 
 // NewHostPortStrategy constructs a default host port strategy
@@ -58,6 +61,12 @@ func (hp *HostPortStrategy) WithStartupTimeout(startupTimeout time.Duration) *Ho
 // WithPollInterval can be used to override the default polling interval of 100 milliseconds
 func (hp *HostPortStrategy) WithPollInterval(pollInterval time.Duration) *HostPortStrategy {
 	hp.PollInterval = pollInterval
+	return hp
+}
+
+// WithInternalCheckDisabled can be used to disable internal port check. This is useful when using images that don't have a shell.
+func (hp *HostPortStrategy) WithInternalCheckDisabled() *HostPortStrategy {
+	hp.internalCheckDisabled = true
 	return hp
 }
 
@@ -127,8 +136,10 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		return err
 	}
 
-	if err := internalCheck(ctx, internalPort, target); err != nil {
-		return err
+	if !hp.internalCheckDisabled {
+		if err := internalCheck(ctx, internalPort, target); err != nil {
+			return err
+		}
 	}
 
 	return nil
