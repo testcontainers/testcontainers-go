@@ -71,7 +71,7 @@ type DockerContainer struct {
 	raw               *types.ContainerJSON
 	stopProducer      chan bool
 	logger            Logging
-	lifecycleHooks    ContainerLifecycleHooks
+	lifecycleHooks    []ContainerLifecycleHooks
 }
 
 // SetLogger sets the logger for the container
@@ -188,15 +188,12 @@ func (c *DockerContainer) SessionID() string {
 
 // Start will start an already created container
 func (c *DockerContainer) Start(ctx context.Context) error {
-	if len(c.lifecycleHooks.PreStarts) > 0 {
-		err := c.lifecycleHooks.Starting(ctx)(c)
-		if err != nil {
-			return err
-		}
+	err := c.startingHook(ctx)
+	if err != nil {
+		return err
 	}
 
 	shortID := c.ID[:12]
-	c.logger.Printf("🐳 Starting container id: %s image: %s", shortID, c.Image)
 
 	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
@@ -210,14 +207,12 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 			return err
 		}
 	}
-	c.logger.Printf("✅ Container is ready id: %s image: %s", shortID, c.Image)
+
 	c.isRunning = true
 
-	if len(c.lifecycleHooks.PostStarts) > 0 {
-		err := c.lifecycleHooks.Started(ctx)(c)
-		if err != nil {
-			return err
-		}
+	err = c.startedHook(ctx)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -233,14 +228,9 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 // otherwise the engine default. A negative timeout value can be specified,
 // meaning no timeout, i.e. no forceful termination is performed.
 func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) error {
-	shortID := c.ID[:12]
-	c.logger.Printf("Stopping container id: %s image: %s", shortID, c.Image)
-
-	if len(c.lifecycleHooks.PreStops) > 0 {
-		err := c.lifecycleHooks.Stopping(ctx)(c)
-		if err != nil {
-			return err
-		}
+	err := c.stoppingHook(ctx)
+	if err != nil {
+		return err
 	}
 
 	var options container.StopOptions
@@ -255,14 +245,11 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	}
 	defer c.provider.Close()
 
-	c.logger.Printf("Container is stopped id: %s image: %s", shortID, c.Image)
 	c.isRunning = false
 
-	if len(c.lifecycleHooks.PostStops) > 0 {
-		err := c.lifecycleHooks.Stopped(ctx)(c)
-		if err != nil {
-			return err
-		}
+	err = c.stoppedHook(ctx)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -270,14 +257,12 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 
 // Terminate is used to kill the container. It is usually triggered by as defer function.
 func (c *DockerContainer) Terminate(ctx context.Context) error {
-	if len(c.lifecycleHooks.PreTerminates) > 0 {
-		err := c.lifecycleHooks.Terminating(ctx)(c)
-		if err != nil {
-			return err
-		}
+	err := c.terminatingHook(ctx)
+	if err != nil {
+		return err
 	}
 
-	err := c.StopLogProducer()
+	err = c.StopLogProducer()
 	if err != nil {
 		return err
 	}
@@ -295,11 +280,9 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		return err
 	}
 
-	if len(c.lifecycleHooks.PostTerminates) > 0 {
-		err := c.lifecycleHooks.Terminated(ctx)(c)
-		if err != nil {
-			return err
-		}
+	err = c.terminatedHook(ctx)
+	if err != nil {
+		return err
 	}
 
 	if c.imageWasBuilt {
@@ -1054,16 +1037,37 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	networkingConfig := &network.NetworkingConfig{}
 
-	err = p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
-	if err != nil {
-		return nil, err
+	// default hooks include logger hook and pre-create hook
+	defaultHooks := []ContainerLifecycleHooks{
+		DefaultLoggingHook(p.Logger),
+		{
+			PreCreates: []ContainerRequestHook{
+				func(ctx context.Context, req ContainerRequest) error {
+					return p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
+				},
+			},
+			PostCreates: []ContainerHook{
+				// copy files to container after it's created
+				func(ctx context.Context, c Container) error {
+					for _, f := range req.Files {
+						err := c.CopyFileToContainer(ctx, f.HostFilePath, f.ContainerFilePath, f.FileMode)
+						if err != nil {
+							return fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
+						}
+					}
+
+					return nil
+				},
+			},
+		},
 	}
 
-	if len(req.LifecycleHooks.PreCreates) > 0 {
-		err := req.LifecycleHooks.Creating(ctx)(req)
-		if err != nil {
-			return nil, err
-		}
+	// always prepend default lifecycle hooks to user-defined hooks
+	req.LifecycleHooks = append(defaultHooks, req.LifecycleHooks...)
+
+	err = req.creatingHook(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, networkingConfig, platform, req.Name)
@@ -1102,18 +1106,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		lifecycleHooks:    req.LifecycleHooks,
 	}
 
-	for _, f := range req.Files {
-		err := c.CopyFileToContainer(ctx, f.HostFilePath, f.ContainerFilePath, f.FileMode)
-		if err != nil {
-			return nil, fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
-		}
-	}
-
-	if len(req.LifecycleHooks.PostCreates) > 0 {
-		err := req.LifecycleHooks.Created(ctx)(c)
-		if err != nil {
-			return nil, err
-		}
+	err = c.createdHook(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return c, nil
