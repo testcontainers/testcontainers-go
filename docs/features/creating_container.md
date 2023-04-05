@@ -102,8 +102,8 @@ _Testcontainers for Go_ allows you to define your own lifecycle hooks for better
 
 In the following example, we are going to create a container using all the lifecycle hooks, all of them printing a message when any of the lifecycle hooks is called:
 
-<!--codeinclude--> 
-[Extending container with life cycle hooks](../../lifecycle_test.go) inside_block:lifecycleHooks
+<!--codeinclude-->
+[Extending container with life cycle hooks](../../lifecycle_test.go) inside_block:reqWithLifecycleHooks
 <!--/codeinclude-->
 
 ### Advanced Settings

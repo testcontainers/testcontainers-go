@@ -303,95 +303,93 @@ func TestPreCreateModifierHook(t *testing.T) {
 }
 
 func TestLifecycleHooks(t *testing.T) {
-	// lifecycleHooks {
+	// reqWithLifecycleHooks {
 	prints := []string{}
 
-	lifecycleHooks := ContainerLifecycleHooks{
-		PreCreates: []ContainerRequestHook{
-			func(ctx context.Context, req ContainerRequest) error {
-				prints = append(prints, fmt.Sprintf("pre-create hook 1: %#v", req))
-				return nil
-			},
-			func(ctx context.Context, req ContainerRequest) error {
-				prints = append(prints, fmt.Sprintf("pre-create hook 2: %#v", req))
-				return nil
-			},
-		},
-		PostCreates: []ContainerHook{
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("post-create hook 1: %#v", c))
-				return nil
-			},
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("post-create hook 2: %#v", c))
-				return nil
-			},
-		},
-		PreStarts: []ContainerHook{
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("pre-start hook 1: %#v", c))
-				return nil
-			},
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("pre-start hook 2: %#v", c))
-				return nil
-			},
-		},
-		PostStarts: []ContainerHook{
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("post-start hook 1: %#v", c))
-				return nil
-			},
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("post-start hook 2: %#v", c))
-				return nil
-			},
-		},
-		PreStops: []ContainerHook{
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("pre-stop hook 1: %#v", c))
-				return nil
-			},
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("pre-stop hook 2: %#v", c))
-				return nil
-			},
-		},
-		PostStops: []ContainerHook{
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("post-stop hook 1: %#v", c))
-				return nil
-			},
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("post-stop hook 2: %#v", c))
-				return nil
-			},
-		},
-		PreTerminates: []ContainerHook{
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("pre-terminate hook 1: %#v", c))
-				return nil
-			},
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("pre-terminate hook 2: %#v", c))
-				return nil
-			},
-		},
-		PostTerminates: []ContainerHook{
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("post-terminate hook 1: %#v", c))
-				return nil
-			},
-			func(ctx context.Context, c Container) error {
-				prints = append(prints, fmt.Sprintf("post-terminate hook 2: %#v", c))
-				return nil
-			},
-		},
-	}
-
 	req := ContainerRequest{
-		Image:          nginxAlpineImage,
-		LifecycleHooks: lifecycleHooks,
+		Image: nginxAlpineImage,
+		LifecycleHooks: ContainerLifecycleHooks{
+			PreCreates: []ContainerRequestHook{
+				func(ctx context.Context, req ContainerRequest) error {
+					prints = append(prints, fmt.Sprintf("pre-create hook 1: %#v", req))
+					return nil
+				},
+				func(ctx context.Context, req ContainerRequest) error {
+					prints = append(prints, fmt.Sprintf("pre-create hook 2: %#v", req))
+					return nil
+				},
+			},
+			PostCreates: []ContainerHook{
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("post-create hook 1: %#v", c))
+					return nil
+				},
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("post-create hook 2: %#v", c))
+					return nil
+				},
+			},
+			PreStarts: []ContainerHook{
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("pre-start hook 1: %#v", c))
+					return nil
+				},
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("pre-start hook 2: %#v", c))
+					return nil
+				},
+			},
+			PostStarts: []ContainerHook{
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("post-start hook 1: %#v", c))
+					return nil
+				},
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("post-start hook 2: %#v", c))
+					return nil
+				},
+			},
+			PreStops: []ContainerHook{
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("pre-stop hook 1: %#v", c))
+					return nil
+				},
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("pre-stop hook 2: %#v", c))
+					return nil
+				},
+			},
+			PostStops: []ContainerHook{
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("post-stop hook 1: %#v", c))
+					return nil
+				},
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("post-stop hook 2: %#v", c))
+					return nil
+				},
+			},
+			PreTerminates: []ContainerHook{
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("pre-terminate hook 1: %#v", c))
+					return nil
+				},
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("pre-terminate hook 2: %#v", c))
+					return nil
+				},
+			},
+			PostTerminates: []ContainerHook{
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("post-terminate hook 1: %#v", c))
+					return nil
+				},
+				func(ctx context.Context, c Container) error {
+					prints = append(prints, fmt.Sprintf("post-terminate hook 2: %#v", c))
+					return nil
+				},
+			},
+		},
 	}
 	// }
 
