@@ -42,6 +42,159 @@ type ContainerLifecycleHooks struct {
 	PostTerminates []ContainerHook
 }
 
+var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
+	shortContainerID := func(c Container) string {
+		return c.GetContainerID()[:12]
+	}
+
+	return ContainerLifecycleHooks{
+		PreCreates: []ContainerRequestHook{
+			func(ctx context.Context, req ContainerRequest) error {
+				logger.Printf("🐳 Creating container for image %s", req.Image)
+				return nil
+			},
+		},
+		PostCreates: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("✅ Container created: %s", shortContainerID(c))
+				return nil
+			},
+		},
+		PreStarts: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("🐳 Starting container: %s", shortContainerID(c))
+				return nil
+			},
+		},
+		PostStarts: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("✅ Container started: %s", shortContainerID(c))
+				return nil
+			},
+		},
+		PreStops: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("🐳 Stopping container: %s", shortContainerID(c))
+				return nil
+			},
+		},
+		PostStops: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("✋ Container stopped: %s", shortContainerID(c))
+				return nil
+			},
+		},
+		PreTerminates: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("🐳 Terminating container: %s", shortContainerID(c))
+				return nil
+			},
+		},
+		PostTerminates: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("🚫 Container terminated: %s", shortContainerID(c))
+				return nil
+			},
+		},
+	}
+}
+
+// creatingHook is a hook that will be called before a container is created.
+func (req ContainerRequest) creatingHook(ctx context.Context) error {
+	for _, lifecycleHooks := range req.LifecycleHooks {
+		err := lifecycleHooks.Creating(ctx)(req)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// createdHook is a hook that will be called after a container is created
+func (c *DockerContainer) createdHook(ctx context.Context) error {
+	for _, lifecycleHooks := range c.lifecycleHooks {
+		err := containerHookFn(ctx, lifecycleHooks.PostCreates)(c)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// startingHook is a hook that will be called before a container is started
+func (c *DockerContainer) startingHook(ctx context.Context) error {
+	for _, lifecycleHooks := range c.lifecycleHooks {
+		err := containerHookFn(ctx, lifecycleHooks.PreStarts)(c)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// startedHook is a hook that will be called after a container is started
+func (c *DockerContainer) startedHook(ctx context.Context) error {
+	for _, lifecycleHooks := range c.lifecycleHooks {
+		err := containerHookFn(ctx, lifecycleHooks.PostStarts)(c)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// stoppingHook is a hook that will be called before a container is stopped
+func (c *DockerContainer) stoppingHook(ctx context.Context) error {
+	for _, lifecycleHooks := range c.lifecycleHooks {
+		err := containerHookFn(ctx, lifecycleHooks.PreStops)(c)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// stoppedHook is a hook that will be called after a container is stopped
+func (c *DockerContainer) stoppedHook(ctx context.Context) error {
+	for _, lifecycleHooks := range c.lifecycleHooks {
+		err := containerHookFn(ctx, lifecycleHooks.PostStops)(c)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// terminatingHook is a hook that will be called before a container is terminated
+func (c *DockerContainer) terminatingHook(ctx context.Context) error {
+	for _, lifecycleHooks := range c.lifecycleHooks {
+		err := containerHookFn(ctx, lifecycleHooks.PreTerminates)(c)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// terminatedHook is a hook that will be called after a container is terminated
+func (c *DockerContainer) terminatedHook(ctx context.Context) error {
+	for _, lifecycleHooks := range c.lifecycleHooks {
+		err := containerHookFn(ctx, lifecycleHooks.PostTerminates)(c)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Creating is a hook that will be called before a container is created.
 func (c ContainerLifecycleHooks) Creating(ctx context.Context) func(req ContainerRequest) error {
 	return func(req ContainerRequest) error {
