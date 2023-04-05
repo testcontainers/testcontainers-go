@@ -71,6 +71,7 @@ type DockerContainer struct {
 	raw               *types.ContainerJSON
 	stopProducer      chan bool
 	logger            Logging
+	lifecycleHooks    ContainerLifecycleHooks
 }
 
 // SetLogger sets the logger for the container
@@ -187,6 +188,13 @@ func (c *DockerContainer) SessionID() string {
 
 // Start will start an already created container
 func (c *DockerContainer) Start(ctx context.Context) error {
+	if len(c.lifecycleHooks.PreStarts) > 0 {
+		err := c.lifecycleHooks.Starting(ctx)(c)
+		if err != nil {
+			return err
+		}
+	}
+
 	shortID := c.ID[:12]
 	c.logger.Printf("🐳 Starting container id: %s image: %s", shortID, c.Image)
 
@@ -204,6 +212,14 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 	}
 	c.logger.Printf("✅ Container is ready id: %s image: %s", shortID, c.Image)
 	c.isRunning = true
+
+	if len(c.lifecycleHooks.PostStarts) > 0 {
+		err := c.lifecycleHooks.Started(ctx)(c)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -220,6 +236,13 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	shortID := c.ID[:12]
 	c.logger.Printf("Stopping container id: %s image: %s", shortID, c.Image)
 
+	if len(c.lifecycleHooks.PreStops) > 0 {
+		err := c.lifecycleHooks.Stopping(ctx)(c)
+		if err != nil {
+			return err
+		}
+	}
+
 	var options container.StopOptions
 
 	if timeout != nil {
@@ -234,11 +257,26 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 
 	c.logger.Printf("Container is stopped id: %s image: %s", shortID, c.Image)
 	c.isRunning = false
+
+	if len(c.lifecycleHooks.PostStops) > 0 {
+		err := c.lifecycleHooks.Stopped(ctx)(c)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 // Terminate is used to kill the container. It is usually triggered by as defer function.
 func (c *DockerContainer) Terminate(ctx context.Context) error {
+	if len(c.lifecycleHooks.PreTerminates) > 0 {
+		err := c.lifecycleHooks.Terminating(ctx)(c)
+		if err != nil {
+			return err
+		}
+	}
+
 	err := c.StopLogProducer()
 	if err != nil {
 		return err
@@ -255,6 +293,13 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 	})
 	if err != nil {
 		return err
+	}
+
+	if len(c.lifecycleHooks.PostTerminates) > 0 {
+		err := c.lifecycleHooks.Terminated(ctx)(c)
+		if err != nil {
+			return err
+		}
 	}
 
 	if c.imageWasBuilt {
@@ -1014,6 +1059,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		return nil, err
 	}
 
+	if len(req.LifecycleHooks.PreCreates) > 0 {
+		err := req.LifecycleHooks.Creating(ctx)(req)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, networkingConfig, platform, req.Name)
 	if err != nil {
 		return nil, err
@@ -1047,12 +1099,20 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		terminationSignal: termSignal,
 		stopProducer:      nil,
 		logger:            p.Logger,
+		lifecycleHooks:    req.LifecycleHooks,
 	}
 
 	for _, f := range req.Files {
 		err := c.CopyFileToContainer(ctx, f.HostFilePath, f.ContainerFilePath, f.FileMode)
 		if err != nil {
 			return nil, fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
+		}
+	}
+
+	if len(req.LifecycleHooks.PostCreates) > 0 {
+		err := req.LifecycleHooks.Created(ctx)(c)
+		if err != nil {
+			return nil, err
 		}
 	}
 
