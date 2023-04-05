@@ -439,6 +439,48 @@ func TestLifecycleHooks(t *testing.T) {
 
 }
 
+type inMemoryLogger struct {
+	data []string
+}
+
+func (l *inMemoryLogger) Printf(format string, args ...interface{}) {
+	l.data = append(l.data, fmt.Sprintf(format, args...))
+}
+
+func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
+	ctx := context.Background()
+
+	// reqWithDefaultLogginHook {
+	dl := inMemoryLogger{}
+
+	req := ContainerRequest{
+		Image: nginxAlpineImage,
+		LifecycleHooks: []ContainerLifecycleHooks{
+			DefaultLoggingHook(&dl),
+		},
+	}
+	// }
+
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	require.NotNil(t, c)
+
+	duration := 1 * time.Second
+	err = c.Stop(ctx, &duration)
+	require.Nil(t, err)
+
+	err = c.Start(ctx)
+	require.Nil(t, err)
+
+	err = c.Terminate(ctx)
+	require.Nil(t, err)
+
+	require.Equal(t, 10, len(dl.data))
+}
+
 func lifecycleHooksIsHonouredFn(t *testing.T, ctx context.Context, container Container, prints []string) {
 	require.Equal(t, 20, len(prints))
 

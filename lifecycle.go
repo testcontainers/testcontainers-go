@@ -42,6 +42,63 @@ type ContainerLifecycleHooks struct {
 	PostTerminates []ContainerHook
 }
 
+var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
+	shortContainerID := func(c Container) string {
+		return c.GetContainerID()[:12]
+	}
+
+	return ContainerLifecycleHooks{
+		PreCreates: []ContainerRequestHook{
+			func(ctx context.Context, req ContainerRequest) error {
+				logger.Printf("🐳 Creating container for image %s", req.Image)
+				return nil
+			},
+		},
+		PostCreates: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("✅ Container created: %s", shortContainerID(c))
+				return nil
+			},
+		},
+		PreStarts: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("🐳 Starting container: %s", shortContainerID(c))
+				return nil
+			},
+		},
+		PostStarts: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("✅ Container started: %s", shortContainerID(c))
+				return nil
+			},
+		},
+		PreStops: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("🐳 Stopping container: %s", shortContainerID(c))
+				return nil
+			},
+		},
+		PostStops: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("✋ Container stopped: %s", shortContainerID(c))
+				return nil
+			},
+		},
+		PreTerminates: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("🐳 Terminating container: %s", shortContainerID(c))
+				return nil
+			},
+		},
+		PostTerminates: []ContainerHook{
+			func(ctx context.Context, c Container) error {
+				logger.Printf("🚫 Container terminated: %s", shortContainerID(c))
+				return nil
+			},
+		},
+	}
+}
+
 // creatingHook is a hook that will be called before a container is created.
 func (req ContainerRequest) creatingHook(ctx context.Context) error {
 	for _, lifecycleHooks := range req.LifecycleHooks {

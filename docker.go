@@ -194,7 +194,6 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 	}
 
 	shortID := c.ID[:12]
-	c.logger.Printf("🐳 Starting container id: %s image: %s", shortID, c.Image)
 
 	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
@@ -208,7 +207,7 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 			return err
 		}
 	}
-	c.logger.Printf("✅ Container is ready id: %s image: %s", shortID, c.Image)
+
 	c.isRunning = true
 
 	err = c.startedHook(ctx)
@@ -229,9 +228,6 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 // otherwise the engine default. A negative timeout value can be specified,
 // meaning no timeout, i.e. no forceful termination is performed.
 func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) error {
-	shortID := c.ID[:12]
-	c.logger.Printf("Stopping container id: %s image: %s", shortID, c.Image)
-
 	err := c.stoppingHook(ctx)
 	if err != nil {
 		return err
@@ -249,7 +245,6 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	}
 	defer c.provider.Close()
 
-	c.logger.Printf("Container is stopped id: %s image: %s", shortID, c.Image)
 	c.isRunning = false
 
 	err = c.stoppedHook(ctx)
@@ -1042,10 +1037,20 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	networkingConfig := &network.NetworkingConfig{}
 
-	err = p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
-	if err != nil {
-		return nil, err
+	// default hooks include logger hook and pre-create hook
+	defaultHooks := []ContainerLifecycleHooks{
+		DefaultLoggingHook(p.Logger),
+		{
+			PreCreates: []ContainerRequestHook{
+				func(ctx context.Context, req ContainerRequest) error {
+					return p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
+				},
+			},
+		},
 	}
+
+	// always prepend default lifecycle hooks to user-defined hooks
+	req.LifecycleHooks = append(defaultHooks, req.LifecycleHooks...)
 
 	err = req.creatingHook(ctx)
 	if err != nil {

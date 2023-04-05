@@ -108,6 +108,14 @@ In the following example, we are going to create a container using all the lifec
 [Extending container with life cycle hooks](../../lifecycle_test.go) inside_block:reqWithLifecycleHooks
 <!--/codeinclude-->
 
+#### Default Logging Hook
+
+_Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event. You can enable it by passing the `testcontainers.DefaultLoggingHook` option to the `ContainerRequest`, passing a reference to the container logger like this:
+
+<!--codeinclude-->
+[Extending container with life cycle hooks](../../lifecycle_test.go) inside_block:reqWithDefaultLogginHook
+<!--/codeinclude-->
+
 ### Advanced Settings
 
 The aforementioned `GenericContainer` function and the `ContainerRequest` struct represent a straightforward manner to configure the containers, but you could need to create your containers with more advance settings regarding the config, host config and endpoint settings Docker types. For those more advance settings, _Testcontainers for Go_ offers a way to fully customize the container request and those internal Docker types. These customisations, called _modifiers_, will be applied just before the internal call to the Docker client to create the container.
