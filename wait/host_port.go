@@ -123,11 +123,22 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		}
 	}
 
+	if err := externalCheck(ctx, ipAddress, port, target, waitInterval); err != nil {
+		return err
+	}
+
+	if err := internalCheck(ctx, internalPort, target); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func externalCheck(ctx context.Context, ipAddress string, port nat.Port, target StrategyTarget, waitInterval time.Duration) error {
 	proto := port.Proto()
 	portNumber := port.Int()
 	portString := strconv.Itoa(portNumber)
 
-	//external check
 	dialer := net.Dialer{}
 	address := net.JoinHostPort(ipAddress, portString)
 	for {
@@ -150,8 +161,10 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			break
 		}
 	}
+	return nil
+}
 
-	//internal check
+func internalCheck(ctx context.Context, internalPort nat.Port, target StrategyTarget) error {
 	command := buildInternalCheckCommand(internalPort.Int())
 	for {
 		if ctx.Err() != nil {
@@ -171,7 +184,6 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			return errors.New("/bin/sh command not executable")
 		}
 	}
-
 	return nil
 }
 
