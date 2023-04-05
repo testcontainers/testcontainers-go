@@ -87,9 +87,9 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 }
 ```
 
-### Lifecycle callbacks
+### Lifecycle hooks
 
-_Testcontainers for Go_ allows you to define your own lifecycle callbacks for better control over your containers. You just need to define functions that return an error and implement the `testcontainers.Lifecycle` interface. The `testcontainers.Lifecycle` interface has the following methods:
+_Testcontainers for Go_ allows you to define your own lifecycle hooks for better control over your containers. You just need to define functions that return an error and receive the Go context as first argument, and a `ContainerRequest` for the `Creating` hook, and a `Container` for the rest of them. The `testcontainers.ContainerLifecycleHooks` struct has the following methods:
 
 * `Creating` - called before the container is created
 * `Created` - called after the container is created
@@ -100,7 +100,7 @@ _Testcontainers for Go_ allows you to define your own lifecycle callbacks for be
 * `Terminating` - called before the container is terminated
 * `Terminated` - called after the container is terminated
 
-In the following example, we are going to create a container with a lifecycle callback that will print a message when any of the lifecycle hooks is called:
+In the following example, we are going to create a container using all the lifecycle hooks, all of them printing a message when any of the lifecycle hooks is called:
 
 <!--codeinclude--> 
 [Extending container with life cycle hooks](../../lifecycle_test.go) inside_block:lifecycleHooks
