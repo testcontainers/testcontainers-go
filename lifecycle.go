@@ -8,6 +8,102 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+// ContainerRequestHook is a hook that will be called before a container is created.
+// It can be used to modify container configuration before it is created,
+// using the different lifecycle hooks that are available:
+// - Creating
+// For that, it will receive a ContainerRequest, modify it and return an error if needed.
+type ContainerRequestHook func(ctx context.Context, req ContainerRequest) error
+
+// ContainerHook is a hook that will be called after a container is created
+// It can be used to modify the state of the container after it is created,
+// using the different lifecycle hooks that are available:
+// - Created
+// - Starting
+// - Started
+// - Stopping
+// - Stopped
+// - Terminating
+// - Terminated
+// For that, it will receive a Container, modify it and return an error if needed.
+type ContainerHook func(ctx context.Context, container Container) error
+
+// ContainerLifecycleHooks is a struct that contains all the hooks that can be used
+// to modify the container lifecycle. All the container lifecycle hooks except the PreCreates hooks
+// will be passed to the container once it's created
+type ContainerLifecycleHooks struct {
+	PreCreates     []ContainerRequestHook
+	PostCreates    []ContainerHook
+	PreStarts      []ContainerHook
+	PostStarts     []ContainerHook
+	PreStops       []ContainerHook
+	PostStops      []ContainerHook
+	PreTerminates  []ContainerHook
+	PostTerminates []ContainerHook
+}
+
+// Creating is a hook that will be called before a container is created.
+func (c ContainerLifecycleHooks) Creating(ctx context.Context) func(req ContainerRequest) error {
+	return func(req ContainerRequest) error {
+		for _, hook := range c.PreCreates {
+			if err := hook(ctx, req); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
+// containerHookFn is a helper function that will create a function to be returned by all the different
+// container lifecycle hooks. The created function will iterate over all the hooks and call them one by one.
+func containerHookFn(ctx context.Context, containerHook []ContainerHook) func(container Container) error {
+	return func(container Container) error {
+		for _, hook := range containerHook {
+			if err := hook(ctx, container); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
+// Created is a hook that will be called after a container is created
+func (c ContainerLifecycleHooks) Created(ctx context.Context) func(container Container) error {
+	return containerHookFn(ctx, c.PostCreates)
+}
+
+// Starting is a hook that will be called before a container is started
+func (c ContainerLifecycleHooks) Starting(ctx context.Context) func(container Container) error {
+	return containerHookFn(ctx, c.PreStarts)
+}
+
+// Started is a hook that will be called after a container is started
+func (c ContainerLifecycleHooks) Started(ctx context.Context) func(container Container) error {
+	return containerHookFn(ctx, c.PostStarts)
+}
+
+// Stopping is a hook that will be called before a container is stopped
+func (c ContainerLifecycleHooks) Stopping(ctx context.Context) func(container Container) error {
+	return containerHookFn(ctx, c.PreStops)
+}
+
+// Stopped is a hook that will be called after a container is stopped
+func (c ContainerLifecycleHooks) Stopped(ctx context.Context) func(container Container) error {
+	return containerHookFn(ctx, c.PostStops)
+}
+
+// Terminating is a hook that will be called before a container is terminated
+func (c ContainerLifecycleHooks) Terminating(ctx context.Context) func(container Container) error {
+	return containerHookFn(ctx, c.PreTerminates)
+}
+
+// Terminated is a hook that will be called after a container is terminated
+func (c ContainerLifecycleHooks) Terminated(ctx context.Context) func(container Container) error {
+	return containerHookFn(ctx, c.PostTerminates)
+}
+
 func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
 	// prepare mounts
 	hostConfig.Mounts = mapToDockerMounts(req.Mounts)
