@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"strconv"
@@ -16,6 +17,8 @@ import (
 var _ Strategy = (*HostPortStrategy)(nil)
 var _ StrategyTimeout = (*HostPortStrategy)(nil)
 
+var errShellNotExecutable = errors.New("/bin/sh command not executable")
+
 type HostPortStrategy struct {
 	// Port is a string containing port number and protocol in the format "80/tcp"
 	// which
@@ -23,9 +26,6 @@ type HostPortStrategy struct {
 	// all WaitStrategies should have a startupTimeout to avoid waiting infinitely
 	timeout      *time.Duration
 	PollInterval time.Duration
-	// internalCheckDisabled is a flag to disable internal port check
-	// This is useful when waiting for containers that don't have a shell as the internal check will fail as it will try to run a command on the container
-	internalCheckDisabled bool
 }
 
 // NewHostPortStrategy constructs a default host port strategy
@@ -61,12 +61,6 @@ func (hp *HostPortStrategy) WithStartupTimeout(startupTimeout time.Duration) *Ho
 // WithPollInterval can be used to override the default polling interval of 100 milliseconds
 func (hp *HostPortStrategy) WithPollInterval(pollInterval time.Duration) *HostPortStrategy {
 	hp.PollInterval = pollInterval
-	return hp
-}
-
-// WithInternalCheckDisabled can be used to disable internal port check. This is useful when using images that don't have a shell.
-func (hp *HostPortStrategy) WithInternalCheckDisabled() *HostPortStrategy {
-	hp.internalCheckDisabled = true
 	return hp
 }
 
@@ -136,10 +130,11 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		return err
 	}
 
-	if !hp.internalCheckDisabled {
-		if err := internalCheck(ctx, internalPort, target); err != nil {
-			return err
-		}
+	err = internalCheck(ctx, internalPort, target)
+	if err != nil && errors.Is(errShellNotExecutable, err) {
+		log.Printf("Shell not executable in container, only external port check will be performed")
+	} else {
+		return err
 	}
 
 	return nil
@@ -192,7 +187,7 @@ func internalCheck(ctx context.Context, internalPort nat.Port, target StrategyTa
 		if exitCode == 0 {
 			break
 		} else if exitCode == 126 {
-			return errors.New("/bin/sh command not executable")
+			return errShellNotExecutable
 		}
 	}
 	return nil
