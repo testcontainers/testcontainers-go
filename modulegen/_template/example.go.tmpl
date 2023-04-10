@@ -12,19 +12,21 @@ type {{ $containerName }} struct {
 }
 
 // {{ $entrypoint }} creates an instance of the {{ $title }} container type
-func {{ $entrypoint }}(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*{{ $containerName }}, error) {
+func {{ $entrypoint }}(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*{{ $containerName }}, error) {
 	req := testcontainers.ContainerRequest{
 		Image: "{{ .Image }}",
 	}
 
-	for _, opt := range opts {
-		opt(&req)
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
-	})
+	}
+
+	for _, opt := range opts {
+		opt.Customize(&genericContainerReq)
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
 	}

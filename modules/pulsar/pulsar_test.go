@@ -44,7 +44,7 @@ func TestPulsar(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		opts         []testcontainers.CustomizeRequestOption
+		opts         []testcontainers.ContainerCustomizer
 		logConsumers []testcontainers.LogConsumer
 	}{
 		{
@@ -52,7 +52,7 @@ func TestPulsar(t *testing.T) {
 		},
 		{
 			name: "with modifiers",
-			opts: []testcontainers.CustomizeRequestOption{
+			opts: []testcontainers.ContainerCustomizer{
 				// setPulsarImage {
 				testcontainers.WithImage("docker.io/apachepulsar/pulsar:2.10.2"),
 				// }
@@ -78,7 +78,7 @@ func TestPulsar(t *testing.T) {
 		},
 		{
 			name: "with functions worker",
-			opts: []testcontainers.CustomizeRequestOption{
+			opts: []testcontainers.ContainerCustomizer{
 				// withFunctionsWorker {
 				testcontainerspulsar.WithFunctionsWorker(),
 				// }
@@ -86,7 +86,7 @@ func TestPulsar(t *testing.T) {
 		},
 		{
 			name: "with transactions",
-			opts: []testcontainers.CustomizeRequestOption{
+			opts: []testcontainers.ContainerCustomizer{
 				// withTransactions {
 				testcontainerspulsar.WithTransactions(),
 				// }

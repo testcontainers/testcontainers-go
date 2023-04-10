@@ -24,20 +24,8 @@ type MySQLContainer struct {
 	database string
 }
 
-// RunContainer creates an instance of the MySQL container type
-func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*MySQLContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        defaultImage,
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
-		Env: map[string]string{
-			"MYSQL_USER":     defaultUser,
-			"MYSQL_PASSWORD": defaultPassword,
-			"MYSQL_DATABASE": defaultDatabaseName,
-		},
-		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server"),
-	}
-
-	opts = append(opts, func(req *testcontainers.GenericContainerRequest) {
+func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
 		username := req.Env["MYSQL_USER"]
 		password := req.Env["MYSQL_PASSWORD"]
 		if strings.EqualFold(rootUser, username) {
@@ -49,14 +37,31 @@ func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOp
 			req.Env["MYSQL_ALLOW_EMPTY_PASSWORD"] = "yes"
 			delete(req.Env, "MYSQL_PASSWORD")
 		}
-	})
+	}
+}
+
+// RunContainer creates an instance of the MySQL container type
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MySQLContainer, error) {
+	req := testcontainers.ContainerRequest{
+		Image:        defaultImage,
+		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
+		Env: map[string]string{
+			"MYSQL_USER":     defaultUser,
+			"MYSQL_PASSWORD": defaultPassword,
+			"MYSQL_DATABASE": defaultDatabaseName,
+		},
+		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server"),
+	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	}
+
+	opts = append(opts, WithDefaultCredentials())
+
 	for _, opt := range opts {
-		opt(&genericContainerReq)
+		opt.Customize(&genericContainerReq)
 	}
 
 	username, ok := req.Env["MYSQL_USER"]
