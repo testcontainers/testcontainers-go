@@ -6,10 +6,11 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/containerd/containerd v1.6.19
 	github.com/cpuguy83/dockercfg v0.3.1
-	github.com/docker/docker v23.0.1+incompatible
+	github.com/docker/docker v23.0.2+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.5.0
 	github.com/google/uuid v1.3.0
+	github.com/imdario/mergo v0.3.12
 	github.com/magiconair/properties v1.8.7
 	github.com/moby/term v0.0.0-20221128092401-c43b287e0e0f
 	github.com/opencontainers/image-spec v1.1.0-rc2
@@ -39,7 +40,7 @@ require (
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/runc v1.1.3 // indirect
+	github.com/opencontainers/runc v1.1.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.8.1 // indirect

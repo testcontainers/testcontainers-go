@@ -17,3 +17,47 @@ go get github.com/testcontainers/testcontainers-go/{{ ParentDir }}/{{ $lower }}
 {{ codeinclude "<!--codeinclude-->" }}
 [Test for a {{ $title }} container](../../{{ ParentDir }}/{{ $lower }}/{{ $lower }}_test.go)
 {{ codeinclude "<!--/codeinclude-->" }}
+
+## Module reference
+
+The {{ $title }} module exposes one entrypoint function to create the {{ $title }} container, and this function receives two parameters:
+
+```golang
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*{{ $title }}Container, error)
+```
+
+- `context.Context`, the Go context.
+- `testcontainers.CustomizeRequestOption`, a variadic argument for passing options.
+
+### Container Options
+
+When starting the {{ $title }} container, you can pass options in a variadic way to configure it.
+
+#### Image
+
+If you need to set a different {{ $title }} Docker image, you can use `testcontainers.WithImage` with a valid Docker image
+for {{ $title }}. E.g. `testcontainers.WithImage("{{ .Image }}")`.
+
+#### Wait Strategies
+
+If you need to set a different wait strategy for {{ $title }}, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
+for {{ $title }}.
+
+!!!info
+    The default deadline for the wait strategy is 60 seconds.
+
+At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+
+#### Docker type modifiers
+
+If you need an advanced configuration for {{ $title }}, you can leverage the following Docker type modifiers:
+
+- `testcontainers.WithConfigModifier`
+- `testcontainers.WithHostConfigModifier`
+- `testcontainers.WithEndpointSettingsModifier`
+
+Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+
+### Container Methods
+
+The {{ $title }} container exposes the following methods:

@@ -25,6 +25,8 @@ markdown_extensions:
     - pymdownx.tabbed:
         alternate_style: true
     - pymdownx.snippets
+    - toc:
+        permalink: true
 nav:
     - Home: index.md
     - Quickstart: quickstart.md
@@ -57,6 +59,7 @@ nav:
         - modules/postgres.md
         - modules/neo4j.md
         - modules/pulsar.md
+        - modules/redis.md
         - modules/vault.md
     - Examples:
         - examples/index.md
@@ -68,7 +71,6 @@ nav:
         - examples/mongodb.md
         - examples/nginx.md
         - examples/pubsub.md
-        - examples/redis.md
         - examples/spanner.md
         - examples/toxiproxy.md
     - System Requirements:

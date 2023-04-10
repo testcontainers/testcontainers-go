@@ -19,11 +19,11 @@ go get github.com/testcontainers/testcontainers-go/modules/postgres
 The Postgres module exposes one entrypoint function to create the Postgres container, and this function receives two parameters:
 
 ```golang
-func StartContainer(ctx context.Context, opts ...PostgresContainerOption) (*PostgresContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*PostgresContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `PostgresContainerOption`, a variad argument for passing options.
+- `testcontainers.CustomizeRequestOption`, a variadic argument for passing options.
 
 ### Container Options
 
@@ -34,8 +34,8 @@ When starting the Postgres container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different Postgres Docker image, you can use `WithImage` with a valid Docker image
-for Postgres. E.g. `WithImage("docker.io/postgres:9.6")`.
+If you need to set a different Postgres Docker image, you can use `testcontainers.WithImage` with a valid Docker image
+for Postgres. E.g. `testcontainers.WithImage("docker.io/postgres:9.6")`.
 
 #### Initial Database
 
@@ -74,7 +74,7 @@ In the case you have a custom config file for Postgres, it's possible to copy th
 #### Wait Strategies
 
 Given you could need to wait for different conditions, in particular using a wait.ForSQL strategy,
-the Postgres container exposes a `WithWaitStrategy` option to set a custom wait strategy.
+the Postgres container exposes a `testcontainers.WithWaitStrategy` option to set a custom wait strategy.
 
 <!--codeinclude-->
 [Set Wait Strategy](../../modules/postgres/postgres_test.go) inside_block:withWaitStrategy

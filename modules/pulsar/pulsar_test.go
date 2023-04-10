@@ -43,31 +43,32 @@ func TestPulsar(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		name string
-		opts []testcontainerspulsar.ContainerOptions
+		name         string
+		opts         []testcontainers.CustomizeRequestOption
+		logConsumers []testcontainers.LogConsumer
 	}{
 		{
 			name: "default",
 		},
 		{
 			name: "with modifiers",
-			opts: []testcontainerspulsar.ContainerOptions{
+			opts: []testcontainers.CustomizeRequestOption{
 				// setPulsarImage {
-				testcontainerspulsar.WithPulsarImage("docker.io/apachepulsar/pulsar:2.10.2"),
+				testcontainers.WithImage("docker.io/apachepulsar/pulsar:2.10.2"),
 				// }
 				// addPulsarEnv {
 				testcontainerspulsar.WithPulsarEnv("brokerDeduplicationEnabled", "true"),
 				// }
 				// advancedDockerSettings {
-				testcontainerspulsar.WithConfigModifier(func(config *container.Config) {
+				testcontainers.WithConfigModifier(func(config *container.Config) {
 					config.Env = append(config.Env, "PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m")
 				}),
-				testcontainerspulsar.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
+				testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 					hostConfig.Resources = container.Resources{
 						Memory: 1024 * 1024 * 1024,
 					}
 				}),
-				testcontainerspulsar.WithEndpointSettingsModifier(func(settings map[string]*network.EndpointSettings) {
+				testcontainers.WithEndpointSettingsModifier(func(settings map[string]*network.EndpointSettings) {
 					settings[nwName] = &network.EndpointSettings{
 						Aliases: []string{"pulsar"},
 					}
@@ -77,7 +78,7 @@ func TestPulsar(t *testing.T) {
 		},
 		{
 			name: "with functions worker",
-			opts: []testcontainerspulsar.ContainerOptions{
+			opts: []testcontainers.CustomizeRequestOption{
 				// withFunctionsWorker {
 				testcontainerspulsar.WithFunctionsWorker(),
 				// }
@@ -85,35 +86,38 @@ func TestPulsar(t *testing.T) {
 		},
 		{
 			name: "with transactions",
-			opts: []testcontainerspulsar.ContainerOptions{
+			opts: []testcontainers.CustomizeRequestOption{
 				// withTransactions {
 				testcontainerspulsar.WithTransactions(),
 				// }
 			},
 		},
 		{
-			name: "with log consumers",
-			opts: []testcontainerspulsar.ContainerOptions{
-				// withLogConsumers {
-				testcontainerspulsar.WithLogConsumers(&testLogConsumer{}),
-				// }
-			},
+			name:         "with log consumers",
+			logConsumers: []testcontainers.LogConsumer{&testLogConsumer{}},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// startPulsarContainer {
-			c, err := testcontainerspulsar.StartContainer(
+			c, err := testcontainerspulsar.RunContainer(
 				ctx,
 				tt.opts...,
 			)
-			// }
 			require.Nil(t, err)
+			defer func() {
+				err := c.Terminate(ctx)
+				require.Nil(t, err)
+			}()
+			// }
 
+			// withLogConsumers {
 			if len(c.LogConsumers) > 0 {
+				c.WithLogConsumers(ctx, tt.logConsumers...)
 				defer c.StopLogProducer()
 			}
+			// }
 
 			// getPulsarURLs {
 			brokerURL, err := c.BrokerURL(ctx)

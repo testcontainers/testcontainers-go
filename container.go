@@ -121,6 +121,7 @@ type ContainerRequest struct {
 	ConfigModifier          func(*container.Config)                    // Modifier for the config before container creation
 	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
+	LifecycleHooks          []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
 }
 
 // containerOptions functional options for a container

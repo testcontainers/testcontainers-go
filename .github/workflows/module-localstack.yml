@@ -1,6 +1,16 @@
 name: LocalStack module pipeline
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+    - 'mkdocs.yml'
+    - 'docs/**'
+    - 'README.md'
+  pull_request:
+    paths-ignore:
+    - 'mkdocs.yml'
+    - 'docs/**'
+    - 'README.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
