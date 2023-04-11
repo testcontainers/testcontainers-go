@@ -3,9 +3,11 @@ package localstack
 import (
 	"context"
 	"fmt"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -192,7 +194,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 		OverrideContainerRequest(testcontainers.ContainerRequest{
 			Image:          "localstack/localstack:2.0.0",
 			Networks:       []string{"localstack-network-v2"},
-			NetworkAliases: map[string][]string{"localstack-network": {"localstack"}},
+			NetworkAliases: map[string][]string{"localstack-network-v2": {"localstack"}},
 		}),
 	)
 	require.Nil(t, err)
@@ -209,26 +211,20 @@ func TestStartV2WithNetwork(t *testing.T) {
 				"AWS_SECRET_ACCESS_KEY": "secretkey",
 				"AWS_REGION":            "eu-west-1",
 			},
+			WaitingFor: wait.ForExec([]string{"/usr/local/bin/aws", "sqs", "create-queue", "--queue-name", "baz", "--region", "eu-west-1",
+				"--endpoint-url", "http://localstack:4566", "--no-verify-ssl"}).
+				WithStartupTimeout(time.Second * 10).
+				WithExitCodeMatcher(func(exitCode int) bool {
+					return exitCode == 0
+				}).
+				WithResponseMatcher(func(r io.Reader) bool {
+					respBytes, _ := io.ReadAll(r)
+					resp := string(respBytes)
+					return strings.Contains(resp, "http://localstack:4566")
+				}),
 		},
 		Started: true,
 	})
 	require.Nil(t, err)
 	assert.NotNil(t, cli)
-
-	c, output, err := cli.Exec(ctx, []string{"/usr/local/bin/aws", "sqs", "create-queue", "--queue-name", "baz", "--region", "eu-west-1",
-		"--endpoint-url", "http://localstack:4566", "--no-verify-ssl"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if c != 0 {
-		t.Fatalf("AWS CLI command was executed, expected return code 1, got %v", c)
-	}
-
-	content, err := io.ReadAll(output)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(content), "http://localstack:4566") {
-		t.Fatal("Created queue should use LOCALSTACK_HOSTNAME env var")
-	}
 }
