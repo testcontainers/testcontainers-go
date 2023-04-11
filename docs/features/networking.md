@@ -44,7 +44,8 @@ It is normally advisable to use `Host` and `MappedPort` together when constructi
 [Getting the container host and mapped port](../../docker_test.go) inside_block:buildingAddresses
 <!--/codeinclude-->
 
-Setting the `TC_HOST` environment variable overrides the host of the docker daemon where the container port is exposed. For example, `TC_HOST=172.17.0.1`.
+!!! info
+    Setting the `TC_HOST` environment variable overrides the host of the docker daemon where the container port is exposed. For example, `TC_HOST=172.17.0.1`.
 
 ## Advanced networking
 
