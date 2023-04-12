@@ -44,6 +44,9 @@ It is normally advisable to use `Host` and `MappedPort` together when constructi
 [Getting the container host and mapped port](../../docker_test.go) inside_block:buildingAddresses
 <!--/codeinclude-->
 
+!!! info
+    Setting the `TC_HOST` environment variable overrides the host of the docker daemon where the container port is exposed. For example, `TC_HOST=172.17.0.1`.
+
 ## Advanced networking
 
 Docker provides the ability for you to create custom networks and place containers on one or more networks. Then, communication can occur between networked containers without the need of exposing ports through the host. With Testcontainers, you can do this as well. 
