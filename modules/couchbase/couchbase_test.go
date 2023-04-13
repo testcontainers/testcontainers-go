@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/couchbase/gocb/v2"
+	"github.com/testcontainers/testcontainers-go"
 	tccouchbase "github.com/testcontainers/testcontainers-go/modules/couchbase"
 )
 
@@ -17,7 +18,8 @@ const (
 
 // }
 
-func TestCouchbaseWithCommunityContainer(t *testing.T) {
+// Deprecated
+func TestStartContainer(t *testing.T) {
 	ctx := context.Background()
 
 	// withBucket {
@@ -43,11 +45,37 @@ func TestCouchbaseWithCommunityContainer(t *testing.T) {
 	testBucketUsage(t, cluster.Bucket(bucketName))
 }
 
+func TestCouchbaseWithCommunityContainer(t *testing.T) {
+	ctx := context.Background()
+
+	// withBucket {
+	bucketName := "testBucket"
+	container, err := tccouchbase.RunContainer(ctx, testcontainers.WithImage(communityEdition), tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// }
+
+	// Clean up the container after the test is complete
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	cluster, err := connectCluster(ctx, container)
+	if err != nil {
+		t.Fatalf("could not connect couchbase: %s", err)
+	}
+
+	testBucketUsage(t, cluster.Bucket(bucketName))
+}
+
 func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	container, err := tccouchbase.StartContainer(ctx, tccouchbase.WithImageName(enterpriseEdition), tccouchbase.WithBucket(tccouchbase.NewBucket(bucketName)))
+	container, err := tccouchbase.RunContainer(ctx, testcontainers.WithImage(enterpriseEdition), tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,10 +99,10 @@ func TestAnalyticsServiceWithCommunityContainer(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	_, err := tccouchbase.StartContainer(ctx,
-		tccouchbase.WithImageName(communityEdition),
-		tccouchbase.WithAnalyticsService(),
-		tccouchbase.WithBucket(tccouchbase.NewBucket(bucketName)))
+	_, err := tccouchbase.RunContainer(ctx,
+		testcontainers.WithImage(communityEdition),
+		tccouchbase.WithServiceAnalytics(),
+		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
 
 	if err == nil {
 		t.Errorf("Expected error to be [%v] , got nil", err)
@@ -85,10 +113,10 @@ func TestEventingServiceWithCommunityContainer(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	_, err := tccouchbase.StartContainer(ctx,
-		tccouchbase.WithImageName(communityEdition),
-		tccouchbase.WithEventingService(),
-		tccouchbase.WithBucket(tccouchbase.NewBucket(bucketName)))
+	_, err := tccouchbase.RunContainer(ctx,
+		testcontainers.WithImage(communityEdition),
+		tccouchbase.WithServiceEventing(),
+		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
 
 	if err == nil {
 		t.Errorf("Expected error to be [%v] , got nil", err)
