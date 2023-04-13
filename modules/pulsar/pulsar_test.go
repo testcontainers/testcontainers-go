@@ -119,10 +119,12 @@ func TestPulsar(t *testing.T) {
 			}
 			// }
 
-			// getPulsarURLs {
+			// getBrokerURL {
 			brokerURL, err := c.BrokerURL(ctx)
 			require.Nil(t, err)
+			// }
 
+			// getAdminURL {
 			serviceURL, err := c.HTTPServiceURL(ctx)
 			require.Nil(t, err)
 			// }
