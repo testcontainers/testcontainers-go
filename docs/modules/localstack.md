@@ -39,11 +39,16 @@ For further reference on the SDK v1, please check out the AWS docs [here](https:
 
 For further reference on the SDK v2, please check out the AWS docs [here](https://aws.github.io/aws-sdk-go-v2/docs/getting-started)
 
-## `HOSTNAME_EXTERNAL` and hostname-sensitive services
+## Accessing hostname-sensitive services
 
 Some Localstack APIs, such as SQS, require the container to be aware of the hostname that it is accessible on - for example, for construction of queue URLs in responses.
 
-Testcontainers will inform Localstack of the best hostname automatically, using the `HOSTNAME_EXTERNAL` environment variable:
+Testcontainers will inform Localstack of the best hostname automatically, using the an environment variable for that:
+
+* for Localstack versions 0.10.0 and above, the `HOSTNAME_EXTERNAL` environment variable will be set to hostname in the container request.
+* for Localstack versions 2.0.0 and above, the `LOCALSTACK_HOST` environment variable will be set to the hostname in the container request.
+
+Once the variable is set:
 
 * when running the Localstack container directly without a custom network defined, it is expected that all calls to the container will be from the test host. As such, the container address will be used (typically localhost or the address where the Docker daemon is running).
 
