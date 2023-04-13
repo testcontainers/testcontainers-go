@@ -51,7 +51,7 @@ type CouchbaseContainer struct {
 // StartContainer creates an instance of the Couchbase container type
 func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, error) {
 	config := &Config{
-		enabledServices: []service{kv, query, search, index},
+		enabledServices: []Service{kv, query, search, index},
 		username:        "Administrator",
 		password:        "password",
 		// defaultImage {
@@ -581,7 +581,7 @@ func (c *CouchbaseContainer) checkAllServicesEnabled(rawConfig []byte) bool {
 	return true
 }
 
-func exposePorts(enabledServices []service) []string {
+func exposePorts(enabledServices []Service) []string {
 	exposedPorts := []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"}
 
 	for _, service := range enabledServices {
@@ -593,7 +593,7 @@ func exposePorts(enabledServices []service) []string {
 	return exposedPorts
 }
 
-func contains(services []service, service service) bool {
+func contains(services []Service, service Service) bool {
 	for _, s := range services {
 		if s.identifier == service.identifier {
 			return true

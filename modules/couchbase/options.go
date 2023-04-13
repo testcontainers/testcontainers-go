@@ -5,7 +5,7 @@ type Option func(*Config)
 
 // Config is the configuration for the Couchbase container, that will be stored in the container itself.
 type Config struct {
-	enabledServices  []service
+	enabledServices  []Service
 	username         string
 	password         string
 	isEnterprise     bool
