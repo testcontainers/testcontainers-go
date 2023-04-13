@@ -64,21 +64,33 @@ Testcontainers will inform Localstack of the best hostname automatically, using 
 The LocalStack module exposes one single function to create the LocalStack container, and this function receives two parameters:
 
 ```golang
-func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOption) (*LocalStackContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error)
 ```
 
 - `context.Context`
-- `OverrideContainerRequestOption`
+- `testcontainers.ContainerCustomizer`
 
-### OverrideContainerRequestOption
+### Container Options
 
-The `OverrideContainerRequestOption` functional option represents a way to override the default LocalStack container request:
+When starting the Localstack container, you can pass options in a variadic way to configure it.
+
+#### Set Image
+
+By default, the image used is `localstack:1.4.0`.  If you need to use a different image, you can use `testcontainers.WithImage` option.
 
 <!--codeinclude-->
-[Default container request](../../modules/localstack/localstack.go) inside_block:defaultContainerRequest
+[Custom Image](../../modules/localstack/localstack_test.go) inside_block:withImage
 <!--/codeinclude-->
 
-With simply passing your own instance of an `OverrideContainerRequestOption` type to the `StartContainer` function, you'll be able to configure the LocalStack container with your own needs, as this new container request will be merged with the original one.
+#### Customize the container request
+
+It's possible to entirely override the default LocalStack container request:
+
+<!--codeinclude-->
+[Customize container request](../../modules/localstack/localstack_test.go) inside_block:withCustomContainerRequest
+<!--/codeinclude-->
+
+With simply passing the `testcontainers.CustomizeRequest` functional option to the `RunContainer` function, you'll be able to configure the LocalStack container with your own needs, as this new container request will be merged with the original one.
 
 In the following example you check how it's possible to set certain environment variables that are needed by the tests, the most important of them the AWS services you want to use. Besides, the container runs in a separate Docker network with an alias:
 
@@ -86,10 +98,10 @@ In the following example you check how it's possible to set certain environment 
 [Overriding the default container request](../../modules/localstack/localstack_test.go) inside_block:withNetwork
 <!--/codeinclude-->
 
-If you do not need to override the container request, you can pass `nil` or the `NoopOverrideContainerRequest` instance, which is exposed as a helper for this reason.
+If you do not need to override the container request, you can simply pass the Go context to the `RunContainer` function.
 
 <!--codeinclude-->
-[Skip overriding the default container request](../../modules/localstack/localstack_test.go) inside_block:noopOverrideContainerRequest
+[Skip overriding the default container request](../../modules/localstack/localstack_test.go) inside_block:noOverrideContainerRequest
 <!--/codeinclude-->
 
 ## Testing the module

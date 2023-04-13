@@ -3,11 +3,12 @@ package localstack
 import (
 	"context"
 	"fmt"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"io"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,9 +17,11 @@ import (
 
 func generateContainerRequest() *LocalStackContainerRequest {
 	return &LocalStackContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Env:          map[string]string{},
-			ExposedPorts: []string{},
+		GenericContainerRequest: testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Env:          map[string]string{},
+				ExposedPorts: []string{},
+			},
 		},
 	}
 }
@@ -103,6 +106,35 @@ func TestIsLegacyMode(t *testing.T) {
 	}
 }
 
+func TestRun(t *testing.T) {
+	ctx := context.Background()
+
+	// withImage {
+	container, err := RunContainer(
+		ctx,
+		testcontainers.WithImage(fmt.Sprintf("localstack/localstack:%s", defaultVersion)),
+	)
+	// }
+
+	t.Run("multiple services should be exposed using the same port", func(t *testing.T) {
+		require.Nil(t, err)
+		assert.NotNil(t, container)
+
+		rawPorts, err := container.Ports(ctx)
+		require.Nil(t, err)
+
+		ports := 0
+		// only one port is exposed among all the ports in the container
+		for _, v := range rawPorts {
+			if len(v) > 0 {
+				ports++
+			}
+		}
+
+		assert.Equal(t, 1, ports) // a single port is exposed
+	})
+}
+
 func TestStart(t *testing.T) {
 	ctx := context.Background()
 
@@ -110,7 +142,7 @@ func TestStart(t *testing.T) {
 	container, err := StartContainer(
 		ctx,
 		OverrideContainerRequest(testcontainers.ContainerRequest{
-			Image: fmt.Sprintf("localstack/localstack:%s", defaultVersion),
+			Image: fmt.Sprintf("localstack/localstack:%s", "2.0.0"),
 		}),
 	)
 	// }
@@ -135,13 +167,10 @@ func TestStart(t *testing.T) {
 }
 
 func TestStartWithoutOverride(t *testing.T) {
-	// noopOverrideContainerRequest {
+	// noOverrideContainerRequest {
 	ctx := context.Background()
 
-	container, err := StartContainer(
-		ctx,
-		NoopOverrideContainerRequest,
-	)
+	container, err := RunContainer(ctx)
 	require.Nil(t, err)
 	assert.NotNil(t, container)
 	// }
@@ -159,13 +188,15 @@ func TestStartWithNetwork(t *testing.T) {
 	require.Nil(t, err)
 	assert.NotNil(t, nw)
 
-	container, err := StartContainer(
+	container, err := RunContainer(
 		ctx,
-		OverrideContainerRequest(testcontainers.ContainerRequest{
-			Image:          "localstack/localstack:0.13.0",
-			Env:            map[string]string{"SERVICES": "s3,sqs"},
-			Networks:       []string{"localstack-network"},
-			NetworkAliases: map[string][]string{"localstack-network": {"localstack"}},
+		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:          "localstack/localstack:0.13.0",
+				Env:            map[string]string{"SERVICES": "s3,sqs"},
+				Networks:       []string{"localstack-network"},
+				NetworkAliases: map[string][]string{"localstack-network": {"localstack"}},
+			},
 		}),
 	)
 	require.Nil(t, err)
@@ -189,14 +220,18 @@ func TestStartV2WithNetwork(t *testing.T) {
 	require.Nil(t, err)
 	assert.NotNil(t, nw)
 
-	localstack, err := StartContainer(
+	// withCustomContainerRequest {
+	localstack, err := RunContainer(
 		ctx,
-		OverrideContainerRequest(testcontainers.ContainerRequest{
-			Image:          "localstack/localstack:2.0.0",
-			Networks:       []string{"localstack-network-v2"},
-			NetworkAliases: map[string][]string{"localstack-network-v2": {"localstack"}},
+		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:          "localstack/localstack:2.0.0",
+				Networks:       []string{"localstack-network-v2"},
+				NetworkAliases: map[string][]string{"localstack-network-v2": {"localstack"}},
+			},
 		}),
 	)
+	// }
 	require.Nil(t, err)
 	assert.NotNil(t, localstack)
 
