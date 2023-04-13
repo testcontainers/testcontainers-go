@@ -23,7 +23,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variad argument for passing options.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ## Container Options
 

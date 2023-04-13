@@ -72,8 +72,8 @@ The LocalStack module exposes one single function to create the LocalStack conta
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error)
 ```
 
-- `context.Context`
-- `testcontainers.ContainerCustomizer`
+- `context.Context`, the Go context.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
 
