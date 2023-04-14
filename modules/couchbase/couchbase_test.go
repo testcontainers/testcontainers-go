@@ -22,13 +22,11 @@ const (
 func TestStartContainer(t *testing.T) {
 	ctx := context.Background()
 
-	// withBucket {
 	bucketName := "testBucket"
 	container, err := tccouchbase.StartContainer(ctx, tccouchbase.WithImageName(communityEdition), tccouchbase.WithBucket(tccouchbase.NewBucket(bucketName)))
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
