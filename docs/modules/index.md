@@ -145,7 +145,7 @@ $ make tidy-examples
 
 The steps to convert an existing example, aka `${THE_EXAMPLE}`, into a module are the following:
 
-1. Rename the module path at the `go.mod`file for your example.
+1. Rename the module path at the `go.mod` file for your example.
 1. Move the `examples/${THE_EXAMPLE}` directory to `modules/${THE_EXAMPLE}`.
 1. Move the `${THE_EXAMPLE}` dependabot config from the examples section to the modules one, which is located at the bottom.
 1. In the `mkdocs.yml` file, move the entry for `${THE_EXAMPLE}` from examples to modules.
