@@ -17,6 +17,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// containerPorts {
 const (
 	MGMT_PORT     = "8091"
 	MGMT_SSL_PORT = "18091"
@@ -39,6 +40,8 @@ const (
 	KV_PORT     = "11210"
 	KV_SSL_PORT = "11207"
 )
+
+// }
 
 // initialServices is the list of services that are enabled by default
 var initialServices = []Service{kv, query, search, index}
@@ -374,11 +377,8 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 				return false
 			}
 			status := gjson.Get(string(response), "nodes.0.status")
-			if status.String() != "healthy" {
-				return false
-			}
 
-			return true
+			return status.String() == "healthy"
 		}))
 
 	if contains(c.config.enabledServices, query) {

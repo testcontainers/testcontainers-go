@@ -48,7 +48,14 @@ func TestCouchbaseWithCommunityContainer(t *testing.T) {
 
 	// withBucket {
 	bucketName := "testBucket"
-	container, err := tccouchbase.RunContainer(ctx, testcontainers.WithImage(communityEdition), tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
+	bucket := tccouchbase.NewBucket(bucketName)
+
+	bucket = bucket.WithQuota(100).
+		WithReplicas(0).
+		WithFlushEnabled(false).
+		WithPrimaryIndex(true)
+
+	container, err := tccouchbase.RunContainer(ctx, testcontainers.WithImage(communityEdition), tccouchbase.WithBuckets(bucket))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,6 +98,20 @@ func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
 	}
 
 	testBucketUsage(t, cluster.Bucket(bucketName))
+}
+
+func TestWithCredentials(t *testing.T) {
+	ctx := context.Background()
+
+	bucketName := "testBucket"
+	_, err := tccouchbase.RunContainer(ctx,
+		testcontainers.WithImage(communityEdition),
+		tccouchbase.WithAdminCredentials("testcontainers", "cool!"),
+		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
+
+	if err != nil {
+		t.Errorf("Expected error to be [%v] , got nil", err)
+	}
 }
 
 func TestAnalyticsServiceWithCommunityContainer(t *testing.T) {
@@ -159,10 +180,12 @@ func connectCluster(ctx context.Context, container *tccouchbase.CouchbaseContain
 		return nil, err
 	}
 
+	// getCredentials {
 	return gocb.Connect(connectionString, gocb.ClusterOptions{
 		Username: container.Username(),
 		Password: container.Password(),
 	})
+	// }
 }
 
 // }
