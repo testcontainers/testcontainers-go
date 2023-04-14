@@ -55,11 +55,59 @@ We are going to propose a set of steps to follow when adding types and methods t
 
 - Make sure a public `Container` type exists for the module. This type have to use composition to embed the `testcontainers.Container` type, inheriting all the methods from it.
 - Make sure a `RunContainer` function exists and is public. This function is the entrypoint to the module and will define the initial values for a `testcontainers.GenericContainerRequest` struct, including the image, the default exposed ports, wait strategies, etc. Therefore, the function must initialise the container request with the default values.
-- Define container options for the module. We consider that a best practice for the options is to return a function that returns a modified `testcontainers.GenericContainerRequest` type, and for that, the library already provides with a `testcontainers.CustomizeRequestOption` type representing this function signature.
+- Define container options for the module leveraging the `testcontainers.ContainerCustomizer` interface, that has one single method: `Customize(req *GenericContainerRequest)`.
+- We consider that a best practice for the options is define a function using the `With` prefix, that returns a function returning a modified `testcontainers.GenericContainerRequest` type. For that, the library already provides with a `testcontainers.CustomizeRequestOption` type implementing the `ContainerCustomizer` interface, and we encourage you use this type for creating your own customizer functions.
+- At the same time, you could need to create your own container customizers for your module. Make sure they implement the `testcontainers.ContainerCustomizer` interface. Defining your own customizer functions is useful when you need to transfer certain state that is not present at the `ContainerRequest` to the container, possibly using an intermediate Config struct.
 - The options will be passed to the `RunContainer` function as variadic arguments after the Go context, and they will be processed right after defining the initial `testcontainers.GenericContainerRequest` struct using a for loop.
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*Container, error) {...}
+// Config type represents an intermediate struct for transferring state from the options to the container
+type Config struct {
+    data string
+}
+
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+    cfg := Config{}
+
+    req := testcontainers.ContainerRequest{
+        Image: "my-image",
+        ...
+    }
+    genericContainerReq := testcontainers.GenericContainerRequest{
+        ContainerRequest: req,
+        Started:          true,
+    }
+    ...
+    for _, opt := range opts {
+        req = opt.Customize(&genericContainerReq)
+
+        // If you need to transfer some state from the options to the container, you can do it here
+        if myCustomizer, ok := opt.(MyCustomizer); ok {
+            config.data = customizer.data
+        }
+    }
+    ...
+    container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+    ...
+    moduleContainer := &Container{Container: container}
+    moduleContainer.initializeState(ctx, cfg)
+    ...
+    return moduleContainer, nil
+}
+
+// MyCustomizer type represents a container customizer for transferring state from the options to the container
+type MyCustomizer struct {
+    data string
+}
+// Customize method implementation
+func (c MyCustomizer) Customize(req *testcontainers.GenericContainerRequest) testcontainers.ContainerRequest {
+    req.ExposedPorts = append(req.ExposedPorts, "1234/tcp")
+    return req.ContainerRequest
+}
+// WithMy function option to use the customizer
+func WithMy(data string) testcontainers.ContainerCustomizer {
+    return MyCustomizer{data: data}
+}
 ```
 
 - If needed, define public methods to extract information from the running container, using the `Container` type as receiver. E.g. a connection string to access a database:
@@ -73,7 +121,7 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {...}
 
 ### ContainerRequest options
 
-In order to simplify the creation of the container for a given module, `Testcontainers for Go` provides with a set of `testcontainers.CustomizeRequestOption` functions to customise the container request for the module. These options are:
+In order to simplify the creation of the container for a given module, `Testcontainers for Go` provides with a set of `testcontainers.CustomizeRequestOption` functions to customize the container request for the module. These options are:
 
 - `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customising the container request.
 - `testcontainers.WithImage`: a function that sets the image for the container request.

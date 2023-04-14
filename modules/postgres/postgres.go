@@ -110,7 +110,7 @@ func WithUsername(user string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the postgres container type
-func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*PostgresContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image: defaultPostgresImage,
 		Env: map[string]string{
@@ -128,7 +128,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOp
 	}
 
 	for _, opt := range opts {
-		opt(&genericContainerReq)
+		opt.Customize(&genericContainerReq)
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

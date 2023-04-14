@@ -27,9 +27,19 @@ type GenericContainerRequest struct {
 	Reuse            bool         // reuse an existing container if it exists or create a new one. a container name mustn't be empty
 }
 
+// ContainerCustomizer is an interface that can be used to configure the Testcontainers container
+// request. The passed request will be merged with the default one.
+type ContainerCustomizer interface {
+	Customize(req *GenericContainerRequest)
+}
+
 // CustomizeRequestOption is a type that can be used to configure the Testcontainers container request.
 // The passed request will be merged with the default one.
 type CustomizeRequestOption func(req *GenericContainerRequest)
+
+func (opt CustomizeRequestOption) Customize(req *GenericContainerRequest) {
+	opt(req)
+}
 
 // CustomizeRequest returns a function that can be used to merge the passed container request with the one that is used by the container.
 // Slices and Maps will be appended.

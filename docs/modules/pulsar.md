@@ -22,24 +22,29 @@ Create a `Pulsar` container to use it in your tests:
 
 where the `tt.opts` are the options to configure the container. See the [Container Options](#container-options) section for more details.
 
-Then you can retrieve the broker and the admin url:
+## Module Reference
 
-<!--codeinclude-->
-[Get broker and admin urls](../../modules/pulsar/pulsar_test.go) inside_block:getPulsarURLs
-<!--/codeinclude-->
+The Redis module exposes one entrypoint function to create the containerr, and this function receives two parameters:
 
-## Container Options
+```golang
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+```
+
+- `context.Context`, the Go context.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+### Container Options
 
 When starting the Pulsar container, you can pass options in a variadic way to configure it.
 
-### Pulsar Image
+#### Pulsar Image
 If you need to set a different Pulsar image you can use the `testcontainers.WithImage`.
 
 <!--codeinclude-->
 [Set Pulsar image](../../modules/pulsar/pulsar_test.go) inside_block:setPulsarImage
 <!--/codeinclude-->
 
-### Pulsar Configuration
+#### Pulsar Configuration
 If you need to set Pulsar configuration variables you can use the `WithPulsarEnv` to set Pulsar environment variables: the `PULSAR_PREFIX_` prefix will be automatically added for you.
 
 For example, if you want to enable `brokerDeduplicationEnabled`:
@@ -50,7 +55,7 @@ For example, if you want to enable `brokerDeduplicationEnabled`:
 
 It will result in the `PULSAR_PREFIX_brokerDeduplicationEnabled=true` environment variable being set in the container request.
 
-### Pulsar IO
+#### Pulsar IO
 
 If you need to test Pulsar IO framework you can enable the Pulsar Functions Worker with the `WithFunctionsWorker` option:
 
@@ -58,7 +63,7 @@ If you need to test Pulsar IO framework you can enable the Pulsar Functions Work
 [Create a Pulsar container with functions worker](../../modules/pulsar/pulsar_test.go) inside_block:withFunctionsWorker
 <!--/codeinclude-->
 
-### Pulsar Transactions
+#### Pulsar Transactions
 
 If you need to test Pulsar Transactions you can enable the transactions feature:
 
@@ -66,7 +71,7 @@ If you need to test Pulsar Transactions you can enable the transactions feature:
 [Create a Pulsar container with transactions](../../modules/pulsar/pulsar_test.go) inside_block:withTransactions
 <!--/codeinclude-->
 
-### Log consumers
+#### Log consumers
 If you need to collect the logs from the Pulsar container, you can add your own LogConsumer with the `WithLogConsumers` function, which accepts a variadic argument of LogConsumers.
 
 <!--codeinclude-->
@@ -84,7 +89,7 @@ An example of a LogConsumer could be the following:
 
 If you want to know more about LogConsumers, please check the [Following Container Logs](../features/follow_logs.md) documentation.
 
-## Advanced configuration
+#### Advanced configuration
 
 In the case you need a more advanced configuration regarding the config, host config and endpoint settings Docker types, you can leverage the modifier functions that are available in
 the ContainerRequest. The Pulsar container exposes a way to interact with those modifiers in a simple manner, using the aforementioned options in the `RunContainer` function:
@@ -94,3 +99,19 @@ the ContainerRequest. The Pulsar container exposes a way to interact with those 
 <!--/codeinclude-->
 
 Please check out the [Advanced Settings](../features/creating_container.md#advanced-settings) for creating containers documentation.
+
+### Container methods
+
+Once you have a Pulsar container, then you can retrieve the broker and the admin url:
+
+#### Admin URL
+
+<!--codeinclude-->
+[Get admin url](../../modules/pulsar/pulsar_test.go) inside_block:getAdminURL
+<!--/codeinclude-->
+
+#### Broker URL
+
+<!--codeinclude-->
+[Get broker url](../../modules/pulsar/pulsar_test.go) inside_block:getBrokerURL
+<!--/codeinclude-->

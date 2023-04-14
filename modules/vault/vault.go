@@ -22,7 +22,7 @@ type VaultContainer struct {
 }
 
 // RunContainer creates an instance of the vault container type
-func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*VaultContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*VaultContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImageName,
 		ExposedPorts: []string{defaultPort + "/tcp"},
@@ -41,7 +41,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOp
 	}
 
 	for _, opt := range opts {
-		opt(&genericContainerReq)
+		opt.Customize(&genericContainerReq)
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
