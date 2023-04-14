@@ -106,10 +106,24 @@ func TestWithCredentials(t *testing.T) {
 	bucketName := "testBucket"
 	_, err := tccouchbase.RunContainer(ctx,
 		testcontainers.WithImage(communityEdition),
-		tccouchbase.WithAdminCredentials("testcontainers", "cool!"),
+		tccouchbase.WithAdminCredentials("testcontainers", "testcontainers.IS.cool!"),
 		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
 
 	if err != nil {
+		t.Errorf("Expected error to be [%v] , got nil", err)
+	}
+}
+
+func TestWithCredentials_Password_LessThan_6(t *testing.T) {
+	ctx := context.Background()
+
+	bucketName := "testBucket"
+	_, err := tccouchbase.RunContainer(ctx,
+		testcontainers.WithImage(communityEdition),
+		tccouchbase.WithAdminCredentials("testcontainers", "12345"),
+		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
+
+	if err == nil {
 		t.Errorf("Expected error to be [%v] , got nil", err)
 	}
 }

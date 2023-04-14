@@ -97,6 +97,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			// If the option is a credentialsCustomizer, we need to set the credentials
 			config.username = credentialsCustomizer.username
 			config.password = credentialsCustomizer.password
+
+			if len(credentialsCustomizer.password) < 6 {
+				return nil, errors.New("admin password must be at most 6 characters long")
+			}
 		}
 	}
 
@@ -554,24 +558,39 @@ func (c *CouchbaseContainer) doHttpRequest(ctx context.Context, port, path, meth
 		return nil, err
 	}
 
-	request, err := http.NewRequestWithContext(ctx, method, url, strings.NewReader(form.Encode()))
-	if err != nil {
-		return nil, err
+	var bytes []byte
+	// retry with backoff
+	backoffErr := backoff.Retry(func() error {
+		request, err := http.NewRequestWithContext(ctx, method, url, strings.NewReader(form.Encode()))
+		if err != nil {
+			return err
+		}
+
+		request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+		if auth {
+			request.SetBasicAuth(c.config.username, c.config.password)
+		}
+
+		response, err := http.DefaultClient.Do(request)
+		if err != nil {
+			return err
+		}
+		defer response.Body.Close()
+
+		bytes, err = io.ReadAll(response.Body)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+
+	if backoffErr != nil {
+		return nil, backoffErr
 	}
 
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	if auth {
-		request.SetBasicAuth(c.config.username, c.config.password)
-	}
-
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	defer response.Body.Close()
-
-	return io.ReadAll(response.Body)
+	return bytes, nil
 }
 
 func (c *CouchbaseContainer) getUrl(ctx context.Context, port, path string) (string, error) {
