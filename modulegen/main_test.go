@@ -435,7 +435,7 @@ func assertExampleTestContent(t *testing.T, example Example, exampleTestFile str
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "package "+example.Lower())
 	assert.Equal(t, data[7], "func Test"+example.Title()+"(t *testing.T) {")
-	assert.Equal(t, data[10], "\tcontainer, err := setup"+example.Title()+"(ctx)")
+	assert.Equal(t, data[10], "\tcontainer, err := RunContainer(ctx)")
 }
 
 // assert content example

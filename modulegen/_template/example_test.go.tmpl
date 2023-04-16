@@ -8,7 +8,7 @@ import (
 func Test{{ $title }}(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := setup{{ $title }}(ctx)
+	container, err := RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
