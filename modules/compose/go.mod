@@ -20,9 +20,9 @@ replace (
 
 require (
 	github.com/compose-spec/compose-go v1.13.0
-	github.com/docker/cli v23.0.1+incompatible
+	github.com/docker/cli v23.0.3+incompatible
 	github.com/docker/compose/v2 v2.17.0
-	github.com/docker/docker v23.0.2+incompatible
+	github.com/docker/docker v23.0.3+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.19.0
