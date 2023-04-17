@@ -435,7 +435,7 @@ func assertExampleTestContent(t *testing.T, example Example, exampleTestFile str
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "package "+example.Lower())
 	assert.Equal(t, data[7], "func Test"+example.Title()+"(t *testing.T) {")
-	assert.Equal(t, data[10], "\tcontainer, err := setup"+example.Title()+"(ctx)")
+	assert.Equal(t, data[10], "\tcontainer, err := RunContainer(ctx)")
 }
 
 // assert content example
@@ -453,9 +453,9 @@ func assertExampleContent(t *testing.T, example Example, exampleFile string) {
 	assert.Equal(t, data[8], "// "+containerName+" represents the "+exampleName+" container type used in the module")
 	assert.Equal(t, data[9], "type "+containerName+" struct {")
 	assert.Equal(t, data[13], "// "+entrypoint+" creates an instance of the "+exampleName+" container type")
-	assert.Equal(t, data[14], "func "+entrypoint+"(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*"+containerName+", error) {")
+	assert.Equal(t, data[14], "func "+entrypoint+"(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*"+containerName+", error) {")
 	assert.Equal(t, data[16], "\t\tImage: \""+example.Image+"\",")
-	assert.Equal(t, data[31], "\treturn &"+containerName+"{Container: container}, nil")
+	assert.Equal(t, data[33], "\treturn &"+containerName+"{Container: container}, nil")
 }
 
 // assert content GitHub workflow for the example

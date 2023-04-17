@@ -28,7 +28,7 @@ var (
 
 func TestMain(m *testing.M) {
 	var err error
-	opts := []testcontainers.CustomizeRequestOption{
+	opts := []testcontainers.ContainerCustomizer{
 		// WithImageName {
 		testcontainers.WithImage("hashicorp/vault:1.13.0"),
 		// }

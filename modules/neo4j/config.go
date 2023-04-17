@@ -92,7 +92,7 @@ func addSetting(req *testcontainers.GenericContainerRequest, key string, newVal 
 	if oldVal, found := req.Env[normalizedKey]; found {
 		// make sure AUTH is not overwritten by a setting
 		if key == "AUTH" {
-			req.Logger.Printf("setting %q is not permitted, WithAdminPassword as already been set\n", normalizedKey)
+			req.Logger.Printf("setting %q is not permitted, WithAdminPassword has already been set\n", normalizedKey)
 			return
 		}
 

@@ -38,7 +38,7 @@ func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
 }
 
 // RunContainer creates an instance of the Neo4j container type
-func RunContainer(ctx context.Context, options ...testcontainers.CustomizeRequestOption) (*Neo4jContainer, error) {
+func RunContainer(ctx context.Context, options ...testcontainers.ContainerCustomizer) (*Neo4jContainer, error) {
 	httpPort, _ := nat.NewPort("tcp", defaultHttpPort)
 	request := testcontainers.ContainerRequest{
 		Image: fmt.Sprintf("docker.io/%s:%s", defaultImageName, defaultTag),
@@ -72,7 +72,7 @@ func RunContainer(ctx context.Context, options ...testcontainers.CustomizeReques
 	}
 
 	for _, option := range options {
-		option(&genericContainerReq)
+		option.Customize(&genericContainerReq)
 	}
 
 	err := validate(&genericContainerReq)

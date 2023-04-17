@@ -17,6 +17,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// containerPorts {
 const (
 	MGMT_PORT     = "8091"
 	MGMT_SSL_PORT = "18091"
@@ -40,6 +41,11 @@ const (
 	KV_SSL_PORT = "11207"
 )
 
+// }
+
+// initialServices is the list of services that are enabled by default
+var initialServices = []Service{kv, query, search, index}
+
 type clusterInit func(context.Context) error
 
 // CouchbaseContainer represents the Couchbase container type used in the module
@@ -48,31 +54,57 @@ type CouchbaseContainer struct {
 	config *Config
 }
 
-// StartContainer creates an instance of the Couchbase container type
-func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, error) {
+// RunContainer creates an instance of the Couchbase container type
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CouchbaseContainer, error) {
 	config := &Config{
-		enabledServices: []service{kv, query, search, index},
-		username:        "Administrator",
-		password:        "password",
-		// defaultImage {
-		imageName: "couchbase:6.5.1",
-		// }
+		enabledServices:  make([]Service, 0),
+		username:         "Administrator",
+		password:         "password",
 		indexStorageMode: MemoryOptimized,
 	}
 
-	for _, opt := range opts {
-		opt(config)
-	}
-
 	req := testcontainers.ContainerRequest{
-		Image:        config.imageName,
-		ExposedPorts: exposePorts(config.enabledServices),
+		// defaultImage {
+		Image: "couchbase:6.5.1",
+		// }
+		ExposedPorts: []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"},
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
-	})
+	}
+
+	for _, srv := range initialServices {
+		opts = append(opts, withService(srv))
+	}
+
+	for _, opt := range opts {
+		opt.Customize(&genericContainerReq)
+
+		// transfer options to the config
+
+		if bucketCustomizer, ok := opt.(bucketCustomizer); ok {
+			// If the option is a bucketCustomizer, we need to add the buckets to the request
+			config.buckets = append(config.buckets, bucketCustomizer.buckets...)
+		} else if serviceCustomizer, ok := opt.(serviceCustomizer); ok {
+			// If the option is a serviceCustomizer, we need to append the service
+			config.enabledServices = append(config.enabledServices, serviceCustomizer.enabledService)
+		} else if indexStorageCustomizer, ok := opt.(indexStorageCustomizer); ok {
+			// If the option is a indexStorageCustomizer, we need to set the index storage mode
+			config.indexStorageMode = indexStorageCustomizer.mode
+		} else if credentialsCustomizer, ok := opt.(credentialsCustomizer); ok {
+			// If the option is a credentialsCustomizer, we need to set the credentials
+			config.username = credentialsCustomizer.username
+			config.password = credentialsCustomizer.password
+
+			if len(credentialsCustomizer.password) < 6 {
+				return nil, errors.New("admin password must be at most 6 characters long")
+			}
+		}
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +120,35 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 	}
 
 	return &couchbaseContainer, nil
+}
+
+// StartContainer creates an instance of the Couchbase container type
+// Deprecated: use RunContainer instead
+func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, error) {
+	config := &Config{
+		enabledServices:  []Service{kv, query, search, index},
+		username:         "Administrator",
+		password:         "password",
+		imageName:        "couchbase:6.5.1",
+		indexStorageMode: MemoryOptimized,
+	}
+
+	for _, opt := range opts {
+		opt(config)
+	}
+
+	customizers := []testcontainers.ContainerCustomizer{
+		testcontainers.WithImage(config.imageName),
+		WithAdminCredentials(config.username, config.password),
+		WithIndexStorage(config.indexStorageMode),
+		WithBuckets(config.buckets...),
+	}
+
+	for _, srv := range config.enabledServices {
+		customizers = append(customizers, withService(srv))
+	}
+
+	return RunContainer(ctx, customizers...)
 }
 
 // ConnectionString returns the connection string to connect to the Couchbase container instance.
@@ -320,11 +381,8 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 				return false
 			}
 			status := gjson.Get(string(response), "nodes.0.status")
-			if status.String() != "healthy" {
-				return false
-			}
 
-			return true
+			return status.String() == "healthy"
 		}))
 
 	if contains(c.config.enabledServices, query) {
@@ -500,24 +558,39 @@ func (c *CouchbaseContainer) doHttpRequest(ctx context.Context, port, path, meth
 		return nil, err
 	}
 
-	request, err := http.NewRequestWithContext(ctx, method, url, strings.NewReader(form.Encode()))
-	if err != nil {
-		return nil, err
+	var bytes []byte
+	// retry with backoff
+	backoffErr := backoff.Retry(func() error {
+		request, err := http.NewRequestWithContext(ctx, method, url, strings.NewReader(form.Encode()))
+		if err != nil {
+			return err
+		}
+
+		request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+		if auth {
+			request.SetBasicAuth(c.config.username, c.config.password)
+		}
+
+		response, err := http.DefaultClient.Do(request)
+		if err != nil {
+			return err
+		}
+		defer response.Body.Close()
+
+		bytes, err = io.ReadAll(response.Body)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+
+	if backoffErr != nil {
+		return nil, backoffErr
 	}
 
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	if auth {
-		request.SetBasicAuth(c.config.username, c.config.password)
-	}
-
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	defer response.Body.Close()
-
-	return io.ReadAll(response.Body)
+	return bytes, nil
 }
 
 func (c *CouchbaseContainer) getUrl(ctx context.Context, port, path string) (string, error) {
@@ -581,19 +654,35 @@ func (c *CouchbaseContainer) checkAllServicesEnabled(rawConfig []byte) bool {
 	return true
 }
 
-func exposePorts(enabledServices []service) []string {
-	exposedPorts := []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"}
-
-	for _, service := range enabledServices {
-		for _, port := range service.ports {
-			exposedPorts = append(exposedPorts, port+"/tcp")
-		}
-	}
-
-	return exposedPorts
+type serviceCustomizer struct {
+	enabledService Service
 }
 
-func contains(services []service, service service) bool {
+func (c serviceCustomizer) Customize(req *testcontainers.GenericContainerRequest) {
+	for _, port := range c.enabledService.ports {
+		req.ExposedPorts = append(req.ExposedPorts, port+"/tcp")
+	}
+}
+
+// withService creates a serviceCustomizer for the given service.
+// It's private to prevent users from creating other services than the Analytics and Eventing services.
+func withService(service Service) serviceCustomizer {
+	return serviceCustomizer{
+		enabledService: service,
+	}
+}
+
+// WithServiceAnalytics enables the Analytics service.
+func WithServiceAnalytics() serviceCustomizer {
+	return withService(analytics)
+}
+
+// WithServiceEventing enables the Eventing service.
+func WithServiceEventing() serviceCustomizer {
+	return withService(eventing)
+}
+
+func contains(services []Service, service Service) bool {
 	for _, s := range services {
 		if s.identifier == service.identifier {
 			return true
