@@ -19,10 +19,10 @@ replace (
 )
 
 require (
-	github.com/compose-spec/compose-go v1.13.0
-	github.com/docker/cli v23.0.1+incompatible
-	github.com/docker/compose/v2 v2.17.0
-	github.com/docker/docker v23.0.2+incompatible
+	github.com/compose-spec/compose-go v1.13.2
+	github.com/docker/cli v23.0.3+incompatible
+	github.com/docker/compose/v2 v2.17.2
+	github.com/docker/docker v23.0.3+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.19.0
@@ -57,7 +57,7 @@ require (
 	github.com/containerd/typeurl v1.0.2 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/distribution/distribution/v3 v3.0.0-20230214150026-36d8c594d7aa // indirect
+	github.com/distribution/distribution/v3 v3.0.0-20230223072852-e5d5810851d1 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/buildx v0.10.4 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
@@ -88,7 +88,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
-	github.com/imdario/mergo v0.3.13 // indirect
+	github.com/imdario/mergo v0.3.14 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/jonboulle/clockwork v0.3.1-0.20230117163003-a89700cec744 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -103,7 +103,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/miekg/pkcs11 v1.1.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/moby/buildkit v0.11.4 // indirect
+	github.com/moby/buildkit v0.11.5 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/patternmatcher v0.5.0 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
