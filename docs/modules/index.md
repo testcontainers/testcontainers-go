@@ -13,7 +13,15 @@ We have provided a command line tool to generate the scaffolding for the code of
     - a Go test file for running a simple test for your container, consuming the above struct.
     - a Makefile to run the tests in a consistent manner
     - a tools.go file including the build tools (i.e. `gotestsum`) used to build/run the example.
-- a markdown file in the docs/modules directory including the snippets for both the creation of the container and a simple test.
+- a markdown file in the docs/modules directory including the snippets for both the creation of the container and a simple test. By default, this generated file will contain all the documentation for the module, including:
+    - the version of _Testcontainers for Go_ in which the module was added.
+    - a short introduction to the module.
+    - a section for adding the module to the project dependencies.
+    - a section for a usage example.
+    - a section for the module reference, including:
+        - the entrypoint function for creating the container.
+        - the options for creating the container.
+    - a section for the container methods.
 - a new Nav entry for the module in the docs site, adding it to the `mkdocs.yml` file located at the root directory of the project.
 - a GitHub workflow file in the .github/workflows directory to run the tests for the example.
 - an entry in Dependabot's configuration file, in order to receive dependency updates.
