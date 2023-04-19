@@ -1,6 +1,6 @@
 # Apache Pulsar
 
-Since testcontainers-go <span class="tc-version">:material-tag: v0.18.0</span>
+Since testcontainers-go <span class="tc-version">:material-tag: v0.19.0</span>
 
 ## Introduction
 
