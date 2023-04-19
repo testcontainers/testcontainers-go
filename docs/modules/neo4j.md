@@ -1,5 +1,7 @@
 # Neo4j
 
+Not available until the next release of testcontainers-go <span class="tc-version">:material-tag: dev</span>
+
 The Testcontainers module for [Neo4j](https://neo4j.com/), the leading graph platform.
 
 ## Adding this module to your project dependencies

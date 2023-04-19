@@ -1,5 +1,7 @@
 # Apache Pulsar
 
+Since testcontainers-go <span class="tc-version">:material-tag: v0.18.0</span>
+
 Testcontainers can be used to automatically create [Apache Pulsar](https://pulsar.apache.org) containers without external services.
 
 It's based on the official Apache Pulsar docker image, so it is recommended to read the [official guide](https://pulsar.apache.org/docs/next/getting-started-docker/).
