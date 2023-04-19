@@ -57,8 +57,8 @@ When starting the Couchbase container, you can pass options in a variadic way to
 
 #### Image
 
-If you need to set a different Couchbase Docker image, you can use `WithImageName` with a valid Docker image
-for Couchbase. E.g. `WithImageName("docker.io/couchbase:6.5.1")`.
+If you need to set a different Couchbase Docker image, you can use `testcontainers.WithImage` with a valid Docker image
+for Couchbase. E.g. `testcontainers.WithImage("docker.io/couchbase:6.5.1")`.
 
 By default, the container will use the following Docker image:
 

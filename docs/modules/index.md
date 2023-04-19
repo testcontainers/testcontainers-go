@@ -53,11 +53,11 @@ We are going to propose a set of steps to follow when adding types and methods t
 !!!warning
     The `StartContainer` function will be eventually deprecated and replaced with `RunContainer`. We are keeping it in certain modules for backwards compatibility, but they will be removed in the future.
 
-- Make sure a public `Container` type exists for the module. This type have to use composition to embed the `testcontainers.Container` type, inheriting all the methods from it.
+- Make sure a public `Container` type exists for the module. This type has to use composition to embed the `testcontainers.Container` type, promoting all the methods from it.
 - Make sure a `RunContainer` function exists and is public. This function is the entrypoint to the module and will define the initial values for a `testcontainers.GenericContainerRequest` struct, including the image, the default exposed ports, wait strategies, etc. Therefore, the function must initialise the container request with the default values.
 - Define container options for the module leveraging the `testcontainers.ContainerCustomizer` interface, that has one single method: `Customize(req *GenericContainerRequest)`.
-- We consider that a best practice for the options is define a function using the `With` prefix, that returns a function returning a modified `testcontainers.GenericContainerRequest` type. For that, the library already provides with a `testcontainers.CustomizeRequestOption` type implementing the `ContainerCustomizer` interface, and we encourage you use this type for creating your own customizer functions.
-- At the same time, you could need to create your own container customizers for your module. Make sure they implement the `testcontainers.ContainerCustomizer` interface. Defining your own customizer functions is useful when you need to transfer certain state that is not present at the `ContainerRequest` to the container, possibly using an intermediate Config struct.
+- We consider that a best practice for the options is define a function using the `With` prefix, that returns a function returning a modified `testcontainers.GenericContainerRequest` type. For that, the library already provides a `testcontainers.CustomizeRequestOption` type implementing the `ContainerCustomizer` interface, and we encourage you to use this type for creating your own customizer functions.
+- At the same time, you could need to create your own container customizers for your module. Make sure they implement the `testcontainers.ContainerCustomizer` interface. Defining your own customizer functions is useful when you need to transfer a certain state that is not present at the `ContainerRequest` for the container, possibly using an intermediate Config struct.
 - The options will be passed to the `RunContainer` function as variadic arguments after the Go context, and they will be processed right after defining the initial `testcontainers.GenericContainerRequest` struct using a for loop.
 
 ```golang
@@ -66,6 +66,7 @@ type Config struct {
     data string
 }
 
+// RunContainer function is the entrypoint to the module
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
     cfg := Config{}
 
@@ -121,9 +122,9 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {...}
 
 ### ContainerRequest options
 
-In order to simplify the creation of the container for a given module, `Testcontainers for Go` provides with a set of `testcontainers.CustomizeRequestOption` functions to customize the container request for the module. These options are:
+In order to simplify the creation of the container for a given module, `Testcontainers for Go` provides a set of `testcontainers.CustomizeRequestOption` functions to customize the container request for the module. These options are:
 
-- `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customising the container request.
+- `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customizing the container request.
 - `testcontainers.WithImage`: a function that sets the image for the container request.
 - `testcontainers.WithConfigModifier`: a function that sets the config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
@@ -144,7 +145,7 @@ $ make tidy-examples
 
 The steps to convert an existing example, aka `${THE_EXAMPLE}`, into a module are the following:
 
-1. Rename the module path at the `go.mod`file for your example.
+1. Rename the module path at the `go.mod` file for your example.
 1. Move the `examples/${THE_EXAMPLE}` directory to `modules/${THE_EXAMPLE}`.
 1. Move the `${THE_EXAMPLE}` dependabot config from the examples section to the modules one, which is located at the bottom.
 1. In the `mkdocs.yml` file, move the entry for `${THE_EXAMPLE}` from examples to modules.
