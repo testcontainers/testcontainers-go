@@ -2,9 +2,9 @@
 
 Not available until the next release of testcontainers-go <span class="tc-version">:material-tag: dev</span>
 
-<img src="https://cdn.worldvectorlogo.com/logos/vault-enterprise.svg" width="200" />
+## Introduction
 
-Testcontainers module for Vault. [Vault](https://www.vaultproject.io/) is an open-source tool designed for securely storing, accessing, and managing secrets and sensitive data such as passwords, certificates, API keys, and other confidential information.
+The Testcontainers module for Vault. [Vault](https://www.vaultproject.io/) is an open-source tool designed for securely storing, accessing, and managing secrets and sensitive data such as passwords, certificates, API keys, and other confidential information.
 
 ## Adding this module to your project dependencies
 

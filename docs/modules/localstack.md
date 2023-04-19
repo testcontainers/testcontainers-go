@@ -2,6 +2,8 @@
 
 Since testcontainers-go <span class="tc-version">:material-tag: v0.18.0</span>
 
+## Introduction
+
 The Testcontainers module for [LocalStack](http://localstack.cloud/) is _"a fully functional local AWS cloud stack"_, to develop and test your cloud and serverless apps without actually using the cloud.
 
 ## Adding this module to your project dependencies

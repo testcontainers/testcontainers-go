@@ -2,6 +2,10 @@
 
 Not available until the next release of testcontainers-go <span class="tc-version">:material-tag: dev</span>
 
+## Introduction
+
+The Testcontainers module for Redis.
+
 ## Adding this module to your project dependencies
 
 Please run the following command to add the Redis module to your Go dependencies:

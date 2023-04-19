@@ -2,9 +2,9 @@
 
 Not available until the next release of testcontainers-go <span class="tc-version">:material-tag: dev</span>
 
-<img src="https://cdn.worldvectorlogo.com/logos/couchbase.svg" width="300" />
+## Introduction
 
-Testcontainers module for Couchbase. [Couchbase](https://www.couchbase.com/) is a document oriented NoSQL database.
+The Testcontainers module for Couchbase.
 
 ## Adding this module to your project dependencies
 
