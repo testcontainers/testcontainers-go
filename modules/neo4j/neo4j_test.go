@@ -99,6 +99,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	})
 
 	outer.Run("warns about overwrites of setting keys", func(t *testing.T) {
+		// withSettings {
 		logger := &inMemoryLogger{}
 		container, err := neo4j.RunContainer(ctx,
 			neo4j.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
@@ -107,6 +108,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 			neo4j.WithNeo4jSettings(map[string]string{"some.key": "value2"}),
 			neo4j.WithNeo4jSetting("some.key", "value3"),
 		)
+		// }
 		if err != nil {
 			t.Fatalf("expected env to successfully run but did not: %s", err)
 		}
@@ -153,7 +155,9 @@ func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Neo4jContainer {
 }
 
 func createDriver(t *testing.T, ctx context.Context, container *neo4j.Neo4jContainer) neo.DriverWithContext {
+	// boltURL {
 	boltUrl, err := container.BoltUrl(ctx)
+	// }
 	if err != nil {
 		t.Fatal(err)
 	}

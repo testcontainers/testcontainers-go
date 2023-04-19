@@ -11,12 +11,14 @@ import (
 type LabsPlugin string
 
 const (
+	// labsPlugins {
 	Apoc             LabsPlugin = "apoc"
 	ApocCore         LabsPlugin = "apoc-core"
 	Bloom            LabsPlugin = "bloom"
 	GraphDataScience LabsPlugin = "graph-data-science"
 	NeoSemantics     LabsPlugin = "n10s"
 	Streams          LabsPlugin = "streams"
+	// }
 )
 
 // WithoutAuthentication disables authentication.
@@ -92,7 +94,7 @@ func addSetting(req *testcontainers.GenericContainerRequest, key string, newVal 
 	if oldVal, found := req.Env[normalizedKey]; found {
 		// make sure AUTH is not overwritten by a setting
 		if key == "AUTH" {
-			req.Logger.Printf("setting %q is not permitted, WithAdminPassword as already been set\n", normalizedKey)
+			req.Logger.Printf("setting %q is not permitted, WithAdminPassword has already been set\n", normalizedKey)
 			return
 		}
 

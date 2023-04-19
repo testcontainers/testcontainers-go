@@ -10,17 +10,27 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const defaultImageName = "neo4j"
-const defaultTag = "4.4"
-const defaultBoltPort = "7687"
-const defaultHttpPort = "7474"
-const defaultHttpsPort = "7473"
+const (
+	// defaultImage {
+	defaultImageName = "neo4j"
+	defaultTag       = "4.4"
+	// }
+)
+
+const (
+	// containerPorts {
+	defaultBoltPort  = "7687"
+	defaultHttpPort  = "7474"
+	defaultHttpsPort = "7473"
+	// }
+)
 
 // Neo4jContainer represents the Neo4j container type used in the module
 type Neo4jContainer struct {
 	testcontainers.Container
 }
 
+// BoltUrl returns the bolt url for the Neo4j container, using the bolt port, in the format of neo4j://host:port
 func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
@@ -38,7 +48,7 @@ func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
 }
 
 // RunContainer creates an instance of the Neo4j container type
-func RunContainer(ctx context.Context, options ...testcontainers.CustomizeRequestOption) (*Neo4jContainer, error) {
+func RunContainer(ctx context.Context, options ...testcontainers.ContainerCustomizer) (*Neo4jContainer, error) {
 	httpPort, _ := nat.NewPort("tcp", defaultHttpPort)
 	request := testcontainers.ContainerRequest{
 		Image: fmt.Sprintf("docker.io/%s:%s", defaultImageName, defaultTag),
@@ -72,7 +82,7 @@ func RunContainer(ctx context.Context, options ...testcontainers.CustomizeReques
 	}
 
 	for _, option := range options {
-		option(&genericContainerReq)
+		option.Customize(&genericContainerReq)
 	}
 
 	err := validate(&genericContainerReq)

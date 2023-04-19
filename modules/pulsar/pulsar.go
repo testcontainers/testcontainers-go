@@ -124,7 +124,7 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 //		- the Pulsar admin API ("/admin/v2/clusters") to be ready on port 8080/tcp and return the response `["standalone"]`
 // 		- the log message "Successfully updated the policies on namespace public/default"
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
-func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOption) (*Container, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultPulsarImage,
 		Env:          map[string]string{},
@@ -139,7 +139,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.CustomizeRequestOp
 	}
 
 	for _, opt := range opts {
-		opt(&genericContainerReq)
+		opt.Customize(&genericContainerReq)
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, genericContainerReq)

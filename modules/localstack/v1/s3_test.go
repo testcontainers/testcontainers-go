@@ -62,7 +62,7 @@ func TestS3(t *testing.T) {
 	ctx := context.Background()
 
 	// localStackCreateContainer {
-	container, err := localstack.StartContainer(ctx, localstack.NoopOverrideContainerRequest)
+	container, err := localstack.RunContainer(ctx)
 	require.Nil(t, err)
 	// }
 
