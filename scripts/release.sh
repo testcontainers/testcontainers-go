@@ -103,6 +103,22 @@ function bumpVersion() {
     make "tidy-${directory}"
   done
 
+  cd "${ROOT_DIR}/docs/modules"
+
+  versionEscapingDots="${versionToBumpWithoutV/./\.}"
+  NON_RELEASED_STRING='Not available until the next release of testcontainers-go <span class=\"tc-version\">:material-tag: main<\/span>'
+  RELEASED_STRING="Since testcontainers-go <span class=\\\"tc-version\\\">:material-tag: v${versionEscapingDots}<\/span>"
+
+  ls | grep -v "index.md" | while read -r module_file; do
+    if [[ "${DRY_RUN}" == "true" ]]; then
+      echo "sed \"s/${NON_RELEASED_STRING}/${RELEASED_STRING}/g\" ${module_file} > ${module_file}.tmp"
+      echo "mv ${module_file}.tmp ${module_file}"
+    else
+      sed "s/${NON_RELEASED_STRING}/${RELEASED_STRING}/g" ${module_file} > ${module_file}.tmp
+      mv ${module_file}.tmp ${module_file}
+    fi
+  done
+
   gitCommitVersion "${newVersion}"
 }
 
