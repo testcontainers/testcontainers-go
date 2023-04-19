@@ -1,6 +1,6 @@
 # Vault
 
-Not available until the next release of testcontainers-go <span class="tc-version">:material-tag: dev</span>
+Not available until the next release of testcontainers-go <span class="tc-version">:material-tag: main</span>
 
 ## Introduction
 
