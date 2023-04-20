@@ -132,7 +132,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 
 	err = internalCheck(ctx, internalPort, target)
 	if err != nil && errors.Is(errShellNotExecutable, err) {
-		log.Printf("Shell not executable in container, only external port check will be performed")
+		log.Println("Shell not executable in container, only external port check will be performed")
 	} else {
 		return err
 	}
