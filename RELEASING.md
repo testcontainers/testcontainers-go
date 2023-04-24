@@ -29,6 +29,7 @@ Once the version file is correct in the repository:
         BUMP_TYPE="major" ./scripts/release.sh
 
 - The script will update the `go.mod` files for each Go modules and example modules under the examples and modules directories, updating the version of the testcontainers-go dependency to the recently created tag.
+- The script will modify the docs for the each Go module **that was not released yet**, updating the version of _Testcontainers for Go_ where it was added to the recently created tag.
 - The script will create a commit in the **main** branch if the `COMMIT` variable is set to `true`.
 - The script will push the git the main branch including the tags to the upstream repository, https://github.com/testcontainers/testcontainers-go, if the `COMMIT` variable is set to `true`.
 

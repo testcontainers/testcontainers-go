@@ -1,5 +1,11 @@
 # Postgres
 
+Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+## Introduction
+
+The Testcontainers module for Postgres.
+
 ## Adding this module to your project dependencies
 
 Please run the following command to add the Postgres module to your Go dependencies:
