@@ -1,6 +1,6 @@
 # LocalStack
 
-Since testcontainers-go <span class="tc-version">:material-tag: v0.18.0</span>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.18.0"><span class="tc-version">:material-tag: v0.18.0</span></a>
 
 ## Introduction
 

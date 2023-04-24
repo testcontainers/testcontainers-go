@@ -413,7 +413,7 @@ func assertExampleDocContent(t *testing.T, example Example, exampleDocFile strin
 
 	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "# "+title)
-	assert.Equal(t, data[2], `Not available until the next release of testcontainers-go <span class="tc-version">:material-tag: main</span>`)
+	assert.Equal(t, data[2], `Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>`)
 	assert.Equal(t, data[4], "## Introduction")
 	assert.Equal(t, data[6], "The Testcontainers module for "+title+".")
 	assert.Equal(t, data[8], "## Adding this module to your project dependencies")
