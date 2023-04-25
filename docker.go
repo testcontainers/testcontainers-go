@@ -683,7 +683,6 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 					}
 					_, _ = fmt.Fprintf(os.Stderr, "container log error: %+v", err)
 					// if we would continue here, the next header-read will result into random data...
-					<-stop
 					return
 				}
 
@@ -710,8 +709,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 						// Probably safe to continue here
 						continue
 					}
-					// we can not continie here as the next read most likely will not be the next header
-					<-stop
+					// we can not continue here as the next read most likely will not be the next header
 					return
 				}
 				for _, c := range c.consumers {
