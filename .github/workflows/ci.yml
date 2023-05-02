@@ -1,6 +1,10 @@
 name: Main pipeline
 
 on:
+  workflow_run:
+    workflows: [golangci-lint / static-analysis]
+    types:
+      - completed
   push:
     paths-ignore:
     - 'mkdocs.yml'
