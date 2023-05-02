@@ -16,7 +16,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0-rc2
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/sys v0.6.0
-	gotest.tools/gotestsum v1.9.0
+	gotest.tools/gotestsum v1.10.0
 )
 
 require (
