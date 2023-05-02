@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/couchbase
 go 1.18
 
 require (
-	github.com/cenkalti/backoff/v4 v4.2.0
+	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/couchbase/gocb/v2 v2.6.2
 	github.com/docker/go-connections v0.4.0
 	github.com/testcontainers/testcontainers-go v0.18.0
