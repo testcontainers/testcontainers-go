@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/hashicorp/consul/api v1.20.0
 	github.com/testcontainers/testcontainers-go v0.19.0
-	gotest.tools/gotestsum v1.9.0
+	gotest.tools/gotestsum v1.10.0
 )
 
 require (

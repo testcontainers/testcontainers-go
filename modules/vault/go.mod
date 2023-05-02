@@ -3,12 +3,12 @@ module github.com/testcontainers/testcontainers-go/modules/vault
 go 1.19
 
 require (
-	github.com/docker/docker v23.0.3+incompatible
+	github.com/docker/docker v23.0.5+incompatible
 	github.com/hashicorp/vault-client-go v0.2.0
 	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.19.0
 	github.com/tidwall/gjson v1.14.4
-	gotest.tools/gotestsum v1.9.0
+	gotest.tools/gotestsum v1.10.0
 )
 
 require (
