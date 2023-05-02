@@ -3,9 +3,9 @@ module github.com/testcontainers/testcontainers-go/modules/mysql
 go 1.19
 
 require (
-	github.com/go-sql-driver/mysql v1.7.0
+	github.com/go-sql-driver/mysql v1.7.1
 	github.com/testcontainers/testcontainers-go v0.19.0
-	gotest.tools/gotestsum v1.9.0
+	gotest.tools/gotestsum v1.10.0
 )
 
 require (
