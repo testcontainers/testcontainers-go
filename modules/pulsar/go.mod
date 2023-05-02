@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/apache/pulsar-client-go v0.9.0
-	github.com/docker/docker v23.0.3+incompatible
+	github.com/docker/docker v23.0.5+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.19.0
