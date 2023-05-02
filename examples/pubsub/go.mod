@@ -7,7 +7,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.19.0
 	google.golang.org/api v0.114.0
 	google.golang.org/grpc v1.54.0
-	gotest.tools/gotestsum v1.9.0
+	gotest.tools/gotestsum v1.10.0
 )
 
 require (
