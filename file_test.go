@@ -15,6 +15,35 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestFileExists(t *testing.T) {
+	type cases struct {
+		filepath string
+		expected bool
+	}
+
+	tests := []cases{
+		{
+			filepath: "testdata",
+			expected: true,
+		},
+		{
+			filepath: "docker.go",
+			expected: true,
+		},
+		{
+			filepath: "foobar.doc",
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.filepath, func(t *testing.T) {
+			result := fileExists(test.filepath)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
 func Test_IsDir(t *testing.T) {
 	type cases struct {
 		filepath string
