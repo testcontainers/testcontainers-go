@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -17,8 +16,10 @@ var DockerHostContextKey = dockerHostContext("docker_host")
 const DefaultDockerSocketPath = "/var/run/docker.sock"
 
 var (
-	ErrDockerSocketOverrideNotSet = errors.New("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set")
-	ErrSocketNotFound             = errors.New("socket not found")
+	ErrDockerSocketOverrideNotSet  = errors.New("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set")
+	ErrDockerSocketNotSetInContext = errors.New("socket not set in context")
+	ErrNoUnixSchema                = errors.New("URL schema is not unix")
+	ErrSocketNotFound              = errors.New("socket not found")
 )
 
 // deprecated
@@ -41,7 +42,7 @@ func DefaultGatewayIP() (string, error) {
 func ExtractDockerHost(ctx context.Context) string {
 	socketPathFns := []func(context.Context) (string, error){
 		dockerSocketOverridePath,
-		extractDockerSocketPath,
+		dockerSocketFromContext,
 	}
 
 	outerErr := ErrSocketNotFound
@@ -58,37 +59,25 @@ func ExtractDockerHost(ctx context.Context) string {
 	return DefaultDockerSocketPath
 }
 
+func dockerSocketFromContext(ctx context.Context) (string, error) {
+	if socketPath, ok := ctx.Value(DockerHostContextKey).(string); ok && socketPath != "" {
+		parsed, err := parseURL(socketPath)
+		if err != nil {
+			return "", err
+		}
+
+		return parsed, nil
+	}
+
+	return "", ErrDockerSocketNotSetInContext
+}
+
 func dockerSocketOverridePath(ctx context.Context) (string, error) {
 	if dockerHostPath, exists := os.LookupEnv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"); exists {
 		return dockerHostPath, nil
 	}
 
 	return "", ErrDockerSocketOverrideNotSet
-}
-
-// extractDockerSocketPath returns if the path to the Docker socket exists.
-func extractDockerSocketPath(ctx context.Context) (string, error) {
-	dockerHostPath := DefaultDockerSocketPath
-
-	var hostRawURL string
-	if h, ok := ctx.Value(DockerHostContextKey).(string); !ok || h == "" {
-		return dockerHostPath, nil
-	} else {
-		hostRawURL = h
-	}
-	var hostURL *url.URL
-	if u, err := url.Parse(hostRawURL); err != nil {
-		return dockerHostPath, nil
-	} else {
-		hostURL = u
-	}
-
-	switch hostURL.Scheme {
-	case "unix":
-		return hostURL.Path, nil
-	default:
-		return dockerHostPath, nil
-	}
 }
 
 // InAContainer returns true if the code is running inside a container

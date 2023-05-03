@@ -72,6 +72,30 @@ func Test_ExtractDockerHost(t *testing.T) {
 			require.ErrorIs(t, err, ErrDockerSocketOverrideNotSet)
 			assert.Empty(t, socket)
 		})
+
+		t.Run("Context sets the Docker socket", func(t *testing.T) {
+			ctx := context.Background()
+
+			socket, err := dockerSocketFromContext(context.WithValue(ctx, DockerHostContextKey, "unix:///this/is/a/sample.sock"))
+			require.Nil(t, err)
+			assert.Equal(t, "/this/is/a/sample.sock", socket)
+		})
+
+		t.Run("Context sets a malformed Docker socket", func(t *testing.T) {
+			ctx := context.Background()
+
+			socket, err := dockerSocketFromContext(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
+			require.Error(t, err)
+			assert.Empty(t, socket)
+		})
+
+		t.Run("Context sets a malformed schema for the Docker socket", func(t *testing.T) {
+			ctx := context.Background()
+
+			socket, err := dockerSocketFromContext(context.WithValue(ctx, DockerHostContextKey, "http://example.com/docker.sock"))
+			require.ErrorIs(t, err, ErrNoUnixSchema)
+			assert.Empty(t, socket)
+		})
 	})
 }
 
