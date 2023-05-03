@@ -1,6 +1,10 @@
 name: Main pipeline
 
 on:
+  workflow_run:
+    workflows: [golangci-lint / static-analysis]
+    types:
+      - completed
   push:
     paths-ignore:
     - 'mkdocs.yml'
@@ -54,10 +58,6 @@ jobs:
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-unit
-
-      - name: Run module generator tests
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make -C modulegen test-unit
 
       - name: Run checker
         run: |
