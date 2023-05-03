@@ -63,7 +63,7 @@ func ExtractDockerHost(ctx context.Context) string {
 		return socketPath
 	}
 
-	return DefaultDockerSocketPath
+	return ""
 }
 
 // dockerHostFromEnv returns the docker host from the DOCKER_HOST environment variable, if it's not empty
