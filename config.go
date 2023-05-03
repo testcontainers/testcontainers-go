@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -52,7 +53,7 @@ func readConfig() TestcontainersConfig {
 	config := TestcontainersConfig{}
 
 	applyEnvironmentConfiguration := func(config TestcontainersConfig) TestcontainersConfig {
-		if dockerHostEnv := os.Getenv("DOCKER_HOST"); dockerHostEnv != "" {
+		if dockerHostEnv := testcontainersdocker.ExtractDockerHost(context.Background()); dockerHostEnv != "" {
 			config.Host = dockerHostEnv
 		}
 		if config.Host == "" {
