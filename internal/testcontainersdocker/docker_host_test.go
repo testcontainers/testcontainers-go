@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_ExtractDockerHost(t *testing.T) {
@@ -46,6 +47,32 @@ func Test_ExtractDockerHost(t *testing.T) {
 
 		assert.Equal(t, "/this/is/a/sample.sock", host)
 	})
+
+	t.Run("Extract Docker socket", func(t *testing.T) {
+		originalDockerSocketOverride := os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+		defer func() {
+			os.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", originalDockerSocketOverride)
+		}()
+
+		t.Run("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is set", func(t *testing.T) {
+			tmpDir := t.TempDir()
+			tmpSocket := filepath.Join(tmpDir, "docker.sock")
+			t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", tmpSocket)
+			createTmpDockerSocket(tmpDir)
+
+			socket, err := dockerSocketOverridePath(context.Background())
+			require.Nil(t, err)
+			assert.Equal(t, tmpSocket, socket)
+		})
+
+		t.Run("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set", func(t *testing.T) {
+			os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+
+			socket, err := dockerSocketOverridePath(context.Background())
+			require.ErrorIs(t, err, ErrDockerSocketOverrideNotSet)
+			assert.Empty(t, socket)
+		})
+	})
 }
 
 func TestInAContainer(t *testing.T) {
@@ -66,4 +93,28 @@ func TestInAContainer(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, inAContainer(f))
 	})
+}
+
+func createTmpDir(dir string) error {
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createTmpDockerSocket(parent string) error {
+	socketPath := filepath.Join(parent, "docker.sock")
+	err := os.MkdirAll(filepath.Dir(socketPath), 0755)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Create(socketPath)
+	if err != nil {
+		return err
+	}
+	f.Close()
+	return nil
 }

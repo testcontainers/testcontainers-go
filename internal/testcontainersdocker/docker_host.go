@@ -17,7 +17,8 @@ var DockerHostContextKey = dockerHostContext("docker_host")
 const DefaultDockerSocketPath = "/var/run/docker.sock"
 
 var (
-	ErrSocketNotFound = errors.New("Socket not found")
+	ErrDockerSocketOverrideNotSet = errors.New("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set")
+	ErrSocketNotFound             = errors.New("socket not found")
 )
 
 // deprecated
@@ -39,6 +40,7 @@ func DefaultGatewayIP() (string, error) {
 // Extracts the docker host from the context, or returns the default value
 func ExtractDockerHost(ctx context.Context) string {
 	socketPathFns := []func(context.Context) (string, error){
+		dockerSocketOverridePath,
 		extractDockerSocketPath,
 	}
 
@@ -56,14 +58,17 @@ func ExtractDockerHost(ctx context.Context) string {
 	return DefaultDockerSocketPath
 }
 
-// extractDockerSocketPath returns if the path to the Docker socket exists.
-func extractDockerSocketPath(ctx context.Context) (string, error) {
-	var dockerHostPath string
-	if dockerHostPath = os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"); dockerHostPath != "" {
+func dockerSocketOverridePath(ctx context.Context) (string, error) {
+	if dockerHostPath, exists := os.LookupEnv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"); exists {
 		return dockerHostPath, nil
 	}
 
-	dockerHostPath = DefaultDockerSocketPath
+	return "", ErrDockerSocketOverrideNotSet
+}
+
+// extractDockerSocketPath returns if the path to the Docker socket exists.
+func extractDockerSocketPath(ctx context.Context) (string, error) {
+	dockerHostPath := DefaultDockerSocketPath
 
 	var hostRawURL string
 	if h, ok := ctx.Value(DockerHostContextKey).(string); !ok || h == "" {
