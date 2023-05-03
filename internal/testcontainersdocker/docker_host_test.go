@@ -21,7 +21,7 @@ func Test_ExtractDockerHost(t *testing.T) {
 	t.Run("Default Docker Host", func(t *testing.T) {
 		host := ExtractDockerHost(context.Background())
 
-		assert.Equal(t, "/var/run/docker.sock", host)
+		assert.Equal(t, DefaultDockerSocketPath, host)
 	})
 
 	t.Run("Malformed Docker Host is passed in context", func(t *testing.T) {
@@ -29,7 +29,7 @@ func Test_ExtractDockerHost(t *testing.T) {
 
 		host := ExtractDockerHost(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
 
-		assert.Equal(t, "/var/run/docker.sock", host)
+		assert.Equal(t, DefaultDockerSocketPath, host)
 	})
 
 	t.Run("Malformed Schema Docker Host is passed in context", func(t *testing.T) {
@@ -37,7 +37,7 @@ func Test_ExtractDockerHost(t *testing.T) {
 
 		host := ExtractDockerHost(context.WithValue(ctx, DockerHostContextKey, "http://path to docker sock"))
 
-		assert.Equal(t, "/var/run/docker.sock", host)
+		assert.Equal(t, DefaultDockerSocketPath, host)
 	})
 
 	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
