@@ -40,19 +40,21 @@ but does not allow starting privileged containers, you can turn off the Ryuk con
 
 ## Customizing Docker host detection
 
-Testcontainers will attempt to detect the Docker environment and configure everything to work automatically.
+_Testcontainers for Go_ will attempt to detect the Docker environment and configure everything to work automatically.
 
-However, sometimes customization is required. Testcontainers will respect the following **environment variables**:
+However, sometimes customization is required. _Testcontainers for Go_ will respect the following order:
 
-> **DOCKER_HOST** = unix:///var/run/docker.sock  
-> See [Docker environment variables](https://docs.docker.com/engine/reference/commandline/cli/#environment-variables)
+> 1. Read the **DOCKER_HOST** environment variable. E.g. `DOCKER_HOST=unix:///var/run/docker.sock`
+> See [Docker environment variables](https://docs.docker.com/engine/reference/commandline/cli/#environment-variables) for more information.
 >
-> **TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE**  
+> 1. Read the **TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE** environment variable.
 > Path to Docker's socket. Used by Ryuk, Docker Compose, and a few other containers that need to perform Docker actions.  
 > Example: `/var/run/docker-alt.sock`
+>
+> 1. Return an empty string if none of the above are set.
 
-For advanced users, the Docker host connection can be configured **via configuration** in `~/.testcontainers.properties`.
-The example below illustrates usage:
+For advanced users, the Docker host connection can be configured **via configuration** in `~/.testcontainers.properties`, but environment variables will take precedence.
+The example below illustrates usage for the properties file:
 
 ```properties
 docker.host=tcp://my.docker.host:1234       # Equivalent to the DOCKER_HOST environment variable.
