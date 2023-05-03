@@ -3,6 +3,7 @@ package testcontainersdocker
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"os/exec"
@@ -12,6 +13,12 @@ import (
 type dockerHostContext string
 
 var DockerHostContextKey = dockerHostContext("docker_host")
+
+const DefaultDockerSocketPath = "/var/run/docker.sock"
+
+var (
+	ErrSocketNotFound = errors.New("Socket not found")
+)
 
 // deprecated
 // see https://github.com/testcontainers/testcontainers-java/blob/main/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L46
@@ -30,31 +37,52 @@ func DefaultGatewayIP() (string, error) {
 }
 
 // Extracts the docker host from the context, or returns the default value
-func ExtractDockerHost(ctx context.Context) (dockerHostPath string) {
-	if dockerHostPath = os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"); dockerHostPath != "" {
-		return dockerHostPath
+func ExtractDockerHost(ctx context.Context) string {
+	socketPathFns := []func(context.Context) (string, error){
+		extractDockerSocketPath,
 	}
 
-	dockerHostPath = "/var/run/docker.sock"
+	outerErr := ErrSocketNotFound
+	for _, socketPathFn := range socketPathFns {
+		socketPath, err := socketPathFn(ctx)
+		if err != nil {
+			outerErr = fmt.Errorf("%w: %v", outerErr, err)
+			continue
+		}
+
+		return socketPath
+	}
+
+	return DefaultDockerSocketPath
+}
+
+// extractDockerSocketPath returns if the path to the Docker socket exists.
+func extractDockerSocketPath(ctx context.Context) (string, error) {
+	var dockerHostPath string
+	if dockerHostPath = os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"); dockerHostPath != "" {
+		return dockerHostPath, nil
+	}
+
+	dockerHostPath = DefaultDockerSocketPath
 
 	var hostRawURL string
 	if h, ok := ctx.Value(DockerHostContextKey).(string); !ok || h == "" {
-		return dockerHostPath
+		return dockerHostPath, nil
 	} else {
 		hostRawURL = h
 	}
 	var hostURL *url.URL
 	if u, err := url.Parse(hostRawURL); err != nil {
-		return dockerHostPath
+		return dockerHostPath, nil
 	} else {
 		hostURL = u
 	}
 
 	switch hostURL.Scheme {
 	case "unix":
-		return hostURL.Path
+		return hostURL.Path, nil
 	default:
-		return dockerHostPath
+		return dockerHostPath, nil
 	}
 }
 
