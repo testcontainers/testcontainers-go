@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,7 +32,7 @@ func TestReadConfig(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 
-		config := ReadConfig()
+		config := ReadConfigWithContext(context.Background())
 
 		expected := TestcontainersConfig{
 			RyukDisabled: true,
@@ -41,7 +42,7 @@ func TestReadConfig(t *testing.T) {
 		assert.Equal(t, expected, config)
 
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "false")
-		config = ReadConfig()
+		config = ReadConfigWithContext(context.Background())
 		assert.Equal(t, expected, config)
 	})
 }
@@ -52,7 +53,7 @@ func TestReadTCConfig(t *testing.T) {
 	t.Run("HOME is not set", func(t *testing.T) {
 		t.Setenv("HOME", "")
 
-		config := readConfig()
+		config := readConfig(context.Background())
 
 		expected := TestcontainersConfig{}
 		expected.Host = dockerSock
@@ -65,7 +66,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
-		config := readConfig()
+		config := readConfig(context.Background())
 
 		expected := TestcontainersConfig{}
 		expected.RyukDisabled = true
@@ -79,7 +80,7 @@ func TestReadTCConfig(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("HOME", tmpDir)
 
-		config := readConfig()
+		config := readConfig(context.Background())
 
 		expected := TestcontainersConfig{}
 		expected.Host = dockerSock
@@ -92,7 +93,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("HOME", tmpDir)
 		t.Setenv("DOCKER_HOST", tcpDockerHost33293)
 
-		config := readConfig()
+		config := readConfig(context.Background())
 		expected := TestcontainersConfig{}
 		expected.Host = tcpDockerHost33293
 
@@ -105,7 +106,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
-		config := readConfig()
+		config := readConfig(context.Background())
 		expected := TestcontainersConfig{}
 		expected.RyukDisabled = true
 		expected.RyukPrivileged = true
@@ -419,7 +420,7 @@ func TestReadTCConfig(t *testing.T) {
 					return
 				}
 
-				config := readConfig()
+				config := readConfig(context.Background())
 
 				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
 			})

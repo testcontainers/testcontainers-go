@@ -74,7 +74,7 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 // Should only be used internally and instead use reuseOrCreateReaper to prefer reusing an existing Reaper instance
 func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
 	// read host from config, which has been loaded once
-	dockerHost := ReadConfig().Host
+	dockerHost := ReadConfigWithContext(ctx).Host
 
 	reaper := &Reaper{
 		Provider:  provider,

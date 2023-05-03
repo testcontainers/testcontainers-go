@@ -322,7 +322,7 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 }
 
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
-	tcConfig := readConfig() // read the config using the private method to avoid the sync.Once
+	tcConfig := readConfig(context.Background()) // read the config using the private method to avoid the sync.Once
 	if !tcConfig.RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
@@ -361,7 +361,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 }
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
-	tcConfig := readConfig() // read the config using the private method to avoid the sync.Once
+	tcConfig := readConfig(context.Background()) // read the config using the private method to avoid the sync.Once
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -493,7 +493,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 }
 
 func TestContainerStopWithReaper(t *testing.T) {
-	tcConfig := readConfig() // read the config using the private method to avoid the sync.Once
+	tcConfig := readConfig(context.Background()) // read the config using the private method to avoid the sync.Once
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -540,7 +540,7 @@ func TestContainerStopWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithReaper(t *testing.T) {
-	tcConfig := readConfig() // read the config using the private method to avoid the sync.Once
+	tcConfig := readConfig(context.Background()) // read the config using the private method to avoid the sync.Once
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -579,7 +579,7 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
-	tcConfig := readConfig() // read the config using the private method to avoid the sync.Once
+	tcConfig := readConfig(context.Background()) // read the config using the private method to avoid the sync.Once
 	if !tcConfig.RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}

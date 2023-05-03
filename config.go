@@ -29,9 +29,16 @@ type TestcontainersConfig struct {
 
 // ReadConfig reads from testcontainers properties file, storing the result in a singleton instance
 // of the TestcontainersConfig struct
+// Deprecated use ReadConfigWithContext instead
 func ReadConfig() TestcontainersConfig {
+	return ReadConfigWithContext(context.Background())
+}
+
+// ReadConfigWithContext reads from testcontainers properties file, storing the result in a singleton instance
+// of the TestcontainersConfig struct
+func ReadConfigWithContext(ctx context.Context) TestcontainersConfig {
 	tcConfigOnce.Do(func() {
-		tcConfig = readConfig()
+		tcConfig = readConfig(ctx)
 
 		if tcConfig.RyukDisabled {
 			ryukDisabledMessage := `
@@ -49,11 +56,11 @@ More on this: https://golang.testcontainers.org/features/garbage_collector/
 
 // readConfig reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
-func readConfig() TestcontainersConfig {
+func readConfig(ctx context.Context) TestcontainersConfig {
 	config := TestcontainersConfig{}
 
 	applyEnvironmentConfiguration := func(config TestcontainersConfig) TestcontainersConfig {
-		if dockerHostEnv := testcontainersdocker.ExtractDockerHost(context.Background()); dockerHostEnv != "" {
+		if dockerHostEnv := testcontainersdocker.ExtractDockerHost(ctx); dockerHostEnv != "" {
 			config.Host = dockerHostEnv
 		}
 		if config.Host == "" {

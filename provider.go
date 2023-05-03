@@ -141,7 +141,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		return nil, err
 	}
 
-	tcConfig := ReadConfig()
+	tcConfig := ReadConfigWithContext(context.Background())
 
 	p := &DockerProvider{
 		DockerProviderOptions: o,
