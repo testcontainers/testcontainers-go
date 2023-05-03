@@ -21,6 +21,7 @@ const (
 )
 
 var (
+	ErrDockerHostNotSet            = errors.New("DOCKER_HOST is not set")
 	ErrDockerSocketOverrideNotSet  = errors.New("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set")
 	ErrDockerSocketNotSetInContext = errors.New("socket not set in context")
 	ErrNoUnixSchema                = errors.New("URL schema is not unix")
@@ -46,6 +47,7 @@ func DefaultGatewayIP() (string, error) {
 // Extracts the docker host from the context, or returns the default value
 func ExtractDockerHost(ctx context.Context) string {
 	socketPathFns := []func(context.Context) (string, error){
+		dockerHostFromEnv,
 		dockerSocketOverridePath,
 		dockerSocketFromContext,
 	}
@@ -62,6 +64,15 @@ func ExtractDockerHost(ctx context.Context) string {
 	}
 
 	return DefaultDockerSocketPath
+}
+
+// dockerHostFromEnv returns the docker host from the DOCKER_HOST environment variable, if it's not empty
+func dockerHostFromEnv(ctx context.Context) (string, error) {
+	if dockerHostPath := os.Getenv("DOCKER_HOST"); dockerHostPath != "" {
+		return dockerHostPath, nil
+	}
+
+	return "", ErrDockerHostNotSet
 }
 
 func dockerSocketFromContext(ctx context.Context) (string, error) {

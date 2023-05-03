@@ -12,6 +12,13 @@ import (
 
 func Test_ExtractDockerHost(t *testing.T) {
 	t.Run("Docker Host as environment variable", func(t *testing.T) {
+		t.Setenv("DOCKER_HOST", "/path/to/docker.sock")
+		host := ExtractDockerHost(context.Background())
+
+		assert.Equal(t, "/path/to/docker.sock", host)
+	})
+
+	t.Run("Docker Host as environment variable", func(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
 		host := ExtractDockerHost(context.Background())
 
@@ -53,6 +60,25 @@ func Test_ExtractDockerHost(t *testing.T) {
 		defer func() {
 			os.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", originalDockerSocketOverride)
 		}()
+
+		t.Run("DOCKER_HOST is set", func(t *testing.T) {
+			tmpDir := t.TempDir()
+			tmpSocket := filepath.Join(tmpDir, "docker.sock")
+			t.Setenv("DOCKER_HOST", tmpSocket)
+			createTmpDockerSocket(tmpDir)
+
+			socket, err := dockerHostFromEnv(context.Background())
+			require.Nil(t, err)
+			assert.Equal(t, tmpSocket, socket)
+		})
+
+		t.Run("DOCKER_HOST is not set", func(t *testing.T) {
+			t.Setenv("DOCKER_HOST", "")
+
+			socket, err := dockerHostFromEnv(context.Background())
+			require.ErrorIs(t, err, ErrDockerHostNotSet)
+			assert.Empty(t, socket)
+		})
 
 		t.Run("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is set", func(t *testing.T) {
 			tmpDir := t.TempDir()
