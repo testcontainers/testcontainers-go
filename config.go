@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/magiconair/properties"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
 var tcConfig TestcontainersConfig
@@ -55,7 +56,7 @@ func readConfig() TestcontainersConfig {
 			config.Host = dockerHostEnv
 		}
 		if config.Host == "" {
-			config.Host = "unix:///var/run/docker.sock"
+			config.Host = testcontainersdocker.DefaultDockerSocketPathWithSchema
 		}
 
 		ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")

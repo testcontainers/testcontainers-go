@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -360,6 +361,9 @@ func createTestContainer(t *testing.T, ctx context.Context) int {
 
 func TestBindMount(t *testing.T) {
 	t.Parallel()
+
+	dockerSocket := testcontainersdocker.DefaultDockerSocketPath
+
 	type args struct {
 		hostPath    string
 		mountTarget ContainerMountTarget
@@ -370,9 +374,9 @@ func TestBindMount(t *testing.T) {
 		want ContainerMount
 	}{
 		{
-			name: "/var/run/docker.sock:/var/run/docker.sock",
-			args: args{hostPath: "/var/run/docker.sock", mountTarget: "/var/run/docker.sock"},
-			want: ContainerMount{Source: GenericBindMountSource{HostPath: "/var/run/docker.sock"}, Target: "/var/run/docker.sock"},
+			name: dockerSocket + ":" + dockerSocket,
+			args: args{hostPath: dockerSocket, mountTarget: "/var/run/docker.sock"},
+			want: ContainerMount{Source: GenericBindMountSource{HostPath: dockerSocket}, Target: "/var/run/docker.sock"},
 		},
 		{
 			name: "/var/lib/app/data:/data",

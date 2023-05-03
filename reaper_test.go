@@ -60,7 +60,7 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 			testcontainersdocker.LabelLang:    "go",
 			testcontainersdocker.LabelVersion: internal.Version,
 		},
-		Mounts:     Mounts(BindMount("/var/run/docker.sock", "/var/run/docker.sock")),
+		Mounts:     Mounts(BindMount(testcontainersdocker.DefaultDockerSocketPath, "/var/run/docker.sock")),
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
 		ReaperOptions: []ContainerOption{
 			WithImageName("reaperImage"),
@@ -100,11 +100,11 @@ func Test_NewReaper(t *testing.T) {
 		{
 			name: "docker-host in context",
 			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
-				req.Mounts = Mounts(BindMount("/value/in/context.sock", "/var/run/docker.sock"))
+				req.Mounts = Mounts(BindMount(testcontainersdocker.DefaultDockerSocketPath, "/var/run/docker.sock"))
 				return req
 			}),
 			config: TestcontainersConfig{},
-			ctx:    context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, "unix:///value/in/context.sock"),
+			ctx:    context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, testcontainersdocker.DefaultDockerSocketPathWithSchema),
 		},
 	}
 

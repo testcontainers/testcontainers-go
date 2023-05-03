@@ -7,10 +7,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
 const (
-	dockerSock         = "unix:///var/run/docker.sock"
+	dockerSock         = testcontainersdocker.DefaultDockerSocketPathWithSchema
 	tcpDockerHost1234  = "tcp://127.0.0.1:1234"
 	tcpDockerHost33293 = "tcp://127.0.0.1:33293"
 	tcpDockerHost4711  = "tcp://127.0.0.1:4711"
