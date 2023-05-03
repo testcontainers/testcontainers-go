@@ -26,12 +26,15 @@ func Test_ExtractDockerHost(t *testing.T) {
 	})
 
 	t.Run("Empty Docker Host", func(t *testing.T) {
+		setupRootlessNotFound(t)
 		host := ExtractDockerHost(context.Background())
 
 		assert.Equal(t, "", host)
 	})
 
 	t.Run("Malformed Docker Host is passed in context", func(t *testing.T) {
+		setupRootlessNotFound(t)
+
 		ctx := context.Background()
 
 		host := ExtractDockerHost(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
@@ -40,6 +43,7 @@ func Test_ExtractDockerHost(t *testing.T) {
 	})
 
 	t.Run("Malformed Schema Docker Host is passed in context", func(t *testing.T) {
+		setupRootlessNotFound(t)
 		ctx := context.Background()
 
 		host := ExtractDockerHost(context.WithValue(ctx, DockerHostContextKey, "http://path to docker sock"))

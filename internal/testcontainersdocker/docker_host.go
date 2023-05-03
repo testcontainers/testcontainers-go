@@ -50,6 +50,7 @@ func ExtractDockerHost(ctx context.Context) string {
 		dockerHostFromEnv,
 		dockerSocketOverridePath,
 		dockerSocketFromContext,
+		rootlessDockerSocketPath,
 	}
 
 	outerErr := ErrSocketNotFound

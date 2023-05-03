@@ -1,0 +1,124 @@
+package testcontainersdocker
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/url"
+	"os"
+	"path/filepath"
+	"runtime"
+)
+
+var (
+	ErrRootlessDockerNotFound               = errors.New("rootless Docker not found")
+	ErrRootlessDockerNotFoundHomeDesktopDir = errors.New("checked path: ~/.docker/desktop/docker.sock")
+	ErrRootlessDockerNotFoundHomeRunDir     = errors.New("checked path: ~/.docker/run/docker.sock")
+	ErrRootlessDockerNotFoundRunDir         = errors.New("checked path: /run/user/${uid}/docker.sock")
+	ErrRootlessDockerNotFoundXDGRuntimeDir  = errors.New("checked path: $XDG_RUNTIME_DIR")
+	ErrRootlessDockerNotSupportedWindows    = errors.New("rootless Docker is not supported on Windows")
+	ErrXDGRuntimeDirNotSet                  = errors.New("XDG_RUNTIME_DIR is not set")
+)
+
+// rootlessDockerSocketPath returns if the path to the rootless Docker socket exists.
+func rootlessDockerSocketPath(_ context.Context) (string, error) {
+	// adding a manner to test it on non-windows machines, setting the GOOS env var to windows
+	// This is needed because runtime.GOOS is a constant that returns the OS of the machine running the test
+	if os.Getenv("GOOS") == "windows" || runtime.GOOS == "windows" {
+		return "", ErrRootlessDockerNotSupportedWindows
+	}
+
+	socketPathFns := []func() (string, error){
+		rootlessSocketPathFromEnv,
+		rootlessSocketPathFromHomeRunDir,
+		rootlessSocketPathFromHomeDesktopDir,
+		rootlessSocketPathFromRunDir,
+	}
+
+	outerErr := ErrRootlessDockerNotFound
+	for _, socketPathFn := range socketPathFns {
+		s, err := socketPathFn()
+		if err != nil {
+			outerErr = fmt.Errorf("%w: %v", outerErr, err)
+			continue
+		}
+
+		return s, nil
+	}
+
+	return "", outerErr
+}
+
+func fileExists(p string) bool {
+	_, err := os.Stat(p)
+	return err == nil
+}
+
+func parseURL(s string) (string, error) {
+	var hostURL *url.URL
+	if u, err := url.Parse(s); err != nil {
+		return "", err
+	} else {
+		hostURL = u
+	}
+
+	switch hostURL.Scheme {
+	case "unix":
+		return hostURL.Path, nil
+	default:
+		return "", ErrNoUnixSchema
+	}
+}
+
+// rootlessSocketPathFromEnv returns the path to the rootless Docker socket from the XDG_RUNTIME_DIR environment variable.
+func rootlessSocketPathFromEnv() (string, error) {
+	xdgRuntimeDir, exists := os.LookupEnv("XDG_RUNTIME_DIR")
+	if exists {
+		p := filepath.Join(xdgRuntimeDir, "docker.sock")
+		if fileExists(p) {
+			return p, nil
+		}
+
+		return "", ErrRootlessDockerNotFoundXDGRuntimeDir
+	}
+
+	return "", ErrXDGRuntimeDirNotSet
+}
+
+// rootlessSocketPathFromHomeRunDir returns the path to the rootless Docker socket from the ~/.docker/run/docker.sock file.
+func rootlessSocketPathFromHomeRunDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	p := filepath.Join(home, ".docker", "run", "docker.sock")
+	if fileExists(p) {
+		return p, nil
+	}
+	return "", ErrRootlessDockerNotFoundHomeRunDir
+}
+
+// rootlessSocketPathFromHomeDesktopDir returns the path to the rootless Docker socket from the ~/.docker/desktop/docker.sock file.
+func rootlessSocketPathFromHomeDesktopDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	f := filepath.Join(home, ".docker", "desktop", "docker.sock")
+	if fileExists(f) {
+		return f, nil
+	}
+	return "", ErrRootlessDockerNotFoundHomeDesktopDir
+}
+
+// rootlessSocketPathFromRunDir returns the path to the rootless Docker socket from the /run/user/<uid>/docker.sock file.
+func rootlessSocketPathFromRunDir() (string, error) {
+	uid := os.Getuid()
+	f := filepath.Join("/run", "user", fmt.Sprintf("%d", uid), "docker.sock")
+	if fileExists(f) {
+		return f, nil
+	}
+	return "", ErrRootlessDockerNotFoundRunDir
+}
