@@ -13,13 +13,6 @@ type dockerHostContext string
 
 var DockerHostContextKey = dockerHostContext("docker_host")
 
-const (
-	// DefaultDockerSocketPath is the default docker socket path
-	DefaultDockerSocketPath = "/var/run/docker.sock"
-	// DefaultDockerSocketPathWithSchema is the default docker socket path with the unix schema
-	DefaultDockerSocketPathWithSchema = "unix:///var/run/docker.sock"
-)
-
 var (
 	ErrDockerHostNotSet            = errors.New("DOCKER_HOST is not set")
 	ErrDockerSocketOverrideNotSet  = errors.New("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set")

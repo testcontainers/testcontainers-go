@@ -64,7 +64,7 @@ func readConfig(ctx context.Context) TestcontainersConfig {
 			config.Host = dockerHostEnv
 		}
 		if config.Host == "" {
-			config.Host = testcontainersdocker.DefaultDockerSocketPathWithSchema
+			config.Host = testcontainersdocker.DockerSocketPathWithSchema
 		}
 
 		ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")

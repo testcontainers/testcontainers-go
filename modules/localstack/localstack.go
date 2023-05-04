@@ -66,7 +66,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	// defaultContainerRequest {
 	dockerHost := testcontainersdocker.ExtractDockerHost(ctx)
 	if dockerHost == "" {
-		dockerHost = testcontainersdocker.DefaultDockerSocketPath
+		dockerHost = testcontainersdocker.DockerSocketPath
 	}
 	req := testcontainers.ContainerRequest{
 		Image:        fmt.Sprintf("localstack/localstack:%s", defaultVersion),

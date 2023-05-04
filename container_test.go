@@ -362,7 +362,7 @@ func createTestContainer(t *testing.T, ctx context.Context) int {
 func TestBindMount(t *testing.T) {
 	t.Parallel()
 
-	dockerSocket := testcontainersdocker.DefaultDockerSocketPath
+	dockerSocket := testcontainersdocker.DockerSocketPath
 
 	type args struct {
 		hostPath    string
