@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  test-modulegen:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
