@@ -4,11 +4,32 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var (
+	originalDockerSocketPath           string
+	originalDockerSocketPathWithSchema string
+)
+
+var originalDockerSocketOverride string
+var tmpSchema string
+
+func init() {
+	originalDockerSocketPath = DockerSocketPath
+	originalDockerSocketPathWithSchema = DockerSocketPathWithSchema
+
+	originalDockerSocketOverride = os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+
+	tmpSchema = "unix://"
+	if runtime.GOOS == "windows" {
+		tmpSchema = "npipe://"
+	}
+}
 
 func Test_ExtractDockerHost(t *testing.T) {
 	t.Run("Docker Host as environment variable", func(t *testing.T) {
@@ -25,14 +46,8 @@ func Test_ExtractDockerHost(t *testing.T) {
 		assert.Equal(t, "/path/to/docker.sock", host)
 	})
 
-	t.Run("Empty Docker Host", func(t *testing.T) {
-		setupRootlessNotFound(t)
-		host := ExtractDockerHost(context.Background())
-
-		assert.Equal(t, "", host)
-	})
-
 	t.Run("Malformed Docker Host is passed in context", func(t *testing.T) {
+		setupDockerSocketNotFound(t)
 		setupRootlessNotFound(t)
 
 		ctx := context.Background()
@@ -43,6 +58,7 @@ func Test_ExtractDockerHost(t *testing.T) {
 	})
 
 	t.Run("Malformed Schema Docker Host is passed in context", func(t *testing.T) {
+		setupDockerSocketNotFound(t)
 		setupRootlessNotFound(t)
 		ctx := context.Background()
 
@@ -59,11 +75,27 @@ func Test_ExtractDockerHost(t *testing.T) {
 		assert.Equal(t, "/this/is/a/sample.sock", host)
 	})
 
+	t.Run("Default Docker socket", func(t *testing.T) {
+		setupRootlessNotFound(t)
+		tmpSocket := setupDockerSocket(t)
+
+		host := ExtractDockerHost(context.Background())
+
+		assert.Equal(t, tmpSocket, host)
+	})
+
+	t.Run("Empty Docker Host", func(t *testing.T) {
+		setupDockerSocketNotFound(t)
+		setupRootlessNotFound(t)
+		host := ExtractDockerHost(context.Background())
+
+		assert.Equal(t, "", host)
+	})
+
 	t.Run("Extract Docker socket", func(t *testing.T) {
-		originalDockerSocketOverride := os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
-		defer func() {
+		t.Cleanup(func() {
 			os.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", originalDockerSocketOverride)
-		}()
+		})
 
 		t.Run("DOCKER_HOST is set", func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -96,6 +128,9 @@ func Test_ExtractDockerHost(t *testing.T) {
 		})
 
 		t.Run("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set", func(t *testing.T) {
+			t.Cleanup(func() {
+				os.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", originalDockerSocketOverride)
+			})
 			os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
 
 			socket, err := dockerSocketOverridePath(context.Background())
@@ -124,6 +159,22 @@ func Test_ExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerSocketFromContext(context.WithValue(ctx, DockerHostContextKey, "http://example.com/docker.sock"))
 			require.ErrorIs(t, err, ErrNoUnixSchema)
+			assert.Empty(t, socket)
+		})
+
+		t.Run("Docker socket exists", func(t *testing.T) {
+			tmpSocket := setupDockerSocket(t)
+
+			socket, err := dockerSocketPath(context.Background())
+			require.Nil(t, err)
+			assert.Equal(t, tmpSocket, socket)
+		})
+
+		t.Run("Docker socket does not exist", func(t *testing.T) {
+			setupDockerSocketNotFound(t)
+
+			socket, err := dockerSocketPath(context.Background())
+			require.ErrorIs(t, err, ErrSocketNotFoundInPath)
 			assert.Empty(t, socket)
 		})
 	})
@@ -171,4 +222,32 @@ func createTmpDockerSocket(parent string) error {
 	}
 	f.Close()
 	return nil
+}
+
+func setupDockerSocket(t *testing.T) string {
+	t.Cleanup(func() {
+		DockerSocketPath = originalDockerSocketPath
+		DockerSocketPathWithSchema = originalDockerSocketPathWithSchema
+	})
+
+	tmpDir := t.TempDir()
+	tmpSocket := filepath.Join(tmpDir, "docker.sock")
+	createTmpDockerSocket(filepath.Dir(tmpSocket))
+
+	DockerSocketPath = tmpSocket
+	DockerSocketPathWithSchema = tmpSchema + tmpSocket
+
+	return tmpSchema + tmpSocket
+}
+
+func setupDockerSocketNotFound(t *testing.T) {
+	t.Cleanup(func() {
+		DockerSocketPath = originalDockerSocketPath
+		DockerSocketPathWithSchema = originalDockerSocketPathWithSchema
+	})
+
+	tmpDir := t.TempDir()
+	tmpSocket := filepath.Join(tmpDir, "docker.sock")
+
+	DockerSocketPath = tmpSocket
 }

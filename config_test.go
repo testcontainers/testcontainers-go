@@ -11,8 +11,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
+var dockerSock = testcontainersdocker.DockerSocketPathWithSchema
+
 const (
-	dockerSock         = testcontainersdocker.DockerSocketPathWithSchema
 	tcpDockerHost1234  = "tcp://127.0.0.1:1234"
 	tcpDockerHost33293 = "tcp://127.0.0.1:33293"
 	tcpDockerHost4711  = "tcp://127.0.0.1:4711"

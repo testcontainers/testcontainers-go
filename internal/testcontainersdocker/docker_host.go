@@ -19,6 +19,7 @@ var (
 	ErrDockerSocketNotSetInContext = errors.New("socket not set in context")
 	ErrNoUnixSchema                = errors.New("URL schema is not unix")
 	ErrSocketNotFound              = errors.New("socket not found")
+	ErrSocketNotFoundInPath        = errors.New("docker socket not found in " + DockerSocketPath)
 )
 
 // deprecated
@@ -43,6 +44,7 @@ func ExtractDockerHost(ctx context.Context) string {
 		dockerHostFromEnv,
 		dockerSocketOverridePath,
 		dockerSocketFromContext,
+		dockerSocketPath,
 		rootlessDockerSocketPath,
 	}
 
@@ -88,6 +90,14 @@ func dockerSocketOverridePath(ctx context.Context) (string, error) {
 	}
 
 	return "", ErrDockerSocketOverrideNotSet
+}
+
+func dockerSocketPath(ctx context.Context) (string, error) {
+	if fileExists(DockerSocketPath) {
+		return DockerSocketPathWithSchema, nil
+	}
+
+	return "", ErrSocketNotFoundInPath
 }
 
 // InAContainer returns true if the code is running inside a container
