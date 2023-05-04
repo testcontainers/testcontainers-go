@@ -76,7 +76,7 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 	t.Run("Home run dir: ~/.docker/run/docker.sock", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		_ = os.Unsetenv("XDG_RUNTIME_DIR")
-		defer restoreEnvFn()
+		t.Cleanup(restoreEnvFn)
 
 		runDir := filepath.Join(tmpDir, ".docker", "run")
 		err := createTmpDockerSocket(runDir)
@@ -91,7 +91,7 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 	t.Run("Home desktop dir: ~/.docker/desktop/docker.sock", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		_ = os.Unsetenv("XDG_RUNTIME_DIR")
-		defer restoreEnvFn()
+		t.Cleanup(restoreEnvFn)
 
 		desktopDir := filepath.Join(tmpDir, ".docker", "desktop")
 		err := createTmpDockerSocket(desktopDir)
@@ -106,7 +106,7 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 	t.Run("Run dir: /run/user/${uid}/docker.sock", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		_ = os.Unsetenv("XDG_RUNTIME_DIR")
-		defer restoreEnvFn()
+		t.Cleanup(restoreEnvFn)
 
 		uid := os.Getuid()
 		runDir := filepath.Join(tmpDir, "user", fmt.Sprintf("%d", uid))
