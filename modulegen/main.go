@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"html/template"
+	htmltemplate "html/template"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+	"text/template"
 	"unicode"
 	"unicode/utf8"
 
@@ -182,7 +183,7 @@ func generate(example Example, rootDir string) error {
 		"ParentDir":     func() string { return example.ParentDir() },
 		"ToLower":       func() string { return example.Lower() },
 		"Title":         func() string { return example.Title() },
-		"codeinclude":   func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
+		"codeinclude":   func(s string) htmltemplate.HTML { return htmltemplate.HTML(s) }, // escape HTML comments for codeinclude
 	}
 
 	// create the example dir

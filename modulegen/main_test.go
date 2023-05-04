@@ -472,6 +472,7 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	data := strings.Split(sanitiseContent(string(content)), "\n")
 	assert.Equal(t, "name: "+title+" "+example.Type()+" pipeline", data[0])
 	assert.Equal(t, "  test-"+lower+":", data[23])
+	assert.Equal(t, "    if: ${{ github.event.workflow_run.conclusion == 'success' }}", data[24])
 	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[34])
 	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[41])
 	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[45])
