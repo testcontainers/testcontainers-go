@@ -1,6 +1,10 @@
 name: Bigtable example pipeline
 
 on:
+  workflow_run:
+    workflows: [Module generator pipeline]
+    types:
+      - completed
   push:
     paths-ignore:
     - 'mkdocs.yml'
@@ -18,6 +22,7 @@ concurrency:
 
 jobs:
   test-bigtable:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
         go-version: [1.19.x, 1.x]

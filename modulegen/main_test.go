@@ -472,11 +472,11 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	data := strings.Split(sanitiseContent(string(content)), "\n")
 	assert.Equal(t, "name: "+title+" "+example.Type()+" pipeline", data[0])
 	assert.Equal(t, "  test-"+lower+":", data[23])
-	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[33])
-	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[40])
-	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[44])
-	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[48])
-	assert.Equal(t, "          paths: \"**/TEST-"+lower+"*.xml\"", data[58])
+	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[34])
+	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[41])
+	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[45])
+	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[49])
+	assert.Equal(t, "          paths: \"**/TEST-"+lower+"*.xml\"", data[59])
 }
 
 // assert content go.mod

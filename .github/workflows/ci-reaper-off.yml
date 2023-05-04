@@ -1,6 +1,10 @@
 name: Reaper-Off pipeline
 
 on:
+  workflow_run:
+    workflows: [golangci-lint / static-analysis]
+    types:
+      - completed
   push:
     paths-ignore:
     - 'mkdocs.yml'
@@ -18,6 +22,7 @@ concurrency:
 
 jobs:
   test-reaper-off:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
         go-version: [1.19.x, 1.x]
