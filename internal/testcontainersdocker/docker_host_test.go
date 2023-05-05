@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
 var (
@@ -170,6 +171,29 @@ func Test_ExtractDockerHost(t *testing.T) {
 			assert.Equal(t, tmpSocket, socket)
 		})
 
+		t.Run("Docker host is defined in properties", func(t *testing.T) {
+			tmpSocket := "/this/is/a/sample.sock"
+			content := "docker.host=unix://" + tmpSocket
+
+			config.Reset()
+			setupTestcontainersProperties(t, content)
+
+			socket, err := dockerSocketFromProperties(context.Background())
+			require.Nil(t, err)
+			assert.Equal(t, tmpSocket, socket)
+		})
+
+		t.Run("Docker host is not defined in properties", func(t *testing.T) {
+			content := "ryuk.disabled=false"
+
+			config.Reset()
+			setupTestcontainersProperties(t, content)
+
+			socket, err := dockerSocketFromProperties(context.Background())
+			require.ErrorIs(t, err, ErrDockerSocketNotSetInProperties)
+			assert.Empty(t, socket)
+		})
+
 		t.Run("Docker socket does not exist", func(t *testing.T) {
 			setupDockerSocketNotFound(t)
 
@@ -250,4 +274,17 @@ func setupDockerSocketNotFound(t *testing.T) {
 	tmpSocket := filepath.Join(tmpDir, "docker.sock")
 
 	DockerSocketPath = tmpSocket
+}
+
+func setupTestcontainersProperties(t *testing.T, content string) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	err := createTmpDir(homeDir)
+	require.Nil(t, err)
+	t.Setenv("HOME", homeDir)
+
+	if err := os.WriteFile(filepath.Join(homeDir, ".testcontainers.properties"), []byte(content), 0o600); err != nil {
+		t.Errorf("Failed to create the file: %v", err)
+		return
+	}
 }

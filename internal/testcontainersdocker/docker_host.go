@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
 type dockerHostContext string
@@ -14,12 +16,13 @@ type dockerHostContext string
 var DockerHostContextKey = dockerHostContext("docker_host")
 
 var (
-	ErrDockerHostNotSet            = errors.New("DOCKER_HOST is not set")
-	ErrDockerSocketOverrideNotSet  = errors.New("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set")
-	ErrDockerSocketNotSetInContext = errors.New("socket not set in context")
-	ErrNoUnixSchema                = errors.New("URL schema is not unix")
-	ErrSocketNotFound              = errors.New("socket not found")
-	ErrSocketNotFoundInPath        = errors.New("docker socket not found in " + DockerSocketPath)
+	ErrDockerHostNotSet               = errors.New("DOCKER_HOST is not set")
+	ErrDockerSocketOverrideNotSet     = errors.New("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set")
+	ErrDockerSocketNotSetInContext    = errors.New("socket not set in context")
+	ErrDockerSocketNotSetInProperties = errors.New("socket not set in ~/.testcontainers.properties")
+	ErrNoUnixSchema                   = errors.New("URL schema is not unix")
+	ErrSocketNotFound                 = errors.New("socket not found")
+	ErrSocketNotFoundInPath           = errors.New("docker socket not found in " + DockerSocketPath)
 )
 
 // deprecated
@@ -45,6 +48,7 @@ func ExtractDockerHost(ctx context.Context) string {
 		dockerSocketOverridePath,
 		dockerSocketFromContext,
 		dockerSocketPath,
+		dockerSocketFromProperties,
 		rootlessDockerSocketPath,
 	}
 
@@ -84,6 +88,21 @@ func dockerSocketFromContext(ctx context.Context) (string, error) {
 	return "", ErrDockerSocketNotSetInContext
 }
 
+func dockerSocketFromProperties(ctx context.Context) (string, error) {
+	cfg := config.Read(ctx)
+	socketPath := cfg.Host
+	if socketPath != "" {
+		parsed, err := parseURL(socketPath)
+		if err != nil {
+			return "", err
+		}
+
+		return parsed, nil
+	}
+
+	return "", ErrDockerSocketNotSetInProperties
+}
+
 func dockerSocketOverridePath(ctx context.Context) (string, error) {
 	if dockerHostPath, exists := os.LookupEnv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"); exists {
 		return dockerHostPath, nil
@@ -94,7 +113,7 @@ func dockerSocketOverridePath(ctx context.Context) (string, error) {
 
 func dockerSocketPath(ctx context.Context) (string, error) {
 	if fileExists(DockerSocketPath) {
-		return DockerSocketPathWithSchema, nil
+		return DockerSocketPath, nil
 	}
 
 	return "", ErrSocketNotFoundInPath
