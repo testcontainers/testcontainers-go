@@ -29,6 +29,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -322,7 +323,7 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 }
 
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
-	tcConfig := readConfig(context.Background()) // read the config using the private method to avoid the sync.Once
+	tcConfig := config.Read(context.Background()) // read the config using the internal method to avoid the sync.Once
 	if !tcConfig.RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
@@ -361,7 +362,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 }
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
-	tcConfig := readConfig(context.Background()) // read the config using the private method to avoid the sync.Once
+	tcConfig := config.Read(context.Background()) // read the config using the internal method to avoid the sync.Once
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -493,7 +494,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 }
 
 func TestContainerStopWithReaper(t *testing.T) {
-	tcConfig := readConfig(context.Background()) // read the config using the private method to avoid the sync.Once
+	tcConfig := config.Read(context.Background()) // read the config using the internal method to avoid the sync.Once
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -540,7 +541,7 @@ func TestContainerStopWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithReaper(t *testing.T) {
-	tcConfig := readConfig(context.Background()) // read the config using the private method to avoid the sync.Once
+	tcConfig := config.Read(context.Background()) // read the config using the internal method to avoid the sync.Once
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -579,7 +580,7 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
-	tcConfig := readConfig(context.Background()) // read the config using the private method to avoid the sync.Once
+	tcConfig := config.Read(context.Background()) // read the config using the internal method to avoid the sync.Once
 	if !tcConfig.RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}

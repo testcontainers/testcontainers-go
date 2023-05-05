@@ -10,6 +10,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go/internal"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -94,7 +95,9 @@ func Test_NewReaper(t *testing.T) {
 				return req
 			}),
 			config: TestcontainersConfig{
-				RyukPrivileged: true,
+				Config: config.Config{
+					RyukPrivileged: true,
+				},
 			},
 		},
 		{

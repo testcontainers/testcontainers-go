@@ -784,7 +784,7 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 var _ ContainerProvider = (*DockerProvider)(nil)
 
 func NewDockerClient() (cli *client.Client, err error) {
-	tcConfig := ReadConfigWithContext(context.Background())
+	tcConfig := ReadConfigWithContext(context.Background()).Config
 
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
 
@@ -934,7 +934,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		opt(&reaperOpts)
 	}
 
-	tcConfig := p.Config()
+	tcConfig := p.Config().Config
 
 	var termSignal chan bool
 	// the reaper does not need to start a reaper for itself
@@ -1143,7 +1143,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		return p.CreateContainer(ctx, req)
 	}
 
-	tcConfig := p.Config()
+	tcConfig := p.Config().Config
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
@@ -1298,7 +1298,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		req.Labels = make(map[string]string)
 	}
 
-	tcConfig := p.Config()
+	tcConfig := p.Config().Config
 
 	nc := types.NetworkCreate{
 		Driver:         req.Driver,

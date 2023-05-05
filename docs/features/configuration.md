@@ -20,13 +20,13 @@ case with underscore separators, preceded by `TESTCONTAINERS_` - e.g. `ryuk.disa
 _Testcontainers for Go_ provides a struct type to represent the configuration:
 
 <!--codeinclude-->
-[Supported properties](../../config.go) inside_block:testcontainersConfig
+[Supported properties](../../internal/config/config.go) inside_block:testcontainersConfig
 <!--/codeinclude-->
 
-You can read it with the `ReadConfig()` function:
+You can read it with the `ReadConfigWithContext(ctx)` function:
 
 ```go
-cfg := testcontainers.ReadConfig()
+cfg := testcontainers.ReadConfigWithContext(ctx)
 ```
 
 ### Disabling Ryuk

@@ -142,10 +142,11 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 	}
 
 	tcConfig := ReadConfigWithContext(context.Background())
+	cfg := tcConfig.Config
 
 	p := &DockerProvider{
 		DockerProviderOptions: o,
-		host:                  tcConfig.Host,
+		host:                  cfg.Host,
 		client:                c,
 		config:                tcConfig,
 	}

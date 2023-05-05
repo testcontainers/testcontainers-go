@@ -237,7 +237,7 @@ func setupDockerSocket(t *testing.T) string {
 	DockerSocketPath = tmpSocket
 	DockerSocketPathWithSchema = tmpSchema + tmpSocket
 
-	return tmpSchema + tmpSocket
+	return tmpSocket
 }
 
 func setupDockerSocketNotFound(t *testing.T) {
