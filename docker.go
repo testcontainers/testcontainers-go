@@ -784,44 +784,7 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 var _ ContainerProvider = (*DockerProvider)(nil)
 
 func NewDockerClient() (cli *client.Client, err error) {
-	tcConfig := ReadConfigWithContext(context.Background()).Config
-
-	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
-
-	if tcConfig.Host != "" {
-		opts = append(opts, client.WithHost(tcConfig.Host))
-
-		// For further information, read https://docs.docker.com/engine/security/protect-access/.
-		if tcConfig.TLSVerify == 1 {
-			caCertPath := filepath.Join(tcConfig.CertPath, "ca.pem")
-			certPath := filepath.Join(tcConfig.CertPath, "cert.pem")
-			keyPath := filepath.Join(tcConfig.CertPath, "key.pem")
-
-			opts = append(opts, client.WithTLSClientConfig(caCertPath, certPath, keyPath))
-		}
-	}
-
-	opts = append(opts, client.WithHTTPHeaders(
-		map[string]string{
-			"x-tc-sid": testcontainerssession.String(),
-		}),
-	)
-
-	cli, err = client.NewClientWithOpts(opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err = cli.Ping(context.Background()); err != nil {
-		// Fallback to environment.
-		cli, err = testcontainersdocker.NewClient(context.Background())
-		if err != nil {
-			return nil, err
-		}
-	}
-	defer cli.Close()
-
-	return cli, nil
+	return testcontainersdocker.NewClient(context.Background())
 }
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
