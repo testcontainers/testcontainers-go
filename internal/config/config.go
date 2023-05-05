@@ -46,6 +46,14 @@ More on this: https://golang.testcontainers.org/features/garbage_collector/
 	return tcConfig
 }
 
+// Reset resets the singleton instance of the Config struct,
+// allowing to read the configuration again.
+// Handy for testing, so do not use it in production code
+// This function is not thread-safe
+func Reset() {
+	tcConfigOnce = new(sync.Once)
+}
+
 func read(ctx context.Context) Config {
 	config := Config{}
 
