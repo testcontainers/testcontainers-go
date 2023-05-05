@@ -2,13 +2,9 @@ package testcontainers
 
 import (
 	"context"
-	"sync"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
-
-var tcConfig TestcontainersConfig
-var tcConfigOnce *sync.Once = new(sync.Once)
 
 // TestcontainersConfig represents the configuration for Testcontainers
 type TestcontainersConfig struct {
@@ -30,21 +26,7 @@ func ReadConfig() TestcontainersConfig {
 // ReadConfigWithContext reads from testcontainers properties file, storing the result in a singleton instance
 // of the TestcontainersConfig struct
 func ReadConfigWithContext(ctx context.Context) TestcontainersConfig {
-	tcConfigOnce.Do(func() {
-		cfg := config.Read(ctx)
-
-		tcConfig.Config = cfg
-
-		if cfg.RyukDisabled {
-			ryukDisabledMessage := `
-**********************************************************************************************
-Ryuk has been disabled for the current execution. This can cause unexpected behavior in your environment.
-More on this: https://golang.testcontainers.org/features/garbage_collector/
-**********************************************************************************************`
-			Logger.Printf(ryukDisabledMessage)
-			Logger.Printf("\n%+v", cfg)
-		}
-	})
-
-	return tcConfig
+	return TestcontainersConfig{
+		Config: config.Read(ctx),
+	}
 }
