@@ -50,11 +50,6 @@ func read(ctx context.Context) Config {
 	config := Config{}
 
 	applyEnvironmentConfiguration := func(config Config) Config {
-		dockerHostEnv := os.Getenv("DOCKER_HOST")
-		if dockerHostEnv != "" {
-			config.Host = dockerHostEnv
-		}
-
 		ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
 		if parseBool(ryukDisabledEnv) {
 			config.RyukDisabled = ryukDisabledEnv == "true"
