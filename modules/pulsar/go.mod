@@ -3,12 +3,12 @@ module github.com/testcontainers/testcontainers-go/modules/pulsar
 go 1.19
 
 require (
-	github.com/apache/pulsar-client-go v0.9.0
-	github.com/docker/docker v23.0.2+incompatible
+	github.com/apache/pulsar-client-go v0.10.0
+	github.com/docker/docker v23.0.5+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.19.0
-	gotest.tools/gotestsum v1.9.0
+	gotest.tools/gotestsum v1.10.0
 )
 
 replace github.com/testcontainers/testcontainers-go => ../..
@@ -22,6 +22,7 @@ require (
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bits-and-blooms/bitset v1.4.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/containerd/containerd v1.6.19 // indirect

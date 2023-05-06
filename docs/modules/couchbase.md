@@ -1,8 +1,10 @@
 # Couchbase
 
-<img src="https://cdn.worldvectorlogo.com/logos/couchbase.svg" width="300" />
+Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-Testcontainers module for Couchbase. [Couchbase](https://www.couchbase.com/) is a document oriented NoSQL database.
+## Introduction
+
+The Testcontainers module for Couchbase.
 
 ## Adding this module to your project dependencies
 
@@ -57,8 +59,8 @@ When starting the Couchbase container, you can pass options in a variadic way to
 
 #### Image
 
-If you need to set a different Couchbase Docker image, you can use `WithImageName` with a valid Docker image
-for Couchbase. E.g. `WithImageName("docker.io/couchbase:6.5.1")`.
+If you need to set a different Couchbase Docker image, you can use `testcontainers.WithImage` with a valid Docker image
+for Couchbase. E.g. `testcontainers.WithImage("docker.io/couchbase:6.5.1")`.
 
 By default, the container will use the following Docker image:
 

@@ -1,6 +1,10 @@
 name: Spanner example pipeline
 
 on:
+  workflow_run:
+    workflows: [Module generator pipeline]
+    types:
+      - completed
   push:
     paths-ignore:
     - 'mkdocs.yml'

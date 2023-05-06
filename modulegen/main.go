@@ -149,15 +149,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	cmd := exec.Command("go", "mod", "tidy")
-	cmd.Dir = filepath.Join(rootDir, example.ParentDir(), example.Lower())
-	err = cmd.Run()
+	cmdDir := filepath.Join(rootDir, example.ParentDir(), example.Lower())
+	err = runGoCommand(cmdDir, "mod", "tidy")
 	if err != nil {
 		fmt.Printf(">> error synchronizing the dependencies: %v\n", err)
 		os.Exit(1)
 	}
+	err = runGoCommand(cmdDir, "vet", "./...")
+	if err != nil {
+		fmt.Printf(">> error checking generated code: %v\n", err)
+		os.Exit(1)
+	}
 
-	fmt.Println("Please go to", cmd.Dir, "directory to check the results, where 'go mod tidy' was executed to synchronize the dependencies")
+	fmt.Println("Please go to", cmdDir, "directory to check the results, where 'go mod tidy' and 'go vet' was executed to synchronize the dependencies")
 	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
 	fmt.Println("Thanks!")
 }
@@ -315,4 +319,10 @@ func generateMkdocs(rootDir string, example Example) error {
 	}
 
 	return writeMkdocsConfig(rootDir, mkdocsConfig)
+}
+
+func runGoCommand(cmdDir string, args ...string) error {
+	cmd := exec.Command("go", args...)
+	cmd.Dir = cmdDir
+	return cmd.Run()
 }
