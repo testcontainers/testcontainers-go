@@ -289,11 +289,6 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 		req.ConfigModifier(dockerInput)
 	}
 
-	if req.HostConfigModifier == nil {
-		req.HostConfigModifier = defaultHostConfigModifier(req)
-	}
-	req.HostConfigModifier(hostConfig)
-
 	if req.EnpointSettingsModifier != nil {
 		req.EnpointSettingsModifier(endpointSettings)
 	}
@@ -319,6 +314,11 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 
 	dockerInput.ExposedPorts = exposedPortSet
 	hostConfig.PortBindings = exposedPortMap
+	
+	if req.HostConfigModifier == nil {
+		req.HostConfigModifier = defaultHostConfigModifier(req)
+	}
+	req.HostConfigModifier(hostConfig)
 
 	return nil
 }
