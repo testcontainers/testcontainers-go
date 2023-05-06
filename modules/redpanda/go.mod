@@ -7,8 +7,8 @@ require (
 	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.19.0
 	github.com/twmb/franz-go v1.13.2
-	github.com/twmb/franz-go/pkg/kadm v1.7.0
-	gotest.tools/gotestsum v1.9.0
+	github.com/twmb/franz-go/pkg/kadm v1.8.1
+	gotest.tools/gotestsum v1.10.0
 )
 
 require (
