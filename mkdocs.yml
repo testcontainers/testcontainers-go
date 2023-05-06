@@ -60,10 +60,11 @@ nav:
         - modules/couchbase.md
         - modules/localstack.md
         - modules/mysql.md
-        - modules/postgres.md
         - modules/neo4j.md
+        - modules/postgres.md
         - modules/pulsar.md
         - modules/redis.md
+        - modules/redpanda.md
         - modules/vault.md
     - Examples:
         - examples/index.md
