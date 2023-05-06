@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/pubsub v1.30.0
 	github.com/testcontainers/testcontainers-go v0.19.0
 	google.golang.org/api v0.120.0
-	google.golang.org/grpc v1.54.0
+	google.golang.org/grpc v1.55.0
 	gotest.tools/gotestsum v1.10.0
 )
 
