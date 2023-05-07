@@ -411,7 +411,7 @@ func assertExampleDocContent(t *testing.T, example Example, exampleDocFile strin
 	lower := example.Lower()
 	title := example.Title()
 
-	data := strings.Split(sanitiseContent(string(content)), "\n")
+	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "# "+title)
 	assert.Equal(t, data[2], `Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>`)
 	assert.Equal(t, data[4], "## Introduction")
@@ -435,7 +435,7 @@ func assertExampleTestContent(t *testing.T, example Example, exampleTestFile str
 	content, err := os.ReadFile(exampleTestFile)
 	assert.Nil(t, err)
 
-	data := strings.Split(sanitiseContent(string(content)), "\n")
+	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "package "+example.Lower())
 	assert.Equal(t, data[7], "func Test"+example.Title()+"(t *testing.T) {")
 	assert.Equal(t, data[10], "\tcontainer, err := RunContainer(ctx)")
@@ -451,7 +451,7 @@ func assertExampleContent(t *testing.T, example Example, exampleFile string) {
 	exampleName := example.Title()
 	entrypoint := example.Entrypoint()
 
-	data := strings.Split(sanitiseContent(string(content)), "\n")
+	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[0], "package "+lower)
 	assert.Equal(t, data[8], "// "+containerName+" represents the "+exampleName+" container type used in the module")
 	assert.Equal(t, data[9], "type "+containerName+" struct {")
@@ -469,14 +469,14 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	lower := example.Lower()
 	title := example.Title()
 
-	data := strings.Split(sanitiseContent(string(content)), "\n")
+	data := strings.Split(string(content), "\n")
 	assert.Equal(t, "name: "+title+" "+example.Type()+" pipeline", data[0])
-	assert.Equal(t, "  test-"+lower+":", data[23])
-	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[33])
+	assert.Equal(t, "  test-"+lower+":", data[19])
+	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[29])
+	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[36])
 	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[40])
 	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[44])
-	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[48])
-	assert.Equal(t, "          paths: \"**/TEST-"+lower+"*.xml\"", data[58])
+	assert.Equal(t, "          paths: \"**/TEST-"+lower+"*.xml\"", data[54])
 }
 
 // assert content go.mod
@@ -484,7 +484,7 @@ func assertGoModContent(t *testing.T, example Example, goModFile string) {
 	content, err := os.ReadFile(goModFile)
 	assert.Nil(t, err)
 
-	data := strings.Split(sanitiseContent(string(content)), "\n")
+	data := strings.Split(string(content), "\n")
 	assert.Equal(t, "module github.com/testcontainers/testcontainers-go/"+example.ParentDir()+"/"+example.Lower(), data[0])
 	assert.Equal(t, "\tgithub.com/testcontainers/testcontainers-go "+example.TCVersion, data[5])
 }
@@ -494,7 +494,7 @@ func assertMakefileContent(t *testing.T, example Example, makefile string) {
 	content, err := os.ReadFile(makefile)
 	assert.Nil(t, err)
 
-	data := strings.Split(sanitiseContent(string(content)), "\n")
+	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[4], "\t$(MAKE) test-"+example.Lower())
 }
 
@@ -534,23 +534,7 @@ func assertToolsGoContent(t *testing.T, example Example, tools string) {
 	content, err := os.ReadFile(tools)
 	assert.Nil(t, err)
 
-	data := strings.Split(sanitiseContent(string(content)), "\n")
+	data := strings.Split(string(content), "\n")
 	assert.Equal(t, data[3], "// This package contains the tool dependencies of the "+example.Title()+" "+example.Type()+".")
 	assert.Equal(t, data[5], "package tools")
-}
-
-// sanitiseContent removes the carriage return from a string
-// This is needed because on Windows, we need to remove the carriage return while asserting the content
-func sanitiseContent(s string) string {
-	fns := []func(string) string{
-		func(s string) string {
-			return strings.ReplaceAll(s, "\r", "")
-		},
-	}
-
-	for _, fn := range fns {
-		s = fn(s)
-	}
-
-	return s
 }

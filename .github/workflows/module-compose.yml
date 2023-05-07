@@ -1,10 +1,6 @@
 name: Compose module pipeline
 
 on:
-  workflow_run:
-    workflows: [Main pipeline]
-    types:
-      - completed
   push:
     paths-ignore:
     - 'mkdocs.yml'
