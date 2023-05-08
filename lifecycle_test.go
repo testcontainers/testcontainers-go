@@ -300,6 +300,39 @@ func TestPreCreateModifierHook(t *testing.T) {
 			"Networking config's network ID should be retrieved from Docker",
 		)
 	})
+	
+	t.Run("Request contains exposed port modifiers", func(t *testing.T) {
+		// reqWithModifiers {
+		req := ContainerRequest{
+			Image: nginxAlpineImage, // alpine image does expose port 80
+			HostConfigModifier: func(hostConfig *container.HostConfig) {
+				hostConfig.PortBindings = nat.PortMap{
+					"80/tcp": []nat.PortBinding{
+						{
+							HostIP:   "localhost",
+							HostPort: "8080",
+						},
+					},
+				}
+			},
+			ExposedPorts: []string{"80"},
+		}
+		// }
+
+		// define empty inputs to be overwritten by the pre create hook
+		inputConfig := &container.Config{
+			Image: req.Image,
+		}
+		inputHostConfig := &container.HostConfig{}
+		inputNetworkingConfig := &network.NetworkingConfig{}
+
+		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		require.Nil(t, err)
+
+		// assertions
+		assert.Equal(t, inputHostConfig.PortBindings["80/tcp"][0].HostIP, "localhost")
+		assert.Equal(t, inputHostConfig.PortBindings["80/tcp"][0].HostPort, "8080")
+	})
 }
 
 func TestLifecycleHooks(t *testing.T) {
