@@ -5,6 +5,14 @@ In order to create a release, we have added a shell script that performs all the
 First, it's really important that you first check that the [version.go](./internal/version.go) file is up-to-date, containing the right version you want to create. That file will be used by the automation to perform the release.
 Once the version file is correct in the repository:
 
+Second, check that the git remote for the `origin` is pointing to `github.com/testcontainers/testcontainers-go`. You can check it by running:
+
+```shell
+git remote -v
+```
+
+Once the remote is properly set, please follow these steps:
+
 - Run the [release.sh](./scripts/release.sh) shell script to run it in dry-run mode.
 - You can use the `DRY_RUN`variable to enable or disable the dry-run mode. By default, it's enabled.
 - You can use the `COMMIT` variable to enable or disable the commit creation. By default, it's disabled.
