@@ -784,21 +784,19 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 var _ ContainerProvider = (*DockerProvider)(nil)
 
 func NewDockerClient() (cli *client.Client, err error) {
-	tcConfig = ReadConfig()
-
-	host := tcConfig.Host
-
+	tcConfig := ReadConfig()
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
-	if host != "" {
-		opts = append(opts, client.WithHost(host))
 
-		// for further informacion, read https://docs.docker.com/engine/security/protect-access/
+	if tcConfig.Host != "" {
+		opts = append(opts, client.WithHost(tcConfig.Host))
+
+		// For further information, read https://docs.docker.com/engine/security/protect-access/.
 		if tcConfig.TLSVerify == 1 {
-			cacertPath := filepath.Join(tcConfig.CertPath, "ca.pem")
+			caCertPath := filepath.Join(tcConfig.CertPath, "ca.pem")
 			certPath := filepath.Join(tcConfig.CertPath, "cert.pem")
 			keyPath := filepath.Join(tcConfig.CertPath, "key.pem")
 
-			opts = append(opts, client.WithTLSClientConfig(cacertPath, certPath, keyPath))
+			opts = append(opts, client.WithTLSClientConfig(caCertPath, certPath, keyPath))
 		}
 	}
 
@@ -813,9 +811,8 @@ func NewDockerClient() (cli *client.Client, err error) {
 		return nil, err
 	}
 
-	_, err = cli.Ping(context.TODO())
-	if err != nil {
-		// fallback to environment
+	if _, err = cli.Ping(context.Background()); err != nil {
+		// Fallback to environment.
 		cli, err = testcontainersdocker.NewClient(context.Background())
 		if err != nil {
 			return nil, err
