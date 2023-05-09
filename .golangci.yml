@@ -2,6 +2,8 @@ linters:
   enable:
     - gci
     - gofmt
+    - misspell
+
 
 linters-settings:
   gci:
