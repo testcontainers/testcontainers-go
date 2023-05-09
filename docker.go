@@ -18,12 +18,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types/filters"
-
 	"github.com/cenkalti/backoff/v4"
 	"github.com/containerd/containerd/platforms"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -32,7 +31,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
-
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"

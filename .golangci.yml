@@ -1,3 +1,14 @@
 linters:
   enable:
+    - gci
     - gofmt
+
+linters-settings:
+  gci:
+    sections:
+    - standard
+    - default
+    - prefix(github.com/testcontainters)
+
+run:
+  timeout: 3m
