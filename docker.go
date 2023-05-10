@@ -67,7 +67,7 @@ type DockerContainer struct {
 	terminationSignal chan bool
 	consumers         []LogConsumer
 	raw               *types.ContainerJSON
-	stopProducer      context.CancelFunc
+	stopProducer      chan bool
 	logger            Logging
 	lifecycleHooks    []ContainerLifecycleHooks
 }
@@ -630,9 +630,9 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 		return errors.New("log producer already started")
 	}
 
-	ctx, c.stopProducer = context.WithCancel(ctx)
+	c.stopProducer = make(chan bool)
 
-	go func() {
+	go func(stop <-chan bool) {
 		since := ""
 		// if the socket is closed we will make additional logs request with updated Since timestamp
 	BEGIN:
@@ -643,22 +643,20 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 			Since:      since,
 		}
 
+		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
+
 		r, err := c.provider.client.ContainerLogs(ctx, c.GetContainerID(), options)
 		if err != nil {
-			// if we can't get the logs, retry in one second.
-			c.logger.Printf("cannot get logs for container %q: %v", c.ID, err)
-			if ctx.Err() != nil {
-				// context done.
-				return
-			}
-			time.Sleep(1 * time.Second)
-			goto BEGIN
+			// if we can't get the logs, panic, we can't return an error to anything
+			// from within this goroutine
+			panic(err)
 		}
 		defer c.provider.Close()
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-stop:
 				err := r.Close()
 				if err != nil {
 					// we can't close the read closer, this should never happen
@@ -709,7 +707,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 			}
 		}
-	}()
+	}(c.stopProducer)
 
 	return nil
 }
@@ -718,8 +716,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 // and sending them to each added LogConsumer
 func (c *DockerContainer) StopLogProducer() error {
 	if c.stopProducer != nil {
-		// Cancel the producer's context.
-		c.stopProducer()
+		c.stopProducer <- true
 		c.stopProducer = nil
 	}
 	return nil
