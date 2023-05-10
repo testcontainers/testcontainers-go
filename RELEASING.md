@@ -25,9 +25,6 @@ Once the remote is properly set, please follow these steps:
 
 - The script will update the [mkdocs.yml](./mkdocks.yml) file, updating the `latest_version` field to the current version.
 - The script will update the [version.go](./internal/version.go) file, setting the next development version to the next **minor** version by default. For example, if the current version is `v0.18.0`, the script will update the [version.go](./internal/version.go) file with the next development version `v0.19.0`.
-- You can define the bump type, using the `BUMP_TYPE` environment variable. The default value is `minor`, but you can also use `major` or `patch` (the script will fail if the value is not one of these three):
-
-        BUMP_TYPE="major" ./scripts/pre-release.sh
 
 - The script will update the `go.mod` files for each Go modules and example modules under the examples and modules directories, updating the version of the testcontainers-go dependency to the recently created tag.
 - The script will modify the docs for the each Go module **that was not released yet**, updating the version of _Testcontainers for Go_ where it was added to the recently created tag.
@@ -126,6 +123,10 @@ Once you are satisfied with the modified files in the git state:
 - You can use the `DRY_RUN` variable to enable or disable the dry-run mode. By default, it's enabled.
 
         DRY_RUN="false" ./scripts/release.sh
+
+- You can define the bump type, using the `BUMP_TYPE` environment variable. The default value is `minor`, but you can also use `major` or `patch` (the script will fail if the value is not one of these three):
+
+        BUMP_TYPE="major" ./scripts/release.sh
 
 - The script will commit the current state of the git repository, if the `DRY_RUN` variable is set to `false`. The modified files are the ones modified by the `pre-release.sh` script.
 - The script will create a git tag with the current value of the [version.go](./internal/version.go) file, starting with `v`: e.g. `v0.18.0`, for the following Go modules:

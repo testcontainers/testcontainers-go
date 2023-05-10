@@ -6,7 +6,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/couchbase/gocb/v2 v2.6.3
 	github.com/docker/go-connections v0.4.0
-	github.com/testcontainers/testcontainers-go v0.20.0
+	github.com/testcontainers/testcontainers-go v0.20.1
 	github.com/tidwall/gjson v1.14.4
 	gotest.tools/gotestsum v1.10.0
 )

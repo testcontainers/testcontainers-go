@@ -120,6 +120,7 @@ function gitCommitVersion() {
 
   gitFn add "${VERSION_FILE}"
   gitFn add "${MKDOCS_FILE}"
+  gitFn add "docs/**/*.md"
   gitFn add "examples/**/go.*"
   gitFn add "modules/**/go.*"
   gitFn commit -m "chore: use new version (${version}) in modules and examples"
