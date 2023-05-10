@@ -25,7 +25,7 @@ function main() {
   readonly version="$(extractCurrentVersion)"
   readonly vVersion="v${version}"
 
-  #gitState
+  gitFn checkout main
   bumpVersion "${version}"
 }
 
@@ -92,14 +92,6 @@ function gitFn() {
   fi
 
   git "${args[@]}"
-}
-
-# This function is setting the git state to the next development cycle:
-# - Stashing the changes
-# - Moving to the main branch
-function gitState() {
-  gitFn stash
-  gitFn checkout main
 }
 
 main "$@"

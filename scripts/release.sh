@@ -77,8 +77,6 @@ function main() {
       curlGolangProxy "${module_path}" "${vVersion}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1.info
     done
   done
-
-  gitUnstash
 }
 
 # This function is used to trigger the Go proxy to fetch the module.
@@ -140,10 +138,6 @@ function gitNextDevelopment() {
 # This function is used to push the tags to the remote repository.
 function gitPushTags() {
   gitFn push origin main --tags
-}
-
-function gitUnstash() {
-  gitFn stash pop
 }
 
 # This function is used to create a tag for the module.
