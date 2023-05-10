@@ -68,6 +68,7 @@ nav:
         - modules/pulsar.md
         - modules/redis.md
         - modules/redpanda.md
+        - modules/dockerregistry.md
         - modules/vault.md
     - Examples:
         - examples/index.md
