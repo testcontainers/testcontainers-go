@@ -18,7 +18,7 @@ git remote -v
 Once the remote is properly set, please follow these steps:
 
 - Run the [release.sh](./scripts/pre-release.sh) shell script to run it in dry-run mode.
-- You can use the `DRY_RUN`variable to enable or disable the dry-run mode. By default, it's enabled.
+- You can use the `DRY_RUN` variable to enable or disable the dry-run mode. By default, it's enabled.
 - To prepare for a release, updating the _Testcontainers for Go_ dependency for all the modules and examples, without performing any Git operation:
 
         DRY_RUN="false" ./scripts/pre-release.sh
@@ -123,7 +123,7 @@ mv vault.md.tmp vault.md
 Once you are satisfied with the modified files in the git state:
 
 - Run the [release.sh](./scripts/release.sh) shell script to create the release in dry-run mode.
-- You can use the `DRY_RUN`variable to enable or disable the dry-run mode. By default, it's enabled.
+- You can use the `DRY_RUN` variable to enable or disable the dry-run mode. By default, it's enabled.
 
         DRY_RUN="false" ./scripts/release.sh
 
@@ -135,7 +135,7 @@ Once you are satisfied with the modified files in the git state:
              "${directory}/${module_name}/${version}", e.g. "examples/mysql/v0.18.0", "modules/compose/v0.18.0"
 
 - The script will create a commit in the **main** branch if the `DRY_RUN` variable is set to `false`.
-- The script will push the git the main branch including the tags to the upstream repository, https://github.com/testcontainers/testcontainers-go, if the `DRY_RUN` variable is set to `false`.
+- The script will push the main branch including the tags to the upstream repository, https://github.com/testcontainers/testcontainers-go, if the `DRY_RUN` variable is set to `false`.
 - Finally, the script will trigger the Golang proxy to update the modules in https://proxy.golang.org/, if the `DRY_RUN` variable is set to `false`.
 
 An example execution, with dry-run mode enabled:
