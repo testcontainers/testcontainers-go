@@ -197,7 +197,6 @@ curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/module
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/redis/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/redpanda/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/vault/@v/v0.20.1.info
-git stash pop
 ```
 
 Right after that, you have to:
