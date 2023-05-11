@@ -20,7 +20,7 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 	if host != "" {
 		opts = append(opts, client.WithHost(host))
 
-		// for further informacion, read https://docs.docker.com/engine/security/protect-access/
+		// for further information, read https://docs.docker.com/engine/security/protect-access/
 		if tcConfig.TLSVerify == 1 {
 			cacertPath := filepath.Join(tcConfig.CertPath, "ca.pem")
 			certPath := filepath.Join(tcConfig.CertPath, "cert.pem")
