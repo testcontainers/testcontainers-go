@@ -41,9 +41,8 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 		return nil, err
 	}
 
-	_, err = cli.Ping(context.TODO())
-	if err != nil {
-		// fallback to environment
+	if _, err = cli.Ping(context.Background()); err != nil {
+		// Fallback to environment.
 		cli, err = defaultClient(context.Background())
 		if err != nil {
 			return nil, err
