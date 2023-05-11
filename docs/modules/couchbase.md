@@ -68,6 +68,26 @@ By default, the container will use the following Docker image:
 [Default Docker image](../../modules/couchbase/couchbase.go) inside_block:defaultImage
 <!--/codeinclude-->
 
+#### Wait Strategies
+
+If you need to set a different wait strategy for Couchbase, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
+for Couchbase.
+
+!!!info
+    The default deadline for the wait strategy is 60 seconds.
+
+At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+
+#### Docker type modifiers
+
+If you need an advanced configuration for Couchbase, you can leverage the following Docker type modifiers:
+
+- `testcontainers.WithConfigModifier`
+- `testcontainers.WithHostConfigModifier`
+- `testcontainers.WithEndpointSettingsModifier`
+
+Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+
 #### Credentials
 
 If you need to change the default credentials for the admin user, you can use `WithAdminCredentials(user, password)` with a valid username and password.
