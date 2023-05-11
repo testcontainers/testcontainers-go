@@ -102,7 +102,8 @@ func Test_ExtractDockerHost(t *testing.T) {
 			tmpDir := t.TempDir()
 			tmpSocket := filepath.Join(tmpDir, "docker.sock")
 			t.Setenv("DOCKER_HOST", tmpSocket)
-			createTmpDockerSocket(tmpDir)
+			err := createTmpDockerSocket(tmpDir)
+			require.Nil(t, err)
 
 			socket, err := dockerHostFromEnv(context.Background())
 			require.Nil(t, err)
@@ -121,7 +122,8 @@ func Test_ExtractDockerHost(t *testing.T) {
 			tmpDir := t.TempDir()
 			tmpSocket := filepath.Join(tmpDir, "docker.sock")
 			t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", tmpSocket)
-			createTmpDockerSocket(tmpDir)
+			err := createTmpDockerSocket(tmpDir)
+			require.Nil(t, err)
 
 			socket, err := dockerSocketOverridePath(context.Background())
 			require.Nil(t, err)
@@ -256,7 +258,8 @@ func setupDockerSocket(t *testing.T) string {
 
 	tmpDir := t.TempDir()
 	tmpSocket := filepath.Join(tmpDir, "docker.sock")
-	createTmpDockerSocket(filepath.Dir(tmpSocket))
+	err := createTmpDockerSocket(filepath.Dir(tmpSocket))
+	require.Nil(t, err)
 
 	DockerSocketPath = tmpSocket
 	DockerSocketPathWithSchema = tmpSchema + tmpSocket
