@@ -16,7 +16,7 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 
 	host := tcConfig.Host
 
-	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
+	opts := append(ops, client.FromEnv, client.WithAPIVersionNegotiation())
 	if host != "" {
 		opts = append(opts, client.WithHost(host))
 
@@ -42,8 +42,8 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 	}
 
 	if _, err = cli.Ping(context.Background()); err != nil {
-		// Fallback to environment.
-		cli, err = defaultClient(context.Background())
+		// Fallback to environment, including the original options
+		cli, err = defaultClient(context.Background(), ops...)
 		if err != nil {
 			return nil, err
 		}
