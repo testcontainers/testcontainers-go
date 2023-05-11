@@ -93,8 +93,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("DOCKER_HOST", tcpDockerHost33293)
 
 		config := read(context.Background())
-		expected := Config{}
-		expected.Host = tcpDockerHost33293
+		expected := Config{} // the config does not read DOCKER_HOST, that's why it's empty
 
 		assert.Equal(t, expected, config)
 	})
