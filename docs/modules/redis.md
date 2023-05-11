@@ -41,7 +41,7 @@ When starting the Redis container, you can pass options in a variadic way to con
 #### Image
 
 If you need to set a different Redis Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Postgres. E.g. `testcontainers.WithImage("docker.io/redis:7")`.
+for Redis. E.g. `testcontainers.WithImage("docker.io/redis:7")`.
 
 <!--codeinclude-->
 [Use a different image](../../modules/redis/redis_test.go) inside_block:withImage
