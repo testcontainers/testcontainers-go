@@ -10,11 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/docker/docker/client"
-
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )

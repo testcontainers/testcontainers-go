@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/examples/nginx
 go 1.19
 
 require (
-	github.com/testcontainers/testcontainers-go v0.20.0
+	github.com/testcontainers/testcontainers-go v0.20.1
 	gotest.tools/gotestsum v1.10.0
 )
 
