@@ -48,6 +48,7 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 			return nil, err
 		}
 	}
+	defer cli.Close()
 
 	return cli, nil
 }
