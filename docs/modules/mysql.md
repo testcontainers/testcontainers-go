@@ -56,6 +56,9 @@ options.  By default, the username, the password and the database name is `test`
 [Custom Database initialization](../../modules/mysql/mysql_test.go) inside_block:customInitialization
 <!--/codeinclude-->
 
+!!!info
+    The default values for the username is `root`, for password is `test` and for the default database name is `test`.
+
 ### Init Scripts
 
 If you would like to perform DDL or DML operations in the MySQL container, add one or more `*.sql`, `*.sql.gz`, or `*.sh`
