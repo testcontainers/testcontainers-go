@@ -47,6 +47,26 @@ for Redis. E.g. `testcontainers.WithImage("docker.io/redis:7")`.
 [Use a different image](../../modules/redis/redis_test.go) inside_block:withImage
 <!--/codeinclude-->
 
+#### Wait Strategies
+
+If you need to set a different wait strategy for Redis, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
+for Redis.
+
+!!!info
+    The default deadline for the wait strategy is 60 seconds.
+
+At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+
+#### Docker type modifiers
+
+If you need an advanced configuration for Redis, you can leverage the following Docker type modifiers:
+
+- `testcontainers.WithConfigModifier`
+- `testcontainers.WithHostConfigModifier`
+- `testcontainers.WithEndpointSettingsModifier`
+
+Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+
 #### Snapshotting
 
 By default Redis saves snapshots of the dataset on disk, in a binary file called dump.rdb. You can configure Redis to have it save the dataset every N seconds if there are at least M changes in the dataset.
