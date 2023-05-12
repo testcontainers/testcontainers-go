@@ -1,7 +1,7 @@
 package testcontainersdocker
 
 // DockerSocketSchema is the npipe schema.
-var DockerSocketSchema = "npipe://"
+const DockerSocketSchema = "npipe://"
 
 // DockerSocketPath is the path to the docker socket under windows systems.
 var DockerSocketPath = "//./pipe/docker_engine"

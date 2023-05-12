@@ -1,7 +1,7 @@
 package testcontainersdocker
 
 // DockerSocketSchema is the unix schema.
-var DockerSocketSchema = "unix://"
+const DockerSocketSchema = "unix://"
 
 // DockerSocketPath is the path to the docker socket under unix systems.
 var DockerSocketPath = "/var/run/docker.sock"
