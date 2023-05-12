@@ -72,10 +72,7 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 // newReaper creates a Reaper with a sessionID to identify containers and a provider to use
 // Should only be used internally and instead use reuseOrCreateReaper to prefer reusing an existing Reaper instance
 func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
-	dockerHost := testcontainersdocker.ExtractDockerHost(ctx)
-
-	// remove the schema from the docker host to create a valid bind mount
-	dockerHost = strings.Replace(dockerHost, testcontainersdocker.DockerSocketSchema, "", 1)
+	dockerHostMount := testcontainersdocker.DockerSocketPath
 
 	reaper := &Reaper{
 		Provider:  provider,
@@ -99,7 +96,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 			TestcontainerLabelIsReaper:       "true",
 			testcontainersdocker.LabelReaper: "true",
 		},
-		Mounts:        Mounts(BindMount(dockerHost, "/var/run/docker.sock")),
+		Mounts:        Mounts(BindMount(dockerHostMount, "/var/run/docker.sock")),
 		Privileged:    tcConfig.RyukPrivileged,
 		WaitingFor:    wait.ForListeningPort(listeningPort),
 		ReaperOptions: opts,
