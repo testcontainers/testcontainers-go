@@ -300,7 +300,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 			"Networking config's network ID should be retrieved from Docker",
 		)
 	})
-	
+
 	t.Run("Request contains exposed port modifiers", func(t *testing.T) {
 		// reqWithModifiers {
 		req := ContainerRequest{
@@ -333,6 +333,104 @@ func TestPreCreateModifierHook(t *testing.T) {
 		assert.Equal(t, inputHostConfig.PortBindings["80/tcp"][0].HostIP, "localhost")
 		assert.Equal(t, inputHostConfig.PortBindings["80/tcp"][0].HostPort, "8080")
 	})
+}
+
+func Test_mergePortBindings(t *testing.T) {
+	type arg struct {
+		configPortMap nat.PortMap
+		parsedPortMap nat.PortMap
+		exposedPorts  []string
+	}
+	cases := []struct {
+		name     string
+		arg      arg
+		expected nat.PortMap
+	}{
+		{
+			name: "empty ports",
+			arg: arg{
+				configPortMap: nil,
+				parsedPortMap: nil,
+				exposedPorts:  nil,
+			},
+			expected: map[nat.Port][]nat.PortBinding{},
+		},
+		{
+			name: "config port map but not exposed",
+			arg: arg{
+				configPortMap: map[nat.Port][]nat.PortBinding{
+					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+				},
+				parsedPortMap: nil,
+				exposedPorts:  nil,
+			},
+			expected: map[nat.Port][]nat.PortBinding{},
+		},
+		{
+			name: "parsed port map without config",
+			arg: arg{
+				configPortMap: nil,
+				parsedPortMap: map[nat.Port][]nat.PortBinding{
+					"80/tcp": {{HostIP: "", HostPort: ""}},
+				},
+				exposedPorts: nil,
+			},
+			expected: map[nat.Port][]nat.PortBinding{
+				"80/tcp": {{HostIP: "", HostPort: ""}},
+			},
+		},
+		{
+			name: "config port map without parsed",
+			arg: arg{
+				configPortMap: map[nat.Port][]nat.PortBinding{
+					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+				},
+				parsedPortMap: nil,
+				exposedPorts:  []string{"80"},
+			},
+			expected: map[nat.Port][]nat.PortBinding{
+				"80/tcp": {{HostIP: "1", HostPort: "2"}},
+			},
+		},
+		{
+			name: "config port map with parsed",
+			arg: arg{
+				configPortMap: map[nat.Port][]nat.PortBinding{
+					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+				},
+				parsedPortMap: map[nat.Port][]nat.PortBinding{
+					"80/tcp": {{HostIP: "", HostPort: ""}},
+				},
+				exposedPorts: []string{"80"},
+			},
+			expected: map[nat.Port][]nat.PortBinding{
+				"80/tcp": {{HostIP: "1", HostPort: "2"}},
+			},
+		},
+		{
+			name: "merge both parsed and config",
+			arg: arg{
+				configPortMap: map[nat.Port][]nat.PortBinding{
+					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+				},
+				parsedPortMap: map[nat.Port][]nat.PortBinding{
+					"90/tcp": {{HostIP: "", HostPort: ""}},
+				},
+				exposedPorts: []string{"80"},
+			},
+			expected: map[nat.Port][]nat.PortBinding{
+				"80/tcp": {{HostIP: "1", HostPort: "2"}},
+				"90/tcp": {{HostIP: "", HostPort: ""}},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			res := mergePortBindings(c.arg.configPortMap, c.arg.parsedPortMap, c.arg.exposedPorts)
+			assert.Equal(t, c.expected, res)
+		})
+	}
 }
 
 func TestLifecycleHooks(t *testing.T) {
