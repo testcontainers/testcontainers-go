@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
@@ -25,6 +26,9 @@ var (
 	ErrSocketNotFoundInPath           = errors.New("docker socket not found in " + DockerSocketPath)
 )
 
+var dockerHostCache string
+var dockerHostOnce sync.Once
+
 // deprecated
 // see https://github.com/testcontainers/testcontainers-java/blob/main/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L46
 func DefaultGatewayIP() (string, error) {
@@ -41,7 +45,9 @@ func DefaultGatewayIP() (string, error) {
 	return ip, nil
 }
 
-// ExtractDockerHost Extracts the docker host from the different alternatives. The possible alternatives are:
+// ExtractDockerHost Extracts the docker host from the different alternatives, caching the result to avoid unnecessary
+// calculations.
+// The possible alternatives are:
 //   1. DOCKER_HOST environment variable
 //   2. TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE environment variable
 //   3. Docker socket path from context
@@ -50,6 +56,16 @@ func DefaultGatewayIP() (string, error) {
 //   6. Rootless docker socket path
 //   If none of the above alternatives are found, an empty string is returned
 func ExtractDockerHost(ctx context.Context) string {
+	dockerHostOnce.Do(func() {
+		dockerHostCache = extractDockerHost(ctx)
+	})
+
+	return dockerHostCache
+}
+
+// extractDockerHost Extracts the docker host from the different alternatives, without caching the result.
+// This internal method is handy for testing purposes.
+func extractDockerHost(ctx context.Context) string {
 	socketPathFns := []func(context.Context) (string, error){
 		dockerHostFromEnv,
 		dockerSocketOverridePath,

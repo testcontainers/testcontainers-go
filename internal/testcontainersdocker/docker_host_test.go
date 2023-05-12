@@ -28,17 +28,30 @@ func init() {
 	tmpSchema = DockerSocketSchema
 }
 
-func Test_ExtractDockerHost(t *testing.T) {
+func TestExtractDockerHost(t *testing.T) {
+	t.Run("Docker Host as extracted just once", func(t *testing.T) {
+		expected := "/path/to/docker.sock"
+		t.Setenv("DOCKER_HOST", expected)
+		host := ExtractDockerHost(context.Background())
+
+		assert.Equal(t, expected, host)
+
+		t.Setenv("DOCKER_HOST", "/path/to/another/docker.sock")
+
+		host = ExtractDockerHost(context.Background())
+		assert.Equal(t, expected, host)
+	})
+
 	t.Run("Docker Host as environment variable", func(t *testing.T) {
 		t.Setenv("DOCKER_HOST", "/path/to/docker.sock")
-		host := ExtractDockerHost(context.Background())
+		host := extractDockerHost(context.Background())
 
 		assert.Equal(t, "/path/to/docker.sock", host)
 	})
 
 	t.Run("Docker Host as environment variable", func(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
-		host := ExtractDockerHost(context.Background())
+		host := extractDockerHost(context.Background())
 
 		assert.Equal(t, "/path/to/docker.sock", host)
 	})
@@ -49,7 +62,7 @@ func Test_ExtractDockerHost(t *testing.T) {
 
 		ctx := context.Background()
 
-		host := ExtractDockerHost(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
+		host := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
 
 		assert.Equal(t, "", host)
 	})
@@ -59,7 +72,7 @@ func Test_ExtractDockerHost(t *testing.T) {
 		setupRootlessNotFound(t)
 		ctx := context.Background()
 
-		host := ExtractDockerHost(context.WithValue(ctx, DockerHostContextKey, "http://path to docker sock"))
+		host := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "http://path to docker sock"))
 
 		assert.Equal(t, "", host)
 	})
@@ -67,7 +80,7 @@ func Test_ExtractDockerHost(t *testing.T) {
 	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
 		ctx := context.Background()
 
-		host := ExtractDockerHost(context.WithValue(ctx, DockerHostContextKey, "unix:///this/is/a/sample.sock"))
+		host := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "unix:///this/is/a/sample.sock"))
 
 		assert.Equal(t, "/this/is/a/sample.sock", host)
 	})
@@ -76,7 +89,7 @@ func Test_ExtractDockerHost(t *testing.T) {
 		setupRootlessNotFound(t)
 		tmpSocket := setupDockerSocket(t)
 
-		host := ExtractDockerHost(context.Background())
+		host := extractDockerHost(context.Background())
 
 		assert.Equal(t, tmpSocket, host)
 	})
@@ -84,7 +97,7 @@ func Test_ExtractDockerHost(t *testing.T) {
 	t.Run("Empty Docker Host", func(t *testing.T) {
 		setupDockerSocketNotFound(t)
 		setupRootlessNotFound(t)
-		host := ExtractDockerHost(context.Background())
+		host := extractDockerHost(context.Background())
 
 		assert.Equal(t, "", host)
 	})
