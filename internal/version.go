@@ -1,3 +1,4 @@
 package internal
 
-const Version = "0.20.0"
+// Version is the next development version of the application
+const Version = "0.21.0"

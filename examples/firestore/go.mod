@@ -4,9 +4,9 @@ go 1.19
 
 require (
 	cloud.google.com/go/firestore v1.9.0
-	github.com/testcontainers/testcontainers-go v0.19.0
-	google.golang.org/api v0.120.0
-	google.golang.org/grpc v1.54.0
+	github.com/testcontainers/testcontainers-go v0.20.1
+	google.golang.org/api v0.121.0
+	google.golang.org/grpc v1.55.0
 	gotest.tools/gotestsum v1.10.0
 )
 
@@ -22,7 +22,7 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v23.0.3+incompatible // indirect
+	github.com/docker/docker v23.0.5+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
@@ -31,7 +31,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/s2a-go v0.1.2 // indirect
+	github.com/google/s2a-go v0.1.3 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect

@@ -4,14 +4,14 @@ go 1.19
 
 require (
 	github.com/aws/aws-sdk-go v1.44.244
-	github.com/aws/aws-sdk-go-v2 v1.17.8
+	github.com/aws/aws-sdk-go-v2 v1.18.0
 	github.com/aws/aws-sdk-go-v2/config v1.18.19
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.18
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.3
 	github.com/docker/go-connections v0.4.0
 	github.com/stretchr/testify v1.8.2
-	github.com/testcontainers/testcontainers-go v0.19.0
-	golang.org/x/mod v0.9.0
+	github.com/testcontainers/testcontainers-go v0.20.1
+	golang.org/x/mod v0.10.0
 	gotest.tools/gotestsum v1.10.0
 )
 
@@ -38,7 +38,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v23.0.3+incompatible // indirect
+	github.com/docker/docker v23.0.5+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
@@ -46,7 +46,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/imdario/mergo v0.3.14 // indirect
+	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
@@ -64,7 +64,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect

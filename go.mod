@@ -6,7 +6,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/containerd/containerd v1.6.19
 	github.com/cpuguy83/dockercfg v0.3.1
-	github.com/docker/docker v23.0.3+incompatible
+	github.com/docker/docker v23.0.5+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.5.0
 	github.com/google/uuid v1.3.0
@@ -16,7 +16,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0-rc2
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
-	golang.org/x/sys v0.6.0
+	golang.org/x/sys v0.7.0
 	gotest.tools/gotestsum v1.10.0
 )
 

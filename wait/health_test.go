@@ -71,7 +71,7 @@ func TestWaitForHealthSucceeds(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-// TestWaitForHealthWithNil checks that an initial `nil` Health will not casue a panic,
+// TestWaitForHealthWithNil checks that an initial `nil` Health will not cause a panic,
 // and if the container eventually becomes healthy, the HealthStrategy will succeed.
 func TestWaitForHealthWithNil(t *testing.T) {
 	target := &healthStrategyTarget{

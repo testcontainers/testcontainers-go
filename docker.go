@@ -18,12 +18,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types/filters"
-
 	"github.com/cenkalti/backoff/v4"
 	"github.com/containerd/containerd/platforms"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -32,7 +31,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
-
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
@@ -69,7 +67,7 @@ type DockerContainer struct {
 	terminationSignal chan bool
 	consumers         []LogConsumer
 	raw               *types.ContainerJSON
-	stopProducer      context.CancelFunc
+	stopProducer      chan bool
 	logger            Logging
 	lifecycleHooks    []ContainerLifecycleHooks
 }
@@ -632,9 +630,9 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 		return errors.New("log producer already started")
 	}
 
-	ctx, c.stopProducer = context.WithCancel(ctx)
+	c.stopProducer = make(chan bool)
 
-	go func() {
+	go func(stop <-chan bool) {
 		since := ""
 		// if the socket is closed we will make additional logs request with updated Since timestamp
 	BEGIN:
@@ -645,22 +643,20 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 			Since:      since,
 		}
 
+		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
+
 		r, err := c.provider.client.ContainerLogs(ctx, c.GetContainerID(), options)
 		if err != nil {
-			// if we can't get the logs, retry in one second.
-			c.logger.Printf("cannot get logs for container %q: %v", c.ID, err)
-			if ctx.Err() != nil {
-				// context done.
-				return
-			}
-			time.Sleep(1 * time.Second)
-			goto BEGIN
+			// if we can't get the logs, panic, we can't return an error to anything
+			// from within this goroutine
+			panic(err)
 		}
 		defer c.provider.Close()
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-stop:
 				err := r.Close()
 				if err != nil {
 					// we can't close the read closer, this should never happen
@@ -711,7 +707,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 			}
 		}
-	}()
+	}(c.stopProducer)
 
 	return nil
 }
@@ -720,8 +716,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 // and sending them to each added LogConsumer
 func (c *DockerContainer) StopLogProducer() error {
 	if c.stopProducer != nil {
-		// Cancel the producer's context.
-		c.stopProducer()
+		c.stopProducer <- true
 		c.stopProducer = nil
 	}
 	return nil
@@ -784,21 +779,19 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 var _ ContainerProvider = (*DockerProvider)(nil)
 
 func NewDockerClient() (cli *client.Client, err error) {
-	tcConfig = ReadConfig()
-
-	host := tcConfig.Host
-
+	tcConfig := ReadConfig()
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
-	if host != "" {
-		opts = append(opts, client.WithHost(host))
 
-		// for further informacion, read https://docs.docker.com/engine/security/protect-access/
+	if tcConfig.Host != "" {
+		opts = append(opts, client.WithHost(tcConfig.Host))
+
+		// For further information, read https://docs.docker.com/engine/security/protect-access/.
 		if tcConfig.TLSVerify == 1 {
-			cacertPath := filepath.Join(tcConfig.CertPath, "ca.pem")
+			caCertPath := filepath.Join(tcConfig.CertPath, "ca.pem")
 			certPath := filepath.Join(tcConfig.CertPath, "cert.pem")
 			keyPath := filepath.Join(tcConfig.CertPath, "key.pem")
 
-			opts = append(opts, client.WithTLSClientConfig(cacertPath, certPath, keyPath))
+			opts = append(opts, client.WithTLSClientConfig(caCertPath, certPath, keyPath))
 		}
 	}
 
@@ -813,9 +806,8 @@ func NewDockerClient() (cli *client.Client, err error) {
 		return nil, err
 	}
 
-	_, err = cli.Ping(context.TODO())
-	if err != nil {
-		// fallback to environment
+	if _, err = cli.Ping(context.Background()); err != nil {
+		// Fallback to environment.
 		cli, err = testcontainersdocker.NewClient(context.Background())
 		if err != nil {
 			return nil, err
