@@ -335,7 +335,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 	})
 }
 
-func Test_mergePortBindings(t *testing.T) {
+func TestMergePortBindings(t *testing.T) {
 	type arg struct {
 		configPortMap nat.PortMap
 		parsedPortMap nat.PortMap
@@ -380,45 +380,21 @@ func Test_mergePortBindings(t *testing.T) {
 			},
 		},
 		{
-			name: "config port map without parsed",
+			name: "merge both parsed and config",
 			arg: arg{
 				configPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
-				},
-				parsedPortMap: nil,
-				exposedPorts:  []string{"80"},
-			},
-			expected: map[nat.Port][]nat.PortBinding{
-				"80/tcp": {{HostIP: "1", HostPort: "2"}},
-			},
-		},
-		{
-			name: "config port map with parsed",
-			arg: arg{
-				configPortMap: map[nat.Port][]nat.PortBinding{
+					"60/tcp": {{HostIP: "1", HostPort: "2"}},
+					"70/tcp": {{HostIP: "1", HostPort: "2"}},
 					"80/tcp": {{HostIP: "1", HostPort: "2"}},
 				},
 				parsedPortMap: map[nat.Port][]nat.PortBinding{
 					"80/tcp": {{HostIP: "", HostPort: ""}},
-				},
-				exposedPorts: []string{"80"},
-			},
-			expected: map[nat.Port][]nat.PortBinding{
-				"80/tcp": {{HostIP: "1", HostPort: "2"}},
-			},
-		},
-		{
-			name: "merge both parsed and config",
-			arg: arg{
-				configPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
-				},
-				parsedPortMap: map[nat.Port][]nat.PortBinding{
 					"90/tcp": {{HostIP: "", HostPort: ""}},
 				},
-				exposedPorts: []string{"80"},
+				exposedPorts: []string{"70", "80"},
 			},
 			expected: map[nat.Port][]nat.PortBinding{
+				"70/tcp": {{HostIP: "1", HostPort: "2"}},
 				"80/tcp": {{HostIP: "1", HostPort: "2"}},
 				"90/tcp": {{HostIP: "", HostPort: ""}},
 			},
