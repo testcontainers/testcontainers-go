@@ -63,8 +63,11 @@ func parseURL(s string) (string, error) {
 	}
 
 	switch hostURL.Scheme {
-	case "unix":
+	case "unix", "npipe":
 		return hostURL.Path, nil
+	case "tcp":
+		// return the original URL, as it is a valid TCP URL
+		return s, nil
 	default:
 		return "", ErrNoUnixSchema
 	}
