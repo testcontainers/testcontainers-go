@@ -15,7 +15,7 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 
 	dockerHost := ExtractDockerHost(ctx)
 
-	opts := append(ops, client.FromEnv, client.WithAPIVersionNegotiation())
+	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
 	if dockerHost != "" {
 		opts = append(opts, client.WithHost(dockerHost))
 
@@ -34,6 +34,9 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 			"x-tc-sid": testcontainerssession.String(),
 		}),
 	)
+
+	// passed options have priority over the default ones
+	opts = append(opts, ops...)
 
 	cli, err := client.NewClientWithOpts(opts...)
 	if err != nil {
