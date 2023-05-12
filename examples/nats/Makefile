@@ -2,4 +2,4 @@ include ../../commons-test.mk
 
 .PHONY: test
 test:
-	$(MAKE) nats
+	$(MAKE) test-nats
