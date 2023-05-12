@@ -74,6 +74,9 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
 	dockerHost := testcontainersdocker.ExtractDockerHost(ctx)
 
+	// remove the schema from the docker host to create a valid bind mount
+	dockerHost = strings.Replace(dockerHost, testcontainersdocker.DockerSocketSchema, "", 1)
+
 	reaper := &Reaper{
 		Provider:  provider,
 		SessionID: sessionID,

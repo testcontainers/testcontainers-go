@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,10 +25,7 @@ func init() {
 
 	originalDockerSocketOverride = os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
 
-	tmpSchema = "unix://"
-	if runtime.GOOS == "windows" {
-		tmpSchema = "npipe://"
-	}
+	tmpSchema = DockerSocketSchema
 }
 
 func Test_ExtractDockerHost(t *testing.T) {
@@ -264,7 +260,7 @@ func setupDockerSocket(t *testing.T) string {
 	DockerSocketPath = tmpSocket
 	DockerSocketPathWithSchema = tmpSchema + tmpSocket
 
-	return tmpSocket
+	return tmpSchema + tmpSocket
 }
 
 func setupDockerSocketNotFound(t *testing.T) {

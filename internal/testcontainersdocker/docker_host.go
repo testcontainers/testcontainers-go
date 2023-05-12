@@ -41,7 +41,14 @@ func DefaultGatewayIP() (string, error) {
 	return ip, nil
 }
 
-// Extracts the docker host from the context, or returns the default value
+// ExtractDockerHost Extracts the docker host from the different alternatives. The possible alternatives are:
+//   1. DOCKER_HOST environment variable
+//   2. TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE environment variable
+//   3. Docker socket path from context
+//   4. Docker socket path from the default docker socket path
+//   5. Docker socket path from the "docker.host" property in the ~/.testcontainers.properties file
+//   6. Rootless docker socket path
+//   If none of the above alternatives are found, an empty string is returned
 func ExtractDockerHost(ctx context.Context) string {
 	socketPathFns := []func(context.Context) (string, error){
 		dockerHostFromEnv,
@@ -113,7 +120,7 @@ func dockerSocketOverridePath(ctx context.Context) (string, error) {
 
 func dockerSocketPath(ctx context.Context) (string, error) {
 	if fileExists(DockerSocketPath) {
-		return DockerSocketPath, nil
+		return DockerSocketPathWithSchema, nil
 	}
 
 	return "", ErrSocketNotFoundInPath

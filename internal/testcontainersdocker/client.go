@@ -9,16 +9,15 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 )
 
-// NewClient returns a new docker client with the default options
-// reading the Testcontainers configuration from the Testcontainers file
+// NewClient returns a new docker client extracting the docker host from the different alternatives
 func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 	tcConfig := config.Read(ctx)
 
-	host := tcConfig.Host
+	dockerHost := ExtractDockerHost(ctx)
 
 	opts := append(ops, client.FromEnv, client.WithAPIVersionNegotiation())
-	if host != "" {
-		opts = append(opts, client.WithHost(host))
+	if dockerHost != "" {
+		opts = append(opts, client.WithHost(dockerHost))
 
 		// for further information, read https://docs.docker.com/engine/security/protect-access/
 		if tcConfig.TLSVerify == 1 {
