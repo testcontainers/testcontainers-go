@@ -97,13 +97,13 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
-      directory: /modules/postgres
+      directory: /modules/neo4j
       schedule:
         interval: monthly
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
-      directory: /modules/neo4j
+      directory: /modules/postgres
       schedule:
         interval: monthly
       open-pull-requests-limit: 3
@@ -116,6 +116,12 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/redis
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/redpanda
       schedule:
         interval: monthly
       open-pull-requests-limit: 3

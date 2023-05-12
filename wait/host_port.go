@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"strconv"
@@ -15,6 +16,8 @@ import (
 // Implement interface
 var _ Strategy = (*HostPortStrategy)(nil)
 var _ StrategyTimeout = (*HostPortStrategy)(nil)
+
+var errShellNotExecutable = errors.New("/bin/sh command not executable")
 
 type HostPortStrategy struct {
 	// Port is a string containing port number and protocol in the format "80/tcp"
@@ -123,11 +126,25 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		}
 	}
 
+	if err := externalCheck(ctx, ipAddress, port, target, waitInterval); err != nil {
+		return err
+	}
+
+	err = internalCheck(ctx, internalPort, target)
+	if err != nil && errors.Is(errShellNotExecutable, err) {
+		log.Println("Shell not executable in container, only external port check will be performed")
+	} else {
+		return err
+	}
+
+	return nil
+}
+
+func externalCheck(ctx context.Context, ipAddress string, port nat.Port, target StrategyTarget, waitInterval time.Duration) error {
 	proto := port.Proto()
 	portNumber := port.Int()
 	portString := strconv.Itoa(portNumber)
 
-	//external check
 	dialer := net.Dialer{}
 	address := net.JoinHostPort(ipAddress, portString)
 	for {
@@ -150,8 +167,10 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			break
 		}
 	}
+	return nil
+}
 
-	//internal check
+func internalCheck(ctx context.Context, internalPort nat.Port, target StrategyTarget) error {
 	command := buildInternalCheckCommand(internalPort.Int())
 	for {
 		if ctx.Err() != nil {
@@ -168,10 +187,9 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		if exitCode == 0 {
 			break
 		} else if exitCode == 126 {
-			return errors.New("/bin/sh command not executable")
+			return errShellNotExecutable
 		}
 	}
-
 	return nil
 }
 

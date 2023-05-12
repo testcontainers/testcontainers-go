@@ -1,5 +1,9 @@
 # Neo4j
 
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
+## Introduction
+
 The Testcontainers module for [Neo4j](https://neo4j.com/), the leading graph platform.
 
 ## Adding this module to your project dependencies
@@ -51,6 +55,26 @@ By default, the container will use the following Docker image:
 <!--codeinclude-->
 [Default Docker image](../../modules/neo4j/neo4j.go) inside_block:defaultImage
 <!--/codeinclude-->
+
+#### Wait Strategies
+
+If you need to set a different wait strategy for Neo4j, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
+for Neo4j.
+
+!!!info
+    The default deadline for the wait strategy is 60 seconds.
+
+At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+
+#### Docker type modifiers
+
+If you need an advanced configuration for Neo4j, you can leverage the following Docker type modifiers:
+
+- `testcontainers.WithConfigModifier`
+- `testcontainers.WithHostConfigModifier`
+- `testcontainers.WithEndpointSettingsModifier`
+
+Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
 
 #### Logger
 
