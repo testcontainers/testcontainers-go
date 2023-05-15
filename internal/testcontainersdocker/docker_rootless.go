@@ -20,6 +20,10 @@ var (
 	ErrXDGRuntimeDirNotSet                  = errors.New("XDG_RUNTIME_DIR is not set")
 )
 
+// baseRunDir is the base directory for the "/run/user/${uid}" directory.
+// It is a variable so it can be modified for testing.
+var baseRunDir = "/run"
+
 // rootlessDockerSocketPath returns if the path to the rootless Docker socket exists.
 func rootlessDockerSocketPath(_ context.Context) (string, error) {
 	// adding a manner to test it on non-windows machines, setting the GOOS env var to windows
@@ -119,7 +123,7 @@ func rootlessSocketPathFromHomeDesktopDir() (string, error) {
 // rootlessSocketPathFromRunDir returns the path to the rootless Docker socket from the /run/user/<uid>/docker.sock file.
 func rootlessSocketPathFromRunDir() (string, error) {
 	uid := os.Getuid()
-	f := filepath.Join("/run", "user", fmt.Sprintf("%d", uid), "docker.sock")
+	f := filepath.Join(baseRunDir, "user", fmt.Sprintf("%d", uid), "docker.sock")
 	if fileExists(f) {
 		return f, nil
 	}

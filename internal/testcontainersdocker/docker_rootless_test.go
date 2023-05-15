@@ -12,9 +12,11 @@ import (
 )
 
 var originalXDGRuntimeDir string
+var originalHomeDir string
 
 func init() {
 	originalXDGRuntimeDir = os.Getenv("XDG_RUNTIME_DIR")
+	originalHomeDir = os.Getenv("HOME")
 }
 
 func TestFileExists(t *testing.T) {
@@ -48,6 +50,7 @@ func TestFileExists(t *testing.T) {
 
 func TestRootlessDockerSocketPath(t *testing.T) {
 	restoreEnvFn := func() {
+		os.Setenv("HOME", originalHomeDir)
 		os.Setenv("XDG_RUNTIME_DIR", originalXDGRuntimeDir)
 	}
 
@@ -134,7 +137,9 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 }
 
 func setupRootlessNotFound(t *testing.T) {
+	originalBaseRunDir := baseRunDir
 	t.Cleanup(func() {
+		baseRunDir = originalBaseRunDir
 		os.Setenv("XDG_RUNTIME_DIR", originalXDGRuntimeDir)
 	})
 
@@ -154,6 +159,7 @@ func setupRootlessNotFound(t *testing.T) {
 	err = createTmpDir(homeRunDir)
 	require.Nil(t, err)
 
+	baseRunDir = tmpDir
 	uid := os.Getuid()
 	runDir := filepath.Join(tmpDir, "run", "user", fmt.Sprintf("%d", uid))
 	err = createTmpDir(runDir)
