@@ -28,9 +28,9 @@ markdown_extensions:
     - toc:
         permalink: true
     - attr_list
-    - pymdownx.emoji:
-        emoji_generator: ""
-        emoji_index: ""
+    # - pymdownx.emoji:
+    #     emoji_generator: ""
+    #     emoji_index: ""
 nav:
     - Home: index.md
     - Quickstart: quickstart.md
