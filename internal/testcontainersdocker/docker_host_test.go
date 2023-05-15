@@ -215,6 +215,33 @@ func TestExtractDockerHost(t *testing.T) {
 	})
 }
 
+func TestExtractMountDockerHost(t *testing.T) {
+	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
+		ctx := context.Background()
+		t.Setenv("DOCKER_HOST", "unix:///this/is/a/sample.sock")
+
+		host := extractMountDockerHost(ctx)
+
+		assert.Equal(t, "/this/is/a/sample.sock", host)
+	})
+
+	t.Run("Windows Docker Host is passed in context", func(t *testing.T) {
+		originalDockerSocketSchema := DockerSocketSchema
+		t.Cleanup(func() {
+			DockerSocketSchema = originalDockerSocketSchema
+		})
+
+		DockerSocketSchema = "npipe://"
+
+		ctx := context.Background()
+		t.Setenv("DOCKER_HOST", "npipe:////./pipe/docker_engine")
+
+		host := extractMountDockerHost(ctx)
+
+		assert.Equal(t, "//./pipe/docker_engine", host)
+	})
+}
+
 func TestInAContainer(t *testing.T) {
 	const dockerenvName = ".dockerenv"
 

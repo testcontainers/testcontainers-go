@@ -29,6 +29,9 @@ var (
 var dockerHostCache string
 var dockerHostOnce sync.Once
 
+var mountDockerHostCache string
+var mountDockerHostOnce sync.Once
+
 // deprecated
 // see https://github.com/testcontainers/testcontainers-java/blob/main/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L46
 func DefaultGatewayIP() (string, error) {
@@ -63,6 +66,15 @@ func ExtractDockerHost(ctx context.Context) string {
 	return dockerHostCache
 }
 
+// ExtractMountDockerHost Extracts the docker host from the different alternatives, removing the socket schema
+func ExtractMountDockerHost(ctx context.Context) string {
+	mountDockerHostOnce.Do(func() {
+		mountDockerHostCache = extractMountDockerHost(ctx)
+	})
+
+	return mountDockerHostCache
+}
+
 // extractDockerHost Extracts the docker host from the different alternatives, without caching the result.
 // This internal method is handy for testing purposes.
 func extractDockerHost(ctx context.Context) string {
@@ -87,6 +99,14 @@ func extractDockerHost(ctx context.Context) string {
 	}
 
 	return ""
+}
+
+// extractDockerHost Extracts the docker host from the different alternatives, without caching the result.
+// This internal method is handy for testing purposes.
+func extractMountDockerHost(ctx context.Context) string {
+	dockerHost := extractDockerHost(ctx)
+
+	return strings.Replace(dockerHost, DockerSocketSchema, "", 1)
 }
 
 // dockerHostFromEnv returns the docker host from the DOCKER_HOST environment variable, if it's not empty
