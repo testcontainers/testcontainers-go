@@ -75,8 +75,6 @@ nav:
         - examples/firestore.md
         - examples/mongodb.md
         - examples/nats.md
-        - examples/nats.md
-        - examples/nats.md
         - examples/nginx.md
         - examples/pubsub.md
         - examples/spanner.md
