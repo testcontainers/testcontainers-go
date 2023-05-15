@@ -11,12 +11,13 @@ import (
 // natsContainer represents the nats container type used in the module
 type natsContainer struct {
 	testcontainers.Container
+	URI string
 }
 
 // runContainer creates an instance of the nats container type
 func runContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*natsContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "docker.io/nats:latest",
+		Image:        "nats:latest",
 		ExposedPorts: []string{"4222/tcp", "6222/tcp", "8222/tcp"},
 		Cmd:          []string{"-DV", "-js"},
 		WaitingFor:   wait.ForLog("Listening for client connections on 0.0.0.0:4222"),
@@ -36,20 +37,17 @@ func runContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	return &natsContainer{Container: container}, nil
-}
-
-// ConnectionString returns the connection string of the container
-func (c *natsContainer) ConnectionString(ctx context.Context) (string, error) {
-	port, err := c.MappedPort(ctx, "4222/tcp")
+	mappedPort, err := container.MappedPort(ctx, "4222/tcp")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	host, err := c.Host(ctx)
+	hostIP, err := container.Host(ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return fmt.Sprintf("nats://%s:%s", host, port.Port()), nil
+	uri:= fmt.Sprintf("nats://%s:%s", hostIP, mappedPort.Port())
+
+	return &natsContainer{Container: container, URI: uri}, nil
 }

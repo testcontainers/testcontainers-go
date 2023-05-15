@@ -23,12 +23,7 @@ func TestNats(t *testing.T) {
 	})
 
 	// perform assertions
-	connString, err := container.ConnectionString(ctx)
-	if err != nil {
-		t.Fatalf("failed to get connection string: %s", err)
-	}
-
-	nc, err := nats.Connect(connString)
+	nc, err := nats.Connect(container.URI)
 	if err != nil {
 		t.Fatalf("failed to connect to nats: %s", err)
 	}
@@ -59,7 +54,7 @@ func TestNats(t *testing.T) {
 	}
 
 	// wait for the message to be received
-	msg, err := sub.NextMsg(1000)
+	msg, err := sub.NextMsgWithContext(ctx)
 	if err != nil {
 		t.Fatalf("failed to get message: %s", err)
 	}
