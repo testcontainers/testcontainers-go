@@ -48,13 +48,13 @@ func DefaultGatewayIP() (string, error) {
 // ExtractDockerHost Extracts the docker host from the different alternatives, caching the result to avoid unnecessary
 // calculations.
 // The possible alternatives are:
-//   1. DOCKER_HOST environment variable
-//   2. TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE environment variable
-//   3. Docker socket path from context
-//   4. Docker socket path from the default docker socket path
-//   5. Docker socket path from the "docker.host" property in the ~/.testcontainers.properties file
-//   6. Rootless docker socket path
-//   If none of the above alternatives are found, an empty string is returned
+// 1. DOCKER_HOST environment variable
+// 2. TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE environment variable
+// 3. Docker socket path from context
+// 4. Docker socket path from the default docker socket path
+// 5. Docker socket path from the "docker.host" property in the ~/.testcontainers.properties file
+// 6. Rootless docker socket path
+// If none of the above alternatives are found, an empty string is returned
 func ExtractDockerHost(ctx context.Context) string {
 	dockerHostOnce.Do(func() {
 		dockerHostCache = extractDockerHost(ctx)
