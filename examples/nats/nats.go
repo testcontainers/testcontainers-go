@@ -8,14 +8,38 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const (
-	defaultNATSImage = "nats:latest"
-)
-
+// natsContainer represents the nats container type used in the module
 type natsContainer struct {
 	testcontainers.Container
 }
 
+// runContainer creates an instance of the nats container type
+func runContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*natsContainer, error) {
+	req := testcontainers.ContainerRequest{
+		Image:        "docker.io/nats:latest",
+		ExposedPorts: []string{"4222/tcp", "6222/tcp", "8222/tcp"},
+		Cmd:          []string{"-DV", "-js"},
+		WaitingFor:   wait.ForLog("Listening for client connections on 0.0.0.0:4222"),
+	}
+
+	genericContainerReq := testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	for _, opt := range opts {
+		opt.Customize(&genericContainerReq)
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	if err != nil {
+		return nil, err
+	}
+
+	return &natsContainer{Container: container}, nil
+}
+
+// ConnectionString returns the connection string of the container
 func (c *natsContainer) ConnectionString(ctx context.Context) (string, error) {
 	port, err := c.MappedPort(ctx, "4222/tcp")
 	if err != nil {
@@ -28,23 +52,4 @@ func (c *natsContainer) ConnectionString(ctx context.Context) (string, error) {
 	}
 
 	return fmt.Sprintf("nats://%s:%s", host, port.Port()), nil
-}
-
-func startContainer(ctx context.Context) (*natsContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        defaultNATSImage,
-		ExposedPorts: []string{"4222/tcp", "6222/tcp", "8222/tcp"},
-		Cmd:          []string{"-DV", "-js"},
-		WaitingFor:   wait.ForLog("Listening for client connections on 0.0.0.0:4222"),
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &natsContainer{Container: container}, nil
 }

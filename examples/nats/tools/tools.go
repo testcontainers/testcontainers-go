@@ -1,7 +1,7 @@
 //go:build tools
 // +build tools
 
-// This package contains the tool dependencies of the mongodb example.
+// This package contains the tool dependencies of the nats example.
 
 package tools
 

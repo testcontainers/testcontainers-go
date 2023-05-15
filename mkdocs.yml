@@ -29,8 +29,8 @@ markdown_extensions:
         permalink: true
     - attr_list
     - pymdownx.emoji:
-        emoji_index: !!python/name:materialx.emoji.twemoji
-        emoji_generator: !!python/name:materialx.emoji.to_svg
+        emoji_generator: ""
+        emoji_index: ""
 nav:
     - Home: index.md
     - Quickstart: quickstart.md
@@ -74,6 +74,9 @@ nav:
         - examples/datastore.md
         - examples/firestore.md
         - examples/mongodb.md
+        - examples/nats.md
+        - examples/nats.md
+        - examples/nats.md
         - examples/nginx.md
         - examples/pubsub.md
         - examples/spanner.md

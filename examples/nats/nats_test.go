@@ -7,10 +7,10 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func TestNATS(t *testing.T) {
+func TestNats(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := startContainer(ctx)
+	container, err := runContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,6 +22,7 @@ func TestNATS(t *testing.T) {
 		}
 	})
 
+	// perform assertions
 	connString, err := container.ConnectionString(ctx)
 	if err != nil {
 		t.Fatalf("failed to get connection string: %s", err)
@@ -67,3 +68,4 @@ func TestNATS(t *testing.T) {
 		t.Fatalf("expected message to be 'hello', got '%s'", msg.Data)
 	}
 }
+
