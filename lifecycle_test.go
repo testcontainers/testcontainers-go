@@ -378,6 +378,21 @@ func TestMergePortBindings(t *testing.T) {
 			},
 		},
 		{
+			name: "parsed and configured but not exposed",
+			arg: arg{
+				configPortMap: map[nat.Port][]nat.PortBinding{
+					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+				},
+				parsedPortMap: map[nat.Port][]nat.PortBinding{
+					"80/tcp": {{HostIP: "", HostPort: ""}},
+				},
+				exposedPorts: nil,
+			},
+			expected: map[nat.Port][]nat.PortBinding{
+				"80/tcp": {{HostIP: "", HostPort: ""}},
+			},
+		},
+		{
 			name: "merge both parsed and config",
 			arg: arg{
 				configPortMap: map[nat.Port][]nat.PortBinding{
