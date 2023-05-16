@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go/internal/config"
@@ -28,6 +30,10 @@ func init() {
 	tmpSchema = DockerSocketSchema
 }
 
+var resetSocketOverrideFn = func() {
+	os.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", originalDockerSocketOverride)
+}
+
 func TestExtractDockerHost(t *testing.T) {
 	t.Run("Docker Host as extracted just once", func(t *testing.T) {
 		expected := "/path/to/docker.sock"
@@ -44,13 +50,6 @@ func TestExtractDockerHost(t *testing.T) {
 
 	t.Run("Docker Host as environment variable", func(t *testing.T) {
 		t.Setenv("DOCKER_HOST", "/path/to/docker.sock")
-		host := extractDockerHost(context.Background())
-
-		assert.Equal(t, "/path/to/docker.sock", host)
-	})
-
-	t.Run("Docker Host as environment variable", func(t *testing.T) {
-		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
 		host := extractDockerHost(context.Background())
 
 		assert.Equal(t, "/path/to/docker.sock", host)
@@ -103,9 +102,7 @@ func TestExtractDockerHost(t *testing.T) {
 	})
 
 	t.Run("Extract Docker socket", func(t *testing.T) {
-		t.Cleanup(func() {
-			os.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", originalDockerSocketOverride)
-		})
+		t.Cleanup(resetSocketOverrideFn)
 
 		t.Run("DOCKER_HOST is set", func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -128,6 +125,8 @@ func TestExtractDockerHost(t *testing.T) {
 		})
 
 		t.Run("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is set", func(t *testing.T) {
+			t.Cleanup(resetSocketOverrideFn)
+
 			tmpDir := t.TempDir()
 			tmpSocket := filepath.Join(tmpDir, "docker.sock")
 			t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", tmpSocket)
@@ -140,9 +139,8 @@ func TestExtractDockerHost(t *testing.T) {
 		})
 
 		t.Run("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set", func(t *testing.T) {
-			t.Cleanup(func() {
-				os.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", originalDockerSocketOverride)
-			})
+			t.Cleanup(resetSocketOverrideFn)
+
 			os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
 
 			socket, err := dockerSocketOverridePath(context.Background())
@@ -153,7 +151,7 @@ func TestExtractDockerHost(t *testing.T) {
 		t.Run("Context sets the Docker socket", func(t *testing.T) {
 			ctx := context.Background()
 
-			socket, err := dockerSocketFromContext(context.WithValue(ctx, DockerHostContextKey, "unix:///this/is/a/sample.sock"))
+			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, "unix:///this/is/a/sample.sock"))
 			require.Nil(t, err)
 			assert.Equal(t, "/this/is/a/sample.sock", socket)
 		})
@@ -161,7 +159,7 @@ func TestExtractDockerHost(t *testing.T) {
 		t.Run("Context sets a malformed Docker socket", func(t *testing.T) {
 			ctx := context.Background()
 
-			socket, err := dockerSocketFromContext(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
+			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
 			require.Error(t, err)
 			assert.Empty(t, socket)
 		})
@@ -169,7 +167,7 @@ func TestExtractDockerHost(t *testing.T) {
 		t.Run("Context sets a malformed schema for the Docker socket", func(t *testing.T) {
 			ctx := context.Background()
 
-			socket, err := dockerSocketFromContext(context.WithValue(ctx, DockerHostContextKey, "http://example.com/docker.sock"))
+			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, "http://example.com/docker.sock"))
 			require.ErrorIs(t, err, ErrNoUnixSchema)
 			assert.Empty(t, socket)
 		})
@@ -189,7 +187,7 @@ func TestExtractDockerHost(t *testing.T) {
 			config.Reset()
 			setupTestcontainersProperties(t, content)
 
-			socket, err := dockerSocketFromProperties(context.Background())
+			socket, err := dockerHostFromProperties(context.Background())
 			require.Nil(t, err)
 			assert.Equal(t, tmpSocket, socket)
 		})
@@ -200,7 +198,7 @@ func TestExtractDockerHost(t *testing.T) {
 			config.Reset()
 			setupTestcontainersProperties(t, content)
 
-			socket, err := dockerSocketFromProperties(context.Background())
+			socket, err := dockerHostFromProperties(context.Background())
 			require.ErrorIs(t, err, ErrDockerSocketNotSetInProperties)
 			assert.Empty(t, socket)
 		})
@@ -215,30 +213,53 @@ func TestExtractDockerHost(t *testing.T) {
 	})
 }
 
-func TestExtractMountDockerHost(t *testing.T) {
-	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
-		ctx := context.Background()
-		t.Setenv("DOCKER_HOST", "unix:///this/is/a/sample.sock")
+// mockCli is a mock implementation of client.APIClient, which is handy for simulating
+// different operating systems.
+type mockCli struct {
+	client.APIClient
+	OS string
+}
 
-		host := extractMountDockerHost(ctx)
+// Info returns a mock implementation of types.Info, which is handy for detecting the operating system,
+// which is used to determine the default docker socket path.
+func (m mockCli) Info(ctx context.Context) (types.Info, error) {
+	return types.Info{
+		OperatingSystem: m.OS,
+	}, nil
+}
 
-		assert.Equal(t, "/this/is/a/sample.sock", host)
+func TestExtractDockerSocketFromClient(t *testing.T) {
+	t.Run("Docker Socket as Testcontainers environment variable", func(t *testing.T) {
+		t.Cleanup(resetSocketOverrideFn)
+
+		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
+		host := extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
+
+		assert.Equal(t, "/path/to/docker.sock", host)
 	})
 
-	t.Run("Windows Docker Host is passed in context", func(t *testing.T) {
-		originalDockerSocketSchema := DockerSocketSchema
-		t.Cleanup(func() {
-			DockerSocketSchema = originalDockerSocketSchema
-		})
-
-		DockerSocketSchema = "npipe://"
+	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Docker Desktop)", func(t *testing.T) {
+		t.Cleanup(resetSocketOverrideFn)
 
 		ctx := context.Background()
-		t.Setenv("DOCKER_HOST", "npipe:////./pipe/docker_engine")
+		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+		t.Setenv("DOCKER_HOST", "unix:///this/is/a/sample.sock")
 
-		host := extractMountDockerHost(ctx)
+		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Docker Desktop"})
 
-		assert.Equal(t, "//./pipe/docker_engine", host)
+		assert.Equal(t, "/var/run/docker.sock", socket)
+	})
+
+	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Not Docker Desktop)", func(t *testing.T) {
+		t.Cleanup(resetSocketOverrideFn)
+
+		ctx := context.Background()
+		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+		t.Setenv("DOCKER_HOST", "unix:///this/is/a/sample.sock")
+
+		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
+
+		assert.Equal(t, "/this/is/a/sample.sock", socket)
 	})
 }
 

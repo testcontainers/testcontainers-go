@@ -64,7 +64,7 @@ func isVersion2(image string) bool {
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error) {
 	// defaultContainerRequest {
-	dockerHost := testcontainersdocker.ExtractMountDockerHost(ctx)
+	dockerHost := testcontainersdocker.ExtractDockerSocket(ctx)
 	if dockerHost == "" {
 		dockerHost = testcontainersdocker.DockerSocketPath
 	}
