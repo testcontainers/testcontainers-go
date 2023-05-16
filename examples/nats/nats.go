@@ -17,7 +17,7 @@ type natsContainer struct {
 // runContainer creates an instance of the nats container type
 func runContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*natsContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "nats:latest",
+		Image:        "nats:2.9",
 		ExposedPorts: []string{"4222/tcp", "6222/tcp", "8222/tcp"},
 		Cmd:          []string{"-DV", "-js"},
 		WaitingFor:   wait.ForLog("Listening for client connections on 0.0.0.0:4222"),
