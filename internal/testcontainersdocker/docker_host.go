@@ -52,12 +52,12 @@ func DefaultGatewayIP() (string, error) {
 // ExtractDockerHost Extracts the docker host from the different alternatives, caching the result to avoid unnecessary
 // calculations. Use this function to get the actual Docker host. This function does not consider Windows containers at the moment.
 // The possible alternatives are:
-//   1. DOCKER_HOST environment variable
-//   2. Docker host from context
-//   3. Docker host from the default docker socket path, without the unix schema
-//   4. Docker host from the "docker.host" property in the ~/.testcontainers.properties file
-//   5. Rootless docker socket path
-//   6. Else, an empty string is returned
+// 1. DOCKER_HOST environment variable
+// 2. Docker host from context
+// 3. Docker host from the default docker socket path, without the unix schema
+// 4. Docker host from the "docker.host" property in the ~/.testcontainers.properties file
+// 5. Rootless docker socket path
+// 6. Else, an empty string is returned
 func ExtractDockerHost(ctx context.Context) string {
 	dockerHostOnce.Do(func() {
 		dockerHostCache = extractDockerHost(ctx)
@@ -70,11 +70,11 @@ func ExtractDockerHost(ctx context.Context) string {
 // caching the result to avoid unnecessary calculations. Use this function to get the docker socket path,
 // not the host (e.g. mounting the socket in a container). This function does not consider Windows containers at the moment.
 // The possible alternatives are:
-//   1. The TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE environment variable
-//   2. Using a Docker client, check if the Info().OperativeSystem is "Docker Desktop" and return the default docker socket path for rootless docker
-//   3. Else, Get the current Docker Host from the existing strategies: see ExtractDockerHost
-//   4. If the socket contains the unix schema, the schema is removed (e.g. unix:///var/run/docker.sock -> /var/run/docker.sock)
-//   5. Else, the default location of the docker socket is used: /var/run/docker.sock
+// 1. The TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE environment variable
+// 2. Using a Docker client, check if the Info().OperativeSystem is "Docker Desktop" and return the default docker socket path for rootless docker
+// 3. Else, Get the current Docker Host from the existing strategies: see ExtractDockerHost
+// 4. If the socket contains the unix schema, the schema is removed (e.g. unix:///var/run/docker.sock -> /var/run/docker.sock)
+// 5. Else, the default location of the docker socket is used: /var/run/docker.sock
 func ExtractDockerSocket(ctx context.Context) string {
 	dockerSocketPathOnce.Do(func() {
 		dockerSocketPathCache = extractDockerSocket(ctx)
