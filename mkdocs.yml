@@ -29,8 +29,8 @@ markdown_extensions:
         permalink: true
     - attr_list
     - pymdownx.emoji:
-        emoji_index: !!python/name:materialx.emoji.twemoji
-        emoji_generator: !!python/name:materialx.emoji.to_svg
+        emoji_generator: ""
+        emoji_index: ""
 nav:
     - Home: index.md
     - Quickstart: quickstart.md
@@ -58,6 +58,13 @@ nav:
     - Modules:
         - modules/index.md
         - modules/couchbase.md
+        - modules/k3s.md
+        - modules/k3s.md
+        - modules/k3s.md
+        - modules/k3s.md
+        - modules/k3s.md
+        - modules/k3s.md
+        - modules/k3s.md
         - modules/localstack.md
         - modules/mysql.md
         - modules/neo4j.md
