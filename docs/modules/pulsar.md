@@ -43,11 +43,37 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 When starting the Pulsar container, you can pass options in a variadic way to configure it.
 
-#### Pulsar Image
-If you need to set a different Pulsar image you can use the `testcontainers.WithImage`.
+#### Image
+
+If you need to set a different Pulsar Docker image, you can use `testcontainers.WithImage` with a valid Docker image
+for Pulsar. E.g. `testcontainers.WithImage("docker.io/apachepulsar/pulsar:2.10.2")`.
 
 <!--codeinclude-->
 [Set Pulsar image](../../modules/pulsar/pulsar_test.go) inside_block:setPulsarImage
+<!--/codeinclude-->
+
+#### Wait Strategies
+
+If you need to set a different wait strategy for Pulsar, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
+for Pulsar.
+
+!!!info
+    The default deadline for the wait strategy is 60 seconds.
+
+At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+
+#### Docker type modifiers
+
+If you need an advanced configuration for Pulsar, you can leverage the following Docker type modifiers:
+
+- `testcontainers.WithConfigModifier`
+- `testcontainers.WithHostConfigModifier`
+- `testcontainers.WithEndpointSettingsModifier`
+
+Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+
+<!--codeinclude-->
+[Advanced Docker settings](../../modules/pulsar/pulsar_test.go) inside_block:advancedDockerSettings
 <!--/codeinclude-->
 
 #### Pulsar Configuration
@@ -94,17 +120,6 @@ An example of a LogConsumer could be the following:
     You will need to explicitly stop the producer in your tests.
 
 If you want to know more about LogConsumers, please check the [Following Container Logs](../features/follow_logs.md) documentation.
-
-#### Advanced configuration
-
-In the case you need a more advanced configuration regarding the config, host config and endpoint settings Docker types, you can leverage the modifier functions that are available in
-the ContainerRequest. The Pulsar container exposes a way to interact with those modifiers in a simple manner, using the aforementioned options in the `RunContainer` function:
-
-<!--codeinclude-->
-[Advanced Docker settings](../../modules/pulsar/pulsar_test.go) inside_block:advancedDockerSettings
-<!--/codeinclude-->
-
-Please check out the [Advanced Settings](../features/creating_container.md#advanced-settings) for creating containers documentation.
 
 ### Container methods
 

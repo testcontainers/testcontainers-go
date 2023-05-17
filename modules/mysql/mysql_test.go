@@ -29,7 +29,12 @@ func TestMySQL(t *testing.T) {
 	})
 
 	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx, "tls=skip-verify")
+	// connectionString {
+	connectionString, err := container.ConnectionString(ctx, "tls=skip-verify")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// }
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {

@@ -1,6 +1,6 @@
 # Postgres
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 ## Introduction
 
@@ -43,6 +43,30 @@ When starting the Postgres container, you can pass options in a variadic way to 
 If you need to set a different Postgres Docker image, you can use `testcontainers.WithImage` with a valid Docker image
 for Postgres. E.g. `testcontainers.WithImage("docker.io/postgres:9.6")`.
 
+#### Wait Strategies
+
+If you need to set a different wait strategy for Postgres, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
+for Postgres.
+
+!!!info
+    The default deadline for the wait strategy is 60 seconds.
+
+At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+
+<!--codeinclude-->
+[Set Wait Strategy](../../modules/postgres/postgres_test.go) inside_block:withWaitStrategy
+<!--/codeinclude-->
+
+#### Docker type modifiers
+
+If you need an advanced configuration for Postgres, you can leverage the following Docker type modifiers:
+
+- `testcontainers.WithConfigModifier`
+- `testcontainers.WithHostConfigModifier`
+- `testcontainers.WithEndpointSettingsModifier`
+
+Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+
 #### Initial Database
 
 If you need to set a different database, and its credentials, you can use the `WithInitialDatabase`.
@@ -75,15 +99,6 @@ In the case you have a custom config file for Postgres, it's possible to copy th
 
 <!--codeinclude-->
 [Include custom configuration file](../../modules/postgres/postgres_test.go) inside_block:withConfigFile
-<!--/codeinclude-->
-
-#### Wait Strategies
-
-Given you could need to wait for different conditions, in particular using a wait.ForSQL strategy,
-the Postgres container exposes a `testcontainers.WithWaitStrategy` option to set a custom wait strategy.
-
-<!--codeinclude-->
-[Set Wait Strategy](../../modules/postgres/postgres_test.go) inside_block:withWaitStrategy
 <!--/codeinclude-->
 
 ### Container Methods
