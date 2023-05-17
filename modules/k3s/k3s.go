@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"path/filepath"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -12,13 +11,12 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"gopkg.in/yaml.v3"
-	//kubeCon "github.com/giantswarm/kubeconfig/"
 )
 
 var (
 	defaultKubeSecurePort     = "6443/tcp"
 	defaultRancherWebhookPort = "8443/tcp"
-	// kubeConfigYaml            string
+	defaultKubeConfigK3sPath  = "/etc/rancher/k3s/k3s.yaml"
 )
 
 // K3sContainer represents the K3s container type used in the module
@@ -72,83 +70,51 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &K3sContainer{Container: container}, nil
 }
 
-func WithNetwork(networks []string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Networks = networks
-	}
-}
-
-func WithNetworkAlias(networkAlias map[string][]string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.NetworkAliases = networkAlias
-	}
-}
-
-func WithKubectlConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		cf := testcontainers.ContainerFile{
-			HostFilePath:      configFile,
-			ContainerFilePath: filepath.Join(".", "config"),
-			FileMode:          0755,
-		}
-		req.Files = append(req.Files, cf)
-	}
-}
-
-func WithCmd(commands []string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Cmd = commands
-	}
-}
-
-// getkubeConfigYaml returns the string of modifed kubeconfig with server url
-func (c *K3sContainer) getkubeConfigYaml(ctx context.Context) (string, error) {
+// GetkubeConfigYaml returns the string of modified kubeconfig with server url
+func (c *K3sContainer) GetkubeConfigYaml(ctx context.Context) ([]byte, error) {
 	hostIP, err := c.Host(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get hostIP: %w", err)
+		return nil, fmt.Errorf("failed to get hostIP: %w", err)
 	}
 
 	mappedPort, err := c.MappedPort(ctx, nat.Port(defaultKubeSecurePort))
 	if err != nil {
-		return "", fmt.Errorf("failed to get mapped port: %w", err)
+		return nil, fmt.Errorf("failed to get mapped port: %w", err)
 	}
 
-	reader, err := c.CopyFileFromContainer(ctx, "/etc/rancher/k3s/k3s.yaml")
+	reader, err := c.CopyFileFromContainer(ctx, defaultKubeConfigK3sPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to copy file from container: %w", err)
+		return nil, fmt.Errorf("failed to copy file from container: %w", err)
 	}
 
 	kubeConfigYaml, err := io.ReadAll(reader)
 	if err != nil {
-		return "", fmt.Errorf("failed to read file from container: %w", err)
+		return nil, fmt.Errorf("failed to read file from container: %w", err)
 	}
 
 	server := "https://" + fmt.Sprintf("%v:%d", hostIP, mappedPort.Int())
 	newkubeConfigYaml, err := kubeConfigYamlwithServer(string(kubeConfigYaml), server)
 	if err != nil {
-		return "", fmt.Errorf("failed to modify kubeconfig with server url: %w", err)
+		return nil, fmt.Errorf("failed to modify kubeconfig with server url: %w", err)
 	}
-
-	fmt.Println(newkubeConfigYaml)
 
 	return newkubeConfigYaml, nil
 }
 
-func kubeConfigYamlwithServer(kubeConfigYaml, server string) (string, error) {
+func kubeConfigYamlwithServer(kubeConfigYaml, server string) ([]byte, error) {
 
 	kubeConfig, err := unmarshal([]byte(kubeConfigYaml))
 	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal kubeconfig: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal kubeconfig: %w", err)
 	}
 
 	kubeConfig.Clusters[0].Cluster.Server = server
 	modifiedKubeConfig, err := marshal(kubeConfig)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal kubeconfig: %w", err)
+		return nil, fmt.Errorf("failed to marshal kubeconfig: %w", err)
 	}
 
-	modifiedKubeConfigYaml := string(modifiedKubeConfig)
-	return modifiedKubeConfigYaml, nil
+	return modifiedKubeConfig, nil
 }
 
 func marshal(config *KubeConfigValue) ([]byte, error) {
@@ -167,36 +133,3 @@ func unmarshal(bytes []byte) (*KubeConfigValue, error) {
 	}
 	return &kubeConfig, nil
 }
-
-//TODO
-// getInternalKubeConfigYaml returns the string of modifed kubeconfig with server
-// func (c *K3sContainer) getInternalKubeConfigYaml(ctx context.Context, networkAlias string) (string, error) {
-// 	time.Sleep(time.Minute * 1)
-// 	reader, err := c.CopyFileFromContainer(ctx, "/etc/rancher/k3s/k3s.yaml")
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to copy file from container: %w", err)
-// 	}
-
-// 	kubeConfigYaml, err := io.ReadAll(reader)
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to read file from container: %w", err)
-// 	}
-// 	//	time.Sleep(time.Minute * 1)
-// 	nA, err := c.Container.NetworkAliases(ctx)
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to get hostIP: %w", err)
-// 	}
-
-// 	fmt.Println(nA)
-
-// 	if _, ok := nA[networkAlias]; ok {
-// 		server := "https://" + fmt.Sprintf("%s:%s", networkAlias, defaultKubeSecurePort)
-// 		newkubeConfigYaml, err := kubeConfigYamlwithServer(string(kubeConfigYaml), server)
-// 		if err != nil {
-// 			return "", fmt.Errorf("failed to read file from container: %w", err)
-// 		}
-// 		return newkubeConfigYaml, nil
-// 	} else {
-// 		return "", fmt.Errorf("%s is not a network alias for k3s container", networkAlias)
-// 	}
-// }
