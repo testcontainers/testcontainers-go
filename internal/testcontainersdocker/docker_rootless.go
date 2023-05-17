@@ -25,6 +25,13 @@ var (
 var baseRunDir = "/run"
 
 // rootlessDockerSocketPath returns if the path to the rootless Docker socket exists.
+// The rootless socket path is determined by the following order:
+//
+//  1. XDG_RUNTIME_DIR environment variable.
+//  2. ~/.docker/run/docker.sock file.
+//  3. ~/.docker/desktop/docker.sock file.
+//  4. /run/user/${uid}/docker.sock file.
+//  5. Else, return ErrRootlessDockerNotFound, wrapping secific errors for each of the above paths.
 func rootlessDockerSocketPath(_ context.Context) (string, error) {
 	// adding a manner to test it on non-windows machines, setting the GOOS env var to windows
 	// This is needed because runtime.GOOS is a constant that returns the OS of the machine running the test
