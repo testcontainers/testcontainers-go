@@ -320,7 +320,13 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	}
 
 	dockerInput.ExposedPorts = exposedPortSet
-	hostConfig.PortBindings = mergePortBindings(hostConfig.PortBindings, exposedPortMap, req.ExposedPorts)
+
+	// only exposing those ports automatically if the container request exposes zero ports and the container does not run in a container network
+	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
+		hostConfig.PortBindings = exposedPortMap
+	} else {
+		hostConfig.PortBindings = mergePortBindings(hostConfig.PortBindings, exposedPortMap, req.ExposedPorts)
+	}
 
 	return nil
 }
