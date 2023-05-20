@@ -15,11 +15,14 @@ import (
 func TestK3s(t *testing.T) {
 	ctx := context.Background()
 
+	// k3sRunContainer {
 	container, err := RunContainer(ctx,
 		testcontainers.WithWaitStrategy(wait.ForLog("Starting node config controller")))
 	if err != nil {
 		t.Fatal(err)
 	}
+	// }
+
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
 		if err := container.Terminate(ctx); err != nil {
@@ -27,11 +30,12 @@ func TestK3s(t *testing.T) {
 		}
 	})
 
-	// perform assertions
+	// getkubeConfigYaml {
 	kubeConfigYaml, err := container.GetkubeConfigYaml(ctx)
 	if err != nil {
 		t.Fatalf("failed to get kube-config : %s", err)
 	}
+	// }
 
 	restcfg, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigYaml)
 	if err != nil {
