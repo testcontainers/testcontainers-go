@@ -70,7 +70,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &K3sContainer{Container: container}, nil
 }
 
-// GetkubeConfigYaml returns the string of modified kubeconfig with server url
+// GetkubeConfigYaml returns the modified kubeconfig with server url
 func (c *K3sContainer) GetkubeConfigYaml(ctx context.Context) ([]byte, error) {
 	hostIP, err := c.Host(ctx)
 	if err != nil {
