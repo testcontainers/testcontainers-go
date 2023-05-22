@@ -30,8 +30,8 @@ func TestK3s(t *testing.T) {
 		}
 	})
 
-	// getkubeConfigYaml {
-	kubeConfigYaml, err := container.GetkubeConfigYaml(ctx)
+	// GetKubeConfig {
+	kubeConfigYaml, err := container.GetKubeConfig(ctx)
 	if err != nil {
 		t.Fatalf("failed to get kube-config : %s", err)
 	}

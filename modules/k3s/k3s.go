@@ -70,8 +70,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &K3sContainer{Container: container}, nil
 }
 
-// GetkubeConfigYaml returns the modified kubeconfig with server url
-func (c *K3sContainer) GetkubeConfigYaml(ctx context.Context) ([]byte, error) {
+// GetKubeConfig returns the modified kubeconfig with server url
+func (c *K3sContainer) GetKubeConfig(ctx context.Context) ([]byte, error) {
 	hostIP, err := c.Host(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get hostIP: %w", err)
@@ -93,15 +93,15 @@ func (c *K3sContainer) GetkubeConfigYaml(ctx context.Context) ([]byte, error) {
 	}
 
 	server := "https://" + fmt.Sprintf("%v:%d", hostIP, mappedPort.Int())
-	newkubeConfigYaml, err := kubeConfigYamlwithServer(string(kubeConfigYaml), server)
+	newKubeConfig, err := kubeConfigWithServerUrl(string(kubeConfigYaml), server)
 	if err != nil {
 		return nil, fmt.Errorf("failed to modify kubeconfig with server url: %w", err)
 	}
 
-	return newkubeConfigYaml, nil
+	return newKubeConfig, nil
 }
 
-func kubeConfigYamlwithServer(kubeConfigYaml, server string) ([]byte, error) {
+func kubeConfigWithServerUrl(kubeConfigYaml, server string) ([]byte, error) {
 
 	kubeConfig, err := unmarshal([]byte(kubeConfigYaml))
 	if err != nil {

@@ -64,12 +64,12 @@ Please read the [Create containers: Advanced Settings](../features/creating_cont
 
 The K3s container exposes the following methods:
 
-#### GetkubeConfigYaml
+#### GetKubeConfig
 
-GetkubeConfigYaml returns modified kubeconfig with server url that should be used for connecting
+GetKubeConfig returns modified kubeconfig with server url that should be used for connecting
 to the Kubernetes Rest Client API with your Kubernetes client. It'll be returned in the format:
 `[]bytes`
 
 <!--codeinclude-->
-[Get Kubeconifg Yaml](../../modules/k3s/k3s_test.go) inside_block:getkubeConfigYaml
+[Get KubeConifg](../../modules/k3s/k3s_test.go) inside_block:GetKubeConfig
 <!--/codeinclude-->
