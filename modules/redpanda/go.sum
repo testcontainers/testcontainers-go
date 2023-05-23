@@ -160,8 +160,8 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ8=
 github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
-github.com/twmb/franz-go v1.13.3 h1:AO0HcPu7hNMi+ue+jz3CnV+VpuAizaazQuqTo1SvLr4=
-github.com/twmb/franz-go v1.13.3/go.mod h1:jm/FtYxmhxDTN0gNSb26XaJY0irdSVcsckLiR5tQNMk=
+github.com/twmb/franz-go v1.13.4 h1:xu+lTAJChFqDh6u+Edr1IR2sq81nS+XGtk6OETTxFbc=
+github.com/twmb/franz-go v1.13.4/go.mod h1:jm/FtYxmhxDTN0gNSb26XaJY0irdSVcsckLiR5tQNMk=
 github.com/twmb/franz-go/pkg/kadm v1.8.1 h1:SrzL855I7gQTGdMtOYGTHhebs7TPgPN29FPtjusqwlE=
 github.com/twmb/franz-go/pkg/kadm v1.8.1/go.mod h1:qUSM7pxoMCU1UNu5H4USE64ODcVmeG9LS96mysv1nu8=
 github.com/twmb/franz-go/pkg/kmsg v1.5.0 h1:eqVJquFQLdBNLrRMWX03pPDPpngn6PTjGZLlZnagouk=
