@@ -24,7 +24,7 @@ require (
 	github.com/docker/compose/v2 v2.17.3
 	github.com/docker/docker v23.0.5+incompatible
 	github.com/google/uuid v1.3.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	github.com/testcontainers/testcontainers-go v0.20.1
 	golang.org/x/sync v0.2.0
 	gopkg.in/yaml.v3 v3.0.1
