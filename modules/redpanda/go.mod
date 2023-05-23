@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/docker/go-connections v0.4.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	github.com/testcontainers/testcontainers-go v0.20.1
 	github.com/twmb/franz-go v1.13.3
 	github.com/twmb/franz-go/pkg/kadm v1.8.1
