@@ -10,7 +10,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.5.0
 	github.com/google/uuid v1.3.0
-	github.com/imdario/mergo v0.3.12
+	github.com/imdario/mergo v0.3.15
 	github.com/magiconair/properties v1.8.7
 	github.com/moby/term v0.0.0-20221128092401-c43b287e0e0f
 	github.com/opencontainers/image-spec v1.1.0-rc2
