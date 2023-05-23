@@ -55,12 +55,13 @@ func DefaultGatewayIP() (string, error) {
 // calculations. Use this function to get the actual Docker host. This function does not consider Windows containers at the moment.
 // The possible alternatives are:
 //
-//  1. DOCKER_HOST environment variable.
-//  2. Docker host from context.
-//  3. Docker host from the default docker socket path, without the unix schema.
-//  4. Docker host from the "docker.host" property in the ~/.testcontainers.properties file.
-//  5. Rootless docker socket path.
-//  6. Else, an empty string is returned.
+//  1. Docker host from the "testcontainers.host" property in the ~/.testcontainers.properties file.
+//  2. DOCKER_HOST environment variable.
+//  3. Docker host from context.
+//  4. Docker host from the default docker socket path, without the unix schema.
+//  5. Docker host from the "docker.host" property in the ~/.testcontainers.properties file.
+//  6. Rootless docker socket path.
+//  7. Else, an empty string is returned.
 func ExtractDockerHost(ctx context.Context) string {
 	dockerHostOnce.Do(func() {
 		dockerHostCache = extractDockerHost(ctx)
