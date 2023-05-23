@@ -31,6 +31,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 - `context.Context`, the Go context.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
+
+### Container Ports
+These are the ports used by the K3s container:
+<!--codeinclude-->
+[Container Ports](../../modules/k3s/k3s.go) inside_block:containerPorts
+<!--/codeinclude-->
+
 ### Container Options
 
 When starting the K3s container, you can pass options in a variadic way to configure it.
@@ -66,9 +73,8 @@ The K3s container exposes the following methods:
 
 #### GetKubeConfig
 
-GetKubeConfig returns modified kubeconfig with server url that should be used for connecting
-to the Kubernetes Rest Client API with your Kubernetes client. It'll be returned in the format:
-`[]bytes`
+The `GetKubeConfig` method returns the K3s cluster's `kubeconfig`, including the server URL, to be used for connecting
+to the Kubernetes Rest Client API using a Kubernetes client. It'll be returned in the format of `[]bytes`.
 
 <!--codeinclude-->
 [Get KubeConifg](../../modules/k3s/k3s_test.go) inside_block:GetKubeConfig

@@ -14,9 +14,11 @@ import (
 )
 
 var (
+	// containerPorts {
 	defaultKubeSecurePort     = "6443/tcp"
 	defaultRancherWebhookPort = "8443/tcp"
-	defaultKubeConfigK3sPath  = "/etc/rancher/k3s/k3s.yaml"
+	// }
+	defaultKubeConfigK3sPath = "/etc/rancher/k3s/k3s.yaml"
 )
 
 // K3sContainer represents the K3s container type used in the module
