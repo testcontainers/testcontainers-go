@@ -35,6 +35,10 @@ var resetSocketOverrideFn = func() {
 }
 
 func TestExtractDockerHost(t *testing.T) {
+	// do not mess with local .testcontainers.properties
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
 	t.Run("Docker Host as extracted just once", func(t *testing.T) {
 		expected := "/path/to/docker.sock"
 		t.Setenv("DOCKER_HOST", expected)
@@ -46,6 +50,19 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host = ExtractDockerHost(context.Background())
 		assert.Equal(t, expected, host)
+	})
+
+	t.Run("Testcontainers Host is resolved first", func(t *testing.T) {
+		t.Setenv("DOCKER_HOST", "/path/to/docker.sock")
+		tmpHost := "tcp://127.0.0.1:12345"
+		content := "testcontainers.host=" + tmpHost
+
+		config.Reset()
+		setupTestcontainersProperties(t, content)
+
+		host := extractDockerHost(context.Background())
+
+		assert.Equal(t, tmpHost, host)
 	})
 
 	t.Run("Docker Host as environment variable", func(t *testing.T) {
@@ -103,6 +120,31 @@ func TestExtractDockerHost(t *testing.T) {
 
 	t.Run("Extract Docker socket", func(t *testing.T) {
 		t.Cleanup(resetSocketOverrideFn)
+
+		t.Run("Testcontainers host is defined in properties", func(t *testing.T) {
+			tmpSocket := "tcp://127.0.0.1:12345"
+			content := "testcontainers.host=" + tmpSocket
+
+			config.Reset()
+			setupTestcontainersProperties(t, content)
+			defer config.Reset()
+
+			socket, err := testcontainersHostFromProperties(context.Background())
+			require.Nil(t, err)
+			assert.Equal(t, tmpSocket, socket)
+		})
+
+		t.Run("Testcontainers host is not defined in properties", func(t *testing.T) {
+			content := "ryuk.disabled=false"
+
+			config.Reset()
+			setupTestcontainersProperties(t, content)
+			defer config.Reset()
+
+			socket, err := testcontainersHostFromProperties(context.Background())
+			require.ErrorIs(t, err, ErrTestcontainersHostNotSetInProperties)
+			assert.Empty(t, socket)
+		})
 
 		t.Run("DOCKER_HOST is set", func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -337,6 +379,11 @@ func setupDockerSocketNotFound(t *testing.T) {
 }
 
 func setupTestcontainersProperties(t *testing.T, content string) {
+	t.Cleanup(func() {
+		// reset the properties file after the test
+		config.Reset()
+	})
+
 	tmpDir := t.TempDir()
 	homeDir := filepath.Join(tmpDir, "home")
 	err := createTmpDir(homeDir)

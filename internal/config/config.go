@@ -17,11 +17,12 @@ var tcConfigOnce *sync.Once = new(sync.Once)
 // Config represents the configuration for Testcontainers
 // testcontainersConfig {
 type Config struct {
-	Host           string `properties:"docker.host,default="`
-	TLSVerify      int    `properties:"docker.tls.verify,default=0"`
-	CertPath       string `properties:"docker.cert.path,default="`
-	RyukDisabled   bool   `properties:"ryuk.disabled,default=false"`
-	RyukPrivileged bool   `properties:"ryuk.container.privileged,default=false"`
+	Host               string `properties:"docker.host,default="`
+	TLSVerify          int    `properties:"docker.tls.verify,default=0"`
+	CertPath           string `properties:"docker.cert.path,default="`
+	RyukDisabled       bool   `properties:"ryuk.disabled,default=false"`
+	RyukPrivileged     bool   `properties:"ryuk.container.privileged,default=false"`
+	TestcontainersHost string `properties:"testcontainers.host,default="`
 }
 
 // }

@@ -25,6 +25,8 @@ var (
 	ErrNoUnixSchema                   = errors.New("URL schema is not unix")
 	ErrSocketNotFound                 = errors.New("socket not found")
 	ErrSocketNotFoundInPath           = errors.New("docker socket not found in " + DockerSocketPath)
+	// ErrTestcontainersHostNotSetInProperties this error is specific to Testcontainers
+	ErrTestcontainersHostNotSetInProperties = errors.New("testcontainers.host not set in ~/.testcontainers.properties")
 )
 
 var dockerHostCache string
@@ -89,6 +91,7 @@ func ExtractDockerSocket(ctx context.Context) string {
 // This internal method is handy for testing purposes.
 func extractDockerHost(ctx context.Context) string {
 	dockerHostFns := []func(context.Context) (string, error){
+		testcontainersHostFromProperties,
 		dockerHostFromEnv,
 		dockerHostFromContext,
 		dockerSocketPath,
@@ -209,6 +212,22 @@ func dockerSocketPath(ctx context.Context) (string, error) {
 	}
 
 	return "", ErrSocketNotFoundInPath
+}
+
+// testcontainersHostFromProperties returns the testcontainers host from the ~/.testcontainers.properties file, if it's not empty
+func testcontainersHostFromProperties(ctx context.Context) (string, error) {
+	cfg := config.Read(ctx)
+	testcontainersHost := cfg.TestcontainersHost
+	if testcontainersHost != "" {
+		parsed, err := parseURL(testcontainersHost)
+		if err != nil {
+			return "", err
+		}
+
+		return parsed, nil
+	}
+
+	return "", ErrTestcontainersHostNotSetInProperties
 }
 
 // InAContainer returns true if the code is running inside a container
