@@ -107,8 +107,8 @@ github.com/hashicorp/go-rootcerts v1.0.2 h1:jzhAVGtqPKbwpyCPELlgNWhE1znq+qwJtW5O
 github.com/hashicorp/go-rootcerts v1.0.2/go.mod h1:pqUvnprVnM5bf7AOirdbb01K4ccR319Vf4pU3K5EGc8=
 github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 h1:kes8mmyCpxJsI7FTwtzRqEy9CdjCtrXrXGuOpxEA7Ts=
 github.com/hashicorp/go-secure-stdlib/strutil v0.1.2/go.mod h1:Gou2R9+il93BqX25LAKCLuM+y9U2T4hlwvT1yprcna4=
-github.com/hashicorp/vault-client-go v0.2.0 h1:Zzf5D2kj7QmBZE2ZTdril1aJlujMptPatxslTkdDF+U=
-github.com/hashicorp/vault-client-go v0.2.0/go.mod h1:C9rbJeHeI1Dy/MXXd5YLrzRfAH27n6mARnhpvaW/8gk=
+github.com/hashicorp/vault-client-go v0.3.2 h1:y4AssYeYvgB4BiExAAVfwpnDUu77ANX9XE7IEbXyCKc=
+github.com/hashicorp/vault-client-go v0.3.2/go.mod h1:C9rbJeHeI1Dy/MXXd5YLrzRfAH27n6mARnhpvaW/8gk=
 github.com/imdario/mergo v0.3.12 h1:b6R2BslTbIEToALKP7LxUvijTsNI9TAe80pLWN2g/HU=
 github.com/imdario/mergo v0.3.12/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH0dnCYA=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

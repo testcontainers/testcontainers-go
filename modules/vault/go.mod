@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/docker/docker v23.0.5+incompatible
-	github.com/hashicorp/vault-client-go v0.2.0
+	github.com/hashicorp/vault-client-go v0.3.2
 	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.20.1
 	github.com/tidwall/gjson v1.14.4
