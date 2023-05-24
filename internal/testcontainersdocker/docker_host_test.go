@@ -35,6 +35,7 @@ var resetSocketOverrideFn = func() {
 }
 
 func TestExtractDockerHost(t *testing.T) {
+	setupDockerHostNotFound(t)
 	// do not mess with local .testcontainers.properties
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
@@ -119,6 +120,7 @@ func TestExtractDockerHost(t *testing.T) {
 	})
 
 	t.Run("Extract Docker socket", func(t *testing.T) {
+		setupDockerHostNotFound(t)
 		t.Cleanup(resetSocketOverrideFn)
 
 		t.Run("Testcontainers host is defined in properties", func(t *testing.T) {
@@ -271,6 +273,8 @@ func (m mockCli) Info(ctx context.Context) (types.Info, error) {
 }
 
 func TestExtractDockerSocketFromClient(t *testing.T) {
+	setupDockerHostNotFound(t)
+
 	t.Run("Docker Socket as Testcontainers environment variable", func(t *testing.T) {
 		t.Cleanup(resetSocketOverrideFn)
 
@@ -347,6 +351,12 @@ func createTmpDockerSocket(parent string) error {
 	}
 	f.Close()
 	return nil
+}
+
+// setupDockerHostNotFound sets up the environment for the test case where the DOCKER_HOST environment variable is
+// already set (e.g. rootless docker) therefore we need to unset it before the test
+func setupDockerHostNotFound(t *testing.T) {
+	t.Setenv("DOCKER_HOST", "")
 }
 
 func setupDockerSocket(t *testing.T) string {
