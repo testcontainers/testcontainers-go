@@ -55,7 +55,7 @@ _Testcontainers for Go_ will attempt to detect the Docker environment and config
 
 However, sometimes customization is required. _Testcontainers for Go_ will respect the following order:
 
-1. Read the **testcontainers.host** property in the `~/.testcontainers.properties` file. E.g. `testcontainers.host=tcp://my.docker.host:1234`
+1. Read the **tc.host** property in the `~/.testcontainers.properties` file. E.g. `tc.host=tcp://my.docker.host:1234`
 
 2. Read the **DOCKER_HOST** environment variable. E.g. `DOCKER_HOST=unix:///var/run/docker.sock`
 See [Docker environment variables](https://docs.docker.com/engine/reference/commandline/cli/#environment-variables) for more information.

@@ -26,7 +26,7 @@ var (
 	ErrSocketNotFound                 = errors.New("socket not found")
 	ErrSocketNotFoundInPath           = errors.New("docker socket not found in " + DockerSocketPath)
 	// ErrTestcontainersHostNotSetInProperties this error is specific to Testcontainers
-	ErrTestcontainersHostNotSetInProperties = errors.New("testcontainers.host not set in ~/.testcontainers.properties")
+	ErrTestcontainersHostNotSetInProperties = errors.New("tc.host not set in ~/.testcontainers.properties")
 )
 
 var dockerHostCache string
@@ -55,7 +55,7 @@ func DefaultGatewayIP() (string, error) {
 // calculations. Use this function to get the actual Docker host. This function does not consider Windows containers at the moment.
 // The possible alternatives are:
 //
-//  1. Docker host from the "testcontainers.host" property in the ~/.testcontainers.properties file.
+//  1. Docker host from the "tc.host" property in the ~/.testcontainers.properties file.
 //  2. DOCKER_HOST environment variable.
 //  3. Docker host from context.
 //  4. Docker host from the default docker socket path, without the unix schema.

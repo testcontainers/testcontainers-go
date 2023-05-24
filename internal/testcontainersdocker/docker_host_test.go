@@ -55,7 +55,7 @@ func TestExtractDockerHost(t *testing.T) {
 	t.Run("Testcontainers Host is resolved first", func(t *testing.T) {
 		t.Setenv("DOCKER_HOST", "/path/to/docker.sock")
 		tmpHost := "tcp://127.0.0.1:12345"
-		content := "testcontainers.host=" + tmpHost
+		content := "tc.host=" + tmpHost
 
 		config.Reset()
 		setupTestcontainersProperties(t, content)
@@ -123,7 +123,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		t.Run("Testcontainers host is defined in properties", func(t *testing.T) {
 			tmpSocket := "tcp://127.0.0.1:12345"
-			content := "testcontainers.host=" + tmpSocket
+			content := "tc.host=" + tmpSocket
 
 			config.Reset()
 			setupTestcontainersProperties(t, content)

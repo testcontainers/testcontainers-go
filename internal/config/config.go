@@ -22,7 +22,7 @@ type Config struct {
 	CertPath           string `properties:"docker.cert.path,default="`
 	RyukDisabled       bool   `properties:"ryuk.disabled,default=false"`
 	RyukPrivileged     bool   `properties:"ryuk.container.privileged,default=false"`
-	TestcontainersHost string `properties:"testcontainers.host,default="`
+	TestcontainersHost string `properties:"tc.host,default="`
 }
 
 // }
