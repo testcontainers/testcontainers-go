@@ -15,14 +15,15 @@ go get github.com/testcontainers/testcontainers-go/modules/compose
 
 !!!warning
 
-	Given the version includes the Compose dependency, and the Docker folks added [a replace directive until the upcoming Docker 22.06 release is out](https://github.com/docker/compose/issues/9946#issuecomment-1288923912),
-	we were forced to add it too, causing consumers of _Testcontainers for Go_ to add the following replace directive to their `go.mod` files.
-	We expect this to be removed in the next releases of _Testcontainers for Go_.
+	Given the version includes the Compose dependency, and the Docker folks added a replace directive in their [go.mod](https://github.com/docker/compose/blob/v2/go.mod#L175-L188),
+	we were forced to add it as well. As a result, users of _Testcontainers for Go_ need to add the following replace directive to their `go.mod` files.
 
 	```
 	replace (
 
 		github.com/cucumber/godog => github.com/laurazard/godog v0.0.0-20220922095256-4c4b17abdae7
+
+		golang.org/x/oauth2 => golang.org/x/oauth2 v0.1.0
 
 		// For k8s dependencies, we use a replace directive, to prevent them being
 		// upgraded to the version specified in containerd, which is not relevant to the
