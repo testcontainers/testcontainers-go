@@ -40,7 +40,6 @@ Ryuk has been disabled for the current execution. This can cause unexpected beha
 More on this: https://golang.testcontainers.org/features/garbage_collector/
 **********************************************************************************************`
 			fmt.Println(ryukDisabledMessage)
-			fmt.Printf("\n%+v", tcConfig)
 		}
 	})
 
