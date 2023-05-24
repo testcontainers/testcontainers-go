@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/docker/go-connections v0.4.0
 	github.com/lib/pq v1.10.9
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	github.com/testcontainers/testcontainers-go v0.20.1
 	gotest.tools/gotestsum v1.10.0
 )
