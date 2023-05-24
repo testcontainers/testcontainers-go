@@ -32,6 +32,8 @@ var baseRunDir = "/run"
 //  3. ~/.docker/desktop/docker.sock file.
 //  4. /run/user/${uid}/docker.sock file.
 //  5. Else, return ErrRootlessDockerNotFound, wrapping secific errors for each of the above paths.
+//
+// It will include the Docker socket schema (unix://) in the returned path.
 func rootlessDockerSocketPath(_ context.Context) (string, error) {
 	// adding a manner to test it on non-windows machines, setting the GOOS env var to windows
 	// This is needed because runtime.GOOS is a constant that returns the OS of the machine running the test
@@ -54,14 +56,14 @@ func rootlessDockerSocketPath(_ context.Context) (string, error) {
 			continue
 		}
 
-		return s, nil
+		return DockerSocketSchema + s, nil
 	}
 
 	return "", outerErr
 }
 
-func fileExists(p string) bool {
-	_, err := os.Stat(p)
+func fileExists(f string) bool {
+	_, err := os.Stat(f)
 	return err == nil
 }
 
@@ -88,9 +90,9 @@ func parseURL(s string) (string, error) {
 func rootlessSocketPathFromEnv() (string, error) {
 	xdgRuntimeDir, exists := os.LookupEnv("XDG_RUNTIME_DIR")
 	if exists {
-		p := filepath.Join(xdgRuntimeDir, "docker.sock")
-		if fileExists(p) {
-			return p, nil
+		f := filepath.Join(xdgRuntimeDir, "docker.sock")
+		if fileExists(f) {
+			return f, nil
 		}
 
 		return "", ErrRootlessDockerNotFoundXDGRuntimeDir
@@ -106,9 +108,9 @@ func rootlessSocketPathFromHomeRunDir() (string, error) {
 		return "", err
 	}
 
-	p := filepath.Join(home, ".docker", "run", "docker.sock")
-	if fileExists(p) {
-		return p, nil
+	f := filepath.Join(home, ".docker", "run", "docker.sock")
+	if fileExists(f) {
+		return f, nil
 	}
 	return "", ErrRootlessDockerNotFoundHomeRunDir
 }
