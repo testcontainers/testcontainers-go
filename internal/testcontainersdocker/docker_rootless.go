@@ -56,7 +56,7 @@ func rootlessDockerSocketPath(_ context.Context) (string, error) {
 			continue
 		}
 
-		return s, nil
+		return DockerSocketSchema + s, nil
 	}
 
 	return "", outerErr
@@ -111,7 +111,7 @@ func rootlessSocketPathFromHomeRunDir() (string, error) {
 
 	f := filepath.Join(home, ".docker", "run", "docker.sock")
 	if fileExists(f) {
-		return DockerSocketSchema + f, nil
+		return f, nil
 	}
 	return "", ErrRootlessDockerNotFoundHomeRunDir
 }
@@ -125,7 +125,7 @@ func rootlessSocketPathFromHomeDesktopDir() (string, error) {
 
 	f := filepath.Join(home, ".docker", "desktop", "docker.sock")
 	if fileExists(f) {
-		return DockerSocketSchema + f, nil
+		return f, nil
 	}
 	return "", ErrRootlessDockerNotFoundHomeDesktopDir
 }
@@ -135,7 +135,7 @@ func rootlessSocketPathFromRunDir() (string, error) {
 	uid := os.Getuid()
 	f := filepath.Join(baseRunDir, "user", fmt.Sprintf("%d", uid), "docker.sock")
 	if fileExists(f) {
-		return DockerSocketSchema + f, nil
+		return f, nil
 	}
 	return "", ErrRootlessDockerNotFoundRunDir
 }
