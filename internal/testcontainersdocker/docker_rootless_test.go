@@ -11,10 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var originalBaseRunDir string
 var originalXDGRuntimeDir string
 var originalHomeDir string
 
 func init() {
+	originalBaseRunDir = baseRunDir
 	originalXDGRuntimeDir = os.Getenv("XDG_RUNTIME_DIR")
 	originalHomeDir = os.Getenv("HOME")
 }
@@ -137,7 +139,6 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 }
 
 func setupRootlessNotFound(t *testing.T) {
-	originalBaseRunDir := baseRunDir
 	t.Cleanup(func() {
 		baseRunDir = originalBaseRunDir
 		os.Setenv("XDG_RUNTIME_DIR", originalXDGRuntimeDir)
