@@ -65,9 +65,7 @@ func isVersion2(image string) bool {
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error) {
 	// defaultContainerRequest {
 	dockerHost := testcontainersdocker.ExtractDockerSocket(ctx)
-	if dockerHost == "" {
-		dockerHost = testcontainersdocker.DockerSocketPath
-	}
+
 	req := testcontainers.ContainerRequest{
 		Image:        fmt.Sprintf("localstack/localstack:%s", defaultVersion),
 		Binds:        []string{fmt.Sprintf("%s:/var/run/docker.sock", dockerHost)},

@@ -128,6 +128,10 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 // }
 
 func TestContainerWithHostNetworkOptions(t *testing.T) {
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Skip("Skipping test that requires host network access when running in a container")
+	}
+
 	absPath, err := filepath.Abs("./testdata/nginx-highport.conf")
 	if err != nil {
 		t.Fatal(err)
@@ -201,6 +205,10 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 }
 
 func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Skip("Skipping test that requires host network access when running in a container")
+	}
+
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
@@ -223,6 +231,10 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 }
 
 func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Skip("Skipping test that requires host network access when running in a container")
+	}
+
 	ctx := context.Background()
 
 	absPath, err := filepath.Abs("./testdata/nginx-highport.conf")
@@ -260,6 +272,10 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 }
 
 func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Skip("Skipping test that requires host network access when running in a container")
+	}
+
 	ctx := context.Background()
 
 	absPath, err := filepath.Abs("./testdata/nginx-highport.conf")
@@ -1881,6 +1897,9 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 func TestDockerContainerResources(t *testing.T) {
 	if providerType == ProviderPodman {
 		t.Skip("Rootless Podman does not support setting rlimit")
+	}
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Skip("Rootless Docker does not support setting rlimit")
 	}
 
 	ctx := context.Background()
