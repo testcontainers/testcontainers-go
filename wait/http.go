@@ -157,6 +157,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 				ports, err = target.Ports(ctx)
 			}
 		}
+
 		for k, bindings := range ports {
 			if len(bindings) == 0 || k.Proto() != "tcp" {
 				continue
@@ -164,6 +165,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 			mappedPort, _ = nat.NewPort(k.Proto(), bindings[0].HostPort)
 			break
 		}
+
 		if mappedPort == "" {
 			return errors.New("No exposed tcp ports or mapped ports - cannot wait for status")
 		}
