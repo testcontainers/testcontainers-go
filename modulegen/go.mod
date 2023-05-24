@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modulegen
 go 1.19
 
 require (
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	golang.org/x/text v0.9.0
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools/gotestsum v1.10.0
