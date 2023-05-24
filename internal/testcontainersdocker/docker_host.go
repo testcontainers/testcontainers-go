@@ -111,7 +111,8 @@ func extractDockerHost(ctx context.Context) string {
 		return socketPath
 	}
 
-	return ""
+	// We are not supporting Windows containers at the moment
+	return DockerSocketPathWithSchema
 }
 
 // extractDockerHost Extracts the docker socket from the different alternatives, without caching the result.
@@ -152,8 +153,7 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 		return strings.Replace(dockerHost, DockerSocketSchema, "", 1)
 	}
 
-	// We are not supporting Windows containers at the moment
-	return "/var/run/docker.sock"
+	return dockerHost
 }
 
 // dockerHostFromEnv returns the docker host from the DOCKER_HOST environment variable, if it's not empty
