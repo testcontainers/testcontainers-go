@@ -14,7 +14,11 @@ const rootUser = "root"
 const defaultUser = "test"
 const defaultPassword = "test"
 const defaultDatabaseName = "test"
+
+// defaultImage {
 const defaultImage = "mysql:8"
+
+// }
 
 // MySQLContainer represents the MySQL container type used in the module
 type MySQLContainer struct {

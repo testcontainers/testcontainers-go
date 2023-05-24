@@ -1,6 +1,6 @@
 # Vault
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 ## Introduction
 
@@ -40,12 +40,25 @@ go get -u github.com/hashicorp/vault-client-go
 [Use library to read data](../../modules/vault/vault_test.go) inside_block:TestVaultGetSecretPathWithClient
 <!--/codeinclude-->
 
-## Container Options
+## Module Reference
 
-You can set below options to create Vault container.
+The Vault module exposes one entrypoint function to create the containerr, and this function receives two parameters:
 
-### Image 
-If you need to set a different Vault image, you can use the `testcontainers.WithImage`. 
+```golang
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*VaultContainer, error)
+```
+
+- `context.Context`, the Go context.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+### Container Options
+
+When starting the Vault container, you can pass options in a variadic way to configure it.
+
+#### Image
+
+If you need to set a different Vault Docker image, you can use `testcontainers.WithImage` with a valid Docker image
+for Vault. E.g. `testcontainers.WithImage("hashicorp/vault:1.13.0")`.
 
 !!!info
     Default image name is `hashicorp/vault:1.13.0`.
@@ -54,14 +67,46 @@ If you need to set a different Vault image, you can use the `testcontainers.With
 [Set image name](../../modules/vault/vault_test.go) inside_block:WithImageName
 <!--/codeinclude-->
 
-### Token
+#### Wait Strategies
+
+If you need to set a different wait strategy for Vault, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
+for Vault.
+
+!!!info
+    The default deadline for the wait strategy is 60 seconds.
+
+At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+
+#### Docker type modifiers
+
+If you need an advanced configuration for Vault, you can leverage the following Docker type modifiers:
+
+- `testcontainers.WithConfigModifier`
+- `testcontainers.WithHostConfigModifier`
+- `testcontainers.WithEndpointSettingsModifier`
+
+Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+
+#### Token
+
 If you need to add token authentication, you can use the `WithToken`.
 <!--codeinclude-->
 [Add token authentication](../../modules/vault/vault_test.go) inside_block:WithToken
 <!--/codeinclude-->
 
-### Command
+#### Command
+
 If you need to run vault command in the container, you can use the `WithInitCommand`.
 <!--codeinclude-->
 [Run init command](../../modules/vault/vault_test.go) inside_block:WithInitCommand
+<!--/codeinclude-->
+
+### Container Methods
+
+#### HttpHostAddress
+
+This method returns the http host address of Vault, in the `http://<host>:<port>` format.
+
+<!--codeinclude-->
+[Get the HTTP host address](../../modules/vault/vault_test.go) inside_block:httpHostAddress
 <!--/codeinclude-->

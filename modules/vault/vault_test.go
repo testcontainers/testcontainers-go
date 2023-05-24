@@ -70,8 +70,10 @@ func TestVaultGetSecretPathWithCLI(t *testing.T) {
 }
 
 func TestVaultGetSecretPathWithHTTP(t *testing.T) {
+	// httpHostAddress {
 	hostAddress, err := vault.HttpHostAddress(ctx)
 	assert.Nil(t, err)
+	// }
 
 	request, _ := http.NewRequest(http.MethodGet, hostAddress+"/v1/secret/data/test1", nil)
 	request.Header.Add("X-Vault-Token", token)

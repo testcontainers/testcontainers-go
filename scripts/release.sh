@@ -12,21 +12,24 @@
 #
 # Usage: DRY_RUN="false" ./scripts/release.sh
 
+readonly BUMP_TYPE="${BUMP_TYPE:-minor}"
 readonly DOCKER_IMAGE_SEMVER="docker.io/mdelapenya/semver-tool:3.4.0"
-readonly COMMIT="${COMMIT:-false}"
 readonly DRY_RUN="${DRY_RUN:-true}"
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
 readonly MKDOCS_FILE="${ROOT_DIR}/mkdocs.yml"
 readonly VERSION_FILE="${ROOT_DIR}/internal/version.go"
-readonly BUMP_TYPE="${BUMP_TYPE:-minor}"
 
 readonly REPOSITORY="github.com/testcontainers/testcontainers-go"
 readonly DIRECTORIES=(examples modules)
 
 function main() {
-  readonly version="$(extractCurrentVersion)"
-  readonly vVersion="v${version}"
+  local version="$(extractCurrentVersion)"
+  local vVersion="v${version}"
+  echo "Current version: ${vVersion}"
+
+  # Commit the project in the current state
+  gitCommitVersion "${vVersion}"
 
   tagModule "${vVersion}"
 
@@ -41,33 +44,11 @@ function main() {
     done
   done
 
-  gitState
-  bumpVersion "${version}"
-  gitPushTags
-  gitUnstash
+  # Get the version to bump to from the semver-tool and the bump type
+  local newVersion=$(docker run --rm "${DOCKER_IMAGE_SEMVER}" bump "${BUMP_TYPE}" "${vVersion}")
+  echo "Producing a ${BUMP_TYPE} bump of the version, from ${version} to ${newVersion}"
 
-  curlGolangProxy "${REPOSITORY}" "${vVersion}" # e.g. github.com/testcontainers/testcontainers-go/@v/v0.0.1
-
-  for directory in "${DIRECTORIES[@]}"
-  do
-    cd "${ROOT_DIR}/${directory}"
-
-    ls -d */ | grep -v "_template" | while read -r module; do
-      module="${module%?}" # remove trailing slash
-      module_path="${REPOSITORY}/${directory}/${module}"
-      curlGolangProxy "${module_path}" "${vVersion}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1
-    done
-  done
-}
-
-# This function is used to bump the version in the version.go file and in the mkdocs.yml file.
-function bumpVersion() {
-  local versionToBumpWithoutV="${1}"
-  local versionToBump="v${versionToBumpWithoutV}"
-
-  local newVersion=$(docker run --rm "${DOCKER_IMAGE_SEMVER}" bump "${BUMP_TYPE}" "${versionToBump}")
-  echo "Producing a ${BUMP_TYPE} bump of the version, from ${versionToBump} to ${newVersion}"
-
+  # Bump the version in the version.go file
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo "sed \"s/const Version = \".*\"/const Version = \"${newVersion}\"/g\" ${VERSION_FILE} > ${VERSION_FILE}.tmp"
     echo "mv ${VERSION_FILE}.tmp ${VERSION_FILE}"
@@ -76,50 +57,26 @@ function bumpVersion() {
     mv ${VERSION_FILE}.tmp ${VERSION_FILE}
   fi
 
-  if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "sed \"s/latest_version: .*/latest_version: ${versionToBump}/g\" ${MKDOCS_FILE} > ${MKDOCS_FILE}.tmp"
-    echo "mv ${MKDOCS_FILE}.tmp ${MKDOCS_FILE}"
-  else
-    sed "s/latest_version: .*/latest_version: ${versionToBump}/g" ${MKDOCS_FILE} > ${MKDOCS_FILE}.tmp
-    mv ${MKDOCS_FILE}.tmp ${MKDOCS_FILE}
-  fi
+  # Commit the version.go file in the next development version
+  gitNextDevelopment "${newVersion}"
 
+  # Update the remote repository with the new tags
+  gitPushTags
+
+  # Trigger the Go proxy to fetch the core module
+  curlGolangProxy "${REPOSITORY}" "${vVersion}" # e.g. github.com/testcontainers/testcontainers-go/@v/v0.0.1.info
+
+  # Trigger the Go proxy to fetch the modules
   for directory in "${DIRECTORIES[@]}"
   do
     cd "${ROOT_DIR}/${directory}"
 
     ls -d */ | grep -v "_template" | while read -r module; do
       module="${module%?}" # remove trailing slash
-      module_mod_file="${module}/go.mod" # e.g. modules/mongodb/go.mod
-      if [[ "${DRY_RUN}" == "true" ]]; then
-        echo "sed \"s/testcontainers-go v.*/testcontainers-go v${versionToBumpWithoutV}/g\" ${module_mod_file} > ${module_mod_file}.tmp"
-        echo "mv ${module_mod_file}.tmp ${module_mod_file}"
-      else
-        sed "s/testcontainers-go v.*/testcontainers-go v${versionToBumpWithoutV}/g" ${module_mod_file} > ${module_mod_file}.tmp
-        mv ${module_mod_file}.tmp ${module_mod_file}
-      fi
+      module_path="${REPOSITORY}/${directory}/${module}"
+      curlGolangProxy "${module_path}" "${vVersion}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1.info
     done
-
-    make "tidy-${directory}"
   done
-
-  cd "${ROOT_DIR}/docs/modules"
-
-  versionEscapingDots="${versionToBumpWithoutV/./\.}"
-  NON_RELEASED_STRING='Not available until the next release of testcontainers-go <a href=\"https:\/\/github.com\/testcontainers\/testcontainers-go\"><span class=\"tc-version\">:material-tag: main<\/span><\/a>'
-  RELEASED_STRING="Since testcontainers-go <a href=\\\"https:\/\/github.com\/testcontainers\/testcontainers-go\/releases\/tag\/v${versionEscapingDots}\\\"><span class=\\\"tc-version\\\">:material-tag: v${versionEscapingDots}<\/span><\/a>"
-
-  ls | grep -v "index.md" | while read -r module_file; do
-    if [[ "${DRY_RUN}" == "true" ]]; then
-      echo "sed \"s/${NON_RELEASED_STRING}/${RELEASED_STRING}/g\" ${module_file} > ${module_file}.tmp"
-      echo "mv ${module_file}.tmp ${module_file}"
-    else
-      sed "s/${NON_RELEASED_STRING}/${RELEASED_STRING}/g" ${module_file} > ${module_file}.tmp
-      mv ${module_file}.tmp ${module_file}
-    fi
-  done
-
-  gitCommitVersion "${newVersion}"
 }
 
 # This function is used to trigger the Go proxy to fetch the module.
@@ -128,8 +85,8 @@ function curlGolangProxy() {
   local module_path="${1}"
   local module_version="${2}"
 
-  if [[ "${DRY_RUN}" == "true" || "${COMMIT}" == "false" ]]; then
-    echo "curl https://proxy.golang.org/${module_path}/@v/${module_version}"
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "curl https://proxy.golang.org/${module_path}/@v/${module_version}.info"
     return
   fi
 
@@ -147,7 +104,7 @@ function extractCurrentVersion() {
 # This function is used to run git commands
 function gitFn() {
   args=("$@")
-  if [[ "${DRY_RUN}" == "true" || "${COMMIT}" == "false" ]]; then
+  if [[ "${DRY_RUN}" == "true" ]]; then
     echo "git ${args[@]}"
     return
   fi
@@ -155,34 +112,33 @@ function gitFn() {
   git "${args[@]}"
 }
 
-# This function is used to commit the version.go file.
+# This function is used to commit the version.go file, mkdocs, examples and modules.
 function gitCommitVersion() {
-  local newVersion="${1}" 
+  local version="${1}" 
 
   cd "${ROOT_DIR}"
 
   gitFn add "${VERSION_FILE}"
   gitFn add "${MKDOCS_FILE}"
+  gitFn add "docs/**/*.md"
   gitFn add "examples/**/go.*"
   gitFn add "modules/**/go.*"
+  gitFn commit -m "chore: use new version (${version}) in modules and examples"
+}
+
+# This function is used to commit the version.go file.
+function gitNextDevelopment() {
+  local newVersion="${1}" 
+
+  cd "${ROOT_DIR}"
+
+  gitFn add "${VERSION_FILE}"
   gitFn commit -m "chore: prepare for next ${BUMP_TYPE} development cycle (${newVersion})"
 }
 
 # This function is used to push the tags to the remote repository.
 function gitPushTags() {
   gitFn push origin main --tags
-}
-
-# This function is setting the git state to the next development cycle:
-# - Stashing the changes
-# - Moving to the main branch
-function gitState() {
-  gitFn stash
-  gitFn checkout main
-}
-
-function gitUnstash() {
-  gitFn stash pop
 }
 
 # This function is used to create a tag for the module.

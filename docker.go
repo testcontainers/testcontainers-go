@@ -18,12 +18,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types/filters"
-
 	"github.com/cenkalti/backoff/v4"
 	"github.com/containerd/containerd/platforms"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -32,7 +31,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
-
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
@@ -53,6 +51,8 @@ const (
 	Podman        = "podman"
 	ReaperDefault = "reaper_default" // Default network name when bridge is not available
 	packagePath   = "github.com/testcontainers/testcontainers-go"
+
+	logStoppedForOutOfSyncMessage = "Stopping log consumer: Headers out of sync"
 )
 
 // DockerContainer represents a container started using Docker
@@ -69,7 +69,7 @@ type DockerContainer struct {
 	terminationSignal chan bool
 	consumers         []LogConsumer
 	raw               *types.ContainerJSON
-	stopProducer      context.CancelFunc
+	stopProducer      chan bool
 	logger            Logging
 	lifecycleHooks    []ContainerLifecycleHooks
 }
@@ -632,9 +632,9 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 		return errors.New("log producer already started")
 	}
 
-	ctx, c.stopProducer = context.WithCancel(ctx)
+	c.stopProducer = make(chan bool)
 
-	go func() {
+	go func(stop <-chan bool) {
 		since := ""
 		// if the socket is closed we will make additional logs request with updated Since timestamp
 	BEGIN:
@@ -645,22 +645,20 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 			Since:      since,
 		}
 
+		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
+
 		r, err := c.provider.client.ContainerLogs(ctx, c.GetContainerID(), options)
 		if err != nil {
-			// if we can't get the logs, retry in one second.
-			c.logger.Printf("cannot get logs for container %q: %v", c.ID, err)
-			if ctx.Err() != nil {
-				// context done.
-				return
-			}
-			time.Sleep(1 * time.Second)
-			goto BEGIN
+			// if we can't get the logs, panic, we can't return an error to anything
+			// from within this goroutine
+			panic(err)
 		}
 		defer c.provider.Close()
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-stop:
 				err := r.Close()
 				if err != nil {
 					// we can't close the read closer, this should never happen
@@ -669,7 +667,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				return
 			default:
 				h := make([]byte, 8)
-				_, err := r.Read(h)
+				_, err := io.ReadFull(r, h)
 				if err != nil {
 					// proper type matching requires https://go-review.googlesource.com/c/go/+/250357/ (go 1.16)
 					if strings.Contains(err.Error(), "use of closed network connection") {
@@ -677,9 +675,13 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 						since = fmt.Sprintf("%d.%09d", now.Unix(), int64(now.Nanosecond()))
 						goto BEGIN
 					}
-					// this explicitly ignores errors
-					// because we want to keep procesing even if one of our reads fails
-					continue
+					if errors.Is(err, context.DeadlineExceeded) {
+						// Probably safe to continue here
+						continue
+					}
+					_, _ = fmt.Fprintf(os.Stderr, "container log error: %+v. %s", err, logStoppedForOutOfSyncMessage)
+					// if we would continue here, the next header-read will result into random data...
+					return
 				}
 
 				count := binary.BigEndian.Uint32(h[4:])
@@ -697,11 +699,17 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				logTypes := []string{"", StdoutLog, StderrLog}
 
 				b := make([]byte, count)
-				_, err = r.Read(b)
+				_, err = io.ReadFull(r, b)
 				if err != nil {
 					// TODO: add-logger: use logger to log out this error
 					_, _ = fmt.Fprintf(os.Stderr, "error occurred reading log with known length %s", err.Error())
-					continue
+					if errors.Is(err, context.DeadlineExceeded) {
+						// Probably safe to continue here
+						continue
+					}
+					// we can not continue here as the next read most likely will not be the next header
+					_, _ = fmt.Fprintln(os.Stderr, logStoppedForOutOfSyncMessage)
+					return
 				}
 				for _, c := range c.consumers {
 					c.Accept(Log{
@@ -711,7 +719,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 			}
 		}
-	}()
+	}(c.stopProducer)
 
 	return nil
 }
@@ -720,8 +728,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 // and sending them to each added LogConsumer
 func (c *DockerContainer) StopLogProducer() error {
 	if c.stopProducer != nil {
-		// Cancel the producer's context.
-		c.stopProducer()
+		c.stopProducer <- true
 		c.stopProducer = nil
 	}
 	return nil
@@ -784,21 +791,19 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 var _ ContainerProvider = (*DockerProvider)(nil)
 
 func NewDockerClient() (cli *client.Client, err error) {
-	tcConfig = ReadConfig()
-
-	host := tcConfig.Host
-
+	tcConfig := ReadConfig()
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
-	if host != "" {
-		opts = append(opts, client.WithHost(host))
 
-		// for further informacion, read https://docs.docker.com/engine/security/protect-access/
+	if tcConfig.Host != "" {
+		opts = append(opts, client.WithHost(tcConfig.Host))
+
+		// For further information, read https://docs.docker.com/engine/security/protect-access/.
 		if tcConfig.TLSVerify == 1 {
-			cacertPath := filepath.Join(tcConfig.CertPath, "ca.pem")
+			caCertPath := filepath.Join(tcConfig.CertPath, "ca.pem")
 			certPath := filepath.Join(tcConfig.CertPath, "cert.pem")
 			keyPath := filepath.Join(tcConfig.CertPath, "key.pem")
 
-			opts = append(opts, client.WithTLSClientConfig(cacertPath, certPath, keyPath))
+			opts = append(opts, client.WithTLSClientConfig(caCertPath, certPath, keyPath))
 		}
 	}
 
@@ -813,9 +818,8 @@ func NewDockerClient() (cli *client.Client, err error) {
 		return nil, err
 	}
 
-	_, err = cli.Ping(context.TODO())
-	if err != nil {
-		// fallback to environment
+	if _, err = cli.Ping(context.Background()); err != nil {
+		// Fallback to environment.
 		cli, err = testcontainersdocker.NewClient(context.Background())
 		if err != nil {
 			return nil, err
