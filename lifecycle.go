@@ -2,10 +2,12 @@ package testcontainers
 
 import (
 	"context"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
+	"golang.org/x/exp/slices"
 )
 
 // ContainerRequestHook is a hook that will be called before a container is created.
@@ -318,9 +320,28 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	}
 
 	dockerInput.ExposedPorts = exposedPortSet
-	hostConfig.PortBindings = exposedPortMap
+
+	// only exposing those ports automatically if the container request exposes zero ports and the container does not run in a container network
+	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
+		hostConfig.PortBindings = exposedPortMap
+	} else {
+		hostConfig.PortBindings = mergePortBindings(hostConfig.PortBindings, exposedPortMap, req.ExposedPorts)
+	}
 
 	return nil
+}
+
+func mergePortBindings(configPortMap, exposedPortMap nat.PortMap, exposedPorts []string) nat.PortMap {
+	if exposedPortMap == nil {
+		exposedPortMap = make(map[nat.Port][]nat.PortBinding)
+	}
+
+	for k, v := range configPortMap {
+		if slices.Contains(exposedPorts, strings.Split(string(k), "/")[0]) {
+			exposedPortMap[k] = v
+		}
+	}
+	return exposedPortMap
 }
 
 // defaultHostConfigModifier provides a default modifier including the deprecated fields
