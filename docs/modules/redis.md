@@ -1,6 +1,6 @@
 # Redis
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 ## Introduction
 
@@ -41,11 +41,31 @@ When starting the Redis container, you can pass options in a variadic way to con
 #### Image
 
 If you need to set a different Redis Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Postgres. E.g. `testcontainers.WithImage("docker.io/redis:7")`.
+for Redis. E.g. `testcontainers.WithImage("docker.io/redis:7")`.
 
 <!--codeinclude-->
 [Use a different image](../../modules/redis/redis_test.go) inside_block:withImage
 <!--/codeinclude-->
+
+#### Wait Strategies
+
+If you need to set a different wait strategy for Redis, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
+for Redis.
+
+!!!info
+    The default deadline for the wait strategy is 60 seconds.
+
+At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+
+#### Docker type modifiers
+
+If you need an advanced configuration for Redis, you can leverage the following Docker type modifiers:
+
+- `testcontainers.WithConfigModifier`
+- `testcontainers.WithHostConfigModifier`
+- `testcontainers.WithEndpointSettingsModifier`
+
+Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
 
 #### Snapshotting
 

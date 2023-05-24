@@ -3,9 +3,8 @@ package testcontainers
 import (
 	"context"
 
-	"github.com/docker/docker/api/types/network"
-
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/network"
 )
 
 // NetworkProvider allows the creation of networks on an arbitrary system
