@@ -29,7 +29,7 @@ type K3sContainer struct {
 // RunContainer creates an instance of the K3s container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "docker.io/rancher/k3s:latest",
+		Image: "docker.io/rancher/k3s:v1.27.1-k3s1",
 		ExposedPorts: []string{
 			defaultKubeSecurePort,
 			defaultRancherWebhookPort,
