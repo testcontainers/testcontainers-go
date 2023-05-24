@@ -90,7 +90,7 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
 		require.Nil(t, err)
-		assert.NotEmpty(t, socketPath)
+		assert.Equal(t, "unix://"+runDir+"/docker.sock", socketPath)
 	})
 
 	t.Run("Home desktop dir: ~/.docker/desktop/docker.sock", func(t *testing.T) {
@@ -105,22 +105,32 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
 		require.Nil(t, err)
-		assert.NotEmpty(t, socketPath)
+		assert.Equal(t, "unix://"+desktopDir+"/docker.sock", socketPath)
 	})
 
 	t.Run("Run dir: /run/user/${uid}/docker.sock", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		_ = os.Unsetenv("XDG_RUNTIME_DIR")
-		t.Cleanup(restoreEnvFn)
+
+		homeDir := filepath.Join(tmpDir, "home")
+		err := createTmpDir(homeDir)
+		require.Nil(t, err)
+		t.Setenv("HOME", homeDir)
+
+		baseRunDir = tmpDir
+		t.Cleanup(func() {
+			baseRunDir = originalBaseRunDir
+			restoreEnvFn()
+		})
 
 		uid := os.Getuid()
 		runDir := filepath.Join(tmpDir, "user", fmt.Sprintf("%d", uid))
-		err := createTmpDockerSocket(runDir)
+		err = createTmpDockerSocket(runDir)
 		require.Nil(t, err)
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
 		require.Nil(t, err)
-		assert.NotEmpty(t, socketPath)
+		assert.Equal(t, "unix://"+runDir+"/docker.sock", socketPath)
 	})
 
 	t.Run("Rootless not found", func(t *testing.T) {

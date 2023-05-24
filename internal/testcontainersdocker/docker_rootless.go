@@ -33,7 +33,7 @@ var baseRunDir = "/run"
 //  4. /run/user/${uid}/docker.sock file.
 //  5. Else, return ErrRootlessDockerNotFound, wrapping secific errors for each of the above paths.
 //
-// It will include the Docker socket schema (unix://) in the returned path.
+// It should include the Docker socket schema (unix://) in the returned path.
 func rootlessDockerSocketPath(_ context.Context) (string, error) {
 	// adding a manner to test it on non-windows machines, setting the GOOS env var to windows
 	// This is needed because runtime.GOOS is a constant that returns the OS of the machine running the test
@@ -56,7 +56,7 @@ func rootlessDockerSocketPath(_ context.Context) (string, error) {
 			continue
 		}
 
-		return DockerSocketSchema + s, nil
+		return s, nil
 	}
 
 	return "", outerErr
@@ -87,6 +87,7 @@ func parseURL(s string) (string, error) {
 }
 
 // rootlessSocketPathFromEnv returns the path to the rootless Docker socket from the XDG_RUNTIME_DIR environment variable.
+// It should include the Docker socket schema (unix://) in the returned path.
 func rootlessSocketPathFromEnv() (string, error) {
 	xdgRuntimeDir, exists := os.LookupEnv("XDG_RUNTIME_DIR")
 	if exists {
@@ -110,7 +111,7 @@ func rootlessSocketPathFromHomeRunDir() (string, error) {
 
 	f := filepath.Join(home, ".docker", "run", "docker.sock")
 	if fileExists(f) {
-		return f, nil
+		return DockerSocketSchema + f, nil
 	}
 	return "", ErrRootlessDockerNotFoundHomeRunDir
 }
@@ -124,7 +125,7 @@ func rootlessSocketPathFromHomeDesktopDir() (string, error) {
 
 	f := filepath.Join(home, ".docker", "desktop", "docker.sock")
 	if fileExists(f) {
-		return f, nil
+		return DockerSocketSchema + f, nil
 	}
 	return "", ErrRootlessDockerNotFoundHomeDesktopDir
 }
@@ -134,7 +135,7 @@ func rootlessSocketPathFromRunDir() (string, error) {
 	uid := os.Getuid()
 	f := filepath.Join(baseRunDir, "user", fmt.Sprintf("%d", uid), "docker.sock")
 	if fileExists(f) {
-		return f, nil
+		return DockerSocketSchema + f, nil
 	}
 	return "", ErrRootlessDockerNotFoundRunDir
 }
