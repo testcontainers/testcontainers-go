@@ -45,7 +45,7 @@ When starting the K3s container, you can pass options in a variadic way to confi
 #### Image
 
 If you need to set a different K3s Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for K3s. E.g. `testcontainers.WithImage("docker.io/rancher/k3s:latest")`.
+for K3s. E.g. `testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1")`.
 
 #### Wait Strategies
 
