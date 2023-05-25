@@ -22,6 +22,12 @@ var testDockerConfigDirPath = filepath.Join("testdata", ".docker")
 
 var indexDockerIO = testcontainersdocker.IndexDockerIO
 
+var originalDockerAuthConfig string
+
+func init() {
+	originalDockerAuthConfig = os.Getenv("DOCKER_AUTH_CONFIG")
+}
+
 func TestGetDockerConfig(t *testing.T) {
 	const expectedErrorMessage = "Expected to find %s in auth configs"
 
@@ -76,6 +82,10 @@ func TestGetDockerConfig(t *testing.T) {
 	})
 
 	t.Run("DOCKER_AUTH_CONFIG env var takes precedence", func(t *testing.T) {
+		t.Cleanup(func() {
+			os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
+		})
+
 		t.Setenv("DOCKER_AUTH_CONFIG", `{
 			"auths": {
 					"`+exampleAuth+`": {}
@@ -101,6 +111,10 @@ func TestGetDockerConfig(t *testing.T) {
 	})
 
 	t.Run("retrieve auth with DOCKER_AUTH_CONFIG env var", func(t *testing.T) {
+		t.Cleanup(func() {
+			os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
+		})
+
 		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
 
 		t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -137,6 +151,10 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 }
 
 func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
+	t.Cleanup(func() {
+		os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
+	})
+
 	// using the same credentials as in the Docker Registry
 	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -182,6 +200,10 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 }
 
 func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *testing.T) {
+	t.Cleanup(func() {
+		os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
+	})
+
 	// using different credentials than in the Docker Registry
 	base64 := "Zm9vOmJhcg==" // foo:bar
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -210,6 +232,11 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 }
 
 func TestCreateContainerFromPrivateRegistry(t *testing.T) {
+	t.Cleanup(func() {
+		os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
+	})
+	os.Unsetenv("DOCKER_AUTH_CONFIG")
+
 	// using the same credentials as in the Docker Registry
 	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
