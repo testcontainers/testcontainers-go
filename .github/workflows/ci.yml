@@ -55,6 +55,10 @@ jobs:
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: make test-unit
 
+      - name: Run module generator tests
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: make -C modulegen test-unit
+
       - name: Run checker
         run: |
           ./scripts/check_environment.sh
