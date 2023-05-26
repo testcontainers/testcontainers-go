@@ -275,6 +275,33 @@ func (m mockCli) Info(ctx context.Context) (types.Info, error) {
 func TestExtractDockerSocketFromClient(t *testing.T) {
 	setupDockerHostNotFound(t)
 
+	t.Run("Docker socket from Testcontainers host defined in properties", func(t *testing.T) {
+		tmpSocket := "tcp://127.0.0.1:12345"
+		content := "tc.host=" + tmpSocket
+
+		config.Reset()
+		setupTestcontainersProperties(t, content)
+		defer config.Reset()
+
+		socket := extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
+		assert.Equal(t, tmpSocket, socket)
+	})
+
+	t.Run("Docker socket from Testcontainers host takes precedence over TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", func(t *testing.T) {
+		tmpSocket := "tcp://127.0.0.1:12345"
+		content := "tc.host=" + tmpSocket
+
+		config.Reset()
+		setupTestcontainersProperties(t, content)
+		t.Cleanup(config.Reset)
+
+		t.Cleanup(resetSocketOverrideFn)
+		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
+
+		socket := extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
+		assert.Equal(t, tmpSocket, socket)
+	})
+
 	t.Run("Docker Socket as Testcontainers environment variable", func(t *testing.T) {
 		t.Cleanup(resetSocketOverrideFn)
 
