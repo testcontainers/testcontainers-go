@@ -26,7 +26,13 @@ func ReadConfig() TestcontainersConfig {
 // ReadConfigWithContext reads from testcontainers properties file, storing the result in a singleton instance
 // of the TestcontainersConfig struct
 func ReadConfigWithContext(ctx context.Context) TestcontainersConfig {
+	cfg := config.Read(ctx)
 	return TestcontainersConfig{
-		Config: config.Read(ctx),
+		Host:           cfg.Host,
+		TLSVerify:      cfg.TLSVerify,
+		CertPath:       cfg.CertPath,
+		RyukDisabled:   cfg.RyukDisabled,
+		RyukPrivileged: cfg.RyukPrivileged,
+		Config:         cfg,
 	}
 }

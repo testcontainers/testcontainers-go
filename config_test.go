@@ -25,6 +25,7 @@ func TestReadConfig(t *testing.T) {
 		cfg := ReadConfigWithContext(context.Background())
 
 		expected := TestcontainersConfig{
+			RyukDisabled: true,
 			Config: config.Config{
 				RyukDisabled: true,
 			},
