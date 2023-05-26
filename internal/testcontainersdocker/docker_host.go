@@ -61,7 +61,7 @@ func DefaultGatewayIP() (string, error) {
 //  4. Docker host from the default docker socket path, without the unix schema.
 //  5. Docker host from the "docker.host" property in the ~/.testcontainers.properties file.
 //  6. Rootless docker socket path.
-//  7. Else, an empty string is returned.
+//  7. Else, the default Docker socket including schema will be returned.
 func ExtractDockerHost(ctx context.Context) string {
 	dockerHostOnce.Do(func() {
 		dockerHostCache = extractDockerHost(ctx)

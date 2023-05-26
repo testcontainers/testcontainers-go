@@ -72,7 +72,7 @@ See [Docker environment variables](https://docs.docker.com/engine/reference/comm
     3. `${HOME}/.docker/desktop/docker.sock`.
     4. `/run/user/${UID}/docker.sock`, where `${UID}` is the user ID of the current user.
 
-7. Return an empty string if none of the above are set.
+7. The default Docker socket including schema will be returned if none of the above are set.
 
 ## Docker socket path detection
 
