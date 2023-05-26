@@ -24,7 +24,7 @@ Variations on the HTTP wait strategy are supported, including:
 ## Match an HTTP method with Port
 
 <!--codeinclude-->
-[Waiting for an HTTP endpoint](../../../wait/http_test.go) inside_block:waitForHTTPWithPorg
+[Waiting for an HTTP endpoint](../../../wait/http_test.go) inside_block:waitForHTTPWithPort
 <!--/codeinclude-->
 
 ## Match an HTTP method with Basic Auth
