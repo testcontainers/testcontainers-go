@@ -2,10 +2,12 @@ package testcontainers
 
 import (
 	"testing"
+
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
 func TestProviderTypeGetProviderAutodetect(t *testing.T) {
-	const dockerSocket = "unix:///var/run/docker.sock"
+	var dockerSocket = testcontainersdocker.DockerSocketPathWithSchema
 	const podmanSocket = "unix://$XDG_RUNTIME_DIR/podman/podman.sock"
 
 	tests := []struct {

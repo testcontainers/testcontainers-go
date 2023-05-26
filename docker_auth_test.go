@@ -22,6 +22,12 @@ var testDockerConfigDirPath = filepath.Join("testdata", ".docker")
 
 var indexDockerIO = testcontainersdocker.IndexDockerIO
 
+var originalDockerAuthConfig string
+
+func init() {
+	originalDockerAuthConfig = os.Getenv("DOCKER_AUTH_CONFIG")
+}
+
 func TestGetDockerConfig(t *testing.T) {
 	const expectedErrorMessage = "Expected to find %s in auth configs"
 
@@ -76,6 +82,10 @@ func TestGetDockerConfig(t *testing.T) {
 	})
 
 	t.Run("DOCKER_AUTH_CONFIG env var takes precedence", func(t *testing.T) {
+		t.Cleanup(func() {
+			os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
+		})
+
 		t.Setenv("DOCKER_AUTH_CONFIG", `{
 			"auths": {
 					"`+exampleAuth+`": {}
@@ -101,6 +111,10 @@ func TestGetDockerConfig(t *testing.T) {
 	})
 
 	t.Run("retrieve auth with DOCKER_AUTH_CONFIG env var", func(t *testing.T) {
+		t.Cleanup(func() {
+			os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
+		})
+
 		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
 
 		t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -127,8 +141,9 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 		FromDockerfile: FromDockerfile{
 			Context: "./testdata",
 		},
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("Ready to accept connections"),
+		AlwaysPullImage: true, // make sure the authentication takes place
+		ExposedPorts:    []string{"6379/tcp"},
+		WaitingFor:      wait.ForLog("Ready to accept connections"),
 	}
 
 	redisC, err := prepareRedisImage(ctx, req, t)
@@ -136,7 +151,29 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, redisC)
 }
 
+// removeImageFromLocalCache removes the image from the local cache
+func removeImageFromLocalCache(t *testing.T, image string) {
+	ctx := context.Background()
+
+	testcontainersClient, err := testcontainersdocker.NewClient(ctx, client.WithVersion(daemonMaxVersion))
+	if err != nil {
+		t.Log("could not create client to cleanup registry: ", err)
+	}
+
+	_, err = testcontainersClient.ImageRemove(ctx, image, types.ImageRemoveOptions{
+		Force:         true,
+		PruneChildren: true,
+	})
+	if err != nil {
+		t.Logf("could not remove image %s: %v", image, err)
+	}
+}
+
 func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
+	t.Cleanup(func() {
+		os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
+	})
+
 	// using the same credentials as in the Docker Registry
 	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -147,22 +184,6 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 	}`)
 
 	prepareLocalRegistryWithAuth(t)
-	defer func() {
-		ctx := context.Background()
-		testcontainersClient, err := client.NewClientWithOpts(client.WithVersion(daemonMaxVersion))
-		if err != nil {
-			t.Log("could not create client to cleanup registry: ", err)
-		}
-
-		_, err = testcontainersClient.ImageRemove(ctx, "localhost:5000/redis:5.0-alpine", types.ImageRemoveOptions{
-			Force:         true,
-			PruneChildren: true,
-		})
-		if err != nil {
-			t.Log("could not remove image: ", err)
-		}
-
-	}()
 
 	ctx := context.Background()
 
@@ -171,9 +192,9 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 			Context:    "./testdata",
 			Dockerfile: "auth.Dockerfile",
 		},
-
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("Ready to accept connections"),
+		AlwaysPullImage: true, // make sure the authentication takes place
+		ExposedPorts:    []string{"6379/tcp"},
+		WaitingFor:      wait.ForLog("Ready to accept connections"),
 	}
 
 	redisC, err := prepareRedisImage(ctx, req, t)
@@ -182,6 +203,10 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 }
 
 func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *testing.T) {
+	t.Cleanup(func() {
+		os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
+	})
+
 	// using different credentials than in the Docker Registry
 	base64 := "Zm9vOmJhcg==" // foo:bar
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -200,8 +225,9 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 			Context:    "./testdata",
 			Dockerfile: "auth.Dockerfile",
 		},
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("Ready to accept connections"),
+		AlwaysPullImage: true, // make sure the authentication takes place
+		ExposedPorts:    []string{"6379/tcp"},
+		WaitingFor:      wait.ForLog("Ready to accept connections"),
 	}
 
 	redisC, err := prepareRedisImage(ctx, req, t)
@@ -210,6 +236,11 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 }
 
 func TestCreateContainerFromPrivateRegistry(t *testing.T) {
+	t.Cleanup(func() {
+		os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
+	})
+	os.Unsetenv("DOCKER_AUTH_CONFIG")
+
 	// using the same credentials as in the Docker Registry
 	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -276,6 +307,9 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 	registryC, err := GenericContainer(ctx, genContainerReq)
 	assert.NoError(t, err)
 
+	t.Cleanup(func() {
+		removeImageFromLocalCache(t, "localhost:5000/redis:5.0-alpine")
+	})
 	t.Cleanup(func() {
 		assert.NoError(t, registryC.Terminate(context.Background()))
 	})
