@@ -28,7 +28,7 @@ func ExampleHTTPStrategy() {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx:latest",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithPort("80/tcp"),
+		WaitingFor:   wait.ForHTTP("/"),
 	}
 
 	gogs, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -55,7 +55,7 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 	req := testcontainers.ContainerRequest{
 		Image:        "gogs/gogs:0.11.91",
 		ExposedPorts: []string{"3000/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithPort("3000/tcp").WithBasicAuth("username", "password"),
+		WaitingFor:   wait.ForHTTP("/").WithBasicAuth("username", "password"),
 	}
 
 	gogs, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -187,7 +187,7 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 		},
 		ExposedPorts: []string{"6443/tcp"},
 		WaitingFor: wait.NewHTTPStrategy("/ping").WithTLS(true, tlsconfig).
-			WithStartupTimeout(time.Second * 10).WithPort("6443/tcp").
+			WithStartupTimeout(time.Second * 10).
 			WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
 				return bytes.Equal(data, []byte("pong"))
