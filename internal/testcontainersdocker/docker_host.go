@@ -102,13 +102,13 @@ func extractDockerHost(ctx context.Context) string {
 
 	outerErr := ErrSocketNotFound
 	for _, dockerHostFn := range dockerHostFns {
-		socketPath, err := dockerHostFn(ctx)
+		dockerHost, err := dockerHostFn(ctx)
 		if err != nil {
 			outerErr = fmt.Errorf("%w: %v", outerErr, err)
 			continue
 		}
 
-		return socketPath
+		return dockerHost
 	}
 
 	// We are not supporting Windows containers at the moment
