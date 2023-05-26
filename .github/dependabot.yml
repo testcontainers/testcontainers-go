@@ -43,6 +43,12 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /examples/nats
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /examples/nginx
       schedule:
         interval: monthly
@@ -80,6 +86,12 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/couchbase
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/k3s
       schedule:
         interval: monthly
       open-pull-requests-limit: 3

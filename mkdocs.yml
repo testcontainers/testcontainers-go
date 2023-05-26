@@ -58,6 +58,7 @@ nav:
     - Modules:
         - modules/index.md
         - modules/couchbase.md
+        - modules/k3s.md
         - modules/localstack.md
         - modules/mysql.md
         - modules/neo4j.md
@@ -74,12 +75,14 @@ nav:
         - examples/datastore.md
         - examples/firestore.md
         - examples/mongodb.md
+        - examples/nats.md
         - examples/nginx.md
         - examples/pubsub.md
         - examples/spanner.md
         - examples/toxiproxy.md
     - System Requirements:
         - system_requirements/index.md
+        - system_requirements/docker.md
         - system_requirements/using_colima.md
         - system_requirements/using_podman.md
     - Contributing:
