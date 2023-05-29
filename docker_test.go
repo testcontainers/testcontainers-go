@@ -1680,7 +1680,7 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 				ContainerRequest: ContainerRequest{
-					Image:        "nginx:1.17.6",
+					Image:        "docker.io/nginx:1.17.6",
 					ExposedPorts: []string{"80/tcp"},
 					WaitingFor:   wait.ForListeningPort("80/tcp"),
 					Files:        tc.files,
@@ -1764,7 +1764,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 				ContainerRequest: ContainerRequest{
-					Image:        "nginx:1.17.6",
+					Image:        "docker.io/nginx:1.17.6",
 					ExposedPorts: []string{"80/tcp"},
 					WaitingFor:   wait.ForListeningPort("80/tcp"),
 					Files:        []ContainerFile{tc.dir},
@@ -2251,7 +2251,7 @@ func TestDockerProviderFindContainerByName(t *testing.T) {
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Name:       "test",
-			Image:      "nginx:1.17.6",
+			Image:      "docker.io/nginx:1.17.6",
 			WaitingFor: wait.ForExposedPort(),
 		},
 		Started: true,
@@ -2265,7 +2265,7 @@ func TestDockerProviderFindContainerByName(t *testing.T) {
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Name:       "test2",
-			Image:      "nginx:1.17.6",
+			Image:      "docker.io/nginx:1.17.6",
 			WaitingFor: wait.ForExposedPort(),
 		},
 		Started: true,

@@ -1,4 +1,4 @@
-FROM nginx:a as builderA
-FROM nginx:b as builderB
-FROM nginx:c as builderC
+FROM docker.io/nginx:a as builderA
+FROM docker.io/nginx:b as builderB
+FROM docker.io/nginx:c as builderC
 FROM scratch

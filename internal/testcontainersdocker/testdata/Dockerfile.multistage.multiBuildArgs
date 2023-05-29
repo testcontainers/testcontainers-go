@@ -1,5 +1,5 @@
-ARG BASE_IMAGE=scratch
-ARG NGINX_IMAGE=nginx:latest
+ARG BASE_IMAGE=docker.io/scratch
+ARG NGINX_IMAGE=docker.io/nginx:latest
 ARG REGISTRY_HOST=localhost
 ARG REGISTRY_PORT=5000
 FROM ${NGINX_IMAGE} as builderA

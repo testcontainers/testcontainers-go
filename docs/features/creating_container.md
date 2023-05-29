@@ -155,7 +155,7 @@ ctx := context.Background()
 
 n1, err := GenericContainer(ctx, GenericContainerRequest{
 	ContainerRequest: ContainerRequest{
-		Image:        "nginx:1.17.6",
+		Image:        "docker.io/nginx:1.17.6",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForListeningPort("80/tcp"),
 		Name:         reusableContainerName,
@@ -176,7 +176,7 @@ if err != nil {
 
 n2, err := GenericContainer(ctx, GenericContainerRequest{
 	ContainerRequest: ContainerRequest{
-		Image:        "nginx:1.17.6",
+		Image:        "docker.io/nginx:1.17.6",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForListeningPort("80/tcp"),
 		Name:         reusableContainerName,

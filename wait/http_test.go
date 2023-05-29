@@ -26,7 +26,7 @@ func ExampleHTTPStrategy() {
 	// waitForHTTP {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:        "nginx:latest",
+		Image:        "docker.io/nginx:latest",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithPort("80/tcp"),
 	}
