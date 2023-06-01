@@ -865,7 +865,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// Make sure that bridge network exists
 	// In case it is disabled we will create reaper_default network
 	if p.DefaultNetwork == "" {
-		p.DefaultNetwork, err = p.getDefaultNetwork(ctx, p.client)
+		p.DefaultNetwork, err = p.getDefaultNetwork(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -1259,7 +1259,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	// Make sure that bridge network exists
 	// In case it is disabled we will create reaper_default network
 	if p.DefaultNetwork == "" {
-		if p.DefaultNetwork, err = p.getDefaultNetwork(ctx, p.client); err != nil {
+		if p.DefaultNetwork, err = p.getDefaultNetwork(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -1329,7 +1329,7 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	// Use a default network as defined in the DockerProvider
 	if p.DefaultNetwork == "" {
 		var err error
-		p.DefaultNetwork, err = p.getDefaultNetwork(ctx, p.client)
+		p.DefaultNetwork, err = p.getDefaultNetwork(ctx)
 		if err != nil {
 			return "", err
 		}
@@ -1353,9 +1353,9 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	return ip, nil
 }
 
-func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APIClient) (string, error) {
+func (p *DockerProvider) getDefaultNetwork(ctx context.Context) (string, error) {
 	// Get list of available networks
-	networkResources, err := cli.NetworkList(ctx, types.NetworkListOptions{})
+	networkResources, err := p.client.NetworkList(ctx, types.NetworkListOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -1376,7 +1376,7 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 
 	// Create a bridge network for the container communications
 	if !reaperNetworkExists {
-		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
+		_, err = p.client.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
 			Driver:     Bridge,
 			Attachable: true,
 			Labels: map[string]string{
