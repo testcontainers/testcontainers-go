@@ -253,7 +253,7 @@ func Test_StartStop(t *testing.T) {
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {
-	if providerType == ProviderPodman {
+	if testcontainersdocker.IsPodman() {
 		t.Skip("Docker-in-Docker does not work with rootless Podman")
 	}
 	// First spin up a docker-in-docker container, then spin up an inner container within that dind container

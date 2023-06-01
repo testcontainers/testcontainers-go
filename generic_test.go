@@ -17,7 +17,6 @@ func TestGenericReusableContainer(t *testing.T) {
 	ctx := context.Background()
 
 	n1, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:        nginxAlpineImage,
 			ExposedPorts: []string{nginxDefaultPort},
@@ -74,7 +73,6 @@ func TestGenericReusableContainer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			n2, err := GenericContainer(ctx, GenericContainerRequest{
-				ProviderType: providerType,
 				ContainerRequest: ContainerRequest{
 					Image:        nginxAlpineImage,
 					ExposedPorts: []string{nginxDefaultPort},

@@ -15,7 +15,6 @@ func TestToxiproxy(t *testing.T) {
 	ctx := context.Background()
 
 	newNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
-		ProviderType: testcontainers.ProviderDocker,
 		NetworkRequest: testcontainers.NetworkRequest{
 			Name:           "newNetwork",
 			CheckDuplicate: true,

@@ -29,6 +29,10 @@ func init() {
 }
 
 func TestGetDockerConfig(t *testing.T) {
+	if testcontainersdocker.IsPodman() {
+		t.Skip("dockercfg dependency does not support Podman's config file yet")
+	}
+
 	const expectedErrorMessage = "Expected to find %s in auth configs"
 
 	// Verify that the default docker config file exists before any test in this suite runs.
@@ -170,6 +174,10 @@ func removeImageFromLocalCache(t *testing.T, image string) {
 }
 
 func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
+	if testcontainersdocker.IsPodman() {
+		t.Skip("dockercfg dependency does not support Podman's config file yet")
+	}
+
 	t.Cleanup(func() {
 		os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
 	})
@@ -236,6 +244,10 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 }
 
 func TestCreateContainerFromPrivateRegistry(t *testing.T) {
+	if testcontainersdocker.IsPodman() {
+		t.Skip("dockercfg dependency does not support Podman's config file yet")
+	}
+
 	t.Cleanup(func() {
 		os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
 	})
@@ -299,7 +311,6 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 	}
 
 	genContainerReq := GenericContainerRequest{
-		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	}
@@ -320,7 +331,6 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 
 func prepareRedisImage(ctx context.Context, req ContainerRequest, t *testing.T) (Container, error) {
 	genContainerReq := GenericContainerRequest{
-		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	}
