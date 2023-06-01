@@ -18,12 +18,15 @@ type Network interface {
 	Remove(context.Context) error // removes the network
 }
 
+// Deprecated: the default network is automatically detected from the environment
 type DefaultNetwork string
 
+// Deprecated: the default network is automatically detected from the environment
 func (n DefaultNetwork) ApplyGenericTo(opts *GenericProviderOptions) {
 	opts.DefaultNetwork = string(n)
 }
 
+// Deprecated: the default network is automatically detected from the environment
 func (n DefaultNetwork) ApplyDockerTo(opts *DockerProviderOptions) {
 	opts.DefaultNetwork = string(n)
 }

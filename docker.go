@@ -769,6 +769,15 @@ type DockerProvider struct {
 	config    TestcontainersConfig
 }
 
+// BridgeNetworkName gets the name of the bridge newwork: bridge or podman
+func (p *DockerProvider) BridgeNetworkName() string {
+	if testcontainersdocker.IsPodman() {
+		return Podman
+	}
+
+	return Bridge
+}
+
 // Client gets the docker client used by the provider
 func (p *DockerProvider) Client() client.APIClient {
 	return p.client
@@ -874,7 +883,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// If default network is not bridge make sure it is attached to the request
 	// as container won't be attached to it automatically
 	// in case of Podman the bridge network is called 'podman' as 'bridge' would conflict
-	if p.DefaultNetwork != p.defaultBridgeNetworkName {
+	if p.DefaultNetwork != p.BridgeNetworkName() {
 		isAttached := false
 		for _, net := range req.Networks {
 			if net == p.DefaultNetwork {
@@ -1353,6 +1362,10 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	return ip, nil
 }
 
+// getDefaultNetwork returns the name of the default network. In the case the default bridge
+// network is present in the list of available networks, it will be returned. Otherwise, it will
+// check if the reaper_default network is present. If the bridge network is not present and the
+// reaper network is not present, it will create the reaper_default network, returning the latter's name.
 func (p *DockerProvider) getDefaultNetwork(ctx context.Context) (string, error) {
 	// Get list of available networks
 	networkResources, err := p.client.NetworkList(ctx, types.NetworkListOptions{})
@@ -1364,9 +1377,10 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context) (string, error) 
 
 	reaperNetworkExists := false
 
+	defaultBridgeNetworkName := p.BridgeNetworkName()
 	for _, net := range networkResources {
-		if net.Name == p.defaultBridgeNetworkName {
-			return p.defaultBridgeNetworkName, nil
+		if net.Name == defaultBridgeNetworkName {
+			return defaultBridgeNetworkName, nil
 		}
 
 		if net.Name == reaperNetwork {
