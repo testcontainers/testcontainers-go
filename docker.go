@@ -1382,6 +1382,11 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context) (string, error) 
 		if net.Name == defaultBridgeNetworkName {
 			return defaultBridgeNetworkName, nil
 		}
+		// even though the bridge network is called 'podman' in podman,
+		// the Docker API still returns 'bridge' as the name
+		if net.Name == Bridge {
+			return defaultBridgeNetworkName, nil
+		}
 
 		if net.Name == reaperNetwork {
 			reaperNetworkExists = true
