@@ -132,7 +132,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 		t.Skip("Skipping test that requires host network access when running in a container")
 	}
 
-	absPath, err := filepath.Abs("./testdata/nginx-highport.conf")
+	absPath, err := filepath.Abs(filepath.Join("testdata", "nginx-highport.conf"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,7 +237,7 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 
 	ctx := context.Background()
 
-	absPath, err := filepath.Abs("./testdata/nginx-highport.conf")
+	absPath, err := filepath.Abs(filepath.Join("testdata", "nginx-highport.conf"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +278,7 @@ func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
 
 	ctx := context.Background()
 
-	absPath, err := filepath.Abs("./testdata/nginx-highport.conf")
+	absPath, err := filepath.Abs(filepath.Join("testdata", "nginx-highport.conf"))
 	if err != nil {
 		t.Fatal(err)
 	}
