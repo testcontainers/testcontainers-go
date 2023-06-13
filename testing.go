@@ -23,7 +23,7 @@ func SkipIfProviderIsNotHealthy(t *testing.T) {
 	}
 }
 
-// SkipIfProviderIsNotHealthy is a utility function capable of skipping tests
+// SkipIfDockerDesktop is a utility function capable of skipping tests
 // if tests are run using Docker Desktop.
 func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
 	cli, err := testcontainersdocker.NewClient(ctx)
