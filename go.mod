@@ -12,9 +12,9 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/imdario/mergo v0.3.15
 	github.com/magiconair/properties v1.8.7
-	github.com/moby/term v0.0.0-20221128092401-c43b287e0e0f
+	github.com/moby/term v0.5.0
 	github.com/opencontainers/image-spec v1.1.0-rc2
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
 	golang.org/x/sys v0.8.0
 	gotest.tools/gotestsum v1.10.0
@@ -23,7 +23,6 @@ require (
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
-	github.com/creack/pty v1.1.17 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect

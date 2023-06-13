@@ -27,12 +27,13 @@ ARG FOO
 You can specify them like:
 
 ```go
+val := "BAR" 
 req := ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context: "/path/to/build/context",
 			Dockerfile: "CustomDockerfile",
 			BuildArgs: map[string]*string {
-				"FOO": "BAR",
+				"FOO": &val,
 			},
 		},
 	}

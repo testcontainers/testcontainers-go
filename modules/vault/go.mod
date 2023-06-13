@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/docker/docker v23.0.5+incompatible
 	github.com/hashicorp/vault-client-go v0.3.3
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.20.1
 	github.com/tidwall/gjson v1.14.4
 	gotest.tools/gotestsum v1.10.0
@@ -42,7 +42,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/moby/patternmatcher v0.5.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
-	github.com/moby/term v0.0.0-20221128092401-c43b287e0e0f // indirect
+	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect

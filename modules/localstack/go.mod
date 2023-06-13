@@ -3,13 +3,13 @@ module github.com/testcontainers/testcontainers-go/modules/localstack
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.268
+	github.com/aws/aws-sdk-go v1.44.273
 	github.com/aws/aws-sdk-go-v2 v1.18.0
 	github.com/aws/aws-sdk-go-v2/config v1.18.25
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.24
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.33.1
 	github.com/docker/go-connections v0.4.0
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.20.1
 	golang.org/x/mod v0.10.0
 	gotest.tools/gotestsum v1.10.0
@@ -54,7 +54,7 @@ require (
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/moby/patternmatcher v0.5.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
-	github.com/moby/term v0.0.0-20221128092401-c43b287e0e0f // indirect
+	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
