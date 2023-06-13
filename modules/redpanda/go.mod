@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/docker/go-connections v0.4.0
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.20.1
 	github.com/twmb/franz-go v1.13.4
 	github.com/twmb/franz-go/pkg/kadm v1.8.1
@@ -46,6 +46,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.5.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
+	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
