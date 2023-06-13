@@ -132,12 +132,14 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 		t.Skip("Skipping test that requires host network access when running in a container")
 	}
 
+	ctx := context.Background()
+	SkipIfDockerDesktop(t, ctx)
+
 	absPath, err := filepath.Abs(filepath.Join("testdata", "nginx-highport.conf"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -209,7 +211,11 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 		t.Skip("Skipping test that requires host network access when running in a container")
 	}
 
+	// skipIfDockerDesktop {
 	ctx := context.Background()
+	SkipIfDockerDesktop(t, ctx)
+	// }
+
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -236,6 +242,7 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 	}
 
 	ctx := context.Background()
+	SkipIfDockerDesktop(t, ctx)
 
 	absPath, err := filepath.Abs(filepath.Join("testdata", "nginx-highport.conf"))
 	if err != nil {
@@ -277,6 +284,7 @@ func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
 	}
 
 	ctx := context.Background()
+	SkipIfDockerDesktop(t, ctx)
 
 	absPath, err := filepath.Abs(filepath.Join("testdata", "nginx-highport.conf"))
 	if err != nil {
