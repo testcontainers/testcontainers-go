@@ -236,7 +236,7 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, nginx)
 }
 
-func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
+func TestContainerWithHostNetwork(t *testing.T) {
 	if os.Getenv("XDG_RUNTIME_DIR") != "" {
 		t.Skip("Skipping test that requires host network access when running in a container")
 	}
@@ -266,6 +266,17 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
+
+	portEndpoint, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
+	if err != nil {
+		t.Errorf("Expected port endpoint %s. Got '%d'.", portEndpoint, err)
+	}
+	t.Log(portEndpoint)
+
+	_, err = http.Get(portEndpoint)
+	if err != nil {
+		t.Errorf("Expected OK response. Got '%v'.", err)
+	}
 
 	host, err := nginxC.Host(ctx)
 	if err != nil {
@@ -273,49 +284,6 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 	}
 
 	_, err = http.Get("http://" + host + ":8080")
-	if err != nil {
-		t.Errorf("Expected OK response. Got '%v'.", err)
-	}
-}
-
-func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
-	if os.Getenv("XDG_RUNTIME_DIR") != "" {
-		t.Skip("Skipping test that requires host network access when running in a container")
-	}
-
-	ctx := context.Background()
-	SkipIfDockerDesktop(t, ctx)
-
-	absPath, err := filepath.Abs(filepath.Join("testdata", "nginx-highport.conf"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	gcr := GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:      nginxAlpineImage,
-			WaitingFor: wait.ForListeningPort(nginxHighPort),
-			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
-			HostConfigModifier: func(hc *container.HostConfig) {
-				hc.NetworkMode = "host"
-			},
-		},
-		Started: true,
-	}
-
-	nginxC, err := GenericContainer(ctx, gcr)
-
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
-
-	hostN, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
-	if err != nil {
-		t.Errorf("Expected host %s. Got '%d'.", hostN, err)
-	}
-	t.Log(hostN)
-
-	_, err = http.Get(hostN)
 	if err != nil {
 		t.Errorf("Expected OK response. Got '%v'.", err)
 	}
