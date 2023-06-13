@@ -58,7 +58,6 @@ func TestExtractDockerHost(t *testing.T) {
 		tmpHost := "tcp://127.0.0.1:12345"
 		content := "tc.host=" + tmpHost
 
-		config.Reset()
 		setupTestcontainersProperties(t, content)
 
 		host := extractDockerHost(context.Background())
@@ -127,9 +126,7 @@ func TestExtractDockerHost(t *testing.T) {
 			tmpSocket := "tcp://127.0.0.1:12345"
 			content := "tc.host=" + tmpSocket
 
-			config.Reset()
 			setupTestcontainersProperties(t, content)
-			defer config.Reset()
 
 			socket, err := testcontainersHostFromProperties(context.Background())
 			require.Nil(t, err)
@@ -139,9 +136,7 @@ func TestExtractDockerHost(t *testing.T) {
 		t.Run("Testcontainers host is not defined in properties", func(t *testing.T) {
 			content := "ryuk.disabled=false"
 
-			config.Reset()
 			setupTestcontainersProperties(t, content)
-			defer config.Reset()
 
 			socket, err := testcontainersHostFromProperties(context.Background())
 			require.ErrorIs(t, err, ErrTestcontainersHostNotSetInProperties)
@@ -228,7 +223,6 @@ func TestExtractDockerHost(t *testing.T) {
 			tmpSocket := "/this/is/a/sample.sock"
 			content := "docker.host=unix://" + tmpSocket
 
-			config.Reset()
 			setupTestcontainersProperties(t, content)
 
 			socket, err := dockerHostFromProperties(context.Background())
@@ -239,7 +233,6 @@ func TestExtractDockerHost(t *testing.T) {
 		t.Run("Docker host is not defined in properties", func(t *testing.T) {
 			content := "ryuk.disabled=false"
 
-			config.Reset()
 			setupTestcontainersProperties(t, content)
 
 			socket, err := dockerHostFromProperties(context.Background())
@@ -279,30 +272,28 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		tmpSocket := "tcp://127.0.0.1:12345"
 		content := "tc.host=" + tmpSocket
 
-		config.Reset()
 		setupTestcontainersProperties(t, content)
-		defer config.Reset()
 
 		socket := extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
-		assert.Equal(t, tmpSocket, socket)
+		assert.Equal(t, "/var/run/docker.sock", socket)
 	})
 
 	t.Run("Docker socket from Testcontainers host takes precedence over TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", func(t *testing.T) {
 		tmpSocket := "tcp://127.0.0.1:12345"
 		content := "tc.host=" + tmpSocket
 
-		config.Reset()
 		setupTestcontainersProperties(t, content)
-		t.Cleanup(config.Reset)
 
 		t.Cleanup(resetSocketOverrideFn)
 		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
 
 		socket := extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
-		assert.Equal(t, tmpSocket, socket)
+		assert.Equal(t, "/var/run/docker.sock", socket)
 	})
 
 	t.Run("Docker Socket as Testcontainers environment variable", func(t *testing.T) {
+		setupTestcontainersProperties(t, "")
+
 		t.Cleanup(resetSocketOverrideFn)
 
 		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
@@ -312,6 +303,8 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 	})
 
 	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Docker Desktop)", func(t *testing.T) {
+		setupTestcontainersProperties(t, "")
+
 		t.Cleanup(resetSocketOverrideFn)
 
 		ctx := context.Background()
@@ -324,6 +317,8 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 	})
 
 	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Not Docker Desktop)", func(t *testing.T) {
+		setupTestcontainersProperties(t, "")
+
 		t.Cleanup(resetSocketOverrideFn)
 
 		ctx := context.Background()
@@ -420,6 +415,8 @@ func setupTestcontainersProperties(t *testing.T, content string) {
 		// reset the properties file after the test
 		config.Reset()
 	})
+
+	config.Reset()
 
 	tmpDir := t.TempDir()
 	homeDir := filepath.Join(tmpDir, "home")

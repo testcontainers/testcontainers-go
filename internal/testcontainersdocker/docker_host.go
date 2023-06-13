@@ -135,6 +135,11 @@ func extractDockerSocket(ctx context.Context) string {
 func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) string {
 	tcHost, err := testcontainersHostFromProperties(ctx)
 	if err == nil {
+		// this use case will cover the case when the docker host is a tcp socket
+		if strings.HasPrefix(tcHost, "tcp://") {
+			return "/var/run/docker.sock"
+		}
+
 		return tcHost
 	}
 
