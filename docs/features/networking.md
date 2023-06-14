@@ -47,6 +47,24 @@ It is normally advisable to use `Host` and `MappedPort` together when constructi
 !!! info
     Setting the `TC_HOST` environment variable overrides the host of the docker daemon where the container port is exposed. For example, `TC_HOST=172.17.0.1`.
 
+## Docker's host networking mode
+
+From [Docker documentation](https://docs.docker.com/network/drivers/host/):
+
+> If you use the host network mode for a container, that container’s network stack is not isolated from the Docker host (the container shares the host’s networking namespace), and the container does not get its own IP-address allocated. For instance, if you run a container which binds to port 80 and you use host networking, the container’s application is available on port 80 on the host’s IP address.
+
+But according to those docs, it's supported only for Linux hosts:
+
+> The host networking driver only works on Linux hosts, and is not supported on Docker Desktop for Mac, Docker Desktop for Windows, or Docker EE for Windows Server.
+
+In the case you need to skip a test on non-Linux hosts, you can use the `SkipIfDockerDesktop` function:
+
+<!--codeinclude-->
+[Skipping tests on non-Linux hosts](../../docker_test.go) inside_block:skipIfDockerDesktop
+<!--/codeinclude-->
+
+It will try to get a Docker client and obtain its Info. In the case the Operation System is "Docker Desktop", it will skip the test.
+
 ## Advanced networking
 
 Docker provides the ability for you to create custom networks and place containers on one or more networks. Then, communication can occur between networked containers without the need of exposing ports through the host. With Testcontainers, you can do this as well. 
