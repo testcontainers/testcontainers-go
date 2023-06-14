@@ -3,14 +3,14 @@ name: Datastore example pipeline
 on:
   push:
     paths-ignore:
-    - 'mkdocs.yml'
-    - 'docs/**'
-    - 'README.md'
+      - "mkdocs.yml"
+      - "docs/**"
+      - "README.md"
   pull_request:
     paths-ignore:
-    - 'mkdocs.yml'
-    - 'docs/**'
-    - 'README.md'
+      - "mkdocs.yml"
+      - "docs/**"
+      - "README.md"
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.head_ref || github.sha }}"
@@ -23,7 +23,6 @@ jobs:
         go-version: [1.19.x, 1.x]
     runs-on: "ubuntu-latest"
     steps:
-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
@@ -52,5 +51,5 @@ jobs:
       - name: Test Summary
         uses: test-summary/action@4ee9ece4bca777a38f05c8fc578ac2007fe266f7
         with:
-          paths: "**/TEST-datastore*.xml"
+          paths: "**/TEST-unit*.xml"
         if: always()
