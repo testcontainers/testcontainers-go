@@ -127,6 +127,10 @@ func Test_GetDockerfile(t *testing.T) {
 }
 
 func Test_BuildImageWithContexts(t *testing.T) {
+	if testcontainersdocker.IsPodman() {
+		t.Skip("Incompatible Docker API version for Podman")
+	}
+
 	type TestCase struct {
 		Name               string
 		ContextPath        string

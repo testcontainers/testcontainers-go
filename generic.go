@@ -22,7 +22,7 @@ var (
 type GenericContainerRequest struct {
 	ContainerRequest              // embedded request for provider
 	Started          bool         // whether to auto-start the container
-	ProviderType     ProviderType // which provider to use, Docker if empty
+	ProviderType     ProviderType // Deprecated: it will be discovered from the environment. Which provider to use, Docker if empty
 	Logger           Logging      // provide a container specific Logging - use default global logger if empty
 	Reuse            bool         // reuse an existing container if it exists or create a new one. a container name mustn't be empty
 }
@@ -95,7 +95,7 @@ func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Stra
 // GenericNetworkRequest represents parameters to a generic network
 type GenericNetworkRequest struct {
 	NetworkRequest              // embedded request for provider
-	ProviderType   ProviderType // which provider to use, Docker if empty
+	ProviderType   ProviderType // Deprecated: it will be discovered from the environment. Which provider to use, Docker if empty
 }
 
 // GenericNetwork creates a generic network with parameters

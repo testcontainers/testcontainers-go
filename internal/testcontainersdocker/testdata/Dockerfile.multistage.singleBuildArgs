@@ -1,5 +1,5 @@
-ARG BASE_IMAGE=scratch
-FROM nginx:a as builderA
-FROM nginx:b as builderB
-FROM nginx:c as builderC
+ARG BASE_IMAGE=docker.io/scratch
+FROM docker.io/nginx:a as builderA
+FROM docker.io/nginx:b as builderB
+FROM docker.io/nginx:c as builderC
 FROM ${BASE_IMAGE}

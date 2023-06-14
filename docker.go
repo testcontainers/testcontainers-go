@@ -769,6 +769,15 @@ type DockerProvider struct {
 	config    TestcontainersConfig
 }
 
+// BridgeNetworkName gets the name of the bridge newwork: bridge or podman
+func (p *DockerProvider) BridgeNetworkName() string {
+	if testcontainersdocker.IsPodman() {
+		return Podman
+	}
+
+	return Bridge
+}
+
 // Client gets the docker client used by the provider
 func (p *DockerProvider) Client() client.APIClient {
 	return p.client
@@ -865,7 +874,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// Make sure that bridge network exists
 	// In case it is disabled we will create reaper_default network
 	if p.DefaultNetwork == "" {
-		p.DefaultNetwork, err = p.getDefaultNetwork(ctx, p.client)
+		p.DefaultNetwork, err = p.getDefaultNetwork(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -874,7 +883,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// If default network is not bridge make sure it is attached to the request
 	// as container won't be attached to it automatically
 	// in case of Podman the bridge network is called 'podman' as 'bridge' would conflict
-	if p.DefaultNetwork != p.defaultBridgeNetworkName {
+	if p.DefaultNetwork != p.BridgeNetworkName() {
 		isAttached := false
 		for _, net := range req.Networks {
 			if net == p.DefaultNetwork {
@@ -1259,7 +1268,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	// Make sure that bridge network exists
 	// In case it is disabled we will create reaper_default network
 	if p.DefaultNetwork == "" {
-		if p.DefaultNetwork, err = p.getDefaultNetwork(ctx, p.client); err != nil {
+		if p.DefaultNetwork, err = p.getDefaultNetwork(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -1329,7 +1338,7 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	// Use a default network as defined in the DockerProvider
 	if p.DefaultNetwork == "" {
 		var err error
-		p.DefaultNetwork, err = p.getDefaultNetwork(ctx, p.client)
+		p.DefaultNetwork, err = p.getDefaultNetwork(ctx)
 		if err != nil {
 			return "", err
 		}
@@ -1353,9 +1362,13 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	return ip, nil
 }
 
-func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APIClient) (string, error) {
+// getDefaultNetwork returns the name of the default network. In the case the default bridge
+// network is present in the list of available networks, it will be returned. Otherwise, it will
+// check if the reaper_default network is present. If the bridge network is not present and the
+// reaper network is not present, it will create the reaper_default network, returning the latter's name.
+func (p *DockerProvider) getDefaultNetwork(ctx context.Context) (string, error) {
 	// Get list of available networks
-	networkResources, err := cli.NetworkList(ctx, types.NetworkListOptions{})
+	networkResources, err := p.client.NetworkList(ctx, types.NetworkListOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -1364,9 +1377,15 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 
 	reaperNetworkExists := false
 
+	defaultBridgeNetworkName := p.BridgeNetworkName()
 	for _, net := range networkResources {
-		if net.Name == p.defaultBridgeNetworkName {
-			return p.defaultBridgeNetworkName, nil
+		if net.Name == defaultBridgeNetworkName {
+			return defaultBridgeNetworkName, nil
+		}
+		// even though the bridge network is called 'podman' in podman,
+		// the Docker API still returns 'bridge' as the name
+		if net.Name == Bridge {
+			return defaultBridgeNetworkName, nil
 		}
 
 		if net.Name == reaperNetwork {
@@ -1376,7 +1395,7 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 
 	// Create a bridge network for the container communications
 	if !reaperNetworkExists {
-		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
+		_, err = p.client.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
 			Driver:     Bridge,
 			Attachable: true,
 			Labels: map[string]string{

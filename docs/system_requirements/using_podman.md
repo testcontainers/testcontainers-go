@@ -1,12 +1,25 @@
 # Using Podman instead of Docker
 
-_Testcontainers for Go_ supports the use of Podman (rootless or rootful) instead of Docker.
+_Testcontainers for Go_ supports the use of Podman (rootless or rootful) instead of Docker, but it requires some extra configuration.
 
-In most scenarios no special setup is required in _Testcontainers for Go_.
-_Testcontainers for Go_ will automatically discover the socket based on the `DOCKER_HOST` or the `TC_HOST` environment variables.
-Alternatively you can configure the host with a `.testcontainers.properties` file.
-The discovered Docker host is taken into account when starting a reaper container.
-The discovered socket is used to detect the use of Podman.
+1. We should start Podman's socket so it is available to Testcontainers:
+
+```shell
+systemctl enable --now --user podman podman.socket
+```
+
+2. Confirm socket exists and Podman is working:
+
+```shell
+ls -l $XDG_RUNTIME_DIR/podman/podman.sock
+podman info
+```
+
+3. Set `DOCKER_HOST` environment variable for Testcontainers Configuration strategy:
+
+```bash
+export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
+```
 
 By default _Testcontainers for Go_ takes advantage of the default network settings both Docker and Podman are applying to newly created containers.
 It only intervenes in scenarios where a `ContainerRequest` specifies networks and does not include the default network of the current container provider.
@@ -37,22 +50,9 @@ func TestSomething(t *testing.T) {
 
 The `ProviderPodman` configures the `DockerProvider` with the correct default network for Podman to ensure complex network scenarios are working as with Docker.
 
-## Podman socket activation
-
-The reaper container needs to connect to the docker daemon to reap containers, so the podman socket service must be started:
-```shell
-> systemctl --user start podman.socket
-```
-
 ## Fedora
 
-`DOCKER_HOST` environment variable must be set
-
-```
-> export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
-```
-
-SELinux may require a custom policy be applied to allow the reaper container to connect to and write to a socket. Once you experience the se-linux error, you can run the following commands to create and install a custom policy.
+The `DOCKER_HOST` environment variable must be set, as mentioned above. Additionally, SELinux may require a custom policy be applied to allow the reaper container to connect to and write to a socket. Once you experience the se-linux error, you can run the following commands to create and install a custom policy.
 
 ```
 > sudo ausearch -c 'app' --raw | audit2allow -M my-podman

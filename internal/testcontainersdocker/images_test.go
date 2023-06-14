@@ -40,25 +40,26 @@ func TestExtractImagesFromDockerfile(t *testing.T) {
 			name:       "Single Image",
 			dockerfile: filepath.Join("testdata", "Dockerfile"),
 			buildArgs:  nil,
-			expected:   []string{"nginx:${tag}"},
+			expected:   []string{"docker.io/nginx:${tag}"},
 		},
 		{
 			name:       "Multiple Images",
 			dockerfile: filepath.Join("testdata", "Dockerfile.multistage"),
 			buildArgs:  nil,
-			expected:   []string{"nginx:a", "nginx:b", "nginx:c", "scratch"},
+			expected:   []string{"docker.io/nginx:a", "docker.io/nginx:b", "docker.io/nginx:c", "docker.io/scratch"},
 		},
 		{
 			name:       "Multiple Images with one build arg",
 			dockerfile: filepath.Join("testdata", "Dockerfile.multistage.singleBuildArgs"),
 			buildArgs:  map[string]*string{"BASE_IMAGE": &baseImage},
-			expected:   []string{"nginx:a", "nginx:b", "nginx:c", "scratch"},
+			expected:   []string{"docker.io/nginx:a", "docker.io/nginx:b", "docker.io/nginx:c", "scratch"},
 		},
 		{
 			name:       "Multiple Images with multiple build args",
 			dockerfile: filepath.Join("testdata", "Dockerfile.multistage.multiBuildArgs"),
 			buildArgs:  map[string]*string{"BASE_IMAGE": &baseImage, "REGISTRY_HOST": &registryHost, "REGISTRY_PORT": &registryPort, "NGINX_IMAGE": &nginxImage},
-			expected:   []string{"nginx:latest", "localhost:5000/nginx:latest", "scratch"},
+			// we are not prepending "docker.io" here because the expected images come from the build args
+			expected: []string{"nginx:latest", "localhost:5000/nginx:latest", "scratch"},
 		},
 	}
 

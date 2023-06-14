@@ -1,4 +1,4 @@
 ARG tag=latest
-   FROM nginx:${tag}
+   FROM docker.io/nginx:${tag}
 COPY . .
 CMD ["pwd"]
