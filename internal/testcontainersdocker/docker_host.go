@@ -81,6 +81,8 @@ func ExtractDockerHost(ctx context.Context) string {
 //  4. Else, Get the current Docker Host from the existing strategies: see ExtractDockerHost.
 //  5. If the socket contains the unix schema, the schema is removed (e.g. unix:///var/run/docker.sock -> /var/run/docker.sock)
 //  6. Else, the default location of the docker socket is used (/var/run/docker.sock)
+//
+// In any case, if the docker socket schema is "tcp://", the default docker socket path will be returned.
 func ExtractDockerSocket(ctx context.Context) string {
 	dockerSocketPathOnce.Do(func() {
 		dockerSocketPathCache = extractDockerSocket(ctx)
@@ -133,19 +135,28 @@ func extractDockerSocket(ctx context.Context) string {
 // and receiving an instance of the Docker API client interface.
 // This internal method is handy for testing purposes, passing a mock type simulating the desired behaviour.
 func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) string {
-	tcHost, err := testcontainersHostFromProperties(ctx)
-	if err == nil {
+	// check that the socket is not a tcp or unix socket
+	checkDockerSocketFn := func(socket string) string {
 		// this use case will cover the case when the docker host is a tcp socket
-		if strings.HasPrefix(tcHost, "tcp://") {
-			return "/var/run/docker.sock"
+		if strings.HasPrefix(socket, TCPSchema) {
+			return DockerSocketPath
 		}
 
-		return tcHost
+		if strings.HasPrefix(socket, DockerSocketSchema) {
+			return strings.Replace(socket, DockerSocketSchema, "", 1)
+		}
+
+		return socket
+	}
+
+	tcHost, err := testcontainersHostFromProperties(ctx)
+	if err == nil {
+		return checkDockerSocketFn(tcHost)
 	}
 
 	testcontainersDockerSocket, err := dockerSocketOverridePath(ctx)
 	if err == nil {
-		return testcontainersDockerSocket
+		return checkDockerSocketFn(testcontainersDockerSocket)
 	}
 
 	info, err := cli.Info(ctx)
@@ -155,16 +166,12 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 
 	// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker
 	if info.OperatingSystem == "Docker Desktop" {
-		return "/var/run/docker.sock"
+		return DockerSocketPath
 	}
 
 	dockerHost := extractDockerHost(ctx)
 
-	if strings.HasPrefix(dockerHost, DockerSocketSchema) {
-		return strings.Replace(dockerHost, DockerSocketSchema, "", 1)
-	}
-
-	return dockerHost
+	return checkDockerSocketFn(dockerHost)
 }
 
 // dockerHostFromEnv returns the docker host from the DOCKER_HOST environment variable, if it's not empty
