@@ -95,3 +95,5 @@ Path to Docker's socket. Used by Ryuk, Docker Compose, and a few other container
 5. If the socket contains the unix schema, the schema is removed (e.g. `unix:///var/run/docker.sock` -> `/var/run/docker.sock`)
 
 6. Else, the default location of the docker socket is used: `/var/run/docker.sock`
+
+In any case, if the docker socket schema is `tcp://`, the default docker socket path will be returned.
