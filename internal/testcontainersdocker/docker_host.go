@@ -139,7 +139,7 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 	checkDockerSocketFn := func(socket string) string {
 		// this use case will cover the case when the docker host is a tcp socket
 		if strings.HasPrefix(socket, TCPSchema) {
-			return "/var/run/docker.sock"
+			return DockerSocketPath
 		}
 
 		if strings.HasPrefix(socket, DockerSocketSchema) {
@@ -166,7 +166,7 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 
 	// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker
 	if info.OperatingSystem == "Docker Desktop" {
-		return "/var/run/docker.sock"
+		return DockerSocketPath
 	}
 
 	dockerHost := extractDockerHost(ctx)

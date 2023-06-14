@@ -275,7 +275,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		setupTestcontainersProperties(t, content)
 
 		socket := extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
-		assert.Equal(t, "/var/run/docker.sock", socket)
+		assert.Equal(t, DockerSocketPath, socket)
 	})
 
 	t.Run("Docker socket from Testcontainers host takes precedence over TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", func(t *testing.T) {
@@ -288,7 +288,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
 
 		socket := extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
-		assert.Equal(t, "/var/run/docker.sock", socket)
+		assert.Equal(t, DockerSocketPath, socket)
 	})
 
 	t.Run("Docker Socket as Testcontainers environment variable", func(t *testing.T) {
@@ -313,7 +313,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", TCPSchema+"127.0.0.1:12345")
 		host = extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
-		assert.Equal(t, "/var/run/docker.sock", host)
+		assert.Equal(t, DockerSocketPath, host)
 	})
 
 	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Docker Desktop)", func(t *testing.T) {
@@ -327,7 +327,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Docker Desktop"})
 
-		assert.Equal(t, "/var/run/docker.sock", socket)
+		assert.Equal(t, DockerSocketPath, socket)
 	})
 
 	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Not Docker Desktop)", func(t *testing.T) {
@@ -358,7 +358,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		t.Setenv("DOCKER_HOST", TCPSchema+"127.0.0.1:12345")
 		socket = extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
-		assert.Equal(t, "/var/run/docker.sock", socket)
+		assert.Equal(t, DockerSocketPath, socket)
 	})
 }
 
