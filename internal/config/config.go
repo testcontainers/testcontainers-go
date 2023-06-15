@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -29,9 +28,9 @@ type Config struct {
 
 // Read reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
-func Read(ctx context.Context) Config {
+func Read() Config {
 	tcConfigOnce.Do(func() {
-		tcConfig = read(ctx)
+		tcConfig = read()
 
 		if tcConfig.RyukDisabled {
 			ryukDisabledMessage := `
@@ -54,7 +53,7 @@ func Reset() {
 	tcConfigOnce = new(sync.Once)
 }
 
-func read(ctx context.Context) Config {
+func read() Config {
 	config := Config{}
 
 	applyEnvironmentConfiguration := func(config Config) Config {

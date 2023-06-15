@@ -199,7 +199,7 @@ func dockerHostFromContext(ctx context.Context) (string, error) {
 
 // dockerHostFromProperties returns the docker host from the ~/.testcontainers.properties file, if it's not empty
 func dockerHostFromProperties(ctx context.Context) (string, error) {
-	cfg := config.Read(ctx)
+	cfg := config.Read()
 	socketPath := cfg.Host
 	if socketPath != "" {
 		parsed, err := parseURL(socketPath)
@@ -235,7 +235,7 @@ func dockerSocketPath(ctx context.Context) (string, error) {
 
 // testcontainersHostFromProperties returns the testcontainers host from the ~/.testcontainers.properties file, if it's not empty
 func testcontainersHostFromProperties(ctx context.Context) (string, error) {
-	cfg := config.Read(ctx)
+	cfg := config.Read()
 	testcontainersHost := cfg.TestcontainersHost
 	if testcontainersHost != "" {
 		parsed, err := parseURL(testcontainersHost)

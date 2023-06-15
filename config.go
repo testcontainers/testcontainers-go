@@ -1,8 +1,6 @@
 package testcontainers
 
 import (
-	"context"
-
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
@@ -18,15 +16,8 @@ type TestcontainersConfig struct {
 
 // ReadConfig reads from testcontainers properties file, storing the result in a singleton instance
 // of the TestcontainersConfig struct
-// Deprecated use ReadConfigWithContext instead
 func ReadConfig() TestcontainersConfig {
-	return ReadConfigWithContext(context.Background())
-}
-
-// ReadConfigWithContext reads from testcontainers properties file, storing the result in a singleton instance
-// of the TestcontainersConfig struct
-func ReadConfigWithContext(ctx context.Context) TestcontainersConfig {
-	cfg := config.Read(ctx)
+	cfg := config.Read()
 	return TestcontainersConfig{
 		Host:           cfg.Host,
 		TLSVerify:      cfg.TLSVerify,

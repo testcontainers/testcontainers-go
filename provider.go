@@ -143,7 +143,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		return nil, err
 	}
 
-	tcConfig := ReadConfigWithContext(context.Background())
+	tcConfig := ReadConfig()
 
 	dockerHost := testcontainersdocker.ExtractDockerHost(context.Background())
 

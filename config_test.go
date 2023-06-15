@@ -1,7 +1,6 @@
 package testcontainers
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +21,7 @@ func TestReadConfig(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 
-		cfg := ReadConfigWithContext(context.Background())
+		cfg := ReadConfig()
 
 		expected := TestcontainersConfig{
 			RyukDisabled: true,
