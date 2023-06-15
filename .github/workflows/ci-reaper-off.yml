@@ -3,14 +3,14 @@ name: Reaper-Off pipeline
 on:
   push:
     paths-ignore:
-      - "mkdocs.yml"
-      - "docs/**"
-      - "README.md"
+    - 'mkdocs.yml'
+    - 'docs/**'
+    - 'README.md'
   pull_request:
     paths-ignore:
-      - "mkdocs.yml"
-      - "docs/**"
-      - "README.md"
+    - 'mkdocs.yml'
+    - 'docs/**'
+    - 'README.md'
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.head_ref || github.sha }}"
