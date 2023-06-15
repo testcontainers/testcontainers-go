@@ -11,7 +11,7 @@ import (
 
 // NewClient returns a new docker client extracting the docker host from the different alternatives
 func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
-	tcConfig := config.Read(ctx)
+	tcConfig := config.Read()
 
 	dockerHost := ExtractDockerHost(ctx)
 

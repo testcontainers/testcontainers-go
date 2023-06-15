@@ -23,10 +23,10 @@ _Testcontainers for Go_ provides a struct type to represent the configuration:
 [Supported properties](../../internal/config/config.go) inside_block:testcontainersConfig
 <!--/codeinclude-->
 
-You can read it with the `ReadConfigWithContext(ctx)` function:
+You can read it with the `ReadConfig()` function:
 
 ```go
-cfg := testcontainers.ReadConfigWithContext(ctx)
+cfg := testcontainers.ReadConfig()
 ```
 
 For advanced users, the Docker host connection can be configured **via configuration** in `~/.testcontainers.properties`, but environment variables will take precedence.

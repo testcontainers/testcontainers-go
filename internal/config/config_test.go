@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,7 +30,7 @@ func TestReadConfig(t *testing.T) {
 		t.Setenv("DOCKER_HOST", "")
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 
-		config := Read(context.Background())
+		config := Read()
 
 		expected := Config{
 			RyukDisabled: true,
@@ -42,7 +41,7 @@ func TestReadConfig(t *testing.T) {
 
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "false")
 
-		config = Read(context.Background())
+		config = Read()
 		assert.Equal(t, expected, config)
 	})
 }
@@ -53,7 +52,7 @@ func TestReadTCConfig(t *testing.T) {
 	t.Run("HOME is not set", func(t *testing.T) {
 		t.Setenv("HOME", "")
 
-		config := read(context.Background())
+		config := read()
 
 		expected := Config{}
 
@@ -65,7 +64,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
-		config := read(context.Background())
+		config := read()
 
 		expected := Config{
 			RyukDisabled:   true,
@@ -80,7 +79,7 @@ func TestReadTCConfig(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("HOME", tmpDir)
 
-		config := read(context.Background())
+		config := read()
 
 		expected := Config{}
 
@@ -92,7 +91,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("HOME", tmpDir)
 		t.Setenv("DOCKER_HOST", tcpDockerHost33293)
 
-		config := read(context.Background())
+		config := read()
 		expected := Config{} // the config does not read DOCKER_HOST, that's why it's empty
 
 		assert.Equal(t, expected, config)
@@ -104,7 +103,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
-		config := read(context.Background())
+		config := read()
 		expected := Config{
 			RyukDisabled:   true,
 			RyukPrivileged: true,
@@ -402,7 +401,7 @@ func TestReadTCConfig(t *testing.T) {
 				}
 
 				//
-				config := read(context.Background())
+				config := read()
 
 				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
 			})

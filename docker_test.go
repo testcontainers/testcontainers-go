@@ -310,7 +310,8 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 }
 
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
-	tcConfig := config.Read(context.Background()) // read the config using the internal method to avoid the sync.Once
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
 	if !tcConfig.RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
@@ -349,7 +350,8 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 }
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
-	tcConfig := config.Read(context.Background()) // read the config using the internal method to avoid the sync.Once
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -481,7 +483,8 @@ func TestContainerStateAfterTermination(t *testing.T) {
 }
 
 func TestContainerStopWithReaper(t *testing.T) {
-	tcConfig := config.Read(context.Background()) // read the config using the internal method to avoid the sync.Once
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -528,7 +531,8 @@ func TestContainerStopWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithReaper(t *testing.T) {
-	tcConfig := config.Read(context.Background()) // read the config using the internal method to avoid the sync.Once
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -567,7 +571,8 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
-	tcConfig := config.Read(context.Background()) // read the config using the internal method to avoid the sync.Once
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
 	if !tcConfig.RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
