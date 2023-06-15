@@ -52,5 +52,5 @@ jobs:
       - name: Test Summary
         uses: test-summary/action@4ee9ece4bca777a38f05c8fc578ac2007fe266f7
         with:
-          paths: "**/TEST-datastore*.xml"
+          paths: "**/TEST-unit*.xml"
         if: always()
