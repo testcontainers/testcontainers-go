@@ -3,14 +3,14 @@ name: Rootless Docker pipeline
 on:
   push:
     paths-ignore:
-    - 'mkdocs.yml'
-    - 'docs/**'
-    - 'README.md'
+      - "mkdocs.yml"
+      - "docs/**"
+      - "README.md"
   pull_request:
     paths-ignore:
-    - 'mkdocs.yml'
-    - 'docs/**'
-    - 'README.md'
+      - "mkdocs.yml"
+      - "docs/**"
+      - "README.md"
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.head_ref || github.sha }}"
@@ -26,7 +26,6 @@ jobs:
     env:
       TESTCONTAINERS_RYUK_DISABLED: "false"
     steps:
-
       - name: Setup rootless Docker
         uses: ScribeMD/rootless-docker@0.2.2
 
