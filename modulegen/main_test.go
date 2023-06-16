@@ -476,7 +476,7 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[36])
 	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[40])
 	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[44])
-	assert.Equal(t, "          paths: \"**/TEST-"+lower+"*.xml\"", data[54])
+	assert.Equal(t, "          paths: \"**/TEST-unit*.xml\"", data[54])
 }
 
 // assert content go.mod
