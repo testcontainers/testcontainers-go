@@ -1,4 +1,5 @@
 site_name: Testcontainers for Go
+site_url: https://golang.testcontainers.org
 plugins:
     - search
     - codeinclude
