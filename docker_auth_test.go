@@ -272,6 +272,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 	ctx := context.Background()
 	wd, err := os.Getwd()
 	assert.NoError(t, err)
+	// bindMounts {
 	req := ContainerRequest{
 		Image:        "registry:2",
 		ExposedPorts: []string{"5000:5000/tcp"},
@@ -297,6 +298,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 		},
 		WaitingFor: wait.ForExposedPort(),
 	}
+	// }
 
 	genContainerReq := GenericContainerRequest{
 		ProviderType:     providerType,

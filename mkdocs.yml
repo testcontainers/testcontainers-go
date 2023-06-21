@@ -37,6 +37,7 @@ nav:
     - Quickstart: quickstart.md
     - Features:
         - features/creating_container.md
+        - features/files_and_mounts.md
         - features/configuration.md
         - features/networking.md
         - features/garbage_collector.md
