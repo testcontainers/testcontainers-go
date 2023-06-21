@@ -18,13 +18,13 @@ Variations on the HTTP wait strategy are supported, including:
 ## Match an HTTP method
 
 <!--codeinclude-->
-[Waiting for an HTTP endpoint](../../../wait/http_test.go) inside_block:waitForHTTP
+[Waiting for an HTTP endpoint using image's default port](../../../wait/http_test.go) inside_block:waitForHTTPWithDefaultPort
 <!--/codeinclude-->
 
 ## Match an HTTP method with Port
 
 <!--codeinclude-->
-[Waiting for an HTTP endpoint](../../../wait/http_test.go) inside_block:waitForHTTPWithPort
+[Waiting for an HTTP endpoint including port](../../../wait/http_test.go) inside_block:waitForHTTPWithPort
 <!--/codeinclude-->
 
 ## Match an HTTP method with Basic Auth

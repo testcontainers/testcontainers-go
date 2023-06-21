@@ -23,7 +23,7 @@ import (
 
 // https://github.com/testcontainers/testcontainers-go/issues/183
 func ExampleHTTPStrategy() {
-	// waitForHTTP {
+	// waitForHTTPWithDefaultPort {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx:latest",
