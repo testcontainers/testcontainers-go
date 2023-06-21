@@ -23,11 +23,38 @@ import (
 
 // https://github.com/testcontainers/testcontainers-go/issues/183
 func ExampleHTTPStrategy() {
-	// waitForHTTP {
+	// waitForHTTPWithDefaultPort {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx:latest",
 		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForHTTP("/"),
+	}
+
+	gogs, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		panic(err)
+	}
+	// }
+
+	defer func() {
+		if err := gogs.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
+
+	// Here you have a running container
+}
+
+func ExampleHTTPStrategy_WithPort() {
+	// waitForHTTPWithPort {
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "nginx:latest",
+		ExposedPorts: []string{"8080/tcp", "80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithPort("80/tcp"),
 	}
 
@@ -55,7 +82,7 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 	req := testcontainers.ContainerRequest{
 		Image:        "gogs/gogs:0.11.91",
 		ExposedPorts: []string{"3000/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithPort("3000/tcp").WithBasicAuth("username", "password"),
+		WaitingFor:   wait.ForHTTP("/").WithBasicAuth("username", "password"),
 	}
 
 	gogs, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -187,7 +214,7 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 		},
 		ExposedPorts: []string{"6443/tcp"},
 		WaitingFor: wait.NewHTTPStrategy("/ping").WithTLS(true, tlsconfig).
-			WithStartupTimeout(time.Second * 10).WithPort("6443/tcp").
+			WithStartupTimeout(time.Second * 10).
 			WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
 				return bytes.Equal(data, []byte("pong"))
@@ -268,6 +295,16 @@ func TestHttpStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) 
 				OOMKilled: true,
 			}, nil
 		},
+		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
+			return nat.PortMap{
+				"8080/tcp": []nat.PortBinding{
+					{
+						HostIP:   "127.0.0.1",
+						HostPort: "49152",
+					},
+				},
+			}, nil
+		},
 	}
 
 	wg := wait.ForHTTP("/").
@@ -304,6 +341,16 @@ func TestHttpStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 			return &types.ContainerState{
 				Status:   "exited",
 				ExitCode: 1,
+			}, nil
+		},
+		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
+			return nat.PortMap{
+				"8080/tcp": []nat.PortBinding{
+					{
+						HostIP:   "127.0.0.1",
+						HostPort: "49152",
+					},
+				},
 			}, nil
 		},
 	}
@@ -343,6 +390,16 @@ func TestHttpStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *test
 				Status: "dead",
 			}, nil
 		},
+		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
+			return nat.PortMap{
+				"8080/tcp": []nat.PortBinding{
+					{
+						HostIP:   "127.0.0.1",
+						HostPort: "49152",
+					},
+				},
+			}, nil
+		},
 	}
 
 	wg := wait.ForHTTP("/").
@@ -373,6 +430,16 @@ func TestHTTPStrategyFailsWhileRequestSendingDueToOOMKilledContainer(t *testing.
 		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
 			return &types.ContainerState{
 				OOMKilled: true,
+			}, nil
+		},
+		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
+			return nat.PortMap{
+				"8080/tcp": []nat.PortBinding{
+					{
+						HostIP:   "127.0.0.1",
+						HostPort: "49152",
+					},
+				},
 			}, nil
 		},
 	}
@@ -408,6 +475,16 @@ func TestHttpStrategyFailsWhileRequestSendingDueToExitedContainer(t *testing.T) 
 				ExitCode: 1,
 			}, nil
 		},
+		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
+			return nat.PortMap{
+				"8080/tcp": []nat.PortBinding{
+					{
+						HostIP:   "127.0.0.1",
+						HostPort: "49152",
+					},
+				},
+			}, nil
+		},
 	}
 
 	wg := wait.ForHTTP("/").
@@ -440,6 +517,16 @@ func TestHttpStrategyFailsWhileRequestSendingDueToUnexpectedContainerStatus(t *t
 				Status: "dead",
 			}, nil
 		},
+		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
+			return nat.PortMap{
+				"8080/tcp": []nat.PortBinding{
+					{
+						HostIP:   "127.0.0.1",
+						HostPort: "49152",
+					},
+				},
+			}, nil
+		},
 	}
 
 	wg := wait.ForHTTP("/").
@@ -453,6 +540,135 @@ func TestHttpStrategyFailsWhileRequestSendingDueToUnexpectedContainerStatus(t *t
 		}
 
 		expected := "unexpected container status \"dead\""
+		if err.Error() != expected {
+			t.Fatalf("expected %q, got %q", expected, err.Error())
+		}
+	}
+}
+
+func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
+	var mappedPortCount int
+	target := &wait.MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			defer func() { mappedPortCount++ }()
+			if mappedPortCount == 0 {
+				return "", wait.ErrPortNotFound
+			}
+			return "49152", nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				Status: "running",
+			}, nil
+		},
+		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
+			return nat.PortMap{}, nil
+		},
+	}
+
+	wg := wait.ForHTTP("/").
+		WithStartupTimeout(500 * time.Millisecond).
+		WithPollInterval(100 * time.Millisecond)
+
+	{
+		err := wg.WaitUntilReady(context.Background(), target)
+		if err == nil {
+			t.Fatal("no error")
+		}
+
+		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+		if err.Error() != expected {
+			t.Fatalf("expected %q, got %q", expected, err.Error())
+		}
+	}
+}
+
+func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
+	var mappedPortCount int
+	target := &wait.MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			defer func() { mappedPortCount++ }()
+			if mappedPortCount == 0 {
+				return "", wait.ErrPortNotFound
+			}
+			return "49152", nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				Status: "running",
+			}, nil
+		},
+		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
+			return nat.PortMap{
+				"8080/udp": []nat.PortBinding{
+					{
+						HostIP:   "127.0.0.1",
+						HostPort: "49152",
+					},
+				},
+			}, nil
+		},
+	}
+
+	wg := wait.ForHTTP("/").
+		WithStartupTimeout(500 * time.Millisecond).
+		WithPollInterval(100 * time.Millisecond)
+
+	{
+		err := wg.WaitUntilReady(context.Background(), target)
+		if err == nil {
+			t.Fatal("no error")
+		}
+
+		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+		if err.Error() != expected {
+			t.Fatalf("expected %q, got %q", expected, err.Error())
+		}
+	}
+}
+
+func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.T) {
+	var mappedPortCount int
+	target := &wait.MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			defer func() { mappedPortCount++ }()
+			if mappedPortCount == 0 {
+				return "", wait.ErrPortNotFound
+			}
+			return "49152", nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				Status: "running",
+			}, nil
+		},
+		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
+			return nat.PortMap{
+				"8080/tcp": []nat.PortBinding{},
+			}, nil
+		},
+	}
+
+	wg := wait.ForHTTP("/").
+		WithStartupTimeout(500 * time.Millisecond).
+		WithPollInterval(100 * time.Millisecond)
+
+	{
+		err := wg.WaitUntilReady(context.Background(), target)
+		if err == nil {
+			t.Fatal("no error")
+		}
+
+		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
 		if err.Error() != expected {
 			t.Fatalf("expected %q, got %q", expected, err.Error())
 		}
