@@ -34,7 +34,7 @@ type MkDocsConfig struct {
 		Features           []interface{} `yaml:"Features,omitempty"`
 		Examples           []string      `yaml:"Examples,omitempty"`
 		Modules            []string      `yaml:"Modules,omitempty"`
-		SystemRequirements []string      `yaml:"System Requirements,omitempty"`
+		SystemRequirements []interface{} `yaml:"System Requirements,omitempty"`
 		Contributing       []string      `yaml:"Contributing,omitempty"`
 		GettingHelp        string        `yaml:"Getting help,omitempty"`
 	} `yaml:"nav"`

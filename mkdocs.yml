@@ -85,6 +85,16 @@ nav:
     - System Requirements:
         - system_requirements/index.md
         - system_requirements/docker.md
+        - Continuous Integration:
+            - system_requirements/ci/aws_codebuild.md
+            - system_requirements/ci/bitbucket_pipelines.md
+            - system_requirements/ci/circle_ci.md
+            - system_requirements/ci/concourse_ci.md
+            - system_requirements/ci/dind_patterns.md
+            - system_requirements/ci/drone.md
+            - system_requirements/ci/gitlab_ci.md
+            - system_requirements/ci/tekton.md
+            - system_requirements/ci/travis.md
         - system_requirements/using_colima.md
         - system_requirements/using_podman.md
     - Contributing:
