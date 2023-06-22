@@ -193,22 +193,10 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 		return err
 	}
 
-	shortID := c.ID[:12]
-
 	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
 	defer c.provider.Close()
-
-	// if a Wait Strategy has been specified, wait before returning
-	if c.WaitingFor != nil {
-		c.logger.Printf("🚧 Waiting for container id %s image: %s", shortID, c.Image)
-		if err := c.WaitingFor.WaitUntilReady(ctx, c); err != nil {
-			return err
-		}
-	}
-
-	c.isRunning = true
 
 	err = c.startedHook(ctx)
 	if err != nil {
@@ -1026,6 +1014,27 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 							return fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
 						}
 					}
+
+					return nil
+				},
+			},
+			PostStarts: []ContainerHook{
+				// first post-start hook is to wait for the container to be ready
+				func(ctx context.Context, c Container) error {
+					dockerContainer := c.(*DockerContainer)
+
+					// if a Wait Strategy has been specified, wait before returning
+					if dockerContainer.WaitingFor != nil {
+						dockerContainer.logger.Printf(
+							"🚧 Waiting for container id %s image: %s. Waiting for: %+v",
+							dockerContainer.ID[:12], dockerContainer.Image, dockerContainer.WaitingFor,
+						)
+						if err := dockerContainer.WaitingFor.WaitUntilReady(ctx, c); err != nil {
+							return err
+						}
+					}
+
+					dockerContainer.isRunning = true
 
 					return nil
 				},
