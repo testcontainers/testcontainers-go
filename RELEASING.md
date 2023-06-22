@@ -17,7 +17,7 @@ git remote -v
 
 Once the remote is properly set, please follow these steps:
 
-- Run the [release.sh](./scripts/pre-release.sh) shell script to run it in dry-run mode.
+- Run the [pre-release.sh](./scripts/pre-release.sh) shell script to run it in dry-run mode.
 - You can use the `DRY_RUN` variable to enable or disable the dry-run mode. By default, it's enabled.
 - To prepare for a release, updating the _Testcontainers for Go_ dependency for all the modules and examples, without performing any Git operation:
 
