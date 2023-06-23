@@ -37,14 +37,11 @@ jobs:
         working-directory: ./modules/compose
         run: go mod tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./modules/compose
         run: |
-          go run gotest.tools/gotestsum \
-            --format short-verbose \
-            --rerun-fails=5 \
-            --packages="./..." \
-            --junitfile TEST-compose.xml
+          go install gotest.tools/gotestsum@latest
+          make test-unit
 
       - name: Run checker
         run: |

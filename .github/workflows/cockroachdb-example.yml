@@ -41,9 +41,11 @@ jobs:
         working-directory: ./examples/cockroachdb
         run: make tools-tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./examples/cockroachdb
-        run: make test-unit
+        run: |
+          go install gotest.tools/gotestsum@latest
+          make test-unit
 
       - name: Run checker
         run: |
