@@ -34,7 +34,7 @@ type ContainerMountSource interface {
 // Optionally mount.BindOptions might be added for advanced scenarios
 type GenericBindMountSource struct {
 	// HostPath is the path mounted into the container
-	// the same host path might be mounted to multiple locations withing a single container
+	// the same host path might be mounted to multiple locations within a single container
 	HostPath string
 }
 

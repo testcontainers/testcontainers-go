@@ -2,7 +2,7 @@
 
 The HTTP wait strategy will check the result of an HTTP(S) request against the container and allows to set the following conditions:
 
-- the port to be used.
+- the port to be used. If no port is passed, it will use the first exposed port in the image.
 - the path to be used.
 - the HTTP method to be used.
 - the HTTP request body to be sent.
@@ -18,7 +18,13 @@ Variations on the HTTP wait strategy are supported, including:
 ## Match an HTTP method
 
 <!--codeinclude-->
-[Waiting for an HTTP endpoint](../../../wait/http_test.go) inside_block:waitForHTTP
+[Waiting for an HTTP endpoint using image's default port](../../../wait/http_test.go) inside_block:waitForHTTPWithDefaultPort
+<!--/codeinclude-->
+
+## Match an HTTP method with Port
+
+<!--codeinclude-->
+[Waiting for an HTTP endpoint including port](../../../wait/http_test.go) inside_block:waitForHTTPWithPort
 <!--/codeinclude-->
 
 ## Match an HTTP method with Basic Auth

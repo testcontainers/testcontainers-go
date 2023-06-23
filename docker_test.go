@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
-
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -16,19 +15,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/strslice"
+	"github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-units"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/docker/docker/errdefs"
-
-	"github.com/docker/docker/api/types/volume"
-
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/filters"
-
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -132,12 +128,18 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 // }
 
 func TestContainerWithHostNetworkOptions(t *testing.T) {
-	absPath, err := filepath.Abs("./testdata/nginx-highport.conf")
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Skip("Skipping test that requires host network access when running in a container")
+	}
+
+	ctx := context.Background()
+	SkipIfDockerDesktop(t, ctx)
+
+	absPath, err := filepath.Abs(filepath.Join("testdata", "nginx-highport.conf"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -205,7 +207,15 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 }
 
 func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Skip("Skipping test that requires host network access when running in a container")
+	}
+
+	// skipIfDockerDesktop {
 	ctx := context.Background()
+	SkipIfDockerDesktop(t, ctx)
+	// }
+
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -226,10 +236,15 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, nginx)
 }
 
-func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
-	ctx := context.Background()
+func TestContainerWithHostNetwork(t *testing.T) {
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Skip("Skipping test that requires host network access when running in a container")
+	}
 
-	absPath, err := filepath.Abs("./testdata/nginx-highport.conf")
+	ctx := context.Background()
+	SkipIfDockerDesktop(t, ctx)
+
+	absPath, err := filepath.Abs(filepath.Join("testdata", "nginx-highport.conf"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -251,6 +266,17 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
+
+	portEndpoint, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
+	if err != nil {
+		t.Errorf("Expected port endpoint %s. Got '%d'.", portEndpoint, err)
+	}
+	t.Log(portEndpoint)
+
+	_, err = http.Get(portEndpoint)
+	if err != nil {
+		t.Errorf("Expected OK response. Got '%v'.", err)
+	}
 
 	host, err := nginxC.Host(ctx)
 	if err != nil {
@@ -258,44 +284,6 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 	}
 
 	_, err = http.Get("http://" + host + ":8080")
-	if err != nil {
-		t.Errorf("Expected OK response. Got '%v'.", err)
-	}
-}
-
-func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
-	ctx := context.Background()
-
-	absPath, err := filepath.Abs("./testdata/nginx-highport.conf")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	gcr := GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:      nginxAlpineImage,
-			WaitingFor: wait.ForListeningPort(nginxHighPort),
-			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
-			HostConfigModifier: func(hc *container.HostConfig) {
-				hc.NetworkMode = "host"
-			},
-		},
-		Started: true,
-	}
-
-	nginxC, err := GenericContainer(ctx, gcr)
-
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
-
-	hostN, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
-	if err != nil {
-		t.Errorf("Expected host %s. Got '%d'.", hostN, err)
-	}
-	t.Log(hostN)
-
-	_, err = http.Get(hostN)
 	if err != nil {
 		t.Errorf("Expected OK response. Got '%v'.", err)
 	}
@@ -322,7 +310,8 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 }
 
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
-	tcConfig := readConfig() // read the config using the private method to avoid the sync.Once
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
 	if !tcConfig.RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
@@ -361,7 +350,8 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 }
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
-	tcConfig := readConfig() // read the config using the private method to avoid the sync.Once
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -493,7 +483,8 @@ func TestContainerStateAfterTermination(t *testing.T) {
 }
 
 func TestContainerStopWithReaper(t *testing.T) {
-	tcConfig := readConfig() // read the config using the private method to avoid the sync.Once
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -540,7 +531,8 @@ func TestContainerStopWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithReaper(t *testing.T) {
-	tcConfig := readConfig() // read the config using the private method to avoid the sync.Once
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -579,7 +571,8 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 }
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
-	tcConfig := readConfig() // read the config using the private method to avoid the sync.Once
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
 	if !tcConfig.RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
@@ -1885,6 +1878,9 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 func TestDockerContainerResources(t *testing.T) {
 	if providerType == ProviderPodman {
 		t.Skip("Rootless Podman does not support setting rlimit")
+	}
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Skip("Rootless Docker does not support setting rlimit")
 	}
 
 	ctx := context.Background()

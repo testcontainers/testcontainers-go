@@ -15,6 +15,12 @@ h1, h2, h3, h4, h5, h6 {
     gap: 10px;
 }
 
+.tc-version {
+    font-size: 1.1em;
+    text-align: center;
+    margin: 0;
+}
+
 @media (min-width: 680px) {
     .card-grid {
         grid-template-columns: repeat(3, 1fr);

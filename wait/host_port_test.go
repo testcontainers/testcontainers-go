@@ -481,3 +481,53 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatu
 		}
 	}
 }
+
+func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+
+	rawPort := listener.Addr().(*net.TCPAddr).Port
+	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	target := &MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		PortsImpl: func(_ context.Context) (nat.PortMap, error) {
+			return nat.PortMap{
+				"80": []nat.PortBinding{
+					{
+						HostIP:   "0.0.0.0",
+						HostPort: port.Port(),
+					},
+				},
+			}, nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			return port, nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				Running: true,
+			}, nil
+		},
+		ExecImpl: func(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
+			// This is the error that would be returned if the shell is not installed.
+			return 126, nil, nil
+		},
+	}
+
+	wg := NewHostPortStrategy("80").
+		WithStartupTimeout(500 * time.Millisecond).
+		WithPollInterval(100 * time.Millisecond)
+
+	if err := wg.WaitUntilReady(context.Background(), target); err != nil {
+		t.Fatal(err)
+	}
+}
