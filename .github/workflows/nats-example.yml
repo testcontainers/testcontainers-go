@@ -41,7 +41,7 @@ jobs:
         working-directory: ./examples/nats
         run: make tools-tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./examples/nats
         run: make test-unit
 

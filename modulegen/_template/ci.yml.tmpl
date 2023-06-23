@@ -41,7 +41,7 @@ jobs:
         working-directory: ./{{ ParentDir }}/{{ $lower }}
         run: make tools-tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./{{ ParentDir }}/{{ $lower }}
         run: make test-unit
 

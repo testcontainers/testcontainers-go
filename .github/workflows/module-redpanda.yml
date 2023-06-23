@@ -41,7 +41,7 @@ jobs:
         working-directory: ./modules/redpanda
         run: make tools-tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./modules/redpanda
         run: make test-unit
 

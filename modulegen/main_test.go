@@ -302,7 +302,6 @@ func TestGenerate(t *testing.T) {
 	assertExampleContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
 	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertToolsGoContent(t, example, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
 	assertMkdocsExamplesNav(t, example, originalConfig, rootTmp)
 	assertDependabotExamplesUpdates(t, example, originalDependabotConfig, rootTmp)
 }
@@ -374,7 +373,6 @@ func TestGenerateModule(t *testing.T) {
 	assertExampleContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
 	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertToolsGoContent(t, example, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
 	assertMkdocsExamplesNav(t, example, originalConfig, rootTmp)
 	assertDependabotExamplesUpdates(t, example, originalDependabotConfig, rootTmp)
 }
@@ -527,14 +525,4 @@ func assertMkdocsExamplesNav(t *testing.T, example Example, originalConfig *MkDo
 
 	// first item is the index
 	assert.Equal(t, parentDir+"/index.md", examples[0], examples)
-}
-
-// assert content tools/tools.go
-func assertToolsGoContent(t *testing.T, example Example, tools string) {
-	content, err := os.ReadFile(tools)
-	assert.Nil(t, err)
-
-	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[3], "// This package contains the tool dependencies of the "+example.Title()+" "+example.Type()+".")
-	assert.Equal(t, data[5], "package tools")
 }

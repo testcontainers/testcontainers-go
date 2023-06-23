@@ -41,7 +41,7 @@ jobs:
         working-directory: ./examples/pubsub
         run: make tools-tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./examples/pubsub
         run: make test-unit
 

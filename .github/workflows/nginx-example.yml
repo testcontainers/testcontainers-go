@@ -41,7 +41,7 @@ jobs:
         working-directory: ./examples/nginx
         run: make tools-tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./examples/nginx
         run: make test-unit
 

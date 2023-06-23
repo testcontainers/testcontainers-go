@@ -41,7 +41,7 @@ jobs:
         working-directory: ./modules/localstack
         run: make tools-tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./modules/localstack
         run: make test-unit
 

@@ -41,7 +41,7 @@ jobs:
         working-directory: ./modules/couchbase
         run: make tools-tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./modules/couchbase
         run: make test-unit
 

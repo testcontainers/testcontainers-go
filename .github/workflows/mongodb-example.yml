@@ -41,7 +41,7 @@ jobs:
         working-directory: ./examples/mongodb
         run: make tools-tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./examples/mongodb
         run: make test-unit
 

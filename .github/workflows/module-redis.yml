@@ -41,7 +41,7 @@ jobs:
         working-directory: ./modules/redis
         run: make tools-tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./modules/redis
         run: make test-unit
 

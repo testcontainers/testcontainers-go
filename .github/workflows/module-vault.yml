@@ -41,7 +41,7 @@ jobs:
         working-directory: ./modules/vault
         run: make tools-tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./modules/vault
         run: make test-unit
 
