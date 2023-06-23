@@ -10,17 +10,27 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const defaultImageName = "neo4j"
-const defaultTag = "4.4"
-const defaultBoltPort = "7687"
-const defaultHttpPort = "7474"
-const defaultHttpsPort = "7473"
+const (
+	// defaultImage {
+	defaultImageName = "neo4j"
+	defaultTag       = "4.4"
+	// }
+)
+
+const (
+	// containerPorts {
+	defaultBoltPort  = "7687"
+	defaultHttpPort  = "7474"
+	defaultHttpsPort = "7473"
+	// }
+)
 
 // Neo4jContainer represents the Neo4j container type used in the module
 type Neo4jContainer struct {
 	testcontainers.Container
 }
 
+// BoltUrl returns the bolt url for the Neo4j container, using the bolt port, in the format of neo4j://host:port
 func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {

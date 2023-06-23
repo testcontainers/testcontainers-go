@@ -34,13 +34,13 @@ func DockerImageAuth(ctx context.Context, image string) (string, types.AuthConfi
 // It will use the docker daemon to get the default registry, returning "https://index.docker.io/v1/" if
 // it fails to get the information from the daemon
 func defaultRegistry(ctx context.Context) string {
-	p, err := NewDockerProvider()
+	client, err := testcontainersdocker.NewClient(ctx)
 	if err != nil {
 		return testcontainersdocker.IndexDockerIO
 	}
-	defer p.Close()
+	defer client.Close()
 
-	info, err := p.client.Info(ctx)
+	info, err := client.Info(ctx)
 	if err != nil {
 		return testcontainersdocker.IndexDockerIO
 	}

@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"context"
 	"testing"
 
 	"github.com/docker/docker/api/types/mount"
@@ -173,4 +174,36 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			assert.Equalf(t, tt.want, mapToDockerMounts(tt.mounts), "PrepareMounts()")
 		})
 	}
+}
+
+func TestCreateContainerWithVolume(t *testing.T) {
+	// volumeMounts {
+	req := ContainerRequest{
+		Image: "alpine",
+		Mounts: ContainerMounts{
+			{
+				Source: GenericVolumeMountSource{
+					Name: "test-volume",
+				},
+				Target: "/data",
+			},
+		},
+	}
+	// }
+
+	ctx := context.Background()
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	assert.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, c)
+
+	// Check if volume is created
+	client, err := NewDockerClient()
+	assert.NoError(t, err)
+
+	volume, err := client.VolumeInspect(ctx, "test-volume")
+	assert.NoError(t, err)
+	assert.Equal(t, "test-volume", volume.Name)
 }

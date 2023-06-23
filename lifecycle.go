@@ -2,10 +2,13 @@ package testcontainers
 
 import (
 	"context"
+	"io"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
+	"golang.org/x/exp/slices"
 )
 
 // ContainerRequestHook is a hook that will be called before a container is created.
@@ -128,6 +131,7 @@ func (c *DockerContainer) startingHook(ctx context.Context) error {
 	for _, lifecycleHooks := range c.lifecycleHooks {
 		err := containerHookFn(ctx, lifecycleHooks.PreStarts)(c)
 		if err != nil {
+			c.printLogs(ctx)
 			return err
 		}
 	}
@@ -140,11 +144,30 @@ func (c *DockerContainer) startedHook(ctx context.Context) error {
 	for _, lifecycleHooks := range c.lifecycleHooks {
 		err := containerHookFn(ctx, lifecycleHooks.PostStarts)(c)
 		if err != nil {
+			c.printLogs(ctx)
 			return err
 		}
 	}
 
 	return nil
+}
+
+// printLogs is a helper function that will print the logs of a Docker container
+// We are going to use this helper function to inform the user of the logs when an error occurs
+func (c *DockerContainer) printLogs(ctx context.Context) {
+	reader, err := c.Logs(ctx)
+	if err != nil {
+		c.logger.Printf("failed accessing container logs: %w\n", err)
+		return
+	}
+
+	b, err := io.ReadAll(reader)
+	if err != nil {
+		c.logger.Printf("failed reading container logs: %w\n", err)
+		return
+	}
+
+	c.logger.Printf("container logs:\n%s", b)
 }
 
 // stoppingHook is a hook that will be called before a container is stopped
@@ -318,9 +341,28 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	}
 
 	dockerInput.ExposedPorts = exposedPortSet
-	hostConfig.PortBindings = exposedPortMap
+
+	// only exposing those ports automatically if the container request exposes zero ports and the container does not run in a container network
+	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
+		hostConfig.PortBindings = exposedPortMap
+	} else {
+		hostConfig.PortBindings = mergePortBindings(hostConfig.PortBindings, exposedPortMap, req.ExposedPorts)
+	}
 
 	return nil
+}
+
+func mergePortBindings(configPortMap, exposedPortMap nat.PortMap, exposedPorts []string) nat.PortMap {
+	if exposedPortMap == nil {
+		exposedPortMap = make(map[nat.Port][]nat.PortBinding)
+	}
+
+	for k, v := range configPortMap {
+		if slices.Contains(exposedPorts, strings.Split(string(k), "/")[0]) {
+			exposedPortMap[k] = v
+		}
+	}
+	return exposedPortMap
 }
 
 // defaultHostConfigModifier provides a default modifier including the deprecated fields

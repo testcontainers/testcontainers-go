@@ -10,6 +10,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go/internal"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -60,7 +61,7 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 			testcontainersdocker.LabelLang:    "go",
 			testcontainersdocker.LabelVersion: internal.Version,
 		},
-		Mounts:     Mounts(BindMount("/var/run/docker.sock", "/var/run/docker.sock")),
+		Mounts:     Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock")),
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
 		ReaperOptions: []ContainerOption{
 			WithImageName("reaperImage"),
@@ -94,17 +95,19 @@ func Test_NewReaper(t *testing.T) {
 				return req
 			}),
 			config: TestcontainersConfig{
-				RyukPrivileged: true,
+				Config: config.Config{
+					RyukPrivileged: true,
+				},
 			},
 		},
 		{
 			name: "docker-host in context",
 			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
-				req.Mounts = Mounts(BindMount("/value/in/context.sock", "/var/run/docker.sock"))
+				req.Mounts = Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock"))
 				return req
 			}),
 			config: TestcontainersConfig{},
-			ctx:    context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, "unix:///value/in/context.sock"),
+			ctx:    context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, testcontainersdocker.DockerSocketPathWithSchema),
 		},
 	}
 
