@@ -53,7 +53,9 @@ jobs:
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
         if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: make test-unit
+        run: |
+          go install gotest.tools/gotestsum@latest
+          make test-unit
 
       - name: Run module generator tests
         if: ${{ matrix.platform == 'ubuntu-latest' }}

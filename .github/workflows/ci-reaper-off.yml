@@ -40,7 +40,9 @@ jobs:
         # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
-        run: make test-unit
+        run: |
+          go install gotest.tools/gotestsum@latest
+          make test-unit
 
       - name: Run checker
         run: |

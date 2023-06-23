@@ -6,7 +6,11 @@ dependencies-scan:
 .PHONY: test-%
 test-%:
 	@echo "Running $* tests..."
-	go test ./... -v
+	gotestsum \
+		--format short-verbose \
+		--rerun-fails=5 \
+		--packages="./..." \
+		--junitfile TEST-$*.xml
 
 .PHONY: tools
 tools:
