@@ -6,7 +6,7 @@ dependencies-scan:
 .PHONY: test-%
 test-%:
 	@echo "Running $* tests..."
-	go run -v ./...
+	go test ./... -v
 
 .PHONY: tools
 tools:
