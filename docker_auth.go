@@ -83,7 +83,7 @@ func getDockerAuthConfigs() (map[string]types.AuthConfig, error) {
 
 	// in the case where the auth field in the .docker/conf.json is empty, and the user has credential helpers registered
 	// the auth comes from there
-	if len(cfg.AuthConfigs) == 0 && len(cfg.CredentialHelpers) > 0 {
+	if len(cfg.AuthConfigs) == 0 {
 		for k, _ := range cfg.CredentialHelpers {
 			ac := types.AuthConfig{}
 			u, p, _ := dockercfg.GetRegistryCredentials(k)
@@ -109,7 +109,6 @@ func getDockerConfig() (dockercfg.Config, error) {
 		if err == nil {
 			return cfg, nil
 		}
-
 	}
 
 	cfg, err := dockercfg.LoadDefaultConfig()
