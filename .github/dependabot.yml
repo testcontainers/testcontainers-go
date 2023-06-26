@@ -1,5 +1,11 @@
 version: 2
 updates:
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /
       schedule:
@@ -140,6 +146,12 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/vault
+      schedule:
+        interval: monthly
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: pip
+      directory: /
       schedule:
         interval: monthly
       open-pull-requests-limit: 3
