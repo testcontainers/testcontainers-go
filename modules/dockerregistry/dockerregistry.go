@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // DockerRegistryContainer represents the DockerRegistry container type used in the module
@@ -14,8 +15,9 @@ type DockerRegistryContainer struct {
 // RunContainer creates an instance of the DockerRegistry container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DockerRegistryContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "docker.io/registry:latest",
-		ExposedPorts: []string{"5000/tcp"},
+		Image:        "registry:2",
+		ExposedPorts: []string{"5000:5000/tcp"},
+		WaitingFor:   wait.ForExposedPort(),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -83,5 +85,12 @@ func WithData(dataDir string) testcontainers.CustomizeRequestOption {
 
 		req.Mounts = append(req.Mounts, dataMount)
 
+	}
+}
+
+// WithImage customizer that will override the registry image used
+func WithImage(image string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Image = image
 	}
 }
