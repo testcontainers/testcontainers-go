@@ -110,8 +110,6 @@ func TestDockerRegistryWithData(t *testing.T) {
 	t.Cleanup(cancel)
 }
 
-/**/
-
 func TestDockerRegistryWithAuth(t *testing.T) {
 	ctx := context.Background()
 	wd, err := os.Getwd()
@@ -136,6 +134,35 @@ func TestDockerRegistryWithAuth(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://"+ipAddress+":"+port.Port()+"/v2/_catalog", nil)
 	req.SetBasicAuth("testuser", "testpassword")
 	resp, _ := h.Do(req)
+	defer resp.Body.Close()
+	_, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+}
+
+func TestDockerRegistryWithAuthWithUnauthorizedRequest(t *testing.T) {
+	ctx := context.Background()
+	wd, err := os.Getwd()
+	assert.NoError(t, err)
+	container, err := RunContainer(ctx, WithAuthentication(wd+"/../../testdata/auth"))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Clean up the container after the test is complete
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	port, ipAddress := getRegistryPortAndAddress(t, err, container, ctx)
+
+	// Let's simply check that the registry is up and running with a GET to http://localhost:5000/v2/_catalog
+	h := http.Client{}
+	req, _ := http.NewRequest("GET", "http://"+ipAddress+":"+port.Port()+"/v2/_catalog", nil)
+	resp, err := h.Do(req)
+	require.Equal(t, resp.StatusCode, 401)
 	defer resp.Body.Close()
 	_, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
