@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/datastore v1.11.0
 	github.com/testcontainers/testcontainers-go v0.21.0
 	google.golang.org/api v0.125.0
-	google.golang.org/grpc v1.55.0
+	google.golang.org/grpc v1.56.1
 )
 
 require (
