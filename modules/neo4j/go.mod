@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/docker/go-connections v0.4.0
-	github.com/neo4j/neo4j-go-driver/v5 v5.9.0
+	github.com/neo4j/neo4j-go-driver/v5 v5.10.0
 	github.com/testcontainers/testcontainers-go v0.21.0
 
 )
