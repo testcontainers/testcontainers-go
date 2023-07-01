@@ -6,7 +6,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.21.0
-	github.com/twmb/franz-go v1.13.5
+	github.com/twmb/franz-go v1.13.6
 	github.com/twmb/franz-go/pkg/kadm v1.8.1
 
 )
