@@ -57,6 +57,7 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		Labels: map[string]string{
 			TestcontainerLabel:                "true",
 			TestcontainerLabelIsReaper:        "true",
+			testcontainersdocker.LabelBase:    "true",
 			testcontainersdocker.LabelReaper:  "true",
 			testcontainersdocker.LabelLang:    "go",
 			testcontainersdocker.LabelVersion: internal.Version,

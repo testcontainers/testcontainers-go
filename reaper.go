@@ -198,6 +198,7 @@ func (r *Reaper) Labels() map[string]string {
 	return map[string]string{
 		TestcontainerLabel:                  "true",
 		TestcontainerLabelSessionID:         r.SessionID,
+		testcontainersdocker.LabelBase:      "true",
 		testcontainersdocker.LabelLang:      "go",
 		testcontainersdocker.LabelVersion:   internal.Version,
 		testcontainersdocker.LabelSessionID: r.SessionID,
