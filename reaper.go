@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"net"
 	"strings"
 	"sync"
@@ -195,13 +194,11 @@ func (r *Reaper) Connect() (chan bool, error) {
 
 // Labels returns the container labels to use so that this Reaper cleans them up
 func (r *Reaper) Labels() map[string]string {
-	labels := map[string]string{
+	return map[string]string{
 		TestcontainerLabel:                  "true",
 		TestcontainerLabelSessionID:         r.SessionID,
 		testcontainersdocker.LabelSessionID: r.SessionID,
 	}
-	maps.Copy(labels, testcontainersdocker.GetDefaultLabels())
-	return labels
 }
 
 func reaperImage(reaperImageName string) string {
