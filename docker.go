@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"io"
 	"net/url"
 	"os"
@@ -977,6 +978,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			}
 		}
 	}
+
+	maps.Copy(req.Labels, testcontainersdocker.GetDefaultLabels())
 
 	dockerInput := &container.Config{
 		Entrypoint: req.Entrypoint,
