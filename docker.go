@@ -36,7 +36,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"golang.org/x/exp/maps"
 )
 
 var (
@@ -979,7 +978,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
-	maps.Copy(req.Labels, testcontainersdocker.GetDefaultLabels())
+	for k, v := range testcontainersdocker.GetDefaultLabels() {
+		req.Labels[k] = v
+	}
 
 	dockerInput := &container.Config{
 		Entrypoint: req.Entrypoint,
