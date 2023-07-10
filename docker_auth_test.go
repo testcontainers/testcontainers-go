@@ -141,6 +141,7 @@ func removeImageFromLocalCache(t *testing.T, image string) {
 	if err != nil {
 		t.Log("could not create client to cleanup registry: ", err)
 	}
+	defer testcontainersClient.Close()
 
 	_, err = testcontainersClient.ImageRemove(ctx, image, types.ImageRemoveOptions{
 		Force:         true,
