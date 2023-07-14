@@ -36,6 +36,7 @@ func TestRedpanda(t *testing.T) {
 		kgo.SeedBrokers(seedBroker),
 	)
 	require.NoError(t, err)
+	defer kafkaCl.Close()
 
 	kafkaAdmCl := kadm.NewClient(kafkaCl)
 	metadata, err := kafkaAdmCl.Metadata(ctx)
