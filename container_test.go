@@ -476,3 +476,47 @@ func TestOverrideContainerRequest(t *testing.T) {
 	assert.Equal(t, []string{"bar"}, req.NetworkAliases["foo1"])
 	assert.Equal(t, wait.ForLog("foo"), req.WaitingFor)
 }
+
+func TestMultiStageBuildTarget(t *testing.T) {
+	type TestCase struct {
+		Target             string
+		ExpectedEchoOutput string
+		Name               string
+	}
+
+	testCases := []TestCase{
+		TestCase{
+			Target:             "first_stage",
+			ExpectedEchoOutput: "first stage",
+			Name:               "StopAtFirstStage",
+		},
+		TestCase{
+			Target:             "second_stage",
+			ExpectedEchoOutput: "second stage",
+			Name:               "StopAtSecondStage",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			ctx := context.Background()
+			containerRequest := ContainerRequest{
+				FromDockerfile: FromDockerfile{
+					Context:    "./testdata",
+					Dockerfile: "multi-stage.Dockerfile",
+				},
+				Target:     testCase.Target,
+				WaitingFor: wait.ForLog(testCase.ExpectedEchoOutput).WithStartupTimeout(10 * time.Second),
+			}
+
+			_, err := GenericContainer(ctx, GenericContainerRequest{
+				ContainerRequest: containerRequest,
+				Started:          true,
+			})
+
+			if err != nil {
+				t.Errorf("did not find expected log \"%s\": %s", testCase.ExpectedEchoOutput, err.Error())
+			}
+		})
+	}
+}

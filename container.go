@@ -65,6 +65,7 @@ type ImageBuildInfo interface {
 	ShouldBuildImage() bool                      // return true if the image needs to be built
 	GetBuildArgs() map[string]*string            // return the environment args used to build the from Dockerfile
 	GetAuthConfigs() map[string]types.AuthConfig // return the auth configs to be able to pull from an authenticated docker registry
+	GetTarget() string
 }
 
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
@@ -121,6 +122,7 @@ type ContainerRequest struct {
 	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 	LifecycleHooks          []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
+	Target                  string                                     // the build target to stop at for multi-stage builds
 }
 
 // containerOptions functional options for a container
@@ -165,6 +167,10 @@ func (c *ContainerRequest) Validate() error {
 	}
 
 	return nil
+}
+
+func (c *ContainerRequest) GetTarget() string {
+	return c.Target
 }
 
 // GetContext retrieve the build context for the request
