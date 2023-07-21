@@ -544,3 +544,63 @@ func ExampleGenericContainer_withSubstitutors() {
 
 	// Output: docker.io/alpine:latest
 }
+
+func TestMultiStageBuildTarget(t *testing.T) {
+	type TestCase struct {
+		Target             string
+		ExpectedEchoOutput string
+		Name               string
+		ExpectError        bool
+	}
+
+	testCases := []TestCase{
+		TestCase{
+			Target:             "first_stage",
+			ExpectedEchoOutput: "first stage",
+			Name:               "StopAtFirstStage",
+		},
+		TestCase{
+			Target:             "second_stage",
+			ExpectedEchoOutput: "second stage",
+			Name:               "StopAtSecondStage",
+		},
+		TestCase{
+			Target:             "does_not_exist",
+			ExpectedEchoOutput: "second stage",
+			Name:               "DoesNotExist",
+			ExpectError:        true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			containerRequest := ContainerRequest{
+				FromDockerfile: FromDockerfile{
+					Context:       "./testdata",
+					Dockerfile:    "multi-stage.Dockerfile",
+					PrintBuildLog: true,
+				},
+				Target:     testCase.Target,
+				WaitingFor: wait.ForLog(testCase.ExpectedEchoOutput).WithStartupTimeout(10 * time.Second),
+			}
+
+			_, err := GenericContainer(ctx, GenericContainerRequest{
+				ContainerRequest: containerRequest,
+				Started:          true,
+			})
+
+			if testCase.ExpectError && err == nil {
+				t.Fatalf("expected error, received none")
+			} else if testCase.ExpectError {
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("did not find expected log \"%s\": %s", testCase.ExpectedEchoOutput, err.Error())
+			}
+		})
+	}
+}

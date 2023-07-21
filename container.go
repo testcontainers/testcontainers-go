@@ -75,6 +75,7 @@ type ImageBuildInfo interface {
 	ShouldBuildImage() bool                         // return true if the image needs to be built
 	GetBuildArgs() map[string]*string               // return the environment args used to build the from Dockerfile
 	GetAuthConfigs() map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Return the auth configs to be able to pull from an authenticated docker registry
+	GetTarget() string                              // get the build target for multi-stage builds
 }
 
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
@@ -144,6 +145,7 @@ type ContainerRequest struct {
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 	LifecycleHooks          []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
 	LogConsumerCfg          *LogConsumerConfig                         // define the configuration for the log producer and its log consumers to follow the logs
+	Target                  string                                     // the build target to stop at for multi-stage builds
 }
 
 // containerOptions functional options for a container
@@ -190,6 +192,10 @@ func (c *ContainerRequest) Validate() error {
 	}
 
 	return nil
+}
+
+func (c *ContainerRequest) GetTarget() string {
+	return c.Target
 }
 
 // GetContext retrieve the build context for the request
@@ -355,6 +361,8 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	} else {
 		buildOptions.Tags = []string{tag}
 	}
+
+	buildOptions.Target = c.GetTarget()
 
 	return buildOptions, nil
 }
