@@ -3,6 +3,7 @@ module github.com/testcontainers/testcontainers-go
 go 1.19
 
 require (
+	dario.cat/mergo v1.0.0
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/containerd/containerd v1.6.19
 	github.com/cpuguy83/dockercfg v0.3.1
@@ -10,7 +11,6 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.5.0
 	github.com/google/uuid v1.3.0
-	github.com/imdario/mergo v0.3.15
 	github.com/magiconair/properties v1.8.7
 	github.com/moby/term v0.5.0
 	github.com/opencontainers/image-spec v1.1.0-rc2
