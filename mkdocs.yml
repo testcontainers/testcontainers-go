@@ -59,6 +59,7 @@ nav:
             - SQL: features/wait/sql.md
     - Modules:
         - modules/index.md
+        - modules/clickhouse.md
         - modules/couchbase.md
         - modules/k3s.md
         - modules/localstack.md
