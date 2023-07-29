@@ -12,7 +12,6 @@ import (
 )
 
 const defaultUser = "default"
-const defaultPassword = "clickhouse"
 const defaultDatabaseName = "clickhouse"
 
 const defaultImage = "clickhouse/clickhouse-server:23.3.8.21-alpine"
@@ -151,7 +150,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		Image: defaultImage,
 		Env: map[string]string{
 			"CLICKHOUSE_USER":                      defaultUser,
-			"CLICKHOUSE_PASSWORD":                  defaultPassword,
+			"CLICKHOUSE_PASSWORD":                  defaultUser,
 			"CLICKHOUSE_DB":                        defaultDatabaseName,
 			"CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT": "1",
 		},

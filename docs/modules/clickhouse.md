@@ -18,7 +18,7 @@ go get github.com/testcontainers/testcontainers-go/modules/clickhouse
 
 <!--codeinclude-->
 
-[Test for a ClickHouse container](../../modules/clickhouse/clickhouse_test.go)
+[Test for a ClickHouse container](../../modules/clickhouse/clickhouse_test.go)inside_block:customInitialization
 
 <!--/codeinclude-->
 
@@ -48,7 +48,7 @@ If you need to set a different wait strategy for ClickHouse, you can use `testco
 for ClickHouse.
 
 !!!info
-    The default deadline for the wait strategy is 60 seconds.
+The default deadline for the wait strategy is 60 seconds.
 
 At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
 
@@ -74,7 +74,7 @@ options.
 <!--/codeinclude-->
 
 !!!info
-    The default values for the username is `default`, for password is `clickhouse` and for the default database name is `clickhouse`.
+The default values for the username is `default`, for password is `clickhouse` and for the default database name is `clickhouse`.
 
 #### Init Scripts
 
