@@ -20,7 +20,7 @@ jobs:
   test-bigtable:
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.19.10, 1.20.5]
     runs-on: "ubuntu-latest"
     steps:
 
