@@ -7,27 +7,27 @@ import (
 	"os"
 
 	"github.com/cpuguy83/dockercfg"
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
 // DockerImageAuth returns the auth config for the given Docker image, extracting first its Docker registry.
 // Finally, it will use the credential helpers to extract the information from the docker config file
 // for that registry, if it exists.
-func DockerImageAuth(ctx context.Context, image string) (string, types.AuthConfig, error) {
+func DockerImageAuth(ctx context.Context, image string) (string, registry.AuthConfig, error) {
 	defaultRegistry := defaultRegistry(ctx)
-	registry := testcontainersdocker.ExtractRegistry(image, defaultRegistry)
+	reg := testcontainersdocker.ExtractRegistry(image, defaultRegistry)
 
 	cfgs, err := getDockerAuthConfigs()
 	if err != nil {
-		return registry, types.AuthConfig{}, err
+		return reg, registry.AuthConfig{}, err
 	}
 
-	if cfg, ok := cfgs[registry]; ok {
-		return registry, cfg, nil
+	if cfg, ok := cfgs[reg]; ok {
+		return reg, cfg, nil
 	}
 
-	return registry, types.AuthConfig{}, dockercfg.ErrCredentialsNotFound
+	return reg, registry.AuthConfig{}, dockercfg.ErrCredentialsNotFound
 }
 
 // defaultRegistry returns the default registry to use when pulling images
@@ -50,15 +50,15 @@ func defaultRegistry(ctx context.Context) string {
 
 // getDockerAuthConfigs returns a map with the auth configs from the docker config file
 // using the registry as the key
-func getDockerAuthConfigs() (map[string]types.AuthConfig, error) {
+func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 	cfg, err := getDockerConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	cfgs := map[string]types.AuthConfig{}
+	cfgs := map[string]registry.AuthConfig{}
 	for k, v := range cfg.AuthConfigs {
-		ac := types.AuthConfig{
+		ac := registry.AuthConfig{
 			Auth:          v.Auth,
 			Email:         v.Email,
 			IdentityToken: v.IdentityToken,
