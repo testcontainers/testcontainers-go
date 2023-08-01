@@ -11,6 +11,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
@@ -450,7 +451,10 @@ func assertVolumeDoesNotExist(tb testing.TB, volumeName string) {
 		tb.Fatalf("Failed to get provider: %v", err)
 	}
 
-	volumeList, err := containerClient.VolumeList(context.Background(), filters.NewArgs(filters.Arg("name", volumeName)))
+	listOptions := volume.ListOptions{
+		Filters: filters.NewArgs(filters.Arg("name", volumeName)),
+	}
+	volumeList, err := containerClient.VolumeList(context.Background(), listOptions)
 	if err != nil {
 		tb.Fatalf("Failed to list volumes: %v", err)
 	}

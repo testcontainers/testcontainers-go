@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
@@ -446,7 +447,7 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 	volumeListFilters := filters.NewArgs()
 	// the "mydata" identifier comes from the "testdata/docker-compose-volume.yml" file
 	volumeListFilters.Add("name", fmt.Sprintf("%s_mydata", identifier))
-	volumeList, err := compose.dockerClient.VolumeList(ctx, volumeListFilters)
+	volumeList, err := compose.dockerClient.VolumeList(ctx, volume.ListOptions{Filters: volumeListFilters})
 	assert.NoError(t, err, "compose.dockerClient.VolumeList()")
 
 	assert.Equal(t, 0, len(volumeList.Volumes), "Volumes are not cleaned up")
