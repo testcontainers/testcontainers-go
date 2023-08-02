@@ -101,7 +101,9 @@ jobs:
 
       - name: Run module generator tests
         working-directory: ./modulegen
-        run: make test-unit
+        run: |
+          go install gotest.tools/gotestsum@latest
+          make test-unit
 
       - name: Test Summary
         uses: test-summary/action@4ee9ece4bca777a38f05c8fc578ac2007fe266f7
