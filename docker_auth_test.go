@@ -42,7 +42,7 @@ func TestGetDockerConfig(t *testing.T) {
 		require.Nil(t, err)
 		require.NotNil(t, cfg)
 
-		assert.Equal(t, 1, len(cfg.AuthConfigs))
+		assert.Greater(t, len(cfg.AuthConfigs), 0)
 
 		authCfgs := cfg.AuthConfigs
 

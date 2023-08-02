@@ -6,7 +6,6 @@ require (
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/text v0.9.0
 	gopkg.in/yaml.v3 v3.0.1
-	gotest.tools/gotestsum v1.10.0
 )
 
 require (
