@@ -9,6 +9,9 @@ dependent upon.
 
 ## Using `docker-compose` directly
 
+!!!warning
+	The minimal version of Go required to use this module is **1.20**.
+
 ```
 go get github.com/testcontainers/testcontainers-go/modules/compose
 ```
