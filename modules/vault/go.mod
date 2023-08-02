@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/vault
 go 1.19
 
 require (
-	github.com/docker/docker v23.0.5+incompatible
+	github.com/docker/docker v24.0.5+incompatible
 	github.com/hashicorp/vault-client-go v0.2.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.21.0
