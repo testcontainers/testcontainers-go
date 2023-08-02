@@ -9,6 +9,9 @@ dependent upon.
 
 ## Using `docker-compose` directly
 
+!!!warning
+	The minimal version of Go required to use this module is **1.20**.
+
 ```
 go get github.com/testcontainers/testcontainers-go/modules/compose
 ```
@@ -20,19 +23,7 @@ go get github.com/testcontainers/testcontainers-go/modules/compose
 
 	```
 	replace (
-
 		github.com/cucumber/godog => github.com/laurazard/godog v0.0.0-20220922095256-4c4b17abdae7
-
-		golang.org/x/oauth2 => golang.org/x/oauth2 v0.1.0
-
-		// For k8s dependencies, we use a replace directive, to prevent them being
-		// upgraded to the version specified in containerd, which is not relevant to the
-		// version needed.
-		// See https://github.com/docker/buildx/pull/948 for details.
-		// https://github.com/docker/buildx/blob/v0.8.1/go.mod#L62-L64
-		k8s.io/api => k8s.io/api v0.22.4
-		k8s.io/apimachinery => k8s.io/apimachinery v0.22.4
-		k8s.io/client-go => k8s.io/client-go v0.22.4
 	)
 	```
 

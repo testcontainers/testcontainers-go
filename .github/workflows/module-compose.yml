@@ -16,7 +16,8 @@ jobs:
   test-compose:
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        # TODO: Include back 1.20 when we have a new release
+        go-version: [1.x]
     runs-on: "ubuntu-latest"
     steps:
 
@@ -37,14 +38,11 @@ jobs:
         working-directory: ./modules/compose
         run: go mod tidy
 
-      - name: gotestsum
+      - name: go test
         working-directory: ./modules/compose
         run: |
-          go run gotest.tools/gotestsum \
-            --format short-verbose \
-            --rerun-fails=5 \
-            --packages="./..." \
-            --junitfile TEST-compose.xml
+          go install gotest.tools/gotestsum@latest
+          make test-unit
 
       - name: Run checker
         run: |
