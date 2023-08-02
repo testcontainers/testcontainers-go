@@ -66,7 +66,6 @@ jobs:
         if: always()
 
   test-module-generator:
-    needs: test
     strategy:
       matrix:
         go-version: [1.19.x, 1.x]
@@ -110,7 +109,7 @@ jobs:
         if: always()
 
   test-modules:
-    needs: test-module-generator
+    needs: test
     strategy:
       matrix:
         go-version: [1.19.x, 1.x]
