@@ -3,6 +3,14 @@ name: Module pipeline
 on:
   workflow_call:
     inputs:
+      go-version:
+        required: true
+        type: string
+        description: "The version of Go to use for the test."
+      platform:
+        required: true
+        type: string
+        description: "The platform to run the test on."
       module-directory:
         required: true
         type: string
@@ -15,18 +23,14 @@ on:
 
 jobs:
   test-module:
-    strategy:
-      matrix:
-        go-version: [1.19.x, 1.x]
-        platform: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.platform }}
+    runs-on: ${{ inputs.platform }}
     env:
       TESTCONTAINERS_RYUK_DISABLED: "false"
     steps:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-            go-version: ${{ matrix.go-version }}
+            go-version: ${{ inputs.go-version }}
         id: go
 
       - name: Check out code into the Go module directory
@@ -48,7 +52,7 @@ jobs:
         # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
         # we can't put Windows Server in "Linux Mode" in Github actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
         working-directory: ./${{ inputs.module-directory }}/${{ inputs.module-name }}
         run: |
             go install gotest.tools/gotestsum@latest

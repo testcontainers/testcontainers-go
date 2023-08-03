@@ -112,7 +112,12 @@ jobs:
     needs: test
     strategy:
       matrix:
+        go-version: [1.19.x, 1.x]
+        platform: [ubuntu-latest, macos-latest]
         module: [compose, couchbase, k3s, localstack, mysql, neo4j, postgres, pulsar, redis, redpanda, vault]
+        exclude:
+          - module: compose
+            go-version: 1.19.x
     uses: ./.github/workflows/ci-module.yml
     with:
       module-directory: "modules"
@@ -122,6 +127,8 @@ jobs:
     needs: test-modules
     strategy:
       matrix:
+        go-version: [1.19.x, 1.x]
+        platform: [ubuntu-latest, macos-latest]
         module: [bigtable, cockroachdb, consul, datastore, firestore, mongodb, nats, nginx, pubsub, spanner, toxiproxy]
     uses: ./.github/workflows/ci-module.yml
     with:
