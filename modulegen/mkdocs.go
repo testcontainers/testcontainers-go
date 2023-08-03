@@ -10,6 +10,7 @@ import (
 
 type MkDocsConfig struct {
 	SiteName string   `yaml:"site_name"`
+	SiteURL  string   `yaml:"site_url"`
 	Plugins  []string `yaml:"plugins"`
 	Theme    struct {
 		Name      string `yaml:"name"`
