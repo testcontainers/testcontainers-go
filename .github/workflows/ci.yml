@@ -13,7 +13,7 @@ on:
     - 'README.md'
 
 concurrency:
-  group: "${{ github.workflow }}-${{ github.head_ref || github.sha }}"
+  group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -71,7 +71,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
-      platform: "${{ matrix.platform }}"
+      platform: ${{ matrix.platform }}
       project-directory: "modulegen"
       rootless-docker: false
       ryuk-disabled: false
@@ -90,7 +90,7 @@ jobs:
     with:
       go-version: ${{ matrix.go-version }}
       platform: ${{ matrix.platform }}
-      project-directory: "modules/${{ matrix.module }}"
+      project-directory: modules/${{ matrix.module }}
       rootless-docker: false
       ryuk-disabled: false
 
@@ -105,6 +105,6 @@ jobs:
     with:
       go-version: ${{ matrix.go-version }}
       platform: ${{ matrix.platform }}
-      project-directory: "examples/${{ matrix.module }}"
+      project-directory: examples/${{ matrix.module }}
       rootless-docker: false
       ryuk-disabled: false
