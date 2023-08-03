@@ -1,4 +1,5 @@
 name: Module pipeline
+run-name: "${{ inputs.module-directory }} ${{ inputs.module-name }} ${{ inputs.go-version }} ${{ inputs.platform }}"
 
 on:
   workflow_call:
