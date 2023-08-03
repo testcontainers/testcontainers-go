@@ -120,6 +120,8 @@ jobs:
             go-version: 1.19.x
     uses: ./.github/workflows/ci-module.yml
     with:
+      go-version: ${{ matrix.go-version }}
+      platform: ${{ matrix.platform }}
       module-directory: "modules"
       module-name: ${{ matrix.module }}
 
@@ -132,5 +134,7 @@ jobs:
         module: [bigtable, cockroachdb, consul, datastore, firestore, mongodb, nats, nginx, pubsub, spanner, toxiproxy]
     uses: ./.github/workflows/ci-module.yml
     with:
+      go-version: ${{ matrix.go-version }}
+      platform: ${{ matrix.platform }}
       module-directory: "examples"
       module-name: ${{ matrix.module }}
