@@ -185,13 +185,13 @@ func generate(example Example, rootDir string) error {
 		"codeinclude":   func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
 	}
 
+	exampleLower := example.Lower()
+
 	// create the example dir
-	err := os.MkdirAll(outputDir, 0700)
+	err := os.MkdirAll(filepath.Join(outputDir, exampleLower), 0700)
 	if err != nil {
 		return err
 	}
-
-	exampleLower := example.Lower()
 
 	for _, tmpl := range templates {
 		name := tmpl + ".tmpl"
