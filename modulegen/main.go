@@ -23,7 +23,7 @@ var nameTitleVar string
 var imageVar string
 
 var templates = []string{
-	"ci.yml", "docs_example.md", "example_test.go", "example.go", "go.mod", "Makefile", "tools.go",
+	"ci.yml", "docs_example.md", "example_test.go", "example.go", "go.mod", "Makefile",
 }
 
 func init() {

@@ -81,6 +81,8 @@ func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	length := 0
+
 LOOP:
 	for {
 		select {
@@ -102,11 +104,12 @@ LOOP:
 			}
 
 			logs := string(b)
-			if logs == "" && checkErr != nil {
+			if length == len(logs) && checkErr != nil {
 				return checkErr
 			} else if strings.Count(logs, ws.Log) >= ws.Occurrence {
 				break LOOP
 			} else {
+				length = len(logs)
 				time.Sleep(ws.PollInterval)
 				continue
 			}

@@ -23,6 +23,9 @@ type options struct {
 	// You must use SCRAM-SHA-256 as algorithm when authenticating on the
 	// Kafka API.
 	ServiceAccounts map[string]string
+
+	// AutoCreateTopics is a flag to allow topic auto creation.
+	AutoCreateTopics bool
 }
 
 func defaultOptions() options {
@@ -32,6 +35,7 @@ func defaultOptions() options {
 		KafkaAuthenticationMethod:          "none",
 		SchemaRegistryAuthenticationMethod: "none",
 		ServiceAccounts:                    make(map[string]string, 0),
+		AutoCreateTopics:                   false,
 	}
 }
 
@@ -80,5 +84,12 @@ func WithEnableKafkaAuthorization() Option {
 func WithEnableSchemaRegistryHTTPBasicAuth() Option {
 	return func(o *options) {
 		o.SchemaRegistryAuthenticationMethod = "http_basic"
+	}
+}
+
+// WithAutoCreateTopics enables topic auto creation.
+func WithAutoCreateTopics() Option {
+	return func(o *options) {
+		o.AutoCreateTopics = true
 	}
 }
