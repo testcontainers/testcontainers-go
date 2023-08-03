@@ -108,6 +108,8 @@ jobs:
   # The job below is a copy of the job above, but with Docker rootless.
   # It's executed in a secondary stage to avoid concurrency issues.
   test-rootless-docker:
+    name: "Test with Rootless Docker"
+    needs: test
     strategy:
       matrix:
         go-version: [1.19.x, 1.x]
