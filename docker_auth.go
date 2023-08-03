@@ -15,8 +15,8 @@ import (
 // Finally, it will use the credential helpers to extract the information from the docker config file
 // for that registry, if it exists.
 func DockerImageAuth(ctx context.Context, image string) (string, types.AuthConfig, error) {
-	defaultRegistry := defaultRegistry(ctx)
-	registry := testcontainersdocker.ExtractRegistry(image, defaultRegistry)
+	r := defaultRegistry(ctx)
+	registry := testcontainersdocker.ExtractRegistry(image, r)
 
 	cfgs, err := getDockerAuthConfigs()
 	if err != nil {
@@ -83,15 +83,13 @@ func getDockerAuthConfigs() (map[string]types.AuthConfig, error) {
 
 	// in the case where the auth field in the .docker/conf.json is empty, and the user has credential helpers registered
 	// the auth comes from there
-	if len(cfg.AuthConfigs) == 0 {
-		for k := range cfg.CredentialHelpers {
-			ac := types.AuthConfig{}
-			u, p, _ := dockercfg.GetRegistryCredentials(k)
-			ac.Username = u
-			ac.Password = p
+	for k := range cfg.CredentialHelpers {
+		ac := types.AuthConfig{}
+		u, p, _ := dockercfg.GetRegistryCredentials(k)
+		ac.Username = u
+		ac.Password = p
 
-			cfgs[k] = ac
-		}
+		cfgs[k] = ac
 	}
 
 	return cfgs, nil
