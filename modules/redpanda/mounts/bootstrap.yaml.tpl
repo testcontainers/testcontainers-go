@@ -14,3 +14,7 @@ superusers:
 {{- if .KafkaAPIEnableAuthorization }}
 kafka_enable_authorization: true
 {{- end }}
+
+{{- if .AutoCreateTopics }}
+auto_create_topics_enabled: true
+{{- end }}
