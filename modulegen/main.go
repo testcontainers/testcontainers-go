@@ -200,6 +200,14 @@ func generate(example Example, rootDir string) error {
 			return err
 		}
 
+		// initialize the data using the example struct, which is the default data to be used while
+		// doing the interpolation of the data and the template
+		var data any
+
+		syncDataFn := func() any {
+			return example
+		}
+
 		// create a new file
 		var exampleFilePath string
 
@@ -207,13 +215,29 @@ func generate(example Example, rootDir string) error {
 			// docs example file will go into the docs directory
 			exampleFilePath = filepath.Join(docsOuputDir, exampleLower+".md")
 		} else if strings.EqualFold(tmpl, "ci.yml") {
-			// GitHub workflow example file will go into the .github/workflows directory
-			fileName := exampleLower + "-example.yml"
-			if example.IsModule {
-				fileName = "module-" + exampleLower + ".yml"
+			// GitHub workflow file will go into the .github/workflows directory
+			exampleFilePath = filepath.Join(githubWorkflowsDir, "ci.yml")
+
+			type stringsList struct {
+				Examples string
+				Modules  string
 			}
 
-			exampleFilePath = filepath.Join(githubWorkflowsDir, fileName)
+			syncDataFn = func() any {
+				modulesList, err := getModulesOrExamplesAsString(true)
+				if err != nil {
+					return ""
+				}
+				examplesList, err := getModulesOrExamplesAsString(false)
+				if err != nil {
+					return ""
+				}
+
+				return stringsList{
+					Examples: examplesList,
+					Modules:  modulesList,
+				}
+			}
 		} else if strings.EqualFold(tmpl, "tools.go") {
 			// tools.go example file will go into the tools package
 			exampleFilePath = filepath.Join(outputDir, exampleLower, "tools", tmpl)
@@ -229,7 +253,9 @@ func generate(example Example, rootDir string) error {
 		exampleFile, _ := os.Create(exampleFilePath)
 		defer exampleFile.Close()
 
-		err = t.ExecuteTemplate(exampleFile, name, example)
+		data = syncDataFn()
+
+		err = t.ExecuteTemplate(exampleFile, name, data)
 		if err != nil {
 			return err
 		}
@@ -319,6 +345,53 @@ func generateMkdocs(rootDir string, example Example) error {
 	}
 
 	return writeMkdocsConfig(rootDir, mkdocsConfig)
+}
+
+func getModulesOrExamples(t bool) ([]os.DirEntry, error) {
+	baseDir := "examples"
+	if t {
+		baseDir = "modules"
+	}
+
+	parent, err := getRootDir()
+	if err != nil {
+		return nil, err
+	}
+
+	dir := filepath.Join(parent, baseDir)
+
+	allFiles, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	dirs := make([]os.DirEntry, 0)
+
+	for _, f := range allFiles {
+		// only accept the directories and not the template
+		if f.IsDir() && f.Name() != "_template" {
+			dirs = append(dirs, f)
+		}
+	}
+
+	return dirs, nil
+}
+
+func getModulesOrExamplesAsString(t bool) (string, error) {
+	dirs, err := getModulesOrExamples(t)
+	if err != nil {
+		return "", err
+	}
+
+	// sort the dir names by name
+	names := make([]string, len(dirs))
+	for i, f := range dirs {
+		names[i] = f.Name()
+	}
+
+	sort.Strings(names)
+
+	return strings.Join(names, ", "), nil
 }
 
 func runGoCommand(cmdDir string, args ...string) error {

@@ -49,28 +49,7 @@ func getMkdocsConfigFile(rootDir string) string {
 }
 
 func getExamples() ([]os.DirEntry, error) {
-	parent, err := getRootDir()
-	if err != nil {
-		return nil, err
-	}
-
-	dir := filepath.Join(parent, "examples")
-
-	allFiles, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	examples := make([]os.DirEntry, 0)
-
-	for _, f := range allFiles {
-		// only accept the directories and not the template
-		if f.IsDir() && f.Name() != "_template" {
-			examples = append(examples, f)
-		}
-	}
-
-	return examples, nil
+	return getModulesOrExamples(false)
 }
 
 func getExamplesDocs() ([]os.DirEntry, error) {
@@ -82,6 +61,10 @@ func getExamplesDocs() ([]os.DirEntry, error) {
 	dir := filepath.Join(parent, "docs", "examples")
 
 	return os.ReadDir(dir)
+}
+
+func getModules() ([]os.DirEntry, error) {
+	return getModulesOrExamples(true)
 }
 
 func getRootDir() (string, error) {
