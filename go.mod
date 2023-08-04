@@ -13,7 +13,7 @@ require (
 	github.com/imdario/mergo v0.3.15
 	github.com/magiconair/properties v1.8.7
 	github.com/moby/term v0.5.0
-	github.com/opencontainers/image-spec v1.1.0-rc2
+	github.com/opencontainers/image-spec v1.1.0-rc4
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
 	golang.org/x/sys v0.8.0

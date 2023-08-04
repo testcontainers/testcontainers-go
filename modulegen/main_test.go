@@ -287,15 +287,15 @@ func TestGenerate(t *testing.T) {
 	_, err = os.Stat(exampleDocFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
-	exampleWorkflowFile := filepath.Join(githubWorkflowsTmp, exampleNameLower+"-example.yml")
-	_, err = os.Stat(exampleWorkflowFile)
+	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
+	_, err = os.Stat(mainWorkflowFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
 	// check the number of template files is equal to examples + 2 (the doc and the github workflow)
 	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
 
 	assertExampleDocContent(t, example, exampleDocFile)
-	assertExampleGithubWorkflowContent(t, example, exampleWorkflowFile)
+	assertExampleGithubWorkflowContent(t, example, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, exampleNameLower)
 	assertExampleTestContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
@@ -358,15 +358,15 @@ func TestGenerateModule(t *testing.T) {
 	_, err = os.Stat(exampleDocFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
-	exampleWorkflowFile := filepath.Join(githubWorkflowsTmp, "module-"+exampleNameLower+".yml")
-	_, err = os.Stat(exampleWorkflowFile)
+	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
+	_, err = os.Stat(mainWorkflowFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
 	// check the number of template files is equal to examples + 2 (the doc and the github workflow)
 	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
 
 	assertExampleDocContent(t, example, exampleDocFile)
-	assertExampleGithubWorkflowContent(t, example, exampleWorkflowFile)
+	assertExampleGithubWorkflowContent(t, example, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(modulesTmp, exampleNameLower)
 	assertExampleTestContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
@@ -464,17 +464,15 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	content, err := os.ReadFile(exampleWorkflowFile)
 	assert.Nil(t, err)
 
-	lower := example.Lower()
-	title := example.Title()
-
 	data := strings.Split(string(content), "\n")
-	assert.Equal(t, "name: "+title+" "+example.Type()+" pipeline", data[0])
-	assert.Equal(t, "  test-"+lower+":", data[19])
-	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[29])
-	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[36])
-	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[40])
-	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[44])
-	assert.Equal(t, "          paths: \"**/TEST-unit*.xml\"", data[56])
+
+	modulesList, err := getModulesOrExamplesAsString(true)
+	assert.Nil(t, err)
+	assert.Equal(t, "        module: ["+modulesList+"]", data[84])
+
+	examplesList, err := getModulesOrExamplesAsString(false)
+	assert.Nil(t, err)
+	assert.Equal(t, "        module: ["+examplesList+"]", data[102])
 }
 
 // assert content go.mod
