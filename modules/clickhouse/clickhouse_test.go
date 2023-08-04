@@ -34,11 +34,11 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 		assert.NoError(t, container.Terminate(ctx))
 	})
 
-	connectionString, err := container.ConnectionHost(ctx)
+	connectionHost, err := container.ConnectionHost(ctx)
 	assert.NoError(t, err)
 
 	conn, err := ch.Open(&ch.Options{
-		Addr: []string{connectionString},
+		Addr: []string{connectionHost},
 		Auth: ch.Auth{
 			Database: container.dbName,
 			Username: container.user,
@@ -73,12 +73,12 @@ func TestClickHouseIpPort(t *testing.T) {
 	})
 
 	// connectionHost {
-	connectionString, err := container.ConnectionHost(ctx)
+	connectionHost, err := container.ConnectionHost(ctx)
 	assert.NoError(t, err)
 	// }
 
 	conn, err := ch.Open(&ch.Options{
-		Addr: []string{connectionString},
+		Addr: []string{connectionHost},
 		Auth: ch.Auth{
 			Database: dbname,
 			Username: user,
@@ -183,11 +183,11 @@ func TestClickHouseWithInitScripts(t *testing.T) {
 		assert.NoError(t, container.Terminate(ctx))
 	})
 
-	connectionString, err := container.ConnectionHost(ctx)
+	connectionHost, err := container.ConnectionHost(ctx)
 	assert.NoError(t, err)
 
 	conn, err := ch.Open(&ch.Options{
-		Addr: []string{connectionString},
+		Addr: []string{connectionHost},
 		Auth: ch.Auth{
 			Database: dbname,
 			Username: user,
@@ -234,11 +234,11 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 		assert.NoError(t, container.Terminate(ctx))
 	})
 
-	connectionString, err := container.ConnectionHost(ctx)
+	connectionHost, err := container.ConnectionHost(ctx)
 	assert.NoError(t, err)
 
 	conn, err := ch.Open(&ch.Options{
-		Addr: []string{connectionString},
+		Addr: []string{connectionHost},
 		Auth: ch.Auth{
 			Database: dbname,
 			Username: user,

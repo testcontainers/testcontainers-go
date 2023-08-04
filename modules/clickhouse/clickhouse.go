@@ -46,12 +46,7 @@ func (c *ClickHouseContainer) ConnectionHost(ctx context.Context) (string, error
 // which will be appended to the dsn string. The format of the extra arguments is the same as the
 // connection string format, e.g. "dial_timeout=300ms" or "skip_verify=false"
 func (c *ClickHouseContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	containerPort, err := c.MappedPort(ctx, nativePort)
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
+	host, err := c.ConnectionHost(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -64,7 +59,7 @@ func (c *ClickHouseContainer) ConnectionString(ctx context.Context, args ...stri
 		extraArgs = "?" + extraArgs
 	}
 
-	connectionString := fmt.Sprintf("clickhouse://%s:%s@%s:%s/%s%s", c.user, c.password, host, containerPort.Port(), c.dbName, extraArgs)
+	connectionString := fmt.Sprintf("clickhouse://%s:%s@%s/%s%s", c.user, c.password, host, c.dbName, extraArgs)
 	return connectionString, nil
 }
 
