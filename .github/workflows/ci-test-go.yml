@@ -44,7 +44,7 @@ jobs:
         run: sudo rm -rf /var/run/docker.sock
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
             go-version: ${{ inputs.go-version }}
         id: go
