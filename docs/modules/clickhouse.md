@@ -74,7 +74,7 @@ options.
 <!--/codeinclude-->
 
 !!!info
-The default values for the username is `default`, for password is `clickhouse` and for the default database name is `clickhouse`.
+    The default values for the username is `default`, for password is `clickhouse` and for the default database name is `clickhouse`.
 
 #### Init Scripts
 
