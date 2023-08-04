@@ -1,0 +1,22 @@
+name: windows-test command dispatch
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  windows-test-command-trigger:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Trigger windows-test command
+        uses: peter-evans/slash-command-dispatch@v3
+        with:
+          token: ${{ secrets.WINDOWS_WORKERS_TOKEN }}
+          # The command to trigger the pipeline: e.g. /windows-test
+          # The command name must match the name of the repository_dispatch.type in 'ci-windows.yml' workflow, using '-command' as suffix. E.g. 'windows-test-command'
+          commands: windows-test
+          issue-type: pull-request
+          # The user that owns the above token must belong to the elevated role of 'Maintainers'
+          permission: maintain
+          reactions: false
