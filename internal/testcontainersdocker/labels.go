@@ -10,7 +10,7 @@ const (
 	LabelVersion   = LabelBase + ".version"
 )
 
-func GetDefaultLabels() map[string]string {
+func DefaultLabels() map[string]string {
 	return map[string]string{
 		LabelBase:    "true",
 		LabelLang:    "go",
