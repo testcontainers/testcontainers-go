@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	cloud.google.com/go/spanner v1.47.0
-	github.com/testcontainers/testcontainers-go v0.21.0
+	github.com/testcontainers/testcontainers-go v0.22.0
 	google.golang.org/api v0.134.0
 	google.golang.org/genproto v0.0.0-20230706204954-ccb25ca9f130
 	google.golang.org/grpc v1.57.0
