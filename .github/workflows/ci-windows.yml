@@ -38,7 +38,7 @@ jobs:
           ref: ${{ github.event.client_payload.pull_request.head.ref }}
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: 1.x
         id: go
