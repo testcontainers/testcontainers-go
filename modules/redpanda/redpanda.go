@@ -229,6 +229,7 @@ func createBootstrapConfigFile(settings options) (*os.File, error) {
 	bootstrapTplParams := redpandaBootstrapConfigTplParams{
 		Superusers:                  settings.Superusers,
 		KafkaAPIEnableAuthorization: settings.KafkaEnableAuthorization,
+		AutoCreateTopics:            settings.AutoCreateTopics,
 	}
 
 	tpl, err := template.New("bootstrap.yaml").Parse(bootstrapConfigTpl)
@@ -257,6 +258,7 @@ func createBootstrapConfigFile(settings options) (*os.File, error) {
 // byte array.
 func renderNodeConfig(settings options, hostIP string, advertisedKafkaPort int) ([]byte, error) {
 	tplParams := redpandaConfigTplParams{
+		AutoCreateTopics: settings.AutoCreateTopics,
 		KafkaAPI: redpandaConfigTplParamsKafkaAPI{
 			AdvertisedHost:       hostIP,
 			AdvertisedPort:       advertisedKafkaPort,
@@ -284,11 +286,13 @@ func renderNodeConfig(settings options, hostIP string, advertisedKafkaPort int) 
 type redpandaBootstrapConfigTplParams struct {
 	Superusers                  []string
 	KafkaAPIEnableAuthorization bool
+	AutoCreateTopics            bool
 }
 
 type redpandaConfigTplParams struct {
-	KafkaAPI       redpandaConfigTplParamsKafkaAPI
-	SchemaRegistry redpandaConfigTplParamsSchemaRegistry
+	KafkaAPI         redpandaConfigTplParamsKafkaAPI
+	SchemaRegistry   redpandaConfigTplParamsSchemaRegistry
+	AutoCreateTopics bool
 }
 
 type redpandaConfigTplParamsKafkaAPI struct {

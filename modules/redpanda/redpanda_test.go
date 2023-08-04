@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 )
@@ -35,6 +36,7 @@ func TestRedpanda(t *testing.T) {
 		kgo.SeedBrokers(seedBroker),
 	)
 	require.NoError(t, err)
+	defer kafkaCl.Close()
 
 	kafkaAdmCl := kadm.NewClient(kafkaCl)
 	metadata, err := kafkaAdmCl.Metadata(ctx)
@@ -63,6 +65,10 @@ func TestRedpanda(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// Test produce to unknown topic
+	results := kafkaCl.ProduceSync(ctx, &kgo.Record{Topic: "test", Value: []byte("test message")})
+	require.Error(t, results.FirstErr(), kerr.UnknownTopicOrPartition)
 }
 
 func TestRedpandaWithAuthentication(t *testing.T) {
@@ -172,4 +178,30 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		resp.Body.Close()
 	}
+}
+
+func TestRedpandaProduceWithAutoCreateTopics(t *testing.T) {
+	ctx := context.Background()
+
+	container, err := RunContainer(ctx, WithAutoCreateTopics())
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	brokers, err := container.KafkaSeedBroker(ctx)
+	require.NoError(t, err)
+
+	kafkaCl, err := kgo.NewClient(
+		kgo.SeedBrokers(brokers),
+		kgo.AllowAutoTopicCreation(),
+	)
+	require.NoError(t, err)
+	defer kafkaCl.Close()
+
+	results := kafkaCl.ProduceSync(ctx, &kgo.Record{Topic: "test", Value: []byte("test message")})
+	require.NoError(t, results.FirstErr())
 }
