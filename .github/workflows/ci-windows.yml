@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Create pending status
-        uses: actions/github-script@0.9.0
+        uses: actions/github-script@v6.4.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -58,7 +58,7 @@ jobs:
           gotestsum --format short-verbose --rerun-fails=5 --packages="./..."  --junitfile TEST-unit.xml
 
       - name: Create success status
-        uses: actions/github-script@0.9.0
+        uses: actions/github-script@v6.4.1
         if: success()
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
@@ -73,7 +73,7 @@ jobs:
             })
 
       - name: Create failure status
-        uses: actions/github-script@0.9.0
+        uses: actions/github-script@v6.4.1
         if: failure()
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
