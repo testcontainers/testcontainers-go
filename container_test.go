@@ -298,7 +298,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		Started:          true,
 	})
 
-	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
+	if err != nil && err.Error() != "container exited with code 0: failed to start container" {
 		t.Fatal(err)
 	} else if err == nil {
 		terminateContainerOnEnd(t, ctx, c)

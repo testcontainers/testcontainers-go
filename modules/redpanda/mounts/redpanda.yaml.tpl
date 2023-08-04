@@ -38,3 +38,5 @@ schema_registry_client:
   brokers:
     - address: localhost
       port: 9093
+
+auto_create_topics_enabled: {{ .AutoCreateTopics }}
