@@ -978,7 +978,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
-	for k, v := range testcontainersdocker.GetDefaultLabels() {
+	for k, v := range testcontainersdocker.DefaultLabels() {
 		req.Labels[k] = v
 	}
 
