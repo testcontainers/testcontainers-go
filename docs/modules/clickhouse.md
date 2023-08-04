@@ -48,7 +48,7 @@ If you need to set a different wait strategy for ClickHouse, you can use `testco
 for ClickHouse.
 
 !!!info
-The default deadline for the wait strategy is 60 seconds.
+    The default deadline for the wait strategy is 60 seconds.
 
 At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
 
