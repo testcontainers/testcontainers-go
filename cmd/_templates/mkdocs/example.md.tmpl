@@ -1,0 +1,69 @@
+# {{ .Title }}
+
+Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+## Introduction
+
+The Testcontainers module for {{ .Title }}.
+
+## Adding this module to your project dependencies
+
+Please run the following command to add the {{ .Title }} module to your Go dependencies:
+
+```
+go get github.com/testcontainers/testcontainers-go/{{ .ParentDir }}/{{ .Name }}
+```
+
+## Usage example
+
+{{ codeinclude "<!--codeinclude-->" }}
+[Creating a {{ .Title }} container](../../{{ .ParentDir }}/{{ .Name }}/{{ .Name }}.go)
+{{ codeinclude "<!--/codeinclude-->" }}
+
+{{ codeinclude "<!--codeinclude-->" }}
+[Test for a {{ .Title }} container](../../{{ .ParentDir }}/{{ .Name }}/{{ .Name }}_test.go)
+{{ codeinclude "<!--/codeinclude-->" }}
+
+## Module reference
+
+The {{ .Title }} module exposes one entrypoint function to create the {{ .Title }} container, and this function receives two parameters:
+
+```golang
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*{{ .Title }}Container, error)
+```
+
+- `context.Context`, the Go context.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+### Container Options
+
+When starting the {{ .Title }} container, you can pass options in a variadic way to configure it.
+
+#### Image
+
+If you need to set a different {{ .Title }} Docker image, you can use `testcontainers.WithImage` with a valid Docker image
+for {{ .Title }}. E.g. `testcontainers.WithImage("{{ .Image }}")`.
+
+#### Wait Strategies
+
+If you need to set a different wait strategy for {{ .Title }}, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
+for {{ .Title }}.
+
+!!!info
+    The default deadline for the wait strategy is 60 seconds.
+
+At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+
+#### Docker type modifiers
+
+If you need an advanced configuration for {{ .Title }}, you can leverage the following Docker type modifiers:
+
+- `testcontainers.WithConfigModifier`
+- `testcontainers.WithHostConfigModifier`
+- `testcontainers.WithEndpointSettingsModifier`
+
+Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+
+### Container Methods
+
+The {{ .Title }} container exposes the following methods:

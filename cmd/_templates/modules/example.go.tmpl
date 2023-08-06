@@ -1,0 +1,37 @@
+package {{ .Name }}
+
+import (
+	"context"
+
+	"github.com/testcontainers/testcontainers-go"
+)
+
+const defaultImage = "{{ .Image }}"
+
+// {{ .ContainerName }} represents the {{ .Title }} container type used in the module
+type {{ .ContainerName }} struct {
+	testcontainers.Container
+}
+
+// RunContainer creates an instance of the {{ .Title }} container type
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*{{ .ContainerName }}, error) {
+	req := testcontainers.ContainerRequest{
+		Image: defaultImage,
+	}
+
+	genericContainerReq := testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	for _, opt := range opts {
+		opt.Customize(&genericContainerReq)
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	if err != nil {
+		return nil, err
+	}
+
+	return &{{ .ContainerName }}{Container: container}, nil
+}
