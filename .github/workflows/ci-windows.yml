@@ -42,7 +42,7 @@ jobs:
         run: go mod verify
 
       - name: modTidy
-        run: make tools-tidy
+        run: go mod tidy
 
       - name: ensure compilation
         run: go build
