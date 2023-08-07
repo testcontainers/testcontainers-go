@@ -238,9 +238,6 @@ func generate(example Example, rootDir string) error {
 					Modules:  modulesList,
 				}
 			}
-		} else if strings.EqualFold(tmpl, "tools.go") {
-			// tools.go example file will go into the tools package
-			exampleFilePath = filepath.Join(outputDir, exampleLower, "tools", tmpl)
 		} else {
 			exampleFilePath = filepath.Join(outputDir, exampleLower, strings.ReplaceAll(tmpl, "example", exampleLower))
 		}
