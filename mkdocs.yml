@@ -62,6 +62,7 @@ nav:
         - modules/couchbase.md
         - modules/k3s.md
         - modules/localstack.md
+        - modules/mongodb.md
         - modules/mysql.md
         - modules/neo4j.md
         - modules/postgres.md
