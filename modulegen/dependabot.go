@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
@@ -92,7 +92,7 @@ func getDependabotUpdates() ([]Update, error) {
 func readDependabotConfig(rootDir string) (*DependabotConfig, error) {
 	configFile := getDependabotConfigFile(rootDir)
 
-	file, err := ioutil.ReadFile(configFile)
+	file, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, err
 	}
@@ -115,5 +115,5 @@ func writeDependabotConfig(rootDir string, config *DependabotConfig) error {
 
 	file := getDependabotConfigFile(rootDir)
 
-	return ioutil.WriteFile(file, data, 0777)
+	return os.WriteFile(file, data, 0777)
 }
