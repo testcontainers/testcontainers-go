@@ -4,155 +4,181 @@ updates:
       directory: /
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/bigtable
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/cockroachdb
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/consul
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/datastore
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/firestore
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/mongodb
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/nats
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/nginx
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/pubsub
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/spanner
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /examples/toxiproxy
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modulegen
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/compose
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/couchbase
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/k3s
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/localstack
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/mysql
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/neo4j
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/postgres
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/pulsar
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/redis
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/redpanda
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/vault
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: pip
       directory: /
       schedule:
         interval: monthly
+        day: "sunday"
       open-pull-requests-limit: 3
       rebase-strategy: disabled

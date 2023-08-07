@@ -18,6 +18,7 @@ type DependabotConfig struct {
 
 type Schedule struct {
 	Interval string `yaml:"interval"`
+	Day      string `yaml:"day"`
 }
 
 type Update struct {
@@ -36,6 +37,7 @@ func NewUpdate(example Example) Update {
 		RebaseStrategy:        "disabled",
 		Schedule: Schedule{
 			Interval: updateSchedule,
+			Day:      "sunday",
 		},
 	}
 }
@@ -54,8 +56,8 @@ func (u Updates) Len() int {
 // while Stable preserves the original input order of equal elements.
 //
 // Less must describe a transitive ordering:
-//  - if both Less(i, j) and Less(j, k) are true, then Less(i, k) must be true as well.
-//  - if both Less(i, j) and Less(j, k) are false, then Less(i, k) must be false as well.
+//   - if both Less(i, j) and Less(j, k) are true, then Less(i, k) must be true as well.
+//   - if both Less(i, j) and Less(j, k) are false, then Less(i, k) must be false as well.
 //
 // Note that floating-point comparison (the < operator on float32 or float64 values)
 // is not a transitive ordering when not-a-number (NaN) values are involved.
