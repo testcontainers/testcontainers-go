@@ -1,7 +1,6 @@
 package testcontainersdocker
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,7 +8,7 @@ import (
 
 func TestInitSocketPathsFromDockerClient(t *testing.T) {
 	t.Run("Linux", func(t *testing.T) {
-		if os.Getenv("GOOS") == "windows" {
+		if isWindows() {
 			t.Skip("Skipping test on Windows systems")
 		}
 
@@ -20,9 +19,9 @@ func TestInitSocketPathsFromDockerClient(t *testing.T) {
 	})
 
 	t.Run("Windows", func(t *testing.T) {
-		// Becuase the init function uses the Docker client to extract the Docker socket,
+		// Because the init function uses the Docker client to extract the Docker socket,
 		// and the client is already compiled for Windows, we can't test this on a non-Windows environment
-		if os.Getenv("GOOS") != "windows" {
+		if !isWindows() {
 			t.Skip("Skipping test on non-Windows systems")
 		}
 
