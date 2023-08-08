@@ -127,6 +127,7 @@ func extractDockerSocket(ctx context.Context) string {
 	if err != nil {
 		panic(err) // a Docker client is required to get the Docker info
 	}
+	defer cli.Close()
 
 	return extractDockerSocketFromClient(ctx, cli)
 }

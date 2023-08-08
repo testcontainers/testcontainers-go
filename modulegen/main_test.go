@@ -397,8 +397,17 @@ func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConf
 
 	assert.True(t, found)
 
-	// first item is the main module
+	// first item is the github-actions module
 	assert.Equal(t, "/", examples[0].Directory, examples)
+	assert.Equal(t, "github-actions", examples[0].PackageEcosystem, "PackageEcosystem should be github-actions")
+
+	// second item is the core module
+	assert.Equal(t, "/", examples[1].Directory, examples)
+	assert.Equal(t, "pip", examples[1].PackageEcosystem, "PackageEcosystem should be pip")
+
+	// third item is the core module
+	assert.Equal(t, "/", examples[2].Directory, examples)
+	assert.Equal(t, "gomod", examples[2].PackageEcosystem, "PackageEcosystem should be gomod")
 }
 
 // assert content example file in the docs
