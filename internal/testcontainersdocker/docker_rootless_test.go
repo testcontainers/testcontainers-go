@@ -87,6 +87,10 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 	})
 
 	t.Run("XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR}/docker.sock", func(t *testing.T) {
+		if os.Getenv("GOOS") == "windows" {
+			t.Skip("Docker Rootless is not supported on Windows")
+		}
+
 		tmpDir := t.TempDir()
 		t.Setenv("XDG_RUNTIME_DIR", tmpDir)
 		err := createTmpDockerSocket(tmpDir)
@@ -98,6 +102,10 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 	})
 
 	t.Run("Home run dir: ~/.docker/run/docker.sock", func(t *testing.T) {
+		if os.Getenv("GOOS") == "windows" {
+			t.Skip("Docker Rootless is not supported on Windows")
+		}
+
 		tmpDir := t.TempDir()
 		_ = os.Unsetenv("XDG_RUNTIME_DIR")
 		t.Cleanup(restoreEnvFn)
@@ -113,6 +121,10 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 	})
 
 	t.Run("Home desktop dir: ~/.docker/desktop/docker.sock", func(t *testing.T) {
+		if os.Getenv("GOOS") == "windows" {
+			t.Skip("Docker Rootless is not supported on Windows")
+		}
+
 		tmpDir := t.TempDir()
 		_ = os.Unsetenv("XDG_RUNTIME_DIR")
 		t.Cleanup(restoreEnvFn)
@@ -128,6 +140,10 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 	})
 
 	t.Run("Run dir: /run/user/${uid}/docker.sock", func(t *testing.T) {
+		if os.Getenv("GOOS") == "windows" {
+			t.Skip("Docker Rootless is not supported on Windows")
+		}
+
 		tmpDir := t.TempDir()
 		_ = os.Unsetenv("XDG_RUNTIME_DIR")
 
@@ -153,6 +169,10 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 	})
 
 	t.Run("Rootless not found", func(t *testing.T) {
+		if os.Getenv("GOOS") == "windows" {
+			t.Skip("Docker Rootless is not supported on Windows")
+		}
+
 		setupRootlessNotFound(t)
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
