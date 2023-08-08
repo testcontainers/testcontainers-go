@@ -144,10 +144,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	req := testcontainers.ContainerRequest{
 		Image: defaultImage,
 		Env: map[string]string{
-			"CLICKHOUSE_USER":                      defaultUser,
-			"CLICKHOUSE_PASSWORD":                  defaultUser,
-			"CLICKHOUSE_DB":                        defaultDatabaseName,
-			"CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT": "1",
+			"CLICKHOUSE_USER":     defaultUser,
+			"CLICKHOUSE_PASSWORD": defaultUser,
+			"CLICKHOUSE_DB":       defaultDatabaseName,
 		},
 		ExposedPorts: []string{httpPort.Port(), nativePort.Port()},
 		WaitingFor: wait.ForAll(
