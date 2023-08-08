@@ -6,16 +6,14 @@ import (
 	"testing"
 
 	ch "github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 const dbname = "testdb"
 const user = "clickhouse"
 const password = "password"
-
-const createTableQuery = "create table if not exists test_table (id UInt64) engine = MergeTree PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;"
-const insertQuery = "INSERT INTO test_table (id) VALUES (1);"
-const selectQuery = "SELECT * FROM test_table;"
 
 type Test struct {
 	Id uint64
@@ -53,7 +51,7 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestClickHouseIpPort(t *testing.T) {
+func TestClickHouseConnectionHost(t *testing.T) {
 	ctx := context.Background()
 
 	// customInitialization {
@@ -90,26 +88,8 @@ func TestClickHouseIpPort(t *testing.T) {
 	defer conn.Close()
 
 	// perform assertions
-	err = conn.Exec(context.Background(), createTableQuery)
+	data, err := performCRUD(conn)
 	assert.NoError(t, err)
-
-	err = conn.Exec(context.Background(), insertQuery)
-	assert.NoError(t, err)
-
-	rows, err := conn.Query(context.Background(), selectQuery)
-	assert.NoError(t, err)
-	assert.NotNil(t, rows)
-
-	var data []Test
-	for rows.Next() {
-		var r Test
-		err := rows.Scan(&r.Id)
-
-		assert.NoError(t, err)
-
-		data = append(data, r)
-	}
-
 	assert.Len(t, data, 1)
 }
 
@@ -140,26 +120,8 @@ func TestClickHouseDSN(t *testing.T) {
 	defer conn.Close()
 
 	// perform assertions
-	err = conn.Exec(context.Background(), createTableQuery)
+	data, err := performCRUD(conn)
 	assert.NoError(t, err)
-
-	err = conn.Exec(context.Background(), insertQuery)
-	assert.NoError(t, err)
-
-	rows, err := conn.Query(context.Background(), selectQuery)
-	assert.NoError(t, err)
-	assert.NotNil(t, rows)
-
-	var data []Test
-	for rows.Next() {
-		var r Test
-		err := rows.Scan(&r.Id)
-
-		assert.NoError(t, err)
-
-		data = append(data, r)
-	}
-
 	assert.Len(t, data, 1)
 }
 
@@ -199,76 +161,97 @@ func TestClickHouseWithInitScripts(t *testing.T) {
 	defer conn.Close()
 
 	// perform assertions
-	rows, err := conn.Query(context.Background(), selectQuery)
+	data, err := getAllRows(conn)
 	assert.NoError(t, err)
-	assert.NotNil(t, rows)
-
-	var data []Test
-	for rows.Next() {
-		var r Test
-		err := rows.Scan(&r.Id)
-
-		assert.NoError(t, err)
-
-		data = append(data, r)
-	}
-
 	assert.Len(t, data, 1)
 }
 
 func TestClickHouseWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx,
-		WithUsername(user),
-		WithPassword(""),
-		WithDatabase(dbname),
-		WithConfigFile(filepath.Join("testdata", "config.xml")), // allow_no_password = 1
-	)
+	testCases := []struct {
+		desc         string
+		configOption testcontainers.CustomizeRequestOption
+	}{
+		{"XML_Config", WithConfigFile(filepath.Join("testdata", "config.xml"))},       // <allow_no_password>1</allow_no_password>
+		{"YAML_Config", WithYamlConfigFile(filepath.Join("testdata", "config.yaml"))}, // allow_no_password: true
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			container, err := RunContainer(ctx,
+				WithUsername(user),
+				WithPassword(""),
+				WithDatabase(dbname),
+				tC.configOption,
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Clean up the container after the test is complete
+			t.Cleanup(func() {
+				assert.NoError(t, container.Terminate(ctx))
+			})
+
+			connectionHost, err := container.ConnectionHost(ctx)
+			assert.NoError(t, err)
+
+			conn, err := ch.Open(&ch.Options{
+				Addr: []string{connectionHost},
+				Auth: ch.Auth{
+					Database: dbname,
+					Username: user,
+					// Password: password, // --> password is not required
+				},
+			})
+			assert.NoError(t, err)
+			assert.NotNil(t, conn)
+			defer conn.Close()
+
+			// perform assertions
+			data, err := performCRUD(conn)
+			assert.NoError(t, err)
+			assert.Len(t, data, 1)
+		})
+	}
+}
+
+func performCRUD(conn driver.Conn) ([]Test, error) {
+	err := conn.Exec(context.Background(), "create table if not exists test_table (id UInt64) engine = MergeTree PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
 	if err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		assert.NoError(t, container.Terminate(ctx))
-	})
+	err = conn.Exec(context.Background(), "INSERT INTO test_table (id) VALUES (1);")
+	if err != nil {
+		return nil, err
+	}
 
-	connectionHost, err := container.ConnectionHost(ctx)
-	assert.NoError(t, err)
+	rows, err := getAllRows(conn)
+	if err != nil {
+		return nil, err
+	}
 
-	conn, err := ch.Open(&ch.Options{
-		Addr: []string{connectionHost},
-		Auth: ch.Auth{
-			Database: dbname,
-			Username: user,
-			// Password: password,
-		},
-	})
-	assert.NoError(t, err)
-	assert.NotNil(t, conn)
-	defer conn.Close()
+	return rows, nil
+}
 
-	// perform assertions
-	err = conn.Exec(context.Background(), createTableQuery)
-	assert.NoError(t, err)
-
-	err = conn.Exec(context.Background(), insertQuery)
-	assert.NoError(t, err)
-
-	rows, err := conn.Query(context.Background(), selectQuery)
-	assert.NoError(t, err)
-	assert.NotNil(t, rows)
+func getAllRows(conn driver.Conn) ([]Test, error) {
+	rows, err := conn.Query(context.Background(), "SELECT * FROM test_table;")
+	if err != nil {
+		return nil, err
+	}
 
 	var data []Test
 	for rows.Next() {
 		var r Test
-		err := rows.Scan(&r.Id)
 
-		assert.NoError(t, err)
+		err := rows.Scan(&r.Id)
+		if err != nil {
+			return nil, err
+		}
 
 		data = append(data, r)
 	}
 
-	assert.Len(t, data, 1)
+	return data, nil
 }
