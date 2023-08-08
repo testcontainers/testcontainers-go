@@ -72,3 +72,7 @@ The MongoDB container exposes the following methods:
 
 This method returns the connection string to connect to the MongoDB container.
 It returns a string with the format `mongodb://<host>:<port>`.
+
+<!--codeinclude-->
+[Get connection string](../../modules/mongodb/mongodb_test.go) inside_block:connectionString
+<!--/codeinclude-->

@@ -26,10 +26,12 @@ func TestMongoDB(t *testing.T) {
 
 	// perform assertions
 
+	// connectionString {
 	endpoint, err := container.ConnectionString(ctx)
 	if err != nil {
 		t.Error(fmt.Errorf("failed to get endpoint: %w", err))
 	}
+	// }
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint))
 	if err != nil {
