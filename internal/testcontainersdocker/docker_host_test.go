@@ -99,7 +99,7 @@ func TestExtractDockerHost(t *testing.T) {
 	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
 		ctx := context.Background()
 
-		host := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "unix:///this/is/a/sample.sock"))
+		host := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, DockerSocketSchema+"/this/is/a/sample.sock"))
 
 		assert.Equal(t, "/this/is/a/sample.sock", host)
 	})
@@ -192,7 +192,7 @@ func TestExtractDockerHost(t *testing.T) {
 		t.Run("Context sets the Docker socket", func(t *testing.T) {
 			ctx := context.Background()
 
-			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, "unix:///this/is/a/sample.sock"))
+			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, DockerSocketSchema+"/this/is/a/sample.sock"))
 			require.Nil(t, err)
 			assert.Equal(t, "/this/is/a/sample.sock", socket)
 		})
@@ -307,7 +307,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		t.Cleanup(resetSocketOverrideFn)
 
-		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "unix:///path/to/docker.sock")
+		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", DockerSocketSchema+"/path/to/docker.sock")
 		host := extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
 		assert.Equal(t, "/path/to/docker.sock", host)
 
@@ -323,7 +323,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		ctx := context.Background()
 		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
-		t.Setenv("DOCKER_HOST", "unix:///this/is/a/sample.sock")
+		t.Setenv("DOCKER_HOST", DockerSocketSchema+"/this/is/a/sample.sock")
 
 		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Docker Desktop"})
 
@@ -337,7 +337,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		ctx := context.Background()
 		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
-		t.Setenv("DOCKER_HOST", "unix:///this/is/a/sample.sock")
+		t.Setenv("DOCKER_HOST", DockerSocketSchema+"/this/is/a/sample.sock")
 
 		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
 
@@ -352,7 +352,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		ctx := context.Background()
 		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
 
-		t.Setenv("DOCKER_HOST", "unix:///this/is/a/sample.sock")
+		t.Setenv("DOCKER_HOST", DockerSocketSchema+"/this/is/a/sample.sock")
 		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
 		assert.Equal(t, "/this/is/a/sample.sock", socket)
 

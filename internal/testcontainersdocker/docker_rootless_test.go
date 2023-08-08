@@ -117,7 +117,7 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
 		require.Nil(t, err)
-		assert.Equal(t, "unix://"+runDir+"/docker.sock", socketPath)
+		assert.Equal(t, DockerSocketSchema+runDir+"/docker.sock", socketPath)
 	})
 
 	t.Run("Home desktop dir: ~/.docker/desktop/docker.sock", func(t *testing.T) {
@@ -136,7 +136,7 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
 		require.Nil(t, err)
-		assert.Equal(t, "unix://"+desktopDir+"/docker.sock", socketPath)
+		assert.Equal(t, DockerSocketSchema+desktopDir+"/docker.sock", socketPath)
 	})
 
 	t.Run("Run dir: /run/user/${uid}/docker.sock", func(t *testing.T) {
@@ -165,7 +165,7 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
 		require.Nil(t, err)
-		assert.Equal(t, "unix://"+runDir+"/docker.sock", socketPath)
+		assert.Equal(t, DockerSocketSchema+runDir+"/docker.sock", socketPath)
 	})
 
 	t.Run("Rootless not found", func(t *testing.T) {
