@@ -7,15 +7,9 @@ package testcontainersdocker
 // The value of these variables will be overriden by those obtained
 // from the Docker client.
 var (
-	// DockerSocketSchema is the Docker socket schema.
-	DockerSocketSchema = "unix://"
-
 	// DockerSocketPath is the path to the Docker socket.
 	DockerSocketPath = "/var/run/docker.sock"
 
 	// DockerSocketPathWithSchema is the path to the Docker socket with the schema.
 	DockerSocketPathWithSchema = DockerSocketSchema + DockerSocketPath
 )
-
-// TCPSchema is the tcp schema.
-var TCPSchema = "tcp://"
