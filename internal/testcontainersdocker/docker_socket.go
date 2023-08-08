@@ -58,9 +58,6 @@ func initSocketPathsFromDockerClient() {
 			// the docker client package uses the npipe schema for windows
 			// docker sockets, so we need to replace it with the unix schema
 			schema = DockerSocketSchema
-			// the docker socket path on Windows using Linux containers
-			// prepends the slash to the unix socket path
-			socketPath = "/" + DockerSocketPath
 		}
 	}
 
