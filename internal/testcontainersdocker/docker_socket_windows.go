@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package testcontainersdocker
 
 // DockerSocketSchema is the Docker socket schema on Windows

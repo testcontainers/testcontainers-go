@@ -1,6 +1,3 @@
-//go:build !windows
-// +build !windows
-
 package testcontainersdocker
 
 // DockerSocketPath is the path to the Docker socket.
