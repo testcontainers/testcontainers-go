@@ -67,3 +67,8 @@ Please read the [Create containers: Advanced Settings](../features/creating_cont
 ### Container Methods
 
 The MongoDB container exposes the following methods:
+
+#### ConnectionString
+
+This method returns the connection string to connect to the MongoDB container.
+It returns a string with the format `mongodb://<host>:<port>`.
