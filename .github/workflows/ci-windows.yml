@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Create pending status
-        uses: actions/github-script@v6.4.1
+        uses: actions/github-script@0.9.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -24,11 +24,6 @@ jobs:
               target_url: `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
               context: 'Windows tests',
             })
-
-      - name: Set LongPathsEnabled using Powershell
-        shell: pwsh
-        run: |
-          Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -47,7 +42,7 @@ jobs:
         run: go mod verify
 
       - name: modTidy
-        run: make tools-tidy
+        run: go mod tidy
 
       - name: ensure compilation
         run: go build
@@ -58,7 +53,7 @@ jobs:
           gotestsum --format short-verbose --rerun-fails=5 --packages="./..."  --junitfile TEST-unit.xml
 
       - name: Create success status
-        uses: actions/github-script@v6.4.1
+        uses: actions/github-script@0.9.0
         if: success()
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
@@ -73,7 +68,7 @@ jobs:
             })
 
       - name: Create failure status
-        uses: actions/github-script@v6.4.1
+        uses: actions/github-script@0.9.0
         if: failure()
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
