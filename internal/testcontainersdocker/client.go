@@ -2,7 +2,6 @@ package testcontainersdocker
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	"github.com/docker/docker/client"
@@ -15,7 +14,6 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 	tcConfig := config.Read()
 
 	dockerHost := ExtractDockerHost(ctx)
-	fmt.Println(">>> Resolved Docker Host: ", dockerHost)
 
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
 	if dockerHost != "" {
