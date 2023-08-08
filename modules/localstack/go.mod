@@ -3,14 +3,14 @@ module github.com/testcontainers/testcontainers-go/modules/localstack
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.273
+	github.com/aws/aws-sdk-go v1.44.317
 	github.com/aws/aws-sdk-go-v2 v1.20.0
 	github.com/aws/aws-sdk-go-v2/config v1.18.31
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.30
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.33.1
 	github.com/docker/go-connections v0.4.0
 	github.com/stretchr/testify v1.8.4
-	github.com/testcontainers/testcontainers-go v0.21.0
+	github.com/testcontainers/testcontainers-go v0.22.0
 	golang.org/x/mod v0.12.0
 )
 

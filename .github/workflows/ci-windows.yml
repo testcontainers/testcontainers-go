@@ -25,11 +25,6 @@ jobs:
               context: 'Windows tests',
             })
 
-      - name: Set LongPathsEnabled using Powershell
-        shell: pwsh
-        run: |
-          Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1
-
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -38,7 +33,7 @@ jobs:
           ref: ${{ github.event.client_payload.pull_request.head.ref }}
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: 1.x
         id: go
@@ -47,7 +42,7 @@ jobs:
         run: go mod verify
 
       - name: modTidy
-        run: make tools-tidy
+        run: go mod tidy
 
       - name: ensure compilation
         run: go build

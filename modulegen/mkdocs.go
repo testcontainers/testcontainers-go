@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -80,7 +79,7 @@ func getRootDir() (string, error) {
 func readMkdocsConfig(rootDir string) (*MkDocsConfig, error) {
 	configFile := getMkdocsConfigFile(rootDir)
 
-	file, err := ioutil.ReadFile(configFile)
+	file, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, err
 	}
@@ -103,5 +102,5 @@ func writeMkdocsConfig(rootDir string, config *MkDocsConfig) error {
 
 	file := getMkdocsConfigFile(rootDir)
 
-	return ioutil.WriteFile(file, data, 0777)
+	return os.WriteFile(file, data, 0777)
 }
