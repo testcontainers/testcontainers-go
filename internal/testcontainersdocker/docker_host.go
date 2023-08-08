@@ -166,6 +166,11 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 		panic(err) // Docker Info is required to get the Operating System
 	}
 
+	// On Windows, we need to use the default docker path, prepending one slash
+	if isWindows() {
+		return "//var/run/docker.sock"
+	}
+
 	// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker
 	if info.OperatingSystem == "Docker Desktop" {
 		return DockerSocketPath
