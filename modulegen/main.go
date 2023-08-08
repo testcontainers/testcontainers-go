@@ -238,9 +238,6 @@ func generate(example Example, rootDir string) error {
 					Modules:  modulesList,
 				}
 			}
-		} else if strings.EqualFold(tmpl, "tools.go") {
-			// tools.go example file will go into the tools package
-			exampleFilePath = filepath.Join(outputDir, exampleLower, "tools", tmpl)
 		} else {
 			exampleFilePath = filepath.Join(outputDir, exampleLower, strings.ReplaceAll(tmpl, "example", exampleLower))
 		}
@@ -285,13 +282,13 @@ func generateDependabotUpdates(rootDir string, example Example) error {
 
 	dependabotExampleUpdates := dependabotConfig.Updates
 
-	// make sure the main module is the first element in the list of examples
-	exampleUpdates := make(Updates, len(dependabotExampleUpdates)-1)
+	// make sure GH actions, Pip and the core module are the three first elements in the list of examples
+	exampleUpdates := make(Updates, len(dependabotExampleUpdates)-3)
 	j := 0
 
 	for _, exampleUpdate := range dependabotExampleUpdates {
 		// filter out the root module
-		if exampleUpdate.Directory != "/" {
+		if exampleUpdate.PackageEcosystem == "gomod" && exampleUpdate.Directory != "/" {
 			exampleUpdates[j] = exampleUpdate
 			j++
 		}
@@ -300,8 +297,9 @@ func generateDependabotUpdates(rootDir string, example Example) error {
 	exampleUpdates = append(exampleUpdates, NewUpdate(example))
 	sort.Sort(exampleUpdates)
 
-	// prepend the main and compose modules
-	exampleUpdates = append([]Update{dependabotExampleUpdates[0]}, exampleUpdates...)
+	// prepend the github actions, pip and main modules
+	firstUpdates := dependabotExampleUpdates[0:3]
+	exampleUpdates = append(firstUpdates, exampleUpdates...)
 
 	dependabotConfig.Updates = exampleUpdates
 
