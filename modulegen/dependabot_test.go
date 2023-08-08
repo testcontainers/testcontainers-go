@@ -81,7 +81,7 @@ func TestExamplesHasDependabotEntry(t *testing.T) {
 	exampleUpdates := []Update{}
 	// exclude the Go modules from the examples updates
 	for _, update := range dependabotUpdates {
-		if update.Directory == "/" || update.Directory == "/modulegen" || strings.HasPrefix(update.Directory, "/modules") {
+		if update.PackageEcosystem != "gomod" || update.Directory == "/" || update.Directory == "/modulegen" || strings.HasPrefix(update.Directory, "/modules") {
 			continue
 		}
 		exampleUpdates = append(exampleUpdates, update)

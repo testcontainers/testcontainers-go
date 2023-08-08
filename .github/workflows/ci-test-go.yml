@@ -44,7 +44,7 @@ jobs:
         run: sudo rm -rf /var/run/docker.sock
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
             go-version: ${{ inputs.go-version }}
         id: go
@@ -80,7 +80,7 @@ jobs:
             ./scripts/check_environment.sh
 
       - name: Test Summary
-        uses: test-summary/action@4ee9ece4bca777a38f05c8fc578ac2007fe266f7
+        uses: test-summary/action@62bc5c68de2a6a0d02039763b8c754569df99e3f
         with:
             paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
         if: always()

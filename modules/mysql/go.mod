@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1
-	github.com/testcontainers/testcontainers-go v0.21.0
+	github.com/testcontainers/testcontainers-go v0.22.0
 
 )
 

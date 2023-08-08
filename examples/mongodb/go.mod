@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/examples/mongodb
 go 1.19
 
 require (
-	github.com/testcontainers/testcontainers-go v0.21.0
+	github.com/testcontainers/testcontainers-go v0.22.0
 	go.mongodb.org/mongo-driver v1.12.0
 )
 
