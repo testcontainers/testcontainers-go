@@ -143,6 +143,7 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 			return DockerSocketPath
 		}
 
+		fmt.Printf(">> Socket: %s\nDocker Socket Schema: %s\nDocker Socket Path: %s\n", socket, DockerSocketSchema, DockerSocketPath)
 		if strings.HasPrefix(socket, DockerSocketSchema) {
 			return strings.Replace(socket, DockerSocketSchema, "", 1)
 		}
