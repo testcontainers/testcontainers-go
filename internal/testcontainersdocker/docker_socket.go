@@ -46,5 +46,6 @@ func init() {
 
 	if isWindows() {
 		DockerSocketPath = "//var/run/docker.sock"
+		DockerSocketPathWithSchema = DockerSocketPath
 	}
 }
