@@ -363,18 +363,16 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 }
 
 func TestInAContainer(t *testing.T) {
-	const dockerenvName = ".dockerenv"
-
 	t.Run("file does not exist", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
-		assert.False(t, inAContainer(filepath.Join(tmpDir, dockerenvName)))
+		assert.False(t, inAContainer(filepath.Join(tmpDir, ".dockerenv-a")))
 	})
 
 	t.Run("file exists", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
-		f := filepath.Join(tmpDir, dockerenvName)
+		f := filepath.Join(tmpDir, ".dockerenv-b")
 
 		_, err := os.Create(f)
 		assert.NoError(t, err)
