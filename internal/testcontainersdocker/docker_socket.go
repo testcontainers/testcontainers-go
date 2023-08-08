@@ -7,23 +7,28 @@ import (
 	"github.com/docker/docker/client"
 )
 
-// DockerSocketSchema is the unix schema.
-var DockerSocketSchema = "unix://"
+// Initialise the Docker socket paths with the Unix socket path
+// The value of these variables will be overriden by those obtained
+// from the Docker client.
+var (
+	// DockerSocketSchema is the Docker socket schema.
+	DockerSocketSchema = "unix://"
 
-// DockerSocketPath is the path to the docker socket under unix systems.
-var DockerSocketPath = "/var/run/docker.sock"
+	// DockerSocketPath is the path to the Docker socket.
+	DockerSocketPath = "/var/run/docker.sock"
 
-// DockerSocketPathWithSchema is the path to the docker socket under unix systems with the unix schema.
-var DockerSocketPathWithSchema = DockerSocketSchema + DockerSocketPath
+	// DockerSocketPathWithSchema is the path to the Docker socket with the schema.
+	DockerSocketPathWithSchema = DockerSocketSchema + DockerSocketPath
+)
 
 // TCPSchema is the tcp schema.
 var TCPSchema = "tcp://"
 
 func init() {
-	initSocketPaths()
+	initSocketPathsFromDockerClient()
 }
 
-func initSocketPaths() {
+func initSocketPathsFromDockerClient() {
 	const DefaultDockerHost = client.DefaultDockerHost
 
 	u, err := url.Parse(DefaultDockerHost)

@@ -7,13 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInitSocketPaths(t *testing.T) {
+func TestInitSocketPathsFromDockerClient(t *testing.T) {
 	t.Run("Linux", func(t *testing.T) {
 		if os.Getenv("GOOS") == "windows" {
 			t.Skip("Skipping test on Windows systems")
 		}
 
-		initSocketPaths()
+		initSocketPathsFromDockerClient()
 
 		assert.Equal(t, "unix://", DockerSocketSchema)
 		assert.Equal(t, "/var/run/docker.sock", DockerSocketPath)
@@ -26,7 +26,7 @@ func TestInitSocketPaths(t *testing.T) {
 			t.Skip("Skipping test on non-Windows systems")
 		}
 
-		initSocketPaths()
+		initSocketPathsFromDockerClient()
 
 		assert.Equal(t, "unix://", DockerSocketSchema)
 		assert.Equal(t, "//var/run/docker.sock", DockerSocketPath, "The Docker socket path on Windows should have a slash prefix")
