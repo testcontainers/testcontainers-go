@@ -42,6 +42,7 @@ func TestExtractDockerHost(t *testing.T) {
 	// do not mess with local .testcontainers.properties
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir) // Windows support
 
 	t.Run("Docker Host as extracted just once", func(t *testing.T) {
 		expected := "/path/to/docker.sock"
@@ -453,6 +454,7 @@ func setupTestcontainersProperties(t *testing.T, content string) {
 	err := createTmpDir(homeDir)
 	require.Nil(t, err)
 	t.Setenv("HOME", homeDir)
+	t.Setenv("USERPROFILE", homeDir) // Windows support
 
 	if err := os.WriteFile(filepath.Join(homeDir, ".testcontainers.properties"), []byte(content), 0o600); err != nil {
 		t.Errorf("Failed to create the file: %v", err)
