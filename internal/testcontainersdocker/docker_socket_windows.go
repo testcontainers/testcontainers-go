@@ -10,4 +10,4 @@ var DockerSocketSchema = "npipe://"
 var DockerSocketPath = "//./pipe/docker_engine"
 
 // DockerSocketPathWithSchema concatenates the Docker socket schema with the Docker socket path, removing the first slash.
-var DockerSocketPathWithSchema = DockerSocketSchema + DockerSocketPath[1:]
+var DockerSocketPathWithSchema = DockerSocketSchema + DockerSocketPath
