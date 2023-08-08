@@ -58,10 +58,11 @@ func initSocketPathsFromDockerClient() {
 			// the docker client package uses the npipe schema for windows
 			// docker sockets, so we need to replace it with the unix schema
 			schema = DockerSocketSchema
+			socketPath = "//var/run/docker.sock"
 		}
 	}
 
 	DockerSocketSchema = schema
 	DockerSocketPath = socketPath
-	DockerSocketPathWithSchema = schema + socketPath
+	DockerSocketPathWithSchema = DockerSocketSchema + DockerSocketPathWithSchema
 }

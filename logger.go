@@ -37,7 +37,7 @@ func LogDockerServerInfo(ctx context.Context, client client.APIClient, logger Lo
 	logger.Printf(infoMessage, packagePath,
 		info.ServerVersion, client.ClientVersion(),
 		info.OperatingSystem, info.MemTotal/1024/1024,
-		testcontainersdocker.ExtractDockerHost(ctx),
+		testcontainersdocker.DockerSocketPathWithSchema,
 	)
 }
 
