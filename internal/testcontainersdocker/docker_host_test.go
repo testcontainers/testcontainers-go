@@ -249,6 +249,36 @@ func TestExtractDockerHost(t *testing.T) {
 			require.ErrorIs(t, err, ErrSocketNotFoundInPath)
 			assert.Empty(t, socket)
 		})
+
+		t.Run("Windows socket path", func(t *testing.T) {
+			if !isWindows() {
+				t.Skip("Skipping test on non-Windows platforms")
+			}
+
+			t.Cleanup(resetSocketOverrideFn)
+
+			os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+			t.Setenv("DOCKER_HOST", "")
+			setupTestcontainersProperties(t, "")
+
+			socket, err := windowsSocketPath(context.Background())
+			require.Nil(t, err)
+			assert.Equal(t, "//var/run/docker.sock", socket)
+		})
+
+		t.Run("Windows socket path (Unix)", func(t *testing.T) {
+			t.Setenv("GOOS", "linux")
+
+			t.Cleanup(resetSocketOverrideFn)
+
+			os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+			t.Setenv("DOCKER_HOST", "")
+			setupTestcontainersProperties(t, "")
+
+			socket, err := windowsSocketPath(context.Background())
+			require.ErrorIs(t, err, ErrSocketNotFound)
+			assert.Empty(t, socket)
+		})
 	})
 }
 
