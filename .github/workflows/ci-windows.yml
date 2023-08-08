@@ -10,6 +10,8 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
     strategy:
       fail-fast: false
+    container:
+      image: alpine:3.18
     steps:
       - name: Create pending status
         uses: actions/github-script@0.9.0
