@@ -1,3 +1,6 @@
+//go:build !windows
+// +build !windows
+
 package testcontainersdocker
 
 // Initialise the Docker socket paths with the Unix socket path
