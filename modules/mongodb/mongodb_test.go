@@ -29,7 +29,7 @@ func TestMongoDB(t *testing.T) {
 	// connectionString {
 	endpoint, err := container.ConnectionString(ctx)
 	if err != nil {
-		t.Error(fmt.Errorf("failed to get endpoint: %w", err))
+		t.Error(fmt.Errorf("failed to get connection string: %w", err))
 	}
 	// }
 
