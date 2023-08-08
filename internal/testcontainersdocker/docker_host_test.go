@@ -267,6 +267,10 @@ func TestExtractDockerHost(t *testing.T) {
 		})
 
 		t.Run("Windows socket path (Unix)", func(t *testing.T) {
+			if isWindows() {
+				t.Skip("Skipping test on non-Windows platforms")
+			}
+
 			t.Setenv("GOOS", "linux")
 
 			t.Cleanup(resetSocketOverrideFn)
