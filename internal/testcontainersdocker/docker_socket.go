@@ -64,5 +64,5 @@ func initSocketPathsFromDockerClient() {
 
 	DockerSocketSchema = schema
 	DockerSocketPath = socketPath
-	DockerSocketPathWithSchema = DockerSocketSchema + DockerSocketPathWithSchema
+	DockerSocketPathWithSchema = DockerSocketSchema + DockerSocketPath
 }
