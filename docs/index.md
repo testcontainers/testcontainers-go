@@ -1,6 +1,4 @@
-# Testcontainers
-
-<img src="logo.png" alt="Testcontainers logo" width="1024" height="512"/>
+# Welcome to Testcontainers for Go!
 
 <p align="center"><strong>Not using Go? Here are other supported languages!</strong></p>
 <div class="card-grid">
@@ -11,6 +9,7 @@
     <a href="https://testcontainers-python.readthedocs.io/en/latest/" class="card-grid-item"><img src="language-logos/python.svg"/>Python</a>
     <a href="https://docs.rs/testcontainers/latest/testcontainers/" class="card-grid-item"><img src="language-logos/rust.svg"/>Rust</a>
     <a href="https://github.com/testcontainers/testcontainers-hs" class="card-grid-item"><img src="language-logos/haskell.svg"/>Haskell</a>
+    <a href="https://github.com/testcontainers/testcontainers-ruby/" class="card-grid-item" ><img src="language-logos/ruby.svg"/>Ruby</a>
 </div>
 
 ## About Testcontainers for Go
