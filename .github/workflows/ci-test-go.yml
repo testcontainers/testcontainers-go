@@ -71,6 +71,7 @@ jobs:
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
         if: ${{ inputs.platform == 'ubuntu-latest' }}
         working-directory: ./${{ inputs.project-directory }}
+        timeout-minutes: 30
         run: |
             go install gotest.tools/gotestsum@latest
             make test-unit
