@@ -18,7 +18,7 @@ updates:
       groups:
         all:
           patterns:
-            - '*'
+            - *
     - package-ecosystem: pip
       directory: /
       schedule:
@@ -36,7 +36,7 @@ updates:
       groups:
         all:
           patterns:
-            - '*'
+            - *
     - package-ecosystem: gomod
       directory: /examples/cockroachdb
       schedule:
@@ -47,7 +47,7 @@ updates:
       groups:
         all:
           patterns:
-            - '*'
+            - *
     - package-ecosystem: gomod
       directory: /examples/consul
       schedule:
@@ -58,7 +58,7 @@ updates:
       groups:
         all:
           patterns:
-            - '*'
+            - *
     - package-ecosystem: gomod
       directory: /examples/datastore
       schedule:
@@ -69,7 +69,7 @@ updates:
       groups:
         all:
           patterns:
-            - '*'
+            - *
     - package-ecosystem: gomod
       directory: /examples/firestore
       schedule:
@@ -237,6 +237,17 @@ updates:
             - '*'
     - package-ecosystem: gomod
       directory: /modules/pulsar
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+      groups:
+        all:
+          patterns:
+            - '*'
+    - package-ecosystem: gomod
+      directory: /modules/questdb
       schedule:
         interval: monthly
         day: sunday
