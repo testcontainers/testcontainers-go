@@ -126,7 +126,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
 	dockerReq := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context: workdir + "/testdata",
+			Context: filepath.Join(workdir, "testdata"),
 		},
 		ExposedPorts: []string{"6443/tcp"},
 		WaitingFor: wait.NewHTTPStrategy("/auth-ping").WithTLS(true, tlsconfig).
@@ -192,7 +192,7 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 		return
 	}
 
-	capath := workdir + "/testdata/root.pem"
+	capath := filepath.Join(workdir, "testdata", "root.pem")
 	cafile, err := os.ReadFile(capath)
 	if err != nil {
 		t.Errorf("can't load ca file: %v", err)
