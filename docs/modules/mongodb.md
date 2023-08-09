@@ -20,10 +20,6 @@ go get github.com/testcontainers/testcontainers-go/modules/mongodb
 [Creating a MongoDB container](../../modules/mongodb/mongodb_test.go) inside_block:createMongoDBContainer
 <!--/codeinclude-->
 
-<!--codeinclude-->
-[Test for a MongoDB container](../../modules/mongodb/mongodb_test.go)
-<!--/codeinclude-->
-
 ## Module reference
 
 The MongoDB module exposes one entrypoint function to create the MongoDB container, and this function receives two parameters:
