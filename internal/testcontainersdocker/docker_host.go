@@ -101,7 +101,6 @@ func extractDockerHost(ctx context.Context) string {
 		dockerSocketPath,
 		dockerHostFromProperties,
 		rootlessDockerSocketPath,
-		windowsSocketPath,
 	}
 
 	outerErr := ErrSocketNotFound
@@ -168,6 +167,10 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 
 	// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker
 	if info.OperatingSystem == "Docker Desktop" {
+		if isWindows() {
+			return WindowsDockerSocketPath
+		}
+
 		return DockerSocketPath
 	}
 
@@ -249,15 +252,6 @@ func testcontainersHostFromProperties(ctx context.Context) (string, error) {
 	}
 
 	return "", ErrTestcontainersHostNotSetInProperties
-}
-
-// On Windows, we need to use the default docker path, prepending one slash
-func windowsSocketPath(ctx context.Context) (string, error) {
-	if isWindows() {
-		return "//var/run/docker.sock", nil
-	}
-
-	return "", ErrSocketNotFound
 }
 
 // InAContainer returns true if the code is running inside a container

@@ -19,6 +19,9 @@ var DockerSocketPathWithSchema = DockerSocketSchema + DockerSocketPath
 // TCPSchema is the tcp schema.
 var TCPSchema = "tcp://"
 
+// WindowsDockerSocketPath is the path to the docker socket under windows systems.
+var WindowsDockerSocketPath = "//var/run/docker.sock"
+
 func init() {
 	const DefaultDockerHost = client.DefaultDockerHost
 
@@ -42,12 +45,5 @@ func init() {
 			DockerSocketPath = "/" + DockerSocketPath
 		}
 		DockerSocketPathWithSchema = DockerSocketSchema + DockerSocketPath
-	}
-
-	if isWindows() {
-		DockerSocketPathWithSchema = DockerSocketSchema + DockerSocketPath
-		// asign the socket path for windows right after including the schema, to avoid
-		// removing slashes from the path
-		DockerSocketPath = "//var/run/docker.sock"
 	}
 }

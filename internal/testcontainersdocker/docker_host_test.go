@@ -249,40 +249,6 @@ func TestExtractDockerHost(t *testing.T) {
 			require.ErrorIs(t, err, ErrSocketNotFoundInPath)
 			assert.Empty(t, socket)
 		})
-
-		t.Run("Windows socket path", func(t *testing.T) {
-			if !isWindows() {
-				t.Skip("Skipping test on non-Windows platforms")
-			}
-
-			t.Cleanup(resetSocketOverrideFn)
-
-			os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
-			t.Setenv("DOCKER_HOST", "")
-			setupTestcontainersProperties(t, "")
-
-			socket, err := windowsSocketPath(context.Background())
-			require.Nil(t, err)
-			assert.Equal(t, "//var/run/docker.sock", socket)
-		})
-
-		t.Run("Windows socket path (Unix)", func(t *testing.T) {
-			if isWindows() {
-				t.Skip("Skipping test on non-Windows platforms")
-			}
-
-			t.Setenv("GOOS", "linux")
-
-			t.Cleanup(resetSocketOverrideFn)
-
-			os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
-			t.Setenv("DOCKER_HOST", "")
-			setupTestcontainersProperties(t, "")
-
-			socket, err := windowsSocketPath(context.Background())
-			require.ErrorIs(t, err, ErrSocketNotFound)
-			assert.Empty(t, socket)
-		})
 	})
 }
 
@@ -350,7 +316,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		assert.Equal(t, DockerSocketPath, host)
 	})
 
-	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Docker Desktop)", func(t *testing.T) {
+	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Docker Desktop on non-Windows)", func(t *testing.T) {
 		setupTestcontainersProperties(t, "")
 
 		t.Cleanup(resetSocketOverrideFn)
@@ -362,6 +328,21 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Docker Desktop"})
 
 		assert.Equal(t, DockerSocketPath, socket)
+	})
+
+	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Docker Desktop for Windows)", func(t *testing.T) {
+		t.Setenv("GOOS", "windows")
+		setupTestcontainersProperties(t, "")
+
+		t.Cleanup(resetSocketOverrideFn)
+
+		ctx := context.Background()
+		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+		t.Setenv("DOCKER_HOST", DockerSocketSchema+"/this/is/a/sample.sock")
+
+		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Docker Desktop"})
+
+		assert.Equal(t, WindowsDockerSocketPath, socket)
 	})
 
 	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Not Docker Desktop)", func(t *testing.T) {
