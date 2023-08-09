@@ -326,36 +326,34 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 	t.Cleanup(cancel)
 
 	for i := 0; i < 3; i++ {
+		i := i
 		t.Run(fmt.Sprintf("iteration_%d", i), func(t *testing.T) {
 			t.Parallel()
-			createTestContainer(t, ctx)
+
+			req := ContainerRequest{
+				Image:        nginxAlpineImage,
+				ExposedPorts: []string{nginxDefaultPort},
+				WaitingFor:   wait.ForHTTP("/"),
+			}
+			container, err := GenericContainer(ctx, GenericContainerRequest{
+				ContainerRequest: req,
+				Started:          true,
+			})
+			if err != nil {
+				t.Fatalf("could not start container: %v", err)
+			}
+			// mappedPort {
+			port, err := container.MappedPort(ctx, nginxDefaultPort)
+			// }
+			if err != nil {
+				t.Fatalf("could not get mapped port: %v", err)
+			}
+
+			terminateContainerOnEnd(t, ctx, container)
+
+			t.Logf("Parallel container [iteration_%d] listening on %d", i, port.Int())
 		})
 	}
-}
-
-func createTestContainer(t *testing.T, ctx context.Context) int {
-	req := ContainerRequest{
-		Image:        nginxAlpineImage,
-		ExposedPorts: []string{nginxDefaultPort},
-		WaitingFor:   wait.ForHTTP("/"),
-	}
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	if err != nil {
-		t.Fatalf("could not start container: %v", err)
-	}
-	// mappedPort {
-	port, err := container.MappedPort(ctx, nginxDefaultPort)
-	// }
-	if err != nil {
-		t.Fatalf("could not get mapped port: %v", err)
-	}
-
-	terminateContainerOnEnd(t, ctx, container)
-
-	return port.Int()
 }
 
 func TestBindMount(t *testing.T) {
