@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/docker/docker v24.0.5+incompatible
-	github.com/hashicorp/vault-client-go v0.2.0
+	github.com/hashicorp/vault-client-go v0.3.3
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.22.0
 	github.com/tidwall/gjson v1.15.0
@@ -49,7 +49,7 @@ require (
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.9.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230525234030-28d5490b6b19 // indirect
