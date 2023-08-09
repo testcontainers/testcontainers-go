@@ -9,7 +9,6 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -55,11 +54,9 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		ReaperImage:  "reaperImage",
 		ExposedPorts: []string{"8080/tcp"},
 		Labels: map[string]string{
-			TestcontainerLabel:                "true",
-			TestcontainerLabelIsReaper:        "true",
-			testcontainersdocker.LabelReaper:  "true",
-			testcontainersdocker.LabelLang:    "go",
-			testcontainersdocker.LabelVersion: internal.Version,
+			TestcontainerLabel:               "true",
+			TestcontainerLabelIsReaper:       "true",
+			testcontainersdocker.LabelReaper: "true",
 		},
 		Mounts:     Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock")),
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
