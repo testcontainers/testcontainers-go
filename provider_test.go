@@ -1,13 +1,14 @@
 package testcontainers
 
 import (
+	"context"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
 func TestProviderTypeGetProviderAutodetect(t *testing.T) {
-	var dockerSocket = testcontainersdocker.DockerSocketPathWithSchema
+	var dockerSocket = testcontainersdocker.ExtractDockerSocket(context.Background())
 	const podmanSocket = "unix://$XDG_RUNTIME_DIR/podman/podman.sock"
 
 	tests := []struct {
@@ -57,6 +58,10 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.tr == ProviderPodman && testcontainersdocker.IsWindows() {
+				t.Skip("Podman provider is not implemented for Windows")
+			}
+
 			t.Setenv("DOCKER_HOST", tt.DockerHost)
 
 			got, err := tt.tr.GetProvider()
