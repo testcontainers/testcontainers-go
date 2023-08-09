@@ -279,30 +279,8 @@ func generateDependabotUpdates(rootDir string, example Example) error {
 	if err != nil {
 		return err
 	}
-
-	dependabotExampleUpdates := dependabotConfig.Updates
-
-	// make sure GH actions, Pip and the core module are the three first elements in the list of examples
-	exampleUpdates := make(Updates, len(dependabotExampleUpdates)-3)
-	j := 0
-
-	for _, exampleUpdate := range dependabotExampleUpdates {
-		// filter out the root module
-		if exampleUpdate.PackageEcosystem == "gomod" && exampleUpdate.Directory != "/" {
-			exampleUpdates[j] = exampleUpdate
-			j++
-		}
-	}
-
-	exampleUpdates = append(exampleUpdates, NewUpdate(example))
-	sort.Sort(exampleUpdates)
-
-	// prepend the github actions, pip and main modules
-	firstUpdates := dependabotExampleUpdates[0:3]
-	exampleUpdates = append(firstUpdates, exampleUpdates...)
-
-	dependabotConfig.Updates = exampleUpdates
-
+	dependabotConfig.Updates = append(dependabotConfig.Updates, NewUpdate(example))
+	sort.Sort(dependabotConfig.Updates)
 	return writeDependabotConfig(rootDir, dependabotConfig)
 }
 
