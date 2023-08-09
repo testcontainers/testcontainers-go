@@ -95,6 +95,8 @@ func Test_NetworkWithIPAM(t *testing.T) {
 	if err != nil {
 		t.Fatal("Cannot get Provider")
 	}
+	defer provider.Close()
+
 	foundNetwork, err := provider.GetNetwork(ctx, NetworkRequest{Name: networkName})
 	if err != nil {
 		t.Fatal("Cannot get created network by name")
