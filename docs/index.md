@@ -1,4 +1,4 @@
-# Testcontainers for Go
+# Welcome to Testcontainers for Go!
 
 <p align="center"><strong>Not using Go? Here are other supported languages!</strong></p>
 <div class="card-grid">
