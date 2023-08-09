@@ -18,7 +18,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: pip
       directory: /
       schedule:
@@ -36,7 +36,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /examples/cockroachdb
       schedule:
@@ -47,7 +47,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /examples/consul
       schedule:
@@ -58,7 +58,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /examples/datastore
       schedule:
@@ -69,7 +69,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /examples/firestore
       schedule:
@@ -80,7 +80,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /examples/mongodb
       schedule:
@@ -91,7 +91,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /examples/nats
       schedule:
@@ -102,7 +102,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /examples/nginx
       schedule:
@@ -113,7 +113,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /examples/pubsub
       schedule:
@@ -124,7 +124,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /examples/spanner
       schedule:
@@ -135,7 +135,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /examples/toxiproxy
       schedule:
@@ -146,7 +146,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /modulegen
       schedule:
@@ -157,7 +157,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /modules/compose
       schedule:
@@ -168,7 +168,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /modules/couchbase
       schedule:
@@ -179,7 +179,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /modules/k3s
       schedule:
@@ -190,7 +190,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /modules/localstack
       schedule:
@@ -201,7 +201,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /modules/mysql
       schedule:
@@ -212,7 +212,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /modules/neo4j
       schedule:
@@ -223,7 +223,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /modules/postgres
       schedule:
@@ -234,7 +234,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /modules/pulsar
       schedule:
@@ -245,7 +245,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /modules/redis
       schedule:
@@ -256,7 +256,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /modules/redpanda
       schedule:
@@ -267,7 +267,7 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
     - package-ecosystem: gomod
       directory: /modules/vault
       schedule:
@@ -278,4 +278,4 @@ updates:
       groups:
         all:
           patterns:
-            - "*"
+            - '*'
