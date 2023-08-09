@@ -317,6 +317,11 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 	})
 
 	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Docker Desktop on non-Windows)", func(t *testing.T) {
+		if isWindows() {
+			t.Skip("Skip for Windows")
+		}
+
+		t.Setenv("GOOS", "linux")
 		setupTestcontainersProperties(t, "")
 
 		t.Cleanup(resetSocketOverrideFn)
