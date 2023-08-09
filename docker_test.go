@@ -1971,6 +1971,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	defer cli.Close()
 
 	cnt, err := cli.ContainerInspect(ctx, containerId)
+	fmt.Printf("%+v\n", cnt.NetworkSettings.Networks)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(cnt.NetworkSettings.Networks))
 	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[0]])
