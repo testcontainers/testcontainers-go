@@ -1927,6 +1927,10 @@ func TestDockerContainerResources(t *testing.T) {
 }
 
 func TestContainerWithReaperNetwork(t *testing.T) {
+	if testcontainersdocker.IsWindows() {
+		t.Skip("Skip for Windows. See https://stackoverflow.com/questions/43784916/docker-for-windows-networking-container-with-multiple-network-interfaces")
+	}
+
 	ctx := context.Background()
 	networks := []string{
 		"test_network_" + randomString(),

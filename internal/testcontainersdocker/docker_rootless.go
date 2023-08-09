@@ -24,8 +24,8 @@ var (
 // It is a variable so it can be modified for testing.
 var baseRunDir = "/run"
 
-// isWindows returns if the current OS is Windows. For that it checks the GOOS environment variable or the runtime.GOOS constant.
-func isWindows() bool {
+// IsWindows returns if the current OS is Windows. For that it checks the GOOS environment variable or the runtime.GOOS constant.
+func IsWindows() bool {
 	return os.Getenv("GOOS") == "windows" || runtime.GOOS == "windows"
 }
 
@@ -42,7 +42,7 @@ func isWindows() bool {
 func rootlessDockerSocketPath(_ context.Context) (string, error) {
 	// adding a manner to test it on non-windows machines, setting the GOOS env var to windows
 	// This is needed because runtime.GOOS is a constant that returns the OS of the machine running the test
-	if isWindows() {
+	if IsWindows() {
 		return "", ErrRootlessDockerNotSupportedWindows
 	}
 
