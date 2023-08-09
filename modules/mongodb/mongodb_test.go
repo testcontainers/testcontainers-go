@@ -12,10 +12,12 @@ import (
 func TestMongoDB(t *testing.T) {
 	ctx := context.Background()
 
+	// createMongoDBContainer {
 	container, err := RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {

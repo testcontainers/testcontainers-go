@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mongodb
 ## Usage example
 
 <!--codeinclude-->
-[Creating a MongoDB container](../../modules/mongodb/mongodb.go)
+[Creating a MongoDB container](../../modules/mongodb/mongodb.go) inside_block:createMongoDBContainer
 <!--/codeinclude-->
 
 <!--codeinclude-->
