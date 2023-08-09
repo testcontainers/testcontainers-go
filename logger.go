@@ -25,7 +25,8 @@ func LogDockerServerInfo(ctx context.Context, client client.APIClient, logger Lo
   API Version: %v
   Operating System: %v
   Total Memory: %v MB
-  Docker Socket Path: %s
+  Resolved Docker Host: %s
+  Resolved Docker Socket Path: %s
 `
 
 	info, err := client.Info(ctx)
@@ -38,6 +39,7 @@ func LogDockerServerInfo(ctx context.Context, client client.APIClient, logger Lo
 		info.ServerVersion, client.ClientVersion(),
 		info.OperatingSystem, info.MemTotal/1024/1024,
 		testcontainersdocker.ExtractDockerHost(ctx),
+		testcontainersdocker.ExtractDockerSocket(ctx),
 	)
 }
 
