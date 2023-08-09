@@ -653,7 +653,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 		req := ContainerRequest{
 			FromDockerfile: FromDockerfile{
-				Context: "./testdata",
+				Context: filepath.Join(".", "testdata"),
 			},
 			ExposedPorts: []string{"6379/tcp"},
 			WaitingFor:   wait.ForLog("Ready to accept connections"),
@@ -1058,7 +1058,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	t.Log("got ctx, creating container request")
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:    "./testdata",
+			Context:    filepath.Join(".", "testdata", "testdata"),
 			Dockerfile: "args.Dockerfile",
 			BuildArgs: map[string]*string{
 				"FOO": &ba,
@@ -1110,7 +1110,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	// fromDockerfile {
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:       "./testdata",
+			Context:       filepath.Join(".", "testdata"),
 			Dockerfile:    "buildlog.Dockerfile",
 			PrintBuildLog: true,
 		},
@@ -1355,7 +1355,7 @@ func ExampleContainer_MappedPort() {
 }
 
 func TestContainerCreationWithBindAndVolume(t *testing.T) {
-	absPath, err := filepath.Abs("./testdata/hello.sh")
+	absPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1583,7 +1583,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	copiedFileName := "hello_copy.sh"
-	_ = nginxC.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
+	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), "/"+copiedFileName, 700)
 	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
@@ -1624,7 +1624,7 @@ func TestDockerContainerCopyDirToContainer(t *testing.T) {
 
 func TestDockerCreateContainerWithFiles(t *testing.T) {
 	ctx := context.Background()
-	hostFileName := "./testdata/hello.sh"
+	hostFileName := filepath.Join(".", "testdata", "hello.sh")
 	copiedFileName := "/hello_copy.sh"
 	tests := []struct {
 		name   string
@@ -1651,9 +1651,7 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 				},
 			},
 			errMsg: "can't copy " +
-				"./testdata/hello.sh123 to container: open " +
-				"./testdata/hello.sh123: no such file or directory: " +
-				"failed to create container",
+				hostFileName + "123 to container: open " + hostFileName + "123",
 		},
 	}
 
@@ -1715,7 +1713,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 		{
 			name: "success copy directory",
 			dir: ContainerFile{
-				HostFilePath:      filepath.Join("./", hostDirName),
+				HostFilePath:      filepath.Join(".", hostDirName),
 				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
 				FileMode:          700,
 			},
@@ -1724,8 +1722,8 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 		{
 			name: "host dir not found",
 			dir: ContainerFile{
-				HostFilePath:      "./testdata123",       // does not exist
-				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
+				HostFilePath:      filepath.Join(".", "testdata123"), // does not exist
+				ContainerFilePath: "/tmp/" + hostDirName,             // the parent dir must exist
 				FileMode:          700,
 			},
 			hasError: true,
@@ -1733,7 +1731,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 		{
 			name: "container dir not found",
 			dir: ContainerFile{
-				HostFilePath:      "./" + hostDirName,
+				HostFilePath:      filepath.Join(".", hostDirName),
 				ContainerFilePath: "/parent-does-not-exist/testdata123", // does not exist
 				FileMode:          700,
 			},
@@ -1781,7 +1779,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 
 	copiedFileName := "hello_copy.sh"
 
-	fileContent, err := os.ReadFile("./testdata/hello.sh")
+	fileContent, err := os.ReadFile(filepath.Join(".", "testdata", "hello.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1796,7 +1794,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 }
 
 func TestDockerContainerCopyFileFromContainer(t *testing.T) {
-	fileContent, err := os.ReadFile("./testdata/hello.sh")
+	fileContent, err := os.ReadFile(filepath.Join(".", "testdata", "hello.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1816,7 +1814,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	copiedFileName := "hello_copy.sh"
-	_ = nginxC.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
+	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), "/"+copiedFileName, 700)
 	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
@@ -1854,7 +1852,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	copiedFileName := "hello_copy.sh"
-	_ = nginxC.CopyFileToContainer(ctx, "./testdata/empty.sh", "/"+copiedFileName, 700)
+	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "empty.sh"), "/"+copiedFileName, 700)
 	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
