@@ -1058,7 +1058,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	t.Log("got ctx, creating container request")
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:    filepath.Join(".", "testdata", "testdata"),
+			Context:    filepath.Join(".", "testdata"),
 			Dockerfile: "args.Dockerfile",
 			BuildArgs: map[string]*string{
 				"FOO": &ba,
