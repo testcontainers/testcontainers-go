@@ -1,0 +1,15 @@
+# https://github.com/release-drafter/release-drafter
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update_release_draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@65c5fb495d1e69aa8c08a3317bc44ff8aabe9772 # v5.19.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

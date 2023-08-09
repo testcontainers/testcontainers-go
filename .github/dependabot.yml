@@ -8,14 +8,14 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-    - package-ecosystem: pip
+    - package-ecosystem: gomod
       directory: /
       schedule:
         interval: monthly
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-    - package-ecosystem: gomod
+    - package-ecosystem: pip
       directory: /
       schedule:
         interval: monthly

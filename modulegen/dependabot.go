@@ -63,7 +63,10 @@ func (u Updates) Len() int {
 // is not a transitive ordering when not-a-number (NaN) values are involved.
 // See Float64Slice.Less for a correct implementation for floating-point values.
 func (u Updates) Less(i, j int) bool {
-	return u[i].Directory < u[j].Directory
+	if u[i].Directory != u[j].Directory {
+		return u[i].Directory < u[j].Directory
+	}
+	return u[i].PackageEcosystem < u[j].PackageEcosystem
 }
 
 // Swap swaps the elements with indexes i and j.

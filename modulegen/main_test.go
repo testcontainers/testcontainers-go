@@ -403,11 +403,11 @@ func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConf
 
 	// second item is the core module
 	assert.Equal(t, "/", examples[1].Directory, examples)
-	assert.Equal(t, "pip", examples[1].PackageEcosystem, "PackageEcosystem should be pip")
+	assert.Equal(t, "gomod", examples[1].PackageEcosystem, "PackageEcosystem should be gomod")
 
-	// third item is the core module
+	// third item is the pip module
 	assert.Equal(t, "/", examples[2].Directory, examples)
-	assert.Equal(t, "gomod", examples[2].PackageEcosystem, "PackageEcosystem should be gomod")
+	assert.Equal(t, "pip", examples[2].PackageEcosystem, "PackageEcosystem should be pip")
 }
 
 // assert content example file in the docs
