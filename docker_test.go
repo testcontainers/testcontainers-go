@@ -200,9 +200,14 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 		t.Errorf("Expected server endpoint. Got '%v'.", err)
 	}
 
-	_, err = http.Get(endpoint)
+	resp, err := http.Get(endpoint)
 	if err != nil {
-		t.Errorf("Expected OK response. Got '%d'.", err)
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 }
 
@@ -723,6 +728,8 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
@@ -736,6 +743,8 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
@@ -766,6 +775,8 @@ func TestContainerCreation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
@@ -893,6 +904,8 @@ func TestContainerCreationWithName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
@@ -925,6 +938,8 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
@@ -977,8 +992,10 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 	}
 	resp, err := http.Get(origin)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
@@ -1088,6 +1105,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -1378,6 +1396,8 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 	t.Cleanup(func() {
 		ctx, cnl := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cnl()
+		defer dockerCli.Close()
+
 		err := dockerCli.VolumeRemove(ctx, volumeName, true)
 		if err != nil {
 			t.Fatal(err)
@@ -1473,7 +1493,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 			t.Fatalf("err should be a ctx cancelled error %v", err)
 		}
 
-		terminateContainerOnEnd(t, ctx, c)
+		terminateContainerOnEnd(t, context.Background(), c) // use non-cancelled context
 	})
 }
 
@@ -1518,6 +1538,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 
 		dockerCli, err := NewDockerClient()
 		require.NoError(t, err)
+		defer dockerCli.Close()
 
 		ctr, err := dockerCli.ContainerInspect(ctx, c.GetContainerID())
 		assert.NoError(t, err)
@@ -1557,6 +1578,7 @@ func readHostname(tb testing.TB, containerId string) string {
 	if err != nil {
 		tb.Fatalf("Failed to create Docker client: %v", err)
 	}
+	defer containerClient.Close()
 
 	containerDetails, err := containerClient.ContainerInspect(context.Background(), containerId)
 	if err != nil {
@@ -1666,6 +1688,7 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 				},
 				Started: false,
 			})
+			terminateContainerOnEnd(t, ctx, nginxC)
 
 			if err != nil {
 				require.Contains(t, err.Error(), tc.errMsg)
@@ -1750,6 +1773,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 				},
 				Started: false,
 			})
+			terminateContainerOnEnd(t, ctx, nginxC)
 
 			require.True(t, (err != nil) == tc.hasError)
 			if err == nil {
@@ -1827,6 +1851,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer reader.Close()
 
 	fileContentFromContainer, err := io.ReadAll(reader)
 	if err != nil {
@@ -1865,6 +1890,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer reader.Close()
 
 	fileContentFromContainer, err := io.ReadAll(reader)
 	if err != nil {
@@ -1942,11 +1968,16 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 			Name:       nw,
 			Attachable: true,
 		}
-		_, err := GenericNetwork(ctx, GenericNetworkRequest{
+		n, err := GenericNetwork(ctx, GenericNetworkRequest{
 			ProviderType:   providerType,
 			NetworkRequest: nr,
 		})
 		assert.Nil(t, err)
+		// use t.Cleanup to run after terminateContainerOnEnd
+		t.Cleanup(func() {
+			err := n.Remove(ctx)
+			assert.NoError(t, err)
+		})
 	}
 
 	req := ContainerRequest{
@@ -2108,6 +2139,8 @@ func TestGetGatewayIP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer provider.Close()
+
 	ip, err := provider.(*DockerProvider).GetGatewayIP(context.Background())
 	if err != nil {
 		t.Fatal(err)

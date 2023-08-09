@@ -269,6 +269,7 @@ func TestCreateContainerWithVolume(t *testing.T) {
 	// Check if volume is created
 	client, err := NewDockerClient()
 	assert.NoError(t, err)
+	defer client.Close()
 
 	volume, err := client.VolumeInspect(ctx, "test-volume")
 	assert.NoError(t, err)
