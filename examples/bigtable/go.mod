@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/examples/bigtable
 go 1.19
 
 require (
-	cloud.google.com/go/bigtable v1.18.1
+	cloud.google.com/go/bigtable v1.19.0
 	github.com/testcontainers/testcontainers-go v0.22.0
 	google.golang.org/api v0.136.0
 	google.golang.org/grpc v1.57.0
