@@ -126,6 +126,7 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 	if err != nil {
 		return nil, err
 	}
+	defer provider.Close()
 
 	var c Container
 	if req.Reuse {

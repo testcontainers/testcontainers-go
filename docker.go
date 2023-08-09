@@ -245,6 +245,14 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 
 // Terminate is used to kill the container. It is usually triggered by as defer function.
 func (c *DockerContainer) Terminate(ctx context.Context) error {
+	select {
+	// close reaper if it was created
+	case c.terminationSignal <- true:
+	default:
+	}
+
+	defer c.provider.client.Close()
+
 	err := c.terminatingHook(ctx)
 	if err != nil {
 		return err
@@ -255,11 +263,6 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		return err
 	}
 
-	select {
-	// close reaper if it was created
-	case c.terminationSignal <- true:
-	default:
-	}
 	err = c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
 		RemoveVolumes: true,
 		Force:         true,
@@ -283,10 +286,6 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		}
 	}
 
-	if err := c.provider.client.Close(); err != nil {
-		return err
-	}
-
 	c.sessionID = uuid.UUID{}
 	c.isRunning = false
 	return nil
@@ -294,22 +293,22 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 // update container raw info
 func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.ContainerJSON, error) {
+	defer c.provider.Close()
 	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
 	if err != nil {
 		return nil, err
 	}
-	defer c.provider.Close()
 
 	c.raw = &inspect
 	return c.raw, nil
 }
 
 func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.ContainerJSON, error) {
+	defer c.provider.Close()
 	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
 	if err != nil {
 		return nil, err
 	}
-	defer c.provider.Close()
 
 	return &inspect, nil
 }
@@ -739,13 +738,9 @@ func (n *DockerNetwork) Remove(ctx context.Context) error {
 	default:
 	}
 
-	err := n.provider.client.NetworkRemove(ctx, n.ID)
-	if err != nil {
-		return err
-	}
 	defer n.provider.Close()
 
-	return nil
+	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
 // DockerProvider implements the ContainerProvider interface
@@ -913,6 +908,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
+	// Cleanup on error, otherwise set termSignal to nil before successful return.
+	defer func() {
+		if termSignal != nil {
+			termSignal <- true
+		}
+	}()
+
 	if err = req.Validate(); err != nil {
 		return nil, err
 	}
@@ -976,6 +978,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				return nil, err
 			}
 		}
+	}
+
+	for k, v := range testcontainersdocker.DefaultLabels() {
+		req.Labels[k] = v
 	}
 
 	dockerInput := &container.Config{
@@ -1090,6 +1096,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	if err != nil {
 		return nil, err
 	}
+
+	// Disable cleanup on success
+	termSignal = nil
 
 	return c, nil
 }
@@ -1306,6 +1315,13 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		}
 	}
 
+	// Cleanup on error, otherwise set termSignal to nil before successful return.
+	defer func() {
+		if termSignal != nil {
+			termSignal <- true
+		}
+	}()
+
 	response, err := p.client.NetworkCreate(ctx, req.Name, nc)
 	if err != nil {
 		return &DockerNetwork{}, err
@@ -1318,6 +1334,9 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		terminationSignal: termSignal,
 		provider:          p,
 	}
+
+	// Disable cleanup on success
+	termSignal = nil
 
 	return n, nil
 }
