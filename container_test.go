@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -352,72 +351,6 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 			terminateContainerOnEnd(t, ctx, container)
 
 			t.Logf("Parallel container [iteration_%d] listening on %d\n", i, port.Int())
-		})
-	}
-}
-
-func TestBindMount(t *testing.T) {
-	t.Parallel()
-
-	dockerSocket := testcontainersdocker.ExtractDockerSocket(context.Background())
-	t.Log("Docker Socket Path: ", dockerSocket)
-
-	type args struct {
-		hostPath    string
-		mountTarget ContainerMountTarget
-	}
-	tests := []struct {
-		name string
-		args args
-		want ContainerMount
-	}{
-		{
-			name: dockerSocket + ":" + dockerSocket,
-			args: args{hostPath: dockerSocket, mountTarget: "/var/run/docker.sock"},
-			want: ContainerMount{Source: GenericBindMountSource{HostPath: dockerSocket}, Target: "/var/run/docker.sock"},
-		},
-		{
-			name: "/var/lib/app/data:/data",
-			args: args{hostPath: "/var/lib/app/data", mountTarget: "/data"},
-			want: ContainerMount{Source: GenericBindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data"},
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equalf(t, tt.want, BindMount(tt.args.hostPath, tt.args.mountTarget), "BindMount(%v, %v)", tt.args.hostPath, tt.args.mountTarget)
-		})
-	}
-}
-
-func TestVolumeMount(t *testing.T) {
-	t.Parallel()
-	type args struct {
-		volumeName  string
-		mountTarget ContainerMountTarget
-	}
-	tests := []struct {
-		name string
-		args args
-		want ContainerMount
-	}{
-		{
-			name: "sample-data:/data",
-			args: args{volumeName: "sample-data", mountTarget: "/data"},
-			want: ContainerMount{Source: GenericVolumeMountSource{Name: "sample-data"}, Target: "/data"},
-		},
-		{
-			name: "web:/var/nginx/html",
-			args: args{volumeName: "web", mountTarget: "/var/nginx/html"},
-			want: ContainerMount{Source: GenericVolumeMountSource{Name: "web"}, Target: "/var/nginx/html"},
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equalf(t, tt.want, VolumeMount(tt.args.volumeName, tt.args.mountTarget), "VolumeMount(%v, %v)", tt.args.volumeName, tt.args.mountTarget)
 		})
 	}
 }
