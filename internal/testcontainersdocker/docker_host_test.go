@@ -394,8 +394,10 @@ func TestInAContainer(t *testing.T) {
 
 		f := filepath.Join(tmpDir, ".dockerenv-b")
 
-		_, err := os.Create(f)
+		testFile, err := os.Create(f)
 		assert.NoError(t, err)
+		defer testFile.Close()
+
 		assert.True(t, inAContainer(f))
 	})
 }
