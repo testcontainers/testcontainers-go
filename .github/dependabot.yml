@@ -17,8 +17,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: pip
       directory: /
       schedule:
@@ -35,8 +35,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /examples/cockroachdb
       schedule:
@@ -46,8 +46,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /examples/consul
       schedule:
@@ -57,8 +57,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /examples/datastore
       schedule:
@@ -68,8 +68,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /examples/firestore
       schedule:
@@ -79,8 +79,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /examples/mongodb
       schedule:
@@ -90,8 +90,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /examples/nats
       schedule:
@@ -101,8 +101,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /examples/nginx
       schedule:
@@ -112,8 +112,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /examples/pubsub
       schedule:
@@ -123,8 +123,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /examples/spanner
       schedule:
@@ -134,8 +134,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /examples/toxiproxy
       schedule:
@@ -145,8 +145,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modulegen
       schedule:
@@ -156,8 +156,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/compose
       schedule:
@@ -167,8 +167,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/couchbase
       schedule:
@@ -178,8 +178,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/k3s
       schedule:
@@ -189,8 +189,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/localstack
       schedule:
@@ -200,8 +200,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/mysql
       schedule:
@@ -211,8 +211,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/neo4j
       schedule:
@@ -222,8 +222,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/postgres
       schedule:
@@ -233,8 +233,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/pulsar
       schedule:
@@ -244,8 +244,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/questdb
       schedule:
@@ -255,8 +255,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/redis
       schedule:
@@ -266,8 +266,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/redpanda
       schedule:
@@ -277,8 +277,8 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/vault
       schedule:
@@ -288,5 +288,5 @@ updates:
       rebase-strategy: disabled
       groups:
         all:
-          patterns:
-            - '*'
+            patterns:
+                - '*'
