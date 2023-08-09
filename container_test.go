@@ -351,7 +351,7 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 
 			terminateContainerOnEnd(t, ctx, container)
 
-			t.Logf("Parallel container [iteration_%d] listening on %d", i, port.Int())
+			t.Logf("Parallel container [iteration_%d] listening on %d\n", i, port.Int())
 		})
 	}
 }
@@ -360,6 +360,7 @@ func TestBindMount(t *testing.T) {
 	t.Parallel()
 
 	dockerSocket := testcontainersdocker.ExtractDockerSocket(context.Background())
+	t.Log("Docker Socket Path: ", dockerSocket)
 
 	type args struct {
 		hostPath    string

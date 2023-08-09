@@ -231,7 +231,7 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	nginx, err := GenericContainer(ctx, gcr)
 	if err != nil {
 		// Error when NetworkMode = host and Network = []string{"bridge"}
-		t.Logf("Can't use Network and NetworkMode together, %s", err)
+		t.Logf("Can't use Network and NetworkMode together, %s\n", err)
 	}
 	terminateContainerOnEnd(t, ctx, nginx)
 }

@@ -213,7 +213,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		defer func() {
 			err := net.Remove(ctx)
 			if err != nil {
-				t.Logf("failed to remove network %s: %s", networkName, err)
+				t.Logf("failed to remove network %s: %s\n", networkName, err)
 			}
 		}()
 
@@ -265,7 +265,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		defer func() {
 			err := net.Remove(ctx)
 			if err != nil {
-				t.Logf("failed to remove network %s: %s", networkName, err)
+				t.Logf("failed to remove network %s: %s\n", networkName, err)
 			}
 		}()
 
