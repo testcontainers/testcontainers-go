@@ -773,6 +773,8 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 
 var _ ContainerProvider = (*DockerProvider)(nil)
 
+// Deprecated - This method will be removed in a future release
+// as we do not want to expose the docker client to the users
 func NewDockerClient() (cli *client.Client, err error) {
 	return testcontainersdocker.NewClient(context.Background())
 }
