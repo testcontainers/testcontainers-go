@@ -980,6 +980,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
+	for k, v := range testcontainersdocker.DefaultLabels() {
+		req.Labels[k] = v
+	}
+
 	dockerInput := &container.Config{
 		Entrypoint: req.Entrypoint,
 		Image:      tag,

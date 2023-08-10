@@ -16,6 +16,12 @@ type DependabotConfig struct {
 	Updates Updates `yaml:"updates"`
 }
 
+type Group struct {
+	Patterns []string `yaml:"patterns"`
+}
+
+type Groups map[string]Group
+
 type Schedule struct {
 	Interval string `yaml:"interval"`
 	Day      string `yaml:"day"`
@@ -27,6 +33,7 @@ type Update struct {
 	Schedule              Schedule `yaml:"schedule"`
 	OpenPullRequestsLimit int      `yaml:"open-pull-requests-limit"`
 	RebaseStrategy        string   `yaml:"rebase-strategy"`
+	Groups                Groups   `yaml:"groups,omitempty"`
 }
 
 func NewUpdate(example Example) Update {
@@ -38,6 +45,11 @@ func NewUpdate(example Example) Update {
 		Schedule: Schedule{
 			Interval: updateSchedule,
 			Day:      "sunday",
+		},
+		Groups: Groups{
+			"all": Group{
+				Patterns: []string{"*"},
+			},
 		},
 	}
 }
