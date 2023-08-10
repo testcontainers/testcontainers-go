@@ -977,7 +977,7 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			WaitingFor: wait.ForHTTP("/"),
+			WaitingFor: wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 		},
 		Started: true,
 	})
