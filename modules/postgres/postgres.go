@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
+	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -36,14 +37,7 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string
 		return "", err
 	}
 
-	extraArgs := ""
-	if len(args) >= 1 {
-		extraArgs = args[0]
-	}
-	for _, arg := range args[1:] {
-		extraArgs += "&" + arg
-	}
-
+	extraArgs := strings.Join(args, "&")
 	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?%s", c.user, c.password, net.JoinHostPort(host, containerPort.Port()), c.dbName, extraArgs)
 	return connStr, nil
 }
