@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
@@ -101,10 +102,8 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 		o.ApplyGenericTo(opt)
 	}
 
-	dockerHost := testcontainersdocker.ExtractDockerHost(context.Background())
-
 	pt := t
-	if pt == ProviderDefault && strings.Contains(dockerHost, "podman.sock") {
+	if pt == ProviderDefault && strings.Contains(os.Getenv("DOCKER_HOST"), "podman.sock") {
 		pt = ProviderPodman
 	}
 
