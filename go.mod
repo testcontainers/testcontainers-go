@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	dario.cat/mergo v1.0.0
-	github.com/cenkalti/backoff/v4 v4.2.0
+	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/containerd/containerd v1.7.3
 	github.com/cpuguy83/dockercfg v0.3.1
 	github.com/docker/docker v24.0.5+incompatible
