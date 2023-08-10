@@ -78,6 +78,11 @@ func TestPostgres(t *testing.T) {
 			assert.NoError(t, err)
 			// }
 
+			// Ensure connection string is using generic format
+			id, err := container.MappedPort(ctx, "5432/tcp")
+			assert.NoError(t, err)
+			assert.Equal(t, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&application_name=test", user, password, "localhost", id.Port(), dbname), connStr)
+
 			// perform assertions
 			db, err := sql.Open("postgres", connStr)
 			assert.NoError(t, err)
