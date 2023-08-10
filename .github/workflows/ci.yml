@@ -82,7 +82,7 @@ jobs:
       matrix:
         go-version: [1.19.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
-        module: [clickhouse, compose, couchbase, k3s, localstack, mysql, neo4j, postgres, pulsar, redis, redpanda, vault]
+        module: [clickhouse, compose, couchbase, k3s, localstack, mongodb, mysql, neo4j, postgres, pulsar, redis, redpanda, vault]
         exclude:
           - module: compose
             go-version: 1.19.x
@@ -100,7 +100,7 @@ jobs:
       matrix:
         go-version: [1.19.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
-        module: [bigtable, cockroachdb, consul, datastore, firestore, mongodb, nats, nginx, pubsub, spanner, toxiproxy]
+        module: [bigtable, cockroachdb, consul, datastore, firestore, nats, nginx, pubsub, spanner, toxiproxy]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}

@@ -82,17 +82,6 @@ updates:
             patterns:
                 - '*'
     - package-ecosystem: gomod
-      directory: /examples/mongodb
-      schedule:
-        interval: monthly
-        day: sunday
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
-    - package-ecosystem: gomod
       directory: /examples/nats
       schedule:
         interval: monthly
@@ -165,6 +154,10 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
+      groups:
+        all:
+            patterns:
+                - '*'
     - package-ecosystem: gomod
       directory: /modules/compose
       schedule:
@@ -200,6 +193,17 @@ updates:
                 - '*'
     - package-ecosystem: gomod
       directory: /modules/localstack
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+      groups:
+        all:
+            patterns:
+                - '*'
+    - package-ecosystem: gomod
+      directory: /modules/mongodb
       schedule:
         interval: monthly
         day: sunday
