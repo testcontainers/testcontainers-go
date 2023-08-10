@@ -332,7 +332,7 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 			req := ContainerRequest{
 				Image:        nginxAlpineImage,
 				ExposedPorts: []string{nginxDefaultPort},
-				WaitingFor:   wait.ForHTTP("/"),
+				WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 			}
 			container, err := GenericContainer(ctx, GenericContainerRequest{
 				ContainerRequest: req,

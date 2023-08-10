@@ -28,7 +28,7 @@ func ExampleHTTPStrategy() {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx:latest",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/"),
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 
 	gogs, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{

@@ -3,6 +3,7 @@ package nginx
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -17,7 +18,7 @@ func startContainer(ctx context.Context) (*nginxContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/"),
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,

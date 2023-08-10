@@ -1276,7 +1276,7 @@ func ExampleDockerProvider_CreateContainer() {
 	req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/"),
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -1294,7 +1294,7 @@ func ExampleContainer_Host() {
 	req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/"),
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -1316,7 +1316,7 @@ func ExampleContainer_Start() {
 	req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/"),
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -1334,7 +1334,7 @@ func ExampleContainer_Stop() {
 	req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/"),
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -1353,7 +1353,7 @@ func ExampleContainer_MappedPort() {
 	req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/"),
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
