@@ -20,6 +20,7 @@ readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly DRY_RUN="${DRY_RUN:-true}"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
 readonly GO_MOD_FILE="${ROOT_DIR}/go.mod"
+readonly DEVCONTAINER_IMAGE_PREFIX="go:0-"
 
 function main() {
   echo "Updating Go version:"
@@ -46,6 +47,9 @@ function main() {
   for f in $(find "${ROOT_DIR}/.github/workflows" -name "*.yml"); do
     bumpCIMatrix "${f}" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
   done
+
+  # bump devcontainer file
+  bumpDevcontainer "${ROOT_DIR}/.devcontainer/devcontainer.json" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
 }
 
 # it will replace the 'go-version: [${oldGoVersion}, 1.x]' with 'go-version: [${newGoVersion}, 1.x]' in the given file
@@ -59,6 +63,21 @@ function bumpCIMatrix() {
     echo "mv ${file}.tmp ${file}"
   else
     sed "s/go-version: \[${oldGoVersion}/go-version: \[${newGoVersion}/g" ${file} > ${file}.tmp
+    mv ${file}.tmp ${file}
+  fi
+}
+
+# it will replace the 'go:0-${oldGoVersion}-bullseye' with 'go:0-${newGoVersion}-bullseye' in the given file
+function bumpDevcontainer() {
+  local file="${1}"
+  local oldGoVersion="${2}"
+  local newGoVersion="${3}"
+
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "sed \"s/${DEVCONTAINER_IMAGE_PREFIX}${oldGoVersion}/${DEVCONTAINER_IMAGE_PREFIX}${newGoVersion}/g\" ${file} > ${file}.tmp"
+    echo "mv ${file}.tmp ${file}"
+  else
+    sed "s/${DEVCONTAINER_IMAGE_PREFIX}${oldGoVersion}/${DEVCONTAINER_IMAGE_PREFIX}${newGoVersion}/g" ${file} > ${file}.tmp
     mv ${file}.tmp ${file}
   fi
 }
