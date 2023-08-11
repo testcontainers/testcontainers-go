@@ -27,6 +27,7 @@ func TestReadConfig(t *testing.T) {
 
 	t.Run("Config is read just once", func(t *testing.T) {
 		t.Setenv("HOME", "")
+		t.Setenv("USERPROFILE", "") // Windows support
 		t.Setenv("DOCKER_HOST", "")
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 
@@ -51,6 +52,7 @@ func TestReadTCConfig(t *testing.T) {
 
 	t.Run("HOME is not set", func(t *testing.T) {
 		t.Setenv("HOME", "")
+		t.Setenv("USERPROFILE", "") // Windows support
 
 		config := read()
 
@@ -61,6 +63,7 @@ func TestReadTCConfig(t *testing.T) {
 
 	t.Run("HOME is not set - TESTCONTAINERS_ env is set", func(t *testing.T) {
 		t.Setenv("HOME", "")
+		t.Setenv("USERPROFILE", "") // Windows support
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
@@ -78,6 +81,7 @@ func TestReadTCConfig(t *testing.T) {
 	t.Run("HOME does not contain TC props file", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("HOME", tmpDir)
+		t.Setenv("USERPROFILE", tmpDir) // Windows support
 
 		config := read()
 
@@ -89,6 +93,7 @@ func TestReadTCConfig(t *testing.T) {
 	t.Run("HOME does not contain TC props file - DOCKER_HOST env is set", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("HOME", tmpDir)
+		t.Setenv("USERPROFILE", tmpDir) // Windows support
 		t.Setenv("DOCKER_HOST", tcpDockerHost33293)
 
 		config := read()
@@ -100,6 +105,7 @@ func TestReadTCConfig(t *testing.T) {
 	t.Run("HOME does not contain TC props file - TESTCONTAINERS_ env is set", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("HOME", tmpDir)
+		t.Setenv("USERPROFILE", tmpDir) // Windows support
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
@@ -392,6 +398,7 @@ func TestReadTCConfig(t *testing.T) {
 			t.Run(fmt.Sprintf(tt.name), func(t *testing.T) {
 				tmpDir := t.TempDir()
 				t.Setenv("HOME", tmpDir)
+				t.Setenv("USERPROFILE", tmpDir) // Windows support
 				for k, v := range tt.env {
 					t.Setenv(k, v)
 				}

@@ -148,7 +148,7 @@ func removeImageFromLocalCache(t *testing.T, image string) {
 		PruneChildren: true,
 	})
 	if err != nil {
-		t.Logf("could not remove image %s: %v", image, err)
+		t.Logf("could not remove image %s: %v\n", image, err)
 	}
 }
 

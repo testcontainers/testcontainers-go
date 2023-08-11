@@ -5,7 +5,7 @@ on:
     types: [windows-test-command]
 
 jobs:
-  docker:
+  test-windows:
     # At the moment, we are running a self-hosted runner on Windows 2022.
     runs-on: [self-hosted, Windows, X64]
     strategy:

@@ -19,6 +19,7 @@ func TestReadConfig(t *testing.T) {
 
 	t.Run("Config is read just once", func(t *testing.T) {
 		t.Setenv("HOME", "")
+		t.Setenv("USERPROFILE", "") // Windows support
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 
 		cfg := ReadConfig()

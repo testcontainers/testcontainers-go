@@ -236,7 +236,7 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	nginx, err := GenericContainer(ctx, gcr)
 	if err != nil {
 		// Error when NetworkMode = host and Network = []string{"bridge"}
-		t.Logf("Can't use Network and NetworkMode together, %s", err)
+		t.Logf("Can't use Network and NetworkMode together, %s\n", err)
 	}
 	terminateContainerOnEnd(t, ctx, nginx)
 }
@@ -658,7 +658,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 		req := ContainerRequest{
 			FromDockerfile: FromDockerfile{
-				Context: "./testdata",
+				Context: filepath.Join(".", "testdata"),
 			},
 			ExposedPorts: []string{"6379/tcp"},
 			WaitingFor:   wait.ForLog("Ready to accept connections"),
@@ -970,7 +970,6 @@ func TestContainerCreationTimesOut(t *testing.T) {
 func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 	ctx := context.Background()
 
-	// delayed-nginx will wait 2s before opening port
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -978,7 +977,7 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			WaitingFor: wait.ForHTTP("/"),
+			WaitingFor: wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 		},
 		Started: true,
 	})
@@ -1075,7 +1074,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	t.Log("got ctx, creating container request")
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:    "./testdata",
+			Context:    filepath.Join(".", "testdata"),
 			Dockerfile: "args.Dockerfile",
 			BuildArgs: map[string]*string{
 				"FOO": &ba,
@@ -1128,7 +1127,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	// fromDockerfile {
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:       "./testdata",
+			Context:       filepath.Join(".", "testdata"),
 			Dockerfile:    "buildlog.Dockerfile",
 			PrintBuildLog: true,
 		},
@@ -1277,7 +1276,7 @@ func ExampleDockerProvider_CreateContainer() {
 	req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/"),
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -1295,7 +1294,7 @@ func ExampleContainer_Host() {
 	req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/"),
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -1317,7 +1316,7 @@ func ExampleContainer_Start() {
 	req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/"),
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -1335,7 +1334,7 @@ func ExampleContainer_Stop() {
 	req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/"),
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -1354,7 +1353,7 @@ func ExampleContainer_MappedPort() {
 	req := ContainerRequest{
 		Image:        "docker.io/nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/"),
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -1373,7 +1372,7 @@ func ExampleContainer_MappedPort() {
 }
 
 func TestContainerCreationWithBindAndVolume(t *testing.T) {
-	absPath, err := filepath.Abs("./testdata/hello.sh")
+	absPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1605,7 +1604,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	copiedFileName := "hello_copy.sh"
-	_ = nginxC.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
+	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), "/"+copiedFileName, 700)
 	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
@@ -1646,7 +1645,7 @@ func TestDockerContainerCopyDirToContainer(t *testing.T) {
 
 func TestDockerCreateContainerWithFiles(t *testing.T) {
 	ctx := context.Background()
-	hostFileName := "./testdata/hello.sh"
+	hostFileName := filepath.Join(".", "testdata", "hello.sh")
 	copiedFileName := "/hello_copy.sh"
 	tests := []struct {
 		name   string
@@ -1673,9 +1672,7 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 				},
 			},
 			errMsg: "can't copy " +
-				"./testdata/hello.sh123 to container: open " +
-				"./testdata/hello.sh123: no such file or directory: " +
-				"failed to create container",
+				hostFileName + "123 to container: open " + hostFileName + "123",
 		},
 	}
 
@@ -1738,7 +1735,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 		{
 			name: "success copy directory",
 			dir: ContainerFile{
-				HostFilePath:      filepath.Join("./", hostDirName),
+				HostFilePath:      filepath.Join(".", hostDirName),
 				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
 				FileMode:          700,
 			},
@@ -1747,8 +1744,8 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 		{
 			name: "host dir not found",
 			dir: ContainerFile{
-				HostFilePath:      "./testdata123",       // does not exist
-				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
+				HostFilePath:      filepath.Join(".", "testdata123"), // does not exist
+				ContainerFilePath: "/tmp/" + hostDirName,             // the parent dir must exist
 				FileMode:          700,
 			},
 			hasError: true,
@@ -1756,7 +1753,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 		{
 			name: "container dir not found",
 			dir: ContainerFile{
-				HostFilePath:      "./" + hostDirName,
+				HostFilePath:      filepath.Join(".", hostDirName),
 				ContainerFilePath: "/parent-does-not-exist/testdata123", // does not exist
 				FileMode:          700,
 			},
@@ -1805,7 +1802,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 
 	copiedFileName := "hello_copy.sh"
 
-	fileContent, err := os.ReadFile("./testdata/hello.sh")
+	fileContent, err := os.ReadFile(filepath.Join(".", "testdata", "hello.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1820,7 +1817,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 }
 
 func TestDockerContainerCopyFileFromContainer(t *testing.T) {
-	fileContent, err := os.ReadFile("./testdata/hello.sh")
+	fileContent, err := os.ReadFile(filepath.Join(".", "testdata", "hello.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1840,7 +1837,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	copiedFileName := "hello_copy.sh"
-	_ = nginxC.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
+	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), "/"+copiedFileName, 700)
 	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
@@ -1879,7 +1876,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	copiedFileName := "hello_copy.sh"
-	_ = nginxC.CopyFileToContainer(ctx, "./testdata/empty.sh", "/"+copiedFileName, 700)
+	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "empty.sh"), "/"+copiedFileName, 700)
 	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
@@ -1955,6 +1952,10 @@ func TestDockerContainerResources(t *testing.T) {
 }
 
 func TestContainerWithReaperNetwork(t *testing.T) {
+	if testcontainersdocker.IsWindows() {
+		t.Skip("Skip for Windows. See https://stackoverflow.com/questions/43784916/docker-for-windows-networking-container-with-multiple-network-interfaces")
+	}
+
 	ctx := context.Background()
 	networks := []string{
 		"test_network_" + randomString(),

@@ -88,7 +88,7 @@ Path to Docker's socket. Used by Ryuk, Docker Compose, and a few other container
 
     Example: `/var/run/docker-alt.sock`
 
-3. If the Operative System retrieved by the Docker client is "Docker Desktop", return the default docker socket path for rootless docker.
+3. If the Operative System retrieved by the Docker client is "Docker Desktop", and the host is running on Windows, it will return the `//var/run/docker.sock` UNC Path. Else return the default docker socket path for rootless docker.
 
 4. Get the current Docker Host from the existing strategies: see [Docker host detection](#docker-host-detection).
 

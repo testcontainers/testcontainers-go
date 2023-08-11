@@ -167,6 +167,10 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 
 	// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker
 	if info.OperatingSystem == "Docker Desktop" {
+		if IsWindows() {
+			return WindowsDockerSocketPath
+		}
+
 		return DockerSocketPath
 	}
 

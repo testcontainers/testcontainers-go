@@ -42,6 +42,7 @@ func TestExtractDockerHost(t *testing.T) {
 	// do not mess with local .testcontainers.properties
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir) // Windows support
 
 	t.Run("Docker Host as extracted just once", func(t *testing.T) {
 		expected := "/path/to/docker.sock"
@@ -98,7 +99,7 @@ func TestExtractDockerHost(t *testing.T) {
 	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
 		ctx := context.Background()
 
-		host := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "unix:///this/is/a/sample.sock"))
+		host := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, DockerSocketSchema+"/this/is/a/sample.sock"))
 
 		assert.Equal(t, "/this/is/a/sample.sock", host)
 	})
@@ -191,7 +192,7 @@ func TestExtractDockerHost(t *testing.T) {
 		t.Run("Context sets the Docker socket", func(t *testing.T) {
 			ctx := context.Background()
 
-			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, "unix:///this/is/a/sample.sock"))
+			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, DockerSocketSchema+"/this/is/a/sample.sock"))
 			require.Nil(t, err)
 			assert.Equal(t, "/this/is/a/sample.sock", socket)
 		})
@@ -306,7 +307,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		t.Cleanup(resetSocketOverrideFn)
 
-		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "unix:///path/to/docker.sock")
+		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", DockerSocketSchema+"/path/to/docker.sock")
 		host := extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
 		assert.Equal(t, "/path/to/docker.sock", host)
 
@@ -315,18 +316,38 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		assert.Equal(t, DockerSocketPath, host)
 	})
 
-	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Docker Desktop)", func(t *testing.T) {
+	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Docker Desktop on non-Windows)", func(t *testing.T) {
+		if IsWindows() {
+			t.Skip("Skip for Windows")
+		}
+
+		t.Setenv("GOOS", "linux")
 		setupTestcontainersProperties(t, "")
 
 		t.Cleanup(resetSocketOverrideFn)
 
 		ctx := context.Background()
 		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
-		t.Setenv("DOCKER_HOST", "unix:///this/is/a/sample.sock")
+		t.Setenv("DOCKER_HOST", DockerSocketSchema+"/this/is/a/sample.sock")
 
 		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Docker Desktop"})
 
 		assert.Equal(t, DockerSocketPath, socket)
+	})
+
+	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Docker Desktop for Windows)", func(t *testing.T) {
+		t.Setenv("GOOS", "windows")
+		setupTestcontainersProperties(t, "")
+
+		t.Cleanup(resetSocketOverrideFn)
+
+		ctx := context.Background()
+		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+		t.Setenv("DOCKER_HOST", DockerSocketSchema+"/this/is/a/sample.sock")
+
+		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Docker Desktop"})
+
+		assert.Equal(t, WindowsDockerSocketPath, socket)
 	})
 
 	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Not Docker Desktop)", func(t *testing.T) {
@@ -336,7 +357,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		ctx := context.Background()
 		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
-		t.Setenv("DOCKER_HOST", "unix:///this/is/a/sample.sock")
+		t.Setenv("DOCKER_HOST", DockerSocketSchema+"/this/is/a/sample.sock")
 
 		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
 
@@ -351,7 +372,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		ctx := context.Background()
 		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
 
-		t.Setenv("DOCKER_HOST", "unix:///this/is/a/sample.sock")
+		t.Setenv("DOCKER_HOST", DockerSocketSchema+"/this/is/a/sample.sock")
 		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
 		assert.Equal(t, "/this/is/a/sample.sock", socket)
 
@@ -362,21 +383,21 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 }
 
 func TestInAContainer(t *testing.T) {
-	const dockerenvName = ".dockerenv"
-
 	t.Run("file does not exist", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
-		assert.False(t, inAContainer(filepath.Join(tmpDir, dockerenvName)))
+		assert.False(t, inAContainer(filepath.Join(tmpDir, ".dockerenv-a")))
 	})
 
 	t.Run("file exists", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
-		f := filepath.Join(tmpDir, dockerenvName)
+		f := filepath.Join(tmpDir, ".dockerenv-b")
 
-		_, err := os.Create(f)
+		testFile, err := os.Create(f)
 		assert.NoError(t, err)
+		defer testFile.Close()
+
 		assert.True(t, inAContainer(f))
 	})
 }
@@ -453,6 +474,7 @@ func setupTestcontainersProperties(t *testing.T, content string) {
 	err := createTmpDir(homeDir)
 	require.Nil(t, err)
 	t.Setenv("HOME", homeDir)
+	t.Setenv("USERPROFILE", homeDir) // Windows support
 
 	if err := os.WriteFile(filepath.Join(homeDir, ".testcontainers.properties"), []byte(content), 0o600); err != nil {
 		t.Errorf("Failed to create the file: %v", err)
