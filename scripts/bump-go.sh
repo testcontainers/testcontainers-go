@@ -5,6 +5,7 @@
 # - go.mod in the core module and submodules.
 # - Markdown files explaining how to use Testcontainers for Go in the different CI systems.
 # - Github action workflows using a test matrix to test Testcontainers for Go in different versions of Go.
+# - Templates for the module generator.
 # - Devcontainer file for VSCode.
 #
 # By default, it will be run in dry-run mode, which will print the commands that would be executed, without actually
@@ -37,6 +38,7 @@ function main() {
   for modFile in $(find "${ROOT_DIR}" -name "go.mod" -not -path "${ROOT_DIR}/vendor/*" -not -path "${ROOT_DIR}/.git/*"); do
     bumpModFile "${modFile}" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
   done
+  bumpModFile "${ROOT_DIR}/modulegen/_template/go.mod.tmpl" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
 
   # bump markdown files
   for f in $(find "${ROOT_DIR}" -name "*.md"); do
@@ -47,6 +49,7 @@ function main() {
   for f in $(find "${ROOT_DIR}/.github/workflows" -name "*.yml"); do
     bumpCIMatrix "${f}" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
   done
+  bumpCIMatrix "${ROOT_DIR}/modulegen/_template/ci.yml.tmpl" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
 
   # bump devcontainer file
   bumpDevcontainer "${ROOT_DIR}/.devcontainer/devcontainer.json" "${escapedCurrentGoVersion}" "${escapedGoVersion}"

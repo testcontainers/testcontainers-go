@@ -28,7 +28,7 @@ jobs:
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: "."
       rootless-docker: false
-      run-tests: ${{ matrix.platform == 'ubuntu-latest' }}
+      run-tests: {{ "${{ matrix.platform == 'ubuntu-latest' }}" }}
       ryuk-disabled: false
 
   # The job below is a copy of the job above, but with ryuk disabled.
@@ -93,7 +93,7 @@ jobs:
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: {{ "modules/${{ matrix.module }}" }}
       rootless-docker: false
-      run-tests: ${{ matrix.platform == 'ubuntu-latest' }}
+      run-tests: {{ "${{ matrix.platform == 'ubuntu-latest' }}" }}
       ryuk-disabled: false
 
   test-examples:
@@ -109,5 +109,5 @@ jobs:
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: {{ "examples/${{ matrix.module }}" }}
       rootless-docker: false
-      run-tests: ${{ matrix.platform == 'ubuntu-latest' }}
+      run-tests: {{ "${{ matrix.platform == 'ubuntu-latest' }}" }}
       ryuk-disabled: false
