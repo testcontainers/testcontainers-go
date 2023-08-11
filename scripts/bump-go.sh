@@ -37,8 +37,28 @@ function main() {
     bumpModFile "${modFile}" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
   done
 
+  # bump markdown files
+  for f in $(find "${ROOT_DIR}" -name "*.md"); do
+    bumpGolangDockerImages "${f}" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
+  done
 }
 
+# it will replace the 'golang:${oldGoVersion}' with 'golang:${newGoVersion}' in the given file
+function bumpGolangDockerImages() {
+  local file="${1}"
+  local oldGoVersion="${2}"
+  local newGoVersion="${3}"
+
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "sed \"s/golang:${oldGoVersion}/golang:${newGoVersion}/g\" ${file} > ${file}.tmp"
+    echo "mv ${file}.tmp ${file}"
+  else
+    sed "s/golang:${oldGoVersion}/golang:${newGoVersion}/g" ${file} > ${file}.tmp
+    mv ${file}.tmp ${file}
+  fi
+}
+
+# it will replace the 'go ${oldGoVersion}' with 'go ${newGoVersion}' in the given go.mod file
 function bumpModFile() {
   local goModFile="${1}"
   local oldGoVersion="${2}"
