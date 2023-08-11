@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/examples/nats
 
-go 1.19
+go 1.20
 
 require (
 	github.com/nats-io/nats.go v1.28.0
