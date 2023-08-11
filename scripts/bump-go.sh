@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+# This script is used to bump the version of Go in Testcontainers for Go,
+# modifying the following files:
+# - go.mod in the core module and submodules.
+# - Markdown files explaining how to use Testcontainers for Go in the different CI systems.
+# - Github action workflows using a test matrix to test Testcontainers for Go in different versions of Go.
+# - Devcontainer file for VSCode.
+#
+# By default, it will be run in dry-run mode, which will print the commands that would be executed, without actually
+# executing them.
+#
+# Usage: ./scripts/bump-go.sh "1.20"
+#
+# It's possible to run the script without dry-run mode actually executing the commands.
+#
+# Usage: DRY_RUN="false" ./scripts/go.sh "1.20"
+
+readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+readonly DRY_RUN="${DRY_RUN:-true}"
+readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
+readonly GO_MOD_FILE="${ROOT_DIR}/go.mod"
+
+function main() {
+  echo "Updating Go version:"
+
+  local currentGoVersion="$(extractCurrentVersion)"
+  echo " - Current: ${currentGoVersion}"
+  local escapedCurrentGoVersion="$(echo "${currentGoVersion}" | sed 's/\./\\./g')"
+
+  local goVersion="${1}"
+  local escapedGoVersion="$(echo "${goVersion}" | sed 's/\./\\./g')"
+  echo " - New: ${goVersion}"
+
+  # bump mod files in all the modules
+  for modFile in $(find "${ROOT_DIR}" -name "go.mod" -not -path "${ROOT_DIR}/vendor/*" -not -path "${ROOT_DIR}/.git/*"); do
+    bumpModFile "${modFile}" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
+  done
+
+}
+
+function bumpModFile() {
+  local goModFile="${1}"
+  local oldGoVersion="${2}"
+  local newGoVersion="${3}"
+
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "sed \"s/^go ${oldGoVersion}/go ${newGoVersion}/g\" ${goModFile} > ${goModFile}.tmp"
+    echo "mv ${goModFile}.tmp ${goModFile}"
+  else
+    sed "s/^go ${oldGoVersion}/go ${newGoVersion}/g" ${goModFile} > ${goModFile}.tmp
+    mv ${goModFile}.tmp ${goModFile}
+  fi
+}
+
+# This function reads the reaper.go file and extracts the current version.
+function extractCurrentVersion() {
+  cat "${GO_MOD_FILE}" | grep '^go .*' | sed 's/^go //g' | head -n 1
+}
+
+main "$@"
