@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/clickhouse
 go 1.19
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.12.1
+	github.com/ClickHouse/clickhouse-go/v2 v2.13.0
 	github.com/docker/go-connections v0.4.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.22.0
@@ -36,7 +36,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc4 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
-	github.com/paulmach/orb v0.9.0 // indirect
+	github.com/paulmach/orb v0.10.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
