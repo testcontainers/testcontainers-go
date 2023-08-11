@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/docker/docker/client"
+	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 )
@@ -31,7 +32,8 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 
 	opts = append(opts, client.WithHTTPHeaders(
 		map[string]string{
-			"x-tc-sid": testcontainerssession.String(),
+			"x-tc-sid":   testcontainerssession.String(),
+			"User-Agent": "tc-go/" + internal.Version,
 		}),
 	)
 
