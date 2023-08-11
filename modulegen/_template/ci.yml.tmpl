@@ -28,6 +28,7 @@ jobs:
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: "."
       rootless-docker: false
+      run-tests: ${{ matrix.platform == 'ubuntu-latest' }}
       ryuk-disabled: false
 
   # The job below is a copy of the job above, but with ryuk disabled.
@@ -44,6 +45,7 @@ jobs:
       platform: "ubuntu-latest"
       project-directory: "."
       rootless-docker: false
+      run-tests: true
       ryuk-disabled: true
 
   # The job below is a copy of the job above, but with Docker rootless.
@@ -61,6 +63,7 @@ jobs:
       platform: "ubuntu-latest"
       project-directory: "."
       rootless-docker: true
+      run-tests: true
       ryuk-disabled: false
 
   test-module-generator:
@@ -74,6 +77,7 @@ jobs:
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: "modulegen"
       rootless-docker: false
+      run-tests: true
       ryuk-disabled: false
 
   test-modules:
@@ -83,15 +87,13 @@ jobs:
         go-version: [1.19.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
         module: [{{ .Modules }}]
-        exclude:
-          - module: compose
-            go-version: 1.19.x
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: {{ "modules/${{ matrix.module }}" }}
       rootless-docker: false
+      run-tests: ${{ matrix.platform == 'ubuntu-latest' }}
       ryuk-disabled: false
 
   test-examples:
@@ -107,4 +109,5 @@ jobs:
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: {{ "examples/${{ matrix.module }}" }}
       rootless-docker: false
+      run-tests: ${{ matrix.platform == 'ubuntu-latest' }}
       ryuk-disabled: false
