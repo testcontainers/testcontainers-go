@@ -41,6 +41,26 @@ function main() {
   for f in $(find "${ROOT_DIR}" -name "*.md"); do
     bumpGolangDockerImages "${f}" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
   done
+
+  # bump github action workflows
+  for f in $(find "${ROOT_DIR}/.github/workflows" -name "*.yml"); do
+    bumpCIMatrix "${f}" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
+  done
+}
+
+# it will replace the 'go-version: [${oldGoVersion}, 1.x]' with 'go-version: [${newGoVersion}, 1.x]' in the given file
+function bumpCIMatrix() {
+  local file="${1}"
+  local oldGoVersion="${2}"
+  local newGoVersion="${3}"
+
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "sed \"s/go-version: \[${oldGoVersion}/go-version: \[${newGoVersion}/g\" ${file} > ${file}.tmp"
+    echo "mv ${file}.tmp ${file}"
+  else
+    sed "s/go-version: \[${oldGoVersion}/go-version: \[${newGoVersion}/g" ${file} > ${file}.tmp
+    mv ${file}.tmp ${file}
+  fi
 }
 
 # it will replace the 'golang:${oldGoVersion}' with 'golang:${newGoVersion}' in the given file
