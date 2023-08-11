@@ -20,10 +20,10 @@ jobs:
   static-analysis:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
-      - uses: actions/checkout@v3
       - name: golangci-lint
         uses: golangci/golangci-lint-action@639cd343e1d3b897ff35927a75193d57cfcba299
         with:
