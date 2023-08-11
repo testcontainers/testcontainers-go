@@ -3,7 +3,9 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"net"
 	"path/filepath"
+	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -35,12 +37,8 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string
 		return "", err
 	}
 
-	extraArgs := ""
-	for _, arg := range args {
-		extraArgs += " " + arg
-	}
-
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s %s", host, containerPort.Port(), c.user, c.password, c.dbName, extraArgs)
+	extraArgs := strings.Join(args, "&")
+	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?%s", c.user, c.password, net.JoinHostPort(host, containerPort.Port()), c.dbName, extraArgs)
 	return connStr, nil
 }
 
@@ -58,7 +56,6 @@ func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
 		req.Files = append(req.Files, cfgFile)
 		req.Cmd = append(req.Cmd, "-c", "config_file=/etc/postgresql.conf")
 	}
-
 }
 
 // WithDatabase sets the initial database to be created when the container starts
