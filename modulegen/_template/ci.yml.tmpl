@@ -20,7 +20,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -38,7 +38,7 @@ jobs:
     needs: test
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.20.x, 1.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
@@ -55,7 +55,7 @@ jobs:
     needs: test
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -69,7 +69,7 @@ jobs:
   test-module-generator:
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -84,7 +84,7 @@ jobs:
     needs: test
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
         module: [{{ .Modules }}]
     uses: ./.github/workflows/ci-test-go.yml
@@ -100,7 +100,7 @@ jobs:
     needs: test-modules
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
         module: [{{ .Examples }}]
     uses: ./.github/workflows/ci-test-go.yml
