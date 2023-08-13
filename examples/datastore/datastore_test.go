@@ -1,12 +1,13 @@
 package datastore
 
 import (
-	"cloud.google.com/go/datastore"
 	"context"
+	"testing"
+
+	"cloud.google.com/go/datastore"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"testing"
 )
 
 type Task struct {

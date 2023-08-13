@@ -12,9 +12,10 @@ import (
 	vaultClient "github.com/hashicorp/vault-client-go"
 	"github.com/hashicorp/vault-client-go/schema"
 	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/gjson"
+
 	"github.com/testcontainers/testcontainers-go"
 	testcontainervault "github.com/testcontainers/testcontainers-go/modules/vault"
-	"github.com/tidwall/gjson"
 )
 
 const (

@@ -8,9 +8,10 @@ linters:
 linters-settings:
   gci:
     sections:
-    - standard
-    - default
-    - prefix(github.com/testcontainters)
+      - standard
+      - default
+      - prefix(github.com/testcontainers)
+    custom-order: true
 
 run:
   timeout: 5m

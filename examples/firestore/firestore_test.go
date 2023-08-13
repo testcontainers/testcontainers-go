@@ -1,12 +1,13 @@
 package firestore
 
 import (
-	"cloud.google.com/go/firestore"
 	"context"
+	"testing"
+
+	"cloud.google.com/go/firestore"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"testing"
 )
 
 type Person struct {

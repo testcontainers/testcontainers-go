@@ -10,6 +10,7 @@ import (
 	"dario.cat/mergo"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 

@@ -63,10 +63,6 @@ func getExamplesDocs() ([]os.DirEntry, error) {
 	return os.ReadDir(dir)
 }
 
-func getModules() ([]os.DirEntry, error) {
-	return getModulesOrExamples(true)
-}
-
 func getRootDir() (string, error) {
 	current, err := os.Getwd()
 	if err != nil {

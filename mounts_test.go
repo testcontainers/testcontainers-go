@@ -6,6 +6,7 @@ import (
 
 	"github.com/docker/docker/api/types/mount"
 	"github.com/stretchr/testify/assert"
+
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 

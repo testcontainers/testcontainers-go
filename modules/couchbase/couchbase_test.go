@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/couchbase/gocb/v2"
+
 	"github.com/testcontainers/testcontainers-go"
 	tccouchbase "github.com/testcontainers/testcontainers-go/modules/couchbase"
 )
@@ -179,7 +180,7 @@ func testBucketUsage(t *testing.T, bucket *gocb.Bucket) {
 	var resultData map[string]string
 	err = result.Content(&resultData)
 	if err != nil {
-		t.Fatalf("could not asign content: %s", err)
+		t.Fatalf("could not assign content: %s", err)
 	}
 
 	if resultData["key"] != "value" {

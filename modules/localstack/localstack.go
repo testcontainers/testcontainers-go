@@ -6,21 +6,17 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/mod/semver"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"golang.org/x/mod/semver"
 )
 
 const defaultPort = 4566
-const defaultRegion = "us-east-1"
 const defaultVersion = "1.4.0"
 const hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
 const localstackHostEnvVar = "LOCALSTACK_HOST"
-
-const defaultAccessKeyID = "accesskey"
-const defaultSecretAccessKey = "secretkey"
-const defaultToken = "token"
 
 func isLegacyMode(image string) bool {
 	parts := strings.Split(image, ":")

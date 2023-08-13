@@ -8,6 +8,7 @@ import (
 
 	// Import mysql into the scope of this package (required)
 	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/testcontainers/testcontainers-go"
 )
 

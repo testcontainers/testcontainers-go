@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/testcontainers/testcontainers-go/wait"
-
 	"github.com/docker/docker/api/types/container"
+
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (

@@ -8,6 +8,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 

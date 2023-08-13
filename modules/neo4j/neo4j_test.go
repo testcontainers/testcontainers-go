@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	neo "github.com/neo4j/neo4j-go-driver/v5/neo4j"
+
 	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 )
 
