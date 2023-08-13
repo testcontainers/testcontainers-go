@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/artemis
 ## Usage example
 
 <!--codeinclude-->
-[Creating an Artemis container](../../modules/artemis/example_test.go) inside_block:runContainer
+[Creating and connecting to an Artemis container](../../modules/artemis/example_test.go) inside_block:ExampleRunContainer
 <!--/codeinclude-->
 
 ## Module reference
@@ -25,7 +25,7 @@ go get github.com/testcontainers/testcontainers-go/modules/artemis
 The Artemis module exposes one entrypoint function to create the Artemis container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ArtemisContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.
@@ -50,6 +50,33 @@ for Artemis.
 
 At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
 
+#### Credentials
+
+If you need to change the default admin credentials (i.e. `artemis:artemis`) use `WithCredentials`.
+
+```go
+container, err := artemis.RunContainer(ctx, artemis.WithCredentials("user", "password"))
+```
+
+#### Anonymous Login
+
+If you need to enable anonymous logins (which are disabled by default) use `WithAnonymousLogin`.
+
+```go
+container, err := artemis.RunContainer(ctx, artemis.WithAnonymousLogin())
+```
+
+#### Custom Arguments
+
+If you need to pass custom arguments to the `artemis create` command, use `WithExtraArgs`.
+The default is `--http-host 0.0.0.0 --relax-jolokia`.
+Setting this value will override the default.
+See the documentation on `artemis create` for available options.
+
+```go
+container, err := artemis.RunContainer(ctx, artemis.WithExtraArgs("--http-host 0.0.0.0 --relax-jolokia --queues ArgsTestQueue"))
+```
+
 #### Docker type modifiers
 
 If you need an advanced configuration for Artemis, you can leverage the following Docker type modifiers:
@@ -64,5 +91,34 @@ Please read the [Create containers: Advanced Settings](../features/creating_cont
 
 The Artemis container exposes the following methods:
 
+#### User
 
+User returns the administrator username.
 
+```go
+user := container.User()
+```
+
+#### Password
+
+Password returns the administrator password.
+
+```go
+password := container.Password()
+```
+
+#### BrokerEndpoint
+
+BrokerEndpoint returns the host:port for the combined protocols endpoint.
+
+```go
+host, err := container.BrokerEndpoint(ctx)
+```
+
+#### ConsoleURL
+
+ConsoleURL returns the URL for the management console.
+
+```go
+url, err := container.ConsoleURL(ctx)
+```

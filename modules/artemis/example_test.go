@@ -10,25 +10,35 @@ import (
 func ExampleRunContainer() {
 	ctx := context.Background()
 
-	user := "username"
-	pass := "password"
-
-	// runContainer {
-	container, err := artemis.RunContainer(ctx, artemis.WithCredentials(user, pass))
+	// Run container.
+	container, err := artemis.RunContainer(ctx)
 	if err != nil {
 		panic(err)
 	}
-	// }
+	defer func() {
+		if err := container.Terminate(ctx); err != nil {
+			panic(err)
+		}
+	}()
 
+	// Get broker endpoint.
 	host, err := container.BrokerEndpoint(ctx)
 	if err != nil {
 		panic(err)
 	}
 
+	// Get credentials.
+	user := container.User()
+	pass := container.Password()
+
+	// Connect to Artemis via STOMP.
 	conn, err := stomp.Dial("tcp", host, stomp.ConnOpt.Login(user, pass))
 	if err != nil {
 		panic(err)
 	}
-
-	_ = conn
+	defer func() {
+		if err := conn.Disconnect(); err != nil {
+			panic(err)
+		}
+	}()
 }

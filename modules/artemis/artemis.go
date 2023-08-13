@@ -21,7 +21,7 @@ type Container struct {
 	password string
 }
 
-// Username returns the administrator username.
+// User returns the administrator username.
 func (c *Container) User() string {
 	return c.user
 }
@@ -73,29 +73,27 @@ func WithExtraArgs(args string) testcontainers.CustomizeRequestOption {
 
 // RunContainer creates an instance of the Artemis container type.
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image: "docker.io/apache/activemq-artemis:2.30.0-alpine",
-		Env: map[string]string{
-			"ARTEMIS_USER":     "artemis",
-			"ARTEMIS_PASSWORD": "artemis",
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "docker.io/apache/activemq-artemis:2.30.0-alpine",
+			Env: map[string]string{
+				"ARTEMIS_USER":     "artemis",
+				"ARTEMIS_PASSWORD": "artemis",
+			},
+			ExposedPorts: []string{defaultBrokerPort, defaultHTTPPort},
+			WaitingFor: wait.ForAll(
+				wait.ForLog("Server is now live"),
+				wait.ForLog("REST API available"),
+			),
 		},
-		ExposedPorts: []string{defaultBrokerPort, defaultHTTPPort},
-		WaitingFor: wait.ForAll(
-			wait.ForLog("Server is now live"),
-			wait.ForLog("REST API available"),
-		),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		opt.Customize(&req)
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.GenericContainer(ctx, req)
 	if err != nil {
 		return nil, err
 	}
