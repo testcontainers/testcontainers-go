@@ -15,7 +15,7 @@ jobs:
     machine: true
       image: ubuntu-2204:2023.04.2
     steps:
-      # install Go 1.19
+      # install Go 1.x
       # checkout the project
       - run: go test./...
 ```

@@ -7,7 +7,7 @@ is the minimal required config.
 language: go
 go:
 - 1.x
-- "1.19"
+- "1.20"
 
 services:
 - docker
