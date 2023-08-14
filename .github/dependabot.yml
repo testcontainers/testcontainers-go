@@ -148,6 +148,17 @@ updates:
             patterns:
                 - '*'
     - package-ecosystem: gomod
+      directory: /modules/artemis
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+      groups:
+        all:
+            patterns:
+                - '*'
+    - package-ecosystem: gomod
       directory: /modules/clickhouse
       schedule:
         interval: monthly
