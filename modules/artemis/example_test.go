@@ -28,8 +28,12 @@ func ExampleRunContainer() {
 	}
 
 	// Get credentials.
+	// containerUser {
 	user := container.User()
+	// }
+	// containerPassword {
 	pass := container.Password()
+	// }
 
 	// Connect to Artemis via STOMP.
 	conn, err := stomp.Dial("tcp", host, stomp.ConnOpt.Login(user, pass))

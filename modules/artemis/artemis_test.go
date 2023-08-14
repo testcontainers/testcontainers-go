@@ -31,7 +31,9 @@ func TestArtemis(t *testing.T) {
 		{
 			name: "WithCredentials",
 			opts: []testcontainers.ContainerCustomizer{
+				// withCredentials {
 				artemis.WithCredentials("test", "test"),
+				// }
 			},
 			user: "test",
 			pass: "test",
@@ -39,13 +41,17 @@ func TestArtemis(t *testing.T) {
 		{
 			name: "WithAnonymous",
 			opts: []testcontainers.ContainerCustomizer{
+				// withAnonymousLogin {
 				artemis.WithAnonymousLogin(),
+				// }
 			},
 		},
 		{
 			name: "WithExtraArgs",
 			opts: []testcontainers.ContainerCustomizer{
+				// withExtraArgs {
 				artemis.WithExtraArgs("--http-host 0.0.0.0 --relax-jolokia --queues ArgsTestQueue"),
+				// }
 			},
 			user: "artemis",
 			pass: "artemis",
@@ -61,7 +67,9 @@ func TestArtemis(t *testing.T) {
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, container.Terminate(ctx), "failed to terminate container") })
 
+			// consoleURL {
 			u, err := container.ConsoleURL(ctx)
+			// }
 			require.NoError(t, err)
 
 			res, err := http.Get(u)
@@ -77,7 +85,9 @@ func TestArtemis(t *testing.T) {
 				assert.Equal(t, test.pass, container.Password(), "unexpected password")
 			}
 
+			// brokerEndpoint {
 			host, err := container.BrokerEndpoint(ctx)
+			// }
 			require.NoError(t, err)
 
 			var opt []func(*stomp.Conn) error
