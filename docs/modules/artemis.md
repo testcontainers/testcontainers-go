@@ -54,17 +54,17 @@ At the same time, it's possible to set a wait strategy and a custom deadline wit
 
 If you need to change the default admin credentials (i.e. `artemis:artemis`) use `WithCredentials`.
 
-```go
-container, err := artemis.RunContainer(ctx, artemis.WithCredentials("user", "password"))
-```
+<!--codeinclude-->
+[With credentials](../../modules/artemis/artemis_test.go) inside_block:withCredentials
+<!--/codeinclude-->
 
 #### Anonymous Login
 
 If you need to enable anonymous logins (which are disabled by default) use `WithAnonymousLogin`.
 
-```go
-container, err := artemis.RunContainer(ctx, artemis.WithAnonymousLogin())
-```
+<!--codeinclude-->
+[With Anonymous Login](../../modules/artemis/artemis_test.go) inside_block:withAnonymousLogin
+<!--/codeinclude-->
 
 #### Custom Arguments
 
@@ -73,9 +73,9 @@ The default is `--http-host 0.0.0.0 --relax-jolokia`.
 Setting this value will override the default.
 See the documentation on `artemis create` for available options.
 
-```go
-container, err := artemis.RunContainer(ctx, artemis.WithExtraArgs("--http-host 0.0.0.0 --relax-jolokia --queues ArgsTestQueue"))
-```
+<!--codeinclude-->
+[With Extra Arguments](../../modules/artemis/artemis_test.go) inside_block:withExtraArgs
+<!--/codeinclude-->
 
 #### Docker type modifiers
 
@@ -95,30 +95,30 @@ The Artemis container exposes the following methods:
 
 User returns the administrator username.
 
-```go
-user := container.User()
-```
+<!--codeinclude-->
+[Retrieving the Administrator User](../../modules/artemis/example_test.go) inside_block:containerUser
+<!--/codeinclude-->
 
 #### Password
 
 Password returns the administrator password.
 
-```go
-password := container.Password()
-```
+<!--codeinclude-->
+[Retrieving the Administrator Password](../../modules/artemis/example_test.go) inside_block:containerPassword
+<!--/codeinclude-->
 
 #### BrokerEndpoint
 
 BrokerEndpoint returns the host:port for the combined protocols endpoint.
 
-```go
-host, err := container.BrokerEndpoint(ctx)
-```
+<!--codeinclude-->
+[Get broker endpoint](../../modules/artemis/artemis_test.go) inside_block:brokerEndpoint
+<!--/codeinclude-->
 
 #### ConsoleURL
 
 ConsoleURL returns the URL for the management console.
 
-```go
-url, err := container.ConsoleURL(ctx)
-```
+<!--codeinclude-->
+[Get console URL](../../modules/artemis/artemis_test.go) inside_block:consoleURL
+<!--/codeinclude-->
