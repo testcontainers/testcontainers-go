@@ -9,7 +9,7 @@ In some cases the memory available to Docker needs to be increased.
 Here is a sample Bitbucket Pipeline configuration that does a checkout of a project and runs Go tests:
 
 ```yml
-image: golang:1.19
+image: golang:1.x
 
 pipelines:
   default:

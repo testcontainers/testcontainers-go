@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/examples/bigtable
 
-go 1.19
+go 1.20
 
 require (
 	cloud.google.com/go/bigtable v1.19.0

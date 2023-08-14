@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/examples/consul
 
-go 1.19
+go 1.20
 
 require (
 	github.com/hashicorp/consul/api v1.24.0

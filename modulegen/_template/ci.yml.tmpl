@@ -20,7 +20,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -28,6 +28,7 @@ jobs:
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: "."
       rootless-docker: false
+      run-tests: {{ "${{ matrix.platform == 'ubuntu-latest' }}" }}
       ryuk-disabled: false
 
   # The job below is a copy of the job above, but with ryuk disabled.
@@ -37,13 +38,14 @@ jobs:
     needs: test
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.20.x, 1.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
       platform: "ubuntu-latest"
       project-directory: "."
       rootless-docker: false
+      run-tests: true
       ryuk-disabled: true
 
   # The job below is a copy of the job above, but with Docker rootless.
@@ -53,7 +55,7 @@ jobs:
     needs: test
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -61,12 +63,13 @@ jobs:
       platform: "ubuntu-latest"
       project-directory: "."
       rootless-docker: true
+      run-tests: true
       ryuk-disabled: false
 
   test-module-generator:
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -74,31 +77,30 @@ jobs:
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: "modulegen"
       rootless-docker: false
+      run-tests: true
       ryuk-disabled: false
 
   test-modules:
     needs: test
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
         module: [{{ .Modules }}]
-        exclude:
-          - module: compose
-            go-version: 1.19.x
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: {{ "modules/${{ matrix.module }}" }}
       rootless-docker: false
+      run-tests: {{ "${{ matrix.platform == 'ubuntu-latest' }}" }}
       ryuk-disabled: false
 
   test-examples:
     needs: test-modules
     strategy:
       matrix:
-        go-version: [1.19.x, 1.x]
+        go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
         module: [{{ .Examples }}]
     uses: ./.github/workflows/ci-test-go.yml
@@ -107,4 +109,5 @@ jobs:
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: {{ "examples/${{ matrix.module }}" }}
       rootless-docker: false
+      run-tests: {{ "${{ matrix.platform == 'ubuntu-latest' }}" }}
       ryuk-disabled: false
