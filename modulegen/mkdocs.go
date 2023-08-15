@@ -48,10 +48,6 @@ func getMkdocsConfigFile(rootDir string) string {
 	return filepath.Join(rootDir, "mkdocs.yml")
 }
 
-func getExamples() ([]os.DirEntry, error) {
-	return getModulesOrExamples(false)
-}
-
 func getExamplesDocs() ([]os.DirEntry, error) {
 	parent, err := getRootDir()
 	if err != nil {
@@ -61,10 +57,6 @@ func getExamplesDocs() ([]os.DirEntry, error) {
 	dir := filepath.Join(parent, "docs", "examples")
 
 	return os.ReadDir(dir)
-}
-
-func getModules() ([]os.DirEntry, error) {
-	return getModulesOrExamples(true)
 }
 
 func getRootDir() (string, error) {

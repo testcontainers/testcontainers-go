@@ -15,6 +15,8 @@ import (
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"github.com/testcontainers/testcontainers-go/modulegen/pkg/workflow"
 )
 
 var asModuleVar bool
@@ -218,25 +220,8 @@ func generate(example Example, rootDir string) error {
 			// GitHub workflow file will go into the .github/workflows directory
 			exampleFilePath = filepath.Join(githubWorkflowsDir, "ci.yml")
 
-			type stringsList struct {
-				Examples string
-				Modules  string
-			}
-
 			syncDataFn = func() any {
-				modulesList, err := getModulesOrExamplesAsString(true)
-				if err != nil {
-					return ""
-				}
-				examplesList, err := getModulesOrExamplesAsString(false)
-				if err != nil {
-					return ""
-				}
-
-				return stringsList{
-					Examples: examplesList,
-					Modules:  modulesList,
-				}
+				return workflow.GetDirectories(rootDir)
 			}
 		} else {
 			exampleFilePath = filepath.Join(outputDir, exampleLower, strings.ReplaceAll(tmpl, "example", exampleLower))
@@ -321,53 +306,6 @@ func generateMkdocs(rootDir string, example Example) error {
 	}
 
 	return writeMkdocsConfig(rootDir, mkdocsConfig)
-}
-
-func getModulesOrExamples(t bool) ([]os.DirEntry, error) {
-	baseDir := "examples"
-	if t {
-		baseDir = "modules"
-	}
-
-	parent, err := getRootDir()
-	if err != nil {
-		return nil, err
-	}
-
-	dir := filepath.Join(parent, baseDir)
-
-	allFiles, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	dirs := make([]os.DirEntry, 0)
-
-	for _, f := range allFiles {
-		// only accept the directories and not the template
-		if f.IsDir() && f.Name() != "_template" {
-			dirs = append(dirs, f)
-		}
-	}
-
-	return dirs, nil
-}
-
-func getModulesOrExamplesAsString(t bool) (string, error) {
-	dirs, err := getModulesOrExamples(t)
-	if err != nil {
-		return "", err
-	}
-
-	// sort the dir names by name
-	names := make([]string, len(dirs))
-	for i, f := range dirs {
-		names[i] = f.Name()
-	}
-
-	sort.Strings(names)
-
-	return strings.Join(names, ", "), nil
 }
 
 func runGoCommand(cmdDir string, args ...string) error {

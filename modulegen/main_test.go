@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/testcontainers/testcontainers-go/modulegen/pkg/workflow"
 )
 
 func TestExample(t *testing.T) {
@@ -475,11 +477,13 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 
 	data := sanitiseContent(content)
 
-	modulesList, err := getModulesOrExamplesAsString(true)
+	parent, err := getRootDir()
+	assert.Nil(t, err)
+	modulesList, err := workflow.GetProjectsAsString(parent, "modules")
 	assert.Nil(t, err)
 	assert.Equal(t, "        module: ["+modulesList+"]", data[88])
 
-	examplesList, err := getModulesOrExamplesAsString(false)
+	examplesList, err := workflow.GetProjectsAsString(parent, "examples")
 	assert.Nil(t, err)
 	assert.Equal(t, "        module: ["+examplesList+"]", data[104])
 }

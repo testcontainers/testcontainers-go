@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go/modulegen/pkg/workflow"
 )
 
 func TestGetDependabotConfigFile(t *testing.T) {
@@ -73,7 +75,9 @@ func TestReadDependabotConfig(t *testing.T) {
 }
 
 func TestExamplesHasDependabotEntry(t *testing.T) {
-	examples, err := getExamples()
+	parent, err := getRootDir()
+	require.NoError(t, err)
+	examples, err := workflow.GetProjects(parent, "examples")
 	require.NoError(t, err)
 	dependabotUpdates, err := getDependabotUpdates()
 	require.NoError(t, err)

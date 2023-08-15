@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go/modulegen/pkg/workflow"
 )
 
 func TestGetMkDocsConfigFile(t *testing.T) {
@@ -58,7 +60,9 @@ func TestReadMkDocsConfig(t *testing.T) {
 }
 
 func TestExamples(t *testing.T) {
-	examples, err := getExamples()
+	parent, err := getRootDir()
+	require.NoError(t, err)
+	examples, err := workflow.GetProjects(parent, "examples")
 	require.NoError(t, err)
 	examplesDocs, err := getExamplesDocs()
 	require.NoError(t, err)
