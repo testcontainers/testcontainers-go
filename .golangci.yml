@@ -4,14 +4,12 @@ linters:
     - gofmt
     - misspell
 
-
 linters-settings:
   gci:
     sections:
       - standard
       - default
       - prefix(github.com/testcontainers)
-    custom-order: true
 
 run:
   timeout: 5m
