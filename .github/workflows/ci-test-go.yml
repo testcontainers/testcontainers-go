@@ -53,14 +53,14 @@ jobs:
         if: ${{ inputs.rootless-docker }}
         run: sudo rm -rf /var/run/docker.sock
 
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
             go-version: ${{ inputs.go-version }}
         id: go
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
 
       - name: golangci-lint
         # TODO: Remove each example/module once it passes the golangci-lint
