@@ -15,6 +15,8 @@ import (
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 )
 
 var (
@@ -172,10 +174,11 @@ func generate(example Example, rootDir string) error {
 	if err := example.Validate(); err != nil {
 		return err
 	}
+	ctx := &Context{RootDir: rootDir}
 
-	githubWorkflowsDir := filepath.Join(rootDir, ".github", "workflows")
+	githubWorkflowsDir := ctx.GithubWorkflowsDir()
 	outputDir := filepath.Join(rootDir, example.ParentDir())
-	docsOuputDir := filepath.Join(rootDir, "docs", example.ParentDir())
+	docsOuputDir := filepath.Join(ctx.DocsDir(), example.ParentDir())
 
 	funcMap := template.FuncMap{
 		"Entrypoint":    func() string { return example.Entrypoint() },
@@ -267,7 +270,7 @@ func generate(example Example, rootDir string) error {
 	}
 
 	// update examples in dependabot
-	err = generateDependabotUpdates(rootDir, example)
+	err = generateDependabotUpdates(ctx, example)
 	if err != nil {
 		return err
 	}
@@ -275,15 +278,10 @@ func generate(example Example, rootDir string) error {
 	return nil
 }
 
-func generateDependabotUpdates(rootDir string, example Example) error {
+func generateDependabotUpdates(ctx *Context, example Example) error {
 	// update examples in dependabot
-	dependabotConfig, err := readDependabotConfig(rootDir)
-	if err != nil {
-		return err
-	}
-	dependabotConfig.Updates = append(dependabotConfig.Updates, NewUpdate(example))
-	sort.Sort(dependabotConfig.Updates)
-	return writeDependabotConfig(rootDir, dependabotConfig)
+	directory := "/" + example.ParentDir() + "/" + example.Lower()
+	return dependabot.UpdateConfig(ctx.DependabotConfigFile(), directory, "gomod")
 }
 
 func generateMkdocs(rootDir string, example Example) error {
