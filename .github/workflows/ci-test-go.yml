@@ -59,7 +59,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-            go-version: ${{ inputs.go-version }}
+            go-version: '${{ inputs.go-version }}'
+            cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
         id: go
 
       - name: golangci-lint
