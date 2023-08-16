@@ -98,7 +98,7 @@ func NewDockerClientWithOpts(ctx context.Context, opt ...client.Opt) (*DockerCli
 		Client: dockerClient,
 	}
 
-	if _, err = tcClient.Info(context.Background()); err != nil {
+	if _, err = tcClient.Info(ctx); err != nil {
 		// Fallback to environment, including the original options
 		if len(opt) == 0 {
 			opt = []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
