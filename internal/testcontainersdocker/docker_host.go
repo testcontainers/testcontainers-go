@@ -30,11 +30,15 @@ var (
 	ErrTestcontainersHostNotSetInProperties = errors.New("tc.host not set in ~/.testcontainers.properties")
 )
 
-var dockerHostCache string
-var dockerHostOnce sync.Once
+var (
+	dockerHostCache string
+	dockerHostOnce  sync.Once
+)
 
-var dockerSocketPathCache string
-var dockerSocketPathOnce sync.Once
+var (
+	dockerSocketPathCache string
+	dockerSocketPathOnce  sync.Once
+)
 
 // deprecated
 // see https://github.com/testcontainers/testcontainers-java/blob/main/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L46

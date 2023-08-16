@@ -23,7 +23,6 @@ func TestParallelContainers(t *testing.T) {
 			reqs: ParallelContainerRequest{
 				{
 					ContainerRequest: ContainerRequest{
-
 						Image: "nginx",
 						ExposedPorts: []string{
 							"10080/tcp",
@@ -33,7 +32,6 @@ func TestParallelContainers(t *testing.T) {
 				},
 				{
 					ContainerRequest: ContainerRequest{
-
 						Image: "bad bad bad",
 						ExposedPorts: []string{
 							"10081/tcp",
@@ -50,7 +48,6 @@ func TestParallelContainers(t *testing.T) {
 			reqs: ParallelContainerRequest{
 				{
 					ContainerRequest: ContainerRequest{
-
 						Image: "bad bad bad",
 						ExposedPorts: []string{
 							"10081/tcp",
@@ -60,7 +57,6 @@ func TestParallelContainers(t *testing.T) {
 				},
 				{
 					ContainerRequest: ContainerRequest{
-
 						Image: "bad bad bad",
 						ExposedPorts: []string{
 							"10081/tcp",
@@ -77,7 +73,6 @@ func TestParallelContainers(t *testing.T) {
 			reqs: ParallelContainerRequest{
 				{
 					ContainerRequest: ContainerRequest{
-
 						Image: "nginx",
 						ExposedPorts: []string{
 							"10080/tcp",
@@ -87,7 +82,6 @@ func TestParallelContainers(t *testing.T) {
 				},
 				{
 					ContainerRequest: ContainerRequest{
-
 						Image: "nginx",
 						ExposedPorts: []string{
 							"10081/tcp",

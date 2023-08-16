@@ -109,7 +109,6 @@ func TestWithCredentials(t *testing.T) {
 		testcontainers.WithImage(communityEdition),
 		tccouchbase.WithAdminCredentials("testcontainers", "testcontainers.IS.cool!"),
 		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
-
 	if err != nil {
 		t.Errorf("Expected error to be [%v] , got nil", err)
 	}

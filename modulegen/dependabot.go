@@ -134,5 +134,5 @@ func writeDependabotConfig(rootDir string, config *DependabotConfig) error {
 
 	data = append([]byte(header), data...)
 
-	return os.WriteFile(file, data, 0777)
+	return os.WriteFile(file, data, 0o777)
 }

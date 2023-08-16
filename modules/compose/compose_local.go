@@ -30,15 +30,13 @@ type ComposeVersion interface {
 	Format(parts ...string) string
 }
 
-type composeVersion1 struct {
-}
+type composeVersion1 struct{}
 
 func (c composeVersion1) Format(parts ...string) string {
 	return strings.Join(parts, "_")
 }
 
-type composeVersion2 struct {
-}
+type composeVersion2 struct{}
 
 func (c composeVersion2) Format(parts ...string) string {
 	return strings.Join(parts, "-")
@@ -279,8 +277,8 @@ type ExecError struct {
 
 // execute executes a program with arguments and environment variables inside a specific directory
 func execute(
-	dirContext string, environment map[string]string, binary string, args []string) ExecError {
-
+	dirContext string, environment map[string]string, binary string, args []string,
+) ExecError {
 	var errStdout, errStderr error
 
 	cmd := exec.Command(binary, args...)

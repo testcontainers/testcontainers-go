@@ -146,7 +146,7 @@ func TestMySQLWithConfigFile(t *testing.T) {
 	}
 	defer stmt.Close()
 	row := stmt.QueryRow()
-	var innodbFileFormat = ""
+	innodbFileFormat := ""
 	err = row.Scan(&innodbFileFormat)
 	if err != nil {
 		t.Errorf("error fetching innodb_file_format value")

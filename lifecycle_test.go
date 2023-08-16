@@ -560,7 +560,6 @@ func TestLifecycleHooks(t *testing.T) {
 			lifecycleHooksIsHonouredFn(t, ctx, c, prints)
 		})
 	}
-
 }
 
 type inMemoryLogger struct {
@@ -705,7 +704,6 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 		}
 		assert.True(t, found, "container log line not found in the output of the logger: %s", line)
 	}
-
 }
 
 func lifecycleHooksIsHonouredFn(t *testing.T, ctx context.Context, container Container, prints []string) {

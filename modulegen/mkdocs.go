@@ -98,5 +98,5 @@ func writeMkdocsConfig(rootDir string, config *MkDocsConfig) error {
 
 	file := getMkdocsConfigFile(rootDir)
 
-	return os.WriteFile(file, data, 0777)
+	return os.WriteFile(file, data, 0o777)
 }

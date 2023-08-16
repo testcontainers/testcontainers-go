@@ -12,9 +12,11 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-const dbname = "testdb"
-const user = "clickhouse"
-const password = "password"
+const (
+	dbname   = "testdb"
+	user     = "clickhouse"
+	password = "password"
+)
 
 type Test struct {
 	Id uint64

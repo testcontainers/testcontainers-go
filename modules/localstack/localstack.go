@@ -13,10 +13,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const defaultPort = 4566
-const defaultVersion = "1.4.0"
-const hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
-const localstackHostEnvVar = "LOCALSTACK_HOST"
+const (
+	defaultPort            = 4566
+	defaultVersion         = "1.4.0"
+	hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
+	localstackHostEnvVar   = "LOCALSTACK_HOST"
+)
 
 func isLegacyMode(image string) bool {
 	parts := strings.Split(image, ":")

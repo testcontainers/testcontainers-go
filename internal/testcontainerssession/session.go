@@ -6,8 +6,10 @@ import (
 	"github.com/google/uuid"
 )
 
-var id uuid.UUID
-var idOnce sync.Once
+var (
+	id     uuid.UUID
+	idOnce sync.Once
+)
 
 func ID() uuid.UUID {
 	idOnce.Do(func() {

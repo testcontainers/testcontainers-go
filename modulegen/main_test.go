@@ -154,11 +154,11 @@ func TestGenerateWrongExampleName(t *testing.T) {
 	examplesDocTmp := filepath.Join(rootTmp, "docs", "examples")
 	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
 
-	err := os.MkdirAll(examplesTmp, 0777)
+	err := os.MkdirAll(examplesTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(examplesDocTmp, 0777)
+	err = os.MkdirAll(examplesDocTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	assert.Nil(t, err)
 
 	err = copyInitialMkdocsConfig(t, rootTmp)
@@ -197,11 +197,11 @@ func TestGenerateWrongExampleTitle(t *testing.T) {
 	examplesDocTmp := filepath.Join(rootTmp, "docs", "examples")
 	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
 
-	err := os.MkdirAll(examplesTmp, 0777)
+	err := os.MkdirAll(examplesTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(examplesDocTmp, 0777)
+	err = os.MkdirAll(examplesDocTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	assert.Nil(t, err)
 
 	err = copyInitialMkdocsConfig(t, rootTmp)
@@ -241,11 +241,11 @@ func TestGenerate(t *testing.T) {
 	examplesDocTmp := filepath.Join(rootTmp, "docs", "examples")
 	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
 
-	err := os.MkdirAll(examplesTmp, 0777)
+	err := os.MkdirAll(examplesTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(examplesDocTmp, 0777)
+	err = os.MkdirAll(examplesDocTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	assert.Nil(t, err)
 
 	err = copyInitialMkdocsConfig(t, rootTmp)
@@ -312,11 +312,11 @@ func TestGenerateModule(t *testing.T) {
 	modulesDocTmp := filepath.Join(rootTmp, "docs", "modules")
 	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
 
-	err := os.MkdirAll(modulesTmp, 0777)
+	err := os.MkdirAll(modulesTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(modulesDocTmp, 0777)
+	err = os.MkdirAll(modulesDocTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	assert.Nil(t, err)
 
 	err = copyInitialMkdocsConfig(t, rootTmp)

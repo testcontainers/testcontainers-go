@@ -2191,7 +2191,7 @@ func TestNetworkModeWithContainerReference(t *testing.T) {
 // creates a temporary dir in which the files will be extracted. Then it will compare the bytes of each file in the source with the bytes from the copied-from-container file
 func assertExtractedFiles(t *testing.T, ctx context.Context, container Container, hostFilePath string, containerFilePath string) {
 	// create all copied files into a temporary dir
-	tmpDir := filepath.Join(t.TempDir())
+	tmpDir := t.TempDir()
 
 	// compare the bytes of each file in the source with the bytes from the copied-from-container file
 	srcFiles, err := os.ReadDir(hostFilePath)

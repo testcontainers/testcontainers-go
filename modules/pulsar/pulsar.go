@@ -12,12 +12,14 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const defaultPulsarImage = "docker.io/apachepulsar/pulsar:2.10.2"
-const defaultPulsarPort = "6650/tcp"
-const defaultPulsarAdminPort = "8080/tcp"
-const defaultPulsarCmd = "/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone"
-const detaultPulsarCmdWithoutFunctionsWorker = "--no-functions-worker -nss"
-const transactionTopicEndpoint = "/admin/v2/persistent/pulsar/system/transaction_coordinator_assign/partitions"
+const (
+	defaultPulsarImage                     = "docker.io/apachepulsar/pulsar:2.10.2"
+	defaultPulsarPort                      = "6650/tcp"
+	defaultPulsarAdminPort                 = "8080/tcp"
+	defaultPulsarCmd                       = "/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone"
+	detaultPulsarCmdWithoutFunctionsWorker = "--no-functions-worker -nss"
+	transactionTopicEndpoint               = "/admin/v2/persistent/pulsar/system/transaction_coordinator_assign/partitions"
+)
 
 var defaultWaitStrategies = wait.ForAll(
 	wait.ForHTTP("/admin/v2/clusters").WithPort(defaultPulsarAdminPort).WithResponseMatcher(func(r io.Reader) bool {

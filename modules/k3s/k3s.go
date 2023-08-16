@@ -48,7 +48,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				"/var/run": "",
 			}
 			hc.Mounts = []mount.Mount{}
-
 		},
 		Cmd: []string{
 			"server",
@@ -135,7 +134,6 @@ func (c *K3sContainer) GetKubeConfig(ctx context.Context) ([]byte, error) {
 }
 
 func kubeConfigWithServerUrl(kubeConfigYaml, server string) ([]byte, error) {
-
 	kubeConfig, err := unmarshal([]byte(kubeConfigYaml))
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal kubeconfig: %w", err)

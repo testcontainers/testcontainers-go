@@ -96,7 +96,8 @@ func TestSpanner(t *testing.T) {
 	_, err = client.Apply(ctx, []*spanner.Mutation{
 		spanner.Insert("Languages",
 			[]string{"language", "mascot"},
-			[]interface{}{"Go", "Gopher"})})
+			[]interface{}{"Go", "Gopher"}),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

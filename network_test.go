@@ -69,7 +69,6 @@ func Test_NetworkWithIPAM(t *testing.T) {
 			IPAM:           &ipamConfig,
 		},
 	})
-
 	if err != nil {
 		t.Fatal("cannot create network: ", err)
 	}
@@ -130,7 +129,6 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 	net, err := GenericNetwork(ctx, GenericNetworkRequest{
 		NetworkRequest: networkRequest,
 	})
-
 	if err != nil {
 		t.Fatal("cannot create network")
 	}

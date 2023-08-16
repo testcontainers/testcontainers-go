@@ -317,7 +317,6 @@ func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.Containe
 // Logs will fetch both STDOUT and STDERR from the current container. Returns a
 // ReadCloser and leaves it up to the caller to extract what it wants.
 func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
-
 	const streamHeaderSize = 8
 
 	options := types.ContainerLogsOptions{
@@ -335,7 +334,7 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	r := bufio.NewReader(rc)
 
 	go func() {
-		var lineStarted = true
+		lineStarted := true
 		for err == nil {
 			line, isPrefix, err := r.ReadLine()
 

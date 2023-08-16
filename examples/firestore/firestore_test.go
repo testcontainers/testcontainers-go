@@ -15,12 +15,12 @@ type Person struct {
 	Lastname  string `json:"lastname"`
 }
 
-type emulatorCreds struct {
-}
+type emulatorCreds struct{}
 
 func (ec emulatorCreds) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
 	return map[string]string{"authorization": "Bearer owner"}, nil
 }
+
 func (ec emulatorCreds) RequireTransportSecurity() bool {
 	return false
 }

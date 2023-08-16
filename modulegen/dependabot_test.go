@@ -16,10 +16,10 @@ func TestGetDependabotConfigFile(t *testing.T) {
 	rootDir := filepath.Join(tmp, "testcontainers-go")
 	githubDir := filepath.Join(rootDir, ".github")
 	cfgFile := filepath.Join(githubDir, "dependabot.yml")
-	err := os.MkdirAll(githubDir, 0777)
+	err := os.MkdirAll(githubDir, 0o777)
 	require.NoError(t, err)
 
-	err = os.WriteFile(cfgFile, []byte{}, 0777)
+	err = os.WriteFile(cfgFile, []byte{}, 0o777)
 	require.NoError(t, err)
 
 	file := getDependabotConfigFile(rootDir)
@@ -59,7 +59,7 @@ func TestReadDependabotConfig(t *testing.T) {
 
 	rootDir := filepath.Join(tmp, "testcontainers-go")
 	githubDir := filepath.Join(rootDir, ".github")
-	err := os.MkdirAll(githubDir, 0777)
+	err := os.MkdirAll(githubDir, 0o777)
 	require.NoError(t, err)
 
 	err = copyInitialDependabotConfig(t, rootDir)
