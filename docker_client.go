@@ -38,6 +38,22 @@ func (c *TestcontainersClient) Info(ctx context.Context) (types.Info, error) {
 			dockerInfoOnce = sync.Once{}
 			return
 		}
+
+		infoMessage := `%v - Connected to docker: 
+  Server Version: %v
+  API Version: %v
+  Operating System: %v
+  Total Memory: %v MB
+  Resolved Docker Host: %s
+  Resolved Docker Socket Path: %s
+`
+
+		Logger.Printf(infoMessage, packagePath,
+			dockerInfo.ServerVersion, c.Client.ClientVersion(),
+			dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
+			testcontainersdocker.ExtractDockerHost(ctx),
+			testcontainersdocker.ExtractDockerSocket(ctx),
+		)
 	})
 
 	return dockerInfo, err

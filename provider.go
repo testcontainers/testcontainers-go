@@ -155,10 +155,5 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		config:                tcConfig,
 	}
 
-	// log docker server info only once
-	logOnce.Do(func() {
-		LogDockerServerInfo(context.Background(), p.client, p.Logger)
-	})
-
 	return p, nil
 }

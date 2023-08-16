@@ -133,11 +133,6 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		containers:     make(map[string]*testcontainers.DockerContainer),
 	}
 
-	// log docker server info only once
-	composeLogOnce.Do(func() {
-		testcontainers.LogDockerServerInfo(context.Background(), dockerCli.Client(), testcontainers.Logger)
-	})
-
 	return composeAPI, nil
 }
 
