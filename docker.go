@@ -779,10 +779,7 @@ func NewDockerClient() (cli *client.Client, err error) {
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
-	repo := uuid.New()
-	tag := uuid.New()
-
-	repoTag := fmt.Sprintf("%s:%s", repo, tag)
+	repoTag := fmt.Sprintf("%s:%s", img.GetRepo(), img.GetTag())
 
 	buildContext, err := img.GetContext()
 	if err != nil {

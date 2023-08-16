@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"io"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -62,6 +64,8 @@ type Container interface {
 type ImageBuildInfo interface {
 	GetContext() (io.Reader, error)                 // the path to the build context
 	GetDockerfile() string                          // the relative path to the Dockerfile, including the fileitself
+	GetRepo() string                                // get repo label for image
+	GetTag() string                                 // get tag label for image
 	ShouldPrintBuildLog() bool                      // allow build log to be printed to stdout
 	ShouldBuildImage() bool                         // return true if the image needs to be built
 	GetBuildArgs() map[string]*string               // return the environment args used to build the from Dockerfile
@@ -71,9 +75,11 @@ type ImageBuildInfo interface {
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
 // rather than using a pre-built one
 type FromDockerfile struct {
-	Context        string                         // the path to the context of of the docker build
+	Context        string                         // the path to the context of the docker build
 	ContextArchive io.Reader                      // the tar archive file to send to docker that contains the build context
 	Dockerfile     string                         // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
+	Repo           string                         // the repo label for image, defaults to UUID
+	Tag            string                         // the tag label for image, defaults to UUID
 	BuildArgs      map[string]*string             // enable user to pass build args to docker daemon
 	PrintBuildLog  bool                           // enable user to print build log
 	AuthConfigs    map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Enable auth configs to be able to pull from an authenticated docker registry
@@ -202,6 +208,26 @@ func (c *ContainerRequest) GetDockerfile() string {
 	}
 
 	return f
+}
+
+// GetRepo returns the Repo label for image from the ContainerRequest, defaults to UUID
+func (c *ContainerRequest) GetRepo() string {
+	r := c.FromDockerfile.Repo
+	if r == "" {
+		return uuid.NewString()
+	}
+
+	return strings.ToLower(r)
+}
+
+// GetTag returns the Tag label for image from the ContainerRequest, defaults to UUID
+func (c *ContainerRequest) GetTag() string {
+	t := c.FromDockerfile.Tag
+	if t == "" {
+		return uuid.NewString()
+	}
+
+	return strings.ToLower(t)
 }
 
 // GetAuthConfigs returns the auth configs to be able to pull from an authenticated docker registry
