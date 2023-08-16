@@ -267,7 +267,7 @@ func TestCreateContainerWithVolume(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created
-	client, err := testcontainersdocker.NewClient(ctx)
+	client, err := NewTestcontainersClient(ctx)
 	assert.NoError(t, err)
 	defer client.Close()
 

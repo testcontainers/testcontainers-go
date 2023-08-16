@@ -15,7 +15,6 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -647,7 +646,7 @@ func (l *linesTestLogger) Printf(format string, args ...interface{}) {
 
 func TestPrintContainerLogsOnError(t *testing.T) {
 	ctx := context.Background()
-	client, err := testcontainersdocker.NewClient(ctx)
+	client, err := NewTestcontainersClient(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

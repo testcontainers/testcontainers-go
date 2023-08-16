@@ -45,23 +45,5 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 		return nil, err
 	}
 
-	if _, err = cli.Info(context.Background()); err != nil {
-		// Fallback to environment, including the original options
-		cli, err = defaultClient(context.Background(), ops...)
-		if err != nil {
-			return nil, err
-		}
-	}
-	defer cli.Close()
-
 	return cli, nil
-}
-
-// defaultClient returns a plain, new docker client with the default options
-func defaultClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
-	if len(ops) == 0 {
-		ops = []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
-	}
-
-	return client.NewClientWithOpts(ops...)
 }

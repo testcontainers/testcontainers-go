@@ -139,7 +139,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 	}
 
 	ctx := context.Background()
-	c, err := testcontainersdocker.NewClient(ctx)
+	c, err := NewTestcontainersClient(ctx)
 	if err != nil {
 		return nil, err
 	}

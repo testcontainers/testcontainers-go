@@ -17,7 +17,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -125,7 +124,7 @@ func (dc *LocalDockerCompose) containerNameFromServiceName(service, separator st
 }
 
 func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
-	cli, err := testcontainersdocker.NewClient(context.Background())
+	cli, err := testcontainers.NewTestcontainersClient(context.Background())
 	if err != nil {
 		return err
 	}
