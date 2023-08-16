@@ -15,7 +15,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -42,7 +41,6 @@ var (
 	// Implement interfaces
 	_ Container = (*DockerContainer)(nil)
 
-	logOnce                 sync.Once
 	ErrDuplicateMountTarget = errors.New("duplicate mount target detected")
 )
 
