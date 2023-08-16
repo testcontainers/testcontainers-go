@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"sync"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
@@ -14,6 +15,11 @@ type TestcontainersClient struct {
 	*client.Client // client is embedded into our own client
 }
 
+var (
+	dockerInfo     types.Info // dockerInfo stores the docker info to be reused in the Info method
+	dockerInfoOnce sync.Once
+)
+
 // implements SystemAPIClient interface
 var _ client.SystemAPIClient = &TestcontainersClient{}
 
@@ -24,7 +30,17 @@ func (c *TestcontainersClient) Events(ctx context.Context, options types.EventsO
 
 // Info returns information about the docker server.
 func (c *TestcontainersClient) Info(ctx context.Context) (types.Info, error) {
-	return c.Client.Info(ctx)
+	var err error
+	dockerInfoOnce.Do(func() {
+		dockerInfo, err = c.Client.Info(ctx)
+		if err != nil {
+			// reset the state of the sync.Once so that the next call to Info will try again
+			dockerInfoOnce = sync.Once{}
+			return
+		}
+	})
+
+	return dockerInfo, err
 }
 
 // RegistryLogin logs into a Docker registry.
