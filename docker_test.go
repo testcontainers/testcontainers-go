@@ -322,7 +322,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	client, err := NewTestcontainersClient(ctx)
+	client, err := NewDockerClientWithOpts(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +362,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	client, err := NewTestcontainersClient(ctx)
+	client, err := NewDockerClientWithOpts(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -619,7 +619,7 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	t.Run("if not built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := NewTestcontainersClient(ctx)
+		client, err := NewDockerClientWithOpts(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -650,7 +650,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 	t.Run("if built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := NewTestcontainersClient(ctx)
+		client, err := NewDockerClientWithOpts(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1379,7 +1379,7 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cnl()
 	// Create a Docker client.
-	dockerCli, err := NewTestcontainersClient(context.Background())
+	dockerCli, err := NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1535,7 +1535,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		require.NoError(t, err)
 		terminateContainerOnEnd(t, ctx, c)
 
-		dockerCli, err := NewTestcontainersClient(ctx)
+		dockerCli, err := NewDockerClientWithOpts(ctx)
 		require.NoError(t, err)
 		defer dockerCli.Close()
 
@@ -1573,7 +1573,7 @@ func TestContainerWithCustomHostname(t *testing.T) {
 }
 
 func readHostname(tb testing.TB, containerId string) string {
-	containerClient, err := NewTestcontainersClient(context.Background())
+	containerClient, err := NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		tb.Fatalf("Failed to create Docker client: %v", err)
 	}
@@ -1939,7 +1939,7 @@ func TestDockerContainerResources(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
-	c, err := NewTestcontainersClient(ctx)
+	c, err := NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 	defer c.Close()
 
@@ -2000,7 +2000,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 
 	containerId := nginxC.GetContainerID()
 
-	cli, err := NewTestcontainersClient(ctx)
+	cli, err := NewDockerClientWithOpts(ctx)
 	assert.Nil(t, err)
 	defer cli.Close()
 
@@ -2035,7 +2035,7 @@ func TestContainerCapAdd(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginx)
 
-	dockerClient, err := NewTestcontainersClient(ctx)
+	dockerClient, err := NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 	defer dockerClient.Close()
 

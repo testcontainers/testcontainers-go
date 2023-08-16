@@ -646,7 +646,7 @@ func (l *linesTestLogger) Printf(format string, args ...interface{}) {
 
 func TestPrintContainerLogsOnError(t *testing.T) {
 	ctx := context.Background()
-	client, err := NewTestcontainersClient(ctx)
+	client, err := NewDockerClientWithOpts(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

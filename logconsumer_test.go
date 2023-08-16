@@ -297,7 +297,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
 
-	client, err := NewTestcontainersClient(ctx, opts...)
+	client, err := NewDockerClientWithOpts(ctx, opts...)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -11,9 +11,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
-// TestcontainersClient is a wrapper around the docker client that is used by testcontainers-go.
+// DockerClient is a wrapper around the docker client that is used by testcontainers-go.
 // It implements the SystemAPIClient interface in order to cache the docker info and reuse it.
-type TestcontainersClient struct {
+type DockerClient struct {
 	*client.Client // client is embedded into our own client
 }
 
@@ -23,17 +23,17 @@ var (
 )
 
 // implements SystemAPIClient interface
-var _ client.SystemAPIClient = &TestcontainersClient{}
+var _ client.SystemAPIClient = &DockerClient{}
 
 // Events returns a channel to listen to events that happen to the docker daemon.
-func (c *TestcontainersClient) Events(ctx context.Context, options types.EventsOptions) (<-chan events.Message, <-chan error) {
+func (c *DockerClient) Events(ctx context.Context, options types.EventsOptions) (<-chan events.Message, <-chan error) {
 	return c.Client.Events(ctx, options)
 }
 
 // Info returns information about the docker server. The result of Info is cached
 // and reused every time Info is called.
 // It will also print out the docker server info, and the resolved Docker paths, to the default logger.
-func (c *TestcontainersClient) Info(ctx context.Context) (types.Info, error) {
+func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
 	var err error
 	dockerInfoOnce.Do(func() {
 		dockerInfo, err = c.Client.Info(ctx)
@@ -64,23 +64,23 @@ func (c *TestcontainersClient) Info(ctx context.Context) (types.Info, error) {
 }
 
 // RegistryLogin logs into a Docker registry.
-func (c *TestcontainersClient) RegistryLogin(ctx context.Context, auth registry.AuthConfig) (registry.AuthenticateOKBody, error) {
+func (c *DockerClient) RegistryLogin(ctx context.Context, auth registry.AuthConfig) (registry.AuthenticateOKBody, error) {
 	return c.Client.RegistryLogin(ctx, auth)
 }
 
 // DiskUsage returns the disk usage of all images.
-func (c *TestcontainersClient) DiskUsage(ctx context.Context, options types.DiskUsageOptions) (types.DiskUsage, error) {
+func (c *DockerClient) DiskUsage(ctx context.Context, options types.DiskUsageOptions) (types.DiskUsage, error) {
 	return c.Client.DiskUsage(ctx, options)
 }
 
 // Ping pings the docker server.
-func (c *TestcontainersClient) Ping(ctx context.Context) (types.Ping, error) {
+func (c *DockerClient) Ping(ctx context.Context) (types.Ping, error) {
 	return c.Client.Ping(ctx)
 }
 
-// Deprecated: Use NewTestcontainersClient instead.
+// Deprecated: Use NewDockerClientWithOpts instead.
 func NewDockerClient() (*client.Client, error) {
-	cli, err := NewTestcontainersClient(context.Background())
+	cli, err := NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -88,13 +88,13 @@ func NewDockerClient() (*client.Client, error) {
 	return cli.Client, nil
 }
 
-func NewTestcontainersClient(ctx context.Context, opt ...client.Opt) (*TestcontainersClient, error) {
+func NewDockerClientWithOpts(ctx context.Context, opt ...client.Opt) (*DockerClient, error) {
 	dockerClient, err := testcontainersdocker.NewClient(ctx, opt...)
 	if err != nil {
 		return nil, err
 	}
 
-	tcClient := TestcontainersClient{
+	tcClient := DockerClient{
 		Client: dockerClient,
 	}
 
