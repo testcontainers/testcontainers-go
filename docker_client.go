@@ -11,6 +11,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
+// TestcontainersClient is a wrapper around the docker client that is used by testcontainers-go.
+// It implements the SystemAPIClient interface in order to cache the docker info and reuse it.
 type TestcontainersClient struct {
 	*client.Client // client is embedded into our own client
 }
@@ -28,7 +30,9 @@ func (c *TestcontainersClient) Events(ctx context.Context, options types.EventsO
 	return c.Client.Events(ctx, options)
 }
 
-// Info returns information about the docker server.
+// Info returns information about the docker server. The result of Info is cached
+// and reused every time Info is called.
+// It will also print out the docker server info, and the resolved Docker paths, to the default logger.
 func (c *TestcontainersClient) Info(ctx context.Context) (types.Info, error) {
 	var err error
 	dockerInfoOnce.Do(func() {
