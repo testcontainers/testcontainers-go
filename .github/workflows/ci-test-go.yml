@@ -81,6 +81,20 @@ jobs:
             go install gotest.tools/gotestsum@latest
             make test-unit
 
+      - name: Analyze with SonarCloud
+        uses: sonarsource/sonarcloud-github-action@master
+        with:
+          args: >
+            sonar.projectKey=testcontainers_testcontainers-go
+            sonar.organization=testcontainers
+            sonar.projectName=testcontainers-go
+            sonar.sources=.
+            sonar.exclusions=**/*_test.go
+            sonar.tests=.
+            sonar.test.inclusions=**/*_test.go
+            sonar.go.tests.reportPaths=**/TEST-*.xml
+            sonar.go.coverage.reportPaths=**/coverage.out
+
       - name: Run checker
         run: |
             ./scripts/check_environment.sh
