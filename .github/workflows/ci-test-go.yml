@@ -82,6 +82,7 @@ jobs:
             make test-unit
 
       - name: Analyze with SonarCloud
+        if: ${{ inputs.run-tests }}
         uses: sonarsource/sonarcloud-github-action@master
         with:
           args: >
