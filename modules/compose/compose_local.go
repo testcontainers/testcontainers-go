@@ -124,7 +124,7 @@ func (dc *LocalDockerCompose) containerNameFromServiceName(service, separator st
 }
 
 func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
-	cli, err := testcontainers.NewTestcontainersClient(context.Background())
+	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		return err
 	}
