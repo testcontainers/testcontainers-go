@@ -12,7 +12,7 @@ test-%:
 		--packages="./..." \
 		--junitfile TEST-$*.xml \
 		-- \
-                -coverprofile=cover.out \
+                -coverprofile=coverage.out \
 		-timeout=30m
 
 .PHONY: tools
