@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"path/filepath"
 	"text/template"
 	"time"
 
@@ -38,6 +39,12 @@ type Container struct {
 
 // RunContainer creates an instance of the Redpanda container type.
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	tmpDir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create directory: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
 	// 1. Create container request.
 	// Some (e.g. Image) may be overridden by providing an option argument to this function.
 	req := testcontainers.GenericContainerRequest{
@@ -76,46 +83,63 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	// We have to do this kind of two-step process, because we need to know the mapped
 	// port, so that we can use this in Redpanda's advertised listeners configuration for
 	// the Kafka API.
-	entrypointFile, err := createEntrypointTmpFile()
-	if err != nil {
+	entrypointPath := filepath.Join(tmpDir, "entrypoint-tc.sh")
+	if err := os.WriteFile(entrypointPath, entrypoint, 0o700); err != nil {
 		return nil, fmt.Errorf("failed to create entrypoint file: %w", err)
 	}
 
 	// Bootstrap config file contains cluster configurations which will only be considered
 	// the very first time you start a cluster.
-	bootstrapConfigFile, err := createBootstrapConfigFile(settings)
+	bootstrapConfigPath := filepath.Join(tmpDir, ".bootstrap.yaml")
+	bootstrapConfig, err := renderBootstrapConfig(settings)
 	if err != nil {
+		return nil, fmt.Errorf("failed to create bootstrap config file: %w", err)
+	}
+	if err := os.WriteFile(bootstrapConfigPath, bootstrapConfig, 0o600); err != nil {
 		return nil, fmt.Errorf("failed to create bootstrap config file: %w", err)
 	}
 
 	req.Files = append(req.Files,
 		testcontainers.ContainerFile{
-			HostFilePath:      entrypointFile.Name(),
+			HostFilePath:      entrypointPath,
 			ContainerFilePath: "/entrypoint-tc.sh",
 			FileMode:          700,
 		},
 		testcontainers.ContainerFile{
-			HostFilePath:      bootstrapConfigFile.Name(),
+			HostFilePath:      bootstrapConfigPath,
 			ContainerFilePath: "/etc/redpanda/.bootstrap.yaml",
 			FileMode:          600,
 		},
 	)
 
+	// 4. Create certificate and key for TLS connections.
+	if settings.EnableTLS {
+		certPath := filepath.Join(tmpDir, "cert.pem")
+		if err := os.WriteFile(certPath, settings.cert, 0o600); err != nil {
+			return nil, fmt.Errorf("failed to create certificate file: %w", err)
+		}
+		keyPath := filepath.Join(tmpDir, "key.pem")
+		if err := os.WriteFile(keyPath, settings.key, 0o600); err != nil {
+			return nil, fmt.Errorf("failed to create key file: %w", err)
+		}
+
+		req.Files = append(req.Files,
+			testcontainers.ContainerFile{
+				HostFilePath:      certPath,
+				ContainerFilePath: "/etc/redpanda/cert.pem",
+				FileMode:          600,
+			},
+			testcontainers.ContainerFile{
+				HostFilePath:      keyPath,
+				ContainerFilePath: "/etc/redpanda/key.pem",
+				FileMode:          600,
+			},
+		)
+	}
+
 	container, err := testcontainers.GenericContainer(ctx, req)
 	if err != nil {
 		return nil, err
-	}
-
-	// 4. Create certificate and key for TLS connections.
-	if settings.EnableTLS {
-		err = container.CopyToContainer(ctx, settings.cert, "/etc/redpanda/cert.pem", 600)
-		if err != nil {
-			return nil, fmt.Errorf("failed to copy cert.pem into container: %w", err)
-		}
-		err = container.CopyToContainer(ctx, settings.key, "/etc/redpanda/key.pem", 600)
-		if err != nil {
-			return nil, fmt.Errorf("failed to copy key.pem into container: %w", err)
-		}
 	}
 
 	// 5. Get mapped port for the Kafka API, so that we can render and then mount
@@ -198,26 +222,10 @@ func (c *Container) SchemaRegistryAddress(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, nat.Port(defaultSchemaRegistryPort), c.urlScheme)
 }
 
-// createEntrypointTmpFile returns a temporary file with the custom entrypoint
-// that awaits the actual Redpanda config after the container has been started,
-// before it's going to start the Redpanda process.
-func createEntrypointTmpFile() (*os.File, error) {
-	entrypointTmpFile, err := os.CreateTemp("", "")
-	if err != nil {
-		return nil, err
-	}
-
-	if err := os.WriteFile(entrypointTmpFile.Name(), entrypoint, 0o700); err != nil {
-		return nil, err
-	}
-
-	return entrypointTmpFile, nil
-}
-
-// createBootstrapConfigFile renders the config template for the .bootstrap.yaml config,
+// renderBootstrapConfig renders the config template for the .bootstrap.yaml config,
 // which configures Redpanda's cluster properties.
 // Reference: https://docs.redpanda.com/docs/reference/cluster-properties/
-func createBootstrapConfigFile(settings options) (*os.File, error) {
+func renderBootstrapConfig(settings options) ([]byte, error) {
 	bootstrapTplParams := redpandaBootstrapConfigTplParams{
 		Superusers:                  settings.Superusers,
 		KafkaAPIEnableAuthorization: settings.KafkaEnableAuthorization,
@@ -234,16 +242,7 @@ func createBootstrapConfigFile(settings options) (*os.File, error) {
 		return nil, fmt.Errorf("failed to render redpanda bootstrap config template: %w", err)
 	}
 
-	bootstrapTmpFile, err := os.CreateTemp("", "")
-	if err != nil {
-		return nil, err
-	}
-
-	if err := os.WriteFile(bootstrapTmpFile.Name(), bootstrapConfig.Bytes(), 0o600); err != nil {
-		return nil, err
-	}
-
-	return bootstrapTmpFile, nil
+	return bootstrapConfig.Bytes(), nil
 }
 
 // renderNodeConfig renders the redpanda.yaml node config and returns it as
