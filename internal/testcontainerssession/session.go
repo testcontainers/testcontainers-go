@@ -4,17 +4,9 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"os"
-	"sync"
 
 	"github.com/google/uuid"
 )
-
-var (
-	id     string
-	idOnce sync.Once
-)
-
-const sessionIDPlaceholder = "testcontainers-go:%d"
 
 // ID returns a unique session ID for the current test session. Because each Go package
 // will be run in a separate process, we need a way to identify the current test session.
@@ -37,19 +29,19 @@ const sessionIDPlaceholder = "testcontainers-go:%d"
 // This session ID will be used to:
 //   - identify the test session, aggregating the test execution of multiple packages in the same test session.
 //   - tag the containers created by testcontainers-go, adding a label to the container with the session ID.
-func ID() string {
-	idOnce.Do(func() {
-		parentPid := os.Getppid()
+var ID string
 
-		hasher := sha256.New()
-		_, err := hasher.Write([]byte(fmt.Sprintf(sessionIDPlaceholder, parentPid)))
-		if err != nil {
-			id = uuid.New().String()
-			return
-		}
+const sessionIDPlaceholder = "testcontainers-go:%d"
 
-		id = fmt.Sprintf("%x", hasher.Sum(nil))
-	})
+func init() {
+	parentPid := os.Getppid()
 
-	return id
+	hasher := sha256.New()
+	_, err := hasher.Write([]byte(fmt.Sprintf(sessionIDPlaceholder, parentPid)))
+	if err != nil {
+		ID = uuid.New().String()
+		return
+	}
+
+	ID = fmt.Sprintf("%x", hasher.Sum(nil))
 }
