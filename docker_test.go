@@ -421,7 +421,7 @@ func TestContainerTerminationResetsState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if nginxA.SessionID() != "00000000-0000-0000-0000-000000000000" {
+	if nginxA.SessionID() != "" {
 		t.Fatal("Internal state must be reset.")
 	}
 	ports, err := nginxA.Ports(ctx)
