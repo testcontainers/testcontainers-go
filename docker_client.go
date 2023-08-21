@@ -8,6 +8,7 @@ import (
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
+
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
