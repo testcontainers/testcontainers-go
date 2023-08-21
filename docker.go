@@ -64,7 +64,7 @@ type DockerContainer struct {
 	isRunning         bool
 	imageWasBuilt     bool
 	provider          *DockerProvider
-	sessionID         uuid.UUID
+	sessionID         string
 	terminationSignal chan bool
 	consumers         []LogConsumer
 	raw               *types.ContainerJSON
@@ -182,7 +182,7 @@ func (c *DockerContainer) Ports(ctx context.Context) (nat.PortMap, error) {
 
 // SessionID gets the current session id
 func (c *DockerContainer) SessionID() string {
-	return c.sessionID.String()
+	return c.sessionID
 }
 
 // Start will start an already created container
@@ -285,7 +285,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		}
 	}
 
-	c.sessionID = uuid.UUID{}
+	c.sessionID = ""
 	c.isRunning = false
 	return nil
 }
@@ -887,7 +887,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.EqualFold(req.Image, reaperImage(reaperOpts.ImageName))
 	if !tcConfig.RyukDisabled && !isReaperContainer {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.ID(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1129,7 +1129,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.ID(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1294,7 +1294,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.String(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.ID(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}
