@@ -10,7 +10,6 @@ import (
 
 func envHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
-
 		_, _ = rw.Write([]byte(os.Getenv("FOO")))
 
 		rw.WriteHeader(http.StatusAccepted)

@@ -11,9 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var originalBaseRunDir string
-var originalXDGRuntimeDir string
-var originalHomeDir string
+var (
+	originalBaseRunDir    string
+	originalXDGRuntimeDir string
+	originalHomeDir       string
+)
 
 func init() {
 	originalBaseRunDir = baseRunDir

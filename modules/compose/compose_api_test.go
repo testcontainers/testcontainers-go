@@ -485,7 +485,7 @@ func TestDockerComposeApiWithWaitForShortLifespanService(t *testing.T) {
 	t.Cleanup(cancel)
 
 	err = compose.
-		//Assumption: tzatziki service wait logic will run before falafel, so that falafel service will exit before
+		// Assumption: tzatziki service wait logic will run before falafel, so that falafel service will exit before
 		WaitForService("tzatziki", wait.ForExit().WithExitTimeout(10*time.Second)).
 		WaitForService("falafel", wait.ForExit().WithExitTimeout(10*time.Second)).
 		Up(ctx)

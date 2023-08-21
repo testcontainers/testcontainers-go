@@ -10,9 +10,11 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-const defaultUser = "postgres"
-const defaultPassword = "postgres"
-const defaultPostgresImage = "docker.io/postgres:11-alpine"
+const (
+	defaultUser          = "postgres"
+	defaultPassword      = "postgres"
+	defaultPostgresImage = "docker.io/postgres:11-alpine"
+)
 
 // PostgresContainer represents the postgres container type used in the module
 type PostgresContainer struct {
@@ -50,7 +52,7 @@ func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
 		cfgFile := testcontainers.ContainerFile{
 			HostFilePath:      cfg,
 			ContainerFilePath: "/etc/postgresql.conf",
-			FileMode:          0755,
+			FileMode:          0o755,
 		}
 
 		req.Files = append(req.Files, cfgFile)
@@ -75,7 +77,7 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,
 				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
-				FileMode:          0755,
+				FileMode:          0o755,
 			}
 			initScripts = append(initScripts, cf)
 		}

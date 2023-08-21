@@ -8,6 +8,7 @@ import (
 
 	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types/registry"
+
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 

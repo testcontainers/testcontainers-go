@@ -10,16 +10,18 @@ import (
 
 	"github.com/docker/go-connections/nat"
 	_ "github.com/lib/pq"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const dbname = "test-db"
-const user = "postgres"
-const password = "password"
+const (
+	dbname   = "test-db"
+	user     = "postgres"
+	password = "password"
+)
 
 func TestPostgres(t *testing.T) {
 	ctx := context.Background()
@@ -103,7 +105,7 @@ func TestPostgres(t *testing.T) {
 func TestContainerWithWaitForSQL(t *testing.T) {
 	ctx := context.Background()
 
-	var port = "5432/tcp"
+	port := "5432/tcp"
 	dbURL := func(host string, port nat.Port) string {
 		return fmt.Sprintf("postgres://postgres:password@%s:%s/%s?sslmode=disable", host, port.Port(), dbname)
 	}

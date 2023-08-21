@@ -254,7 +254,7 @@ func createBootstrapConfigFile(settings options) (*os.File, error) {
 	return bootstrapTmpFile, nil
 }
 
-// renderNodeConfig renders the redpanda.yaml node config and retuns it as
+// renderNodeConfig renders the redpanda.yaml node config and returns it as
 // byte array.
 func renderNodeConfig(settings options, hostIP string, advertisedKafkaPort int) ([]byte, error) {
 	tplParams := redpandaConfigTplParams{

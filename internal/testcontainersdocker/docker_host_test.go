@@ -10,6 +10,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
@@ -21,8 +22,10 @@ var (
 	originalDockerSocketPathWithSchema string
 )
 
-var originalDockerSocketOverride string
-var tmpSchema string
+var (
+	originalDockerSocketOverride string
+	tmpSchema                    string
+)
 
 func init() {
 	originalDockerSocketPath = DockerSocketPath
@@ -403,7 +406,7 @@ func TestInAContainer(t *testing.T) {
 }
 
 func createTmpDir(dir string) error {
-	err := os.MkdirAll(dir, 0755)
+	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return err
 	}
@@ -413,7 +416,7 @@ func createTmpDir(dir string) error {
 
 func createTmpDockerSocket(parent string) error {
 	socketPath := filepath.Join(parent, "docker.sock")
-	err := os.MkdirAll(filepath.Dir(socketPath), 0755)
+	err := os.MkdirAll(filepath.Dir(socketPath), 0o755)
 	if err != nil {
 		return err
 	}

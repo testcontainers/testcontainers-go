@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 

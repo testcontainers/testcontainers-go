@@ -7,8 +7,10 @@ import (
 )
 
 // Implement interface
-var _ Strategy = (*MultiStrategy)(nil)
-var _ StrategyTimeout = (*MultiStrategy)(nil)
+var (
+	_ Strategy        = (*MultiStrategy)(nil)
+	_ StrategyTimeout = (*MultiStrategy)(nil)
+)
 
 type MultiStrategy struct {
 	// all Strategies should have a startupTimeout to avoid waiting infinitely

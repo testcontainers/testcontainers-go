@@ -10,8 +10,10 @@ import (
 	"github.com/magiconair/properties"
 )
 
-var tcConfig Config
-var tcConfigOnce *sync.Once = new(sync.Once)
+var (
+	tcConfig     Config
+	tcConfigOnce *sync.Once = new(sync.Once)
+)
 
 // Config represents the configuration for Testcontainers
 // testcontainersConfig {

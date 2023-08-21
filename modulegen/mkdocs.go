@@ -63,10 +63,6 @@ func getExamplesDocs() ([]os.DirEntry, error) {
 	return os.ReadDir(dir)
 }
 
-func getModules() ([]os.DirEntry, error) {
-	return getModulesOrExamples(true)
-}
-
 func getRootDir() (string, error) {
 	current, err := os.Getwd()
 	if err != nil {
@@ -102,5 +98,5 @@ func writeMkdocsConfig(rootDir string, config *MkDocsConfig) error {
 
 	file := getMkdocsConfigFile(rootDir)
 
-	return os.WriteFile(file, data, 0777)
+	return os.WriteFile(file, data, 0o777)
 }
