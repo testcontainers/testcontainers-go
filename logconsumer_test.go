@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -299,7 +298,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
 
-	client, err := testcontainersdocker.NewClient(ctx, opts...)
+	client, err := NewDockerClientWithOpts(ctx, opts...)
 	if err != nil {
 		t.Fatal(err)
 	}

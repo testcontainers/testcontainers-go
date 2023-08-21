@@ -138,7 +138,7 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 func removeImageFromLocalCache(t *testing.T, image string) {
 	ctx := context.Background()
 
-	testcontainersClient, err := testcontainersdocker.NewClient(ctx, client.WithVersion(daemonMaxVersion))
+	testcontainersClient, err := NewDockerClientWithOpts(ctx, client.WithVersion(daemonMaxVersion))
 	if err != nil {
 		t.Log("could not create client to cleanup registry: ", err)
 	}

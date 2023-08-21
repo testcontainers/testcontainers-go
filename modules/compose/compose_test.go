@@ -449,7 +449,7 @@ func TestLocalDockerComposeWithVolume(t *testing.T) {
 }
 
 func assertVolumeDoesNotExist(tb testing.TB, volumeName string) {
-	containerClient, err := testcontainers.NewDockerClient()
+	containerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		tb.Fatalf("Failed to get provider: %v", err)
 	}
@@ -474,7 +474,7 @@ func assertContainerEnvironmentVariables(
 	present map[string]string,
 	absent map[string]string,
 ) {
-	containerClient, err := testcontainers.NewDockerClient()
+	containerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		tb.Fatalf("Failed to get provider: %v", err)
 	}

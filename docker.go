@@ -15,7 +15,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -43,7 +42,6 @@ var (
 	// Implement interfaces
 	_ Container = (*DockerContainer)(nil)
 
-	logOnce                 sync.Once
 	ErrDuplicateMountTarget = errors.New("duplicate mount target detected")
 )
 
@@ -773,10 +771,6 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 
 var _ ContainerProvider = (*DockerProvider)(nil)
 
-func NewDockerClient() (cli *client.Client, err error) {
-	return testcontainersdocker.NewClient(context.Background())
-}
-
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
 	repo := uuid.New()
@@ -1191,9 +1185,9 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 }
 
 // Health measure the healthiness of the provider. Right now we leverage the
-// docker-client ping endpoint to see if the daemon is reachable.
+// docker-client Info endpoint to see if the daemon is reachable.
 func (p *DockerProvider) Health(ctx context.Context) (err error) {
-	_, err = p.client.Ping(ctx)
+	_, err = p.client.Info(ctx)
 	defer p.Close()
 
 	return err
