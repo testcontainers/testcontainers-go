@@ -7,16 +7,19 @@ import (
 	"strings"
 
 	"github.com/docker/go-connections/nat"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const defaultPulsarImage = "docker.io/apachepulsar/pulsar:2.10.2"
-const defaultPulsarPort = "6650/tcp"
-const defaultPulsarAdminPort = "8080/tcp"
-const defaultPulsarCmd = "/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone"
-const detaultPulsarCmdWithoutFunctionsWorker = "--no-functions-worker -nss"
-const transactionTopicEndpoint = "/admin/v2/persistent/pulsar/system/transaction_coordinator_assign/partitions"
+const (
+	defaultPulsarImage                     = "docker.io/apachepulsar/pulsar:2.10.2"
+	defaultPulsarPort                      = "6650/tcp"
+	defaultPulsarAdminPort                 = "8080/tcp"
+	defaultPulsarCmd                       = "/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone"
+	detaultPulsarCmdWithoutFunctionsWorker = "--no-functions-worker -nss"
+	transactionTopicEndpoint               = "/admin/v2/persistent/pulsar/system/transaction_coordinator_assign/partitions"
+)
 
 var defaultWaitStrategies = wait.ForAll(
 	wait.ForHTTP("/admin/v2/clusters").WithPort(defaultPulsarAdminPort).WithResponseMatcher(func(r io.Reader) bool {
@@ -121,8 +124,9 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 // - image: docker.io/apachepulsar/pulsar:2.10.2
 // - exposed ports: 6650/tcp, 8080/tcp
 // - waiting strategy: wait for all the following strategies:
-//		- the Pulsar admin API ("/admin/v2/clusters") to be ready on port 8080/tcp and return the response `["standalone"]`
-// 		- the log message "Successfully updated the policies on namespace public/default"
+//   - the Pulsar admin API ("/admin/v2/clusters") to be ready on port 8080/tcp and return the response `["standalone"]`
+//   - the log message "Successfully updated the policies on namespace public/default"
+//
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{

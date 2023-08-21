@@ -12,9 +12,10 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/docker/go-connections/nat"
+	"github.com/tidwall/gjson"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/tidwall/gjson"
 )
 
 // containerPorts {

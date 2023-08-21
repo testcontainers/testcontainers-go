@@ -10,6 +10,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -130,7 +131,7 @@ func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *RedisCont
 	// }
 
 	// You will likely want to wrap your Redis package of choice in an
-	// interface to aid in unit testing and limit lock-in throughtout your
+	// interface to aid in unit testing and limit lock-in throughout your
 	// codebase but that's out of scope for this example
 	options, err := redis.ParseURL(uri)
 	require.NoError(t, err)

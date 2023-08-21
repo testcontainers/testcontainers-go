@@ -10,6 +10,7 @@ import (
 	"github.com/go-stomp/stomp/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/artemis"
 )

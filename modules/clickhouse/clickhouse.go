@@ -7,17 +7,22 @@ import (
 	"strings"
 
 	"github.com/docker/go-connections/nat"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const defaultUser = "default"
-const defaultDatabaseName = "clickhouse"
+const (
+	defaultUser         = "default"
+	defaultDatabaseName = "clickhouse"
+)
 
 const defaultImage = "clickhouse/clickhouse-server:23.3.8.21-alpine"
 
-const httpPort = nat.Port("8123/tcp")
-const nativePort = nat.Port("9000/tcp")
+const (
+	httpPort   = nat.Port("8123/tcp")
+	nativePort = nat.Port("9000/tcp")
+)
 
 // ClickHouseContainer represents the ClickHouse container type used in the module
 type ClickHouseContainer struct {
@@ -71,7 +76,7 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,
 				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
-				FileMode:          0755,
+				FileMode:          0o755,
 			}
 			initScripts = append(initScripts, cf)
 		}
@@ -87,7 +92,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/clickhouse-server/config.d/config.xml",
-			FileMode:          0755,
+			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
 	}
@@ -101,7 +106,7 @@ func WithYamlConfigFile(configFile string) testcontainers.CustomizeRequestOption
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/clickhouse-server/config.d/config.yaml",
-			FileMode:          0755,
+			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
 	}

@@ -80,7 +80,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: defaultConfigFile,
-			FileMode:          0755,
+			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
 

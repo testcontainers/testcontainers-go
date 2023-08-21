@@ -1,12 +1,13 @@
 package pubsub
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
+	"testing"
+
+	"cloud.google.com/go/pubsub"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"testing"
 )
 
 func TestPubsub(t *testing.T) {
@@ -58,6 +59,9 @@ func TestPubsub(t *testing.T) {
 		m.Ack()
 		defer cancel()
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if string(data) != "Hello World" {
 		t.Fatalf("Expected value %s. Got %s.", "Hello World", data)
 	}

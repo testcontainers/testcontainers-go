@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/docker/docker/client"
+
 	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"

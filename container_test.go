@@ -12,11 +12,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func Test_ContainerValidation(t *testing.T) {
-
 	type ContainerValidationTestCase struct {
 		Name             string
 		ExpectedError    error
@@ -71,13 +71,14 @@ func Test_ContainerValidation(t *testing.T) {
 	for _, testCase := range testTable {
 		t.Run(testCase.Name, func(t *testing.T) {
 			err := testCase.ContainerRequest.Validate()
-			if err == nil && testCase.ExpectedError == nil {
+			switch {
+			case err == nil && testCase.ExpectedError == nil:
 				return
-			} else if err == nil && testCase.ExpectedError != nil {
+			case err == nil && testCase.ExpectedError != nil:
 				t.Errorf("did not receive expected error: %s", testCase.ExpectedError.Error())
-			} else if err != nil && testCase.ExpectedError == nil {
+			case err != nil && testCase.ExpectedError == nil:
 				t.Errorf("received unexpected error: %s", err.Error())
-			} else if err.Error() != testCase.ExpectedError.Error() {
+			case err.Error() != testCase.ExpectedError.Error():
 				t.Errorf("errors mismatch: %s != %s", err.Error(), testCase.ExpectedError.Error())
 			}
 		})
@@ -155,7 +156,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				for _, f := range files {
 					header := tar.Header{
 						Name:     f.Name,
-						Mode:     0777,
+						Mode:     0o777,
 						Size:     int64(len(f.Contents)),
 						Typeflag: tar.TypeReg,
 						Format:   tar.FormatGNU,
@@ -271,13 +272,14 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				ContainerRequest: req,
 				Started:          true,
 			})
-			if testCase.ExpectedError != nil && err != nil {
+			switch {
+			case testCase.ExpectedError != nil && err != nil:
 				if testCase.ExpectedError.Error() != err.Error() {
 					t.Fatalf("unexpected error: %s, was expecting %s", err.Error(), testCase.ExpectedError.Error())
 				}
-			} else if err != nil {
+			case err != nil:
 				t.Fatal(err)
-			} else {
+			default:
 				terminateContainerOnEnd(t, ctx, c)
 			}
 		})

@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/testcontainers/testcontainers-go/wait"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func generateContainerRequest() *LocalStackContainerRequest {
@@ -246,8 +246,10 @@ func TestStartV2WithNetwork(t *testing.T) {
 				"AWS_SECRET_ACCESS_KEY": "secretkey",
 				"AWS_REGION":            "eu-west-1",
 			},
-			WaitingFor: wait.ForExec([]string{"/usr/local/bin/aws", "sqs", "create-queue", "--queue-name", "baz", "--region", "eu-west-1",
-				"--endpoint-url", "http://localstack:4566", "--no-verify-ssl"}).
+			WaitingFor: wait.ForExec([]string{
+				"/usr/local/bin/aws", "sqs", "create-queue", "--queue-name", "baz", "--region", "eu-west-1",
+				"--endpoint-url", "http://localstack:4566", "--no-verify-ssl",
+			}).
 				WithStartupTimeout(time.Second * 10).
 				WithExitCodeMatcher(func(exitCode int) bool {
 					return exitCode == 0

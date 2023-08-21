@@ -1,12 +1,13 @@
 package bigtable
 
 import (
-	"cloud.google.com/go/bigtable"
 	"context"
+	"testing"
+
+	"cloud.google.com/go/bigtable"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"testing"
 )
 
 const (

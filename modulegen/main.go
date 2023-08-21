@@ -17,10 +17,12 @@ import (
 	"golang.org/x/text/language"
 )
 
-var asModuleVar bool
-var nameVar string
-var nameTitleVar string
-var imageVar string
+var (
+	asModuleVar  bool
+	nameVar      string
+	nameTitleVar string
+	imageVar     string
+)
 
 var templates = []string{
 	"ci.yml", "docs_example.md", "example_test.go", "example.go", "go.mod", "Makefile",
@@ -188,7 +190,7 @@ func generate(example Example, rootDir string) error {
 	exampleLower := example.Lower()
 
 	// create the example dir
-	err := os.MkdirAll(filepath.Join(outputDir, exampleLower), 0700)
+	err := os.MkdirAll(filepath.Join(outputDir, exampleLower), 0o700)
 	if err != nil {
 		return err
 	}
@@ -242,7 +244,7 @@ func generate(example Example, rootDir string) error {
 			exampleFilePath = filepath.Join(outputDir, exampleLower, strings.ReplaceAll(tmpl, "example", exampleLower))
 		}
 
-		err = os.MkdirAll(filepath.Dir(exampleFilePath), 0777)
+		err = os.MkdirAll(filepath.Dir(exampleFilePath), 0o777)
 		if err != nil {
 			return err
 		}

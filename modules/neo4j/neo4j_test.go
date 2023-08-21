@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	neo "github.com/neo4j/neo4j-go-driver/v5/neo4j"
+
 	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 )
 
@@ -30,7 +31,6 @@ func TestNeo4j(outer *testing.T) {
 		driver := createDriver(t, ctx, container)
 
 		err := driver.VerifyConnectivity(ctx)
-
 		if err != nil {
 			t.Fatalf("should have successfully connected to server but did not: %s", err)
 		}
@@ -42,7 +42,6 @@ func TestNeo4j(outer *testing.T) {
 		result, err := neo.ExecuteQuery(ctx, driver,
 			"RETURN apoc.number.arabicToRoman(1986) AS output", nil,
 			neo.EagerResultTransformer)
-
 		if err != nil {
 			t.Fatalf("expected APOC query to successfully run but did not: %s", err)
 		}
@@ -175,7 +174,6 @@ func createDriver(t *testing.T, ctx context.Context, container *neo4j.Neo4jConta
 
 func getContainerEnv(t *testing.T, ctx context.Context, container *neo4j.Neo4jContainer) string {
 	exec, reader, err := container.Exec(ctx, []string{"env"})
-
 	if err != nil {
 		t.Fatalf("expected env to successfully run but did not: %s", err)
 	}

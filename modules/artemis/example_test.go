@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-stomp/stomp/v3"
+
 	"github.com/testcontainers/testcontainers-go/modules/artemis"
 )
 

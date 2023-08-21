@@ -9,8 +9,10 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-var _ Strategy = (*waitForSql)(nil)
-var _ StrategyTimeout = (*waitForSql)(nil)
+var (
+	_ Strategy        = (*waitForSql)(nil)
+	_ StrategyTimeout = (*waitForSql)(nil)
+)
 
 const defaultForSqlQuery = "SELECT 1"
 

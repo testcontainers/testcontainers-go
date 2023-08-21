@@ -3,12 +3,14 @@ package toxiproxy
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	toxiproxy "github.com/Shopify/toxiproxy/v2/client"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
+
 	"github.com/testcontainers/testcontainers-go"
-	"testing"
-	"time"
 )
 
 func TestToxiproxy(t *testing.T) {
