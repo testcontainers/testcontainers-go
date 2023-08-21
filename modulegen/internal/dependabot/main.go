@@ -17,7 +17,7 @@ func GetUpdates(configFile string) (Updates, error) {
 	return config.Updates, nil
 }
 
-func CopyDependabotConfig(configFile string, tmpFile string) error {
+func CopyConfig(configFile string, tmpFile string) error {
 	config, err := readConfig(configFile)
 	if err != nil {
 		return err

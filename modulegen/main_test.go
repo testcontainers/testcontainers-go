@@ -553,5 +553,5 @@ func copyInitialDependabotConfig(t *testing.T, tmpFile string) error {
 
 	ctx := &Context{RootDir: projectDir}
 
-	return dependabot.CopyDependabotConfig(ctx.DependabotConfigFile(), tmpFile)
+	return dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpFile)
 }
