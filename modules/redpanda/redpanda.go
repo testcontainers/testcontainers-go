@@ -25,10 +25,18 @@ var (
 
 	//go:embed mounts/entrypoint-tc.sh
 	entrypoint []byte
+)
 
+const (
 	defaultKafkaAPIPort       = "9092/tcp"
 	defaultAdminAPIPort       = "9644/tcp"
 	defaultSchemaRegistryPort = "8081/tcp"
+
+	redpandaDir         = "/etc/redpanda"
+	entrypointFile      = "/entrypoint-tc.sh"
+	bootstrapConfigFile = ".bootstrap.yaml"
+	certFile            = "cert.pem"
+	keyFile             = "key.pem"
 )
 
 // Container represents the Redpanda container type used in the module.
@@ -39,7 +47,7 @@ type Container struct {
 
 // RunContainer creates an instance of the Redpanda container type.
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	tmpDir, err := os.MkdirTemp("", "")
+	tmpDir, err := os.MkdirTemp("", "redpanda")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
@@ -59,7 +67,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			},
 			Entrypoint: []string{},
 			Cmd: []string{
-				"/entrypoint-tc.sh",
+				entrypointFile,
 				"redpanda",
 				"start",
 				"--mode=dev-container",
@@ -83,14 +91,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	// We have to do this kind of two-step process, because we need to know the mapped
 	// port, so that we can use this in Redpanda's advertised listeners configuration for
 	// the Kafka API.
-	entrypointPath := filepath.Join(tmpDir, "entrypoint-tc.sh")
+	entrypointPath := filepath.Join(tmpDir, entrypointFile)
 	if err := os.WriteFile(entrypointPath, entrypoint, 0o700); err != nil {
 		return nil, fmt.Errorf("failed to create entrypoint file: %w", err)
 	}
 
 	// Bootstrap config file contains cluster configurations which will only be considered
 	// the very first time you start a cluster.
-	bootstrapConfigPath := filepath.Join(tmpDir, ".bootstrap.yaml")
+	bootstrapConfigPath := filepath.Join(tmpDir, bootstrapConfigFile)
 	bootstrapConfig, err := renderBootstrapConfig(settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bootstrap config file: %w", err)
@@ -102,23 +110,23 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	req.Files = append(req.Files,
 		testcontainers.ContainerFile{
 			HostFilePath:      entrypointPath,
-			ContainerFilePath: "/entrypoint-tc.sh",
+			ContainerFilePath: entrypointFile,
 			FileMode:          700,
 		},
 		testcontainers.ContainerFile{
 			HostFilePath:      bootstrapConfigPath,
-			ContainerFilePath: "/etc/redpanda/.bootstrap.yaml",
+			ContainerFilePath: filepath.Join(redpandaDir, bootstrapConfigFile),
 			FileMode:          600,
 		},
 	)
 
 	// 4. Create certificate and key for TLS connections.
 	if settings.EnableTLS {
-		certPath := filepath.Join(tmpDir, "cert.pem")
+		certPath := filepath.Join(tmpDir, certFile)
 		if err := os.WriteFile(certPath, settings.cert, 0o600); err != nil {
 			return nil, fmt.Errorf("failed to create certificate file: %w", err)
 		}
-		keyPath := filepath.Join(tmpDir, "key.pem")
+		keyPath := filepath.Join(tmpDir, keyFile)
 		if err := os.WriteFile(keyPath, settings.key, 0o600); err != nil {
 			return nil, fmt.Errorf("failed to create key file: %w", err)
 		}
@@ -126,12 +134,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		req.Files = append(req.Files,
 			testcontainers.ContainerFile{
 				HostFilePath:      certPath,
-				ContainerFilePath: "/etc/redpanda/cert.pem",
+				ContainerFilePath: filepath.Join(redpandaDir, certFile),
 				FileMode:          600,
 			},
 			testcontainers.ContainerFile{
 				HostFilePath:      keyPath,
-				ContainerFilePath: "/etc/redpanda/key.pem",
+				ContainerFilePath: filepath.Join(redpandaDir, keyFile),
 				FileMode:          600,
 			},
 		)
@@ -160,12 +168,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("failed to render node config: %w", err)
 	}
 
-	err = container.CopyToContainer(
-		ctx,
-		nodeConfig,
-		"/etc/redpanda/redpanda.yaml",
-		700,
-	)
+	err = container.CopyToContainer(ctx, nodeConfig, filepath.Join(redpandaDir, "redpanda.yaml"), 600)
 	if err != nil {
 		return nil, fmt.Errorf("failed to copy redpanda.yaml into container: %w", err)
 	}
