@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/google/uuid"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 // SessionID returns a unique session ID for the current test session. Because each Go package
@@ -17,14 +18,14 @@ import (
 //
 // As a consequence, with the sole goal of aggregating test execution across multiple
 // packages, this function will use the parent process ID (pid) of the current process
-// and use it to generate a unique session ID. We are using the parent pid because
+// and its creation date, to use it to generate a unique session ID. We are using the parent pid because
 // the current process will be a child process of:
 //   - the process that is running the tests, e.g.: "go test";
 //   - the process that is running the application in development mode, e.g. "go run main.go -tags dev";
 //   - the process that is running the tests in the IDE, e.g.: "go test ./...".
 //
-// Finally, we will hash the combination of the "testcontainers-go:" string and the parent pid
-// to generate a unique session ID.
+// Finally, we will hash the combination of the "testcontainers-go:" string with the parent pid
+// and the creation date of that parent process to generate a unique session ID.
 //
 // This SessionID will be used to:
 //   - identify the test session, aggregating the test execution of multiple packages in the same test session.
@@ -35,18 +36,42 @@ var SessionID string
 // we need a way to identify the current test process.
 var RunID string
 
-const sessionIDPlaceholder = "testcontainers-go:%d"
+const sessionIDPlaceholder = "testcontainers-go:%d:%d"
 
 func init() {
+	RunID = uuid.New().String()
+
 	parentPid := os.Getppid()
+	var createTime int64
+
+	processes, err := process.Processes()
+	if err != nil {
+		SessionID = uuid.New().String()
+		return
+	}
+
+	for _, p := range processes {
+		if int(p.Pid) != parentPid {
+			continue
+		}
+
+		t, err := p.CreateTime()
+		if err != nil {
+			SessionID = uuid.New().String()
+			return
+		}
+
+		createTime = t
+		break
+	}
 
 	hasher := sha256.New()
-	_, err := hasher.Write([]byte(fmt.Sprintf(sessionIDPlaceholder, parentPid)))
+	_, err = hasher.Write([]byte(fmt.Sprintf(sessionIDPlaceholder, parentPid, createTime)))
 	if err != nil {
 		SessionID = uuid.New().String()
 		return
 	}
 
 	SessionID = fmt.Sprintf("%x", hasher.Sum(nil))
-	RunID = uuid.New().String()
+
 }
