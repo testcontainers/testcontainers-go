@@ -56,11 +56,9 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		ReaperImage:  "reaperImage",
 		ExposedPorts: []string{"8080/tcp"},
 		Labels: map[string]string{
-			TestcontainerLabel:                  "true",
-			TestcontainerLabelIsReaper:          "true",
+			testcontainersdocker.LabelLang:      "go",
 			testcontainersdocker.LabelReaper:    "true",
 			testcontainersdocker.LabelSessionID: testcontainerssession.ID,
-			TestcontainerLabelSessionID:         testcontainerssession.ID,
 		},
 		Mounts:     Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock")),
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),

@@ -1402,7 +1402,6 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 			Driver:     Bridge,
 			Attachable: true,
 			Labels: map[string]string{
-				TestcontainerLabel:                "true",
 				testcontainersdocker.LabelLang:    "go",
 				testcontainersdocker.LabelVersion: internal.Version,
 			},

@@ -137,7 +137,6 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 		Image:        reaperImage(reaperOpts.ImageName),
 		ExposedPorts: []string{string(listeningPort)},
 		Labels: map[string]string{
-			TestcontainerLabelIsReaper:          "true",
 			testcontainersdocker.LabelReaper:    "true",
 			testcontainersdocker.LabelSessionID: sessionID,
 		},
@@ -238,8 +237,7 @@ func (r *Reaper) Connect() (chan bool, error) {
 // Labels returns the container labels to use so that this Reaper cleans them up
 func (r *Reaper) Labels() map[string]string {
 	return map[string]string{
-		TestcontainerLabel:                  "true",
-		TestcontainerLabelSessionID:         r.SessionID,
+		testcontainersdocker.LabelLang:      "go",
 		testcontainersdocker.LabelSessionID: r.SessionID,
 	}
 }
