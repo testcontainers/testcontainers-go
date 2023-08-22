@@ -99,7 +99,7 @@ func WithAutoCreateTopics() Option {
 	}
 }
 
-func WithEnableTLS(cert, key []byte) Option {
+func WithTLS(cert, key []byte) Option {
 	return func(o *options) {
 		o.EnableTLS = true
 		o.cert = cert

@@ -209,13 +209,13 @@ func TestRedpandaProduceWithAutoCreateTopics(t *testing.T) {
 	require.NoError(t, results.FirstErr())
 }
 
-func TestRedpandaWithEnableTLS(t *testing.T) {
+func TestRedpandaWithTLS(t *testing.T) {
 	cert, err := tls.X509KeyPair(localhostCert, localhostKey)
 	require.NoError(t, err, "failed to load key pair")
 
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, WithEnableTLS(localhostCert, localhostKey))
+	container, err := RunContainer(ctx, WithTLS(localhostCert, localhostKey))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
