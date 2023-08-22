@@ -7,6 +7,7 @@ const (
 	LabelLang      = LabelBase + ".lang"
 	LabelReaper    = LabelBase + ".reaper"
 	LabelRyuk      = LabelBase + ".ryuk"
+	LabelRunID     = LabelBase + ".runId"
 	LabelSessionID = LabelBase + ".sessionId"
 	LabelVersion   = LabelBase + ".version"
 )
