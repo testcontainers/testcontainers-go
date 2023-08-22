@@ -46,7 +46,7 @@ type ReaperProvider interface {
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
 // Deprecated: it's not possible to create a reaper anymore.
 func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
-	return reuseOrCreateReaper(ctx, sessionID, provider, WithImageName(reaperImageName))
+	return reuseOrCreateReaper(ctx, provider, WithImageName(reaperImageName))
 }
 
 // findReaperContainer returns true if a reaper container is found in the running state, including
@@ -91,7 +91,7 @@ func findReaperContainer(ctx context.Context) (bool, error) {
 
 // reuseOrCreateReaper returns an existing Reaper instance if it exists and is running. Otherwise, a new Reaper instance
 // will be created with a sessionID to identify containers and a provider to use
-func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
+func reuseOrCreateReaper(ctx context.Context, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	// If reaper already exists and healthy, re-use it
@@ -104,7 +104,7 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 		}
 	}
 
-	r, err := newReaper(ctx, sessionID, provider, opts...)
+	r, err := newReaper(ctx, provider, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -115,8 +115,10 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 
 // newReaper creates a Reaper with a sessionID to identify containers and a provider to use
 // Should only be used internally and instead use reuseOrCreateReaper to prefer reusing an existing Reaper instance
-func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
+func newReaper(ctx context.Context, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
 	dockerHostMount := testcontainersdocker.ExtractDockerSocket(ctx)
+
+	sessionID := testcontainerssession.ID
 
 	reaper := &Reaper{
 		Provider:  provider,
