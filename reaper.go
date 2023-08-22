@@ -61,7 +61,7 @@ func findReaperContainer(ctx context.Context) (bool, error) {
 
 	err = backoff.Retry(func() error {
 		args := []filters.KeyValuePair{
-			filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, testcontainerssession.ID)),
+			filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, testcontainerssession.SessionID)),
 			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelReaper, true)),
 			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelRyuk, true)),
 			filters.Arg("status", "running"),
@@ -118,7 +118,7 @@ func reuseOrCreateReaper(ctx context.Context, provider ReaperProvider, opts ...C
 func newReaper(ctx context.Context, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
 	dockerHostMount := testcontainersdocker.ExtractDockerSocket(ctx)
 
-	sessionID := testcontainerssession.ID
+	sessionID := testcontainerssession.SessionID
 
 	reaper := &Reaper{
 		Provider:  provider,

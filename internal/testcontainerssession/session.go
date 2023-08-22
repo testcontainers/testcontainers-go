@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// ID returns a unique session ID for the current test session. Because each Go package
+// SessionID returns a unique session ID for the current test session. Because each Go package
 // will be run in a separate process, we need a way to identify the current test session.
 // By test session, we mean:
 //   - a single "go test" invocation (including flags)
@@ -26,10 +26,10 @@ import (
 // Finally, we will hash the combination of the "testcontainers-go:" string and the parent pid
 // to generate a unique session ID.
 //
-// This session ID will be used to:
+// This SessionID will be used to:
 //   - identify the test session, aggregating the test execution of multiple packages in the same test session.
 //   - tag the containers created by testcontainers-go, adding a label to the container with the session ID.
-var ID string
+var SessionID string
 
 const sessionIDPlaceholder = "testcontainers-go:%d"
 
@@ -39,9 +39,9 @@ func init() {
 	hasher := sha256.New()
 	_, err := hasher.Write([]byte(fmt.Sprintf(sessionIDPlaceholder, parentPid)))
 	if err != nil {
-		ID = uuid.New().String()
+		SessionID = uuid.New().String()
 		return
 	}
 
-	ID = fmt.Sprintf("%x", hasher.Sum(nil))
+	SessionID = fmt.Sprintf("%x", hasher.Sum(nil))
 }
