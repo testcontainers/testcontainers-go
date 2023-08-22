@@ -15,9 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/errdefs"
@@ -344,13 +342,11 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, container)
 
-	resp, err := client.ContainerList(ctx, types.ContainerListOptions{
-		Filters: filters.NewArgs(filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, container.SessionID()))),
-	})
+	exists, err := findReaperContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(resp) != 0 {
+	if exists {
 		t.Fatal("expected zero reaper running.")
 	}
 }
@@ -384,19 +380,12 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	}
 	terminateContainerOnEnd(t, ctx, c)
 
-	filtersJSON := fmt.Sprintf(`{"label":{"%s":true}}`, testcontainersdocker.LabelReaper)
-	f, err := filters.FromJSON(filtersJSON)
+	exists, err := findReaperContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := client.ContainerList(ctx, types.ContainerListOptions{
-		Filters: f,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(resp) == 0 {
-		t.Fatal("expected at least one reaper to be running.")
+	if !exists {
+		t.Fatal("expected one reaper to be running.")
 	}
 }
 

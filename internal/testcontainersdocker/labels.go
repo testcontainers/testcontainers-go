@@ -6,6 +6,7 @@ const (
 	LabelBase      = "org.testcontainers"
 	LabelLang      = LabelBase + ".lang"
 	LabelReaper    = LabelBase + ".reaper"
+	LabelRyuk      = LabelBase + ".ryuk"
 	LabelSessionID = LabelBase + ".sessionId"
 	LabelVersion   = LabelBase + ".version"
 )

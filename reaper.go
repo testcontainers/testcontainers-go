@@ -9,10 +9,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -45,6 +49,46 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 	return reuseOrCreateReaper(ctx, sessionID, provider, WithImageName(reaperImageName))
 }
 
+// findReaperContainer returns true if a reaper container is found in the running state, including
+// container labels for sessionID, reaper, and ryuk. It will perform a retry with exponential backoff
+// to allow for the container to be started and avoid potential false negatives.
+func findReaperContainer(ctx context.Context) (bool, error) {
+	dockerClient, err := NewDockerClientWithOpts(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer dockerClient.Close()
+
+	err = backoff.Retry(func() error {
+		args := []filters.KeyValuePair{
+			filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, testcontainerssession.ID)),
+			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelReaper, true)),
+			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelRyuk, true)),
+			filters.Arg("status", "running"),
+		}
+
+		resp, err := dockerClient.ContainerList(ctx, types.ContainerListOptions{
+			All:     true,
+			Filters: filters.NewArgs(args...),
+		})
+		if err != nil {
+			return err
+		}
+
+		if len(resp) == 0 {
+			return fmt.Errorf("reaper container not found in the running state")
+		}
+
+		return nil
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 // reuseOrCreateReaper returns an existing Reaper instance if it exists and is running. Otherwise, a new Reaper instance
 // will be created with a sessionID to identify containers and a provider to use
 func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
@@ -53,9 +97,9 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 	// If reaper already exists and healthy, re-use it
 	if reaperInstance != nil {
 		// Verify this instance is still running by checking state.
-		// Can't use Container.IsRunning because the bool is not updated when Reaper is terminated
-		state, err := reaperInstance.container.State(ctx)
-		if err == nil && state.Running {
+		exists, err := findReaperContainer(ctx)
+		if err == nil && exists {
+			fmt.Println("📝 Reaper container already exists and is running, reusing it")
 			return reaperInstance, nil
 		}
 	}
@@ -93,8 +137,9 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 		Image:        reaperImage(reaperOpts.ImageName),
 		ExposedPorts: []string{string(listeningPort)},
 		Labels: map[string]string{
-			TestcontainerLabelIsReaper:       "true",
-			testcontainersdocker.LabelReaper: "true",
+			TestcontainerLabelIsReaper:          "true",
+			testcontainersdocker.LabelReaper:    "true",
+			testcontainersdocker.LabelSessionID: sessionID,
 		},
 		Mounts:        Mounts(BindMount(dockerHostMount, "/var/run/docker.sock")),
 		Privileged:    tcConfig.RyukPrivileged,
@@ -111,9 +156,6 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 
 	// include reaper-specific labels to the reaper container
 	for k, v := range reaper.Labels() {
-		if k == TestcontainerLabelSessionID || k == testcontainersdocker.LabelSessionID {
-			continue
-		}
 		req.Labels[k] = v
 	}
 

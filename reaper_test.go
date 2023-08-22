@@ -12,6 +12,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -55,9 +56,11 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		ReaperImage:  "reaperImage",
 		ExposedPorts: []string{"8080/tcp"},
 		Labels: map[string]string{
-			TestcontainerLabel:               "true",
-			TestcontainerLabelIsReaper:       "true",
-			testcontainersdocker.LabelReaper: "true",
+			TestcontainerLabel:                  "true",
+			TestcontainerLabelIsReaper:          "true",
+			testcontainersdocker.LabelReaper:    "true",
+			testcontainersdocker.LabelSessionID: testcontainerssession.ID,
+			TestcontainerLabelSessionID:         testcontainerssession.ID,
 		},
 		Mounts:     Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock")),
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
@@ -119,7 +122,7 @@ func Test_NewReaper(t *testing.T) {
 				test.ctx = context.TODO()
 			}
 
-			_, err := newReaper(test.ctx, "sessionId", provider, test.req.ReaperOptions...)
+			_, err := newReaper(test.ctx, testcontainerssession.ID, provider, test.req.ReaperOptions...)
 			// we should have errored out see mockReaperProvider.RunContainer
 			assert.EqualError(t, err, "expected")
 
@@ -155,7 +158,7 @@ func Test_ReaperForNetwork(t *testing.T) {
 		config: TestcontainersConfig{},
 	}
 
-	_, err := newReaper(ctx, "sessionId", provider, req.ReaperOptions...)
+	_, err := newReaper(ctx, testcontainerssession.ID, provider, req.ReaperOptions...)
 	assert.EqualError(t, err, "expected")
 
 	assert.Equal(t, "reaperImage", provider.req.Image)
@@ -170,10 +173,10 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 	wasReaperRunning := reaperInstance != nil
 
 	provider, _ := ProviderDocker.GetProvider()
-	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), "sessionId", provider)
+	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), testcontainerssession.ID, provider)
 	assert.NoError(t, err, "creating the Reaper should not error")
 
-	reaperReused, _ := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), "sessionId", provider)
+	reaperReused, _ := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), testcontainerssession.ID, provider)
 	assert.Same(t, reaper, reaperReused, "expecting the same reaper instance is returned if running and healthy")
 
 	terminate, err := reaper.Connect()
