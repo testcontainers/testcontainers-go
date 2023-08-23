@@ -42,6 +42,8 @@ func (g *TestLogConsumer) Accept(l Log) {
 		return
 	}
 
+	// Accept is called from a different goroutine than WaitFor.
+	// We need to synchronize access and notify the waiting goroutine so that it always sees the updated msgs.
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.msgs = append(g.msgs, s)
