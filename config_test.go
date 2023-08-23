@@ -17,6 +17,9 @@ func resetTestEnv(t *testing.T) {
 
 func TestReadConfig(t *testing.T) {
 	resetTestEnv(t)
+	t.Cleanup(func() {
+		config.Reset()
+	})
 
 	t.Run("Config is read just once", func(t *testing.T) {
 		t.Setenv("HOME", "")
