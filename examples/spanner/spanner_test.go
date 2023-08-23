@@ -1,18 +1,19 @@
 package spanner
 
 import (
+	"context"
+	"fmt"
+	"testing"
+
 	"cloud.google.com/go/spanner"
 	database "cloud.google.com/go/spanner/admin/database/apiv1"
 	instance "cloud.google.com/go/spanner/admin/instance/apiv1"
-	"context"
-	"fmt"
 	"google.golang.org/api/option"
 	"google.golang.org/api/option/internaloption"
 	databasepb "google.golang.org/genproto/googleapis/spanner/admin/database/v1"
 	instancepb "google.golang.org/genproto/googleapis/spanner/admin/instance/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"testing"
 )
 
 const (
@@ -95,7 +96,8 @@ func TestSpanner(t *testing.T) {
 	_, err = client.Apply(ctx, []*spanner.Mutation{
 		spanner.Insert("Languages",
 			[]string{"language", "mascot"},
-			[]interface{}{"Go", "Gopher"})})
+			[]interface{}{"Go", "Gopher"}),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

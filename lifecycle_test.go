@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"strings"
@@ -14,6 +15,8 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestPreCreateModifierHook(t *testing.T) {
@@ -210,7 +213,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		defer func() {
 			err := net.Remove(ctx)
 			if err != nil {
-				t.Logf("failed to remove network %s: %s", networkName, err)
+				t.Logf("failed to remove network %s: %s\n", networkName, err)
 			}
 		}()
 
@@ -262,7 +265,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		defer func() {
 			err := net.Remove(ctx)
 			if err != nil {
-				t.Logf("failed to remove network %s: %s", networkName, err)
+				t.Logf("failed to remove network %s: %s\n", networkName, err)
 			}
 		}()
 
@@ -556,7 +559,6 @@ func TestLifecycleHooks(t *testing.T) {
 			lifecycleHooksIsHonouredFn(t, ctx, c, prints)
 		})
 	}
-
 }
 
 type inMemoryLogger struct {
@@ -632,6 +634,75 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 	require.Nil(t, err)
 
 	require.Equal(t, 20, len(dl.data))
+}
+
+type linesTestLogger struct {
+	data []string
+}
+
+func (l *linesTestLogger) Printf(format string, args ...interface{}) {
+	l.data = append(l.data, fmt.Sprintf(format, args...))
+}
+
+func TestPrintContainerLogsOnError(t *testing.T) {
+	ctx := context.Background()
+	client, err := NewDockerClientWithOpts(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	req := ContainerRequest{
+		Image:      "docker.io/alpine",
+		Cmd:        []string{"echo", "-n", "I am expecting this"},
+		WaitingFor: wait.ForLog("I was expecting that").WithStartupTimeout(5 * time.Second),
+	}
+
+	arrayOfLinesLogger := linesTestLogger{
+		data: []string{},
+	}
+
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
+		ContainerRequest: req,
+		Logger:           &arrayOfLinesLogger,
+		Started:          true,
+	})
+	// it should fail because the waiting for condition is not met
+	if err == nil {
+		t.Fatal(err)
+	}
+	terminateContainerOnEnd(t, ctx, container)
+
+	containerLogs, err := container.Logs(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer containerLogs.Close()
+
+	// read container logs line by line, checking that each line is present in the stdout
+	rd := bufio.NewReader(containerLogs)
+	for {
+		line, err := rd.ReadString('\n')
+		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
+
+			t.Fatal("Read Error:", err)
+		}
+
+		// the last line of the array should contain the line of interest,
+		// but we are checking all the lines to make sure that is present
+		found := false
+		for _, l := range arrayOfLinesLogger.data {
+			if strings.Contains(l, line) {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "container log line not found in the output of the logger: %s", line)
+	}
 }
 
 func lifecycleHooksIsHonouredFn(t *testing.T, ctx context.Context, container Container, prints []string) {

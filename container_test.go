@@ -12,12 +12,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func Test_ContainerValidation(t *testing.T) {
-
 	type ContainerValidationTestCase struct {
 		Name             string
 		ExpectedError    error
@@ -72,13 +71,14 @@ func Test_ContainerValidation(t *testing.T) {
 	for _, testCase := range testTable {
 		t.Run(testCase.Name, func(t *testing.T) {
 			err := testCase.ContainerRequest.Validate()
-			if err == nil && testCase.ExpectedError == nil {
+			switch {
+			case err == nil && testCase.ExpectedError == nil:
 				return
-			} else if err == nil && testCase.ExpectedError != nil {
+			case err == nil && testCase.ExpectedError != nil:
 				t.Errorf("did not receive expected error: %s", testCase.ExpectedError.Error())
-			} else if err != nil && testCase.ExpectedError == nil {
+			case err != nil && testCase.ExpectedError == nil:
 				t.Errorf("received unexpected error: %s", err.Error())
-			} else if err.Error() != testCase.ExpectedError.Error() {
+			case err.Error() != testCase.ExpectedError.Error():
 				t.Errorf("errors mismatch: %s != %s", err.Error(), testCase.ExpectedError.Error())
 			}
 		})
@@ -156,7 +156,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				for _, f := range files {
 					header := tar.Header{
 						Name:     f.Name,
-						Mode:     0777,
+						Mode:     0o777,
 						Size:     int64(len(f.Contents)),
 						Typeflag: tar.TypeReg,
 						Format:   tar.FormatGNU,
@@ -272,13 +272,14 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				ContainerRequest: req,
 				Started:          true,
 			})
-			if testCase.ExpectedError != nil && err != nil {
+			switch {
+			case testCase.ExpectedError != nil && err != nil:
 				if testCase.ExpectedError.Error() != err.Error() {
 					t.Fatalf("unexpected error: %s, was expecting %s", err.Error(), testCase.ExpectedError.Error())
 				}
-			} else if err != nil {
+			case err != nil:
 				t.Fatal(err)
-			} else {
+			default:
 				terminateContainerOnEnd(t, ctx, c)
 			}
 		})
@@ -298,7 +299,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		Started:          true,
 	})
 
-	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
+	if err != nil && err.Error() != "container exited with code 0: failed to start container" {
 		t.Fatal(err)
 	} else if err == nil {
 		terminateContainerOnEnd(t, ctx, c)
@@ -326,99 +327,32 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 	t.Cleanup(cancel)
 
 	for i := 0; i < 3; i++ {
+		i := i
 		t.Run(fmt.Sprintf("iteration_%d", i), func(t *testing.T) {
 			t.Parallel()
-			createTestContainer(t, ctx)
-		})
-	}
-}
 
-func createTestContainer(t *testing.T, ctx context.Context) int {
-	req := ContainerRequest{
-		Image:        nginxAlpineImage,
-		ExposedPorts: []string{nginxDefaultPort},
-		WaitingFor:   wait.ForHTTP("/"),
-	}
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	if err != nil {
-		t.Fatalf("could not start container: %v", err)
-	}
-	// mappedPort {
-	port, err := container.MappedPort(ctx, nginxDefaultPort)
-	// }
-	if err != nil {
-		t.Fatalf("could not get mapped port: %v", err)
-	}
+			req := ContainerRequest{
+				Image:        nginxAlpineImage,
+				ExposedPorts: []string{nginxDefaultPort},
+				WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
+			}
+			container, err := GenericContainer(ctx, GenericContainerRequest{
+				ContainerRequest: req,
+				Started:          true,
+			})
+			if err != nil {
+				t.Fatalf("could not start container: %v", err)
+			}
+			// mappedPort {
+			port, err := container.MappedPort(ctx, nginxDefaultPort)
+			// }
+			if err != nil {
+				t.Fatalf("could not get mapped port: %v", err)
+			}
 
-	terminateContainerOnEnd(t, ctx, container)
+			terminateContainerOnEnd(t, ctx, container)
 
-	return port.Int()
-}
-
-func TestBindMount(t *testing.T) {
-	t.Parallel()
-
-	dockerSocket := testcontainersdocker.ExtractDockerSocket(context.Background())
-
-	type args struct {
-		hostPath    string
-		mountTarget ContainerMountTarget
-	}
-	tests := []struct {
-		name string
-		args args
-		want ContainerMount
-	}{
-		{
-			name: dockerSocket + ":" + dockerSocket,
-			args: args{hostPath: dockerSocket, mountTarget: "/var/run/docker.sock"},
-			want: ContainerMount{Source: GenericBindMountSource{HostPath: dockerSocket}, Target: "/var/run/docker.sock"},
-		},
-		{
-			name: "/var/lib/app/data:/data",
-			args: args{hostPath: "/var/lib/app/data", mountTarget: "/data"},
-			want: ContainerMount{Source: GenericBindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data"},
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equalf(t, tt.want, BindMount(tt.args.hostPath, tt.args.mountTarget), "BindMount(%v, %v)", tt.args.hostPath, tt.args.mountTarget)
-		})
-	}
-}
-
-func TestVolumeMount(t *testing.T) {
-	t.Parallel()
-	type args struct {
-		volumeName  string
-		mountTarget ContainerMountTarget
-	}
-	tests := []struct {
-		name string
-		args args
-		want ContainerMount
-	}{
-		{
-			name: "sample-data:/data",
-			args: args{volumeName: "sample-data", mountTarget: "/data"},
-			want: ContainerMount{Source: GenericVolumeMountSource{Name: "sample-data"}, Target: "/data"},
-		},
-		{
-			name: "web:/var/nginx/html",
-			args: args{volumeName: "web", mountTarget: "/var/nginx/html"},
-			want: ContainerMount{Source: GenericVolumeMountSource{Name: "web"}, Target: "/var/nginx/html"},
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equalf(t, tt.want, VolumeMount(tt.args.volumeName, tt.args.mountTarget), "VolumeMount(%v, %v)", tt.args.volumeName, tt.args.mountTarget)
+			t.Logf("Parallel container [iteration_%d] listening on %d\n", i, port.Int())
 		})
 	}
 }

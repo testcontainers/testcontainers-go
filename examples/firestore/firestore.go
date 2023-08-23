@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/testcontainers/testcontainers-go/wait"
-
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // firestoreContainer represents the firestore container type used in the module

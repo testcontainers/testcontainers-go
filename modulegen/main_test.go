@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 )
 
 func TestExample(t *testing.T) {
@@ -154,11 +156,11 @@ func TestGenerateWrongExampleName(t *testing.T) {
 	examplesDocTmp := filepath.Join(rootTmp, "docs", "examples")
 	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
 
-	err := os.MkdirAll(examplesTmp, 0777)
+	err := os.MkdirAll(examplesTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(examplesDocTmp, 0777)
+	err = os.MkdirAll(examplesDocTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	assert.Nil(t, err)
 
 	err = copyInitialMkdocsConfig(t, rootTmp)
@@ -197,11 +199,11 @@ func TestGenerateWrongExampleTitle(t *testing.T) {
 	examplesDocTmp := filepath.Join(rootTmp, "docs", "examples")
 	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
 
-	err := os.MkdirAll(examplesTmp, 0777)
+	err := os.MkdirAll(examplesTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(examplesDocTmp, 0777)
+	err = os.MkdirAll(examplesDocTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	assert.Nil(t, err)
 
 	err = copyInitialMkdocsConfig(t, rootTmp)
@@ -237,15 +239,16 @@ func TestGenerateWrongExampleTitle(t *testing.T) {
 
 func TestGenerate(t *testing.T) {
 	rootTmp := t.TempDir()
+	tmpCtx := &Context{RootDir: rootTmp}
 	examplesTmp := filepath.Join(rootTmp, "examples")
 	examplesDocTmp := filepath.Join(rootTmp, "docs", "examples")
-	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
+	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 
-	err := os.MkdirAll(examplesTmp, 0777)
+	err := os.MkdirAll(examplesTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(examplesDocTmp, 0777)
+	err = os.MkdirAll(examplesDocTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	assert.Nil(t, err)
 
 	err = copyInitialMkdocsConfig(t, rootTmp)
@@ -254,10 +257,10 @@ func TestGenerate(t *testing.T) {
 	originalConfig, err := readMkdocsConfig(rootTmp)
 	assert.Nil(t, err)
 
-	err = copyInitialDependabotConfig(t, rootTmp)
+	err = copyInitialDependabotConfig(t, tmpCtx.DependabotConfigFile())
 	assert.Nil(t, err)
 
-	originalDependabotConfig, err := readDependabotConfig(rootTmp)
+	originalDependabotConfigUpdates, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
 	assert.Nil(t, err)
 
 	example := Example{
@@ -287,37 +290,37 @@ func TestGenerate(t *testing.T) {
 	_, err = os.Stat(exampleDocFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
-	exampleWorkflowFile := filepath.Join(githubWorkflowsTmp, exampleNameLower+"-example.yml")
-	_, err = os.Stat(exampleWorkflowFile)
+	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
+	_, err = os.Stat(mainWorkflowFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
 	// check the number of template files is equal to examples + 2 (the doc and the github workflow)
 	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
 
 	assertExampleDocContent(t, example, exampleDocFile)
-	assertExampleGithubWorkflowContent(t, example, exampleWorkflowFile)
+	assertExampleGithubWorkflowContent(t, example, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, exampleNameLower)
 	assertExampleTestContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
 	assertExampleContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
 	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertToolsGoContent(t, example, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
 	assertMkdocsExamplesNav(t, example, originalConfig, rootTmp)
-	assertDependabotExamplesUpdates(t, example, originalDependabotConfig, rootTmp)
+	assertDependabotExamplesUpdates(t, example, originalDependabotConfigUpdates, tmpCtx.DependabotConfigFile())
 }
 
 func TestGenerateModule(t *testing.T) {
 	rootTmp := t.TempDir()
+	tmpCtx := &Context{RootDir: rootTmp}
 	modulesTmp := filepath.Join(rootTmp, "modules")
 	modulesDocTmp := filepath.Join(rootTmp, "docs", "modules")
-	githubWorkflowsTmp := filepath.Join(rootTmp, ".github", "workflows")
+	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 
-	err := os.MkdirAll(modulesTmp, 0777)
+	err := os.MkdirAll(modulesTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(modulesDocTmp, 0777)
+	err = os.MkdirAll(modulesDocTmp, 0o777)
 	assert.Nil(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0777)
+	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	assert.Nil(t, err)
 
 	err = copyInitialMkdocsConfig(t, rootTmp)
@@ -326,10 +329,10 @@ func TestGenerateModule(t *testing.T) {
 	originalConfig, err := readMkdocsConfig(rootTmp)
 	assert.Nil(t, err)
 
-	err = copyInitialDependabotConfig(t, rootTmp)
+	err = copyInitialDependabotConfig(t, tmpCtx.DependabotConfigFile())
 	assert.Nil(t, err)
 
-	originalDependabotConfig, err := readDependabotConfig(rootTmp)
+	originalDependabotConfigUpdates, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
 	assert.Nil(t, err)
 
 	example := Example{
@@ -359,34 +362,31 @@ func TestGenerateModule(t *testing.T) {
 	_, err = os.Stat(exampleDocFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
-	exampleWorkflowFile := filepath.Join(githubWorkflowsTmp, "module-"+exampleNameLower+".yml")
-	_, err = os.Stat(exampleWorkflowFile)
+	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
+	_, err = os.Stat(mainWorkflowFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
 	// check the number of template files is equal to examples + 2 (the doc and the github workflow)
 	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
 
 	assertExampleDocContent(t, example, exampleDocFile)
-	assertExampleGithubWorkflowContent(t, example, exampleWorkflowFile)
+	assertExampleGithubWorkflowContent(t, example, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(modulesTmp, exampleNameLower)
 	assertExampleTestContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
 	assertExampleContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
 	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertToolsGoContent(t, example, filepath.Join(generatedTemplatesDir, "tools", "tools.go"))
 	assertMkdocsExamplesNav(t, example, originalConfig, rootTmp)
-	assertDependabotExamplesUpdates(t, example, originalDependabotConfig, rootTmp)
+	assertDependabotExamplesUpdates(t, example, originalDependabotConfigUpdates, tmpCtx.DependabotConfigFile())
 }
 
 // assert content in the Examples nav from mkdocs.yml
-func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConfig *DependabotConfig, rootDir string) {
-	config, err := readDependabotConfig(rootDir)
+func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConfigUpdates dependabot.Updates, tmpFile string) {
+	examples, err := dependabot.GetUpdates(tmpFile)
 	assert.Nil(t, err)
 
-	examples := config.Updates
-
-	assert.Equal(t, len(originalConfig.Updates)+1, len(examples))
+	assert.Equal(t, len(originalConfigUpdates)+1, len(examples))
 
 	// the example should be in the dependabot updates
 	found := false
@@ -399,8 +399,17 @@ func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConf
 
 	assert.True(t, found)
 
-	// first item is the main module
+	// first item is the github-actions module
 	assert.Equal(t, "/", examples[0].Directory, examples)
+	assert.Equal(t, "github-actions", examples[0].PackageEcosystem, "PackageEcosystem should be github-actions")
+
+	// second item is the core module
+	assert.Equal(t, "/", examples[1].Directory, examples)
+	assert.Equal(t, "gomod", examples[1].PackageEcosystem, "PackageEcosystem should be gomod")
+
+	// third item is the pip module
+	assert.Equal(t, "/", examples[2].Directory, examples)
+	assert.Equal(t, "pip", examples[2].PackageEcosystem, "PackageEcosystem should be pip")
 }
 
 // assert content example file in the docs
@@ -411,7 +420,7 @@ func assertExampleDocContent(t *testing.T, example Example, exampleDocFile strin
 	lower := example.Lower()
 	title := example.Title()
 
-	data := strings.Split(string(content), "\n")
+	data := sanitiseContent(content)
 	assert.Equal(t, data[0], "# "+title)
 	assert.Equal(t, data[2], `Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>`)
 	assert.Equal(t, data[4], "## Introduction")
@@ -435,7 +444,7 @@ func assertExampleTestContent(t *testing.T, example Example, exampleTestFile str
 	content, err := os.ReadFile(exampleTestFile)
 	assert.Nil(t, err)
 
-	data := strings.Split(string(content), "\n")
+	data := sanitiseContent(content)
 	assert.Equal(t, data[0], "package "+example.Lower())
 	assert.Equal(t, data[7], "func Test"+example.Title()+"(t *testing.T) {")
 	assert.Equal(t, data[10], "\tcontainer, err := RunContainer(ctx)")
@@ -451,7 +460,7 @@ func assertExampleContent(t *testing.T, example Example, exampleFile string) {
 	exampleName := example.Title()
 	entrypoint := example.Entrypoint()
 
-	data := strings.Split(string(content), "\n")
+	data := sanitiseContent(content)
 	assert.Equal(t, data[0], "package "+lower)
 	assert.Equal(t, data[8], "// "+containerName+" represents the "+exampleName+" container type used in the module")
 	assert.Equal(t, data[9], "type "+containerName+" struct {")
@@ -466,17 +475,15 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	content, err := os.ReadFile(exampleWorkflowFile)
 	assert.Nil(t, err)
 
-	lower := example.Lower()
-	title := example.Title()
+	data := sanitiseContent(content)
 
-	data := strings.Split(string(content), "\n")
-	assert.Equal(t, "name: "+title+" "+example.Type()+" pipeline", data[0])
-	assert.Equal(t, "  test-"+lower+":", data[19])
-	assert.Equal(t, "          go-version: ${{ matrix.go-version }}", data[29])
-	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[36])
-	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[40])
-	assert.Equal(t, "        working-directory: ./"+example.ParentDir()+"/"+lower, data[44])
-	assert.Equal(t, "          paths: \"**/TEST-"+lower+"*.xml\"", data[54])
+	modulesList, err := getModulesOrExamplesAsString(true)
+	assert.Nil(t, err)
+	assert.Equal(t, "        module: ["+modulesList+"]", data[88])
+
+	examplesList, err := getModulesOrExamplesAsString(false)
+	assert.Nil(t, err)
+	assert.Equal(t, "        module: ["+examplesList+"]", data[104])
 }
 
 // assert content go.mod
@@ -484,7 +491,7 @@ func assertGoModContent(t *testing.T, example Example, goModFile string) {
 	content, err := os.ReadFile(goModFile)
 	assert.Nil(t, err)
 
-	data := strings.Split(string(content), "\n")
+	data := sanitiseContent(content)
 	assert.Equal(t, "module github.com/testcontainers/testcontainers-go/"+example.ParentDir()+"/"+example.Lower(), data[0])
 	assert.Equal(t, "\tgithub.com/testcontainers/testcontainers-go "+example.TCVersion, data[5])
 }
@@ -494,7 +501,7 @@ func assertMakefileContent(t *testing.T, example Example, makefile string) {
 	content, err := os.ReadFile(makefile)
 	assert.Nil(t, err)
 
-	data := strings.Split(string(content), "\n")
+	data := sanitiseContent(content)
 	assert.Equal(t, data[4], "\t$(MAKE) test-"+example.Lower())
 }
 
@@ -529,12 +536,22 @@ func assertMkdocsExamplesNav(t *testing.T, example Example, originalConfig *MkDo
 	assert.Equal(t, parentDir+"/index.md", examples[0], examples)
 }
 
-// assert content tools/tools.go
-func assertToolsGoContent(t *testing.T, example Example, tools string) {
-	content, err := os.ReadFile(tools)
+func sanitiseContent(bytes []byte) []string {
+	content := string(bytes)
+
+	// Windows uses \r\n for newlines, but we want to use \n
+	content = strings.ReplaceAll(content, "\r\n", "\n")
+
+	data := strings.Split(content, "\n")
+
+	return data
+}
+
+func copyInitialDependabotConfig(t *testing.T, tmpFile string) error {
+	projectDir, err := getRootDir()
 	assert.Nil(t, err)
 
-	data := strings.Split(string(content), "\n")
-	assert.Equal(t, data[3], "// This package contains the tool dependencies of the "+example.Title()+" "+example.Type()+".")
-	assert.Equal(t, data[5], "package tools")
+	ctx := &Context{RootDir: projectDir}
+
+	return dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpFile)
 }

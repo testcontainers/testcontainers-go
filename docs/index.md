@@ -1,16 +1,15 @@
-# Testcontainers
-
-<img src="logo.png" alt="Testcontainers logo" width="1024" height="512"/>
+# Welcome to Testcontainers for Go!
 
 <p align="center"><strong>Not using Go? Here are other supported languages!</strong></p>
 <div class="card-grid">
-    <a href="https://testcontainers.org" class="card-grid-item"><img src="language-logos/java.svg"/>Java</a>
+    <a href="https://java.testcontainers.org" class="card-grid-item"><img src="language-logos/java.svg"/>Java</a>
     <a class="card-grid-item"><img src="language-logos/go.svg"/>Go</a>
     <a href="https://dotnet.testcontainers.org/" class="card-grid-item"><img src="language-logos/dotnet.svg"/>.NET</a>
     <a href="https://node.testcontainers.org/" class="card-grid-item"><img src="language-logos/nodejs.svg"/>Node.js</a></a>
     <a href="https://testcontainers-python.readthedocs.io/en/latest/" class="card-grid-item"><img src="language-logos/python.svg"/>Python</a>
     <a href="https://docs.rs/testcontainers/latest/testcontainers/" class="card-grid-item"><img src="language-logos/rust.svg"/>Rust</a>
     <a href="https://github.com/testcontainers/testcontainers-hs" class="card-grid-item"><img src="language-logos/haskell.svg"/>Haskell</a>
+    <a href="https://github.com/testcontainers/testcontainers-ruby/" class="card-grid-item" ><img src="language-logos/ruby.svg"/>Ruby</a>
 </div>
 
 ## About Testcontainers for Go

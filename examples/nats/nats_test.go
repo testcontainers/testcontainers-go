@@ -63,4 +63,3 @@ func TestNats(t *testing.T) {
 		t.Fatalf("expected message to be 'hello', got '%s'", msg.Data)
 	}
 }
-

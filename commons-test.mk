@@ -6,11 +6,13 @@ dependencies-scan:
 .PHONY: test-%
 test-%:
 	@echo "Running $* tests..."
-	go run gotest.tools/gotestsum \
+	gotestsum \
 		--format short-verbose \
 		--rerun-fails=5 \
 		--packages="./..." \
-		--junitfile TEST-$*.xml
+		--junitfile TEST-$*.xml \
+		-- \
+		-timeout=30m
 
 .PHONY: tools
 tools:

@@ -1,16 +1,15 @@
 linters:
   enable:
     - gci
-    - gofmt
+    - gofumpt
     - misspell
-
 
 linters-settings:
   gci:
     sections:
-    - standard
-    - default
-    - prefix(github.com/testcontainters)
+      - standard
+      - default
+      - prefix(github.com/testcontainers)
 
 run:
-  timeout: 3m
+  timeout: 5m

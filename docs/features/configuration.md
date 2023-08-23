@@ -23,10 +23,10 @@ _Testcontainers for Go_ provides a struct type to represent the configuration:
 [Supported properties](../../internal/config/config.go) inside_block:testcontainersConfig
 <!--/codeinclude-->
 
-You can read it with the `ReadConfigWithContext(ctx)` function:
+You can read it with the `ReadConfig()` function:
 
 ```go
-cfg := testcontainers.ReadConfigWithContext(ctx)
+cfg := testcontainers.ReadConfig()
 ```
 
 For advanced users, the Docker host connection can be configured **via configuration** in `~/.testcontainers.properties`, but environment variables will take precedence.
@@ -80,17 +80,20 @@ _Testcontainers for Go_ will attempt to detect the Docker socket path and config
 
 However, sometimes customization is required. _Testcontainers for Go_ will respect the following order:
 
-1. Read the **tc.host** property in the `~/.testcontainers.properties` file. E.g. `tc.host=tcp://my.docker.host:1234`
+1. Read the **tc.host** property in the `~/.testcontainers.properties` file. E.g. `tc.host=tcp://my.docker.host:1234`. If this property is set, the returned Docker socket path
+will be the default Docker socket path: `/var/run/docker.sock`.
 
 2. Read the **TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE** environment variable.
 Path to Docker's socket. Used by Ryuk, Docker Compose, and a few other containers that need to perform Docker actions.  
 
     Example: `/var/run/docker-alt.sock`
 
-3. If the Operative System retrieved by the Docker client is "Docker Desktop", return the default docker socket path for rootless docker.
+3. If the Operative System retrieved by the Docker client is "Docker Desktop", and the host is running on Windows, it will return the `//var/run/docker.sock` UNC Path. Else return the default docker socket path for rootless docker.
 
 4. Get the current Docker Host from the existing strategies: see [Docker host detection](#docker-host-detection).
 
 5. If the socket contains the unix schema, the schema is removed (e.g. `unix:///var/run/docker.sock` -> `/var/run/docker.sock`)
 
 6. Else, the default location of the docker socket is used: `/var/run/docker.sock`
+
+In any case, if the docker socket schema is `tcp://`, the default docker socket path will be returned.

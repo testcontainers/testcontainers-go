@@ -17,15 +17,13 @@ git remote -v
 
 Once the remote is properly set, please follow these steps:
 
-- Run the [release.sh](./scripts/pre-release.sh) shell script to run it in dry-run mode.
+- Run the [pre-release.sh](./scripts/pre-release.sh) shell script to run it in dry-run mode.
 - You can use the `DRY_RUN` variable to enable or disable the dry-run mode. By default, it's enabled.
 - To prepare for a release, updating the _Testcontainers for Go_ dependency for all the modules and examples, without performing any Git operation:
 
         DRY_RUN="false" ./scripts/pre-release.sh
 
 - The script will update the [mkdocs.yml](./mkdocks.yml) file, updating the `latest_version` field to the current version.
-- The script will update the [version.go](./internal/version.go) file, setting the next development version to the next **minor** version by default. For example, if the current version is `v0.18.0`, the script will update the [version.go](./internal/version.go) file with the next development version `v0.19.0`.
-
 - The script will update the `go.mod` files for each Go modules and example modules under the examples and modules directories, updating the version of the testcontainers-go dependency to the recently created tag.
 - The script will modify the docs for the each Go module **that was not released yet**, updating the version of _Testcontainers for Go_ where it was added to the recently created tag.
 
@@ -135,6 +133,7 @@ Once you are satisfied with the modified files in the git state:
 
              "${directory}/${module_name}/${version}", e.g. "examples/mysql/v0.18.0", "modules/compose/v0.18.0"
 
+- The script will update the [version.go](./internal/version.go) file, setting the next development version to the value defined in the `BUMP_TYPE` environment variable. For example, if the current version is `v0.18.0`, the script will update the [version.go](./internal/version.go) file with the next development version `v0.19.0`.
 - The script will create a commit in the **main** branch if the `DRY_RUN` variable is set to `false`.
 - The script will push the main branch including the tags to the upstream repository, https://github.com/testcontainers/testcontainers-go, if the `DRY_RUN` variable is set to `false`.
 - Finally, the script will trigger the Golang proxy to update the modules in https://proxy.golang.org/, if the `DRY_RUN` variable is set to `false`.

@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -22,33 +23,23 @@ var testDockerConfigDirPath = filepath.Join("testdata", ".docker")
 
 var indexDockerIO = testcontainersdocker.IndexDockerIO
 
-var originalDockerAuthConfig string
-
-func init() {
-	originalDockerAuthConfig = os.Getenv("DOCKER_AUTH_CONFIG")
-}
-
 func TestGetDockerConfig(t *testing.T) {
 	const expectedErrorMessage = "Expected to find %s in auth configs"
 
 	// Verify that the default docker config file exists before any test in this suite runs.
 	// Then, we can safely run the tests that rely on it.
-	cfg, err := dockercfg.LoadDefaultConfig()
+	defaultCfg, err := dockercfg.LoadDefaultConfig()
 	require.Nil(t, err)
-	require.NotNil(t, cfg)
+	require.NotNil(t, defaultCfg)
 
 	t.Run("without DOCKER_CONFIG env var retrieves default", func(t *testing.T) {
+		t.Setenv("DOCKER_CONFIG", "")
+
 		cfg, err := getDockerConfig()
 		require.Nil(t, err)
 		require.NotNil(t, cfg)
 
-		assert.Equal(t, 1, len(cfg.AuthConfigs))
-
-		authCfgs := cfg.AuthConfigs
-
-		if _, ok := authCfgs[indexDockerIO]; !ok {
-			t.Errorf(expectedErrorMessage, indexDockerIO)
-		}
+		assert.Equal(t, defaultCfg, cfg)
 	})
 
 	t.Run("with DOCKER_CONFIG env var pointing to a non-existing file raises error", func(t *testing.T) {
@@ -82,10 +73,6 @@ func TestGetDockerConfig(t *testing.T) {
 	})
 
 	t.Run("DOCKER_AUTH_CONFIG env var takes precedence", func(t *testing.T) {
-		t.Cleanup(func() {
-			os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
-		})
-
 		t.Setenv("DOCKER_AUTH_CONFIG", `{
 			"auths": {
 					"`+exampleAuth+`": {}
@@ -111,10 +98,6 @@ func TestGetDockerConfig(t *testing.T) {
 	})
 
 	t.Run("retrieve auth with DOCKER_AUTH_CONFIG env var", func(t *testing.T) {
-		t.Cleanup(func() {
-			os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
-		})
-
 		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
 
 		t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -155,25 +138,22 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 func removeImageFromLocalCache(t *testing.T, image string) {
 	ctx := context.Background()
 
-	testcontainersClient, err := testcontainersdocker.NewClient(ctx, client.WithVersion(daemonMaxVersion))
+	testcontainersClient, err := NewDockerClientWithOpts(ctx, client.WithVersion(daemonMaxVersion))
 	if err != nil {
 		t.Log("could not create client to cleanup registry: ", err)
 	}
+	defer testcontainersClient.Close()
 
 	_, err = testcontainersClient.ImageRemove(ctx, image, types.ImageRemoveOptions{
 		Force:         true,
 		PruneChildren: true,
 	})
 	if err != nil {
-		t.Logf("could not remove image %s: %v", image, err)
+		t.Logf("could not remove image %s: %v\n", image, err)
 	}
 }
 
 func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
-	t.Cleanup(func() {
-		os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
-	})
-
 	// using the same credentials as in the Docker Registry
 	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -203,10 +183,6 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 }
 
 func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *testing.T) {
-	t.Cleanup(func() {
-		os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
-	})
-
 	// using different credentials than in the Docker Registry
 	base64 := "Zm9vOmJhcg==" // foo:bar
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -236,11 +212,6 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 }
 
 func TestCreateContainerFromPrivateRegistry(t *testing.T) {
-	t.Cleanup(func() {
-		os.Setenv("DOCKER_AUTH_CONFIG", originalDockerAuthConfig)
-	})
-	os.Unsetenv("DOCKER_AUTH_CONFIG")
-
 	// using the same credentials as in the Docker Registry
 	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
@@ -272,6 +243,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 	ctx := context.Background()
 	wd, err := os.Getwd()
 	assert.NoError(t, err)
+	// bindMounts {
 	req := ContainerRequest{
 		Image:        "registry:2",
 		ExposedPorts: []string{"5000:5000/tcp"},
@@ -297,6 +269,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 		},
 		WaitingFor: wait.ForExposedPort(),
 	}
+	// }
 
 	genContainerReq := GenericContainerRequest{
 		ProviderType:     providerType,

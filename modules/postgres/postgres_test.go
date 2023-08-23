@@ -10,16 +10,18 @@ import (
 
 	"github.com/docker/go-connections/nat"
 	_ "github.com/lib/pq"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const dbname = "test-db"
-const user = "postgres"
-const password = "password"
+const (
+	dbname   = "test-db"
+	user     = "postgres"
+	password = "password"
+)
 
 func TestPostgres(t *testing.T) {
 	ctx := context.Background()
@@ -78,6 +80,11 @@ func TestPostgres(t *testing.T) {
 			assert.NoError(t, err)
 			// }
 
+			// Ensure connection string is using generic format
+			id, err := container.MappedPort(ctx, "5432/tcp")
+			assert.NoError(t, err)
+			assert.Equal(t, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&application_name=test", user, password, "localhost", id.Port(), dbname), connStr)
+
 			// perform assertions
 			db, err := sql.Open("postgres", connStr)
 			assert.NoError(t, err)
@@ -98,7 +105,7 @@ func TestPostgres(t *testing.T) {
 func TestContainerWithWaitForSQL(t *testing.T) {
 	ctx := context.Background()
 
-	var port = "5432/tcp"
+	port := "5432/tcp"
 	dbURL := func(host string, port nat.Port) string {
 		return fmt.Sprintf("postgres://postgres:password@%s:%s/%s?sslmode=disable", host, port.Port(), dbname)
 	}

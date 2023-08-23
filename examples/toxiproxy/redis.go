@@ -2,6 +2,7 @@ package toxiproxy
 
 import (
 	"context"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )

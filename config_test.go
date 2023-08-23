@@ -1,10 +1,10 @@
 package testcontainers
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
@@ -20,9 +20,10 @@ func TestReadConfig(t *testing.T) {
 
 	t.Run("Config is read just once", func(t *testing.T) {
 		t.Setenv("HOME", "")
+		t.Setenv("USERPROFILE", "") // Windows support
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 
-		cfg := ReadConfigWithContext(context.Background())
+		cfg := ReadConfig()
 
 		expected := TestcontainersConfig{
 			RyukDisabled: true,

@@ -15,7 +15,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -31,6 +30,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
+
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
@@ -42,7 +42,6 @@ var (
 	// Implement interfaces
 	_ Container = (*DockerContainer)(nil)
 
-	logOnce                 sync.Once
 	ErrDuplicateMountTarget = errors.New("duplicate mount target detected")
 )
 
@@ -193,22 +192,10 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 		return err
 	}
 
-	shortID := c.ID[:12]
-
 	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
 	defer c.provider.Close()
-
-	// if a Wait Strategy has been specified, wait before returning
-	if c.WaitingFor != nil {
-		c.logger.Printf("🚧 Waiting for container id %s image: %s", shortID, c.Image)
-		if err := c.WaitingFor.WaitUntilReady(ctx, c); err != nil {
-			return err
-		}
-	}
-
-	c.isRunning = true
 
 	err = c.startedHook(ctx)
 	if err != nil {
@@ -257,6 +244,14 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 
 // Terminate is used to kill the container. It is usually triggered by as defer function.
 func (c *DockerContainer) Terminate(ctx context.Context) error {
+	select {
+	// close reaper if it was created
+	case c.terminationSignal <- true:
+	default:
+	}
+
+	defer c.provider.client.Close()
+
 	err := c.terminatingHook(ctx)
 	if err != nil {
 		return err
@@ -267,11 +262,6 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		return err
 	}
 
-	select {
-	// close reaper if it was created
-	case c.terminationSignal <- true:
-	default:
-	}
 	err = c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
 		RemoveVolumes: true,
 		Force:         true,
@@ -295,10 +285,6 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		}
 	}
 
-	if err := c.provider.client.Close(); err != nil {
-		return err
-	}
-
 	c.sessionID = uuid.UUID{}
 	c.isRunning = false
 	return nil
@@ -306,22 +292,22 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 // update container raw info
 func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.ContainerJSON, error) {
+	defer c.provider.Close()
 	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
 	if err != nil {
 		return nil, err
 	}
-	defer c.provider.Close()
 
 	c.raw = &inspect
 	return c.raw, nil
 }
 
 func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.ContainerJSON, error) {
+	defer c.provider.Close()
 	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
 	if err != nil {
 		return nil, err
 	}
-	defer c.provider.Close()
 
 	return &inspect, nil
 }
@@ -329,7 +315,6 @@ func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.Containe
 // Logs will fetch both STDOUT and STDERR from the current container. Returns a
 // ReadCloser and leaves it up to the caller to extract what it wants.
 func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
-
 	const streamHeaderSize = 8
 
 	options := types.ContainerLogsOptions{
@@ -347,7 +332,7 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	r := bufio.NewReader(rc)
 
 	go func() {
-		var lineStarted = true
+		lineStarted := true
 		for err == nil {
 			line, isPrefix, err := r.ReadLine()
 
@@ -754,13 +739,9 @@ func (n *DockerNetwork) Remove(ctx context.Context) error {
 	default:
 	}
 
-	err := n.provider.client.NetworkRemove(ctx, n.ID)
-	if err != nil {
-		return err
-	}
 	defer n.provider.Close()
 
-	return nil
+	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
 // DockerProvider implements the ContainerProvider interface
@@ -792,10 +773,6 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 }
 
 var _ ContainerProvider = (*DockerProvider)(nil)
-
-func NewDockerClient() (cli *client.Client, err error) {
-	return testcontainersdocker.NewClient(context.Background())
-}
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
@@ -928,6 +905,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
+	// Cleanup on error, otherwise set termSignal to nil before successful return.
+	defer func() {
+		if termSignal != nil {
+			termSignal <- true
+		}
+	}()
+
 	if err = req.Validate(); err != nil {
 		return nil, err
 	}
@@ -993,6 +977,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
+	for k, v := range testcontainersdocker.DefaultLabels() {
+		req.Labels[k] = v
+	}
+
 	dockerInput := &container.Config{
 		Entrypoint: req.Entrypoint,
 		Image:      tag,
@@ -1029,6 +1017,27 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 							return fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
 						}
 					}
+
+					return nil
+				},
+			},
+			PostStarts: []ContainerHook{
+				// first post-start hook is to wait for the container to be ready
+				func(ctx context.Context, c Container) error {
+					dockerContainer := c.(*DockerContainer)
+
+					// if a Wait Strategy has been specified, wait before returning
+					if dockerContainer.WaitingFor != nil {
+						dockerContainer.logger.Printf(
+							"🚧 Waiting for container id %s image: %s. Waiting for: %+v",
+							dockerContainer.ID[:12], dockerContainer.Image, dockerContainer.WaitingFor,
+						)
+						if err := dockerContainer.WaitingFor.WaitUntilReady(ctx, c); err != nil {
+							return err
+						}
+					}
+
+					dockerContainer.isRunning = true
 
 					return nil
 				},
@@ -1084,6 +1093,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	if err != nil {
 		return nil, err
 	}
+
+	// Disable cleanup on success
+	termSignal = nil
 
 	return c, nil
 }
@@ -1176,9 +1188,9 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 }
 
 // Health measure the healthiness of the provider. Right now we leverage the
-// docker-client ping endpoint to see if the daemon is reachable.
+// docker-client Info endpoint to see if the daemon is reachable.
 func (p *DockerProvider) Health(ctx context.Context) (err error) {
-	_, err = p.client.Ping(ctx)
+	_, err = p.client.Info(ctx)
 	defer p.Close()
 
 	return err
@@ -1300,6 +1312,13 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		}
 	}
 
+	// Cleanup on error, otherwise set termSignal to nil before successful return.
+	defer func() {
+		if termSignal != nil {
+			termSignal <- true
+		}
+	}()
+
 	response, err := p.client.NetworkCreate(ctx, req.Name, nc)
 	if err != nil {
 		return &DockerNetwork{}, err
@@ -1312,6 +1331,9 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		terminationSignal: termSignal,
 		provider:          p,
 	}
+
+	// Disable cleanup on success
+	termSignal = nil
 
 	return n, nil
 }

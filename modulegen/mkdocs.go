@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -10,6 +9,7 @@ import (
 
 type MkDocsConfig struct {
 	SiteName string   `yaml:"site_name"`
+	SiteURL  string   `yaml:"site_url"`
 	Plugins  []string `yaml:"plugins"`
 	Theme    struct {
 		Name      string `yaml:"name"`
@@ -34,7 +34,7 @@ type MkDocsConfig struct {
 		Features           []interface{} `yaml:"Features,omitempty"`
 		Examples           []string      `yaml:"Examples,omitempty"`
 		Modules            []string      `yaml:"Modules,omitempty"`
-		SystemRequirements []string      `yaml:"System Requirements,omitempty"`
+		SystemRequirements []interface{} `yaml:"System Requirements,omitempty"`
 		Contributing       []string      `yaml:"Contributing,omitempty"`
 		GettingHelp        string        `yaml:"Getting help,omitempty"`
 	} `yaml:"nav"`
@@ -49,28 +49,7 @@ func getMkdocsConfigFile(rootDir string) string {
 }
 
 func getExamples() ([]os.DirEntry, error) {
-	parent, err := getRootDir()
-	if err != nil {
-		return nil, err
-	}
-
-	dir := filepath.Join(parent, "examples")
-
-	allFiles, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	examples := make([]os.DirEntry, 0)
-
-	for _, f := range allFiles {
-		// only accept the directories and not the template
-		if f.IsDir() && f.Name() != "_template" {
-			examples = append(examples, f)
-		}
-	}
-
-	return examples, nil
+	return getModulesOrExamples(false)
 }
 
 func getExamplesDocs() ([]os.DirEntry, error) {
@@ -96,7 +75,7 @@ func getRootDir() (string, error) {
 func readMkdocsConfig(rootDir string) (*MkDocsConfig, error) {
 	configFile := getMkdocsConfigFile(rootDir)
 
-	file, err := ioutil.ReadFile(configFile)
+	file, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, err
 	}
@@ -119,5 +98,5 @@ func writeMkdocsConfig(rootDir string, config *MkDocsConfig) error {
 
 	file := getMkdocsConfigFile(rootDir)
 
-	return ioutil.WriteFile(file, data, 0777)
+	return os.WriteFile(file, data, 0o777)
 }

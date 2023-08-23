@@ -47,7 +47,7 @@ func runContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	uri:= fmt.Sprintf("nats://%s:%s", hostIP, mappedPort.Port())
+	uri := fmt.Sprintf("nats://%s:%s", hostIP, mappedPort.Port())
 
 	return &natsContainer{Container: container, URI: uri}, nil
 }

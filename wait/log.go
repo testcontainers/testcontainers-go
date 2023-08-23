@@ -8,8 +8,10 @@ import (
 )
 
 // Implement interface
-var _ Strategy = (*LogStrategy)(nil)
-var _ StrategyTimeout = (*LogStrategy)(nil)
+var (
+	_ Strategy        = (*LogStrategy)(nil)
+	_ StrategyTimeout = (*LogStrategy)(nil)
+)
 
 // LogStrategy will wait until a given log entry shows up in the docker logs
 type LogStrategy struct {
@@ -81,6 +83,8 @@ func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	length := 0
+
 LOOP:
 	for {
 		select {
@@ -102,11 +106,13 @@ LOOP:
 			}
 
 			logs := string(b)
-			if logs == "" && checkErr != nil {
+			switch {
+			case length == len(logs) && checkErr != nil:
 				return checkErr
-			} else if strings.Count(logs, ws.Log) >= ws.Occurrence {
+			case strings.Count(logs, ws.Log) >= ws.Occurrence:
 				break LOOP
-			} else {
+			default:
+				length = len(logs)
 				time.Sleep(ws.PollInterval)
 				continue
 			}

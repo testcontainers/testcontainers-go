@@ -14,8 +14,10 @@ import (
 )
 
 // Implement interface
-var _ Strategy = (*HostPortStrategy)(nil)
-var _ StrategyTimeout = (*HostPortStrategy)(nil)
+var (
+	_ Strategy        = (*HostPortStrategy)(nil)
+	_ StrategyTimeout = (*HostPortStrategy)(nil)
+)
 
 var errShellNotExecutable = errors.New("/bin/sh command not executable")
 
@@ -83,7 +85,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		return
 	}
 
-	var waitInterval = hp.PollInterval
+	waitInterval := hp.PollInterval
 
 	internalPort := hp.Port
 	if internalPort == "" {
@@ -107,7 +109,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 
 	var port nat.Port
 	port, err = target.MappedPort(ctx, internalPort)
-	var i = 0
+	i := 0
 
 	for port == "" {
 		i++

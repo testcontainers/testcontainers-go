@@ -14,7 +14,7 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		Started: true,
 	})
 
-nginxC.CopyFileToContainer(ctx, "./testdata/hello.sh", "/hello_copy.sh", 700)
+nginxC.CopyFileToContainer(ctx, "./testdata/hello.sh", "/hello_copy.sh", 0o700)
 ```
 
 Or you can add a list of files in the `ContainerRequest` initialization, which can be copied before the container starts:
@@ -31,7 +31,7 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 				{
 					HostFilePath:      "./testdata/hello.sh",
 					ContainerFilePath: "/copies-hello.sh",
-					FileMode:          700,
+					FileMode:          0o700,
 				},
 			},
 		},
@@ -60,7 +60,7 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 				{
 					HostFilePath:      "./testdata",    // a directory
 					ContainerFilePath: "/tmp/testdata", // important! its parent already exists
-					FileMode:          700,
+					FileMode:          0o700,
 				},
 			},
 		},
@@ -73,7 +73,7 @@ if err != nil {
 // as the container is started, we can create the directory first
 _, _, err = nginxC.Exec(ctx, []string{"mkdir", "-p", "/usr/lib/my-software/config"})
 // because the container path is a directory, it will use the copy dir method as fallback
-err = nginxC.CopyFileToContainer(ctx, "./files", "/usr/lib/my-software/config/files", 700)
+err = nginxC.CopyFileToContainer(ctx, "./files", "/usr/lib/my-software/config/files", 0o700)
 if err != nil {
 	// handle error
 }
@@ -94,7 +94,7 @@ nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 				{
 					HostFilePath:      "./testdata",    // a directory
 					ContainerFilePath: "/tmp/testdata", // important! its parent already exists
-					FileMode:          700,
+					FileMode:          0o700,
 				},
 			},
 		},
@@ -106,7 +106,7 @@ if err != nil {
 
 // as the container is started, we can create the directory first
 _, _, err = nginxC.Exec(ctx, []string{"mkdir", "-p", "/usr/lib/my-software/config"})
-err = nginxC.CopyDirToContainer(ctx, "./plugins", "/usr/lib/my-software/config/plugins", 700)
+err = nginxC.CopyDirToContainer(ctx, "./plugins", "/usr/lib/my-software/config/plugins", 0o700)
 if err != nil {
 	// handle error
 }

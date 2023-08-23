@@ -5,13 +5,15 @@ import (
 	"path/filepath"
 
 	"github.com/docker/docker/client"
+
+	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 )
 
 // NewClient returns a new docker client extracting the docker host from the different alternatives
 func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
-	tcConfig := config.Read(ctx)
+	tcConfig := config.Read()
 
 	dockerHost := ExtractDockerHost(ctx)
 
@@ -31,7 +33,8 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 
 	opts = append(opts, client.WithHTTPHeaders(
 		map[string]string{
-			"x-tc-sid": testcontainerssession.String(),
+			"x-tc-sid":   testcontainerssession.String(),
+			"User-Agent": "tc-go/" + internal.Version,
 		}),
 	)
 
@@ -43,23 +46,5 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 		return nil, err
 	}
 
-	if _, err = cli.Ping(context.Background()); err != nil {
-		// Fallback to environment, including the original options
-		cli, err = defaultClient(context.Background(), ops...)
-		if err != nil {
-			return nil, err
-		}
-	}
-	defer cli.Close()
-
 	return cli, nil
-}
-
-// defaultClient returns a plain, new docker client with the default options
-func defaultClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
-	if len(ops) == 0 {
-		ops = []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
-	}
-
-	return client.NewClientWithOpts(ops...)
 }

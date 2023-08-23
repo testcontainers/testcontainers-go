@@ -15,10 +15,10 @@ func TestGetMkDocsConfigFile(t *testing.T) {
 
 	rootDir := filepath.Join(tmp, "testcontainers-go")
 	cfgFile := filepath.Join(rootDir, "mkdocs.yml")
-	err := os.MkdirAll(rootDir, 0777)
+	err := os.MkdirAll(rootDir, 0o777)
 	require.NoError(t, err)
 
-	err = os.WriteFile(cfgFile, []byte{}, 0777)
+	err = os.WriteFile(cfgFile, []byte{}, 0o777)
 	require.NoError(t, err)
 
 	file := getMkdocsConfigFile(rootDir)
@@ -31,7 +31,7 @@ func TestReadMkDocsConfig(t *testing.T) {
 	tmp := t.TempDir()
 
 	rootDir := filepath.Join(tmp, "testcontainers-go")
-	err := os.MkdirAll(rootDir, 0777)
+	err := os.MkdirAll(rootDir, 0o777)
 	require.NoError(t, err)
 
 	err = copyInitialMkdocsConfig(t, rootDir)

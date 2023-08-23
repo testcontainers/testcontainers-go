@@ -8,9 +8,10 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
+	"gopkg.in/yaml.v3"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -28,6 +29,11 @@ type K3sContainer struct {
 
 // RunContainer creates an instance of the K3s container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error) {
+	host, err := getContainerHost(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
 	req := testcontainers.ContainerRequest{
 		Image: "docker.io/rancher/k3s:v1.27.1-k3s1",
 		ExposedPorts: []string{
@@ -42,12 +48,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				"/var/run": "",
 			}
 			hc.Mounts = []mount.Mount{}
-
 		},
 		Cmd: []string{
 			"server",
 			"--disable=traefik",
-			"--tls-san=localhost",
+			"--tls-san=" + host, // Host which will be used to access the Kubernetes server from tests.
 		},
 		Env: map[string]string{
 			"K3S_KUBECONFIG_MODE": "644",
@@ -70,6 +75,31 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	return &K3sContainer{Container: container}, nil
+}
+
+func getContainerHost(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (string, error) {
+	// Use a dummy request to get the provider from options.
+	var req testcontainers.GenericContainerRequest
+	for _, opt := range opts {
+		opt.Customize(&req)
+	}
+
+	logging := req.Logger
+	if logging == nil {
+		logging = testcontainers.Logger
+	}
+	p, err := req.ProviderType.GetProvider(testcontainers.WithLogger(logging))
+	if err != nil {
+		return "", err
+	}
+
+	switch p := p.(type) {
+	case *testcontainers.DockerProvider:
+		return p.DaemonHost(ctx)
+	}
+
+	// Fall back to localhost.
+	return "localhost", nil
 }
 
 // GetKubeConfig returns the modified kubeconfig with server url
@@ -104,7 +134,6 @@ func (c *K3sContainer) GetKubeConfig(ctx context.Context) ([]byte, error) {
 }
 
 func kubeConfigWithServerUrl(kubeConfigYaml, server string) ([]byte, error) {
-
 	kubeConfig, err := unmarshal([]byte(kubeConfigYaml))
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal kubeconfig: %w", err)

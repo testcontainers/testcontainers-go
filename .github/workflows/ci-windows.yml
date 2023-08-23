@@ -1,0 +1,85 @@
+name: Windows tests
+
+on:
+  repository_dispatch:
+    types: [windows-test-command]
+
+jobs:
+  test-windows:
+    # At the moment, we are running a self-hosted runner on Windows 2022.
+    runs-on: [self-hosted, Windows, X64]
+    strategy:
+      fail-fast: false
+    timeout-minutes: 30
+    steps:
+      - name: Create pending status
+        uses: actions/github-script@0.9.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.repos.createStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.client_payload.pull_request.head.sha,
+              state: 'pending',
+              target_url: `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+              context: 'Windows tests',
+            })
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.client_payload.pull_request.head.ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+        id: go
+
+      - name: modVerify
+        run: go mod verify
+
+      - name: modTidy
+        run: go mod tidy
+
+      - name: ensure compilation
+        run: go build
+
+      - name: go test
+        timeout-minutes: 30
+        run: |
+          go install gotest.tools/gotestsum@latest
+          gotestsum --format short-verbose --rerun-fails=5 --packages="./..."  --junitfile TEST-unit.xml -- -timeout=30m
+
+      - name: Create success status
+        uses: actions/github-script@0.9.0
+        if: success()
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.repos.createStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.client_payload.pull_request.head.sha,
+              state: 'success',
+              target_url: `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+              context: 'Windows tests',
+            })
+
+      - name: Create failure status
+        uses: actions/github-script@0.9.0
+        if: failure()
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.repos.createStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.client_payload.pull_request.head.sha,
+              state: 'failure',
+              target_url: `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+              context: 'Windows tests',
+            })

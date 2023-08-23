@@ -1,4 +1,5 @@
 site_name: Testcontainers for Go
+site_url: https://golang.testcontainers.org
 plugins:
     - search
     - codeinclude
@@ -15,6 +16,7 @@ theme:
     favicon: favicon.ico
 extra_css:
     - css/extra.css
+    - css/tc-header.css
 repo_name: testcontainers-go
 repo_url: https://github.com/testcontainers/testcontainers-go
 markdown_extensions:
@@ -36,6 +38,7 @@ nav:
     - Quickstart: quickstart.md
     - Features:
         - features/creating_container.md
+        - features/files_and_mounts.md
         - features/configuration.md
         - features/networking.md
         - features/garbage_collector.md
@@ -57,9 +60,12 @@ nav:
             - SQL: features/wait/sql.md
     - Modules:
         - modules/index.md
+        - modules/artemis.md
+        - modules/clickhouse.md
         - modules/couchbase.md
         - modules/k3s.md
         - modules/localstack.md
+        - modules/mongodb.md
         - modules/mysql.md
         - modules/neo4j.md
         - modules/postgres.md
@@ -74,7 +80,6 @@ nav:
         - examples/consul.md
         - examples/datastore.md
         - examples/firestore.md
-        - examples/mongodb.md
         - examples/nats.md
         - examples/nginx.md
         - examples/pubsub.md
@@ -83,6 +88,16 @@ nav:
     - System Requirements:
         - system_requirements/index.md
         - system_requirements/docker.md
+        - Continuous Integration:
+            - system_requirements/ci/aws_codebuild.md
+            - system_requirements/ci/bitbucket_pipelines.md
+            - system_requirements/ci/circle_ci.md
+            - system_requirements/ci/concourse_ci.md
+            - system_requirements/ci/dind_patterns.md
+            - system_requirements/ci/drone.md
+            - system_requirements/ci/gitlab_ci.md
+            - system_requirements/ci/tekton.md
+            - system_requirements/ci/travis.md
         - system_requirements/using_colima.md
         - system_requirements/using_podman.md
     - Contributing:
@@ -91,4 +106,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.20.1
+    latest_version: v0.23.0

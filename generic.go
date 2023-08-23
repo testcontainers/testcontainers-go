@@ -7,9 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"dario.cat/mergo"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
-	"github.com/imdario/mergo"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -126,6 +127,7 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 	if err != nil {
 		return nil, err
 	}
+	defer provider.Close()
 
 	var c Container
 	if req.Reuse {
