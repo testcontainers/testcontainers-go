@@ -212,12 +212,7 @@ func dockerHostFromProperties(ctx context.Context) (string, error) {
 	cfg := config.Read()
 	socketPath := cfg.Host
 	if socketPath != "" {
-		parsed, err := parseURL(socketPath)
-		if err != nil {
-			return "", err
-		}
-
-		return parsed, nil
+		return socketPath, nil
 	}
 
 	return "", ErrDockerSocketNotSetInProperties
