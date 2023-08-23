@@ -400,7 +400,6 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		content := "docker.host=" + DockerSocketSchema + "/this/is/a/sample.sock"
 		setupTestcontainersProperties(t, content)
 		setupDockerSocketNotFound(t)
-		setupRootlessNotFound(t)
 
 		t.Cleanup(resetSocketOverrideFn)
 
