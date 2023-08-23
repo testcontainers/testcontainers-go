@@ -107,6 +107,15 @@ jobs:
         run: |
             go install gotest.tools/gotestsum@latest
             make test-unit
+            
+      - name: Analyze with SonarCloud
+        if: ${{ always() && inputs.run-tests && inputs.project-directory == '.' }}
+        uses: sonarsource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: ${{ inputs.project-directory }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Run checker
         run: |
