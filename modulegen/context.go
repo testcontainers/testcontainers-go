@@ -45,7 +45,7 @@ func (ctx *Context) getModulesByBaseDir(baseDir string) ([]string, error) {
 	return dirs, nil
 }
 
-func (ctx *Context) getMardownsByBaseDir(baseDir string) ([]string, error) {
+func (ctx *Context) getMarkdownsFromDir(baseDir string) ([]string, error) {
 	dir := filepath.Join(ctx.DocsDir(), baseDir)
 
 	allFiles, err := os.ReadDir(dir)
@@ -73,11 +73,11 @@ func (ctx *Context) GetModules() ([]string, error) {
 }
 
 func (ctx *Context) GetExamplesDocs() ([]string, error) {
-	return ctx.getMardownsByBaseDir("examples")
+	return ctx.getMarkdownsFromDir("examples")
 }
 
 func (ctx *Context) GetModulesDocs() ([]string, error) {
-	return ctx.getMardownsByBaseDir("modules")
+	return ctx.getMarkdownsFromDir("modules")
 }
 
 func (ctx *Context) MkdocsConfigFile() string {
