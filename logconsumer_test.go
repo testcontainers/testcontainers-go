@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -253,6 +254,10 @@ func Test_StartStop(t *testing.T) {
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {
+	t.Cleanup(func() {
+		config.Reset()
+	})
+
 	if providerType == ProviderPodman {
 		t.Skip("Docker-in-Docker does not work with rootless Podman")
 	}
