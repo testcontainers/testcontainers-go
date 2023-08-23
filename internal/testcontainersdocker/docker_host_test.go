@@ -108,6 +108,8 @@ func TestExtractDockerHost(t *testing.T) {
 	})
 
 	t.Run("Unix Docker Host is passed as docker.host", func(t *testing.T) {
+		setupDockerSocketNotFound(t)
+		setupRootlessNotFound(t)
 		content := "docker.host=" + DockerSocketSchema + "/this/is/a/sample.sock"
 
 		setupTestcontainersProperties(t, content)
@@ -397,6 +399,8 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 	t.Run("Unix Docker Socket is passed as docker.host property", func(t *testing.T) {
 		content := "docker.host=" + DockerSocketSchema + "/this/is/a/sample.sock"
 		setupTestcontainersProperties(t, content)
+		setupDockerSocketNotFound(t)
+		setupRootlessNotFound(t)
 
 		t.Cleanup(resetSocketOverrideFn)
 
