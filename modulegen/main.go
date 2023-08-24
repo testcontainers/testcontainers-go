@@ -281,8 +281,6 @@ func processHTMLTemplate(ctx *Context, example Example, tmpl string) error {
 		"codeinclude":   func(s string) htmlTemplate.HTML { return htmlTemplate.HTML(s) }, // escape HTML comments for codeinclude
 	}
 
-	githubWorkflowsDir := ctx.GithubWorkflowsDir()
-	outputDir := filepath.Join(ctx.RootDir, example.ParentDir())
 	docsOuputDir := filepath.Join(ctx.DocsDir(), example.ParentDir())
 
 	exampleLower := example.Lower()
@@ -301,39 +299,8 @@ func processHTMLTemplate(ctx *Context, example Example, tmpl string) error {
 		return example
 	}
 
-	// create a new file
-	var exampleFilePath string
-
-	if strings.EqualFold(tmpl, "docs_example.md") {
-		// docs example file will go into the docs directory
-		exampleFilePath = filepath.Join(docsOuputDir, exampleLower+".md")
-	} else if strings.EqualFold(tmpl, "ci.yml") {
-		// GitHub workflow file will go into the .github/workflows directory
-		exampleFilePath = filepath.Join(githubWorkflowsDir, "ci.yml")
-
-		type stringsList struct {
-			Examples string
-			Modules  string
-		}
-
-		syncDataFn = func() any {
-			modulesList, err := getModulesOrExamplesAsString(true)
-			if err != nil {
-				return ""
-			}
-			examplesList, err := getModulesOrExamplesAsString(false)
-			if err != nil {
-				return ""
-			}
-
-			return stringsList{
-				Examples: examplesList,
-				Modules:  modulesList,
-			}
-		}
-	} else {
-		exampleFilePath = filepath.Join(outputDir, exampleLower, strings.ReplaceAll(tmpl, "example", exampleLower))
-	}
+	// docs example file will go into the docs directory
+	exampleFilePath := filepath.Join(docsOuputDir, exampleLower+".md")
 
 	err = os.MkdirAll(filepath.Dir(exampleFilePath), 0o777)
 	if err != nil {
@@ -365,7 +332,6 @@ func processTextTemplate(ctx *Context, example Example, tmpl string) error {
 
 	githubWorkflowsDir := ctx.GithubWorkflowsDir()
 	outputDir := filepath.Join(ctx.RootDir, example.ParentDir())
-	docsOuputDir := filepath.Join(ctx.DocsDir(), example.ParentDir())
 
 	exampleLower := example.Lower()
 	name := tmpl + ".tmpl"
@@ -386,10 +352,7 @@ func processTextTemplate(ctx *Context, example Example, tmpl string) error {
 	// create a new file
 	var exampleFilePath string
 
-	if strings.EqualFold(tmpl, "docs_example.md") {
-		// docs example file will go into the docs directory
-		exampleFilePath = filepath.Join(docsOuputDir, exampleLower+".md")
-	} else if strings.EqualFold(tmpl, "ci.yml") {
+	if strings.EqualFold(tmpl, "ci.yml") {
 		// GitHub workflow file will go into the .github/workflows directory
 		exampleFilePath = filepath.Join(githubWorkflowsDir, "ci.yml")
 
