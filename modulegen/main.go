@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"html/template"
+	htmlTemplate "html/template"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -180,14 +180,14 @@ func generate(example Example, ctx *Context) error {
 	outputDir := filepath.Join(ctx.RootDir, example.ParentDir())
 	docsOuputDir := filepath.Join(ctx.DocsDir(), example.ParentDir())
 
-	funcMap := template.FuncMap{
+	htmlFuncMap := htmlTemplate.FuncMap{
 		"Entrypoint":    func() string { return example.Entrypoint() },
 		"ContainerName": func() string { return example.ContainerName() },
 		"ExampleType":   func() string { return example.Type() },
 		"ParentDir":     func() string { return example.ParentDir() },
 		"ToLower":       func() string { return example.Lower() },
 		"Title":         func() string { return example.Title() },
-		"codeinclude":   func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
+		"codeinclude":   func(s string) htmlTemplate.HTML { return htmlTemplate.HTML(s) }, // escape HTML comments for codeinclude
 	}
 
 	exampleLower := example.Lower()
@@ -200,7 +200,7 @@ func generate(example Example, ctx *Context) error {
 
 	for _, tmpl := range templates {
 		name := tmpl + ".tmpl"
-		t, err := template.New(name).Funcs(funcMap).ParseFiles(filepath.Join("_template", name))
+		t, err := htmlTemplate.New(name).Funcs(htmlFuncMap).ParseFiles(filepath.Join("_template", name))
 		if err != nil {
 			return err
 		}
