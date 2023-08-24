@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/tools"
 )
 
 var (
@@ -155,12 +155,12 @@ func main() {
 	}
 
 	cmdDir := filepath.Join(ctx.RootDir, example.ParentDir(), example.Lower())
-	err = runGoCommand(cmdDir, "mod", "tidy")
+	err = tools.GoModTidy(cmdDir)
 	if err != nil {
 		fmt.Printf(">> error synchronizing the dependencies: %v\n", err)
 		os.Exit(1)
 	}
-	err = runGoCommand(cmdDir, "vet", "./...")
+	err = tools.GoVet(cmdDir)
 	if err != nil {
 		fmt.Printf(">> error checking generated code: %v\n", err)
 		os.Exit(1)
@@ -336,12 +336,6 @@ func getModulesOrExamplesAsString(t bool) (string, error) {
 	sort.Strings(names)
 
 	return strings.Join(names, ", "), nil
-}
-
-func runGoCommand(cmdDir string, args ...string) error {
-	cmd := exec.Command("go", args...)
-	cmd.Dir = cmdDir
-	return cmd.Run()
 }
 
 func getRootDir() (string, error) {
