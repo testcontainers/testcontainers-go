@@ -30,7 +30,7 @@ func TestGetDependabotConfigFile(t *testing.T) {
 }
 
 func TestExamplesHasDependabotEntry(t *testing.T) {
-	ctx := getRootContext(t)
+	ctx := getTestRootContext(t)
 	examples, err := ctx.GetExamples()
 	require.NoError(t, err)
 	dependabotUpdates, err := dependabot.GetUpdates(ctx.DependabotConfigFile())
@@ -64,7 +64,7 @@ func TestExamplesHasDependabotEntry(t *testing.T) {
 }
 
 func TestModulesHasDependabotEntry(t *testing.T) {
-	ctx := getRootContext(t)
+	ctx := getTestRootContext(t)
 	modules, err := ctx.GetModules()
 	require.NoError(t, err)
 	dependabotUpdates, err := dependabot.GetUpdates(ctx.DependabotConfigFile())
@@ -94,4 +94,10 @@ func TestModulesHasDependabotEntry(t *testing.T) {
 		}
 		assert.True(t, found, "module %s is not present in the dependabot updates", module)
 	}
+}
+
+func getTestRootContext(t *testing.T) *Context {
+	current, err := os.Getwd()
+	require.NoError(t, err)
+	return NewContext(filepath.Dir(current))
 }

@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -18,6 +17,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/tools"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/workflow"
 )
 
 var (
@@ -28,7 +28,7 @@ var (
 )
 
 var templates = []string{
-	"ci.yml", "docs_example.md", "example_test.go", "example.go", "go.mod", "Makefile",
+	"docs_example.md", "example_test.go", "example.go", "go.mod", "Makefile",
 }
 
 func init() {
@@ -176,7 +176,6 @@ func generate(example Example, ctx *Context) error {
 		return err
 	}
 
-	githubWorkflowsDir := ctx.GithubWorkflowsDir()
 	outputDir := filepath.Join(ctx.RootDir, example.ParentDir())
 	docsOuputDir := filepath.Join(ctx.DocsDir(), example.ParentDir())
 
@@ -219,30 +218,6 @@ func generate(example Example, ctx *Context) error {
 		if strings.EqualFold(tmpl, "docs_example.md") {
 			// docs example file will go into the docs directory
 			exampleFilePath = filepath.Join(docsOuputDir, exampleLower+".md")
-		} else if strings.EqualFold(tmpl, "ci.yml") {
-			// GitHub workflow file will go into the .github/workflows directory
-			exampleFilePath = filepath.Join(githubWorkflowsDir, "ci.yml")
-
-			type stringsList struct {
-				Examples string
-				Modules  string
-			}
-
-			syncDataFn = func() any {
-				modulesList, err := getModulesOrExamplesAsString(true)
-				if err != nil {
-					return ""
-				}
-				examplesList, err := getModulesOrExamplesAsString(false)
-				if err != nil {
-					return ""
-				}
-
-				return stringsList{
-					Examples: examplesList,
-					Modules:  modulesList,
-				}
-			}
 		} else {
 			exampleFilePath = filepath.Join(outputDir, exampleLower, strings.ReplaceAll(tmpl, "example", exampleLower))
 		}
@@ -262,19 +237,21 @@ func generate(example Example, ctx *Context) error {
 			return err
 		}
 	}
-
+	// update github ci workflow
+	err = generateWorkFlow(ctx)
+	if err != nil {
+		return err
+	}
 	// update examples in mkdocs
 	err = generateMkdocs(ctx, example)
 	if err != nil {
 		return err
 	}
-
 	// update examples in dependabot
 	err = generateDependabotUpdates(ctx, example)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -291,58 +268,26 @@ func generateMkdocs(ctx *Context, example Example) error {
 	return mkdocs.UpdateConfig(ctx.MkdocsConfigFile(), example.IsModule, exampleMd, indexMd)
 }
 
-func getModulesOrExamples(t bool) ([]os.DirEntry, error) {
-	baseDir := "examples"
-	if t {
-		baseDir = "modules"
-	}
-
-	parent, err := getRootDir()
+func generateWorkFlow(ctx *Context) error {
+	rootCtx, err := getRootContext()
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	dir := filepath.Join(parent, baseDir)
-
-	allFiles, err := os.ReadDir(dir)
+	examples, err := rootCtx.GetExamples()
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	dirs := make([]os.DirEntry, 0)
-
-	for _, f := range allFiles {
-		// only accept the directories and not the template
-		if f.IsDir() && f.Name() != "_template" {
-			dirs = append(dirs, f)
-		}
+	modules, err := rootCtx.GetModules()
+	if err != nil {
+		return err
 	}
-
-	return dirs, nil
+	return workflow.Generate(ctx.GithubWorkflowsDir(), examples, modules)
 }
 
-func getModulesOrExamplesAsString(t bool) (string, error) {
-	dirs, err := getModulesOrExamples(t)
-	if err != nil {
-		return "", err
-	}
-
-	// sort the dir names by name
-	names := make([]string, len(dirs))
-	for i, f := range dirs {
-		names[i] = f.Name()
-	}
-
-	sort.Strings(names)
-
-	return strings.Join(names, ", "), nil
-}
-
-func getRootDir() (string, error) {
+func getRootContext() (*Context, error) {
 	current, err := os.Getwd()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	return filepath.Dir(current), nil
+	return NewContext(filepath.Dir(current)), nil
 }
