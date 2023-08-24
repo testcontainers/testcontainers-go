@@ -17,6 +17,7 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 )
 
 var (
@@ -131,9 +132,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	rootDir := filepath.Dir(currentDir)
+	ctx := NewContext(filepath.Dir(currentDir))
 
-	mkdocsConfig, err := readMkdocsConfig(rootDir)
+	mkdocsConfig, err := mkdocs.ReadConfig(ctx.MkdocsConfigFile())
 	if err != nil {
 		fmt.Printf(">> could not read MkDocs config: %v\n", err)
 		os.Exit(1)
@@ -147,13 +148,13 @@ func main() {
 		TCVersion: mkdocsConfig.Extra.LatestVersion,
 	}
 
-	err = generate(example, rootDir)
+	err = generate(example, ctx)
 	if err != nil {
 		fmt.Printf(">> error generating the example: %v\n", err)
 		os.Exit(1)
 	}
 
-	cmdDir := filepath.Join(rootDir, example.ParentDir(), example.Lower())
+	cmdDir := filepath.Join(ctx.RootDir, example.ParentDir(), example.Lower())
 	err = runGoCommand(cmdDir, "mod", "tidy")
 	if err != nil {
 		fmt.Printf(">> error synchronizing the dependencies: %v\n", err)
@@ -170,14 +171,13 @@ func main() {
 	fmt.Println("Thanks!")
 }
 
-func generate(example Example, rootDir string) error {
+func generate(example Example, ctx *Context) error {
 	if err := example.Validate(); err != nil {
 		return err
 	}
-	ctx := &Context{RootDir: rootDir}
 
 	githubWorkflowsDir := ctx.GithubWorkflowsDir()
-	outputDir := filepath.Join(rootDir, example.ParentDir())
+	outputDir := filepath.Join(ctx.RootDir, example.ParentDir())
 	docsOuputDir := filepath.Join(ctx.DocsDir(), example.ParentDir())
 
 	funcMap := template.FuncMap{
@@ -264,7 +264,7 @@ func generate(example Example, rootDir string) error {
 	}
 
 	// update examples in mkdocs
-	err = generateMkdocs(rootDir, example)
+	err = generateMkdocs(ctx, example)
 	if err != nil {
 		return err
 	}
@@ -284,43 +284,11 @@ func generateDependabotUpdates(ctx *Context, example Example) error {
 	return dependabot.UpdateConfig(ctx.DependabotConfigFile(), directory, "gomod")
 }
 
-func generateMkdocs(rootDir string, example Example) error {
+func generateMkdocs(ctx *Context, example Example) error {
 	// update examples in mkdocs
-	mkdocsConfig, err := readMkdocsConfig(rootDir)
-	if err != nil {
-		return err
-	}
-
-	mkdocsExamplesNav := mkdocsConfig.Nav[4].Examples
-	if example.IsModule {
-		mkdocsExamplesNav = mkdocsConfig.Nav[3].Modules
-	}
-
-	// make sure the index.md is the first element in the list of examples in the nav
-	examplesNav := make([]string, len(mkdocsExamplesNav)-1)
-	j := 0
-
-	for _, exampleNav := range mkdocsExamplesNav {
-		// filter out the index.md file
-		if !strings.HasSuffix(exampleNav, "index.md") {
-			examplesNav[j] = exampleNav
-			j++
-		}
-	}
-
-	examplesNav = append(examplesNav, example.ParentDir()+"/"+example.Lower()+".md")
-	sort.Strings(examplesNav)
-
-	// prepend the index.md file
-	examplesNav = append([]string{example.ParentDir() + "/index.md"}, examplesNav...)
-
-	if example.IsModule {
-		mkdocsConfig.Nav[3].Modules = examplesNav
-	} else {
-		mkdocsConfig.Nav[4].Examples = examplesNav
-	}
-
-	return writeMkdocsConfig(rootDir, mkdocsConfig)
+	exampleMd := example.ParentDir() + "/" + example.Lower() + ".md"
+	indexMd := example.ParentDir() + "/index.md"
+	return mkdocs.UpdateConfig(ctx.MkdocsConfigFile(), example.IsModule, exampleMd, indexMd)
 }
 
 func getModulesOrExamples(t bool) ([]os.DirEntry, error) {
@@ -374,4 +342,13 @@ func runGoCommand(cmdDir string, args ...string) error {
 	cmd := exec.Command("go", args...)
 	cmd.Dir = cmdDir
 	return cmd.Run()
+}
+
+func getRootDir() (string, error) {
+	current, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Dir(current), nil
 }
