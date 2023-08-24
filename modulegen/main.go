@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	textTemplate "text/template"
 	"unicode"
 	"unicode/utf8"
 
@@ -187,7 +188,11 @@ func generate(example Example, ctx *Context) error {
 	}
 
 	for _, tmpl := range templates {
-		processHTMLTemplate(ctx, example, tmpl)
+		if strings.EqualFold(tmpl, "docs_example.md") {
+			processHTMLTemplate(ctx, example, tmpl)
+		} else {
+			processTextTemplate(ctx, example, tmpl)
+		}
 	}
 
 	// update examples in mkdocs
@@ -284,6 +289,88 @@ func processHTMLTemplate(ctx *Context, example Example, tmpl string) error {
 	name := tmpl + ".tmpl"
 
 	t, err := htmlTemplate.New(name).Funcs(htmlFuncMap).ParseFiles(filepath.Join("_template", name))
+	if err != nil {
+		return err
+	}
+
+	// initialize the data using the example struct, which is the default data to be used while
+	// doing the interpolation of the data and the template
+	var data any
+
+	syncDataFn := func() any {
+		return example
+	}
+
+	// create a new file
+	var exampleFilePath string
+
+	if strings.EqualFold(tmpl, "docs_example.md") {
+		// docs example file will go into the docs directory
+		exampleFilePath = filepath.Join(docsOuputDir, exampleLower+".md")
+	} else if strings.EqualFold(tmpl, "ci.yml") {
+		// GitHub workflow file will go into the .github/workflows directory
+		exampleFilePath = filepath.Join(githubWorkflowsDir, "ci.yml")
+
+		type stringsList struct {
+			Examples string
+			Modules  string
+		}
+
+		syncDataFn = func() any {
+			modulesList, err := getModulesOrExamplesAsString(true)
+			if err != nil {
+				return ""
+			}
+			examplesList, err := getModulesOrExamplesAsString(false)
+			if err != nil {
+				return ""
+			}
+
+			return stringsList{
+				Examples: examplesList,
+				Modules:  modulesList,
+			}
+		}
+	} else {
+		exampleFilePath = filepath.Join(outputDir, exampleLower, strings.ReplaceAll(tmpl, "example", exampleLower))
+	}
+
+	err = os.MkdirAll(filepath.Dir(exampleFilePath), 0o777)
+	if err != nil {
+		return err
+	}
+
+	exampleFile, _ := os.Create(exampleFilePath)
+	defer exampleFile.Close()
+
+	data = syncDataFn()
+
+	err = t.ExecuteTemplate(exampleFile, name, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func processTextTemplate(ctx *Context, example Example, tmpl string) error {
+	textFuncMap := textTemplate.FuncMap{
+		"Entrypoint":    func() string { return example.Entrypoint() },
+		"ContainerName": func() string { return example.ContainerName() },
+		"ExampleType":   func() string { return example.Type() },
+		"ParentDir":     func() string { return example.ParentDir() },
+		"ToLower":       func() string { return example.Lower() },
+		"Title":         func() string { return example.Title() },
+	}
+
+	githubWorkflowsDir := ctx.GithubWorkflowsDir()
+	outputDir := filepath.Join(ctx.RootDir, example.ParentDir())
+	docsOuputDir := filepath.Join(ctx.DocsDir(), example.ParentDir())
+
+	exampleLower := example.Lower()
+	name := tmpl + ".tmpl"
+
+	t, err := textTemplate.New(name).Funcs(textFuncMap).ParseFiles(filepath.Join("_template", name))
 	if err != nil {
 		return err
 	}
