@@ -188,10 +188,15 @@ func generate(example Example, ctx *Context) error {
 	}
 
 	for _, tmpl := range templates {
+		var err error
 		if strings.EqualFold(tmpl, "docs_example.md") {
-			processHTMLTemplate(ctx, example, tmpl)
+			err = processHTMLTemplate(ctx, example, tmpl)
 		} else {
-			processTextTemplate(ctx, example, tmpl)
+			err = processTextTemplate(ctx, example, tmpl)
+		}
+
+		if err != nil {
+			return err
 		}
 	}
 
