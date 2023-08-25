@@ -56,7 +56,7 @@ func TestReadMkDocsConfig(t *testing.T) {
 }
 
 func TestExamples(t *testing.T) {
-	ctx := getRootContext(t)
+	ctx := getTestRootContext(t)
 	examples, err := ctx.GetExamples()
 	require.NoError(t, err)
 	examplesDocs, err := ctx.GetExamplesDocs()
@@ -81,13 +81,6 @@ func TestExamples(t *testing.T) {
 }
 
 func copyInitialMkdocsConfig(t *testing.T, tmpCtx *Context) error {
-	ctx := getRootContext(t)
-
+	ctx := getTestRootContext(t)
 	return mkdocs.CopyConfig(ctx.MkdocsConfigFile(), tmpCtx.MkdocsConfigFile())
-}
-
-func getRootContext(t *testing.T) *Context {
-	current, err := os.Getwd()
-	require.NoError(t, err)
-	return NewContext(filepath.Dir(current))
 }

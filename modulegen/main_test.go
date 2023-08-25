@@ -475,15 +475,15 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 	assert.Nil(t, err)
 
 	data := sanitiseContent(content)
-	ctx := getRootContext(t)
+	ctx := getTestRootContext(t)
 
 	modulesList, err := ctx.GetModules()
 	assert.Nil(t, err)
-	assert.Equal(t, "        module: ["+strings.Join(modulesList, ", ")+"]", data[88])
+	assert.Equal(t, "        module: ["+strings.Join(modulesList, ", ")+"]", data[90])
 
 	examplesList, err := ctx.GetExamples()
 	assert.Nil(t, err)
-	assert.Equal(t, "        module: ["+strings.Join(examplesList, ", ")+"]", data[104])
+	assert.Equal(t, "        module: ["+strings.Join(examplesList, ", ")+"]", data[106])
 }
 
 // assert content go.mod
@@ -548,7 +548,6 @@ func sanitiseContent(bytes []byte) []string {
 }
 
 func copyInitialDependabotConfig(t *testing.T, tmpCtx *Context) error {
-	ctx := getRootContext(t)
-
+	ctx := getTestRootContext(t)
 	return dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpCtx.DependabotConfigFile())
 }
