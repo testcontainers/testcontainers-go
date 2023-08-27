@@ -38,7 +38,6 @@ function main() {
   for modFile in $(find "${ROOT_DIR}" -name "go.mod" -not -path "${ROOT_DIR}/vendor/*" -not -path "${ROOT_DIR}/.git/*"); do
     bumpModFile "${modFile}" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
   done
-  bumpModFile "${ROOT_DIR}/modulegen/_template/go.mod.tmpl" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
 
   # bump markdown files
   for f in $(find "${ROOT_DIR}" -name "*.md"); do

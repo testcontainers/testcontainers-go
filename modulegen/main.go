@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/tools"
 )
 
@@ -19,7 +18,7 @@ var (
 	imageVar     string
 )
 
-var templates = []string{"docs_example.md", "example_test.go", "example.go", "go.mod"}
+var templates = []string{"docs_example.md"}
 
 func init() {
 	flag.StringVar(&nameVar, "name", "", "Name of the example. Only alphabetical characters are allowed.")
@@ -50,18 +49,11 @@ func main() {
 
 	ctx := NewContext(filepath.Dir(currentDir))
 
-	mkdocsConfig, err := mkdocs.ReadConfig(ctx.MkdocsConfigFile())
-	if err != nil {
-		fmt.Printf(">> could not read MkDocs config: %v\n", err)
-		os.Exit(1)
-	}
-
 	example := Example{
 		Image:     imageVar,
 		IsModule:  asModuleVar,
 		Name:      nameVar,
 		TitleName: nameTitleVar,
-		TCVersion: mkdocsConfig.Extra.LatestVersion,
 	}
 
 	err = generate(example, ctx)
@@ -155,6 +147,11 @@ func generate(example Example, ctx *Context) error {
 	}
 	// creates Makefile for example
 	err = generateMakefile(ctx, example)
+	if err != nil {
+		return err
+	}
+
+	err = generateGoModule(ctx, example)
 	if err != nil {
 		return err
 	}
