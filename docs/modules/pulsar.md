@@ -30,7 +30,7 @@ where the `tt.opts` are the options to configure the container. See the [Contain
 
 ## Module Reference
 
-The Redis module exposes one entrypoint function to create the containerr, and this function receives two parameters:
+The Pulsar module exposes one entrypoint function to create the containerr, and this function receives two parameters:
 
 ```golang
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error)
