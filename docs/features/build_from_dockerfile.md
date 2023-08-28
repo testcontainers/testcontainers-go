@@ -12,9 +12,14 @@ req := ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context: "/path/to/build/context",
 			Dockerfile: "CustomDockerfile",
+			Repo: "myrepo",
+			Tag: "mytag",
 		},
 	}
 ```
+
+As you can see, you can also specify the `Repo` and `Tag` optional fields to use for the image. If not passed, the
+image will be built with a random name and tag.
 
 If your Dockerfile expects build args: 
 
