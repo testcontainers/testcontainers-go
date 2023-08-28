@@ -6,6 +6,7 @@ import (
 
 	"github.com/docker/docker/api/types/mount"
 	"github.com/stretchr/testify/assert"
+
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
@@ -267,7 +268,7 @@ func TestCreateContainerWithVolume(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created
-	client, err := NewDockerClient()
+	client, err := NewDockerClientWithOpts(ctx)
 	assert.NoError(t, err)
 	defer client.Close()
 

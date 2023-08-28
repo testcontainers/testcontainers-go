@@ -10,6 +10,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
@@ -21,8 +22,10 @@ var (
 	originalDockerSocketPathWithSchema string
 )
 
-var originalDockerSocketOverride string
-var tmpSchema string
+var (
+	originalDockerSocketOverride string
+	tmpSchema                    string
+)
 
 func init() {
 	originalDockerSocketPath = DockerSocketPath
@@ -102,6 +105,18 @@ func TestExtractDockerHost(t *testing.T) {
 		host := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, DockerSocketSchema+"/this/is/a/sample.sock"))
 
 		assert.Equal(t, "/this/is/a/sample.sock", host)
+	})
+
+	t.Run("Unix Docker Host is passed as docker.host", func(t *testing.T) {
+		setupDockerSocketNotFound(t)
+		setupRootlessNotFound(t)
+		content := "docker.host=" + DockerSocketSchema + "/this/is/a/sample.sock"
+
+		setupTestcontainersProperties(t, content)
+
+		host := extractDockerHost(context.Background())
+
+		assert.Equal(t, DockerSocketSchema+"/this/is/a/sample.sock", host)
 	})
 
 	t.Run("Default Docker socket", func(t *testing.T) {
@@ -222,8 +237,8 @@ func TestExtractDockerHost(t *testing.T) {
 		})
 
 		t.Run("Docker host is defined in properties", func(t *testing.T) {
-			tmpSocket := "/this/is/a/sample.sock"
-			content := "docker.host=unix://" + tmpSocket
+			tmpSocket := "unix:///this/is/a/sample.sock"
+			content := "docker.host=" + tmpSocket
 
 			setupTestcontainersProperties(t, content)
 
@@ -380,6 +395,22 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		socket = extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
 		assert.Equal(t, DockerSocketPath, socket)
 	})
+
+	t.Run("Unix Docker Socket is passed as docker.host property", func(t *testing.T) {
+		content := "docker.host=" + DockerSocketSchema + "/this/is/a/sample.sock"
+		setupTestcontainersProperties(t, content)
+		setupDockerSocketNotFound(t)
+
+		t.Cleanup(resetSocketOverrideFn)
+
+		ctx := context.Background()
+		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+		os.Unsetenv("DOCKER_HOST")
+
+		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
+
+		assert.Equal(t, "/this/is/a/sample.sock", socket)
+	})
 }
 
 func TestInAContainer(t *testing.T) {
@@ -403,7 +434,7 @@ func TestInAContainer(t *testing.T) {
 }
 
 func createTmpDir(dir string) error {
-	err := os.MkdirAll(dir, 0755)
+	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return err
 	}
@@ -413,7 +444,7 @@ func createTmpDir(dir string) error {
 
 func createTmpDockerSocket(parent string) error {
 	socketPath := filepath.Join(parent, "docker.sock")
-	err := os.MkdirAll(filepath.Dir(socketPath), 0755)
+	err := os.MkdirAll(filepath.Dir(socketPath), 0o755)
 	if err != nil {
 		return err
 	}

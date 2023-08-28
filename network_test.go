@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker/docker/api/types/network"
 	"github.com/stretchr/testify/assert"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -68,7 +69,6 @@ func Test_NetworkWithIPAM(t *testing.T) {
 			IPAM:           &ipamConfig,
 		},
 	})
-
 	if err != nil {
 		t.Fatal("cannot create network: ", err)
 	}
@@ -129,7 +129,6 @@ func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
 	net, err := GenericNetwork(ctx, GenericNetworkRequest{
 		NetworkRequest: networkRequest,
 	})
-
 	if err != nil {
 		t.Fatal("cannot create network")
 	}

@@ -24,6 +24,7 @@ import (
 	"github.com/docker/go-units"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -322,7 +323,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	client, err := testcontainersdocker.NewClient(ctx)
+	client, err := NewDockerClientWithOpts(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +363,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	client, err := testcontainersdocker.NewClient(ctx)
+	client, err := NewDockerClientWithOpts(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -619,7 +620,7 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	t.Run("if not built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := testcontainersdocker.NewClient(ctx)
+		client, err := NewDockerClientWithOpts(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -650,7 +651,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 	t.Run("if built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := testcontainersdocker.NewClient(ctx)
+		client, err := NewDockerClientWithOpts(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1379,7 +1380,7 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cnl()
 	// Create a Docker client.
-	dockerCli, err := NewDockerClient()
+	dockerCli, err := NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1535,7 +1536,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		require.NoError(t, err)
 		terminateContainerOnEnd(t, ctx, c)
 
-		dockerCli, err := NewDockerClient()
+		dockerCli, err := NewDockerClientWithOpts(ctx)
 		require.NoError(t, err)
 		defer dockerCli.Close()
 
@@ -1573,7 +1574,7 @@ func TestContainerWithCustomHostname(t *testing.T) {
 }
 
 func readHostname(tb testing.TB, containerId string) string {
-	containerClient, err := NewDockerClient()
+	containerClient, err := NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		tb.Fatalf("Failed to create Docker client: %v", err)
 	}
@@ -1939,7 +1940,7 @@ func TestDockerContainerResources(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
-	c, err := testcontainersdocker.NewClient(ctx)
+	c, err := NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 	defer c.Close()
 
@@ -2000,7 +2001,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 
 	containerId := nginxC.GetContainerID()
 
-	cli, err := testcontainersdocker.NewClient(ctx)
+	cli, err := NewDockerClientWithOpts(ctx)
 	assert.Nil(t, err)
 	defer cli.Close()
 
@@ -2035,7 +2036,7 @@ func TestContainerCapAdd(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginx)
 
-	dockerClient, err := testcontainersdocker.NewClient(ctx)
+	dockerClient, err := NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 	defer dockerClient.Close()
 
@@ -2190,7 +2191,7 @@ func TestNetworkModeWithContainerReference(t *testing.T) {
 // creates a temporary dir in which the files will be extracted. Then it will compare the bytes of each file in the source with the bytes from the copied-from-container file
 func assertExtractedFiles(t *testing.T, ctx context.Context, container Container, hostFilePath string, containerFilePath string) {
 	// create all copied files into a temporary dir
-	tmpDir := filepath.Join(t.TempDir())
+	tmpDir := t.TempDir()
 
 	// compare the bytes of each file in the source with the bytes from the copied-from-container file
 	srcFiles, err := os.ReadDir(hostFilePath)

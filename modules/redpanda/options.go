@@ -26,6 +26,10 @@ type options struct {
 
 	// AutoCreateTopics is a flag to allow topic auto creation.
 	AutoCreateTopics bool
+
+	// EnableTLS is a flag to enable TLS.
+	EnableTLS bool
+	cert, key []byte
 }
 
 func defaultOptions() options {
@@ -36,6 +40,7 @@ func defaultOptions() options {
 		SchemaRegistryAuthenticationMethod: "none",
 		ServiceAccounts:                    make(map[string]string, 0),
 		AutoCreateTopics:                   false,
+		EnableTLS:                          false,
 	}
 }
 
@@ -91,5 +96,13 @@ func WithEnableSchemaRegistryHTTPBasicAuth() Option {
 func WithAutoCreateTopics() Option {
 	return func(o *options) {
 		o.AutoCreateTopics = true
+	}
+}
+
+func WithTLS(cert, key []byte) Option {
+	return func(o *options) {
+		o.EnableTLS = true
+		o.cert = cert
+		o.key = key
 	}
 }

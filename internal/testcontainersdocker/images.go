@@ -60,7 +60,7 @@ func ExtractImagesFromDockerfile(dockerfile string, buildArgs map[string]*string
 		// interpolate build args
 		for k, v := range buildArgs {
 			if v != nil {
-				parts[0] = strings.Replace(parts[0], "${"+k+"}", *v, -1)
+				parts[0] = strings.ReplaceAll(parts[0], "${"+k+"}", *v)
 			}
 		}
 		images = append(images, parts[0])

@@ -24,8 +24,10 @@ const (
 	envComposeFile = "COMPOSE_FILE"
 )
 
-var composeLogOnce sync.Once
-var ErrNoStackConfigured = errors.New("no stack files configured")
+var (
+	composeLogOnce       sync.Once
+	ErrNoStackConfigured = errors.New("no stack files configured")
+)
 
 type composeStackOptions struct {
 	Identifier string
@@ -132,11 +134,6 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		waitStrategies: make(map[string]wait.Strategy),
 		containers:     make(map[string]*testcontainers.DockerContainer),
 	}
-
-	// log docker server info only once
-	composeLogOnce.Do(func() {
-		testcontainers.LogDockerServerInfo(context.Background(), dockerCli.Client(), testcontainers.Logger)
-	})
 
 	return composeAPI, nil
 }

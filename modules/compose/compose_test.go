@@ -19,8 +19,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var complexComposeTestFile string = filepath.Join("testdata", "docker-compose-complex.yml")
-var simpleComposeTestFile string = filepath.Join("testdata", "docker-compose-simple.yml")
+var (
+	complexComposeTestFile string = filepath.Join("testdata", "docker-compose-complex.yml")
+	simpleComposeTestFile  string = filepath.Join("testdata", "docker-compose-simple.yml")
+)
 
 func ExampleNewLocalDockerCompose() {
 	path := "/path/to/docker-compose.yml"
@@ -116,6 +118,7 @@ func TestLocalDockerCompose(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 }
+
 func TestDockerComposeStrategyForInvalidService(t *testing.T) {
 	path := simpleComposeTestFile
 
@@ -202,7 +205,7 @@ func TestDockerComposeWithWaitForShortLifespanService(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
-		//Assumption: tzatziki service wait logic will run before falafel, so that falafel service will exit before
+		// Assumption: tzatziki service wait logic will run before falafel, so that falafel service will exit before
 		WaitForService(compose.Format("tzatziki", "1"), wait.ForExit().WithExitTimeout(10*time.Second)).
 		WaitForService(compose.Format("falafel", "1"), wait.ForExit().WithExitTimeout(10*time.Second)).
 		Invoke()
@@ -446,7 +449,7 @@ func TestLocalDockerComposeWithVolume(t *testing.T) {
 }
 
 func assertVolumeDoesNotExist(tb testing.TB, volumeName string) {
-	containerClient, err := testcontainers.NewDockerClient()
+	containerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		tb.Fatalf("Failed to get provider: %v", err)
 	}
@@ -471,7 +474,7 @@ func assertContainerEnvironmentVariables(
 	present map[string]string,
 	absent map[string]string,
 ) {
-	containerClient, err := testcontainers.NewDockerClient()
+	containerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		tb.Fatalf("Failed to get provider: %v", err)
 	}

@@ -13,7 +13,8 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -253,6 +254,10 @@ func Test_StartStop(t *testing.T) {
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {
+	t.Cleanup(func() {
+		config.Reset()
+	})
+
 	if providerType == ProviderPodman {
 		t.Skip("Docker-in-Docker does not work with rootless Podman")
 	}
@@ -298,7 +303,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
 
-	client, err := testcontainersdocker.NewClient(ctx, opts...)
+	client, err := NewDockerClientWithOpts(ctx, opts...)
 	if err != nil {
 		t.Fatal(err)
 	}

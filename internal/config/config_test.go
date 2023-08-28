@@ -26,6 +26,10 @@ func TestReadConfig(t *testing.T) {
 	resetTestEnv(t)
 
 	t.Run("Config is read just once", func(t *testing.T) {
+		t.Cleanup(func() {
+			Reset()
+		})
+
 		t.Setenv("HOME", "")
 		t.Setenv("USERPROFILE", "") // Windows support
 		t.Setenv("DOCKER_HOST", "")

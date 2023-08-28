@@ -1,12 +1,13 @@
 package firestore
 
 import (
-	"cloud.google.com/go/firestore"
 	"context"
+	"testing"
+
+	"cloud.google.com/go/firestore"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"testing"
 )
 
 type Person struct {
@@ -14,12 +15,12 @@ type Person struct {
 	Lastname  string `json:"lastname"`
 }
 
-type emulatorCreds struct {
-}
+type emulatorCreds struct{}
 
 func (ec emulatorCreds) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
 	return map[string]string{"authorization": "Bearer owner"}, nil
 }
+
 func (ec emulatorCreds) RequireTransportSecurity() bool {
 	return false
 }

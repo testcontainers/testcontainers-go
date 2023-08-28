@@ -10,10 +10,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const rootUser = "root"
-const defaultUser = "test"
-const defaultPassword = "test"
-const defaultDatabaseName = "test"
+const (
+	rootUser            = "root"
+	defaultUser         = "test"
+	defaultPassword     = "test"
+	defaultDatabaseName = "test"
+)
 
 // defaultImage {
 const defaultImage = "mysql:8"
@@ -134,7 +136,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/mysql/conf.d/my.cnf",
-			FileMode:          0755,
+			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
 	}
@@ -147,7 +149,7 @@ func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,
 				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
-				FileMode:          0755,
+				FileMode:          0o755,
 			}
 			initScripts = append(initScripts, cf)
 		}

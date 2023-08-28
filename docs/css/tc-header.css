@@ -102,6 +102,20 @@ body.mobile-menu #site-header #mobile-menu-toggle {
     white-space: nowrap;
 }
 
+#site-header .menu-item .badge {
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    background-color: #0FD5C6;
+text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    border-radius: 6px;
+    &:hover {
+
+    }
+}
+
 #site-header .menu-item button:hover,
 #site-header .menu-item a:hover {
     color: var(--color-topaz);
