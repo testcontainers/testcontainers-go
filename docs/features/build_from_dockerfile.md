@@ -7,16 +7,9 @@ You can do so by specifying a `Context` (the filepath to the build context on
 your local filesystem) and optionally a `Dockerfile` (defaults to "Dockerfile")
 like so:
 
-```go
-req := ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context: "/path/to/build/context",
-			Dockerfile: "CustomDockerfile",
-			Repo: "myrepo",
-			Tag: "mytag",
-		},
-	}
-```
+<!--codeinclude-->
+[Building From a Dockerfile including Repository and Tag](../../from_dockerfile_test.go) inside_block:fromDockerfileIncludingRepo
+<!--/codeinclude-->
 
 As you can see, you can also specify the `Repo` and `Tag` optional fields to use for the image. If not passed, the
 image will be built with a random name and tag.
@@ -31,18 +24,10 @@ ARG FOO
 ```
 You can specify them like:
 
-```go
-val := "BAR" 
-req := ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context: "/path/to/build/context",
-			Dockerfile: "CustomDockerfile",
-			BuildArgs: map[string]*string {
-				"FOO": &val,
-			},
-		},
-	}
-```
+<!--codeinclude-->
+[Building From a Dockerfile including build arguments](../../docker_test.go) inside_block:fromDockerfileWithBuildArgs
+<!--/codeinclude-->
+
 ## Dynamic Build Context
 
 If you would like to send a build context that you created in code (maybe you have a dynamic Dockerfile), you can

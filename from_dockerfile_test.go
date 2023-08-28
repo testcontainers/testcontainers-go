@@ -22,12 +22,14 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 	ctx := context.Background()
 
 	tag, err := provider.BuildImage(ctx, &ContainerRequest{
+		// fromDockerfileIncludingRepo {
 		FromDockerfile: FromDockerfile{
 			Context:    filepath.Join("testdata"),
 			Dockerfile: "echo.Dockerfile",
 			Repo:       "test-repo",
 			Tag:        "test-tag",
 		},
+		// }
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, "test-repo:test-tag", tag)
