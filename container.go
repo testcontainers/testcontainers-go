@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"io"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
