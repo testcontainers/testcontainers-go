@@ -3,10 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"html/template"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/tools"
 )
@@ -17,8 +15,6 @@ var (
 	nameTitleVar string
 	imageVar     string
 )
-
-var templates = []string{"docs_example.md"}
 
 func init() {
 	flag.StringVar(&nameVar, "name", "", "Name of the example. Only alphabetical characters are allowed.")
@@ -41,13 +37,11 @@ func main() {
 		}
 	}
 
-	currentDir, err := filepath.Abs(filepath.Dir("."))
+	ctx, err := getRootContext()
 	if err != nil {
 		fmt.Printf(">> could not get the root dir: %v\n", err)
 		os.Exit(1)
 	}
-
-	ctx := NewContext(filepath.Dir(currentDir))
 
 	example := Example{
 		Image:     imageVar,
@@ -83,70 +77,8 @@ func generate(example Example, ctx *Context) error {
 	if err := example.Validate(); err != nil {
 		return err
 	}
-
-	outputDir := filepath.Join(ctx.RootDir, example.ParentDir())
-	docsOuputDir := filepath.Join(ctx.DocsDir(), example.ParentDir())
-
-	funcMap := template.FuncMap{
-		"Entrypoint":    func() string { return example.Entrypoint() },
-		"ContainerName": func() string { return example.ContainerName() },
-		"ExampleType":   func() string { return example.Type() },
-		"ParentDir":     func() string { return example.ParentDir() },
-		"ToLower":       func() string { return example.Lower() },
-		"Title":         func() string { return example.Title() },
-		"codeinclude":   func(s string) template.HTML { return template.HTML(s) }, // escape HTML comments for codeinclude
-	}
-
-	exampleLower := example.Lower()
-
-	// create the example dir
-	err := os.MkdirAll(filepath.Join(outputDir, exampleLower), 0o700)
-	if err != nil {
-		return err
-	}
-
-	for _, tmpl := range templates {
-		name := tmpl + ".tmpl"
-		t, err := template.New(name).Funcs(funcMap).ParseFiles(filepath.Join("_template", name))
-		if err != nil {
-			return err
-		}
-
-		// initialize the data using the example struct, which is the default data to be used while
-		// doing the interpolation of the data and the template
-		var data any
-
-		syncDataFn := func() any {
-			return example
-		}
-
-		// create a new file
-		var exampleFilePath string
-
-		if strings.EqualFold(tmpl, "docs_example.md") {
-			// docs example file will go into the docs directory
-			exampleFilePath = filepath.Join(docsOuputDir, exampleLower+".md")
-		} else {
-			exampleFilePath = filepath.Join(outputDir, exampleLower, strings.ReplaceAll(tmpl, "example", exampleLower))
-		}
-
-		err = os.MkdirAll(filepath.Dir(exampleFilePath), 0o777)
-		if err != nil {
-			return err
-		}
-
-		exampleFile, _ := os.Create(exampleFilePath)
-		defer exampleFile.Close()
-
-		data = syncDataFn()
-
-		err = t.ExecuteTemplate(exampleFile, name, data)
-		if err != nil {
-			return err
-		}
-	}
 	// creates Makefile for example
-	err = generateMakefile(ctx, example)
+	err := generateMakefile(ctx, example)
 	if err != nil {
 		return err
 	}
