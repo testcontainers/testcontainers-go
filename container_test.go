@@ -139,6 +139,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 	testCases := []TestCase{
 		{
 			Name: "test build from context archive",
+			// fromDockerfileWithContextArchive {
 			ContextArchive: func() (io.Reader, error) {
 				var buf bytes.Buffer
 				tarWriter := tar.NewWriter(&buf)
@@ -179,6 +180,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 
 				return reader, nil
 			},
+			// }
 			ExpectedEchoOutput: "this is from the archive",
 		},
 		{
