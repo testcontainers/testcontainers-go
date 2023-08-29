@@ -2,7 +2,10 @@ module github.com/testcontainers/testcontainers-go/modules/mariadb
 
 go 1.20
 
-require github.com/testcontainers/testcontainers-go v0.23.0
+require (
+	github.com/go-sql-driver/mysql v1.7.1
+	github.com/testcontainers/testcontainers-go v0.23.0
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect

@@ -17,11 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mariadb
 ## Usage example
 
 <!--codeinclude-->
-[Creating a MariaDB container](../../modules/mariadb/mariadb.go)
-<!--/codeinclude-->
-
-<!--codeinclude-->
-[Test for a MariaDB container](../../modules/mariadb/mariadb_test.go)
+[Creating a MariaDB container](../../modules/mariadb/mariadb_test.go) inside_block:createMariaDBContainer
 <!--/codeinclude-->
 
 ## Module reference
@@ -39,10 +35,18 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 When starting the MariaDB container, you can pass options in a variadic way to configure it.
 
+!!!tip
+
+    You can find all the available configuration and environment variables for the MariaDB Docker image on [Docker Hub](https://hub.docker.com/_/mariadb).
+
 #### Image
 
 If you need to set a different MariaDB Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for MariaDB. E.g. `testcontainers.WithImage("mariadb:10.5.5")`.
+for MariaDB. E.g. `testcontainers.WithImage("mariadb:11.0.3")`.
+
+<!--codeinclude-->
+[Custom Image](../../modules/mariadb/mariadb_test.go) inside_block:withConfigFile
+<!--/codeinclude-->
 
 #### Wait Strategies
 
@@ -64,6 +68,47 @@ If you need an advanced configuration for MariaDB, you can leverage the followin
 
 Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
 
+#### Set username, password and database name
+
+If you need to set a different database, and its credentials, you can use `WithUsername`, `WithPassword`, `WithDatabase`
+options.  By default, the username, the password and the database name is `test`.
+
+<!--codeinclude-->
+[Custom Database initialization](../../modules/mariadb/mariadb_test.go) inside_block:customInitialization
+<!--/codeinclude-->
+
+!!!info
+    The default values for the username is `root`, for password is `test` and for the default database name is `test`.
+
+#### Init Scripts
+
+If you would like to perform DDL or DML operations in the MariaDB container, add one or more `*.sql`, `*.sql.gz`, or `*.sh`
+scripts to the container request. Those files will be copied under `/docker-entrypoint-initdb.d`.
+
+<!--codeinclude-->
+[Include init scripts](../../modules/mariadb/mariadb_test.go) inside_block:withScripts
+<!--/codeinclude-->
+
+#### Custom configuration
+
+If you need to set a custom configuration, you can use `WithConfigFile` option.
+
+<!--codeinclude-->
+[Custom MariaDB config file](../../modules/mariadb/mariadb_test.go) inside_block:withConfigFile
+<!--/codeinclude-->
+
 ### Container Methods
 
 The MariaDB container exposes the following methods:
+
+#### ConnectionString
+
+This method returns the connection string to connect to the MariaDB container, using the default `3306` port.
+It's possible to pass extra parameters to the connection string, e.g. `tls=false`, in a variadic way.
+
+!!!info
+    By default, MariaDB transmits data between the server and clients without encrypting it.
+
+<!--codeinclude-->
+[Get connection string](../../modules/mariadb/mariadb_test.go) inside_block:connectionString
+<!--/codeinclude-->
