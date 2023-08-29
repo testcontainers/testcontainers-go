@@ -294,8 +294,8 @@ func TestGenerate(t *testing.T) {
 	_, err = os.Stat(mainWorkflowFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
-	// check the number of template files is equal to examples + 2 (the doc and the github workflow)
-	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
+	// check the number of template files is equal to examples + 2 (the doc, the github workflow and the VSCode workspace)
+	assert.Equal(t, len(newExampleDir)+3, len(templatesDir))
 
 	assertExampleDocContent(t, example, exampleDocFile)
 	assertExampleGithubWorkflowContent(t, example, mainWorkflowFile)
@@ -365,8 +365,8 @@ func TestGenerateModule(t *testing.T) {
 	_, err = os.Stat(mainWorkflowFile)
 	assert.Nil(t, err) // error nil implies the file exist
 
-	// check the number of template files is equal to examples + 2 (the doc and the github workflow)
-	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
+	// check the number of template files is equal to examples + 2 (the doc, the github workflow and the VSCode workspace)
+	assert.Equal(t, len(newExampleDir)+3, len(templatesDir))
 
 	assertExampleDocContent(t, example, exampleDocFile)
 	assertExampleGithubWorkflowContent(t, example, mainWorkflowFile)
