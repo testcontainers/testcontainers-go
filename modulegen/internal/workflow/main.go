@@ -4,11 +4,12 @@ import (
 	"path/filepath"
 	"text/template"
 
+	internal "github.com/testcontainers/testcontainers-go/modulegen/internal"
 	internal_template "github.com/testcontainers/testcontainers-go/modulegen/internal/template"
 )
 
 func Generate(githubWorkflowsDir string, examples []string, modules []string) error {
-	projectDirectories := newProjectDirectories(examples, modules)
+	projectDirectories := internal.NewProjectDirectories(examples, modules)
 	name := "ci.yml.tmpl"
 	t, err := template.New(name).ParseFiles(filepath.Join("_template", name))
 	if err != nil {
