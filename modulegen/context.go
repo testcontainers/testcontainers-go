@@ -26,6 +26,10 @@ func (ctx *Context) GithubWorkflowsDir() string {
 	return filepath.Join(ctx.GithubDir(), "workflows")
 }
 
+func (ctx *Context) GoModFile() string {
+	return filepath.Join(ctx.RootDir, "go.mod")
+}
+
 func (ctx *Context) getModulesByBaseDir(baseDir string) ([]string, error) {
 	dir := filepath.Join(ctx.RootDir, baseDir)
 
