@@ -115,7 +115,7 @@ func TestMySQLWithConfigFile(t *testing.T) {
 
 	// withConfigFile {
 	container, err := RunContainer(ctx, testcontainers.WithImage("mysql:5.6"),
-		WithConfigFile("./testdata/my.cnf"))
+		WithConfigFile(filepath.Join("testdata", "my.cnf")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +140,7 @@ func TestMySQLWithConfigFile(t *testing.T) {
 	if err = db.Ping(); err != nil {
 		t.Errorf("error pinging db: %+v\n", err)
 	}
-	stmt, _ := db.Prepare("SELECT @@GLOBAL.innodb_file_format")
+	stmt, err := db.Prepare("SELECT @@GLOBAL.innodb_file_format")
 	if err != nil {
 		t.Fatal(err)
 	}
