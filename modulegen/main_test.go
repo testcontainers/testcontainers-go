@@ -184,9 +184,8 @@ func TestGenerateWrongExampleName(t *testing.T) {
 
 	for _, test := range tests {
 		example := Example{
-			Name:      test.name,
-			Image:     "docker.io/example/" + test.name + ":latest",
-			TCVersion: "v0.0.0-test",
+			Name:  test.name,
+			Image: "docker.io/example/" + test.name + ":latest",
 		}
 
 		err = generate(example, tmpCtx)
@@ -230,7 +229,6 @@ func TestGenerateWrongExampleTitle(t *testing.T) {
 			Name:      "foo",
 			TitleName: test.title,
 			Image:     "docker.io/example/foo:latest",
-			TCVersion: "v0.0.0-test",
 		}
 
 		err = generate(example, tmpCtx)
@@ -268,7 +266,6 @@ func TestGenerate(t *testing.T) {
 		TitleName: "FooDB4TheWin",
 		IsModule:  false,
 		Image:     "docker.io/example/foodb:latest",
-		TCVersion: "v0.0.0-test",
 	}
 	exampleNameLower := example.Lower()
 
@@ -295,7 +292,7 @@ func TestGenerate(t *testing.T) {
 	assert.Nil(t, err) // error nil implies the file exist
 
 	// check the number of template files is equal to examples + 2 (the doc and the github workflow)
-	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
+	assert.Equal(t, len(newExampleDir)+1, len(templatesDir))
 
 	assertExampleDocContent(t, example, exampleDocFile)
 	assertExampleGithubWorkflowContent(t, example, mainWorkflowFile)
@@ -303,7 +300,7 @@ func TestGenerate(t *testing.T) {
 	generatedTemplatesDir := filepath.Join(examplesTmp, exampleNameLower)
 	assertExampleTestContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
 	assertExampleContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
-	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))
+	assertGoModContent(t, example, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertMkdocsExamplesNav(t, example, originalConfig, tmpCtx)
 	assertDependabotExamplesUpdates(t, example, originalDependabotConfigUpdates, tmpCtx)
@@ -339,7 +336,6 @@ func TestGenerateModule(t *testing.T) {
 		TitleName: "FooDB",
 		IsModule:  true,
 		Image:     "docker.io/example/foodb:latest",
-		TCVersion: "v0.0.0-test",
 	}
 	exampleNameLower := example.Lower()
 
@@ -366,7 +362,7 @@ func TestGenerateModule(t *testing.T) {
 	assert.Nil(t, err) // error nil implies the file exist
 
 	// check the number of template files is equal to examples + 2 (the doc and the github workflow)
-	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
+	assert.Equal(t, len(newExampleDir)+1, len(templatesDir))
 
 	assertExampleDocContent(t, example, exampleDocFile)
 	assertExampleGithubWorkflowContent(t, example, mainWorkflowFile)
@@ -374,7 +370,7 @@ func TestGenerateModule(t *testing.T) {
 	generatedTemplatesDir := filepath.Join(modulesTmp, exampleNameLower)
 	assertExampleTestContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+"_test.go"))
 	assertExampleContent(t, example, filepath.Join(generatedTemplatesDir, exampleNameLower+".go"))
-	assertGoModContent(t, example, filepath.Join(generatedTemplatesDir, "go.mod"))
+	assertGoModContent(t, example, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, example, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertMkdocsExamplesNav(t, example, originalConfig, tmpCtx)
 	assertDependabotExamplesUpdates(t, example, originalDependabotConfigUpdates, tmpCtx)
@@ -487,13 +483,14 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 }
 
 // assert content go.mod
-func assertGoModContent(t *testing.T, example Example, goModFile string) {
+func assertGoModContent(t *testing.T, example Example, tcVersion string, goModFile string) {
 	content, err := os.ReadFile(goModFile)
 	assert.Nil(t, err)
 
 	data := sanitiseContent(content)
 	assert.Equal(t, "module github.com/testcontainers/testcontainers-go/"+example.ParentDir()+"/"+example.Lower(), data[0])
-	assert.Equal(t, "\tgithub.com/testcontainers/testcontainers-go "+example.TCVersion, data[5])
+	assert.Equal(t, "require github.com/testcontainers/testcontainers-go "+tcVersion, data[4])
+	assert.Equal(t, "replace github.com/testcontainers/testcontainers-go => ../..", data[6])
 }
 
 // assert content Makefile
