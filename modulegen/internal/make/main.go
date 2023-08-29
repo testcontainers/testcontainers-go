@@ -1,6 +1,7 @@
 package make
 
 import (
+	"os"
 	"path/filepath"
 	"text/template"
 
@@ -13,5 +14,19 @@ func Generate(exampleDir string, exampleName string) error {
 	if err != nil {
 		return err
 	}
-	return internal_template.Generate(t, filepath.Join(exampleDir, "Makefile"), name, exampleName)
+
+	exampleFilePath := filepath.Join(exampleDir, "Makefile")
+
+	err = os.MkdirAll(filepath.Dir(exampleFilePath), 0o755)
+	if err != nil {
+		return err
+	}
+
+	exampleFile, err := os.Create(exampleFilePath)
+	if err != nil {
+		return err
+	}
+	defer exampleFile.Close()
+
+	return internal_template.Generate(t, exampleFile, name, exampleName)
 }

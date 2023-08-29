@@ -1,20 +1,12 @@
 package template
 
 import (
-	"os"
-	"path/filepath"
+	"io"
 	"text/template"
 )
 
-func Generate(t *template.Template, exampleFilePath string, name string, data any) error {
-	err := os.MkdirAll(filepath.Dir(exampleFilePath), 0o755)
-	if err != nil {
-		return err
-	}
-	exampleFile, _ := os.Create(exampleFilePath)
-	defer exampleFile.Close()
-
-	err = t.ExecuteTemplate(exampleFile, name, data)
+func Generate(t *template.Template, wr io.Writer, name string, data any) error {
+	err := t.ExecuteTemplate(wr, name, data)
 	if err != nil {
 		return err
 	}
