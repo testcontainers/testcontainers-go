@@ -3,17 +3,17 @@
 {
         "folders": [
                 {
-                        "path": "src/github.com/testcontainers/testcontainers-go"
+                        "path": "{{ .RootDir }}"
                 },
                 {{ range  .Examples }}{
-                        "path": "src/github.com/testcontainers/testcontainers-go/examples/{{ . }}"
+                        "path": "{{ . }}"
                 },
                 {{ end }}
                 {{ range  .Modules }}{
-                        "path": "src/github.com/testcontainers/testcontainers-go/modules/{{ . }}"
+                        "path": "{{ . }}"
                 },
                 {{ end }}{
-                        "path": "src/github.com/testcontainers/testcontainers-go/modulegen"
+                        "path": "{{ .ModuleGeneratorDir }}"
                 }
         ],
         "settings": {}
