@@ -88,6 +88,10 @@ func (ctx *Context) MkdocsConfigFile() string {
 	return filepath.Join(ctx.RootDir, "mkdocs.yml")
 }
 
+func (ctx *Context) VSCodeWorkspaceFile() string {
+	return filepath.Join(ctx.RootDir, ".testcontainers-go.code-workspace")
+}
+
 func NewContext(dir string) *Context {
 	return &Context{RootDir: dir}
 }

@@ -103,6 +103,11 @@ func generate(example Example, ctx *Context) error {
 	if err != nil {
 		return err
 	}
+	// generate vscode workspace
+	err = generateVSCodeWorkspace(ctx)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

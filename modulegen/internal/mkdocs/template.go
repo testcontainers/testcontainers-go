@@ -13,5 +13,6 @@ func GenerateMdFile(filePath string, funcMap template.FuncMap, example any) erro
 	if err != nil {
 		return err
 	}
-	return internal_template.Generate(t, filePath, name, example)
+
+	return internal_template.GenerateFile(t, filePath, name, example)
 }

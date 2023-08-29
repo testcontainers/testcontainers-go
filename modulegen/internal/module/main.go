@@ -17,7 +17,7 @@ func GenerateFiles(exampleDir string, exampleName string, funcMap template.FuncM
 		}
 		exampleFilePath := filepath.Join(exampleDir, strings.ReplaceAll(tmpl, "example", exampleName))
 
-		err = internal_template.Generate(t, exampleFilePath, name, example)
+		err = internal_template.GenerateFile(t, exampleFilePath, name, example)
 		if err != nil {
 			return err
 		}

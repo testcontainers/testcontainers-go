@@ -13,5 +13,8 @@ func Generate(exampleDir string, exampleName string) error {
 	if err != nil {
 		return err
 	}
-	return internal_template.Generate(t, filepath.Join(exampleDir, "Makefile"), name, exampleName)
+
+	exampleFilePath := filepath.Join(exampleDir, "Makefile")
+
+	return internal_template.GenerateFile(t, exampleFilePath, name, exampleName)
 }
