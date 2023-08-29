@@ -1,0 +1,18 @@
+{
+        "folders": [
+                {
+                        "path": "src/github.com/testcontainers/testcontainers-go"
+                },
+                {{ range  .Examples }}{
+                        "path": "src/github.com/testcontainers/testcontainers-go/examples/{{ . }}"
+                },
+                {{ end }}
+                {{ range  .Modules }}{
+                        "path": "src/github.com/testcontainers/testcontainers-go/modules/{{ . }}"
+                },
+                {{ end }}{
+                        "path": "src/github.com/testcontainers/testcontainers-go/modulegen"
+                }
+        ],
+        "settings": {}
+}
