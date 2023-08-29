@@ -1,5 +1,15 @@
 package dependabot
 
+import (
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
+)
+
+// update examples in dependabot
+func GenerateDependabotUpdates(ctx *context.Context, example context.Example) error {
+	directory := "/" + example.ParentDir() + "/" + example.Lower()
+	return UpdateConfig(ctx.DependabotConfigFile(), directory, "gomod")
+}
+
 func UpdateConfig(configFile string, directory string, packageEcosystem string) error {
 	config, err := readConfig(configFile)
 	if err != nil {
