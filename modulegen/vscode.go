@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/vscode"
 )
 
@@ -21,5 +19,5 @@ func generateVSCodeWorkspace(ctx *Context) error {
 		return err
 	}
 
-	return vscode.Generate(os.Stdout, examples, modules)
+	return vscode.Generate(rootCtx.RootDir, examples, modules)
 }
