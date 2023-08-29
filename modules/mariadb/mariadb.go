@@ -46,6 +46,15 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 			req.Env["MARIADB_ALLOW_EMPTY_ROOT_PASSWORD"] = "yes"
 			delete(req.Env, "MARIADB_PASSWORD")
 		}
+
+		// https://github.com/docker-library/docs/tree/master/mariadb#environment-variables
+		// From tag 10.2.38, 10.3.29, 10.4.19, 10.5.10 onwards, and all 10.6 and later tags,
+		// the MARIADB_* equivalent variables are provided. MARIADB_* variants will always be
+		// used in preference to MYSQL_* variants.
+		req.Env["MYSQL_ROOT_PASSWORD"] = req.Env["MARIADB_ROOT_PASSWORD"]
+		req.Env["MYSQL_USER"] = req.Env["MARIADB_USER"]
+		req.Env["MYSQL_PASSWORD"] = req.Env["MARIADB_PASSWORD"]
+		req.Env["MYSQL_DATABASE"] = req.Env["MARIADB_DATABASE"]
 	}
 }
 
