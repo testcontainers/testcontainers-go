@@ -13,10 +13,11 @@ import (
 )
 
 var (
-	asModuleVar  bool
-	nameVar      string
-	nameTitleVar string
-	imageVar     string
+	asModuleVar        bool
+	nameVar            string
+	nameTitleVar       string
+	imageVar           string
+	vsCodeWorkspaceVar bool
 )
 
 var templates = []string{"docs_example.md", "example_test.go", "example.go", "go.mod"}
@@ -26,6 +27,7 @@ func init() {
 	flag.StringVar(&nameTitleVar, "title", "", "(Optional) Title of the example name, used to override the name in the case of mixed casing (Mongodb -> MongoDB). Use camel-case when needed. Only alphabetical characters are allowed.")
 	flag.StringVar(&imageVar, "image", "", "Fully-qualified name of the Docker image to be used by the example")
 	flag.BoolVar(&asModuleVar, "as-module", false, "If set, the example will be generated as a Go module, under the modules directory. Otherwise, it will be generated as a subdirectory of the examples directory.")
+	flag.BoolVar(&vsCodeWorkspaceVar, "vscode-workspace", false, "If set, the string representation of the VSCode workspace file will be printed out to the stdout.")
 }
 
 func main() {
@@ -80,6 +82,13 @@ func main() {
 	if err != nil {
 		fmt.Printf(">> error checking generated code: %v\n", err)
 		os.Exit(1)
+	}
+
+	if vsCodeWorkspaceVar {
+		err = generateVSCodeWorkspace(ctx)
+		if err != nil {
+			os.Exit(1)
+		}
 	}
 
 	fmt.Println("Please go to", cmdDir, "directory to check the results, where 'go mod tidy' and 'go vet' was executed to synchronize the dependencies")

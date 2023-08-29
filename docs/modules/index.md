@@ -24,6 +24,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 - a new Nav entry for the module in the docs site, adding it to the `mkdocs.yml` file located at the root directory of the project.
 - a GitHub workflow file in the .github/workflows directory to run the tests for the example.
 - an entry in Dependabot's configuration file, in order to receive dependency updates.
+- when the `-vscode-workspace` flag is set, the string represention of the [VSCode workspace file](https://code.visualstudio.com/docs/editor/workspaces) will be printed out to the stdout.
 
 ### Command line flags
 
@@ -33,6 +34,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 | -image     | string | Yes      | Fully-qualified name of the Docker image to be used by the module (i.e. 'docker.io/org/project:tag')                                                           |
 | -title     | string | No       | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphanumerical characters are allowed (leading character must be a letter).               |
 | -as-module | bool   | No       | If set, the module will be generated as a Go module, under the modules directory. Otherwise, it will be generated as a subdirectory of the examples directory. |
+| -vscode-workspace | bool   | No       | If set, the string representation of the VSCode workspace file will be printed out to the stdout. |
 
 ### What is this tool not doing?
 
