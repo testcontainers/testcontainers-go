@@ -1,34 +1,42 @@
 package vscode
 
-import "path/filepath"
+import (
+	"sort"
+)
 
-type ProjectDirectories struct {
-	RootDir            string
-	ModuleGeneratorDir string
-	Examples           []string
-	Modules            []string
+type Config struct {
+	Folders []Folder `json:"folders"`
 }
 
-func newProjectDirectories(rootDir string, examples []string, modules []string) *ProjectDirectories {
-	rootDirAbs, err := filepath.Abs(rootDir)
-	if err != nil {
-		rootDirAbs = rootDir
-	}
+type Folder struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
 
-	moduleGeneratorDirAbs := filepath.Join(rootDirAbs, "modulegen")
-
-	for i, example := range examples {
-		examples[i] = filepath.Join(rootDirAbs, "examples", example)
+func newConfig(examples []string, modules []string) *Config {
+	config := Config{
+		Folders: []Folder{
+			{
+				Path: "../modulegen",
+				Name: "modulegen",
+			},
+		},
 	}
-
-	for i, module := range modules {
-		modules[i] = filepath.Join(rootDirAbs, "modules", module)
+	for _, example := range examples {
+		config.Folders = append(config.Folders, Folder{
+			Path: "../examples/" + example,
+			Name: "example / " + example,
+		})
 	}
-
-	return &ProjectDirectories{
-		RootDir:            rootDirAbs,
-		ModuleGeneratorDir: moduleGeneratorDirAbs,
-		Examples:           examples,
-		Modules:            modules,
+	for _, module := range modules {
+		config.Folders = append(config.Folders, Folder{
+			Path: "../modules/" + module,
+			Name: "module / " + module,
+		})
 	}
+	sort.Slice(config.Folders, func(i, j int) bool { return config.Folders[i].Name < config.Folders[j].Name })
+	config.Folders = append([]Folder{
+		{Path: "../", Name: "testcontainers-go"},
+	}, config.Folders...)
+	return &config
 }
