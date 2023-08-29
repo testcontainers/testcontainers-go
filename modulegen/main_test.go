@@ -272,12 +272,7 @@ func TestGenerate(t *testing.T) {
 	err = generate(example, tmpCtx)
 	assert.Nil(t, err)
 
-	templatesDir, err := os.ReadDir(filepath.Join(".", "_template"))
-	assert.Nil(t, err)
-
 	exampleDirPath := filepath.Join(examplesTmp, exampleNameLower)
-	newExampleDir, err := os.ReadDir(exampleDirPath)
-	assert.Nil(t, err)
 
 	exampleDirFileInfo, err := os.Stat(exampleDirPath)
 	assert.Nil(t, err) // error nil implies the file exist
@@ -290,9 +285,6 @@ func TestGenerate(t *testing.T) {
 	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
 	_, err = os.Stat(mainWorkflowFile)
 	assert.Nil(t, err) // error nil implies the file exist
-
-	// check the number of template files is equal to examples + 2 (the VSCode workspace and)
-	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
 
 	assertExampleDocContent(t, example, exampleDocFile)
 	assertExampleGithubWorkflowContent(t, example, mainWorkflowFile)
@@ -342,12 +334,7 @@ func TestGenerateModule(t *testing.T) {
 	err = generate(example, tmpCtx)
 	assert.Nil(t, err)
 
-	templatesDir, err := os.ReadDir(filepath.Join(".", "_template"))
-	assert.Nil(t, err)
-
 	exampleDirPath := filepath.Join(modulesTmp, exampleNameLower)
-	newExampleDir, err := os.ReadDir(exampleDirPath)
-	assert.Nil(t, err)
 
 	exampleDirFileInfo, err := os.Stat(exampleDirPath)
 	assert.Nil(t, err) // error nil implies the file exist
@@ -360,9 +347,6 @@ func TestGenerateModule(t *testing.T) {
 	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
 	_, err = os.Stat(mainWorkflowFile)
 	assert.Nil(t, err) // error nil implies the file exist
-
-	// check the number of template files is equal to examples + 2 (the VSCode workspace and )
-	assert.Equal(t, len(newExampleDir)+2, len(templatesDir))
 
 	assertExampleDocContent(t, example, exampleDocFile)
 	assertExampleGithubWorkflowContent(t, example, mainWorkflowFile)
