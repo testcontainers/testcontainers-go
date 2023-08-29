@@ -29,7 +29,6 @@ func TestMariaDB(t *testing.T) {
 		}
 	})
 
-	// perform assertions
 	// connectionString {
 	// By default, MariaDB transmits data between the server and clients without encrypting it.
 	connectionString, err := container.ConnectionString(ctx, "tls=false")
@@ -89,8 +88,10 @@ func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 		}
 	})
 
-	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
+	connectionString, err := container.ConnectionString(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -128,32 +129,7 @@ func TestMariaDBWithMySQLEnvVars(t *testing.T) {
 		}
 	})
 
-	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
-
-	db, err := sql.Open("mysql", connectionString)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		t.Errorf("error pinging db: %+v\n", err)
-	}
-	stmt, err := db.Prepare("SELECT name from profile")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer stmt.Close()
-	row := stmt.QueryRow()
-	var name string
-	err = row.Scan(&name)
-	if err != nil {
-		t.Errorf("error fetching data")
-	}
-	if name != "profile 1" {
-		t.Fatal("The expected record was not found in the database.")
-	}
+	assertDataCanBeFetched(t, ctx, container)
 }
 
 func TestMariaDBWithConfigFile(t *testing.T) {
@@ -174,8 +150,10 @@ func TestMariaDBWithConfigFile(t *testing.T) {
 		}
 	})
 
-	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
+	connectionString, err := container.ConnectionString(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -225,8 +203,14 @@ func TestMariaDBWithScripts(t *testing.T) {
 		}
 	})
 
-	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
+	assertDataCanBeFetched(t, ctx, container)
+}
+
+func assertDataCanBeFetched(t *testing.T, ctx context.Context, container *MariaDBContainer) {
+	connectionString, err := container.ConnectionString(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -237,6 +221,7 @@ func TestMariaDBWithScripts(t *testing.T) {
 	if err = db.Ping(); err != nil {
 		t.Errorf("error pinging db: %+v\n", err)
 	}
+
 	stmt, err := db.Prepare("SELECT name from profile")
 	if err != nil {
 		t.Fatal(err)
