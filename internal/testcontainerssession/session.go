@@ -73,5 +73,4 @@ func init() {
 	}
 
 	SessionID = fmt.Sprintf("%x", hasher.Sum(nil))
-
 }
