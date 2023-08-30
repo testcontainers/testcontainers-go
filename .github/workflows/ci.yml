@@ -119,5 +119,5 @@ jobs:
       platform: 'ubuntu-latest'
       project-directory: examples/${{ matrix.module }}
       rootless-docker: false
-      run-tests: yes
+      run-tests: true
       ryuk-disabled: false
