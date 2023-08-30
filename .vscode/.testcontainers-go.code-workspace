@@ -38,10 +38,6 @@
             "path": "../examples/pubsub"
         },
         {
-            "name": "example / questdb",
-            "path": "../examples/questdb"
-        },
-        {
             "name": "example / spanner",
             "path": "../examples/spanner"
         },

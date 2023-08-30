@@ -7,11 +7,13 @@ on:
     branches:
       - main
     paths-ignore:
+      - '.vscode/**'
       - 'mkdocs.yml'
       - 'docs/**'
       - 'README.md'
   pull_request:
     paths-ignore:
+      - '.vscode/**'
       - 'mkdocs.yml'
       - 'docs/**'
       - 'README.md'
