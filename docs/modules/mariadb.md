@@ -1,0 +1,123 @@
+# MariaDB
+
+Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+## Introduction
+
+The Testcontainers module for MariaDB.
+
+## Adding this module to your project dependencies
+
+Please run the following command to add the MariaDB module to your Go dependencies:
+
+```
+go get github.com/testcontainers/testcontainers-go/modules/mariadb
+```
+
+## Usage example
+
+<!--codeinclude-->
+[Creating a MariaDB container](../../modules/mariadb/mariadb_test.go) inside_block:createMariaDBContainer
+<!--/codeinclude-->
+
+## Module reference
+
+The MariaDB module exposes one entrypoint function to create the MariaDB container, and this function receives two parameters:
+
+```golang
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MariaDBContainer, error)
+```
+
+- `context.Context`, the Go context.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+### Container Options
+
+When starting the MariaDB container, you can pass options in a variadic way to configure it.
+
+!!!tip
+
+    You can find all the available configuration and environment variables for the MariaDB Docker image on [Docker Hub](https://hub.docker.com/_/mariadb).
+
+#### Image
+
+If you need to set a different MariaDB Docker image, you can use `testcontainers.WithImage` with a valid Docker image
+for MariaDB. E.g. `testcontainers.WithImage("mariadb:11.0.3")`.
+
+<!--codeinclude-->
+[Custom Image](../../modules/mariadb/mariadb_test.go) inside_block:withConfigFile
+<!--/codeinclude-->
+
+!!!info
+    From MariaDB [docs](https://github.com/docker-library/docs/tree/master/mariadb#environment-variables):
+
+    From tag 10.2.38, 10.3.29, 10.4.19, 10.5.10 onwards, and all 10.6 and later tags,
+    the `MARIADB_*` equivalent variables are provided. `MARIADB_*` variants will always be
+    used in preference to `MYSQL_*` variants.
+
+The MariaDB module will take all the environment variables that start with `MARIADB_` and duplicate them with the `MYSQL_` prefix.
+
+#### Wait Strategies
+
+If you need to set a different wait strategy for MariaDB, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
+for MariaDB.
+
+!!!info
+    The default deadline for the wait strategy is 60 seconds.
+
+At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+
+#### Docker type modifiers
+
+If you need an advanced configuration for MariaDB, you can leverage the following Docker type modifiers:
+
+- `testcontainers.WithConfigModifier`
+- `testcontainers.WithHostConfigModifier`
+- `testcontainers.WithEndpointSettingsModifier`
+
+Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+
+#### Set username, password and database name
+
+If you need to set a different database, and its credentials, you can use `WithUsername`, `WithPassword`, `WithDatabase`
+options.  By default, the username, the password and the database name is `test`.
+
+<!--codeinclude-->
+[Custom Database initialization](../../modules/mariadb/mariadb_test.go) inside_block:customInitialization
+<!--/codeinclude-->
+
+!!!info
+    The default values for the username is `root`, for password is `test` and for the default database name is `test`.
+
+#### Init Scripts
+
+If you would like to perform DDL or DML operations in the MariaDB container, add one or more `*.sql`, `*.sql.gz`, or `*.sh`
+scripts to the container request. Those files will be copied under `/docker-entrypoint-initdb.d`.
+
+<!--codeinclude-->
+[Include init scripts](../../modules/mariadb/mariadb_test.go) inside_block:withScripts
+<!--/codeinclude-->
+
+#### Custom configuration
+
+If you need to set a custom configuration, you can use `WithConfigFile` option.
+
+<!--codeinclude-->
+[Custom MariaDB config file](../../modules/mariadb/mariadb_test.go) inside_block:withConfigFile
+<!--/codeinclude-->
+
+### Container Methods
+
+The MariaDB container exposes the following methods:
+
+#### ConnectionString
+
+This method returns the connection string to connect to the MariaDB container, using the default `3306` port.
+It's possible to pass extra parameters to the connection string, e.g. `tls=false`, in a variadic way.
+
+!!!info
+    By default, MariaDB transmits data between the server and clients without encrypting it.
+
+<!--codeinclude-->
+[Get connection string](../../modules/mariadb/mariadb_test.go) inside_block:connectionString
+<!--/codeinclude-->

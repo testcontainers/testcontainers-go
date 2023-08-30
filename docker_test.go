@@ -1059,9 +1059,11 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	t.Log("getting ctx")
 	ctx := context.Background()
 
+	t.Log("got ctx, creating container request")
+
+	// fromDockerfileWithBuildArgs {
 	ba := "build args value"
 
-	t.Log("got ctx, creating container request")
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
 			Context:    filepath.Join(".", "testdata"),
@@ -1073,6 +1075,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 	}
+	// }
 
 	genContainerReq := GenericContainerRequest{
 		ProviderType:     providerType,

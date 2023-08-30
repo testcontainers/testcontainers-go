@@ -1,4 +1,4 @@
-{{ $lower := ToLower }}{{ $title := Title }}package {{ $lower }}
+{{ $entrypoint := Entrypoint }}{{ $lower := ToLower }}{{ $title := Title }}package {{ $lower }}
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 func Test{{ $title }}(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx)
+	container, err := {{ $entrypoint }}(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

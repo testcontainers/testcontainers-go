@@ -107,6 +107,18 @@ func TestExtractDockerHost(t *testing.T) {
 		assert.Equal(t, "/this/is/a/sample.sock", host)
 	})
 
+	t.Run("Unix Docker Host is passed as docker.host", func(t *testing.T) {
+		setupDockerSocketNotFound(t)
+		setupRootlessNotFound(t)
+		content := "docker.host=" + DockerSocketSchema + "/this/is/a/sample.sock"
+
+		setupTestcontainersProperties(t, content)
+
+		host := extractDockerHost(context.Background())
+
+		assert.Equal(t, DockerSocketSchema+"/this/is/a/sample.sock", host)
+	})
+
 	t.Run("Default Docker socket", func(t *testing.T) {
 		setupRootlessNotFound(t)
 		tmpSocket := setupDockerSocket(t)
@@ -225,8 +237,8 @@ func TestExtractDockerHost(t *testing.T) {
 		})
 
 		t.Run("Docker host is defined in properties", func(t *testing.T) {
-			tmpSocket := "/this/is/a/sample.sock"
-			content := "docker.host=unix://" + tmpSocket
+			tmpSocket := "unix:///this/is/a/sample.sock"
+			content := "docker.host=" + tmpSocket
 
 			setupTestcontainersProperties(t, content)
 
@@ -382,6 +394,22 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		t.Setenv("DOCKER_HOST", testRemoteHost)
 		socket = extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
 		assert.Equal(t, DockerSocketPath, socket)
+	})
+
+	t.Run("Unix Docker Socket is passed as docker.host property", func(t *testing.T) {
+		content := "docker.host=" + DockerSocketSchema + "/this/is/a/sample.sock"
+		setupTestcontainersProperties(t, content)
+		setupDockerSocketNotFound(t)
+
+		t.Cleanup(resetSocketOverrideFn)
+
+		ctx := context.Background()
+		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+		os.Unsetenv("DOCKER_HOST")
+
+		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
+
+		assert.Equal(t, "/this/is/a/sample.sock", socket)
 	})
 }
 

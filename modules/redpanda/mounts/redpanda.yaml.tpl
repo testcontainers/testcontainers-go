@@ -27,12 +27,32 @@ redpanda:
       name: internal
       port: 9093
 
+{{ if .EnableTLS }}
+  admin_api_tls:
+    - enabled: true
+      cert_file: /etc/redpanda/cert.pem
+      key_file: /etc/redpanda/key.pem
+  kafka_api_tls:
+    - name: external
+      enabled: true
+      cert_file: /etc/redpanda/cert.pem
+      key_file: /etc/redpanda/key.pem
+{{ end }}
+
 schema_registry:
   schema_registry_api:
   - address: "0.0.0.0"
     name: main
     port: 8081
     authentication_method: {{ .SchemaRegistry.AuthenticationMethod }}
+
+{{ if .EnableTLS }}
+  schema_registry_api_tls:
+  - name: main
+    enabled: true
+    cert_file: /etc/redpanda/cert.pem
+    key_file: /etc/redpanda/key.pem
+{{ end }}
 
 schema_registry_client:
   brokers:

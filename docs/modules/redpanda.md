@@ -55,6 +55,10 @@ for Redpanda.
 
 At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
 
+#### TLS Encryption
+
+If you need to enable TLS use `WithTLS` with a valid PEM encoded certificate and key.
+
 #### Docker type modifiers
 
 If you need an advanced configuration for Redpanda, you can leverage the following Docker type modifiers:
