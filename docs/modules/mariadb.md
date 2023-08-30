@@ -48,6 +48,15 @@ for MariaDB. E.g. `testcontainers.WithImage("mariadb:11.0.3")`.
 [Custom Image](../../modules/mariadb/mariadb_test.go) inside_block:withConfigFile
 <!--/codeinclude-->
 
+!!!info
+    From MariaDB [docs](https://github.com/docker-library/docs/tree/master/mariadb#environment-variables):
+
+    From tag 10.2.38, 10.3.29, 10.4.19, 10.5.10 onwards, and all 10.6 and later tags,
+    the `MARIADB_*` equivalent variables are provided. `MARIADB_*` variants will always be
+    used in preference to `MYSQL_*` variants.
+
+The MariaDB module will take all the environment variables that start with `MARIADB_` and duplicate them with the `MYSQL_` prefix.
+
 #### Wait Strategies
 
 If you need to set a different wait strategy for MariaDB, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy

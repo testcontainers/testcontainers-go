@@ -46,15 +46,23 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 			req.Env["MARIADB_ALLOW_EMPTY_ROOT_PASSWORD"] = "yes"
 			delete(req.Env, "MARIADB_PASSWORD")
 		}
+	}
+}
 
-		// https://github.com/docker-library/docs/tree/master/mariadb#environment-variables
-		// From tag 10.2.38, 10.3.29, 10.4.19, 10.5.10 onwards, and all 10.6 and later tags,
-		// the MARIADB_* equivalent variables are provided. MARIADB_* variants will always be
-		// used in preference to MYSQL_* variants.
-		req.Env["MYSQL_ROOT_PASSWORD"] = req.Env["MARIADB_ROOT_PASSWORD"]
-		req.Env["MYSQL_USER"] = req.Env["MARIADB_USER"]
-		req.Env["MYSQL_PASSWORD"] = req.Env["MARIADB_PASSWORD"]
-		req.Env["MYSQL_DATABASE"] = req.Env["MARIADB_DATABASE"]
+// https://github.com/docker-library/docs/tree/master/mariadb#environment-variables
+// From tag 10.2.38, 10.3.29, 10.4.19, 10.5.10 onwards, and all 10.6 and later tags,
+// the MARIADB_* equivalent variables are provided. MARIADB_* variants will always be
+// used in preference to MYSQL_* variants.
+func withMySQLEnvVars() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		// look up for MARIADB environment variables and apply the same to MYSQL
+		for k, v := range req.Env {
+			if strings.HasPrefix(k, "MARIADB_") {
+				// apply the same value to the MYSQL environment variables
+				mysqlEnvVar := strings.ReplaceAll(k, "MARIADB_", "MYSQL_")
+				req.Env[mysqlEnvVar] = v
+			}
+		}
 	}
 }
 
@@ -125,6 +133,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	for _, opt := range opts {
 		opt.Customize(&genericContainerReq)
 	}
+
+	// Apply MySQL environment variables after user customization
+	// In future releases of MariaDB, they could remove the MYSQL_* environment variables
+	// at all. Then we can remove this customization.
+	withMySQLEnvVars().Customize(&genericContainerReq)
 
 	username, ok := req.Env["MARIADB_USER"]
 	if !ok {
