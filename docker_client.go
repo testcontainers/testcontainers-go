@@ -53,7 +53,7 @@ func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
   Resolved Docker Host: %s
   Resolved Docker Socket Path: %s
   Test SessionID: %s
-  Test RunID: %s
+  Test ProcessID: %s
 `
 
 		Logger.Printf(infoMessage, packagePath,
@@ -62,7 +62,7 @@ func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
 			testcontainersdocker.ExtractDockerHost(ctx),
 			testcontainersdocker.ExtractDockerSocket(ctx),
 			testcontainerssession.SessionID,
-			testcontainerssession.RunID,
+			testcontainerssession.ProcessID,
 		)
 	})
 

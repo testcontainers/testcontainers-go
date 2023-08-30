@@ -32,14 +32,14 @@ import (
 //   - tag the containers created by testcontainers-go, adding a label to the container with the session ID.
 var SessionID string
 
-// RunID returns a unique run ID for the current test process. Because each Go package will be run in a separate process,
-// we need a way to identify the current test process.
-var RunID string
+// ProcessID returns a unique ID for the current test process. Because each Go package will be run in a separate process,
+// we need a way to identify the current test process, in the form of an UUID
+var ProcessID string
 
 const sessionIDPlaceholder = "testcontainers-go:%d:%d"
 
 func init() {
-	RunID = uuid.New().String()
+	ProcessID = uuid.New().String()
 
 	parentPid := os.Getppid()
 	var createTime int64
