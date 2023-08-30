@@ -24,6 +24,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 - a new Nav entry for the module in the docs site, adding it to the `mkdocs.yml` file located at the root directory of the project.
 - a GitHub workflow file in the .github/workflows directory to run the tests for the example.
 - an entry in Dependabot's configuration file, in order to receive dependency updates.
+- an entry in the VSCode workspace file, in order to include the new module in the project's workspace.
 
 ### Command line flags
 
