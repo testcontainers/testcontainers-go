@@ -108,7 +108,7 @@ If you need to set a custom configuration, you can use `WithConfigFile` option.
 #### ConnectionString
 
 This method returns the connection string to connect to the MySQL container, using the default `3306` port.
-It's possible to pass extra parameters to the connection string, e.g. `sslmode=disable` or `application_name=myapp`, in a variadic way.
+It's possible to pass extra parameters to the connection string, e.g. `tls=skip-verify` or `application_name=myapp`, in a variadic way.
 
 <!--codeinclude-->
 [Get connection string](../../modules/mysql/mysql_test.go) inside_block:connectionString

@@ -1,4 +1,4 @@
-package mysql
+package mariadb
 
 import (
 	"context"
@@ -12,10 +12,10 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestMySQL(t *testing.T) {
+func TestMariaDB(t *testing.T) {
 	ctx := context.Background()
 
-	// createMysqlContainer {
+	// createMariaDBContainer {
 	container, err := RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -29,9 +29,9 @@ func TestMySQL(t *testing.T) {
 		}
 	})
 
-	// perform assertions
 	// connectionString {
-	connectionString, err := container.ConnectionString(ctx, "tls=skip-verify")
+	// By default, MariaDB transmits data between the server and clients without encrypting it.
+	connectionString, err := container.ConnectionString(ctx, "tls=false")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestMySQL(t *testing.T) {
 	}
 }
 
-func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
+func TestMariaDBWithNonRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
 	_, err := RunContainer(ctx,
@@ -68,7 +68,7 @@ func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 	}
 }
 
-func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
+func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
 	// customInitialization {
@@ -88,8 +88,10 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 		}
 	})
 
-	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
+	connectionString, err := container.ConnectionString(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -110,11 +112,31 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 	}
 }
 
-func TestMySQLWithConfigFile(t *testing.T) {
+func TestMariaDBWithMySQLEnvVars(t *testing.T) {
+	ctx := context.Background()
+
+	// withMySQLVars {
+	container, err := RunContainer(ctx, testcontainers.WithImage("mariadb:10.3.29"),
+		WithScripts(filepath.Join("testdata", "schema.sql")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// }
+
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	assertDataCanBeFetched(t, ctx, container)
+}
+
+func TestMariaDBWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	// withConfigFile {
-	container, err := RunContainer(ctx, testcontainers.WithImage("mysql:5.6"),
+	container, err := RunContainer(ctx, testcontainers.WithImage("mariadb:11.0.3"),
 		WithConfigFile(filepath.Join("testdata", "my.cnf")))
 	if err != nil {
 		t.Fatal(err)
@@ -128,8 +150,10 @@ func TestMySQLWithConfigFile(t *testing.T) {
 		}
 	})
 
-	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
+	connectionString, err := container.ConnectionString(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -140,7 +164,12 @@ func TestMySQLWithConfigFile(t *testing.T) {
 	if err = db.Ping(); err != nil {
 		t.Errorf("error pinging db: %+v\n", err)
 	}
-	stmt, err := db.Prepare("SELECT @@GLOBAL.innodb_file_format")
+
+	// In MariaDB 10.2.2 and later, the default file format is Barracuda and Antelope is deprecated.
+	// Barracuda is a newer InnoDB file format. It supports the COMPACT, REDUNDANT, DYNAMIC and
+	// COMPRESSED row formats. Tables with large BLOB or TEXT columns in particular could benefit
+	// from the dynamic row format.
+	stmt, err := db.Prepare("SELECT @@GLOBAL.innodb_default_row_format")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,14 +178,14 @@ func TestMySQLWithConfigFile(t *testing.T) {
 	innodbFileFormat := ""
 	err = row.Scan(&innodbFileFormat)
 	if err != nil {
-		t.Errorf("error fetching innodb_file_format value")
+		t.Errorf("error fetching innodb_default_row_format value")
 	}
-	if innodbFileFormat != "Barracuda" {
+	if innodbFileFormat != "dynamic" {
 		t.Fatal("The InnoDB file format has been set by the ini file content")
 	}
 }
 
-func TestMySQLWithScripts(t *testing.T) {
+func TestMariaDBWithScripts(t *testing.T) {
 	ctx := context.Background()
 
 	// withScripts {
@@ -174,8 +203,14 @@ func TestMySQLWithScripts(t *testing.T) {
 		}
 	})
 
-	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
+	assertDataCanBeFetched(t, ctx, container)
+}
+
+func assertDataCanBeFetched(t *testing.T, ctx context.Context, container *MariaDBContainer) {
+	connectionString, err := container.ConnectionString(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -186,6 +221,7 @@ func TestMySQLWithScripts(t *testing.T) {
 	if err = db.Ping(); err != nil {
 		t.Errorf("error pinging db: %+v\n", err)
 	}
+
 	stmt, err := db.Prepare("SELECT name from profile")
 	if err != nil {
 		t.Fatal(err)
