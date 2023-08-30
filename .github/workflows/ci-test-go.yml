@@ -12,6 +12,11 @@ on:
         required: true
         type: string
         description: "The platform to run the test on."
+      fail-fast:
+        required: false
+        type: boolean
+        default: true
+        description: "Fail the workflow if any of the jobs fail."
       project-directory:
         required: true
         type: string
@@ -42,6 +47,7 @@ jobs:
   test-go-project:
     name: "${{ inputs.project-directory }}/${{ inputs.platform }}/${{ inputs.go-version }}"
     runs-on: ${{ inputs.platform }}
+    continue-on-error: ${{ !inputs.fail-fast }}
     env:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
     steps:
