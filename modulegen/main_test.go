@@ -459,11 +459,11 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 
 	modulesList, err := ctx.GetModules()
 	assert.Nil(t, err)
-	assert.Equal(t, "        module: ["+strings.Join(modulesList, ", ")+"]", data[92])
+	assert.Equal(t, "        module: ["+strings.Join(modulesList, ", ")+"]", data[94])
 
 	examplesList, err := ctx.GetExamples()
 	assert.Nil(t, err)
-	assert.Equal(t, "        module: ["+strings.Join(examplesList, ", ")+"]", data[108])
+	assert.Equal(t, "        module: ["+strings.Join(examplesList, ", ")+"]", data[110])
 }
 
 // assert content go.mod
