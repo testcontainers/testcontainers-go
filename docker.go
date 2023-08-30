@@ -27,7 +27,6 @@ import (
 	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/go-connections/nat"
-	"github.com/google/uuid"
 	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
