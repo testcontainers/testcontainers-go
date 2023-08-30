@@ -111,14 +111,13 @@ jobs:
     needs: test-modules
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest]
         module: [{{ .Examples }}]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: "1.20.x"
       fail-fast: true
-      platform: {{ "${{ matrix.platform }}" }}
+      platform: 'ubuntu-latest'
       project-directory: {{ "examples/${{ matrix.module }}" }}
       rootless-docker: false
-      run-tests: {{ "${{ matrix.platform == 'ubuntu-latest' }}" }}
+      run-tests: yes
       ryuk-disabled: false
