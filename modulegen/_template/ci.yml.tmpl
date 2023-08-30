@@ -29,6 +29,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
+      fail-fast: true
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: "."
       rootless-docker: false
@@ -46,6 +47,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
+      fail-fast: true
       platform: "ubuntu-latest"
       project-directory: "."
       rootless-docker: false
@@ -64,6 +66,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
+      fail-fast: true
       platform: "ubuntu-latest"
       project-directory: "."
       rootless-docker: true
@@ -78,6 +81,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
+      fail-fast: true
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: "modulegen"
       rootless-docker: false
@@ -94,6 +98,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
+      fail-fast: false
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: {{ "modules/${{ matrix.module }}" }}
       rootless-docker: false
@@ -104,12 +109,12 @@ jobs:
     needs: test-modules
     strategy:
       matrix:
-        go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
         module: [{{ .Examples }}]
     uses: ./.github/workflows/ci-test-go.yml
     with:
-      go-version: {{ "${{ matrix.go-version }}" }}
+      go-version: "1.x"
+      fail-fast: true
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: {{ "examples/${{ matrix.module }}" }}
       rootless-docker: false
