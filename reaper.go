@@ -139,6 +139,7 @@ func newReaper(ctx context.Context, provider ReaperProvider, opts ...ContainerOp
 		ExposedPorts: []string{string(listeningPort)},
 		Labels: map[string]string{
 			testcontainersdocker.LabelReaper:    "true",
+			testcontainersdocker.LabelRyuk:      "true",
 			testcontainersdocker.LabelSessionID: sessionID,
 		},
 		Mounts:        Mounts(BindMount(dockerHostMount, "/var/run/docker.sock")),
