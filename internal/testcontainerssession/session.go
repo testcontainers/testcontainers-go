@@ -9,7 +9,7 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 )
 
-// SessionID returns a unique session ID for the current test session. Because each Go package
+// sessionID returns a unique session ID for the current test session. Because each Go package
 // will be run in a separate process, we need a way to identify the current test session.
 // By test session, we mean:
 //   - a single "go test" invocation (including flags)
@@ -27,26 +27,26 @@ import (
 // Finally, we will hash the combination of the "testcontainers-go:" string with the parent pid
 // and the creation date of that parent process to generate a unique session ID.
 //
-// This SessionID will be used to:
+// This sessionID will be used to:
 //   - identify the test session, aggregating the test execution of multiple packages in the same test session.
 //   - tag the containers created by testcontainers-go, adding a label to the container with the session ID.
-var SessionID string
+var sessionID string
 
-// ProcessID returns a unique ID for the current test process. Because each Go package will be run in a separate process,
+// processID returns a unique ID for the current test process. Because each Go package will be run in a separate process,
 // we need a way to identify the current test process, in the form of an UUID
-var ProcessID string
+var processID string
 
 const sessionIDPlaceholder = "testcontainers-go:%d:%d"
 
 func init() {
-	ProcessID = uuid.New().String()
+	processID = uuid.New().String()
 
 	parentPid := os.Getppid()
 	var createTime int64
 
 	processes, err := process.Processes()
 	if err != nil {
-		SessionID = uuid.New().String()
+		sessionID = uuid.New().String()
 		return
 	}
 
@@ -57,7 +57,7 @@ func init() {
 
 		t, err := p.CreateTime()
 		if err != nil {
-			SessionID = uuid.New().String()
+			sessionID = uuid.New().String()
 			return
 		}
 
@@ -68,9 +68,17 @@ func init() {
 	hasher := sha256.New()
 	_, err = hasher.Write([]byte(fmt.Sprintf(sessionIDPlaceholder, parentPid, createTime)))
 	if err != nil {
-		SessionID = uuid.New().String()
+		sessionID = uuid.New().String()
 		return
 	}
 
-	SessionID = fmt.Sprintf("%x", hasher.Sum(nil))
+	sessionID = fmt.Sprintf("%x", hasher.Sum(nil))
+}
+
+func ProcessID() string {
+	return processID
+}
+
+func SessionID() string {
+	return sessionID
 }

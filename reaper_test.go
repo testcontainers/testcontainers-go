@@ -58,8 +58,7 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		Labels: map[string]string{
 			testcontainersdocker.LabelLang:      "go",
 			testcontainersdocker.LabelReaper:    "true",
-			testcontainersdocker.LabelProcessID: testcontainerssession.ProcessID,
-			testcontainersdocker.LabelSessionID: testcontainerssession.SessionID,
+			testcontainersdocker.LabelSessionID: testcontainerssession.SessionID(),
 		},
 		Mounts:     Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock")),
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),

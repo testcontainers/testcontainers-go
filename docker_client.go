@@ -61,8 +61,8 @@ func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
 			dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
 			testcontainersdocker.ExtractDockerHost(ctx),
 			testcontainersdocker.ExtractDockerSocket(ctx),
-			testcontainerssession.SessionID,
-			testcontainerssession.ProcessID,
+			testcontainerssession.SessionID(),
+			testcontainerssession.ProcessID(),
 		)
 	})
 

@@ -61,8 +61,7 @@ func findReaperContainer(ctx context.Context) (bool, error) {
 
 	err = backoff.Retry(func() error {
 		args := []filters.KeyValuePair{
-			filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, testcontainerssession.SessionID)),
-			filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelProcessID, testcontainerssession.ProcessID)),
+			filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, testcontainerssession.SessionID())),
 			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelReaper, true)),
 			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelRyuk, true)),
 			filters.Arg("status", "running"),
@@ -118,13 +117,11 @@ func reuseOrCreateReaper(ctx context.Context, provider ReaperProvider, opts ...C
 func newReaper(ctx context.Context, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
 	dockerHostMount := testcontainersdocker.ExtractDockerSocket(ctx)
 
-	processID := testcontainerssession.ProcessID
-	sessionID := testcontainerssession.SessionID
+	sessionID := testcontainerssession.SessionID()
 
 	reaper := &Reaper{
 		Provider:  provider,
 		SessionID: sessionID,
-		ProcessID: processID,
 	}
 
 	listeningPort := nat.Port("8080/tcp")
@@ -143,7 +140,6 @@ func newReaper(ctx context.Context, provider ReaperProvider, opts ...ContainerOp
 		Labels: map[string]string{
 			testcontainersdocker.LabelReaper:    "true",
 			testcontainersdocker.LabelSessionID: sessionID,
-			testcontainersdocker.LabelProcessID: processID,
 		},
 		Mounts:        Mounts(BindMount(dockerHostMount, "/var/run/docker.sock")),
 		Privileged:    tcConfig.RyukPrivileged,
@@ -187,7 +183,6 @@ func newReaper(ctx context.Context, provider ReaperProvider, opts ...ContainerOp
 type Reaper struct {
 	Provider  ReaperProvider
 	SessionID string
-	ProcessID string
 	Endpoint  string
 	container Container
 }
@@ -244,7 +239,6 @@ func (r *Reaper) Connect() (chan bool, error) {
 func (r *Reaper) Labels() map[string]string {
 	return map[string]string{
 		testcontainersdocker.LabelLang:      "go",
-		testcontainersdocker.LabelProcessID: r.ProcessID,
 		testcontainersdocker.LabelSessionID: r.SessionID,
 	}
 }
