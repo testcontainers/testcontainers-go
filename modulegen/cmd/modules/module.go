@@ -16,9 +16,10 @@ var newModuleCmd = &cobra.Command{
 }
 
 func init() {
-	newModuleCmd.Flags().StringVarP(&exampleVar.Name, "name", "n", "", "Name of the module. Only alphabetical characters are allowed.")
-	newModuleCmd.Flags().StringVarP(&exampleVar.NameTitle, "title", "t", "", "(Optional) Title of the module name, used to override the name in the case of mixed casing (Mongodb -> MongoDB). Use camel-case when needed. Only alphabetical characters are allowed.")
-	newModuleCmd.Flags().StringVarP(&exampleVar.Image, "image", "i", "", "Fully-qualified name of the Docker image to be used by the module")
-	_ = newModuleCmd.MarkFlagRequired("image")
-	_ = newModuleCmd.MarkFlagRequired("name")
+	newModuleCmd.Flags().StringVarP(&exampleVar.Name, nameFlag, "n", "", "Name of the module. Only alphabetical characters are allowed.")
+	newModuleCmd.Flags().StringVarP(&exampleVar.NameTitle, titleFlag, "t", "", "(Optional) Title of the module name, used to override the name in the case of mixed casing (Mongodb -> MongoDB). Use camel-case when needed. Only alphabetical characters are allowed.")
+	newModuleCmd.Flags().StringVarP(&exampleVar.Image, imageFlag, "i", "", "Fully-qualified name of the Docker image to be used by the module")
+
+	_ = newModuleCmd.MarkFlagRequired(imageFlag)
+	_ = newModuleCmd.MarkFlagRequired(nameFlag)
 }
