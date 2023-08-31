@@ -11,6 +11,8 @@ import (
 // NATSContainer represents the NATS container type used in the module
 type NATSContainer struct {
 	testcontainers.Container
+	User     string
+	Password string
 }
 
 // RunContainer creates an instance of the NATS container type
@@ -27,8 +29,19 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		Started:          true,
 	}
 
+	// Gather all config options (defaults and then apply provided options)
+	settings := defaultOptions()
 	for _, opt := range opts {
+		if apply, ok := opt.(CmdOption); ok {
+			apply(&settings)
+		}
 		opt.Customize(&genericContainerReq)
+	}
+
+	// Include the command line arguments
+	for k, v := range settings.CmdArgs {
+		// always prepend the dash because it was removed in the options
+		genericContainerReq.Cmd = append(genericContainerReq.Cmd, []string{"--" + k, v}...)
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
@@ -36,7 +49,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	return &NATSContainer{Container: container}, nil
+	natsContainer := NATSContainer{
+		Container: container,
+		User:      settings.CmdArgs["user"],
+		Password:  settings.CmdArgs["pass"],
+	}
+
+	return &natsContainer, nil
 }
 
 // ConnectionString returns a connection string for the NATS container

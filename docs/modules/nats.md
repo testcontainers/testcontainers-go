@@ -60,17 +60,29 @@ If you need an advanced configuration for NATS, you can leverage the following D
 
 Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
 
+#### Set username and password
+
+If you need to set different credentials, you can use `WithUsername` and `WithPassword`
+options.  By default, the username, the password are not set.
+
+<!--codeinclude-->
+[Define NATS container with credentials](../../modules/nats/nats_test.go) inside_block:withCredentials
+<!--/codeinclude-->
+
+To establish the connection with the NATS container:
+
+<!--codeinclude-->
+[Connect using the credentials](../../modules/nats/nats_test.go) inside_block:connectWithCredentials
+<!--/codeinclude-->
+
 ### Container Methods
 
 The NATS container exposes the following methods:
 
 #### ConnectionString
 
-This method returns the connection string to connect to the MariaDB container, using the default `3306` port.
-It's possible to pass extra parameters to the connection string, e.g. `tls=false`, in a variadic way.
-
-!!!info
-    By default, MariaDB transmits data between the server and clients without encrypting it.
+This method returns the connection string to connect to the NATS container, using the default `4222` port.
+It's possible to pass extra parameters to the connection string, in a variadic way.
 
 <!--codeinclude-->
 [Get connection string](../../modules/nats/nats_test.go) inside_block:connectionString
