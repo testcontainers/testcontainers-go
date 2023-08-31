@@ -8,6 +8,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const (
+	defaultClientPort     = "4222/tcp"
+	defaultRoutingPort    = "6222/tcp"
+	defaultMonitoringPort = "8222/tcp"
+)
+
 // NATSContainer represents the NATS container type used in the module
 type NATSContainer struct {
 	testcontainers.Container
@@ -19,7 +25,7 @@ type NATSContainer struct {
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*NATSContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "nats:2.9",
-		ExposedPorts: []string{"4222/tcp", "6222/tcp", "8222/tcp"},
+		ExposedPorts: []string{defaultClientPort, defaultRoutingPort, defaultMonitoringPort},
 		Cmd:          []string{"-DV", "-js"},
 		WaitingFor:   wait.ForLog("Listening for client connections on 0.0.0.0:4222"),
 	}
@@ -60,7 +66,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // ConnectionString returns a connection string for the NATS container
 func (c *NATSContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, "4222/tcp")
+	mappedPort, err := c.MappedPort(ctx, defaultClientPort)
 	if err != nil {
 		return "", err
 	}
