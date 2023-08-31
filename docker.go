@@ -1418,7 +1418,7 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 		return nil, err
 	}
 
-	var container = DockerContainer{}
+	container := DockerContainer{}
 
 	container.ID = response.ID
 	container.WaitingFor = nil
