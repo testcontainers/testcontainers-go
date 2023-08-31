@@ -342,11 +342,11 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, container)
 
-	exists, err := findReaperContainer(ctx)
+	reaperContainer, err := lookUpReaperContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if exists {
+	if reaperContainer != nil {
 		t.Fatal("expected zero reaper running.")
 	}
 }
@@ -380,11 +380,11 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	}
 	terminateContainerOnEnd(t, ctx, c)
 
-	exists, err := findReaperContainer(ctx)
+	reaperContainer, err := lookUpReaperContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !exists {
+	if reaperContainer == nil {
 		t.Fatal("expected one reaper to be running.")
 	}
 }

@@ -49,16 +49,27 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 	return reuseOrCreateReaper(ctx, provider, WithImageName(reaperImageName))
 }
 
-// findReaperContainer returns true if a reaper container is found in the running state, including
-// container labels for sessionID, reaper, and ryuk. It will perform a retry with exponential backoff
-// to allow for the container to be started and avoid potential false negatives.
-func findReaperContainer(ctx context.Context) (bool, error) {
+// lookUpReaperContainer returns a DockerContainer type with the reaper container in the case
+// it's found in the running state, and including the labels for sessionID, reaper, and ryuk.
+// It will perform a retry with exponential backoff to allow for the container to be started and
+// avoid potential false negatives.
+func lookUpReaperContainer(ctx context.Context) (*DockerContainer, error) {
 	dockerClient, err := NewDockerClientWithOpts(ctx)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	defer dockerClient.Close()
 
+	// the backoff will take at most 5 seconds to find the reaper container
+	// doing each attempt every 100ms
+	exp := backoff.NewExponentialBackOff()
+	exp.InitialInterval = 100 * time.Millisecond
+	exp.RandomizationFactor = 0.5
+	exp.Multiplier = 2.0
+	exp.MaxInterval = 5.0 * time.Second
+	exp.MaxElapsedTime = 5 * time.Second
+
+	var reaperContainer *DockerContainer
 	err = backoff.Retry(func() error {
 		args := []filters.KeyValuePair{
 			filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, testcontainerssession.SessionID())),
@@ -79,14 +90,26 @@ func findReaperContainer(ctx context.Context) (bool, error) {
 			return fmt.Errorf("reaper container not found in the running state")
 		}
 
+		if len(resp) > 1 {
+			// this should not be possible, but we'll handle it anyway
+			return fmt.Errorf("multiple reaper containers found in the running state")
+		}
+
+		r, err := containerFromDockerResponse(ctx, resp[0])
+		if err != nil {
+			return err
+		}
+
+		reaperContainer = r
+
 		return nil
-	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+	}, backoff.WithContext(exp, ctx))
 
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	return true, nil
+	return reaperContainer, nil
 }
 
 // reuseOrCreateReaper returns an existing Reaper instance if it exists and is running. Otherwise, a new Reaper instance
@@ -94,21 +117,32 @@ func findReaperContainer(ctx context.Context) (bool, error) {
 func reuseOrCreateReaper(ctx context.Context, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	// If reaper already exists and healthy, re-use it
-	if reaperInstance != nil {
-		// Verify this instance is still running by checking state.
-		exists, err := findReaperContainer(ctx)
-		if err == nil && exists {
-			return reaperInstance, nil
+
+	// Verify this instance is still running by checking state.
+	reaperContainer, err := lookUpReaperContainer(ctx)
+	if err != nil || reaperContainer == nil {
+		r, err := newReaper(ctx, provider, opts...)
+		if err != nil {
+			return nil, err
 		}
+
+		reaperInstance = r
+		return reaperInstance, nil
 	}
 
-	r, err := newReaper(ctx, provider, opts...)
+	// The reaper already exists and healthy, re-use it
+	endpoint, err := reaperContainer.PortEndpoint(ctx, "8080", "")
 	if err != nil {
 		return nil, err
 	}
 
-	reaperInstance = r
+	reaperInstance = &Reaper{
+		Provider:  provider,
+		SessionID: testcontainerssession.SessionID(),
+		Endpoint:  endpoint,
+		container: reaperContainer,
+	}
+
 	return reaperInstance, nil
 }
 

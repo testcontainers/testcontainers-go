@@ -1410,3 +1410,40 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 
 	return reaperNetwork, nil
 }
+
+// containerFromDockerResponse builds a Docker container struct from the response of the Docker API
+func containerFromDockerResponse(ctx context.Context, response types.Container) (*DockerContainer, error) {
+	provider, err := NewDockerProvider()
+	if err != nil {
+		return nil, err
+	}
+
+	var container = DockerContainer{}
+
+	container.ID = response.ID
+	container.WaitingFor = nil
+	container.Image = response.Image
+	container.imageWasBuilt = false
+
+	container.logger = provider.Logger
+	container.lifecycleHooks = []ContainerLifecycleHooks{
+		DefaultLoggingHook(container.logger),
+	}
+	container.provider = provider
+
+	container.sessionID = testcontainerssession.SessionID()
+	container.consumers = []LogConsumer{}
+	container.stopProducer = nil
+	container.isRunning = response.State == "running"
+
+	// the termination signal should be obtained from the reaper
+	container.terminationSignal = nil
+
+	// populate the raw representation of the container
+	_, err = container.inspectRawContainer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &container, nil
+}
