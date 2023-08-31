@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/testcontainers/testcontainers-go/modulegen/internal"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 )
@@ -16,14 +18,14 @@ import (
 func TestExample(t *testing.T) {
 	tests := []struct {
 		name                  string
-		example               Example
+		example               context.Example
 		expectedContainerName string
 		expectedEntrypoint    string
 		expectedTitle         string
 	}{
 		{
 			name: "Module with title",
-			example: Example{
+			example: context.Example{
 				Name:      "mongoDB",
 				IsModule:  true,
 				Image:     "mongodb:latest",
@@ -35,7 +37,7 @@ func TestExample(t *testing.T) {
 		},
 		{
 			name: "Module without title",
-			example: Example{
+			example: context.Example{
 				Name:     "mongoDB",
 				IsModule: true,
 				Image:    "mongodb:latest",
@@ -46,7 +48,7 @@ func TestExample(t *testing.T) {
 		},
 		{
 			name: "Example with title",
-			example: Example{
+			example: context.Example{
 				Name:      "mongoDB",
 				IsModule:  false,
 				Image:     "mongodb:latest",
@@ -58,7 +60,7 @@ func TestExample(t *testing.T) {
 		},
 		{
 			name: "Example without title",
-			example: Example{
+			example: context.Example{
 				Name:     "mongoDB",
 				IsModule: false,
 				Image:    "mongodb:latest",
@@ -86,33 +88,33 @@ func TestExample_Validate(outer *testing.T) {
 
 	tests := []struct {
 		name        string
-		example     Example
+		example     context.Example
 		expectedErr error
 	}{
 		{
 			name: "only alphabetical characters in name/title",
-			example: Example{
+			example: context.Example{
 				Name:      "AmazingDB",
 				TitleName: "AmazingDB",
 			},
 		},
 		{
 			name: "alphanumerical characters in name",
-			example: Example{
+			example: context.Example{
 				Name:      "AmazingDB4tw",
 				TitleName: "AmazingDB",
 			},
 		},
 		{
 			name: "alphanumerical characters in title",
-			example: Example{
+			example: context.Example{
 				Name:      "AmazingDB",
 				TitleName: "AmazingDB4tw",
 			},
 		},
 		{
 			name: "non-alphanumerical characters in name",
-			example: Example{
+			example: context.Example{
 				Name:      "Amazing DB 4 The Win",
 				TitleName: "AmazingDB",
 			},
@@ -120,7 +122,7 @@ func TestExample_Validate(outer *testing.T) {
 		},
 		{
 			name: "non-alphanumerical characters in title",
-			example: Example{
+			example: context.Example{
 				Name:      "AmazingDB",
 				TitleName: "Amazing DB 4 The Win",
 			},
@@ -128,7 +130,7 @@ func TestExample_Validate(outer *testing.T) {
 		},
 		{
 			name: "leading numerical character in name",
-			example: Example{
+			example: context.Example{
 				Name:      "1AmazingDB",
 				TitleName: "AmazingDB",
 			},
@@ -136,7 +138,7 @@ func TestExample_Validate(outer *testing.T) {
 		},
 		{
 			name: "leading numerical character in title",
-			example: Example{
+			example: context.Example{
 				Name:      "AmazingDB",
 				TitleName: "1AmazingDB",
 			},
@@ -152,7 +154,7 @@ func TestExample_Validate(outer *testing.T) {
 }
 
 func TestGenerateWrongExampleName(t *testing.T) {
-	tmpCtx := NewContext(t.TempDir())
+	tmpCtx := context.New(t.TempDir())
 	examplesTmp := filepath.Join(tmpCtx.RootDir, "examples")
 	examplesDocTmp := filepath.Join(tmpCtx.DocsDir(), "examples")
 	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
@@ -183,18 +185,18 @@ func TestGenerateWrongExampleName(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		example := Example{
+		example := context.Example{
 			Name:  test.name,
 			Image: "docker.io/example/" + test.name + ":latest",
 		}
 
-		err = generate(example, tmpCtx)
+		err = internal.GenerateFiles(tmpCtx, example)
 		assert.Error(t, err)
 	}
 }
 
 func TestGenerateWrongExampleTitle(t *testing.T) {
-	tmpCtx := NewContext(t.TempDir())
+	tmpCtx := context.New(t.TempDir())
 	examplesTmp := filepath.Join(tmpCtx.RootDir, "examples")
 	examplesDocTmp := filepath.Join(tmpCtx.DocsDir(), "examples")
 	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
@@ -225,19 +227,19 @@ func TestGenerateWrongExampleTitle(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		example := Example{
+		example := context.Example{
 			Name:      "foo",
 			TitleName: test.title,
 			Image:     "docker.io/example/foo:latest",
 		}
 
-		err = generate(example, tmpCtx)
+		err = internal.GenerateFiles(tmpCtx, example)
 		assert.Error(t, err)
 	}
 }
 
 func TestGenerate(t *testing.T) {
-	tmpCtx := NewContext(t.TempDir())
+	tmpCtx := context.New(t.TempDir())
 	examplesTmp := filepath.Join(tmpCtx.RootDir, "examples")
 	examplesDocTmp := filepath.Join(tmpCtx.DocsDir(), "examples")
 	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
@@ -261,7 +263,7 @@ func TestGenerate(t *testing.T) {
 	originalDependabotConfigUpdates, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
 	assert.Nil(t, err)
 
-	example := Example{
+	example := context.Example{
 		Name:      "foodb4tw",
 		TitleName: "FooDB4TheWin",
 		IsModule:  false,
@@ -269,7 +271,7 @@ func TestGenerate(t *testing.T) {
 	}
 	exampleNameLower := example.Lower()
 
-	err = generate(example, tmpCtx)
+	err = internal.GenerateFiles(tmpCtx, example)
 	assert.Nil(t, err)
 
 	exampleDirPath := filepath.Join(examplesTmp, exampleNameLower)
@@ -299,7 +301,7 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestGenerateModule(t *testing.T) {
-	tmpCtx := NewContext(t.TempDir())
+	tmpCtx := context.New(t.TempDir())
 	modulesTmp := filepath.Join(tmpCtx.RootDir, "modules")
 	modulesDocTmp := filepath.Join(tmpCtx.DocsDir(), "modules")
 	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
@@ -323,7 +325,7 @@ func TestGenerateModule(t *testing.T) {
 	originalDependabotConfigUpdates, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
 	assert.Nil(t, err)
 
-	example := Example{
+	example := context.Example{
 		Name:      "foodb",
 		TitleName: "FooDB",
 		IsModule:  true,
@@ -331,7 +333,7 @@ func TestGenerateModule(t *testing.T) {
 	}
 	exampleNameLower := example.Lower()
 
-	err = generate(example, tmpCtx)
+	err = internal.GenerateFiles(tmpCtx, example)
 	assert.Nil(t, err)
 
 	exampleDirPath := filepath.Join(modulesTmp, exampleNameLower)
@@ -361,7 +363,7 @@ func TestGenerateModule(t *testing.T) {
 }
 
 // assert content in the Examples nav from mkdocs.yml
-func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConfigUpdates dependabot.Updates, tmpCtx *Context) {
+func assertDependabotExamplesUpdates(t *testing.T, example context.Example, originalConfigUpdates dependabot.Updates, tmpCtx *context.Context) {
 	examples, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
 	assert.Nil(t, err)
 
@@ -392,7 +394,7 @@ func assertDependabotExamplesUpdates(t *testing.T, example Example, originalConf
 }
 
 // assert content example file in the docs
-func assertExampleDocContent(t *testing.T, example Example, exampleDocFile string) {
+func assertExampleDocContent(t *testing.T, example context.Example, exampleDocFile string) {
 	content, err := os.ReadFile(exampleDocFile)
 	assert.Nil(t, err)
 
@@ -419,7 +421,7 @@ func assertExampleDocContent(t *testing.T, example Example, exampleDocFile strin
 }
 
 // assert content example test
-func assertExampleTestContent(t *testing.T, example Example, exampleTestFile string) {
+func assertExampleTestContent(t *testing.T, example context.Example, exampleTestFile string) {
 	content, err := os.ReadFile(exampleTestFile)
 	assert.Nil(t, err)
 
@@ -430,7 +432,7 @@ func assertExampleTestContent(t *testing.T, example Example, exampleTestFile str
 }
 
 // assert content example
-func assertExampleContent(t *testing.T, example Example, exampleFile string) {
+func assertExampleContent(t *testing.T, example context.Example, exampleFile string) {
 	content, err := os.ReadFile(exampleFile)
 	assert.Nil(t, err)
 
@@ -450,7 +452,7 @@ func assertExampleContent(t *testing.T, example Example, exampleFile string) {
 }
 
 // assert content GitHub workflow for the example
-func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWorkflowFile string) {
+func assertExampleGithubWorkflowContent(t *testing.T, example context.Example, exampleWorkflowFile string) {
 	content, err := os.ReadFile(exampleWorkflowFile)
 	assert.Nil(t, err)
 
@@ -467,7 +469,7 @@ func assertExampleGithubWorkflowContent(t *testing.T, example Example, exampleWo
 }
 
 // assert content go.mod
-func assertGoModContent(t *testing.T, example Example, tcVersion string, goModFile string) {
+func assertGoModContent(t *testing.T, example context.Example, tcVersion string, goModFile string) {
 	content, err := os.ReadFile(goModFile)
 	assert.Nil(t, err)
 
@@ -478,7 +480,7 @@ func assertGoModContent(t *testing.T, example Example, tcVersion string, goModFi
 }
 
 // assert content Makefile
-func assertMakefileContent(t *testing.T, example Example, makefile string) {
+func assertMakefileContent(t *testing.T, example context.Example, makefile string) {
 	content, err := os.ReadFile(makefile)
 	assert.Nil(t, err)
 
@@ -487,7 +489,7 @@ func assertMakefileContent(t *testing.T, example Example, makefile string) {
 }
 
 // assert content in the Examples nav from mkdocs.yml
-func assertMkdocsExamplesNav(t *testing.T, example Example, originalConfig *mkdocs.Config, tmpCtx *Context) {
+func assertMkdocsExamplesNav(t *testing.T, example context.Example, originalConfig *mkdocs.Config, tmpCtx *context.Context) {
 	config, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
 	assert.Nil(t, err)
 
@@ -528,7 +530,7 @@ func sanitiseContent(bytes []byte) []string {
 	return data
 }
 
-func copyInitialDependabotConfig(t *testing.T, tmpCtx *Context) error {
+func copyInitialDependabotConfig(t *testing.T, tmpCtx *context.Context) error {
 	ctx := getTestRootContext(t)
 	return dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpCtx.DependabotConfigFile())
 }

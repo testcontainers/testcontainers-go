@@ -1,4 +1,4 @@
-package main
+package context
 
 import (
 	"os"
@@ -89,9 +89,17 @@ func (ctx *Context) MkdocsConfigFile() string {
 }
 
 func (ctx *Context) VSCodeWorkspaceFile() string {
-	return filepath.Join(ctx.RootDir, ".testcontainers-go.code-workspace")
+	return filepath.Join(ctx.RootDir, ".vscode", ".testcontainers-go.code-workspace")
 }
 
-func NewContext(dir string) *Context {
+func New(dir string) *Context {
 	return &Context{RootDir: dir}
+}
+
+func GetRootContext() (*Context, error) {
+	current, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	return New(filepath.Dir(current)), nil
 }
