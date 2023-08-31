@@ -8,14 +8,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// natsContainer represents the nats container type used in the module
-type natsContainer struct {
+// NATSContainer represents the NATS container type used in the module
+type NATSContainer struct {
 	testcontainers.Container
-	URI string
 }
 
-// runContainer creates an instance of the nats container type
-func runContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*natsContainer, error) {
+// RunContainer creates an instance of the NATS container type
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*NATSContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "nats:2.9",
 		ExposedPorts: []string{"4222/tcp", "6222/tcp", "8222/tcp"},
@@ -37,17 +36,21 @@ func runContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	mappedPort, err := container.MappedPort(ctx, "4222/tcp")
+	return &NATSContainer{Container: container}, nil
+}
+
+// ConnectionString returns a connection string for the NATS container
+func (c *NATSContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+	mappedPort, err := c.MappedPort(ctx, "4222/tcp")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	hostIP, err := container.Host(ctx)
+	hostIP, err := c.Host(ctx)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	uri := fmt.Sprintf("nats://%s:%s", hostIP, mappedPort.Port())
-
-	return &natsContainer{Container: container, URI: uri}, nil
+	return uri, nil
 }
