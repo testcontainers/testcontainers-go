@@ -9,11 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 )
 
 func TestGetMkDocsConfigFile(t *testing.T) {
-	tmpCtx := NewContext(filepath.Join(t.TempDir(), "testcontainers-go"))
+	tmpCtx := context.New(filepath.Join(t.TempDir(), "testcontainers-go"))
 	cfgFile := tmpCtx.MkdocsConfigFile()
 	err := os.MkdirAll(tmpCtx.RootDir, 0o777)
 	require.NoError(t, err)
@@ -28,7 +29,7 @@ func TestGetMkDocsConfigFile(t *testing.T) {
 }
 
 func TestReadMkDocsConfig(t *testing.T) {
-	tmpCtx := NewContext(filepath.Join(t.TempDir(), "testcontainers-go"))
+	tmpCtx := context.New(filepath.Join(t.TempDir(), "testcontainers-go"))
 	err := os.MkdirAll(tmpCtx.RootDir, 0o777)
 	require.NoError(t, err)
 
@@ -55,7 +56,7 @@ func TestReadMkDocsConfig(t *testing.T) {
 	assert.Greater(t, len(nav[4].Examples), 0)
 }
 
-func TestExamples(t *testing.T) {
+func TestNavItems(t *testing.T) {
 	ctx := getTestRootContext(t)
 	examples, err := ctx.GetExamples()
 	require.NoError(t, err)
@@ -80,7 +81,7 @@ func TestExamples(t *testing.T) {
 	}
 }
 
-func copyInitialMkdocsConfig(t *testing.T, tmpCtx *Context) error {
+func copyInitialMkdocsConfig(t *testing.T, tmpCtx context.Context) error {
 	ctx := getTestRootContext(t)
 	return mkdocs.CopyConfig(ctx.MkdocsConfigFile(), tmpCtx.MkdocsConfigFile())
 }

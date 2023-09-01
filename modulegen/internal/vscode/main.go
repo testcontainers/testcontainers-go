@@ -1,13 +1,25 @@
 package vscode
 
 import (
-	"path/filepath"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 )
 
-func Generate(rootDir string, examples []string, modules []string) error {
-	config := newConfig(examples, modules)
+type Generator struct{}
 
-	exampleFilePath := filepath.Join(rootDir, ".vscode", ".testcontainers-go.code-workspace")
+// Generate updates the workspace for vscode
+func (g Generator) Generate(ctx context.Context) error {
+	rootCtx, err := context.GetRootContext()
+	if err != nil {
+		return err
+	}
+	examples, err := rootCtx.GetExamples()
+	if err != nil {
+		return err
+	}
+	modules, err := rootCtx.GetModules()
+	if err != nil {
+		return err
+	}
 
-	return writeConfig(exampleFilePath, config)
+	return writeConfig(ctx.VSCodeWorkspaceFile(), newConfig(examples, modules))
 }

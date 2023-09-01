@@ -28,12 +28,12 @@ We have provided a command line tool to generate the scaffolding for the code of
 
 ### Command line flags
 
-| Flag       | Type   | Required | Description                                                                                                                                                    |
-|------------|--------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| -name      | string | Yes      | Name of the module, use camel-case when needed. Only alphanumerical characters are allowed (leading character must be a letter).                               |
-| -image     | string | Yes      | Fully-qualified name of the Docker image to be used by the module (i.e. 'docker.io/org/project:tag')                                                           |
-| -title     | string | No       | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphanumerical characters are allowed (leading character must be a letter).               |
-| -as-module | bool   | No       | If set, the module will be generated as a Go module, under the modules directory. Otherwise, it will be generated as a subdirectory of the examples directory. |
+| Flag    | Short | Type   | Required | Description                                                                                                                                      |
+|---------|-------|--------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| --name  | -n    | string | Yes      | Name of the module, use camel-case when needed. Only alphanumerical characters are allowed (leading character must be a letter).                 |
+| --image | -i    | string | Yes      | Fully-qualified name of the Docker image to be used by the module (i.e. 'docker.io/org/project:tag')                                             |
+| --title | -t    | string | No       | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphanumerical characters are allowed (leading character must be a letter). |
+
 
 ### What is this tool not doing?
 
@@ -45,13 +45,13 @@ We have provided a command line tool to generate the scaffolding for the code of
 From the [`modulegen` directory]({{repo_url}}/tree/main/modulegen), please run:
 
 ```shell
-go run . --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
+go run . new example --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
 ```
 
 or for creating a Go module:
 
 ```shell
-go run . --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE} --as-module
+go run . new module --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
 ```
 
 ### Adding types and methods to the module

@@ -9,11 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 )
 
 func TestGetDependabotConfigFile(t *testing.T) {
-	ctx := NewContext(filepath.Join(t.TempDir(), "testcontainers-go"))
+	ctx := context.New(filepath.Join(t.TempDir(), "testcontainers-go"))
 
 	githubDir := ctx.GithubDir()
 	cfgFile := ctx.DependabotConfigFile()
@@ -96,8 +97,8 @@ func TestModulesHasDependabotEntry(t *testing.T) {
 	}
 }
 
-func getTestRootContext(t *testing.T) *Context {
+func getTestRootContext(t *testing.T) context.Context {
 	current, err := os.Getwd()
 	require.NoError(t, err)
-	return NewContext(filepath.Dir(current))
+	return context.New(filepath.Dir(current))
 }
