@@ -60,25 +60,33 @@ func GenerateFiles(ctx *context.Context, m context.TestcontainersModule) error {
 		return err
 	}
 
-	// update github ci workflow
-	err := workflow.GenerateWorkflow(ctx)
-	if err != nil {
-		return err
-	}
 	// update examples in mkdocs
-	err = mkdocs.GenerateMkdocs(ctx, m)
+	err := mkdocs.GenerateMkdocs(ctx, m)
 	if err != nil {
 		return err
 	}
 
-	generators := []FileGenerator{
+	fileGenerators := []FileGenerator{
 		make.Generator{},       // creates Makefile for module
 		module.Generator{},     // creates go.mod for module
 		dependabot.Generator{}, // update examples in dependabot
 	}
 
-	for _, generator := range generators {
+	for _, generator := range fileGenerators {
 		err := generator.AddModule(ctx, m)
+		if err != nil {
+			return err
+		}
+	}
+
+	// they are based on the content of the modules in the project workspace,
+	// not in the new module to be added
+	projectGenerators := []ProjectGenerator{
+		workflow.Generator{}, // update github ci workflow
+	}
+
+	for _, generator := range projectGenerators {
+		err := generator.Generate(ctx)
 		if err != nil {
 			return err
 		}

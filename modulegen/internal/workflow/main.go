@@ -8,8 +8,10 @@ import (
 	internal_template "github.com/testcontainers/testcontainers-go/modulegen/internal/template"
 )
 
-// update github ci workflow
-func GenerateWorkflow(ctx *context.Context) error {
+type Generator struct{}
+
+// Generate updates github ci workflow
+func (g Generator) Generate(ctx *context.Context) error {
 	rootCtx, err := context.GetRootContext()
 	if err != nil {
 		return err
@@ -22,10 +24,9 @@ func GenerateWorkflow(ctx *context.Context) error {
 	if err != nil {
 		return err
 	}
-	return Generate(ctx.GithubWorkflowsDir(), examples, modules)
-}
 
-func Generate(githubWorkflowsDir string, examples []string, modules []string) error {
+	githubWorkflowsDir := ctx.GithubWorkflowsDir()
+
 	projectDirectories := newProjectDirectories(examples, modules)
 	name := "ci.yml.tmpl"
 	t, err := template.New(name).ParseFiles(filepath.Join("_template", name))
