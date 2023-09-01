@@ -44,36 +44,36 @@ type Config struct {
 	} `yaml:"extra"`
 }
 
-func (c *Config) addExample(isModule bool, exampleMd string, indexMd string) {
-	mkdocsExamplesNav := c.Nav[4].Examples
+func (c *Config) addModule(isModule bool, moduleMd string, indexMd string) {
+	mkdocsNavItems := c.Nav[4].Examples
 	if isModule {
-		mkdocsExamplesNav = c.Nav[3].Modules
+		mkdocsNavItems = c.Nav[3].Modules
 	}
 
-	if !slices.Contains(mkdocsExamplesNav, exampleMd) {
+	if !slices.Contains(mkdocsNavItems, moduleMd) {
 
 		// make sure the index.md is the first element in the list of examples in the nav
-		examplesNav := make([]string, len(mkdocsExamplesNav)-1)
+		navItems := make([]string, len(mkdocsNavItems)-1)
 		j := 0
 
-		for _, exampleNav := range mkdocsExamplesNav {
+		for _, navItem := range mkdocsNavItems {
 			// filter out the index.md file
-			if !strings.HasSuffix(exampleNav, "index.md") {
-				examplesNav[j] = exampleNav
+			if !strings.HasSuffix(navItem, "index.md") {
+				navItems[j] = navItem
 				j++
 			}
 		}
 
-		examplesNav = append(examplesNav, exampleMd)
-		sort.Strings(examplesNav)
+		navItems = append(navItems, moduleMd)
+		sort.Strings(navItems)
 
 		// prepend the index.md file
-		examplesNav = append([]string{indexMd}, examplesNav...)
+		navItems = append([]string{indexMd}, navItems...)
 
 		if isModule {
-			c.Nav[3].Modules = examplesNav
+			c.Nav[3].Modules = navItems
 		} else {
-			c.Nav[4].Examples = examplesNav
+			c.Nav[4].Examples = navItems
 		}
 	}
 }

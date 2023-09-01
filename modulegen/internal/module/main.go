@@ -12,27 +12,30 @@ import (
 	internal_template "github.com/testcontainers/testcontainers-go/modulegen/internal/template"
 )
 
-func GenerateGoModule(ctx *context.Context, example context.Example) error {
-	exampleDir := filepath.Join(ctx.RootDir, example.ParentDir(), example.Lower())
-	err := generateGoFiles(exampleDir, example)
+type Generator struct{}
+
+// AddModule creates the go.mod file for the module
+func (g Generator) AddModule(ctx context.Context, tcModule context.TestcontainersModule) error {
+	moduleDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
+	err := generateGoFiles(moduleDir, tcModule)
 	if err != nil {
 		return err
 	}
-	return generateGoModFile(exampleDir, example)
+	return generateGoModFile(moduleDir, tcModule)
 }
 
-func generateGoFiles(exampleDir string, example context.Example) error {
+func generateGoFiles(moduleDir string, tcModule context.TestcontainersModule) error {
 	funcMap := template.FuncMap{
-		"Entrypoint":    func() string { return example.Entrypoint() },
-		"ContainerName": func() string { return example.ContainerName() },
-		"ParentDir":     func() string { return example.ParentDir() },
-		"ToLower":       func() string { return example.Lower() },
-		"Title":         func() string { return example.Title() },
+		"Entrypoint":    func() string { return tcModule.Entrypoint() },
+		"ContainerName": func() string { return tcModule.ContainerName() },
+		"ParentDir":     func() string { return tcModule.ParentDir() },
+		"ToLower":       func() string { return tcModule.Lower() },
+		"Title":         func() string { return tcModule.Title() },
 	}
-	return GenerateFiles(exampleDir, example.Lower(), funcMap, example)
+	return GenerateFiles(moduleDir, tcModule.Lower(), funcMap, tcModule)
 }
 
-func generateGoModFile(exampleDir string, example context.Example) error {
+func generateGoModFile(moduleDir string, tcModule context.TestcontainersModule) error {
 	rootCtx, err := context.GetRootContext()
 	if err != nil {
 		return err
@@ -43,21 +46,21 @@ func generateGoModFile(exampleDir string, example context.Example) error {
 		return err
 	}
 	rootGoModFile := rootCtx.GoModFile()
-	directory := "/" + example.ParentDir() + "/" + example.Lower()
+	directory := "/" + tcModule.ParentDir() + "/" + tcModule.Lower()
 	tcVersion := mkdocsConfig.Extra.LatestVersion
-	return modfile.GenerateModFile(exampleDir, rootGoModFile, directory, tcVersion)
+	return modfile.GenerateModFile(moduleDir, rootGoModFile, directory, tcVersion)
 }
 
-func GenerateFiles(exampleDir string, exampleName string, funcMap template.FuncMap, example any) error {
+func GenerateFiles(moduleDir string, moduleName string, funcMap template.FuncMap, tcModule any) error {
 	for _, tmpl := range []string{"example_test.go", "example.go"} {
 		name := tmpl + ".tmpl"
 		t, err := template.New(name).Funcs(funcMap).ParseFiles(filepath.Join("_template", name))
 		if err != nil {
 			return err
 		}
-		exampleFilePath := filepath.Join(exampleDir, strings.ReplaceAll(tmpl, "example", exampleName))
+		moduleFilePath := filepath.Join(moduleDir, strings.ReplaceAll(tmpl, "example", moduleName))
 
-		err = internal_template.GenerateFile(t, exampleFilePath, name, example)
+		err = internal_template.GenerateFile(t, moduleFilePath, name, tcModule)
 		if err != nil {
 			return err
 		}

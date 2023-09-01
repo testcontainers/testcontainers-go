@@ -97,7 +97,7 @@ func TestModulesHasDependabotEntry(t *testing.T) {
 	}
 }
 
-func getTestRootContext(t *testing.T) *context.Context {
+func getTestRootContext(t *testing.T) context.Context {
 	current, err := os.Getwd()
 	require.NoError(t, err)
 	return context.New(filepath.Dir(current))

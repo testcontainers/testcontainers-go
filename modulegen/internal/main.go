@@ -14,25 +14,25 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/workflow"
 )
 
-func Generate(exampleVar context.ExampleVar, isModule bool) error {
+func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	ctx, err := context.GetRootContext()
 	if err != nil {
 		return fmt.Errorf(">> could not get the root dir: %w", err)
 	}
 
-	example := context.Example{
-		Image:     exampleVar.Image,
+	tcModule := context.TestcontainersModule{
+		Image:     moduleVar.Image,
 		IsModule:  isModule,
-		Name:      exampleVar.Name,
-		TitleName: exampleVar.NameTitle,
+		Name:      moduleVar.Name,
+		TitleName: moduleVar.NameTitle,
 	}
 
-	err = GenerateFiles(ctx, example)
+	err = GenerateFiles(ctx, tcModule)
 	if err != nil {
-		return fmt.Errorf(">> error generating the example: %w", err)
+		return fmt.Errorf(">> error generating the module: %w", err)
 	}
 
-	cmdDir := filepath.Join(ctx.RootDir, example.ParentDir(), example.Lower())
+	cmdDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
 	err = tools.GoModTidy(cmdDir)
 	if err != nil {
 		return fmt.Errorf(">> error synchronizing the dependencies: %w", err)
@@ -48,40 +48,46 @@ func Generate(exampleVar context.ExampleVar, isModule bool) error {
 	return nil
 }
 
-func GenerateFiles(ctx *context.Context, example context.Example) error {
-	if err := example.Validate(); err != nil {
-		return err
-	}
-	// creates Makefile for example
-	err := make.GenerateMakefile(ctx, example)
-	if err != nil {
+type ProjectGenerator interface {
+	Generate(context.Context) error
+}
+type FileGenerator interface {
+	AddModule(context.Context, context.TestcontainersModule) error
+}
+
+func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) error {
+	if err := tcModule.Validate(); err != nil {
 		return err
 	}
 
-	err = module.GenerateGoModule(ctx, example)
-	if err != nil {
-		return err
+	fileGenerators := []FileGenerator{
+		make.Generator{},       // creates Makefile for module
+		module.Generator{},     // creates go.mod for module
+		mkdocs.Generator{},     // update examples in mkdocs
+		dependabot.Generator{}, // update examples in dependabot
 	}
 
-	// update github ci workflow
-	err = workflow.GenerateWorkflow(ctx)
-	if err != nil {
-		return err
+	for _, generator := range fileGenerators {
+		err := generator.AddModule(ctx, tcModule)
+		if err != nil {
+			return err
+		}
 	}
-	// update examples in mkdocs
-	err = mkdocs.GenerateMkdocs(ctx, example)
-	if err != nil {
-		return err
+
+	// they are based on the content of the modules in the project workspace,
+	// not in the new module to be added, that's why they happen after the actual
+	// module generation
+	projectGenerators := []ProjectGenerator{
+		workflow.Generator{}, // update github ci workflow
+		vscode.Generator{},   // update vscode workspace
 	}
-	// update examples in dependabot
-	err = dependabot.GenerateDependabotUpdates(ctx, example)
-	if err != nil {
-		return err
+
+	for _, generator := range projectGenerators {
+		err := generator.Generate(ctx)
+		if err != nil {
+			return err
+		}
 	}
-	// generate vscode workspace
-	err = vscode.GenerateVSCodeWorkspace(ctx)
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
