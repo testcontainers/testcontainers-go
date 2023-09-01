@@ -60,13 +60,8 @@ func GenerateFiles(ctx *context.Context, m context.TestcontainersModule) error {
 		return err
 	}
 
-	err := module.GenerateGoModule(ctx, m)
-	if err != nil {
-		return err
-	}
-
 	// update github ci workflow
-	err = workflow.GenerateWorkflow(ctx)
+	err := workflow.GenerateWorkflow(ctx)
 	if err != nil {
 		return err
 	}
@@ -78,6 +73,7 @@ func GenerateFiles(ctx *context.Context, m context.TestcontainersModule) error {
 
 	generators := []FileGenerator{
 		make.Generator{},       // creates Makefile for module
+		module.Generator{},     // creates go.mod for module
 		dependabot.Generator{}, // update examples in dependabot
 	}
 
