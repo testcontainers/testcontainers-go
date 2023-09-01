@@ -4,8 +4,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 )
 
-// print out the workspace for vscode
-func GenerateVSCodeWorkspace(ctx *context.Context) error {
+type Generator struct{}
+
+// Generate updates the workspace for vscode
+func (g Generator) Generate(ctx *context.Context) error {
 	rootCtx, err := context.GetRootContext()
 	if err != nil {
 		return err
@@ -19,11 +21,5 @@ func GenerateVSCodeWorkspace(ctx *context.Context) error {
 		return err
 	}
 
-	return Generate(ctx.VSCodeWorkspaceFile(), examples, modules)
-}
-
-func Generate(exampleFilePath string, examples []string, modules []string) error {
-	config := newConfig(examples, modules)
-
-	return writeConfig(exampleFilePath, config)
+	return writeConfig(ctx.VSCodeWorkspaceFile(), newConfig(examples, modules))
 }

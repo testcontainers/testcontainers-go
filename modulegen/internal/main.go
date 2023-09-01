@@ -75,9 +75,11 @@ func GenerateFiles(ctx *context.Context, m context.TestcontainersModule) error {
 	}
 
 	// they are based on the content of the modules in the project workspace,
-	// not in the new module to be added
+	// not in the new module to be added, that's why they happen after the actual
+	// module generation
 	projectGenerators := []ProjectGenerator{
 		workflow.Generator{}, // update github ci workflow
+		vscode.Generator{},   // update vscode workspace
 	}
 
 	for _, generator := range projectGenerators {
@@ -87,10 +89,5 @@ func GenerateFiles(ctx *context.Context, m context.TestcontainersModule) error {
 		}
 	}
 
-	// generate vscode workspace
-	err := vscode.GenerateVSCodeWorkspace(ctx)
-	if err != nil {
-		return err
-	}
 	return nil
 }
