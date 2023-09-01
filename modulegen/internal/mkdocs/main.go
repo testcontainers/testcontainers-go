@@ -7,8 +7,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 )
 
-// update modules in mkdocs
-func GenerateMkdocs(ctx *context.Context, m context.TestcontainersModule) error {
+type Generator struct{}
+
+// AddModule update modules in mkdocs
+func (g Generator) AddModule(ctx *context.Context, m context.TestcontainersModule) error {
 	moduleMdFile := filepath.Join(ctx.DocsDir(), m.ParentDir(), m.Lower()+".md")
 	funcMap := template.FuncMap{
 		"Entrypoint":    func() string { return m.Entrypoint() },
@@ -23,10 +25,10 @@ func GenerateMkdocs(ctx *context.Context, m context.TestcontainersModule) error 
 	}
 	moduleMd := m.ParentDir() + "/" + m.Lower() + ".md"
 	indexMd := m.ParentDir() + "/index.md"
-	return UpdateConfig(ctx.MkdocsConfigFile(), m.IsModule, moduleMd, indexMd)
-}
 
-func UpdateConfig(configFile string, isModule bool, moduleMd string, indexMd string) error {
+	configFile := ctx.MkdocsConfigFile()
+	isModule := m.IsModule
+
 	config, err := ReadConfig(configFile)
 	if err != nil {
 		return err

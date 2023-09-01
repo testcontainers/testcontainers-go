@@ -60,15 +60,10 @@ func GenerateFiles(ctx *context.Context, m context.TestcontainersModule) error {
 		return err
 	}
 
-	// update examples in mkdocs
-	err := mkdocs.GenerateMkdocs(ctx, m)
-	if err != nil {
-		return err
-	}
-
 	fileGenerators := []FileGenerator{
 		make.Generator{},       // creates Makefile for module
 		module.Generator{},     // creates go.mod for module
+		mkdocs.Generator{},     // update examples in mkdocs
 		dependabot.Generator{}, // update examples in dependabot
 	}
 
@@ -93,7 +88,7 @@ func GenerateFiles(ctx *context.Context, m context.TestcontainersModule) error {
 	}
 
 	// generate vscode workspace
-	err = vscode.GenerateVSCodeWorkspace(ctx)
+	err := vscode.GenerateVSCodeWorkspace(ctx)
 	if err != nil {
 		return err
 	}
