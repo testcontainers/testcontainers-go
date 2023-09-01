@@ -48,6 +48,11 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	return nil
 }
 
+type FileGenerator interface {
+	AddModule(*context.Context, context.TestcontainersModule) error
+	Generate(*context.Context) error
+}
+
 func GenerateFiles(ctx *context.Context, m context.TestcontainersModule) error {
 	if err := m.Validate(); err != nil {
 		return err
@@ -73,11 +78,18 @@ func GenerateFiles(ctx *context.Context, m context.TestcontainersModule) error {
 	if err != nil {
 		return err
 	}
-	// update examples in dependabot
-	err = dependabot.GenerateDependabotUpdates(ctx, m)
-	if err != nil {
-		return err
+
+	generators := []FileGenerator{
+		dependabot.Generator{}, // update examples in dependabot
 	}
+
+	for _, generator := range generators {
+		err := generator.AddModule(ctx, m)
+		if err != nil {
+			return err
+		}
+	}
+
 	// generate vscode workspace
 	err = vscode.GenerateVSCodeWorkspace(ctx)
 	if err != nil {
