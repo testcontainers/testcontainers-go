@@ -5,8 +5,8 @@ import (
 )
 
 // update examples in dependabot
-func GenerateDependabotUpdates(ctx *context.Context, example context.Example) error {
-	directory := "/" + example.ParentDir() + "/" + example.Lower()
+func GenerateDependabotUpdates(ctx *context.Context, m context.TestcontainersModule) error {
+	directory := "/" + m.ParentDir() + "/" + m.Lower()
 	return UpdateConfig(ctx.DependabotConfigFile(), directory, "gomod")
 }
 

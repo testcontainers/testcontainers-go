@@ -14,25 +14,25 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/workflow"
 )
 
-func Generate(exampleVar context.ExampleVar, isModule bool) error {
+func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	ctx, err := context.GetRootContext()
 	if err != nil {
 		return fmt.Errorf(">> could not get the root dir: %w", err)
 	}
 
-	example := context.Example{
-		Image:     exampleVar.Image,
+	m := context.TestcontainersModule{
+		Image:     moduleVar.Image,
 		IsModule:  isModule,
-		Name:      exampleVar.Name,
-		TitleName: exampleVar.NameTitle,
+		Name:      moduleVar.Name,
+		TitleName: moduleVar.NameTitle,
 	}
 
-	err = GenerateFiles(ctx, example)
+	err = GenerateFiles(ctx, m)
 	if err != nil {
-		return fmt.Errorf(">> error generating the example: %w", err)
+		return fmt.Errorf(">> error generating the module: %w", err)
 	}
 
-	cmdDir := filepath.Join(ctx.RootDir, example.ParentDir(), example.Lower())
+	cmdDir := filepath.Join(ctx.RootDir, m.ParentDir(), m.Lower())
 	err = tools.GoModTidy(cmdDir)
 	if err != nil {
 		return fmt.Errorf(">> error synchronizing the dependencies: %w", err)
@@ -48,17 +48,17 @@ func Generate(exampleVar context.ExampleVar, isModule bool) error {
 	return nil
 }
 
-func GenerateFiles(ctx *context.Context, example context.Example) error {
-	if err := example.Validate(); err != nil {
+func GenerateFiles(ctx *context.Context, m context.TestcontainersModule) error {
+	if err := m.Validate(); err != nil {
 		return err
 	}
-	// creates Makefile for example
-	err := make.GenerateMakefile(ctx, example)
+	// creates Makefile for module
+	err := make.GenerateMakefile(ctx, m)
 	if err != nil {
 		return err
 	}
 
-	err = module.GenerateGoModule(ctx, example)
+	err = module.GenerateGoModule(ctx, m)
 	if err != nil {
 		return err
 	}
@@ -69,12 +69,12 @@ func GenerateFiles(ctx *context.Context, example context.Example) error {
 		return err
 	}
 	// update examples in mkdocs
-	err = mkdocs.GenerateMkdocs(ctx, example)
+	err = mkdocs.GenerateMkdocs(ctx, m)
 	if err != nil {
 		return err
 	}
 	// update examples in dependabot
-	err = dependabot.GenerateDependabotUpdates(ctx, example)
+	err = dependabot.GenerateDependabotUpdates(ctx, m)
 	if err != nil {
 		return err
 	}

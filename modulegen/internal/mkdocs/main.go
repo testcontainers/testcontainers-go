@@ -7,31 +7,31 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 )
 
-// update examples in mkdocs
-func GenerateMkdocs(ctx *context.Context, example context.Example) error {
-	exampleMdFile := filepath.Join(ctx.DocsDir(), example.ParentDir(), example.Lower()+".md")
+// update modules in mkdocs
+func GenerateMkdocs(ctx *context.Context, m context.TestcontainersModule) error {
+	moduleMdFile := filepath.Join(ctx.DocsDir(), m.ParentDir(), m.Lower()+".md")
 	funcMap := template.FuncMap{
-		"Entrypoint":    func() string { return example.Entrypoint() },
-		"ContainerName": func() string { return example.ContainerName() },
-		"ParentDir":     func() string { return example.ParentDir() },
-		"ToLower":       func() string { return example.Lower() },
-		"Title":         func() string { return example.Title() },
+		"Entrypoint":    func() string { return m.Entrypoint() },
+		"ContainerName": func() string { return m.ContainerName() },
+		"ParentDir":     func() string { return m.ParentDir() },
+		"ToLower":       func() string { return m.Lower() },
+		"Title":         func() string { return m.Title() },
 	}
-	err := GenerateMdFile(exampleMdFile, funcMap, example)
+	err := GenerateMdFile(moduleMdFile, funcMap, m)
 	if err != nil {
 		return err
 	}
-	exampleMd := example.ParentDir() + "/" + example.Lower() + ".md"
-	indexMd := example.ParentDir() + "/index.md"
-	return UpdateConfig(ctx.MkdocsConfigFile(), example.IsModule, exampleMd, indexMd)
+	moduleMd := m.ParentDir() + "/" + m.Lower() + ".md"
+	indexMd := m.ParentDir() + "/index.md"
+	return UpdateConfig(ctx.MkdocsConfigFile(), m.IsModule, moduleMd, indexMd)
 }
 
-func UpdateConfig(configFile string, isModule bool, exampleMd string, indexMd string) error {
+func UpdateConfig(configFile string, isModule bool, moduleMd string, indexMd string) error {
 	config, err := ReadConfig(configFile)
 	if err != nil {
 		return err
 	}
-	config.addExample(isModule, exampleMd, indexMd)
+	config.addModule(isModule, moduleMd, indexMd)
 	return writeConfig(configFile, config)
 }
 

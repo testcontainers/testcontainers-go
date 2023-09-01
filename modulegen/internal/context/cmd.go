@@ -1,6 +1,6 @@
 package context
 
-type ExampleVar struct {
+type TestcontainersModuleVar struct {
 	Name      string
 	NameTitle string
 	Image     string

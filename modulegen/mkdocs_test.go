@@ -56,7 +56,7 @@ func TestReadMkDocsConfig(t *testing.T) {
 	assert.Greater(t, len(nav[4].Examples), 0)
 }
 
-func TestExamples(t *testing.T) {
+func TestNavItems(t *testing.T) {
 	ctx := getTestRootContext(t)
 	examples, err := ctx.GetExamples()
 	require.NoError(t, err)

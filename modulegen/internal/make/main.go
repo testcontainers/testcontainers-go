@@ -9,20 +9,20 @@ import (
 )
 
 // creates Makefile for example
-func GenerateMakefile(ctx *context.Context, example context.Example) error {
-	exampleDir := filepath.Join(ctx.RootDir, example.ParentDir(), example.Lower())
-	exampleName := example.Lower()
-	return Generate(exampleDir, exampleName)
+func GenerateMakefile(ctx *context.Context, m context.TestcontainersModule) error {
+	moduleDir := filepath.Join(ctx.RootDir, m.ParentDir(), m.Lower())
+	moduleName := m.Lower()
+	return Generate(moduleDir, moduleName)
 }
 
-func Generate(exampleDir string, exampleName string) error {
+func Generate(moduleDir string, moduleName string) error {
 	name := "Makefile.tmpl"
 	t, err := template.New(name).ParseFiles(filepath.Join("_template", name))
 	if err != nil {
 		return err
 	}
 
-	exampleFilePath := filepath.Join(exampleDir, "Makefile")
+	moduleFilePath := filepath.Join(moduleDir, "Makefile")
 
-	return internal_template.GenerateFile(t, exampleFilePath, name, exampleName)
+	return internal_template.GenerateFile(t, moduleFilePath, name, moduleName)
 }
