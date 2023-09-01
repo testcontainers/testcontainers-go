@@ -6,7 +6,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 )
 
-var tcModuleVar = &context.TestcontainersModuleVar{}
+var tcModuleVar = context.TestcontainersModuleVar{}
 
 var NewCmd = &cobra.Command{
 	Use:   "new",

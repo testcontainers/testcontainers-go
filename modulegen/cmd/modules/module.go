@@ -11,7 +11,7 @@ var newModuleCmd = &cobra.Command{
 	Short: "Create a new Module",
 	Long:  "Create a new Module",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return internal.Generate(*tcModuleVar, true)
+		return internal.Generate(tcModuleVar, true)
 	},
 }
 

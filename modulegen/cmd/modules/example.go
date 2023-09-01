@@ -11,7 +11,7 @@ var newExampleCmd = &cobra.Command{
 	Short: "Create a new Example",
 	Long:  "Create a new Example",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return internal.Generate(*tcModuleVar, false)
+		return internal.Generate(tcModuleVar, false)
 	},
 }
 
