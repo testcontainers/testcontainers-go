@@ -7,7 +7,7 @@ import (
 type Generator struct{}
 
 // Generate updates the workspace for vscode
-func (g Generator) Generate(ctx *context.Context) error {
+func (g Generator) Generate(ctx context.Context) error {
 	rootCtx, err := context.GetRootContext()
 	if err != nil {
 		return err

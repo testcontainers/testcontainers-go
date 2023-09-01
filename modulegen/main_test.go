@@ -363,7 +363,7 @@ func TestGenerateModule(t *testing.T) {
 }
 
 // assert content in the Dependabot descriptor file
-func assertDependabotUpdates(t *testing.T, module context.TestcontainersModule, originalConfigUpdates dependabot.Updates, tmpCtx *context.Context) {
+func assertDependabotUpdates(t *testing.T, module context.TestcontainersModule, originalConfigUpdates dependabot.Updates, tmpCtx context.Context) {
 	modules, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
 	assert.Nil(t, err)
 
@@ -489,7 +489,7 @@ func assertMakefileContent(t *testing.T, module context.TestcontainersModule, ma
 }
 
 // assert content in the nav items from mkdocs.yml
-func assertMkdocsNavItems(t *testing.T, module context.TestcontainersModule, originalConfig *mkdocs.Config, tmpCtx *context.Context) {
+func assertMkdocsNavItems(t *testing.T, module context.TestcontainersModule, originalConfig *mkdocs.Config, tmpCtx context.Context) {
 	config, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
 	assert.Nil(t, err)
 
@@ -530,7 +530,7 @@ func sanitiseContent(bytes []byte) []string {
 	return data
 }
 
-func copyInitialDependabotConfig(t *testing.T, tmpCtx *context.Context) error {
+func copyInitialDependabotConfig(t *testing.T, tmpCtx context.Context) error {
 	ctx := getTestRootContext(t)
 	return dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpCtx.DependabotConfigFile())
 }

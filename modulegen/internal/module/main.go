@@ -15,7 +15,7 @@ import (
 type Generator struct{}
 
 // AddModule creates the go.mod file for the module
-func (g Generator) AddModule(ctx *context.Context, m context.TestcontainersModule) error {
+func (g Generator) AddModule(ctx context.Context, m context.TestcontainersModule) error {
 	moduleDir := filepath.Join(ctx.RootDir, m.ParentDir(), m.Lower())
 	err := generateGoFiles(moduleDir, m)
 	if err != nil {

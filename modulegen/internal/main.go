@@ -49,13 +49,13 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 }
 
 type ProjectGenerator interface {
-	Generate(*context.Context) error
+	Generate(context.Context) error
 }
 type FileGenerator interface {
-	AddModule(*context.Context, context.TestcontainersModule) error
+	AddModule(context.Context, context.TestcontainersModule) error
 }
 
-func GenerateFiles(ctx *context.Context, m context.TestcontainersModule) error {
+func GenerateFiles(ctx context.Context, m context.TestcontainersModule) error {
 	if err := m.Validate(); err != nil {
 		return err
 	}

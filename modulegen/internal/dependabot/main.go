@@ -5,7 +5,7 @@ import "github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 type Generator struct{}
 
 // AddModule update dependabot with the new module
-func (g Generator) AddModule(ctx *context.Context, m context.TestcontainersModule) error {
+func (g Generator) AddModule(ctx context.Context, m context.TestcontainersModule) error {
 	configFile := ctx.DependabotConfigFile()
 
 	config, err := readConfig(configFile)
@@ -22,7 +22,7 @@ func (g Generator) AddModule(ctx *context.Context, m context.TestcontainersModul
 }
 
 // Generate generates dependabot config file from source
-func (g Generator) Generate(ctx *context.Context) error {
+func (g Generator) Generate(ctx context.Context) error {
 	configFile := ctx.DependabotConfigFile()
 
 	config, err := readConfig(configFile)

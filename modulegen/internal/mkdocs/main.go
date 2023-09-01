@@ -10,7 +10,7 @@ import (
 type Generator struct{}
 
 // AddModule update modules in mkdocs
-func (g Generator) AddModule(ctx *context.Context, m context.TestcontainersModule) error {
+func (g Generator) AddModule(ctx context.Context, m context.TestcontainersModule) error {
 	moduleMdFile := filepath.Join(ctx.DocsDir(), m.ParentDir(), m.Lower()+".md")
 	funcMap := template.FuncMap{
 		"Entrypoint":    func() string { return m.Entrypoint() },

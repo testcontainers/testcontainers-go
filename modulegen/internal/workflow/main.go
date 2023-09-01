@@ -11,7 +11,7 @@ import (
 type Generator struct{}
 
 // Generate updates github ci workflow
-func (g Generator) Generate(ctx *context.Context) error {
+func (g Generator) Generate(ctx context.Context) error {
 	rootCtx, err := context.GetRootContext()
 	if err != nil {
 		return err
