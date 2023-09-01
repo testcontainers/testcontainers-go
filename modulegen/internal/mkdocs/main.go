@@ -10,24 +10,24 @@ import (
 type Generator struct{}
 
 // AddModule update modules in mkdocs
-func (g Generator) AddModule(ctx context.Context, m context.TestcontainersModule) error {
-	moduleMdFile := filepath.Join(ctx.DocsDir(), m.ParentDir(), m.Lower()+".md")
+func (g Generator) AddModule(ctx context.Context, tcModule context.TestcontainersModule) error {
+	moduleMdFile := filepath.Join(ctx.DocsDir(), tcModule.ParentDir(), tcModule.Lower()+".md")
 	funcMap := template.FuncMap{
-		"Entrypoint":    func() string { return m.Entrypoint() },
-		"ContainerName": func() string { return m.ContainerName() },
-		"ParentDir":     func() string { return m.ParentDir() },
-		"ToLower":       func() string { return m.Lower() },
-		"Title":         func() string { return m.Title() },
+		"Entrypoint":    func() string { return tcModule.Entrypoint() },
+		"ContainerName": func() string { return tcModule.ContainerName() },
+		"ParentDir":     func() string { return tcModule.ParentDir() },
+		"ToLower":       func() string { return tcModule.Lower() },
+		"Title":         func() string { return tcModule.Title() },
 	}
-	err := GenerateMdFile(moduleMdFile, funcMap, m)
+	err := GenerateMdFile(moduleMdFile, funcMap, tcModule)
 	if err != nil {
 		return err
 	}
-	moduleMd := m.ParentDir() + "/" + m.Lower() + ".md"
-	indexMd := m.ParentDir() + "/index.md"
+	moduleMd := tcModule.ParentDir() + "/" + tcModule.Lower() + ".md"
+	indexMd := tcModule.ParentDir() + "/index.md"
 
 	configFile := ctx.MkdocsConfigFile()
-	isModule := m.IsModule
+	isModule := tcModule.IsModule
 
 	config, err := ReadConfig(configFile)
 	if err != nil {

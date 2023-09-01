@@ -15,27 +15,27 @@ import (
 type Generator struct{}
 
 // AddModule creates the go.mod file for the module
-func (g Generator) AddModule(ctx context.Context, m context.TestcontainersModule) error {
-	moduleDir := filepath.Join(ctx.RootDir, m.ParentDir(), m.Lower())
-	err := generateGoFiles(moduleDir, m)
+func (g Generator) AddModule(ctx context.Context, tcModule context.TestcontainersModule) error {
+	moduleDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
+	err := generateGoFiles(moduleDir, tcModule)
 	if err != nil {
 		return err
 	}
-	return generateGoModFile(moduleDir, m)
+	return generateGoModFile(moduleDir, tcModule)
 }
 
-func generateGoFiles(moduleDir string, m context.TestcontainersModule) error {
+func generateGoFiles(moduleDir string, tcModule context.TestcontainersModule) error {
 	funcMap := template.FuncMap{
-		"Entrypoint":    func() string { return m.Entrypoint() },
-		"ContainerName": func() string { return m.ContainerName() },
-		"ParentDir":     func() string { return m.ParentDir() },
-		"ToLower":       func() string { return m.Lower() },
-		"Title":         func() string { return m.Title() },
+		"Entrypoint":    func() string { return tcModule.Entrypoint() },
+		"ContainerName": func() string { return tcModule.ContainerName() },
+		"ParentDir":     func() string { return tcModule.ParentDir() },
+		"ToLower":       func() string { return tcModule.Lower() },
+		"Title":         func() string { return tcModule.Title() },
 	}
-	return GenerateFiles(moduleDir, m.Lower(), funcMap, m)
+	return GenerateFiles(moduleDir, tcModule.Lower(), funcMap, tcModule)
 }
 
-func generateGoModFile(moduleDir string, m context.TestcontainersModule) error {
+func generateGoModFile(moduleDir string, tcModule context.TestcontainersModule) error {
 	rootCtx, err := context.GetRootContext()
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func generateGoModFile(moduleDir string, m context.TestcontainersModule) error {
 		return err
 	}
 	rootGoModFile := rootCtx.GoModFile()
-	directory := "/" + m.ParentDir() + "/" + m.Lower()
+	directory := "/" + tcModule.ParentDir() + "/" + tcModule.Lower()
 	tcVersion := mkdocsConfig.Extra.LatestVersion
 	return modfile.GenerateModFile(moduleDir, rootGoModFile, directory, tcVersion)
 }

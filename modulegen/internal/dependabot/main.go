@@ -5,7 +5,7 @@ import "github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 type Generator struct{}
 
 // AddModule update dependabot with the new module
-func (g Generator) AddModule(ctx context.Context, m context.TestcontainersModule) error {
+func (g Generator) AddModule(ctx context.Context, tcModule context.TestcontainersModule) error {
 	configFile := ctx.DependabotConfigFile()
 
 	config, err := readConfig(configFile)
@@ -14,7 +14,7 @@ func (g Generator) AddModule(ctx context.Context, m context.TestcontainersModule
 	}
 
 	packageEcosystem := "gomod"
-	directory := "/" + m.ParentDir() + "/" + m.Lower()
+	directory := "/" + tcModule.ParentDir() + "/" + tcModule.Lower()
 
 	config.addUpdate(newUpdate(directory, packageEcosystem))
 

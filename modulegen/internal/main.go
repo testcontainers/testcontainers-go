@@ -20,19 +20,19 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 		return fmt.Errorf(">> could not get the root dir: %w", err)
 	}
 
-	m := context.TestcontainersModule{
+	tcModule := context.TestcontainersModule{
 		Image:     moduleVar.Image,
 		IsModule:  isModule,
 		Name:      moduleVar.Name,
 		TitleName: moduleVar.NameTitle,
 	}
 
-	err = GenerateFiles(ctx, m)
+	err = GenerateFiles(ctx, tcModule)
 	if err != nil {
 		return fmt.Errorf(">> error generating the module: %w", err)
 	}
 
-	cmdDir := filepath.Join(ctx.RootDir, m.ParentDir(), m.Lower())
+	cmdDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
 	err = tools.GoModTidy(cmdDir)
 	if err != nil {
 		return fmt.Errorf(">> error synchronizing the dependencies: %w", err)
@@ -55,8 +55,8 @@ type FileGenerator interface {
 	AddModule(context.Context, context.TestcontainersModule) error
 }
 
-func GenerateFiles(ctx context.Context, m context.TestcontainersModule) error {
-	if err := m.Validate(); err != nil {
+func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) error {
+	if err := tcModule.Validate(); err != nil {
 		return err
 	}
 
@@ -68,7 +68,7 @@ func GenerateFiles(ctx context.Context, m context.TestcontainersModule) error {
 	}
 
 	for _, generator := range fileGenerators {
-		err := generator.AddModule(ctx, m)
+		err := generator.AddModule(ctx, tcModule)
 		if err != nil {
 			return err
 		}

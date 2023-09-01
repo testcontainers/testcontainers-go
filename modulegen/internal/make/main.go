@@ -11,9 +11,9 @@ import (
 type Generator struct{}
 
 // AddModule update dependabot with the new module
-func (g Generator) AddModule(ctx context.Context, m context.TestcontainersModule) error {
-	moduleDir := filepath.Join(ctx.RootDir, m.ParentDir(), m.Lower())
-	moduleName := m.Lower()
+func (g Generator) AddModule(ctx context.Context, tcModule context.TestcontainersModule) error {
+	moduleDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
+	moduleName := tcModule.Lower()
 
 	name := "Makefile.tmpl"
 	t, err := template.New(name).ParseFiles(filepath.Join("_template", name))
@@ -27,9 +27,9 @@ func (g Generator) AddModule(ctx context.Context, m context.TestcontainersModule
 }
 
 // creates Makefile for example
-func GenerateMakefile(ctx context.Context, m context.TestcontainersModule) error {
-	moduleDir := filepath.Join(ctx.RootDir, m.ParentDir(), m.Lower())
-	moduleName := m.Lower()
+func GenerateMakefile(ctx context.Context, tcModule context.TestcontainersModule) error {
+	moduleDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
+	moduleName := tcModule.Lower()
 
 	name := "Makefile.tmpl"
 	t, err := template.New(name).ParseFiles(filepath.Join("_template", name))
