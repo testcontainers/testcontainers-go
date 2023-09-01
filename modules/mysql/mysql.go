@@ -18,7 +18,11 @@ const (
 )
 
 // defaultImage {
-const defaultImage = "mysql:8"
+const (
+	defaultImage = "mysql:8"
+	defaultPort  = "3306/tcp"
+	highPort     = "33060/tcp"
+)
 
 // }
 
@@ -50,7 +54,7 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MySQLContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImage,
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
+		ExposedPorts: []string{defaultPort, highPort},
 		Env: map[string]string{
 			"MYSQL_USER":     defaultUser,
 			"MYSQL_PASSWORD": defaultPassword,
@@ -91,7 +95,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 func (c *MySQLContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "3306/tcp")
+	containerPort, err := c.MappedPort(ctx, defaultPort)
 	if err != nil {
 		return "", err
 	}

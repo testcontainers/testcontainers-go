@@ -17,6 +17,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+var errNotImplemented = errors.New("not implemented")
+
 func ExampleExecStrategy() {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
@@ -50,19 +52,19 @@ type mockExecTarget struct {
 }
 
 func (st mockExecTarget) Host(_ context.Context) (string, error) {
-	return "", errors.New("not implemented")
+	return "", errNotImplemented
 }
 
 func (st mockExecTarget) Ports(ctx context.Context) (nat.PortMap, error) {
-	return nil, errors.New("not implemented")
+	return nil, errNotImplemented
 }
 
 func (st mockExecTarget) MappedPort(_ context.Context, n nat.Port) (nat.Port, error) {
-	return n, errors.New("not implemented")
+	return n, errNotImplemented
 }
 
 func (st mockExecTarget) Logs(_ context.Context) (io.ReadCloser, error) {
-	return nil, errors.New("not implemented")
+	return nil, errNotImplemented
 }
 
 func (st mockExecTarget) Exec(ctx context.Context, _ []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
@@ -85,7 +87,7 @@ func (st mockExecTarget) Exec(ctx context.Context, _ []string, options ...tcexec
 }
 
 func (st mockExecTarget) State(_ context.Context) (*types.ContainerState, error) {
-	return nil, errors.New("not implemented")
+	return nil, errNotImplemented
 }
 
 func TestExecStrategyWaitUntilReady(t *testing.T) {
@@ -107,7 +109,7 @@ func TestExecStrategyWaitUntilReadyForExec(t *testing.T) {
 	}
 }
 
-func TestExecStrategyWaitUntilReady_MultipleChecks(t *testing.T) {
+func TestExecStrategyWaitUntilReadyMultipleChecks(t *testing.T) {
 	target := mockExecTarget{
 		exitCode:     10,
 		successAfter: time.Now().Add(2 * time.Second),
@@ -120,7 +122,7 @@ func TestExecStrategyWaitUntilReady_MultipleChecks(t *testing.T) {
 	}
 }
 
-func TestExecStrategyWaitUntilReady_DeadlineExceeded(t *testing.T) {
+func TestExecStrategyWaitUntilReadyDeadlineExceeded(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
@@ -134,7 +136,7 @@ func TestExecStrategyWaitUntilReady_DeadlineExceeded(t *testing.T) {
 	}
 }
 
-func TestExecStrategyWaitUntilReady_CustomExitCode(t *testing.T) {
+func TestExecStrategyWaitUntilReadyCustomExitCode(t *testing.T) {
 	target := mockExecTarget{
 		exitCode: 10,
 	}

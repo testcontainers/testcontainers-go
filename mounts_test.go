@@ -76,7 +76,7 @@ func TestVolumeMount(t *testing.T) {
 	}
 }
 
-func TestContainerMounts_PrepareMounts(t *testing.T) {
+func TestContainerMountsPrepareMounts(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name   string

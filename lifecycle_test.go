@@ -46,7 +46,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 			},
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
 				hostConfig.PortBindings = nat.PortMap{
-					"80/tcp": []nat.PortBinding{
+					nginxDefaultPort: []nat.PortBinding{
 						{
 							HostIP:   "1",
 							HostPort: "2",
@@ -82,7 +82,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 			"Docker config's env should be overwritten by the modifier",
 		)
 		assert.Equal(t,
-			nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}),
+			nat.PortSet(nat.PortSet{nginxDefaultPort: struct{}{}}),
 			inputConfig.ExposedPorts,
 			"Docker config's exposed ports should be overwritten by the modifier",
 		)
@@ -103,7 +103,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		)
 
 		assert.Equal(t, nat.PortMap{
-			"80/tcp": []nat.PortBinding{
+			nginxDefaultPort: []nat.PortBinding{
 				{
 					HostIP:   "",
 					HostPort: "",
@@ -132,7 +132,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
 				hostConfig.PortBindings = nat.PortMap{
-					"80/tcp": []nat.PortBinding{
+					nginxDefaultPort: []nat.PortBinding{
 						{
 							HostIP:   "1",
 							HostPort: "2",
@@ -309,7 +309,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
 				hostConfig.PortBindings = nat.PortMap{
-					"80/tcp": []nat.PortBinding{
+					nginxDefaultPort: []nat.PortBinding{
 						{
 							HostIP:   "localhost",
 							HostPort: "8080",
@@ -331,8 +331,8 @@ func TestPreCreateModifierHook(t *testing.T) {
 		require.Nil(t, err)
 
 		// assertions
-		assert.Equal(t, inputHostConfig.PortBindings["80/tcp"][0].HostIP, "localhost")
-		assert.Equal(t, inputHostConfig.PortBindings["80/tcp"][0].HostPort, "8080")
+		assert.Equal(t, inputHostConfig.PortBindings[nginxDefaultPort][0].HostIP, "localhost")
+		assert.Equal(t, inputHostConfig.PortBindings[nginxDefaultPort][0].HostPort, "8080")
 	})
 }
 
@@ -360,7 +360,9 @@ func TestMergePortBindings(t *testing.T) {
 			name: "config port map but not exposed",
 			arg: arg{
 				configPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+					nginxDefaultPort: {
+						{HostIP: "1", HostPort: "2"},
+					},
 				},
 				parsedPortMap: nil,
 				exposedPorts:  nil,
@@ -372,47 +374,71 @@ func TestMergePortBindings(t *testing.T) {
 			arg: arg{
 				configPortMap: nil,
 				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: ""}},
+					nginxDefaultPort: {
+						{HostIP: "", HostPort: ""},
+					},
 				},
 				exposedPorts: nil,
 			},
 			expected: map[nat.Port][]nat.PortBinding{
-				"80/tcp": {{HostIP: "", HostPort: ""}},
+				nginxDefaultPort: {
+					{HostIP: "", HostPort: ""},
+				},
 			},
 		},
 		{
 			name: "parsed and configured but not exposed",
 			arg: arg{
 				configPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+					nginxDefaultPort: {
+						{HostIP: "1", HostPort: "2"},
+					},
 				},
 				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: ""}},
+					nginxDefaultPort: {
+						{HostIP: "", HostPort: ""},
+					},
 				},
 				exposedPorts: nil,
 			},
 			expected: map[nat.Port][]nat.PortBinding{
-				"80/tcp": {{HostIP: "", HostPort: ""}},
+				nginxDefaultPort: {{HostIP: "", HostPort: ""}},
 			},
 		},
 		{
 			name: "merge both parsed and config",
 			arg: arg{
 				configPortMap: map[nat.Port][]nat.PortBinding{
-					"60/tcp": {{HostIP: "1", HostPort: "2"}},
-					"70/tcp": {{HostIP: "1", HostPort: "2"}},
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+					"60/tcp": {
+						{HostIP: "1", HostPort: "2"},
+					},
+					"70/tcp": {
+						{HostIP: "1", HostPort: "2"},
+					},
+					nginxDefaultPort: {
+						{HostIP: "1", HostPort: "2"},
+					},
 				},
 				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: ""}},
-					"90/tcp": {{HostIP: "", HostPort: ""}},
+					nginxDefaultPort: {
+						{HostIP: "", HostPort: ""},
+					},
+					"90/tcp": {
+						{HostIP: "", HostPort: ""},
+					},
 				},
 				exposedPorts: []string{"70", "80"},
 			},
 			expected: map[nat.Port][]nat.PortBinding{
-				"70/tcp": {{HostIP: "1", HostPort: "2"}},
-				"80/tcp": {{HostIP: "1", HostPort: "2"}},
-				"90/tcp": {{HostIP: "", HostPort: ""}},
+				"70/tcp": {
+					{HostIP: "1", HostPort: "2"},
+				},
+				nginxDefaultPort: {
+					{HostIP: "1", HostPort: "2"},
+				},
+				"90/tcp": {
+					{HostIP: "", HostPort: ""},
+				},
 			},
 		},
 	}

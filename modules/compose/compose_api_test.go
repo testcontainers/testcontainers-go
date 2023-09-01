@@ -22,6 +22,7 @@ const (
 	complexCompose    = "docker-compose-complex.yml"
 	composeWithVolume = "docker-compose-volume.yml"
 	testdataPackage   = "testdata"
+	nginxDefaultPort  = "80/tcp"
 )
 
 func TestDockerComposeAPI(t *testing.T) {
@@ -103,7 +104,7 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 	t.Cleanup(cancel)
 
 	err = compose.
-		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort(nginxDefaultPort).WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true), RunServices("nginx"))
 
 	assert.NoError(t, err, "compose.Up()")
@@ -170,7 +171,7 @@ func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort(nginxDefaultPort).WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 
 	assert.NoError(t, err, "compose.Up()")
@@ -197,7 +198,7 @@ func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort(nginxDefaultPort).WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 
 	assert.NoError(t, err, "compose.Up()")
@@ -224,7 +225,7 @@ func TestDockerComposeAPIWithContainerName(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort(nginxDefaultPort).WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 
 	assert.NoError(t, err, "compose.Up()")
@@ -235,7 +236,7 @@ func TestDockerComposeAPIWithContainerName(t *testing.T) {
 	assert.Contains(t, serviceNames, "nginx")
 }
 
-func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
+func TestDockerComposeAPIWithWaitStrategyNoExposedPorts(t *testing.T) {
 	path := filepath.Join(testdataPackage, "docker-compose-no-exposed-ports.yml")
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")
@@ -273,7 +274,7 @@ func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 
 	err = compose.
 		WaitForService("mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
-		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort(nginxDefaultPort).WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 
 	assert.NoError(t, err, "compose.Up()")

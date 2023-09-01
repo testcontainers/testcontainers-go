@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func TestMultiStrategy_WaitUntilReady(t *testing.T) {
+func TestMultiStrategyWaitUntilReady(t *testing.T) {
 	t.Parallel()
 	type args struct {
 		ctx    context.Context

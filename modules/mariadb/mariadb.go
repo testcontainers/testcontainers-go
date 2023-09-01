@@ -18,7 +18,11 @@ const (
 )
 
 // defaultImage {
-const defaultImage = "mariadb:11.0.3"
+const (
+	defaultImage = "mariadb:11.0.3"
+	defaultPort  = "3306/tcp"
+	highPort     = "33060/tcp"
+)
 
 // }
 
@@ -114,7 +118,7 @@ func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MariaDBContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImage,
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
+		ExposedPorts: []string{defaultPort, highPort},
 		Env: map[string]string{
 			"MARIADB_USER":     defaultUser,
 			"MARIADB_PASSWORD": defaultPassword,
@@ -160,7 +164,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 func (c *MariaDBContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "3306/tcp")
+	containerPort, err := c.MappedPort(ctx, defaultPort)
 	if err != nil {
 		return "", err
 	}

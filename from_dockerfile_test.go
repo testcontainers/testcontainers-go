@@ -48,7 +48,7 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 	})
 }
 
-func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
+func TestBuildImageFromDockerfileNoRepo(t *testing.T) {
 	provider, err := NewDockerProvider()
 	if err != nil {
 		t.Fatal(err)
@@ -83,7 +83,7 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 	})
 }
 
-func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
+func TestBuildImageFromDockerfileNoTag(t *testing.T) {
 	provider, err := NewDockerProvider()
 	if err != nil {
 		t.Fatal(err)

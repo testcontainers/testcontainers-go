@@ -50,7 +50,7 @@ func ExampleLocalDockerCompose() {
 	}
 }
 
-func ExampleLocalDockerCompose_Down() {
+func ExampleLocalDockerComposeDown() {
 	path := "/path/to/docker-compose.yml"
 
 	compose := NewLocalDockerCompose([]string{path}, "my_project")
@@ -66,7 +66,7 @@ func ExampleLocalDockerCompose_Down() {
 	}
 }
 
-func ExampleLocalDockerCompose_Invoke() {
+func ExampleLocalDockerComposeInvoke() {
 	path := "/path/to/docker-compose.yml"
 
 	compose := NewLocalDockerCompose([]string{path}, "my_project")
@@ -82,7 +82,7 @@ func ExampleLocalDockerCompose_Invoke() {
 	}
 }
 
-func ExampleLocalDockerCompose_WithCommand() {
+func ExampleLocalDockerComposeWithCommand() {
 	path := "/path/to/docker-compose.yml"
 
 	compose := NewLocalDockerCompose([]string{path}, "my_project")
@@ -90,7 +90,7 @@ func ExampleLocalDockerCompose_WithCommand() {
 	compose.WithCommand([]string{"up", "-d"})
 }
 
-func ExampleLocalDockerCompose_WithEnv() {
+func ExampleLocalDockerComposeWithEnv() {
 	path := "/path/to/docker-compose.yml"
 
 	compose := NewLocalDockerCompose([]string{path}, "my_project")
@@ -183,7 +183,7 @@ func TestDockerComposeWithWaitForService(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService(compose.Format("nginx", "1"), wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService(compose.Format("nginx", "1"), wait.NewHTTPStrategy("/").WithPort(nginxDefaultPort).WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -233,7 +233,7 @@ func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService(compose.Format("nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort(nginxDefaultPort).WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -258,7 +258,7 @@ func TestDockerComposeWithContainerName(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("nginxy", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService("nginxy", 9080, wait.NewHTTPStrategy("/").WithPort(nginxDefaultPort).WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -266,7 +266,7 @@ func TestDockerComposeWithContainerName(t *testing.T) {
 	assert.Contains(t, compose.Services, "nginx")
 }
 
-func TestDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
+func TestDockerComposeWithWaitStrategyNoExposedPorts(t *testing.T) {
 	path := filepath.Join("testdata", "docker-compose-no-exposed-ports.yml")
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -303,7 +303,7 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		WithExposedService(compose.Format("mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
-		WithExposedService(compose.Format("nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort(nginxDefaultPort).WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 

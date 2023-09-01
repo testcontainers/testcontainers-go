@@ -18,7 +18,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const lastMessage = "DONE"
+const (
+	lastMessage       = "DONE"
+	dockerDefaultPort = "2375/tcp"
+)
 
 type TestLogConsumer struct {
 	Msgs []string
@@ -35,7 +38,7 @@ func (g *TestLogConsumer) Accept(l Log) {
 	g.Msgs = append(g.Msgs, s)
 }
 
-func Test_LogConsumerGetsCalled(t *testing.T) {
+func TestLogConsumerGetsCalled(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
@@ -101,7 +104,7 @@ func (t *TestLogTypeConsumer) Accept(l Log) {
 	t.LogTypes[l.LogType] = string(l.Content)
 }
 
-func Test_ShouldRecognizeLogTypes(t *testing.T) {
+func TestShouldRecognizeLogTypes(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
@@ -270,9 +273,9 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		Started: true,
 		ContainerRequest: ContainerRequest{
 			Image:        "docker.io/docker:dind",
-			ExposedPorts: []string{"2375/tcp"},
+			ExposedPorts: []string{dockerDefaultPort},
 			Env:          map[string]string{"DOCKER_TLS_CERTDIR": ""},
-			WaitingFor:   wait.ForListeningPort("2375/tcp"),
+			WaitingFor:   wait.ForListeningPort(dockerDefaultPort),
 			Privileged:   true,
 		},
 	})
@@ -287,7 +290,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	// todo: remove this temporary fix (test is flaky).
 	for {
-		remoteDocker, err = dind.Endpoint(ctxEndpoint, "2375/tcp")
+		remoteDocker, err = dind.Endpoint(ctxEndpoint, dockerDefaultPort)
 		if err == nil {
 			break
 		}
@@ -319,7 +322,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		},
 	}
 
-	nginx, err := provider.CreateContainer(ctx, ContainerRequest{Image: "nginx", ExposedPorts: []string{"80/tcp"}})
+	nginx, err := provider.CreateContainer(ctx, ContainerRequest{Image: "nginx", ExposedPorts: []string{nginxDefaultPort}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -328,7 +331,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	}
 	terminateContainerOnEnd(t, ctx, nginx)
 
-	port, err := nginx.MappedPort(ctx, "80/tcp")
+	port, err := nginx.MappedPort(ctx, nginxDefaultPort)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -31,13 +31,16 @@ import (
 )
 
 const (
-	mysqlImage        = "docker.io/mysql:8.0.30"
-	nginxDelayedImage = "docker.io/menedev/delayed-nginx:1.15.2"
-	nginxImage        = "docker.io/nginx"
-	nginxAlpineImage  = "docker.io/nginx:alpine"
-	nginxDefaultPort  = "80/tcp"
-	nginxHighPort     = "8080/tcp"
-	daemonMaxVersion  = "1.41"
+	mysqlImage            = "docker.io/mysql:8.0.30"
+	mysqlDefaultPort      = "3306/tcp"
+	mysqlHighPort         = "33060/tcp"
+	nginxDelayedImage     = "docker.io/menedev/delayed-nginx:1.15.2"
+	nginxImage            = "docker.io/nginx"
+	nginxAlpineImage      = "docker.io/nginx:alpine"
+	nginxDefaultPort      = "80/tcp"
+	nginxHighPort         = "8080/tcp"
+	daemonMaxVersion      = "1.41"
+	unexpectedNetworkName = "Expected network name '%s'. Got '%s'."
 )
 
 var providerType = ProviderDocker
@@ -98,7 +101,7 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 	}
 	network := networks[0]
 	if network != networkName {
-		t.Errorf("Expected network name '%s'. Got '%s'.", networkName, network)
+		t.Errorf(unexpectedNetworkName, networkName, network)
 	}
 
 	networkAliases, err := nginx.NetworkAliases(ctx)
@@ -178,7 +181,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	}
 }
 
-func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testing.T) {
+func TestContainerWithHostNetworkOptionsUseExposePortsFromImageConfigs(t *testing.T) {
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -890,11 +893,11 @@ func TestContainerCreationWithName(t *testing.T) {
 	switch providerType {
 	case ProviderDocker:
 		if network != Bridge {
-			t.Errorf("Expected network name '%s'. Got '%s'.", Bridge, network)
+			t.Errorf(unexpectedNetworkName, Bridge, network)
 		}
 	case ProviderPodman:
 		if network != Podman {
-			t.Errorf("Expected network name '%s'. Got '%s'.", Podman, network)
+			t.Errorf(unexpectedNetworkName, Podman, network)
 		}
 	}
 
@@ -1026,7 +1029,7 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        mysqlImage,
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
+		ExposedPorts: []string{mysqlDefaultPort, mysqlHighPort},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "password",
 			"MYSQL_DATABASE":      "database",
@@ -1049,7 +1052,7 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        mysqlImage,
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
+		ExposedPorts: []string{mysqlDefaultPort, mysqlHighPort},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "password",
 			"MYSQL_DATABASE":      "database",
@@ -1066,7 +1069,7 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, mysqlC)
 }
 
-func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
+func TestBuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	t.Log("getting ctx")
 	ctx := context.Background()
 
@@ -1119,7 +1122,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	assert.Equal(t, ba, string(body))
 }
 
-func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
+func TestBuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	rescueStdout := os.Stderr
 	r, w, _ := os.Pipe()
 	os.Stderr = w
@@ -1163,14 +1166,14 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        mysqlImage,
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
+		ExposedPorts: []string{mysqlDefaultPort, mysqlHighPort},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "password",
 			"MYSQL_DATABASE":      "database",
 		},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("I love testcontainers-go"),
-			wait.ForListeningPort("3306/tcp"),
+			wait.ForListeningPort(mysqlDefaultPort),
 		),
 	}
 	c, err := GenericContainer(ctx, GenericContainerRequest{
@@ -1278,8 +1281,8 @@ func TestEntrypoint(t *testing.T) {
 func ExampleDockerProvider_CreateContainer() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"80/tcp"},
+		Image:        nginxAlpineImage,
+		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
@@ -1296,8 +1299,8 @@ func ExampleDockerProvider_CreateContainer() {
 func ExampleContainer_Host() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"80/tcp"},
+		Image:        nginxAlpineImage,
+		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
@@ -1318,8 +1321,8 @@ func ExampleContainer_Host() {
 func ExampleContainer_Start() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"80/tcp"},
+		Image:        nginxAlpineImage,
+		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
@@ -1336,8 +1339,8 @@ func ExampleContainer_Start() {
 func ExampleContainer_Stop() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"80/tcp"},
+		Image:        nginxAlpineImage,
+		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
@@ -1355,8 +1358,8 @@ func ExampleContainer_Stop() {
 func ExampleContainer_MappedPort() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"80/tcp"},
+		Image:        nginxAlpineImage,
+		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
@@ -1685,8 +1688,8 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 				ContainerRequest: ContainerRequest{
 					Image:        "nginx:1.17.6",
-					ExposedPorts: []string{"80/tcp"},
-					WaitingFor:   wait.ForListeningPort("80/tcp"),
+					ExposedPorts: []string{nginxDefaultPort},
+					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
 					Files:        tc.files,
 				},
 				Started: false,
@@ -1770,8 +1773,8 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 				ContainerRequest: ContainerRequest{
 					Image:        "nginx:1.17.6",
-					ExposedPorts: []string{"80/tcp"},
-					WaitingFor:   wait.ForListeningPort("80/tcp"),
+					ExposedPorts: []string{nginxDefaultPort},
+					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
 					Files:        []ContainerFile{tc.dir},
 				},
 				Started: false,

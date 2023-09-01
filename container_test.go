@@ -16,7 +16,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func Test_ContainerValidation(t *testing.T) {
+const redisLatestImage = "redis:latest"
+
+func TestContainerValidation(t *testing.T) {
 	type ContainerValidationTestCase struct {
 		Name             string
 		ExpectedError    error
@@ -31,14 +33,14 @@ func Test_ContainerValidation(t *testing.T) {
 				FromDockerfile: FromDockerfile{
 					Context: ".",
 				},
-				Image: "redis:latest",
+				Image: redisLatestImage,
 			},
 		},
 		{
 			Name:          "can set image without context",
 			ExpectedError: nil,
 			ContainerRequest: ContainerRequest{
-				Image: "redis:latest",
+				Image: redisLatestImage,
 			},
 		},
 		{
@@ -54,7 +56,7 @@ func Test_ContainerValidation(t *testing.T) {
 			Name:          "Can mount same source to multiple targets",
 			ExpectedError: nil,
 			ContainerRequest: ContainerRequest{
-				Image:  "redis:latest",
+				Image:  redisLatestImage,
 				Mounts: Mounts(BindMount("/data", "/srv"), BindMount("/data", "/data")),
 			},
 		},
@@ -62,7 +64,7 @@ func Test_ContainerValidation(t *testing.T) {
 			Name:          "Cannot mount multiple sources to same target",
 			ExpectedError: errors.New("duplicate mount target detected: /data"),
 			ContainerRequest: ContainerRequest{
-				Image:  "redis:latest",
+				Image:  redisLatestImage,
 				Mounts: Mounts(BindMount("/srv", "/data"), BindMount("/data", "/data")),
 			},
 		},
@@ -85,7 +87,7 @@ func Test_ContainerValidation(t *testing.T) {
 	}
 }
 
-func Test_GetDockerfile(t *testing.T) {
+func TestGetDockerfile(t *testing.T) {
 	type TestCase struct {
 		name                   string
 		ExpectedDockerfileName string
@@ -126,7 +128,7 @@ func Test_GetDockerfile(t *testing.T) {
 	}
 }
 
-func Test_BuildImageWithContexts(t *testing.T) {
+func TestBuildImageWithContexts(t *testing.T) {
 	type TestCase struct {
 		Name               string
 		ContextPath        string
@@ -288,7 +290,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 	}
 }
 
-func Test_GetLogsFromFailedContainer(t *testing.T) {
+func TestGetLogsFromFailedContainer(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:      "docker.io/alpine",

@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_IsDir(t *testing.T) {
+func TestIsDir(t *testing.T) {
 	type cases struct {
 		filepath string
 		expected bool
@@ -53,7 +53,7 @@ func Test_IsDir(t *testing.T) {
 	}
 }
 
-func Test_TarDir(t *testing.T) {
+func TestTarDir(t *testing.T) {
 	originalSrc := filepath.Join(".", "testdata")
 	tests := []struct {
 		abs bool
@@ -111,7 +111,7 @@ func Test_TarDir(t *testing.T) {
 	}
 }
 
-func Test_TarFile(t *testing.T) {
+func TestTarFile(t *testing.T) {
 	b, err := os.ReadFile(filepath.Join(".", "testdata", "Dockerfile"))
 	if err != nil {
 		t.Fatal(err)

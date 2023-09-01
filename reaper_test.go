@@ -72,7 +72,7 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 	return customize(req)
 }
 
-func Test_NewReaper(t *testing.T) {
+func TestNewReaper(t *testing.T) {
 	type cases struct {
 		name   string
 		req    ContainerRequest
@@ -136,7 +136,7 @@ func Test_NewReaper(t *testing.T) {
 	}
 }
 
-func Test_ReaperForNetwork(t *testing.T) {
+func TestReaperForNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	networkName := "test-network-with-custom-reaper"
@@ -162,7 +162,7 @@ func Test_ReaperForNetwork(t *testing.T) {
 	assert.Equal(t, "reaperImage", provider.req.ReaperImage)
 }
 
-func Test_ReaperReusedIfHealthy(t *testing.T) {
+func TestReaperReusedIfHealthy(t *testing.T) {
 	SkipIfProviderIsNotHealthy(&testing.T{})
 
 	ctx := context.Background()

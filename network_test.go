@@ -31,7 +31,7 @@ func ExampleNetworkProvider_CreateNetwork() {
 		ContainerRequest: ContainerRequest{
 			Image: "nginx",
 			ExposedPorts: []string{
-				"80/tcp",
+				nginxDefaultPort,
 			},
 			Networks: []string{
 				networkName,
@@ -47,7 +47,7 @@ func ExampleNetworkProvider_CreateNetwork() {
 	nginxC.GetContainerID()
 }
 
-func Test_NetworkWithIPAM(t *testing.T) {
+func TestNetworkWithIPAM(t *testing.T) {
 	ctx := context.Background()
 	networkName := "test-network-with-ipam"
 	ipamConfig := network.IPAM{
@@ -81,7 +81,7 @@ func Test_NetworkWithIPAM(t *testing.T) {
 		ContainerRequest: ContainerRequest{
 			Image: "nginx",
 			ExposedPorts: []string{
-				"80/tcp",
+				nginxDefaultPort,
 			},
 			Networks: []string{
 				networkName,
@@ -104,7 +104,7 @@ func Test_NetworkWithIPAM(t *testing.T) {
 	assert.Equal(t, ipamConfig, foundNetwork.IPAM)
 }
 
-func Test_MultipleContainersInTheNewNetwork(t *testing.T) {
+func TestMultipleContainersInTheNewNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	networkName := "test-network"

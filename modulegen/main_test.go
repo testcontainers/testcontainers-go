@@ -15,6 +15,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 )
 
+const (
+	mongoDBDefaultImage = "mongodb:latest"
+)
+
 func TestExample(t *testing.T) {
 	tests := []struct {
 		name                  string
@@ -28,7 +32,7 @@ func TestExample(t *testing.T) {
 			example: context.Example{
 				Name:      "mongoDB",
 				IsModule:  true,
-				Image:     "mongodb:latest",
+				Image:     mongoDBDefaultImage,
 				TitleName: "MongoDB",
 			},
 			expectedContainerName: "MongoDBContainer",
@@ -40,7 +44,7 @@ func TestExample(t *testing.T) {
 			example: context.Example{
 				Name:     "mongoDB",
 				IsModule: true,
-				Image:    "mongodb:latest",
+				Image:    mongoDBDefaultImage,
 			},
 			expectedContainerName: "MongodbContainer",
 			expectedEntrypoint:    "RunContainer",
@@ -51,7 +55,7 @@ func TestExample(t *testing.T) {
 			example: context.Example{
 				Name:      "mongoDB",
 				IsModule:  false,
-				Image:     "mongodb:latest",
+				Image:     mongoDBDefaultImage,
 				TitleName: "MongoDB",
 			},
 			expectedContainerName: "mongoDBContainer",
@@ -63,7 +67,7 @@ func TestExample(t *testing.T) {
 			example: context.Example{
 				Name:     "mongoDB",
 				IsModule: false,
-				Image:    "mongodb:latest",
+				Image:    mongoDBDefaultImage,
 			},
 			expectedContainerName: "mongodbContainer",
 			expectedEntrypoint:    "runContainer",

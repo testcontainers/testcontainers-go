@@ -22,13 +22,15 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const nginxDefaultPort = "80/tcp"
+
 // https://github.com/testcontainers/testcontainers-go/issues/183
 func ExampleHTTPStrategy() {
 	// waitForHTTPWithDefaultPort {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx:latest",
-		ExposedPorts: []string{"80/tcp"},
+		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 
@@ -55,8 +57,8 @@ func ExampleHTTPStrategy_WithPort() {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx:latest",
-		ExposedPorts: []string{"8080/tcp", "80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithPort("80/tcp"),
+		ExposedPorts: []string{"8080/tcp", nginxDefaultPort},
+		WaitingFor:   wait.ForHTTP("/").WithPort(nginxDefaultPort),
 	}
 
 	gogs, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
