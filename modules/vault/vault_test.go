@@ -102,7 +102,7 @@ func TestVaultGetSecretPathWithClient(t *testing.T) {
 
 	s, err := client.Secrets.KvV2Read(ctx, "test1")
 	assert.Nil(t, err)
-	assert.Equal(t, "bar1", s.Data.Data["data"].(map[string]interface{})["foo1"])
+	assert.Equal(t, "bar1", s.Data.Data["foo1"])
 }
 
 func TestVaultWriteSecretWithClient(t *testing.T) {
@@ -125,5 +125,5 @@ func TestVaultWriteSecretWithClient(t *testing.T) {
 
 	s, err := client.Secrets.KvV2Read(ctx, "test3")
 	assert.Nil(t, err)
-	assert.Equal(t, "bar", s.Data.Data["data"].(map[string]interface{})["foo"])
+	assert.Equal(t, "bar", s.Data.Data["foo"])
 }
