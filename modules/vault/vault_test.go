@@ -37,7 +37,6 @@ func TestMain(m *testing.M) {
 		testcontainervault.WithToken(token),
 		// }
 		// WithInitCommand {
-		testcontainervault.WithInitCommand("secrets enable -version=2 kv"),
 		testcontainervault.WithInitCommand("secrets enable transit", "write -f transit/keys/my-key"),
 		testcontainervault.WithInitCommand("kv put secret/test1 foo1=bar1"),
 		// }
