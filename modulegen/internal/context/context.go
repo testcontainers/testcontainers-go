@@ -10,27 +10,27 @@ type Context struct {
 	RootDir string
 }
 
-func (ctx *Context) DependabotConfigFile() string {
+func (ctx Context) DependabotConfigFile() string {
 	return filepath.Join(ctx.GithubDir(), "dependabot.yml")
 }
 
-func (ctx *Context) DocsDir() string {
+func (ctx Context) DocsDir() string {
 	return filepath.Join(ctx.RootDir, "docs")
 }
 
-func (ctx *Context) GithubDir() string {
+func (ctx Context) GithubDir() string {
 	return filepath.Join(ctx.RootDir, ".github")
 }
 
-func (ctx *Context) GithubWorkflowsDir() string {
+func (ctx Context) GithubWorkflowsDir() string {
 	return filepath.Join(ctx.GithubDir(), "workflows")
 }
 
-func (ctx *Context) GoModFile() string {
+func (ctx Context) GoModFile() string {
 	return filepath.Join(ctx.RootDir, "go.mod")
 }
 
-func (ctx *Context) getModulesByBaseDir(baseDir string) ([]string, error) {
+func (ctx Context) getModulesByBaseDir(baseDir string) ([]string, error) {
 	dir := filepath.Join(ctx.RootDir, baseDir)
 
 	allFiles, err := os.ReadDir(dir)
@@ -49,7 +49,7 @@ func (ctx *Context) getModulesByBaseDir(baseDir string) ([]string, error) {
 	return dirs, nil
 }
 
-func (ctx *Context) getMarkdownsFromDir(baseDir string) ([]string, error) {
+func (ctx Context) getMarkdownsFromDir(baseDir string) ([]string, error) {
 	dir := filepath.Join(ctx.DocsDir(), baseDir)
 
 	allFiles, err := os.ReadDir(dir)
@@ -68,38 +68,38 @@ func (ctx *Context) getMarkdownsFromDir(baseDir string) ([]string, error) {
 	return dirs, nil
 }
 
-func (ctx *Context) GetExamples() ([]string, error) {
+func (ctx Context) GetExamples() ([]string, error) {
 	return ctx.getModulesByBaseDir("examples")
 }
 
-func (ctx *Context) GetModules() ([]string, error) {
+func (ctx Context) GetModules() ([]string, error) {
 	return ctx.getModulesByBaseDir("modules")
 }
 
-func (ctx *Context) GetExamplesDocs() ([]string, error) {
+func (ctx Context) GetExamplesDocs() ([]string, error) {
 	return ctx.getMarkdownsFromDir("examples")
 }
 
-func (ctx *Context) GetModulesDocs() ([]string, error) {
+func (ctx Context) GetModulesDocs() ([]string, error) {
 	return ctx.getMarkdownsFromDir("modules")
 }
 
-func (ctx *Context) MkdocsConfigFile() string {
+func (ctx Context) MkdocsConfigFile() string {
 	return filepath.Join(ctx.RootDir, "mkdocs.yml")
 }
 
-func (ctx *Context) VSCodeWorkspaceFile() string {
+func (ctx Context) VSCodeWorkspaceFile() string {
 	return filepath.Join(ctx.RootDir, ".vscode", ".testcontainers-go.code-workspace")
 }
 
-func New(dir string) *Context {
-	return &Context{RootDir: dir}
+func New(dir string) Context {
+	return Context{RootDir: dir}
 }
 
-func GetRootContext() (*Context, error) {
+func GetRootContext() (Context, error) {
 	current, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		return Context{}, err
 	}
 	return New(filepath.Dir(current)), nil
 }

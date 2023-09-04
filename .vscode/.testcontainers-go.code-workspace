@@ -26,10 +26,6 @@
             "path": "../examples/firestore"
         },
         {
-            "name": "example / nats",
-            "path": "../examples/nats"
-        },
-        {
             "name": "example / nginx",
             "path": "../examples/nginx"
         },
@@ -80,6 +76,10 @@
         {
             "name": "module / mysql",
             "path": "../modules/mysql"
+        },
+        {
+            "name": "module / nats",
+            "path": "../modules/nats"
         },
         {
             "name": "module / neo4j",

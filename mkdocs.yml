@@ -69,6 +69,7 @@ nav:
         - modules/mariadb.md
         - modules/mongodb.md
         - modules/mysql.md
+        - modules/nats.md
         - modules/neo4j.md
         - modules/postgres.md
         - modules/pulsar.md
@@ -82,7 +83,6 @@ nav:
         - examples/consul.md
         - examples/datastore.md
         - examples/firestore.md
-        - examples/nats.md
         - examples/nginx.md
         - examples/pubsub.md
         - examples/spanner.md

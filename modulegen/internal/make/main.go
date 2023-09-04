@@ -8,21 +8,36 @@ import (
 	internal_template "github.com/testcontainers/testcontainers-go/modulegen/internal/template"
 )
 
-// creates Makefile for example
-func GenerateMakefile(ctx *context.Context, example context.Example) error {
-	exampleDir := filepath.Join(ctx.RootDir, example.ParentDir(), example.Lower())
-	exampleName := example.Lower()
-	return Generate(exampleDir, exampleName)
-}
+type Generator struct{}
 
-func Generate(exampleDir string, exampleName string) error {
+// AddModule update dependabot with the new module
+func (g Generator) AddModule(ctx context.Context, tcModule context.TestcontainersModule) error {
+	moduleDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
+	moduleName := tcModule.Lower()
+
 	name := "Makefile.tmpl"
 	t, err := template.New(name).ParseFiles(filepath.Join("_template", name))
 	if err != nil {
 		return err
 	}
 
-	exampleFilePath := filepath.Join(exampleDir, "Makefile")
+	moduleFilePath := filepath.Join(moduleDir, "Makefile")
 
-	return internal_template.GenerateFile(t, exampleFilePath, name, exampleName)
+	return internal_template.GenerateFile(t, moduleFilePath, name, moduleName)
+}
+
+// creates Makefile for example
+func GenerateMakefile(ctx context.Context, tcModule context.TestcontainersModule) error {
+	moduleDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
+	moduleName := tcModule.Lower()
+
+	name := "Makefile.tmpl"
+	t, err := template.New(name).ParseFiles(filepath.Join("_template", name))
+	if err != nil {
+		return err
+	}
+
+	moduleFilePath := filepath.Join(moduleDir, "Makefile")
+
+	return internal_template.GenerateFile(t, moduleFilePath, name, moduleName)
 }

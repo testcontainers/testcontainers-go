@@ -56,7 +56,7 @@ func TestReadMkDocsConfig(t *testing.T) {
 	assert.Greater(t, len(nav[4].Examples), 0)
 }
 
-func TestExamples(t *testing.T) {
+func TestNavItems(t *testing.T) {
 	ctx := getTestRootContext(t)
 	examples, err := ctx.GetExamples()
 	require.NoError(t, err)
@@ -81,7 +81,7 @@ func TestExamples(t *testing.T) {
 	}
 }
 
-func copyInitialMkdocsConfig(t *testing.T, tmpCtx *context.Context) error {
+func copyInitialMkdocsConfig(t *testing.T, tmpCtx context.Context) error {
 	ctx := getTestRootContext(t)
 	return mkdocs.CopyConfig(ctx.MkdocsConfigFile(), tmpCtx.MkdocsConfigFile())
 }
