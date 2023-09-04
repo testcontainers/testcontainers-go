@@ -64,6 +64,7 @@ nav:
         - modules/artemis.md
         - modules/clickhouse.md
         - modules/couchbase.md
+        - modules/elasticsearch.md
         - modules/k3s.md
         - modules/localstack.md
         - modules/mariadb.md
