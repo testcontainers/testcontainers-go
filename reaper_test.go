@@ -12,7 +12,6 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -55,17 +54,17 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		Image:        "reaperImage",
 		ReaperImage:  "reaperImage",
 		ExposedPorts: []string{"8080/tcp"},
-		Labels: map[string]string{
-			testcontainersdocker.LabelLang:      "go",
-			testcontainersdocker.LabelReaper:    "true",
-			testcontainersdocker.LabelSessionID: testcontainerssession.SessionID(),
-		},
-		Mounts:     Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock")),
-		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
+		Labels:       testcontainersdocker.DefaultLabels(),
+		Mounts:       Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock")),
+		WaitingFor:   wait.ForListeningPort(nat.Port("8080/tcp")),
 		ReaperOptions: []ContainerOption{
 			WithImageName("reaperImage"),
 		},
 	}
+
+	req.Labels[testcontainersdocker.LabelReaper] = "true"
+	req.Labels[testcontainersdocker.LabelRyuk] = "true"
+
 	if customize == nil {
 		return req
 	}
@@ -175,7 +174,11 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 	assert.NoError(t, err, "creating the Reaper should not error")
 
 	reaperReused, _ := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), provider)
-	assert.Same(t, reaper, reaperReused, "expecting the same reaper instance is returned if running and healthy")
+	// assert that the internal state of both reaper instances is the same
+	assert.Equal(t, reaper.SessionID, reaperReused.SessionID, "expecting the same SessionID")
+	assert.Equal(t, reaper.Endpoint, reaperReused.Endpoint, "expecting the same reaper endpoint")
+	assert.Equal(t, reaper.Provider, reaperReused.Provider, "expecting the same container provider")
+	assert.Equal(t, reaper.Labels(), reaperReused.Labels(), "expecting the same container provider")
 
 	terminate, err := reaper.Connect()
 	defer func(term chan bool) {

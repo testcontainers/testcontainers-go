@@ -169,13 +169,9 @@ func newReaper(ctx context.Context, provider ReaperProvider, opts ...ContainerOp
 	}
 
 	req := ContainerRequest{
-		Image:        reaperImage(reaperOpts.ImageName),
-		ExposedPorts: []string{string(listeningPort)},
-		Labels: map[string]string{
-			testcontainersdocker.LabelReaper:    "true",
-			testcontainersdocker.LabelRyuk:      "true",
-			testcontainersdocker.LabelSessionID: sessionID,
-		},
+		Image:         reaperImage(reaperOpts.ImageName),
+		ExposedPorts:  []string{string(listeningPort)},
+		Labels:        testcontainersdocker.DefaultLabels(),
 		Mounts:        Mounts(BindMount(dockerHostMount, "/var/run/docker.sock")),
 		Privileged:    tcConfig.RyukPrivileged,
 		WaitingFor:    wait.ForListeningPort(listeningPort),
@@ -190,9 +186,8 @@ func newReaper(ctx context.Context, provider ReaperProvider, opts ...ContainerOp
 	req.ReaperImage = req.Image
 
 	// include reaper-specific labels to the reaper container
-	for k, v := range reaper.Labels() {
-		req.Labels[k] = v
-	}
+	req.Labels[testcontainersdocker.LabelReaper] = "true"
+	req.Labels[testcontainersdocker.LabelRyuk] = "true"
 
 	// Attach reaper container to a requested network if it is specified
 	if p, ok := provider.(*DockerProvider); ok {
@@ -235,7 +230,7 @@ func (r *Reaper) Connect() (chan bool, error) {
 		defer conn.Close()
 
 		labelFilters := []string{}
-		for l, v := range r.Labels() {
+		for l, v := range testcontainersdocker.DefaultLabels() {
 			labelFilters = append(labelFilters, fmt.Sprintf("label=%s=%s", l, v))
 		}
 
@@ -271,6 +266,7 @@ func (r *Reaper) Connect() (chan bool, error) {
 }
 
 // Labels returns the container labels to use so that this Reaper cleans them up
+// Deprecated: internally replaced by testcontainersdocker.DefaultLabels()
 func (r *Reaper) Labels() map[string]string {
 	return map[string]string{
 		testcontainersdocker.LabelLang:      "go",

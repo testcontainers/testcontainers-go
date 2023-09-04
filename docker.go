@@ -31,7 +31,6 @@ import (
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
-	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -891,7 +890,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if err != nil {
 			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
 		}
-		for k, v := range r.Labels() {
+		for k, v := range testcontainersdocker.DefaultLabels() {
 			if _, ok := req.Labels[k]; !ok {
 				req.Labels[k] = v
 			}
@@ -1298,7 +1297,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		if err != nil {
 			return nil, fmt.Errorf("%w: connecting to network reaper failed", err)
 		}
-		for k, v := range r.Labels() {
+		for k, v := range testcontainersdocker.DefaultLabels() {
 			if _, ok := req.Labels[k]; !ok {
 				req.Labels[k] = v
 			}
@@ -1397,10 +1396,7 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
 			Driver:     Bridge,
 			Attachable: true,
-			Labels: map[string]string{
-				testcontainersdocker.LabelLang:    "go",
-				testcontainersdocker.LabelVersion: internal.Version,
-			},
+			Labels:     testcontainersdocker.DefaultLabels(),
 		})
 
 		if err != nil {
