@@ -3,6 +3,7 @@ package wait
 import (
 	"context"
 	"io"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -20,6 +21,7 @@ type LogStrategy struct {
 
 	// additional properties
 	Log          string
+	IsRegexp     bool
 	Occurrence   int
 	PollInterval time.Duration
 }
@@ -28,6 +30,7 @@ type LogStrategy struct {
 func NewLogStrategy(log string) *LogStrategy {
 	return &LogStrategy{
 		Log:          log,
+		IsRegexp:     false,
 		Occurrence:   1,
 		PollInterval: defaultPollInterval(),
 	}
@@ -36,6 +39,12 @@ func NewLogStrategy(log string) *LogStrategy {
 // fluent builders for each property
 // since go has neither covariance nor generics, the return type must be the type of the concrete implementation
 // this is true for all properties, even the "shared" ones like startupTimeout
+
+// AsRegexp can be used to change the default behavior of the log strategy to use regexp instead of plain text
+func (ws *LogStrategy) AsRegexp() *LogStrategy {
+	ws.IsRegexp = true
+	return ws
+}
 
 // WithStartupTimeout can be used to change the default startup timeout
 func (ws *LogStrategy) WithStartupTimeout(timeout time.Duration) *LogStrategy {
@@ -106,10 +115,11 @@ LOOP:
 			}
 
 			logs := string(b)
+
 			switch {
 			case length == len(logs) && checkErr != nil:
 				return checkErr
-			case strings.Count(logs, ws.Log) >= ws.Occurrence:
+			case checkLogsFn(ws, b):
 				break LOOP
 			default:
 				length = len(logs)
@@ -120,4 +130,16 @@ LOOP:
 	}
 
 	return nil
+}
+
+func checkLogsFn(ws *LogStrategy, b []byte) bool {
+	if ws.IsRegexp {
+		re := regexp.MustCompile(ws.Log)
+		occurrences := re.FindAll(b, -1)
+
+		return len(occurrences) >= ws.Occurrence
+	}
+
+	logs := string(b)
+	return strings.Count(logs, ws.Log) >= ws.Occurrence
 }
