@@ -6,6 +6,10 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
+const (
+	minimalImageVersion = "8.0.0"
+)
+
 // ElasticsearchContainer represents the Elasticsearch container type used in the module
 type ElasticsearchContainer struct {
 	testcontainers.Container
@@ -14,7 +18,7 @@ type ElasticsearchContainer struct {
 // RunContainer creates an instance of the Elasticsearch container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ElasticsearchContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "elasticsearch:8.0.0",
+		Image: minimalImageVersion,
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
