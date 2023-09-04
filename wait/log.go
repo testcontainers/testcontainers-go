@@ -116,20 +116,10 @@ LOOP:
 
 			logs := string(b)
 
-			checkLogsFn := func() bool {
-				if ws.IsRegexp {
-					re := regexp.MustCompile(ws.Log)
-					occurrences := re.FindAll(b, -1)
-
-					return len(occurrences) >= ws.Occurrence
-				}
-				return strings.Count(logs, ws.Log) >= ws.Occurrence
-			}
-
 			switch {
 			case length == len(logs) && checkErr != nil:
 				return checkErr
-			case checkLogsFn():
+			case checkLogsFn(ws, b):
 				break LOOP
 			default:
 				length = len(logs)
@@ -140,4 +130,16 @@ LOOP:
 	}
 
 	return nil
+}
+
+func checkLogsFn(ws *LogStrategy, b []byte) bool {
+	if ws.IsRegexp {
+		re := regexp.MustCompile(ws.Log)
+		occurrences := re.FindAll(b, -1)
+
+		return len(occurrences) >= ws.Occurrence
+	}
+
+	logs := string(b)
+	return strings.Count(logs, ws.Log) >= ws.Occurrence
 }
