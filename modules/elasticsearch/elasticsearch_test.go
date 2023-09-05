@@ -85,7 +85,11 @@ func TestElasticsearch(t *testing.T) {
 
 			// set the password for the request using the Authentication header
 			if tt.passwordCustomiser != nil {
-				req.SetBasicAuth("elastic", password)
+				if container.Settings.Username != "elastic" {
+					t.Fatal("expected username to be elastic but got", container.Settings.Username)
+				}
+
+				req.SetBasicAuth(container.Settings.Username, container.Settings.Password)
 			}
 
 			resp, err := httpClient.Do(req)
@@ -143,7 +147,7 @@ func TestElasticsearch(t *testing.T) {
 	}
 }
 
-func TestElasticsearch8WithoutPasswordShouldUseDefaultPassword(t *testing.T) {
+func TestElasticsearch8WithoutCredentials(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := elasticsearch.RunContainer(ctx, testcontainers.WithImage(baseImage8))
@@ -161,8 +165,8 @@ func TestElasticsearch8WithoutPasswordShouldUseDefaultPassword(t *testing.T) {
 
 	req, err := http.NewRequest("GET", container.Settings.Address, nil)
 
-	// changeme is the default password for Elasticsearch 8
-	req.SetBasicAuth("elastic", "changeme")
+	// elastic:changeme are the default credentials for Elasticsearch 8
+	req.SetBasicAuth(container.Settings.Username, container.Settings.Password)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {

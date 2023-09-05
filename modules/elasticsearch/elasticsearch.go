@@ -14,6 +14,7 @@ const (
 	defaultHTTPPort     = "9200"
 	defaultTCPPort      = "9300"
 	defaultPassword     = "changeme"
+	defaultUsername     = "elastic"
 	minimalImageVersion = "7.9.2"
 )
 
@@ -25,7 +26,7 @@ const (
 // ElasticsearchContainer represents the Elasticsearch container type used in the module
 type ElasticsearchContainer struct {
 	testcontainers.Container
-	Settings *Options
+	Settings Options
 }
 
 // RunContainer creates an instance of the Elasticsearch container type
@@ -61,13 +62,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
-			apply(&settings)
+			apply(settings)
 		}
 		opt.Customize(&req)
 	}
 
 	// Transfer the certificate settings to the container request
-	err := configureCertificate(&settings, &req)
+	err := configureCertificate(settings, &req)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	esContainer := &ElasticsearchContainer{Container: container, Settings: &settings}
+	esContainer := &ElasticsearchContainer{Container: container, Settings: *settings}
 
 	err = configureAddress(ctx, esContainer)
 	if err != nil {
@@ -155,10 +156,10 @@ func configureCertificate(settings *Options, req *testcontainers.GenericContaine
 
 // configurePassword transfers the password settings to the container request.
 // If the password is not set, it will be set to "changeme" for Elasticsearch 8
-func configurePassword(settings Options, req *testcontainers.GenericContainerRequest) error {
+func configurePassword(settings *Options, req *testcontainers.GenericContainerRequest) error {
 	// set "changeme" as default password for Elasticsearch 8
 	if isAtLeastVersion(req.Image, 8) && settings.Password == "" {
-		WithPassword(defaultPassword)(&settings)
+		WithPassword(defaultPassword)(settings)
 	}
 
 	if settings.Password != "" {

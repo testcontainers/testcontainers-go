@@ -11,11 +11,13 @@ type Options struct {
 	Address  string
 	CACert   []byte
 	Password string
+	Username string
 }
 
-func defaultOptions() Options {
-	return Options{
-		CACert: nil,
+func defaultOptions() *Options {
+	return &Options{
+		CACert:   nil,
+		Username: defaultUsername,
 	}
 }
 
