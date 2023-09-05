@@ -25,14 +25,7 @@ const (
 // ElasticsearchContainer represents the Elasticsearch container type used in the module
 type ElasticsearchContainer struct {
 	testcontainers.Container
-	options options
-}
-
-// CaCert returns the certificate bytes for the Elasticsearch container
-// This is only available for Elasticsearch 8 and above. Therefore, any call to this function
-// will return nil for Elasticsearch 7 and below
-func (c *ElasticsearchContainer) CaCert(ctx context.Context) []byte {
-	return c.options.certBytes
+	Settings Options
 }
 
 // HTTPHostAddress returns the HTTP host address for the Elasticsearch container
@@ -50,7 +43,7 @@ func (c *ElasticsearchContainer) HTTPHostAddress(ctx context.Context) (string, e
 	}
 
 	proto := "http"
-	if c.options.EnableTLS {
+	if c.Settings.CACert != nil {
 		proto = "https"
 	}
 
@@ -116,13 +109,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	return &ElasticsearchContainer{Container: container, options: settings}, nil
+	return &ElasticsearchContainer{Container: container, Settings: settings}, nil
 }
 
 // configureCertificate transfers the certificate settings to the container request.
 // For that, it defines a post start hook that copies the certificate from the container to the host.
 // The certificate is only available since version 8, and will be located in a well-known location.
-func configureCertificate(settings *options, req *testcontainers.GenericContainerRequest) error {
+func configureCertificate(settings *Options, req *testcontainers.GenericContainerRequest) error {
 	if isAtLeastVersion(req.Image, 8) {
 		// The container needs a post start hook to copy the certificate from the container to the host.
 		// This certificate is only available since version 8
@@ -141,8 +134,7 @@ func configureCertificate(settings *options, req *testcontainers.GenericContaine
 					return err
 				}
 
-				settings.certBytes = certBytes
-				settings.EnableTLS = true
+				settings.CACert = certBytes
 
 				return nil
 			})
@@ -153,7 +145,7 @@ func configureCertificate(settings *options, req *testcontainers.GenericContaine
 
 // configurePassword transfers the password settings to the container request.
 // If the password is not set, it will be set to "changeme" for Elasticsearch 8
-func configurePassword(settings options, req *testcontainers.GenericContainerRequest) error {
+func configurePassword(settings Options, req *testcontainers.GenericContainerRequest) error {
 	// set "changeme" as default password for Elasticsearch 8
 	if isAtLeastVersion(req.Image, 8) && settings.Password == "" {
 		WithPassword(defaultPassword)(&settings)

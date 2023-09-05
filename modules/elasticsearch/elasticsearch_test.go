@@ -84,27 +84,13 @@ func TestElasticsearch(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			httpClient := getHTTPClient(container)
+			httpClient := configureHTTPClient(container)
 
 			req, err := http.NewRequest("GET", url, nil)
 
 			// set the password for the request using the Authentication header
 			if tt.passwordCustomiser != nil {
 				req.SetBasicAuth("elastic", password)
-			}
-
-			// Elasticsearch 8 uses TLS by default
-			if tt.image == baseImage8 {
-				certBytes := container.CaCert(ctx)
-
-				caCertPool := x509.NewCertPool()
-				caCertPool.AppendCertsFromPEM(certBytes)
-
-				httpClient.Transport = &http.Transport{
-					TLSClientConfig: &tls.Config{
-						RootCAs: caCertPool,
-					},
-				}
 			}
 
 			resp, err := httpClient.Do(req)
@@ -181,23 +167,12 @@ func TestElasticsearch8WithoutPasswordShouldUseDefaultPassword(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	httpClient := getHTTPClient(container)
+	httpClient := configureHTTPClient(container)
 
 	req, err := http.NewRequest("GET", url, nil)
 
 	// changeme is the default password for Elasticsearch 8
 	req.SetBasicAuth("elastic", "changeme")
-
-	certBytes := container.CaCert(ctx)
-
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(certBytes)
-
-	httpClient.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{
-			RootCAs: caCertPool,
-		},
-	}
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -227,8 +202,25 @@ func TestElasticsearchOSSCannotuseWithPassword(t *testing.T) {
 	}
 }
 
-func getHTTPClient(esContainer *elasticsearch.ElasticsearchContainer) *http.Client {
-	return &http.Client{
-		Transport: &http.Transport{},
+// configureHTTPClient configures an HTTP client for the Elasticsearch container.
+// If no certificate bytes are available, the default HTTP client will be returned.
+// If certificate bytes are available, the client will be configured to use TLS with the certificate.
+func configureHTTPClient(c *elasticsearch.ElasticsearchContainer) *http.Client {
+	client := http.DefaultClient
+
+	if c.Settings.CACert == nil {
+		return client
 	}
+
+	// configure TLS transport based on the certificate bytes that were retrieved from the container
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(c.Settings.CACert)
+
+	client.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{
+			RootCAs: caCertPool,
+		},
+	}
+
+	return client
 }
