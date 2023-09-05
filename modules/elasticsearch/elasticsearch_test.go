@@ -1,24 +1,234 @@
-package elasticsearch
+package elasticsearch_test
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/json"
+	"net/http"
 	"testing"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/elasticsearch"
 )
 
+const (
+	baseImage7 = "docker.elastic.co/elasticsearch/elasticsearch:7.9.2"
+	baseImage8 = "docker.elastic.co/elasticsearch/elasticsearch:8.9.0"
+)
+
+type ElasticsearchResponse struct {
+	Name        string `json:"name"`
+	ClusterName string `json:"cluster_name"`
+	ClusterUUID string `json:"cluster_uuid"`
+	Version     struct {
+		Number string `json:"number"`
+	} `json:"version"`
+	Tagline string `json:"tagline"`
+}
+
 func TestElasticsearch(t *testing.T) {
+	// to be used in the container definition and in the HTTP client
+	password := "foo"
+
+	tests := []struct {
+		name               string
+		image              string
+		passwordCustomiser testcontainers.ContainerCustomizer
+	}{
+		{
+			name:               "Elasticsearch 7 without password should allow access using unauthenticated HTTP requests",
+			image:              baseImage7,
+			passwordCustomiser: nil,
+		},
+		{
+			name:               "Elasticsearch 7 with password should allow access using authenticated HTTP requests",
+			image:              baseImage7,
+			passwordCustomiser: elasticsearch.WithPassword(password),
+		},
+		{
+			name:               "Elasticsearch 8 without password should not allow access with unauthenticated HTTPS requests",
+			image:              baseImage8,
+			passwordCustomiser: nil,
+		},
+		{
+			name:               "Elasticsearch 8 with password should allow access using authenticated HTTPS requests",
+			image:              baseImage8,
+			passwordCustomiser: elasticsearch.WithPassword(password),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+
+			opts := []testcontainers.ContainerCustomizer{testcontainers.WithImage(tt.image)}
+
+			if tt.passwordCustomiser != nil {
+				opts = append(opts, tt.passwordCustomiser)
+			}
+
+			container, err := elasticsearch.RunContainer(ctx, opts...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Cleanup(func() {
+				if err := container.Terminate(ctx); err != nil {
+					t.Fatalf("failed to terminate container: %s", err)
+				}
+			})
+
+			url, err := container.HTTPHostAddress(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			httpClient := getHTTPClient(container)
+
+			req, err := http.NewRequest("GET", url, nil)
+
+			// set the password for the request using the Authentication header
+			if tt.passwordCustomiser != nil {
+				req.SetBasicAuth("elastic", password)
+			}
+
+			// Elasticsearch 8 uses TLS by default
+			if tt.image == baseImage8 {
+				certBytes := container.CaCert(ctx)
+
+				caCertPool := x509.NewCertPool()
+				caCertPool.AppendCertsFromPEM(certBytes)
+
+				httpClient.Transport = &http.Transport{
+					TLSClientConfig: &tls.Config{
+						RootCAs: caCertPool,
+					},
+				}
+			}
+
+			resp, err := httpClient.Do(req)
+			if resp != nil {
+				defer resp.Body.Close()
+			}
+
+			if tt.image == baseImage7 && err != nil {
+				if tt.passwordCustomiser != nil {
+					t.Fatal(err, "should access with authorised HTTP client.")
+				} else if tt.passwordCustomiser == nil {
+					t.Fatal(err, "should access with unauthorised HTTP client.")
+				}
+			}
+
+			if tt.image == baseImage8 {
+				if tt.passwordCustomiser != nil && err != nil {
+					t.Fatal(err, "should access with authorised HTTP client using TLS.")
+				}
+				if tt.passwordCustomiser == nil && err == nil {
+					// Elasticsearch 8 should return 401 Unauthorized, not an error in the request
+					if resp.StatusCode != http.StatusUnauthorized {
+						t.Fatal("expected 401 status code for unauthorised HTTP client using TLS, but got", resp.StatusCode)
+					}
+
+					// finish validating the response when the request is unauthorised
+					return
+				}
+
+			}
+
+			// validate response
+			if resp != nil {
+				// validate Elasticsearch response
+				if resp.StatusCode != http.StatusOK {
+					t.Fatal("expected 200 status code but got", resp.StatusCode)
+				}
+
+				var esResp ElasticsearchResponse
+				if err := json.NewDecoder(resp.Body).Decode(&esResp); err != nil {
+					t.Fatal(err)
+				}
+
+				if tt.image == baseImage7 && esResp.Version.Number != "7.9.2" {
+					t.Fatal("expected version to be 7.9.2 but got", esResp.Version.Number)
+				} else if tt.image == baseImage8 && esResp.Version.Number != "8.9.0" {
+					t.Fatal("expected version to be 8.9.0 but got", esResp.Version.Number)
+				}
+
+				if esResp.Tagline != "You Know, for Search" {
+					t.Fatal("expected tagline to be 'You Know, for Search' but got", esResp.Tagline)
+				}
+			}
+		})
+	}
+}
+
+func TestElasticsearch8WithoutPasswordShouldUseDefaultPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx)
+	container, err := elasticsearch.RunContainer(ctx, testcontainers.WithImage(baseImage8))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Clean up the container after the test is complete
 	t.Cleanup(func() {
 		if err := container.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	// perform assertions
+	url, err := container.HTTPHostAddress(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	httpClient := getHTTPClient(container)
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	// changeme is the default password for Elasticsearch 8
+	req.SetBasicAuth("elastic", "changeme")
+
+	certBytes := container.CaCert(ctx)
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(certBytes)
+
+	httpClient.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{
+			RootCAs: caCertPool,
+		},
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		t.Fatal(err, "Should be able to access / URI with client using default password over HTTPS.")
+	}
+
+	defer resp.Body.Close()
+
+	var esResp ElasticsearchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&esResp); err != nil {
+		t.Fatal(err)
+	}
+
+	if esResp.Tagline != "You Know, for Search" {
+		t.Fatal("expected tagline to be 'You Know, for Search' but got", esResp.Tagline)
+	}
+}
+
+func TestElasticsearchOSSCannotuseWithPassword(t *testing.T) {
+	ctx := context.Background()
+
+	ossImage := elasticsearch.DefaultBaseImageOSS + ":7.9.2"
+
+	_, err := elasticsearch.RunContainer(ctx, testcontainers.WithImage(ossImage), elasticsearch.WithPassword("foo"))
+	if err == nil {
+		t.Fatal(err, "Should not be able to use WithPassword with OSS image.")
+	}
+}
+
+func getHTTPClient(esContainer *elasticsearch.ElasticsearchContainer) *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{},
+	}
 }
