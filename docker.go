@@ -890,11 +890,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if err != nil {
 			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
 		}
-		for k, v := range testcontainersdocker.DefaultLabels() {
-			if _, ok := req.Labels[k]; !ok {
-				req.Labels[k] = v
-			}
-		}
 	}
 
 	// Cleanup on error, otherwise set termSignal to nil before successful return.
@@ -969,6 +964,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
+	// add the labels that the reaper will use to terminate the container to the request
 	for k, v := range testcontainersdocker.DefaultLabels() {
 		req.Labels[k] = v
 	}
@@ -1297,11 +1293,11 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		if err != nil {
 			return nil, fmt.Errorf("%w: connecting to network reaper failed", err)
 		}
-		for k, v := range testcontainersdocker.DefaultLabels() {
-			if _, ok := req.Labels[k]; !ok {
-				req.Labels[k] = v
-			}
-		}
+	}
+
+	// add the labels that the reaper will use to terminate the network to the request
+	for k, v := range testcontainersdocker.DefaultLabels() {
+		req.Labels[k] = v
 	}
 
 	// Cleanup on error, otherwise set termSignal to nil before successful return.
