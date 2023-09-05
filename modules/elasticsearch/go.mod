@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/elasticsearch
 go 1.20
 
 require (
-	github.com/elastic/go-elasticsearch/v8 v8.0.0
+	github.com/elastic/go-elasticsearch/v8 v8.9.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.23.0
 	golang.org/x/mod v0.12.0
