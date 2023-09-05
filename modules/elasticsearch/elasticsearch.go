@@ -204,7 +204,6 @@ func configureJvmOpts(ctx context.Context, container testcontainers.Container) e
 	if err := container.CopyFileToContainer(
 		ctx, tmpFile.Name(),
 		"/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-default-memory-vm.options", 0o644); err != nil {
-
 		return err
 	}
 

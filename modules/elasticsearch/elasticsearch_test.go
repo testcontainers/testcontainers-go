@@ -93,6 +93,9 @@ func TestElasticsearch(t *testing.T) {
 			httpClient := configureHTTPClient(esContainer)
 
 			req, err := http.NewRequest("GET", esContainer.Settings.Address, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			// set the password for the request using the Authentication header
 			if tt.passwordCustomiser != nil {
@@ -110,7 +113,7 @@ func TestElasticsearch(t *testing.T) {
 				defer resp.Body.Close()
 			}
 
-			if tt.image == baseImage7 && err != nil {
+			if tt.image != baseImage8 && err != nil {
 				if tt.passwordCustomiser != nil {
 					t.Fatal(err, "should access with authorised HTTP client.")
 				} else if tt.passwordCustomiser == nil {
@@ -177,6 +180,9 @@ func TestElasticsearch8WithoutCredentials(t *testing.T) {
 	httpClient := configureHTTPClient(container)
 
 	req, err := http.NewRequest("GET", container.Settings.Address, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// elastic:changeme are the default credentials for Elasticsearch 8
 	req.SetBasicAuth(container.Settings.Username, container.Settings.Password)

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	es "github.com/elastic/go-elasticsearch/v8"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/elasticsearch"
 )
@@ -18,7 +19,9 @@ func ExampleRunContainer() {
 	if err != nil {
 		panic(err)
 	}
-	defer elasticsearchContainer.Terminate(ctx)
+	defer func() {
+		_ = elasticsearchContainer.Terminate(ctx)
+	}()
 	// }
 
 	fmt.Println(strings.HasPrefix(elasticsearchContainer.Settings.Address, "https://"))
@@ -38,7 +41,9 @@ func ExampleRunContainer_withUsingPassword() {
 	if err != nil {
 		panic(err)
 	}
-	defer elasticsearchContainer.Terminate(ctx)
+	defer func() {
+		_ = elasticsearchContainer.Terminate(ctx)
+	}()
 	// }
 
 	fmt.Println(strings.HasPrefix(elasticsearchContainer.Settings.Address, "http://"))
@@ -60,7 +65,9 @@ func ExampleRunContainer_connectUsingElasticsearchClient() {
 	if err != nil {
 		panic(err)
 	}
-	defer elasticsearchContainer.Terminate(ctx)
+	defer func() {
+		_ = elasticsearchContainer.Terminate(ctx)
+	}()
 
 	cfg := es.Config{
 		Addresses: []string{
