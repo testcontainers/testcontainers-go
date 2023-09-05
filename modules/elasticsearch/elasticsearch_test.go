@@ -79,14 +79,9 @@ func TestElasticsearch(t *testing.T) {
 				}
 			})
 
-			url, err := container.HTTPHostAddress(ctx)
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			httpClient := configureHTTPClient(container)
 
-			req, err := http.NewRequest("GET", url, nil)
+			req, err := http.NewRequest("GET", container.Settings.Address, nil)
 
 			// set the password for the request using the Authentication header
 			if tt.passwordCustomiser != nil {
@@ -162,14 +157,9 @@ func TestElasticsearch8WithoutPasswordShouldUseDefaultPassword(t *testing.T) {
 		}
 	})
 
-	url, err := container.HTTPHostAddress(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	httpClient := configureHTTPClient(container)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", container.Settings.Address, nil)
 
 	// changeme is the default password for Elasticsearch 8
 	req.SetBasicAuth("elastic", "changeme")

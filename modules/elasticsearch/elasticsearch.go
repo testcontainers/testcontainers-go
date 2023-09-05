@@ -25,29 +25,7 @@ const (
 // ElasticsearchContainer represents the Elasticsearch container type used in the module
 type ElasticsearchContainer struct {
 	testcontainers.Container
-	Settings Options
-}
-
-// HTTPHostAddress returns the HTTP host address for the Elasticsearch container
-// It will use HTTPS or HTTP depending on the TLS settings, which are provided by the
-// Elasticsearch version used: Elasticsearch 8 and above will use HTTPS, Elasticsearch 7 and below will use HTTP
-func (c *ElasticsearchContainer) HTTPHostAddress(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, defaultHTTPPort+"/tcp")
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	proto := "http"
-	if c.Settings.CACert != nil {
-		proto = "https"
-	}
-
-	return fmt.Sprintf("%s://%s:%s", proto, host, containerPort.Port()), nil
+	Settings *Options
 }
 
 // RunContainer creates an instance of the Elasticsearch container type
@@ -109,7 +87,39 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	return &ElasticsearchContainer{Container: container, Settings: settings}, nil
+	esContainer := &ElasticsearchContainer{Container: container, Settings: &settings}
+
+	err = configureAddress(ctx, esContainer)
+	if err != nil {
+		return nil, err
+	}
+
+	return esContainer, nil
+}
+
+// configureAddress sets the address of the Elasticsearch container.
+// If the certificate is set, it will use https as protocol, otherwise http.
+func configureAddress(ctx context.Context, c *ElasticsearchContainer) error {
+	settings := c.Settings
+
+	containerPort, err := c.MappedPort(ctx, defaultHTTPPort+"/tcp")
+	if err != nil {
+		return err
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return err
+	}
+
+	proto := "http"
+	if c.Settings.CACert != nil {
+		proto = "https"
+	}
+
+	settings.Address = fmt.Sprintf("%s://%s:%s", proto, host, containerPort.Port())
+
+	return nil
 }
 
 // configureCertificate transfers the certificate settings to the container request.
