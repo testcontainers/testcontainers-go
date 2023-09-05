@@ -96,5 +96,5 @@ func ExampleRunContainer_connectUsingElasticsearchClient() {
 	}
 
 	fmt.Println(esResp.Tagline)
-	// Output: You know, for Search
+	// Output: You Know, for Search
 }
