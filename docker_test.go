@@ -343,8 +343,8 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, container)
 
 	reaperContainer, err := lookUpReaperContainer(ctx)
-	if err != nil {
-		t.Fatal(err)
+	if err == nil {
+		t.Fatal(err, "expected reaper container not found.")
 	}
 	if reaperContainer != nil {
 		t.Fatal("expected zero reaper running.")
@@ -382,7 +382,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 
 	reaperContainer, err := lookUpReaperContainer(ctx)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal(err, "expected reaper container running.")
 	}
 	if reaperContainer == nil {
 		t.Fatal("expected one reaper to be running.")
