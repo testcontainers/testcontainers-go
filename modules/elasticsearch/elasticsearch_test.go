@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	baseImage6 = "docker.elastic.co/elasticsearch/elasticsearch:6.8.23"
 	baseImage7 = "docker.elastic.co/elasticsearch/elasticsearch:7.9.2"
 	baseImage8 = "docker.elastic.co/elasticsearch/elasticsearch:8.9.0"
 )
@@ -36,6 +37,16 @@ func TestElasticsearch(t *testing.T) {
 		image              string
 		passwordCustomiser testcontainers.ContainerCustomizer
 	}{
+		{
+			name:               "Elasticsearch 6 without password should allow access using unauthenticated HTTP requests",
+			image:              baseImage6,
+			passwordCustomiser: nil,
+		},
+		{
+			name:               "Elasticsearch 6 with password should allow access using authenticated HTTP requests",
+			image:              baseImage6,
+			passwordCustomiser: elasticsearch.WithPassword(password),
+		},
 		{
 			name:               "Elasticsearch 7 without password should allow access using unauthenticated HTTP requests",
 			image:              baseImage7,
