@@ -23,8 +23,8 @@ const (
 )
 
 var (
-	ctx   = context.Background()
-	vault *testcontainervault.VaultContainer
+	ctx            = context.Background()
+	vaultContainer *testcontainervault.VaultContainer
 )
 
 func TestMain(m *testing.M) {
@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// RunContainer {
-	vault, err = testcontainervault.RunContainer(ctx, opts...)
+	vaultContainer, err = testcontainervault.RunContainer(ctx, opts...)
 	// }
 	if err != nil {
 		log.Fatal(err)
@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 	c := m.Run()
 
 	// Clean up the vault after the test is complete
-	if err = vault.Terminate(ctx); err != nil {
+	if err = vaultContainer.Terminate(ctx); err != nil {
 		log.Fatalf("failed to terminate vault: %s", err)
 	}
 
@@ -60,7 +60,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestVaultGetSecretPathWithCLI(t *testing.T) {
-	exec, reader, err := vault.Exec(ctx, []string{"vault", "kv", "get", "-format=json", "secret/test1"})
+	exec, reader, err := vaultContainer.Exec(ctx, []string{"vault", "kv", "get", "-format=json", "secret/test1"})
 	assert.Nil(t, err)
 	assert.Equal(t, 0, exec)
 
@@ -72,7 +72,7 @@ func TestVaultGetSecretPathWithCLI(t *testing.T) {
 
 func TestVaultGetSecretPathWithHTTP(t *testing.T) {
 	// httpHostAddress {
-	hostAddress, err := vault.HttpHostAddress(ctx)
+	hostAddress, err := vaultContainer.HttpHostAddress(ctx)
 	assert.Nil(t, err)
 	// }
 
@@ -90,7 +90,7 @@ func TestVaultGetSecretPathWithHTTP(t *testing.T) {
 }
 
 func TestVaultGetSecretPathWithClient(t *testing.T) {
-	hostAddress, _ := vault.HttpHostAddress(ctx)
+	hostAddress, _ := vaultContainer.HttpHostAddress(ctx)
 	client, err := vaultClient.New(
 		vaultClient.WithAddress(hostAddress),
 		vaultClient.WithRequestTimeout(30*time.Second),
@@ -106,7 +106,7 @@ func TestVaultGetSecretPathWithClient(t *testing.T) {
 }
 
 func TestVaultWriteSecretWithClient(t *testing.T) {
-	hostAddress, _ := vault.HttpHostAddress(ctx)
+	hostAddress, _ := vaultContainer.HttpHostAddress(ctx)
 	client, err := vaultClient.New(
 		vaultClient.WithAddress(hostAddress),
 		vaultClient.WithRequestTimeout(30*time.Second),
