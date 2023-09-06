@@ -292,6 +292,7 @@ func TestGenerate(t *testing.T) {
 	assertModuleGithubWorkflowContent(t, module, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, moduleNameLower)
+	assertExamplesTestContent(t, module, filepath.Join(generatedTemplatesDir, "examples_test.go"))
 	assertModuleTestContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+"_test.go"))
 	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
 	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
@@ -354,6 +355,7 @@ func TestGenerateModule(t *testing.T) {
 	assertModuleGithubWorkflowContent(t, module, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(modulesTmp, moduleNameLower)
+	assertExamplesTestContent(t, module, filepath.Join(generatedTemplatesDir, "examples_test.go"))
 	assertModuleTestContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+"_test.go"))
 	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
 	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
@@ -410,14 +412,31 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 	assert.Equal(t, data[10], "Please run the following command to add the "+title+" module to your Go dependencies:")
 	assert.Equal(t, data[13], "go get github.com/testcontainers/testcontainers-go/"+module.ParentDir()+"/"+lower)
 	assert.Equal(t, data[18], "<!--codeinclude-->")
-	assert.Equal(t, data[19], "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/"+lower+".go)")
+	assert.Equal(t, data[19], "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/examples_test.go) inside_block:run"+title+"Container")
 	assert.Equal(t, data[20], "<!--/codeinclude-->")
-	assert.Equal(t, data[22], "<!--codeinclude-->")
-	assert.Equal(t, data[23], "[Test for a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/"+lower+"_test.go)")
-	assert.Equal(t, data[24], "<!--/codeinclude-->")
-	assert.Equal(t, data[28], "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives two parameters:")
-	assert.True(t, strings.HasSuffix(data[31], "(*"+title+"Container, error)"))
-	assert.Equal(t, "for "+title+". E.g. `testcontainers.WithImage(\""+module.Image+"\")`.", data[44])
+	assert.Equal(t, data[24], "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives two parameters:")
+	assert.True(t, strings.HasSuffix(data[27], "(*"+title+"Container, error)"))
+	assert.Equal(t, "for "+title+". E.g. `testcontainers.WithImage(\""+module.Image+"\")`.", data[40])
+}
+
+// assert content module test
+func assertExamplesTestContent(t *testing.T, module context.TestcontainersModule, examplesTestFile string) {
+	content, err := os.ReadFile(examplesTestFile)
+	assert.Nil(t, err)
+
+	lower := module.Lower()
+	entrypoint := module.Entrypoint()
+	title := module.Title()
+
+	data := sanitiseContent(content)
+	assert.Equal(t, data[0], "package "+lower+"_test")
+	assert.Equal(t, data[6], "\t\"github.com/testcontainers/testcontainers-go/modules/"+lower+"\"")
+	assert.Equal(t, data[9], "func Example"+entrypoint+"() {")
+	assert.Equal(t, data[10], "\t// run"+title+"Container {")
+	assert.Equal(t, data[13], "\t"+lower+"Container, err := "+lower+"."+entrypoint+"(ctx)")
+	assert.Equal(t, data[31], "\tfmt.Println(state.Running)")
+	assert.Equal(t, data[33], "\t// Output:")
+	assert.Equal(t, data[34], "\t// true")
 }
 
 // assert content module test

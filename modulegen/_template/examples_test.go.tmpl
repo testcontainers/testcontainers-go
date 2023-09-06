@@ -1,0 +1,36 @@
+{{ $entrypoint := Entrypoint }}{{ $lower := ToLower }}{{ $title := Title }}package {{ $lower }}_test
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/testcontainers/testcontainers-go/modules/{{ $lower }}"
+)
+
+func Example{{ $entrypoint }}() {
+	// run{{ $title }}Container {
+	ctx := context.Background()
+
+	{{ $lower }}Container, err := {{ $lower }}.{{ $entrypoint }}(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	// Clean up the container after the test is complete
+	defer func() {
+		if err := {{ $lower }}Container.Terminate(ctx); err != nil {
+			panic(err)
+		}
+	}()
+	// }
+
+	state, err := {{ $lower }}Container.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
+}
