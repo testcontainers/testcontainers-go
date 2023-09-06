@@ -24,21 +24,26 @@ It takes a context and zero or more Option values to configure the container.
 
 ### Use CLI to read data from Vault container:
 <!--codeinclude-->
-[Use CLI to read data](../../modules/vault/vault_test.go) inside_block:TestVaultGetSecretPathWithCLI
+[Use CLI to read data](../../modules/vault/vault_test.go) inside_block:containerCliRead
 <!--/codeinclude-->
+
+The `vaultContainer` is the container instance obtained from `RunContainer`.
 
 ### Use HTTP API to read data from Vault container:
 <!--codeinclude-->
-[Use HTTP API to read data](../../modules/vault/vault_test.go) inside_block:TestVaultGetSecretPathWithHTTP
+[Use HTTP API to read data](../../modules/vault/vault_test.go) inside_block:httpRead
 <!--/codeinclude-->
+
+The `hostAddress` is obtained from the container instance. Please see [here](#httphostaddress) for more details.
 
 ### Use client library to read data from Vault container:
 Add Vault Client module to your Go dependencies:
+
 ```
 go get -u github.com/hashicorp/vault-client-go
 ```
 <!--codeinclude-->
-[Use library to read data](../../modules/vault/vault_test.go) inside_block:TestVaultGetSecretPathWithClient
+[Use library to read data](../../modules/vault/vault_test.go) inside_block:clientLibRead
 <!--/codeinclude-->
 
 ## Module Reference
@@ -97,7 +102,7 @@ If you need to add token authentication, you can use the `WithToken`.
 
 #### Command
 
-If you need to run vault command in the container, you can use the `WithInitCommand`.
+If you need to run a vault command in the container, you can use the `WithInitCommand`.
 <!--codeinclude-->
 [Run init command](../../modules/vault/vault_test.go) inside_block:WithInitCommand
 <!--/codeinclude-->
