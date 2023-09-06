@@ -52,7 +52,7 @@ func generateGoModFile(moduleDir string, tcModule context.TestcontainersModule) 
 }
 
 func GenerateFiles(moduleDir string, moduleName string, funcMap template.FuncMap, tcModule any) error {
-	for _, tmpl := range []string{"module_test.go", "module.go"} {
+	for _, tmpl := range []string{"examples_test.go", "module_test.go", "module.go"} {
 		name := tmpl + ".tmpl"
 		t, err := template.New(name).Funcs(funcMap).ParseFiles(filepath.Join("_template", name))
 		if err != nil {
