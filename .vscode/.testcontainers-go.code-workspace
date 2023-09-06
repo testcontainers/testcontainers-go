@@ -58,6 +58,10 @@
             "path": "../modules/couchbase"
         },
         {
+            "name": "module / elasticsearch",
+            "path": "../modules/elasticsearch"
+        },
+        {
             "name": "module / k3s",
             "path": "../modules/k3s"
         },
