@@ -17,8 +17,9 @@ go get github.com/testcontainers/testcontainers-go/modules/vault
 ## Usage example
 The **RunContainer** function is the main entry point to create a new VaultContainer instance. 
 It takes a context and zero or more Option values to configure the container.
+
 <!--codeinclude-->
-[Creating a Vault container](../../modules/vault/vault_test.go) inside_block:RunContainer
+[Creating a Vault container](../../modules/vault/examples_test.go) inside_block:runVaultContainer
 <!--/codeinclude-->
 
 ### Use CLI to read data from Vault container:
