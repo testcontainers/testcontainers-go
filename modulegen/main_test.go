@@ -412,7 +412,7 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 	assert.Equal(t, data[10], "Please run the following command to add the "+title+" module to your Go dependencies:")
 	assert.Equal(t, data[13], "go get github.com/testcontainers/testcontainers-go/"+module.ParentDir()+"/"+lower)
 	assert.Equal(t, data[18], "<!--codeinclude-->")
-	assert.Equal(t, data[19], "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/examples_test.go)inside_block:run"+title+"Container")
+	assert.Equal(t, data[19], "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/examples_test.go) inside_block:run"+title+"Container")
 	assert.Equal(t, data[20], "<!--/codeinclude-->")
 	assert.Equal(t, data[24], "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives two parameters:")
 	assert.True(t, strings.HasSuffix(data[27], "(*"+title+"Container, error)"))
