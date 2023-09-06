@@ -178,7 +178,8 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 	assert.Equal(t, reaper.SessionID, reaperReused.SessionID, "expecting the same SessionID")
 	assert.Equal(t, reaper.Endpoint, reaperReused.Endpoint, "expecting the same reaper endpoint")
 	assert.Equal(t, reaper.Provider, reaperReused.Provider, "expecting the same container provider")
-	assert.Equal(t, reaper.Labels(), reaperReused.Labels(), "expecting the same container provider")
+	assert.Equal(t, reaper.container.GetContainerID(), reaperReused.container.GetContainerID(), "expecting the same container ID")
+	assert.Equal(t, reaper.container.SessionID(), reaperReused.container.SessionID(), "expecting the same session ID")
 
 	terminate, err := reaper.Connect()
 	defer func(term chan bool) {
