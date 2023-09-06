@@ -7,10 +7,10 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/containerd/containerd v1.7.3
 	github.com/cpuguy83/dockercfg v0.3.1
-	github.com/docker/docker v24.0.5+incompatible
+	github.com/docker/docker v24.0.6+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.5.0
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/magiconair/properties v1.8.7
 	github.com/moby/term v0.5.0
 	github.com/opencontainers/image-spec v1.1.0-rc4
