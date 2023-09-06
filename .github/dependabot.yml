@@ -16,10 +16,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: pip
       directory: /
       schedule:
@@ -34,10 +30,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /examples/cockroachdb
       schedule:
@@ -45,10 +37,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /examples/consul
       schedule:
@@ -56,10 +44,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /examples/datastore
       schedule:
@@ -67,10 +51,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /examples/firestore
       schedule:
@@ -78,10 +58,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /examples/nginx
       schedule:
@@ -89,10 +65,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /examples/pubsub
       schedule:
@@ -100,10 +72,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /examples/spanner
       schedule:
@@ -111,10 +79,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /examples/toxiproxy
       schedule:
@@ -122,10 +86,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modulegen
       schedule:
@@ -133,10 +93,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/artemis
       schedule:
@@ -144,10 +100,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/clickhouse
       schedule:
@@ -155,10 +107,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/compose
       schedule:
@@ -166,10 +114,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/couchbase
       schedule:
@@ -177,10 +121,13 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
+    - package-ecosystem: gomod
+      directory: /modules/elasticsearch
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/k3s
       schedule:
@@ -188,10 +135,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/localstack
       schedule:
@@ -199,10 +142,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/mariadb
       schedule:
@@ -210,10 +149,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/mongodb
       schedule:
@@ -221,10 +156,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/mysql
       schedule:
@@ -232,10 +163,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/nats
       schedule:
@@ -243,10 +170,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/neo4j
       schedule:
@@ -254,10 +177,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/postgres
       schedule:
@@ -265,10 +184,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/pulsar
       schedule:
@@ -276,10 +191,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/redis
       schedule:
@@ -287,10 +198,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/redpanda
       schedule:
@@ -298,10 +205,6 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'
     - package-ecosystem: gomod
       directory: /modules/vault
       schedule:
@@ -309,7 +212,3 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
-      groups:
-        all:
-            patterns:
-                - '*'

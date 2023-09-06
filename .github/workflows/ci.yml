@@ -24,6 +24,8 @@ concurrency:
 
 jobs:
   test:
+    # do not run this job if it's a PR from dependabot that is not approved yet
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}
     strategy:
       matrix:
         go-version: [1.20.x, 1.x]
@@ -41,6 +43,8 @@ jobs:
   # The job below is a copy of the job above, but with ryuk disabled.
   # It's executed in a secondary stage to avoid concurrency issues.
   test-reaper-off:
+    # do not run this job if it's a PR from dependabot that is not approved yet
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}
     name: "Test with reaper off"
     needs: test
     strategy:
@@ -59,6 +63,8 @@ jobs:
   # The job below is a copy of the job above, but with Docker rootless.
   # It's executed in a secondary stage to avoid concurrency issues.
   test-rootless-docker:
+    # do not run this job if it's a PR from dependabot that is not approved yet
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}
     name: "Test with Rootless Docker"
     needs: test
     strategy:
@@ -76,6 +82,8 @@ jobs:
       ryuk-disabled: false
 
   test-module-generator:
+    # do not run this job if it's a PR from dependabot that is not approved yet
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}
     strategy:
       matrix:
         go-version: [1.20.x, 1.x]
@@ -91,12 +99,14 @@ jobs:
       ryuk-disabled: false
 
   test-modules:
+    # do not run this job if it's a PR from dependabot that is not approved yet
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}
     needs: test
     strategy:
       matrix:
         go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
-        module: [artemis, clickhouse, compose, couchbase, k3s, localstack, mariadb, mongodb, mysql, nats, neo4j, postgres, pulsar, redis, redpanda, vault]
+        module: [artemis, clickhouse, compose, couchbase, elasticsearch, k3s, localstack, mariadb, mongodb, mysql, nats, neo4j, postgres, pulsar, redis, redpanda, vault]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
@@ -108,6 +118,8 @@ jobs:
       ryuk-disabled: false
 
   test-examples:
+    # do not run this job if it's a PR from dependabot that is not approved yet
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}
     needs: test-modules
     strategy:
       matrix:
