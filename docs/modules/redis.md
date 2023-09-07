@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/redis
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Redis container](../../modules/redis/redis_test.go) inside_block:createRedisContainer
+[Creating a Redis container](../../modules/redis/examples_test.go) inside_block:runRedisContainer
 <!--/codeinclude-->
 
 ## Module Reference
@@ -43,10 +43,6 @@ When starting the Redis container, you can pass options in a variadic way to con
 If you need to set a different Redis Docker image, you can use `testcontainers.WithImage` with a valid Docker image
 for Redis. E.g. `testcontainers.WithImage("docker.io/redis:7")`.
 
-<!--codeinclude-->
-[Use a different image](../../modules/redis/redis_test.go) inside_block:withImage
-<!--/codeinclude-->
-
 #### Wait Strategies
 
 If you need to set a different wait strategy for Redis, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
@@ -69,33 +65,21 @@ Please read the [Create containers: Advanced Settings](../features/creating_cont
 
 #### Snapshotting
 
-By default Redis saves snapshots of the dataset on disk, in a binary file called dump.rdb. You can configure Redis to have it save the dataset every N seconds if there are at least M changes in the dataset.
+By default Redis saves snapshots of the dataset on disk, in a binary file called dump.rdb. You can configure Redis to have it save the dataset every `N` seconds if there are at least `M` changes in the dataset. E.g. `WithSnapshotting(10, 1)`.
 
 !!!tip
     Please check [Redis docs on persistence](https://redis.io/docs/management/persistence/#snapshotting) for more information.
 
-<!--codeinclude-->
-[Saving snapshots](../../modules/redis/redis_test.go) inside_block:withSnapshotting
-<!--/codeinclude-->
-
 #### Log Level
 
-By default Redis saves snapshots of the dataset on disk, in a binary file called dump.rdb. You can configure Redis to have it save the dataset every N seconds if there are at least M changes in the dataset.
+By default Redis saves snapshots of the dataset on disk, in a binary file called dump.rdb. You can configure Redis to have it save the dataset every N seconds if there are at least M changes in the dataset. E.g. `WithLogLevel(LogLevelDebug)`.
 
 !!!tip
     Please check [Redis docs on logging](https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log) for more information.
 
-<!--codeinclude-->
-[Changing the log level](../../modules/redis/redis_test.go) inside_block:withLogLevel 
-<!--/codeinclude-->
-
 #### Redis configuration
 
-In the case you have a custom config file for Redis, it's possible to copy that file into the container before it's started.
-
-<!--codeinclude-->
-[Include custom configuration file](../../modules/redis/redis_test.go) inside_block:withConfigFile
-<!--/codeinclude-->
+In the case you have a custom config file for Redis, it's possible to copy that file into the container before it's started. E.g. `WithConfigFile(filepath.Join("testdata", "redis7.conf"))`.
 
 ### Container Methods
 
