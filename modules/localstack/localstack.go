@@ -76,6 +76,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	localStackReq := LocalStackContainerRequest{
 		GenericContainerRequest: testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
+			Logger:           testcontainers.Logger,
 			Started:          true,
 		},
 	}
@@ -88,19 +89,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("version=%s. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0", localStackReq.Image)
 	}
 
+	envVar := hostnameExternalEnvVar
 	if isVersion2(localStackReq.Image) {
-		hostnameExternalReason, err := configureDockerHost(&localStackReq, localstackHostEnvVar)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("Setting %s to %s (%s)\n", localstackHostEnvVar, req.Env[localstackHostEnvVar], hostnameExternalReason)
-	} else {
-		hostnameExternalReason, err := configureDockerHost(&localStackReq, hostnameExternalEnvVar)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("Setting %s to %s (%s)\n", hostnameExternalEnvVar, req.Env[hostnameExternalEnvVar], hostnameExternalReason)
+		envVar = localstackHostEnvVar
 	}
+
+	hostnameExternalReason, err := configureDockerHost(&localStackReq, envVar)
+	if err != nil {
+		return nil, err
+	}
+	localStackReq.GenericContainerRequest.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
 
 	container, err := testcontainers.GenericContainer(ctx, localStackReq.GenericContainerRequest)
 	if err != nil {
