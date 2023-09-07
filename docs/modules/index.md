@@ -11,12 +11,14 @@ We have provided a command line tool to generate the scaffolding for the code of
     - a Go package named after the module, in lowercase
     - a Go file for the creation of the container, using a dedicated struct in which the image flag is set as Docker image.
     - a Go test file for running a simple test for your container, consuming the above struct.
+    - a Go examples file for running the example in the docs site, also adding them to [https://pkg.go.dev](https://pkg.go.dev).
     - a Makefile to run the tests in a consistent manner
 - a markdown file in the docs/modules directory including the snippets for both the creation of the container and a simple test. By default, this generated file will contain all the documentation for the module, including:
     - the version of _Testcontainers for Go_ in which the module was added.
     - a short introduction to the module.
     - a section for adding the module to the project dependencies.
-    - a section for a usage example.
+    - a section for a usage example, including:
+        - a snippet for creating the container, from the `examples_test.go` file in the Go module.
     - a section for the module reference, including:
         - the entrypoint function for creating the container.
         - the options for creating the container.
