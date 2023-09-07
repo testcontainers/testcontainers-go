@@ -12,12 +12,10 @@ import (
 func TestMongoDB(t *testing.T) {
 	ctx := context.Background()
 
-	// createMongoDBContainer {
 	container, err := RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
@@ -30,10 +28,10 @@ func TestMongoDB(t *testing.T) {
 
 	// connectionString {
 	endpoint, err := container.ConnectionString(ctx)
+	// }
 	if err != nil {
 		t.Error(fmt.Errorf("failed to get connection string: %w", err))
 	}
-	// }
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint))
 	if err != nil {
