@@ -54,9 +54,7 @@ func TestPulsar(t *testing.T) {
 		{
 			name: "with modifiers",
 			opts: []testcontainers.ContainerCustomizer{
-				// setPulsarImage {
 				testcontainers.WithImage("docker.io/apachepulsar/pulsar:2.10.2"),
-				// }
 				// addPulsarEnv {
 				testcontainerspulsar.WithPulsarEnv("brokerDeduplicationEnabled", "true"),
 				// }
@@ -101,7 +99,6 @@ func TestPulsar(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// startPulsarContainer {
 			c, err := testcontainerspulsar.RunContainer(
 				ctx,
 				tt.opts...,
@@ -111,7 +108,6 @@ func TestPulsar(t *testing.T) {
 				err := c.Terminate(ctx)
 				require.Nil(t, err)
 			}()
-			// }
 
 			// withLogConsumers {
 			if len(c.LogConsumers) > 0 {
@@ -122,13 +118,13 @@ func TestPulsar(t *testing.T) {
 
 			// getBrokerURL {
 			brokerURL, err := c.BrokerURL(ctx)
-			require.Nil(t, err)
 			// }
+			require.Nil(t, err)
 
 			// getAdminURL {
 			serviceURL, err := c.HTTPServiceURL(ctx)
-			require.Nil(t, err)
 			// }
+			require.Nil(t, err)
 
 			assert.True(t, strings.HasPrefix(brokerURL, "pulsar://"))
 			assert.True(t, strings.HasPrefix(serviceURL, "http://"))
