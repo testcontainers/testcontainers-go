@@ -17,9 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/clickhouse
 ## Usage example
 
 <!--codeinclude-->
-
-[Test for a ClickHouse container](../../modules/clickhouse/clickhouse_test.go)inside_block:customInitialization
-
+[Test for a ClickHouse container](../../modules/clickhouse/examples_test.go) inside_block:runClickHouseContainer
 <!--/codeinclude-->
 
 ## Module reference
@@ -32,6 +30,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 - `context.Context`, the Go context.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+### Container Ports
+
+Here you can find the list with the default ports used by the ClickHouse container.
+
+<!--codeinclude-->
+[Container Ports](../../modules/clickhouse/clickhouse.go) inside_block:containerPorts
+<!--/codeinclude-->
 
 ### Container Options
 
@@ -65,13 +71,7 @@ Please read the [Create containers: Advanced Settings](../features/creating_cont
 #### Set username, password and database name
 
 If you need to set a different database, and its credentials, you can use `WithUsername`, `WithPassword`, `WithDatabase`
-options.
-
-<!--codeinclude-->
-
-[Custom Database initialization](../../modules/clickhouse/clickhouse_test.go) inside_block:customInitialization
-
-<!--/codeinclude-->
+options. E.g. `WithUsername("user")`, `WithPassword("password")`, `WithDatabase("db")`.
 
 !!!info
     The default values for the username is `default`, for password is `clickhouse` and for the default database name is `clickhouse`.
@@ -84,42 +84,46 @@ it will run any `*.sql` files, run any executable `*.sh` scripts, and source any
 initialization before starting the service.
 
 <!--codeinclude-->
-
 [Include init scripts](../../modules/clickhouse/clickhouse_test.go) inside_block:withInitScripts
-
 <!--/codeinclude-->
 
 <!--codeinclude-->
-
 [Init script content](../../modules/clickhouse/testdata/init-db.sh)
+<!--/codeinclude-->
 
+#### Custom configuration
+
+If you need to set a custom configuration, the module provides the `WithConfigFile` option to pass the path to a custom configuration file in XML format.
+
+<!--codeinclude-->
+[XML config file](../../modules/clickhouse/testdata/config.xml)
+<!--/codeinclude-->
+
+In the case you want to pass a YAML configuration file, you can use the `WithYamlConfigFile` option.
+
+<!--codeinclude-->
+[YAML config file](../../modules/clickhouse/testdata/config.yaml)
 <!--/codeinclude-->
 
 ### Container Methods
 
 The ClickHouse container exposes the following methods:
 
+#### ConnectionHost
+
+This method returns the host and port of the ClickHouse container, using the default, native `9000/tcp` port. E.g. `localhost:9000`
+
+<!--codeinclude-->
+[Get connection host](../../modules/clickhouse/clickhouse_test.go) inside_block:connectionHost
+<!--/codeinclude-->
+
 #### ConnectionString
 
-This method returns the dsn connection string to connect to the ClickHouse container, using the default configs.
+This method returns the dsn connection string to connect to the ClickHouse container, using the default, native `9000/tcp` port obtained from the `ConnectionHost` method.
 It's possible to pass extra parameters to the connection string, e.g. `dial_timeout=300ms` or `skip_verify=false`, in a variadic way.
 
 e.g. `clickhouse://default:pass@localhost:9000?dial_timeout=300ms&skip_verify=false`
 
 <!--codeinclude-->
-
 [Get connection string](../../modules/clickhouse/clickhouse_test.go) inside_block:connectionString
-
-<!--/codeinclude-->
-
-#### ConnectionHost
-
-This method returns the host & port of the ClickHouse container.
-
-e.g. `localhost:9000`
-
-<!--codeinclude-->
-
-[Get connection host](../../modules/clickhouse/clickhouse_test.go) inside_block:connectionHost
-
 <!--/codeinclude-->

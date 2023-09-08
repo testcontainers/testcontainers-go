@@ -20,8 +20,10 @@ const (
 const defaultImage = "clickhouse/clickhouse-server:23.3.8.21-alpine"
 
 const (
+	// containerPorts {
 	httpPort   = nat.Port("8123/tcp")
 	nativePort = nat.Port("9000/tcp")
+	// }
 )
 
 // ClickHouseContainer represents the ClickHouse container type used in the module
@@ -32,6 +34,8 @@ type ClickHouseContainer struct {
 	password string
 }
 
+// ConnectionHost returns the host and port of the clickhouse container, using the default, native 9000 port, and
+// obtaining the host and exposed port from the container
 func (c *ClickHouseContainer) ConnectionHost(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
@@ -46,7 +50,7 @@ func (c *ClickHouseContainer) ConnectionHost(ctx context.Context) (string, error
 	return host + ":" + port.Port(), nil
 }
 
-// ConnectionString returns the dsn string for the clickhouse container, using the default 9000 port, and
+// ConnectionString returns the dsn string for the clickhouse container, using the default, native 9000 port, and
 // obtaining the host and exposed port from the container. It also accepts a variadic list of extra arguments
 // which will be appended to the dsn string. The format of the extra arguments is the same as the
 // connection string format, e.g. "dial_timeout=300ms" or "skip_verify=false"
