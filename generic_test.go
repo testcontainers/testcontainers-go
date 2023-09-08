@@ -184,6 +184,8 @@ func createReuseContainerInSubprocess(t *testing.T) string {
 	return string(output)
 }
 
+// TestHelperContainerStarterProcess is a helper function
+// to start a container in a subprocess. It's not a real test.
 func TestHelperContainerStarterProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
@@ -214,6 +216,4 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 	defer resp.Body.Close()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-
-	os.Exit(0)
 }
