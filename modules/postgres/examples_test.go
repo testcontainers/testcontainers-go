@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-
-	"github.com/docker/go-connections/nat"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -19,10 +18,6 @@ func ExampleRunContainer() {
 	dbName := "users"
 	dbUser := "user"
 	dbPassword := "password"
-	port := "5432/tcp"
-	dbURL := func(host string, port nat.Port) string {
-		return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", dbUser, dbPassword, host, port.Port(), dbName)
-	}
 
 	postgresContainer, err := postgres.RunContainer(ctx,
 		testcontainers.WithImage("docker.io/postgres:15.2-alpine"),
@@ -31,7 +26,10 @@ func ExampleRunContainer() {
 		postgres.WithDatabase(dbName),
 		postgres.WithUsername(dbUser),
 		postgres.WithPassword(dbPassword),
-		testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).
+				WithStartupTimeout(5*time.Second)),
 	)
 	if err != nil {
 		panic(err)
