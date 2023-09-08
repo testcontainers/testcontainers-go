@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/couchbase/gocb/v2"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/couchbase"
 )
