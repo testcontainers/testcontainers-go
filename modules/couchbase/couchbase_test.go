@@ -11,38 +11,12 @@ import (
 	tccouchbase "github.com/testcontainers/testcontainers-go/modules/couchbase"
 )
 
-// dockerImages {
 const (
+	// dockerImages {
 	enterpriseEdition = "couchbase:enterprise-7.1.3"
 	communityEdition  = "couchbase:community-7.1.1"
+	// }
 )
-
-// }
-
-// Deprecated
-func TestStartContainer(t *testing.T) {
-	ctx := context.Background()
-
-	bucketName := "testBucket"
-	container, err := tccouchbase.StartContainer(ctx, tccouchbase.WithImageName(communityEdition), tccouchbase.WithBucket(tccouchbase.NewBucket(bucketName)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
-	cluster, err := connectCluster(ctx, container)
-	if err != nil {
-		t.Fatalf("could not connect couchbase: %s", err)
-	}
-
-	testBucketUsage(t, cluster.Bucket(bucketName))
-}
 
 func TestCouchbaseWithCommunityContainer(t *testing.T) {
 	ctx := context.Background()
@@ -187,19 +161,14 @@ func testBucketUsage(t *testing.T, bucket *gocb.Bucket) {
 	}
 }
 
-// connectToCluster {
 func connectCluster(ctx context.Context, container *tccouchbase.CouchbaseContainer) (*gocb.Cluster, error) {
 	connectionString, err := container.ConnectionString(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// getCredentials {
 	return gocb.Connect(connectionString, gocb.ClusterOptions{
 		Username: container.Username(),
 		Password: container.Password(),
 	})
-	// }
 }
-
-// }
