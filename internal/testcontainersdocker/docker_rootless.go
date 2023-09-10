@@ -57,7 +57,7 @@ func rootlessDockerSocketPath(_ context.Context) (string, error) {
 	for _, socketPathFn := range socketPathFns {
 		s, err := socketPathFn()
 		if err != nil {
-			outerErr = fmt.Errorf("%w: %v", outerErr, err)
+			outerErr = fmt.Errorf("%w: %w", outerErr, err)
 			continue
 		}
 

@@ -150,7 +150,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		for err != nil {
 			select {
 			case <-ctx.Done():
-				return fmt.Errorf("%s:%w", ctx.Err(), err)
+				return fmt.Errorf("%w: %w", ctx.Err(), err)
 			case <-time.After(ws.PollInterval):
 				if err := checkTarget(ctx, target); err != nil {
 					return err
@@ -177,7 +177,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		for mappedPort == "" {
 			select {
 			case <-ctx.Done():
-				return fmt.Errorf("%s:%w", ctx.Err(), err)
+				return fmt.Errorf("%w: %w", ctx.Err(), err)
 			case <-time.After(ws.PollInterval):
 				if err := checkTarget(ctx, target); err != nil {
 					return err
