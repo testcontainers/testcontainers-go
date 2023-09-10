@@ -100,7 +100,7 @@ func TestVaultGetSecretPathWithClient(t *testing.T) {
 	err = client.SetToken(token)
 	assert.Nil(t, err)
 
-	s, err := client.Secrets.KvV2Read(ctx, "test1")
+	s, err := client.Secrets.KvV2Read(ctx, "test1", vaultClient.WithMountPath("secret"))
 	assert.Nil(t, err)
 	assert.Equal(t, "bar1", s.Data.Data["foo1"])
 }
@@ -120,10 +120,11 @@ func TestVaultWriteSecretWithClient(t *testing.T) {
 		Data: map[string]any{
 			"foo": "bar",
 		},
-	})
+	},
+		vaultClient.WithMountPath("secret"))
 	assert.Nil(t, err)
 
-	s, err := client.Secrets.KvV2Read(ctx, "test3")
+	s, err := client.Secrets.KvV2Read(ctx, "test3", vaultClient.WithMountPath("secret"))
 	assert.Nil(t, err)
 	assert.Equal(t, "bar", s.Data.Data["foo"])
 }
