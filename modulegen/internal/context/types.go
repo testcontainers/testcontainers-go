@@ -26,11 +26,9 @@ func (m *TestcontainersModule) ContainerName() string {
 
 	if m.IsModule {
 		name = m.Title()
-	} else {
-		if m.TitleName != "" {
-			r, n := utf8.DecodeRuneInString(m.TitleName)
-			name = string(unicode.ToLower(r)) + m.TitleName[n:]
-		}
+	} else if m.TitleName != "" {
+		r, n := utf8.DecodeRuneInString(m.TitleName)
+		name = string(unicode.ToLower(r)) + m.TitleName[n:]
 	}
 
 	return name + "Container"
