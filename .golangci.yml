@@ -22,6 +22,5 @@ linters-settings:
       - standard
       - default
       - prefix(github.com/testcontainers)
-
 run:
   timeout: 5m
