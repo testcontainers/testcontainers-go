@@ -109,7 +109,7 @@ jobs:
             make test-unit
             
       - name: Analyze with SonarCloud
-        if: ${{ github.ref_name == 'main' && inputs.run-tests && inputs.project-directory == '.' }}
+        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.run-tests && inputs.project-directory == '.' }}
         uses: sonarsource/sonarcloud-github-action@master
         with:
           projectBaseDir: ${{ inputs.project-directory }}
