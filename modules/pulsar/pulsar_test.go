@@ -36,7 +36,7 @@ func TestPulsar(t *testing.T) {
 	defer cancel()
 
 	nwName := "pulsar-test"
-	_, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
+	nw, err := testcontainers.GenericNetwork(context.Background(), testcontainers.GenericNetworkRequest{
 		NetworkRequest: testcontainers.NetworkRequest{
 			Name: nwName,
 		},
@@ -211,4 +211,11 @@ func TestPulsar(t *testing.T) {
 			assert.True(t, ok)
 		})
 	}
+
+	// remove the network after the last, so that all containers are already removed
+	// and there are no active endpoints on the network
+	t.Cleanup(func() {
+		err := nw.Remove(context.Background())
+		require.NoError(t, err)
+	})
 }
