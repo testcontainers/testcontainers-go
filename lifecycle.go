@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
 
@@ -131,8 +132,7 @@ func (c *DockerContainer) startingHook(ctx context.Context) error {
 	for _, lifecycleHooks := range c.lifecycleHooks {
 		err := containerHookFn(ctx, lifecycleHooks.PreStarts)(c)
 		if err != nil {
-			c.printLogs(ctx)
-			return err
+			return printLogs(ctx, c, err)
 		}
 	}
 
@@ -144,30 +144,27 @@ func (c *DockerContainer) startedHook(ctx context.Context) error {
 	for _, lifecycleHooks := range c.lifecycleHooks {
 		err := containerHookFn(ctx, lifecycleHooks.PostStarts)(c)
 		if err != nil {
-			c.printLogs(ctx)
-			return err
+			return printLogs(ctx, c, err)
 		}
 	}
 
 	return nil
 }
 
-// printLogs is a helper function that will print the logs of a Docker container
+// printLogs is a helper function that will print the logs of a Docker container after an error occurs
 // We are going to use this helper function to inform the user of the logs when an error occurs
-func (c *DockerContainer) printLogs(ctx context.Context) {
+func printLogs(ctx context.Context, c *DockerContainer, rootCause error) error {
 	reader, err := c.Logs(ctx)
 	if err != nil {
-		c.logger.Printf("failed accessing container logs: %w\n", err)
-		return
+		return fmt.Errorf("failed accessing container logs: %w", err)
 	}
 
 	b, err := io.ReadAll(reader)
 	if err != nil {
-		c.logger.Printf("failed reading container logs: %w\n", err)
-		return
+		return fmt.Errorf("failed reading container logs: %w", err)
 	}
 
-	c.logger.Printf("container logs:\n%s", b)
+	return fmt.Errorf("%s: %w", b, rootCause)
 }
 
 // stoppingHook is a hook that will be called before a container is stopped
