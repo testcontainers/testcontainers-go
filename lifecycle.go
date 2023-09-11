@@ -167,7 +167,7 @@ func (c *DockerContainer) printLogs(ctx context.Context, cause error) {
 		return
 	}
 
-	c.logger.Printf("container logs (%w):\n%s", cause, b)
+	c.logger.Printf("container logs (%s):\n%s", cause, b)
 }
 
 // stoppingHook is a hook that will be called before a container is stopped
