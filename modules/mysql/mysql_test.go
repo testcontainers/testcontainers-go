@@ -15,12 +15,10 @@ import (
 func TestMySQL(t *testing.T) {
 	ctx := context.Background()
 
-	// createMysqlContainer {
 	container, err := RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
@@ -32,10 +30,10 @@ func TestMySQL(t *testing.T) {
 	// perform assertions
 	// connectionString {
 	connectionString, err := container.ConnectionString(ctx, "tls=skip-verify")
+	// }
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -71,7 +69,6 @@ func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	// customInitialization {
 	container, err := RunContainer(ctx,
 		WithDatabase("foo"),
 		WithUsername("root"),
@@ -79,7 +76,6 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
@@ -113,13 +109,11 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 func TestMySQLWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	// withConfigFile {
 	container, err := RunContainer(ctx, testcontainers.WithImage("mysql:5.6"),
-		WithConfigFile(filepath.Join("testdata", "my.cnf")))
+		WithConfigFile(filepath.Join("testdata", "my_5.6.cnf")))
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
@@ -159,13 +153,11 @@ func TestMySQLWithConfigFile(t *testing.T) {
 func TestMySQLWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	// withScripts {
 	container, err := RunContainer(ctx,
 		WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {

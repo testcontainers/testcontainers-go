@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -22,13 +21,8 @@ const (
 	token = "root-token"
 )
 
-var (
-	ctx   = context.Background()
-	vault *testcontainervault.VaultContainer
-)
-
-func TestMain(m *testing.M) {
-	var err error
+func TestVault(t *testing.T) {
+	ctx := context.Background()
 	opts := []testcontainers.ContainerCustomizer{
 		// WithImageName {
 		testcontainers.WithImage("hashicorp/vault:1.13.0"),
@@ -42,89 +36,95 @@ func TestMain(m *testing.M) {
 		// }
 	}
 
-	// RunContainer {
-	vault, err = testcontainervault.RunContainer(ctx, opts...)
-	// }
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	c := m.Run()
-
-	// Clean up the vault after the test is complete
-	if err = vault.Terminate(ctx); err != nil {
-		log.Fatalf("failed to terminate vault: %s", err)
-	}
-
-	os.Exit(c)
-}
-
-func TestVaultGetSecretPathWithCLI(t *testing.T) {
-	exec, reader, err := vault.Exec(ctx, []string{"vault", "kv", "get", "-format=json", "secret/test1"})
-	assert.Nil(t, err)
-	assert.Equal(t, 0, exec)
-
-	bytes, err := io.ReadAll(reader)
+	vaultContainer, err := testcontainervault.RunContainer(ctx, opts...)
 	assert.Nil(t, err)
 
-	assert.Equal(t, "bar1", gjson.Get(string(bytes), "data.data.foo1").String())
-}
-
-func TestVaultGetSecretPathWithHTTP(t *testing.T) {
 	// httpHostAddress {
-	hostAddress, err := vault.HttpHostAddress(ctx)
-	assert.Nil(t, err)
+	hostAddress, err := vaultContainer.HttpHostAddress(ctx)
 	// }
-
-	request, _ := http.NewRequest(http.MethodGet, hostAddress+"/v1/secret/data/test1", nil)
-	request.Header.Add("X-Vault-Token", token)
-
-	response, err := http.DefaultClient.Do(request)
-	assert.Nil(t, err)
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
 	assert.Nil(t, err)
 
-	assert.Equal(t, "bar1", gjson.Get(string(body), "data.data.foo1").String())
-}
+	t.Run("Get secret path", func(t *testing.T) {
+		t.Run("From vault CLI", func(t *testing.T) {
+			ctx := context.Background()
 
-func TestVaultGetSecretPathWithClient(t *testing.T) {
-	hostAddress, _ := vault.HttpHostAddress(ctx)
-	client, err := vaultClient.New(
-		vaultClient.WithAddress(hostAddress),
-		vaultClient.WithRequestTimeout(30*time.Second),
-	)
-	assert.Nil(t, err)
+			// containerCliRead {
+			exec, reader, err := vaultContainer.Exec(ctx, []string{"vault", "kv", "get", "-format=json", "secret/test1"})
+			// }
+			assert.Nil(t, err)
+			assert.Equal(t, 0, exec)
 
-	err = client.SetToken(token)
-	assert.Nil(t, err)
+			bytes, err := io.ReadAll(reader)
+			assert.Nil(t, err)
 
-	s, err := client.Secrets.KvV2Read(ctx, "test1", vaultClient.WithMountPath("secret"))
-	assert.Nil(t, err)
-	assert.Equal(t, "bar1", s.Data.Data["foo1"])
-}
+			assert.Equal(t, "bar1", gjson.Get(string(bytes), "data.data.foo1").String())
+		})
 
-func TestVaultWriteSecretWithClient(t *testing.T) {
-	hostAddress, _ := vault.HttpHostAddress(ctx)
-	client, err := vaultClient.New(
-		vaultClient.WithAddress(hostAddress),
-		vaultClient.WithRequestTimeout(30*time.Second),
-	)
-	assert.Nil(t, err)
+		t.Run("From HTTP request", func(t *testing.T) {
+			// httpRead {
+			request, _ := http.NewRequest(http.MethodGet, hostAddress+"/v1/secret/data/test1", nil)
+			request.Header.Add("X-Vault-Token", token)
 
-	err = client.SetToken(token)
-	assert.Nil(t, err)
+			response, err := http.DefaultClient.Do(request)
+			// }
+			assert.Nil(t, err)
+			defer response.Body.Close()
 
-	_, err = client.Secrets.KvV2Write(ctx, "test3", schema.KvV2WriteRequest{
-		Data: map[string]any{
-			"foo": "bar",
-		},
-	},
-		vaultClient.WithMountPath("secret"))
-	assert.Nil(t, err)
+			body, err := io.ReadAll(response.Body)
+			assert.Nil(t, err)
 
-	s, err := client.Secrets.KvV2Read(ctx, "test3", vaultClient.WithMountPath("secret"))
-	assert.Nil(t, err)
-	assert.Equal(t, "bar", s.Data.Data["foo"])
+			assert.Equal(t, "bar1", gjson.Get(string(body), "data.data.foo1").String())
+		})
+
+		t.Run("From vault client library", func(t *testing.T) {
+			ctx := context.Background()
+
+			// clientLibRead {
+			client, err := vaultClient.New(
+				vaultClient.WithAddress(hostAddress),
+				vaultClient.WithRequestTimeout(30*time.Second),
+			)
+			assert.Nil(t, err)
+
+			err = client.SetToken(token)
+			assert.Nil(t, err)
+
+			s, err := client.Secrets.KvV2Read(ctx, "test1", vaultClient.WithMountPath("secret"))
+			// }
+			assert.Nil(t, err)
+			assert.Equal(t, "bar1", s.Data.Data["foo1"])
+		})
+	})
+
+	t.Run("Write secret", func(t *testing.T) {
+		t.Run("From vault client library", func(t *testing.T) {
+			client, err := vaultClient.New(
+				vaultClient.WithAddress(hostAddress),
+				vaultClient.WithRequestTimeout(30*time.Second),
+			)
+			assert.Nil(t, err)
+
+			err = client.SetToken(token)
+			assert.Nil(t, err)
+
+			_, err = client.Secrets.KvV2Write(ctx, "test3", schema.KvV2WriteRequest{
+				Data: map[string]any{
+					"foo": "bar",
+				},
+			},
+				vaultClient.WithMountPath("secret"))
+			assert.Nil(t, err)
+
+			s, err := client.Secrets.KvV2Read(ctx, "test3", vaultClient.WithMountPath("secret"))
+			assert.Nil(t, err)
+			assert.Equal(t, "bar", s.Data.Data["foo"])
+		})
+	})
+
+	t.Cleanup(func() {
+		// Clean up the vault after the test is complete
+		if err := vaultContainer.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate vault: %s", err)
+		}
+	})
 }

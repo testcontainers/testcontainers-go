@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mongodb
 ## Usage example
 
 <!--codeinclude-->
-[Creating a MongoDB container](../../modules/mongodb/mongodb_test.go) inside_block:createMongoDBContainer
+[Creating a MongoDB container](../../modules/mongodb/mongodb_test.go) inside_block:runMongoDBContainer
 <!--/codeinclude-->
 
 ## Module reference
@@ -66,9 +66,11 @@ The MongoDB container exposes the following methods:
 
 #### ConnectionString
 
-This method returns the connection string to connect to the MongoDB container.
+The `ConnectionString` method returns the connection string to connect to the MongoDB container.
 It returns a string with the format `mongodb://<host>:<port>`.
 
+It can be use to configure a MongoDB client (`go.mongodb.org/mongo-driver/mongo`), e.g.:
+
 <!--codeinclude-->
-[Get connection string](../../modules/mongodb/mongodb_test.go) inside_block:connectionString
+[Using ConnectionString with the MongoDB client](../../modules/mongodb/mongodb_test.go) inside_block:connectToMongo
 <!--/codeinclude-->

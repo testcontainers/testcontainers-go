@@ -23,10 +23,8 @@ go get github.com/testcontainers/testcontainers-go/modules/pulsar
 Create a `Pulsar` container to use it in your tests:
 
 <!--codeinclude-->
-[Creating a Pulsar container](../../modules/pulsar/pulsar_test.go) inside_block:startPulsarContainer
+[Creating a Pulsar container](../../modules/pulsar/examples_test.go) inside_block:runPulsarContainer
 <!--/codeinclude-->
-
-where the `tt.opts` are the options to configure the container. See the [Container Options](#container-options) section for more details.
 
 ## Module Reference
 
@@ -47,10 +45,6 @@ When starting the Pulsar container, you can pass options in a variadic way to co
 
 If you need to set a different Pulsar Docker image, you can use `testcontainers.WithImage` with a valid Docker image
 for Pulsar. E.g. `testcontainers.WithImage("docker.io/apachepulsar/pulsar:2.10.2")`.
-
-<!--codeinclude-->
-[Set Pulsar image](../../modules/pulsar/pulsar_test.go) inside_block:setPulsarImage
-<!--/codeinclude-->
 
 #### Wait Strategies
 
@@ -75,6 +69,8 @@ Please read the [Create containers: Advanced Settings](../features/creating_cont
 <!--codeinclude-->
 [Advanced Docker settings](../../modules/pulsar/pulsar_test.go) inside_block:advancedDockerSettings
 <!--/codeinclude-->
+
+Here, the `nwName` relates to the name of a previously created Docker network. Please see the [How to create a network](../features/creating_networks.md) documentation for more information.
 
 #### Pulsar Configuration
 If you need to set Pulsar configuration variables you can use the `WithPulsarEnv` to set Pulsar environment variables: the `PULSAR_PREFIX_` prefix will be automatically added for you.

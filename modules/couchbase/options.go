@@ -9,12 +9,12 @@ type Option func(*Config)
 // Config is the configuration for the Couchbase container, that will be stored in the container itself.
 type Config struct {
 	enabledServices  []Service
-	username         string // Deprecated: Use WithAdminCredentials instead.
-	password         string // Deprecated: Use WithAdminCredentials instead.
+	username         string
+	password         string
 	isEnterprise     bool
-	buckets          []bucket         // Deprecated: Use WithBuckets instead.
-	imageName        string           // Deprecated: Use WithImage instead.
-	indexStorageMode indexStorageMode // Deprecated: Use WithIndexStorage instead.
+	buckets          []bucket
+	imageName        string
+	indexStorageMode indexStorageMode
 }
 
 // WithEnterpriseService enables the eventing service in the container.

@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/nats
 ## Usage example
 
 <!--codeinclude-->
-[Creating a NATS container](../../modules/nats/nats_test.go) inside_block:createNATSContainer
+[Creating a NATS container](../../modules/nats/examples_test.go) inside_block:runNATSContainer
 <!--/codeinclude-->
 
 ## Module reference
@@ -63,16 +63,10 @@ Please read the [Create containers: Advanced Settings](../features/creating_cont
 #### Set username and password
 
 If you need to set different credentials, you can use `WithUsername` and `WithPassword`
-options.  By default, the username, the password are not set.
+options. By default, the username, the password are not set. To establish the connection with the NATS container:
 
 <!--codeinclude-->
-[Define NATS container with credentials](../../modules/nats/nats_test.go) inside_block:withCredentials
-<!--/codeinclude-->
-
-To establish the connection with the NATS container:
-
-<!--codeinclude-->
-[Connect using the credentials](../../modules/nats/nats_test.go) inside_block:connectWithCredentials
+[Connect using the credentials](../../modules/nats/examples_test.go) inside_block:natsConnect
 <!--/codeinclude-->
 
 ### Container Methods

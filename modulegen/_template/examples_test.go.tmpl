@@ -16,7 +16,7 @@ func Example{{ $entrypoint }}() {
 		panic(err)
 	}
 
-	// Clean up the container after the test is complete
+	// Clean up the container after
 	defer func() {
 		if err := {{ $lower }}Container.Terminate(ctx); err != nil {
 			panic(err)

@@ -57,7 +57,6 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 func TestClickHouseConnectionHost(t *testing.T) {
 	ctx := context.Background()
 
-	// customInitialization {
 	container, err := RunContainer(ctx,
 		WithUsername(user),
 		WithPassword(password),
@@ -66,7 +65,6 @@ func TestClickHouseConnectionHost(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
@@ -75,8 +73,8 @@ func TestClickHouseConnectionHost(t *testing.T) {
 
 	// connectionHost {
 	connectionHost, err := container.ConnectionHost(ctx)
-	assert.NoError(t, err)
 	// }
+	assert.NoError(t, err)
 
 	conn, err := ch.Open(&ch.Options{
 		Addr: []string{connectionHost},
@@ -111,8 +109,8 @@ func TestClickHouseDSN(t *testing.T) {
 
 	// connectionString {
 	connectionString, err := container.ConnectionString(ctx, "debug=true")
-	assert.NoError(t, err)
 	// }
+	assert.NoError(t, err)
 
 	opts, err := ch.ParseDSN(connectionString)
 	assert.NoError(t, err)
