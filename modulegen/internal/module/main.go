@@ -26,11 +26,11 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 
 func generateGoFiles(moduleDir string, tcModule context.TestcontainersModule) error {
 	funcMap := template.FuncMap{
-		"Entrypoint":    func() string { return tcModule.Entrypoint() },
-		"ContainerName": func() string { return tcModule.ContainerName() },
-		"ParentDir":     func() string { return tcModule.ParentDir() },
-		"ToLower":       func() string { return tcModule.Lower() },
-		"Title":         func() string { return tcModule.Title() },
+		"Entrypoint":    tcModule.Entrypoint,
+		"ContainerName": tcModule.ContainerName,
+		"ParentDir":     tcModule.ParentDir,
+		"ToLower":       tcModule.Lower,
+		"Title":         tcModule.Title,
 	}
 	return GenerateFiles(moduleDir, tcModule.Lower(), funcMap, tcModule)
 }

@@ -93,8 +93,7 @@ func getContainerHost(ctx context.Context, opts ...testcontainers.ContainerCusto
 		return "", err
 	}
 
-	switch p := p.(type) {
-	case *testcontainers.DockerProvider:
+	if p, ok := p.(*testcontainers.DockerProvider); ok {
 		return p.DaemonHost(ctx)
 	}
 
