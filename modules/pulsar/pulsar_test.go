@@ -112,7 +112,10 @@ func TestPulsar(t *testing.T) {
 			// withLogConsumers {
 			if len(c.LogConsumers) > 0 {
 				c.WithLogConsumers(ctx, tt.logConsumers...)
-				defer c.StopLogProducer()
+				defer func() {
+					// not handling the error because it will never return an error: it's satisfying the current API
+					_ = c.StopLogProducer()
+				}()
 			}
 			// }
 
@@ -155,7 +158,11 @@ func TestPulsar(t *testing.T) {
 					return
 				}
 				msgChan <- msg.Payload()
-				consumer.Ack(msg)
+				err = consumer.Ack(msg)
+				if err != nil {
+					fmt.Println("failed to send ack", err)
+					return
+				}
 			}()
 
 			producer, err := pc.CreateProducer(pulsar.ProducerOptions{
@@ -163,9 +170,10 @@ func TestPulsar(t *testing.T) {
 			})
 			require.Nil(t, err)
 
-			producer.Send(ctx, &pulsar.ProducerMessage{
+			_, err = producer.Send(ctx, &pulsar.ProducerMessage{
 				Payload: []byte("hello world"),
 			})
+			require.Nil(t, err)
 
 			ticker := time.NewTicker(1 * time.Minute)
 			select {

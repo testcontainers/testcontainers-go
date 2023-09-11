@@ -89,7 +89,8 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 // but it's a responsibility of the caller to stop them calling StopLogProducer
 func (c *Container) WithLogConsumers(ctx context.Context, consumer ...testcontainers.LogConsumer) {
 	if len(c.LogConsumers) > 0 {
-		c.StartLogProducer(ctx)
+		// not handling the error because it will return an error if and only if the producer is already started
+		_ = c.StartLogProducer(ctx)
 	}
 	for _, lc := range c.LogConsumers {
 		c.FollowOutput(lc)
