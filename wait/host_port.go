@@ -116,7 +116,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("%s:%w", ctx.Err(), err)
+			return fmt.Errorf("%w: %w", ctx.Err(), err)
 		case <-time.After(waitInterval):
 			if err := checkTarget(ctx, target); err != nil {
 				return err
@@ -155,8 +155,10 @@ func externalCheck(ctx context.Context, ipAddress string, port nat.Port, target 
 		}
 		conn, err := dialer.DialContext(ctx, proto, address)
 		if err != nil {
-			if v, ok := err.(*net.OpError); ok {
-				if v2, ok := (v.Err).(*os.SyscallError); ok {
+			var v *net.OpError
+			if errors.As(err, &v) {
+				var v2 *os.SyscallError
+				if errors.As(v.Err, &v2) {
 					if isConnRefusedErr(v2.Err) {
 						time.Sleep(waitInterval)
 						continue
