@@ -112,7 +112,7 @@ func extractDockerHost(ctx context.Context) string {
 	for _, dockerHostFn := range dockerHostFns {
 		dockerHost, err := dockerHostFn(ctx)
 		if err != nil {
-			outerErr = fmt.Errorf("%w: %v", outerErr, err)
+			outerErr = fmt.Errorf("%w: %w", outerErr, err)
 			continue
 		}
 

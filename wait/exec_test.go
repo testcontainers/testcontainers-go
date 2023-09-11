@@ -129,7 +129,7 @@ func TestExecStrategyWaitUntilReady_DeadlineExceeded(t *testing.T) {
 	}
 	wg := wait.NewExecStrategy([]string{"true"})
 	err := wg.WaitUntilReady(ctx, target)
-	if err != context.DeadlineExceeded {
+	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal(err)
 	}
 }
