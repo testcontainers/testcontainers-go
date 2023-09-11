@@ -100,9 +100,9 @@ func TestVaultGetSecretPathWithClient(t *testing.T) {
 	err = client.SetToken(token)
 	assert.Nil(t, err)
 
-	s, err := client.Secrets.KVv2Read(ctx, "test1")
+	s, err := client.Secrets.KvV2Read(ctx, "test1", vaultClient.WithMountPath("secret"))
 	assert.Nil(t, err)
-	assert.Equal(t, "bar1", s.Data["data"].(map[string]interface{})["foo1"])
+	assert.Equal(t, "bar1", s.Data.Data["foo1"])
 }
 
 func TestVaultWriteSecretWithClient(t *testing.T) {
@@ -116,14 +116,15 @@ func TestVaultWriteSecretWithClient(t *testing.T) {
 	err = client.SetToken(token)
 	assert.Nil(t, err)
 
-	_, err = client.Secrets.KVv2Write(ctx, "test3", schema.KVv2WriteRequest{
+	_, err = client.Secrets.KvV2Write(ctx, "test3", schema.KvV2WriteRequest{
 		Data: map[string]any{
 			"foo": "bar",
 		},
-	})
+	},
+		vaultClient.WithMountPath("secret"))
 	assert.Nil(t, err)
 
-	s, err := client.Secrets.KVv2Read(ctx, "test3")
+	s, err := client.Secrets.KvV2Read(ctx, "test3", vaultClient.WithMountPath("secret"))
 	assert.Nil(t, err)
-	assert.Equal(t, "bar", s.Data["data"].(map[string]interface{})["foo"])
+	assert.Equal(t, "bar", s.Data.Data["foo"])
 }
