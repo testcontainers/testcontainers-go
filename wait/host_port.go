@@ -156,9 +156,9 @@ func externalCheck(ctx context.Context, ipAddress string, port nat.Port, target 
 		conn, err := dialer.DialContext(ctx, proto, address)
 		if err != nil {
 			var v *net.OpError
-			if ok := errors.As(err, &v); ok {
+			if errors.As(err, &v) {
 				var v2 *os.SyscallError
-				if ok := errors.As(v.Err, &v2); ok {
+				if errors.As(v.Err, &v2) {
 					if isConnRefusedErr(v2.Err) {
 						time.Sleep(waitInterval)
 						continue
