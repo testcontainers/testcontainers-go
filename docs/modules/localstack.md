@@ -54,11 +54,11 @@ It's possible to entirely override the default LocalStack container request:
 
 With simply passing the `testcontainers.CustomizeRequest` functional option to the `RunContainer` function, you'll be able to configure the LocalStack container with your own needs, as this new container request will be merged with the original one.
 
-In the following example you check how it's possible to set certain environment variables that are needed by the tests, the most important of them the AWS services you want to use. Besides, the container runs in a separate Docker network with an alias:
+In the above example you can check how it's possible to set certain environment variables that are needed by the tests, the most important ones are the AWS services you want to use. Besides, the container runs in a separate Docker network with an alias.
 
-<!--codeinclude-->
-[Overriding the default container request](../../modules/localstack/localstack_test.go) inside_block:withCustomContainerRequest
-<!--/codeinclude-->
+#### WithNetwork
+
+By default, the LocalStack container is started in the default Docker network. If you want to use a different Docker network, you can use the `WithNetwork(networkName string, alias string)` option, which receives the new network name and an alias as parameters, creating the new network, attaching the container to it, and setting the network alias for that network.
 
 ## Accessing hostname-sensitive services
 

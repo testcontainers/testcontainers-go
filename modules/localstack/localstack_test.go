@@ -153,23 +153,16 @@ func TestStartWithoutOverride(t *testing.T) {
 func TestStartV2WithNetwork(t *testing.T) {
 	ctx := context.Background()
 
-	nw, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
-		NetworkRequest: testcontainers.NetworkRequest{
-			Name: "localstack-network-v2",
-		},
-	})
-	require.Nil(t, err)
-	assert.NotNil(t, nw)
-
 	// withCustomContainerRequest {
+	networkName := "localstack-network-v2"
+
 	localstack, err := RunContainer(
 		ctx,
+		WithNetwork(networkName, "localstack"),
 		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:          "localstack/localstack:2.0.0",
-				Env:            map[string]string{"SERVICES": "s3,sqs"},
-				Networks:       []string{"localstack-network-v2"},
-				NetworkAliases: map[string][]string{"localstack-network-v2": {"localstack"}},
+				Image: "localstack/localstack:2.0.0",
+				Env:   map[string]string{"SERVICES": "s3,sqs"},
 			},
 		}),
 	)
@@ -180,7 +173,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 	cli, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:      "amazon/aws-cli:2.7.27",
-			Networks:   []string{"localstack-network-v2"},
+			Networks:   []string{networkName},
 			Entrypoint: []string{"tail"},
 			Cmd:        []string{"-f", "/dev/null"},
 			Env: map[string]string{
