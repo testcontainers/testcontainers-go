@@ -28,6 +28,7 @@ func generateGoFiles(moduleDir string, tcModule context.TestcontainersModule) er
 	funcMap := template.FuncMap{
 		"Entrypoint":    tcModule.Entrypoint,
 		"ContainerName": tcModule.ContainerName,
+		"Image":         func() string { return tcModule.Image },
 		"ParentDir":     tcModule.ParentDir,
 		"ToLower":       tcModule.Lower,
 		"Title":         tcModule.Title,
