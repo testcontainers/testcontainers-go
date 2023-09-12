@@ -63,7 +63,7 @@ func TestKafka(t *testing.T) {
 
 	if _, _, err := producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic,
-		Key:   sarama.StringEncoder("keys"),
+		Key:   sarama.StringEncoder("key"),
 		Value: sarama.StringEncoder("value"),
 	}); err != nil {
 		cancel()
