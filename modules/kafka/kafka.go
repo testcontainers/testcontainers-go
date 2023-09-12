@@ -53,7 +53,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS":         "0",
 			"KAFKA_NODE_ID":                                  "1",
 			"KAFKA_PROCESS_ROLES":                            "broker,controller",
-			"KAFKA_CONTROLLER_QUORUM_VOTERS":                 "1@localhost:9094",
 			"KAFKA_CONTROLLER_LISTENER_NAMES":                "CONTROLLER",
 			// }
 		},
@@ -99,6 +98,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 	clusterID := genericContainerReq.Env["CLUSTER_ID"]
 
+	configureControllerQuorumVoters(&genericContainerReq)
+
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
@@ -127,4 +128,26 @@ func (kc *KafkaContainer) Brokers(ctx context.Context) ([]string, error) {
 	}
 
 	return []string{fmt.Sprintf("%s:%d", host, port.Int())}, nil
+}
+
+// configureControllerQuorumVoters sets the quorum voters for the controller. For that, it will
+// check if there are any network aliases defined for the container and use the first alias in the
+// first network. Else, it will use localhost.
+func configureControllerQuorumVoters(req *testcontainers.GenericContainerRequest) {
+	if req.Env == nil {
+		req.Env = map[string]string{}
+	}
+
+	if req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"] == "" {
+		host := "localhost"
+		if len(req.Networks) > 0 {
+			nw := req.Networks[0]
+			if len(req.NetworkAliases[nw]) > 0 {
+				host = req.NetworkAliases[nw][0]
+			}
+		}
+
+		req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"] = fmt.Sprintf("1@%s:9094", host)
+	}
+	// }
 }
