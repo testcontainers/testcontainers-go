@@ -1,10 +1,10 @@
-# Kafka
+# Kafka (KRaft)
 
 Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 ## Introduction
 
-The Testcontainers module for Kafka.
+The Testcontainers module for KRaft: [Apache Kafka Without ZooKeeper](https://developer.confluent.io/learn/kraft).
 
 ## Adding this module to your project dependencies
 
