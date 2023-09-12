@@ -68,7 +68,11 @@ func WithNetwork(networkName string, alias string) testcontainers.CustomizeReque
 			},
 		})
 		if err != nil {
-			req.Logger.Printf("Failed to create network '%s'. Container won't be attached to this network: %v", networkName, err)
+			logger := req.Logger
+			if logger == nil {
+				logger = testcontainers.Logger
+			}
+			logger.Printf("Failed to create network '%s'. Container won't be attached to this network: %v", networkName, err)
 			return
 		}
 
