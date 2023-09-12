@@ -161,12 +161,20 @@ func configureControllerQuorumVoters(req *testcontainers.GenericContainerRequest
 
 // validateKRaftVersion validates if the image version is compatible with KRaft mode,
 // which is available since version 7.0.0.
-func validateKRaftVersion(image string) error {
-	if image == "" {
+func validateKRaftVersion(fqName string) error {
+	if fqName == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
 
-	version := image[strings.LastIndex(image, ":")+1:]
+	image := fqName[:strings.LastIndex(fqName, ":")]
+	version := fqName[strings.LastIndex(fqName, ":")+1:]
+
+	if !strings.EqualFold(image, "confluentinc/cp-kafka") {
+		// do not validate if the image is not the official one.
+		// not raising an error here, letting the image to start and
+		// eventually evaluate an error if it exists.
+		return nil
+	}
 
 	// semver requires the version to start with a "v"
 	if !strings.HasPrefix(version, "v") {

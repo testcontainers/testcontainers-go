@@ -152,34 +152,39 @@ func TestConfigureQuorumVoters(t *testing.T) {
 func TestVAlidateKRaftVersion(t *testing.T) {
 	tests := []struct {
 		name    string
-		version string
+		image   string
 		wantErr bool
 	}{
 		{
-			name:    "valid version",
-			version: "7.3.3",
+			name:    "Official: valid version",
+			image:   "confluentinc/cp-kafka:7.3.3",
 			wantErr: false,
 		},
 		{
-			name:    "valid version: limit",
-			version: "7.0.0",
+			name:    "Official: valid, limit version",
+			image:   "confluentinc/cp-kafka:7.0.0",
 			wantErr: false,
 		},
 		{
-			name:    "invalid version: low version",
-			version: "6.99.99",
+			name:    "Official: invalid, low version",
+			image:   "confluentinc/cp-kafka:6.99.99",
 			wantErr: true,
 		},
 		{
-			name:    "invalid version: too low",
-			version: "5.0.0",
+			name:    "Official: invalid, too low version",
+			image:   "confluentinc/cp-kafka:5.0.0",
 			wantErr: true,
+		},
+		{
+			name:    "Unofficial does not validate KRaft version",
+			image:   "my-kafka:1.0.0",
+			wantErr: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := validateKRaftVersion("test-kafka:" + test.version)
+			err := validateKRaftVersion(test.image)
 
 			if test.wantErr && err == nil {
 				t.Fatalf("expected error, got nil")
