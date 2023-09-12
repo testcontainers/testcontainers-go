@@ -63,11 +63,11 @@ func lookUpReaperContainer(ctx context.Context) (*DockerContainer, error) {
 	// the backoff will take at most 5 seconds to find the reaper container
 	// doing each attempt every 100ms
 	exp := backoff.NewExponentialBackOff()
-	exp.InitialInterval = 100 * time.Millisecond
+	exp.InitialInterval = 100 * time.Millisecond // check every 100ms plus randomization and multiplier
 	exp.RandomizationFactor = 0.5
 	exp.Multiplier = 2.0
-	exp.MaxInterval = 5.0 * time.Second
-	exp.MaxElapsedTime = 5 * time.Second
+	exp.MaxInterval = 5.0 * time.Second  // max interval between attempts
+	exp.MaxElapsedTime = 1 * time.Minute // max time to keep trying
 
 	var reaperContainer *DockerContainer
 	err = backoff.Retry(func() error {
@@ -75,7 +75,6 @@ func lookUpReaperContainer(ctx context.Context) (*DockerContainer, error) {
 			filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, testcontainerssession.SessionID())),
 			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelReaper, true)),
 			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelRyuk, true)),
-			filters.Arg("status", "running"),
 		}
 
 		resp, err := dockerClient.ContainerList(ctx, types.ContainerListOptions{
@@ -87,12 +86,13 @@ func lookUpReaperContainer(ctx context.Context) (*DockerContainer, error) {
 		}
 
 		if len(resp) == 0 {
-			return fmt.Errorf("reaper container not found in the running state")
+			// reaper container not found in the running state:
+			// do not look for it again
+			return nil
 		}
 
 		if len(resp) > 1 {
-			// this should not be possible, but we'll handle it anyway
-			return fmt.Errorf("multiple reaper containers found in the running state")
+			panic(fmt.Sprintf("not possible to have multiple reaper containers found for session ID %s", testcontainerssession.SessionID()))
 		}
 
 		r, err := containerFromDockerResponse(ctx, resp[0])
