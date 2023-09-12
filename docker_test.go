@@ -343,7 +343,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, container)
 
 	reaperContainer, err := lookUpReaperContainer(ctx)
-	if err == nil {
+	if err != nil {
 		t.Fatal(err, "expected reaper container not found.")
 	}
 	if reaperContainer != nil {
