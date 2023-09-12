@@ -72,34 +72,3 @@ func TestNATS(t *testing.T) {
 		t.Fatalf("expected message to be 'hello', got '%s'", msg.Data)
 	}
 }
-
-func TestNATSWithCredentials(t *testing.T) {
-	ctx := context.Background()
-
-	//  withCredentials {
-	container, err := RunContainer(ctx, WithUsername("foo"), WithPassword("bar"))
-	//  }
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
-	uri, err := container.ConnectionString(ctx)
-	if err != nil {
-		t.Fatalf("failed to get connection string: %s", err)
-	}
-
-	// connectWithCredentials {
-	nc, err := nats.Connect(uri, nats.UserInfo(container.User, container.Password))
-	// }
-	if err != nil {
-		t.Fatalf("failed to connect to nats: %s", err)
-	}
-	defer nc.Close()
-}

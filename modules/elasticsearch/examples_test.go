@@ -49,7 +49,10 @@ func ExampleRunContainer_withUsingPassword() {
 		panic(err)
 	}
 	defer func() {
-		_ = elasticsearchContainer.Terminate(ctx)
+		err := elasticsearchContainer.Terminate(ctx)
+		if err != nil {
+			panic(err)
+		}
 	}()
 	// }
 
@@ -73,7 +76,10 @@ func ExampleRunContainer_connectUsingElasticsearchClient() {
 		panic(err)
 	}
 	defer func() {
-		_ = elasticsearchContainer.Terminate(ctx)
+		err := elasticsearchContainer.Terminate(ctx)
+		if err != nil {
+			panic(err)
+		}
 	}()
 
 	cfg := es.Config{

@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/couchbase
 ## Usage example
 
 <!--codeinclude-->
-[Start Couchbase](../../modules/couchbase/couchbase_test.go) inside_block:withBucket
+[Creating a Couchbase container](../../modules/couchbase/examples_test.go) inside_block:runCouchbaseContainer
 <!--/codeinclude-->
 
 ## Module Reference
@@ -49,6 +49,11 @@ Once the container is started, it will perform the following operations, **in th
 
 ### Container Ports
 
+Here you can find the list with the default ports used by the Couchbase container. The Management ports (`MGMT_PORT` and `MGMT_SSL_PORT`) and the Service ports for `kv`, `query` and `search` are exposed by default.
+
+!!!tip
+	You can export the service ports for Analytics and Eventing by using the `WithServiceAnalytics` and `WithServiceEventing` optional functions.
+
 <!--codeinclude-->
 [Container Ports](../../modules/couchbase/couchbase.go) inside_block:containerPorts
 <!--/codeinclude-->
@@ -66,6 +71,12 @@ By default, the container will use the following Docker image:
 
 <!--codeinclude-->
 [Default Docker image](../../modules/couchbase/couchbase.go) inside_block:defaultImage
+<!--/codeinclude-->
+
+You can find the Docker images that are currently tested in this module, for the Enterprise and Community editions, in the following list:
+
+<!--codeinclude-->
+[Docker images](../../modules/couchbase/couchbase_test.go) inside_block:dockerImages
 <!--/codeinclude-->
 
 #### Wait Strategies
@@ -94,12 +105,12 @@ If you need to change the default credentials for the admin user, you can use `W
 When the password has less than 6 characters, the container won't be created and the `RunContainer` function will throw an error.
 
 !!!info
-	The default username is `Administrator` and the default password is `password`.
+	In the case this optional function is not called, the default username is `Administrator` and the default password is `password`.
 
 #### Buckets
 
-When creating a new Couchbase container, you can create one or more buckets. The module provides with a `WithBuckets` function that accepts an array of buckets to be created.
-To create a new bucket, the module exposes a `NewBucket` function, where you can pass the bucket name.
+When creating a new Couchbase container, you can create one or more buckets. The module exposes a `WithBuckets` optional function that accepts an slice of buckets to be created.
+To create a new bucket, the module also exposes a `NewBucket` function, where you can pass the bucket name.
 
 It's possible to customize a newly created bucket, using the following options:
 
@@ -131,10 +142,6 @@ By default, the container will start with the following services: `kv`, `n1ql`, 
 	When running the Enterprise Edition of Couchbase Server, the module provides two functions to enable or disable services:
 	`WithServiceAnalytics` and `WithServiceEventing`. Else, it will throw an error and the container won't be created.
 
-<!--codeinclude-->
-[Docker images](../../modules/couchbase/couchbase_test.go) inside_block:dockerImages
-<!--/codeinclude-->
-
 ### Container Methods
 
 #### ConnectionString
@@ -142,22 +149,10 @@ By default, the container will start with the following services: `kv`, `n1ql`, 
 The `ConnectionString` method returns the connection string to connect to the Couchbase container instance. 
 It returns a string with the format `couchbase://<host>:<port>`.
 
-<!--codeinclude-->
-[Connect to Couchbase](../../modules/couchbase/couchbase_test.go) inside_block:connectToCluster
-<!--/codeinclude-->
-
 #### Username
 
 The `Username` method returns the username of the Couchbase administrator. 
 
-<!--codeinclude-->
-[Connect to Couchbase using Credentials](../../modules/couchbase/couchbase_test.go) inside_block:getCredentials
-<!--/codeinclude-->
-
 #### Password
 
 The `Password` method returns the password of the Couchbase administrator.
-
-<!--codeinclude-->
-[Connect to Couchbase using Credentials](../../modules/couchbase/couchbase_test.go) inside_block:getCredentials
-<!--/codeinclude-->

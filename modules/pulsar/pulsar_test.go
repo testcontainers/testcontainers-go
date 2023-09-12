@@ -36,7 +36,7 @@ func TestPulsar(t *testing.T) {
 	defer cancel()
 
 	nwName := "pulsar-test"
-	_, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
+	nw, err := testcontainers.GenericNetwork(context.Background(), testcontainers.GenericNetworkRequest{
 		NetworkRequest: testcontainers.NetworkRequest{
 			Name: nwName,
 		},
@@ -54,9 +54,7 @@ func TestPulsar(t *testing.T) {
 		{
 			name: "with modifiers",
 			opts: []testcontainers.ContainerCustomizer{
-				// setPulsarImage {
 				testcontainers.WithImage("docker.io/apachepulsar/pulsar:2.10.2"),
-				// }
 				// addPulsarEnv {
 				testcontainerspulsar.WithPulsarEnv("brokerDeduplicationEnabled", "true"),
 				// }
@@ -101,7 +99,6 @@ func TestPulsar(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// startPulsarContainer {
 			c, err := testcontainerspulsar.RunContainer(
 				ctx,
 				tt.opts...,
@@ -111,24 +108,26 @@ func TestPulsar(t *testing.T) {
 				err := c.Terminate(ctx)
 				require.Nil(t, err)
 			}()
-			// }
 
 			// withLogConsumers {
 			if len(c.LogConsumers) > 0 {
 				c.WithLogConsumers(ctx, tt.logConsumers...)
-				defer c.StopLogProducer()
+				defer func() {
+					// not handling the error because it will never return an error: it's satisfying the current API
+					_ = c.StopLogProducer()
+				}()
 			}
 			// }
 
 			// getBrokerURL {
 			brokerURL, err := c.BrokerURL(ctx)
-			require.Nil(t, err)
 			// }
+			require.Nil(t, err)
 
 			// getAdminURL {
 			serviceURL, err := c.HTTPServiceURL(ctx)
-			require.Nil(t, err)
 			// }
+			require.Nil(t, err)
 
 			assert.True(t, strings.HasPrefix(brokerURL, "pulsar://"))
 			assert.True(t, strings.HasPrefix(serviceURL, "http://"))
@@ -159,7 +158,11 @@ func TestPulsar(t *testing.T) {
 					return
 				}
 				msgChan <- msg.Payload()
-				consumer.Ack(msg)
+				err = consumer.Ack(msg)
+				if err != nil {
+					fmt.Println("failed to send ack", err)
+					return
+				}
 			}()
 
 			producer, err := pc.CreateProducer(pulsar.ProducerOptions{
@@ -167,9 +170,10 @@ func TestPulsar(t *testing.T) {
 			})
 			require.Nil(t, err)
 
-			producer.Send(ctx, &pulsar.ProducerMessage{
+			_, err = producer.Send(ctx, &pulsar.ProducerMessage{
 				Payload: []byte("hello world"),
 			})
+			require.Nil(t, err)
 
 			ticker := time.NewTicker(1 * time.Minute)
 			select {
@@ -207,4 +211,11 @@ func TestPulsar(t *testing.T) {
 			assert.True(t, ok)
 		})
 	}
+
+	// remove the network after the last, so that all containers are already removed
+	// and there are no active endpoints on the network
+	t.Cleanup(func() {
+		err := nw.Remove(context.Background())
+		require.NoError(t, err)
+	})
 }

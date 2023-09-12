@@ -22,7 +22,7 @@ go get github.com/testcontainers/testcontainers-go/modules/redpanda
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Redpanda container](../../modules/redpanda/redpanda_test.go) inside_block:redpandaCreateContainer
+[Creating a Redpanda container](../../modules/redpanda/examples_test.go) inside_block:runRedpandaContainer
 <!--/codeinclude-->
 
 ## Module reference

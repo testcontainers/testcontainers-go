@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/k3s
 ## Usage example
 
 <!--codeinclude-->
-[Test for a K3s container](../../modules/k3s/k3s_test.go) inside_block: k3sRunContainer
+[Test for a K3s container](../../modules/k3s/k3s_test.go) inside_block:runK3sContainer
 <!--/codeinclude-->
 
 ## Module reference

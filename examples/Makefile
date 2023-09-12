@@ -4,6 +4,10 @@ include ../commons-test.mk
 dependencies-scan-examples:
 	@find . -type f -name Makefile -execdir make dependencies-scan \;
 
+.PHONY: lint-examples
+lint-examples:
+	@find . -type f -name Makefile -execdir make lint \;
+
 .PHONY: tidy-examples
 tidy-examples:
 	@find . -type f -name Makefile -execdir make tools-tidy \;

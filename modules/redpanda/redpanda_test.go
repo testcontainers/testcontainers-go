@@ -60,8 +60,8 @@ func TestRedpanda(t *testing.T) {
 	// Test Admin API
 	// adminAPIAddress {
 	adminAPIURL, err := container.AdminAPIAddress(ctx)
-	require.NoError(t, err)
 	// }
+	require.NoError(t, err)
 	req, err = http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster/health_overview", adminAPIURL), nil)
 	require.NoError(t, err)
 	resp, err = httpCl.Do(req)
@@ -98,8 +98,8 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 
 	// kafkaSeedBroker {
 	seedBroker, err := container.KafkaSeedBroker(ctx)
-	require.NoError(t, err)
 	// }
+	require.NoError(t, err)
 
 	// Test successful authentication & authorization with all created superusers
 	serviceAccounts := map[string]string{
@@ -162,8 +162,8 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 	httpCl := &http.Client{Timeout: 5 * time.Second}
 	// schemaRegistryAddress {
 	schemaRegistryURL, err := container.SchemaRegistryAddress(ctx)
-	require.NoError(t, err)
 	// }
+	require.NoError(t, err)
 
 	// Failed authentication
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/subjects", schemaRegistryURL), nil)

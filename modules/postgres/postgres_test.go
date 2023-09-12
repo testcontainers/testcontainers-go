@@ -54,7 +54,6 @@ func TestPostgres(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// postgresCreateContainer {
 			container, err := RunContainer(ctx,
 				testcontainers.WithImage(tt.image),
 				WithDatabase(dbname),
@@ -65,7 +64,6 @@ func TestPostgres(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			// }
 
 			// Clean up the container after the test is complete
 			t.Cleanup(func() {
@@ -77,8 +75,8 @@ func TestPostgres(t *testing.T) {
 			// connectionString {
 			// explicitly set sslmode=disable because the container is not configured to use TLS
 			connStr, err := container.ConnectionString(ctx, "sslmode=disable", "application_name=test")
-			assert.NoError(t, err)
 			// }
+			assert.NoError(t, err)
 
 			// Ensure connection string is using generic format
 			id, err := container.MappedPort(ctx, "5432/tcp")
@@ -111,7 +109,6 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	}
 
 	t.Run("default query", func(t *testing.T) {
-		// withInitialDatabase {
 		container, err := RunContainer(
 			ctx,
 			WithDatabase(dbname),
@@ -121,7 +118,6 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 		)
 		require.NoError(t, err)
 		require.NotNil(t, container)
-		// }
 	})
 	t.Run("custom query", func(t *testing.T) {
 		// withWaitStrategy {
@@ -132,9 +128,9 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			WithPassword(password),
 			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
 		)
+		// }
 		require.NoError(t, err)
 		require.NotNil(t, container)
-		// }
 	})
 	t.Run("custom bad query", func(t *testing.T) {
 		container, err := RunContainer(
@@ -152,7 +148,6 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 func TestWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	// withConfigFile {
 	container, err := RunContainer(ctx,
 		WithConfigFile(filepath.Join("testdata", "my-postgres.conf")),
 		WithDatabase(dbname),
@@ -163,7 +158,6 @@ func TestWithConfigFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	t.Cleanup(func() {
 		if err := container.Terminate(ctx); err != nil {
@@ -184,7 +178,6 @@ func TestWithConfigFile(t *testing.T) {
 func TestWithInitScript(t *testing.T) {
 	ctx := context.Background()
 
-	// withInitScripts {
 	container, err := RunContainer(ctx,
 		testcontainers.WithImage("docker.io/postgres:15.2-alpine"),
 		WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
@@ -196,7 +189,6 @@ func TestWithInitScript(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	t.Cleanup(func() {
 		if err := container.Terminate(ctx); err != nil {

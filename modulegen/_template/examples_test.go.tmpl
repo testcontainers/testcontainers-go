@@ -1,9 +1,10 @@
-{{ $entrypoint := Entrypoint }}{{ $lower := ToLower }}{{ $title := Title }}package {{ $lower }}_test
+{{ $entrypoint := Entrypoint }}{{ $image := Image }}{{ $lower := ToLower }}{{ $title := Title }}package {{ $lower }}_test
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/{{ $lower }}"
 )
 
@@ -11,12 +12,12 @@ func Example{{ $entrypoint }}() {
 	// run{{ $title }}Container {
 	ctx := context.Background()
 
-	{{ $lower }}Container, err := {{ $lower }}.{{ $entrypoint }}(ctx)
+	{{ $lower }}Container, err := {{ $lower }}.{{ $entrypoint }}(ctx, testcontainers.WithImage("{{ $image }}"))
 	if err != nil {
 		panic(err)
 	}
 
-	// Clean up the container after the test is complete
+	// Clean up the container after
 	defer func() {
 		if err := {{ $lower }}Container.Terminate(ctx); err != nil {
 			panic(err)
