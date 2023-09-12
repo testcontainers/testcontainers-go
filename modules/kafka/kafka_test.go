@@ -147,7 +147,6 @@ func TestConfigureQuorumVoters(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestVAlidateKRaftVersion(t *testing.T) {

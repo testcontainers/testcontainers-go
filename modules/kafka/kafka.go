@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/docker/go-connections/nat"
-
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
