@@ -140,13 +140,13 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 }
 
 func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Neo4jContainer {
-	// neo4jCreateContainer {
 	container, err := neo4j.RunContainer(ctx,
 		neo4j.WithAdminPassword(testPassword),
+		// withLabsPlugin {
 		neo4j.WithLabsPlugin(neo4j.Apoc),
+		// }
 		neo4j.WithNeo4jSetting("dbms.tx_log.rotation.size", "42M"),
 	)
-	// }
 	if err != nil {
 		t.Fatalf("expected container to successfully initialize but did not: %s", err)
 	}

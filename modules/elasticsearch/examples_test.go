@@ -20,11 +20,18 @@ func ExampleRunContainer() {
 		panic(err)
 	}
 	defer func() {
-		_ = elasticsearchContainer.Terminate(ctx)
+		if err := elasticsearchContainer.Terminate(ctx); err != nil {
+			panic(err)
+		}
 	}()
 	// }
 
-	fmt.Println(strings.HasPrefix(elasticsearchContainer.Settings.Address, "https://"))
+	state, err := elasticsearchContainer.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
 
 	// Output:
 	// true
@@ -42,7 +49,10 @@ func ExampleRunContainer_withUsingPassword() {
 		panic(err)
 	}
 	defer func() {
-		_ = elasticsearchContainer.Terminate(ctx)
+		err := elasticsearchContainer.Terminate(ctx)
+		if err != nil {
+			panic(err)
+		}
 	}()
 	// }
 
@@ -66,7 +76,10 @@ func ExampleRunContainer_connectUsingElasticsearchClient() {
 		panic(err)
 	}
 	defer func() {
-		_ = elasticsearchContainer.Terminate(ctx)
+		err := elasticsearchContainer.Terminate(ctx)
+		if err != nil {
+			panic(err)
+		}
 	}()
 
 	cfg := es.Config{

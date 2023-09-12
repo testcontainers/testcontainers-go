@@ -15,6 +15,7 @@ import (
 
 // Create a network using a provider. By default it is Docker.
 func ExampleNetworkProvider_CreateNetwork() {
+	// createNetwork {
 	ctx := context.Background()
 	networkName := "new-network"
 	net, _ := GenericNetwork(ctx, GenericNetworkRequest{
@@ -24,8 +25,11 @@ func ExampleNetworkProvider_CreateNetwork() {
 		},
 	})
 	defer func() {
-		_ = net.Remove(ctx)
+		if err := net.Remove(ctx); err != nil {
+			panic(err)
+		}
 	}()
+	// }
 
 	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -48,6 +52,7 @@ func ExampleNetworkProvider_CreateNetwork() {
 }
 
 func Test_NetworkWithIPAM(t *testing.T) {
+	// withIPAM {
 	ctx := context.Background()
 	networkName := "test-network-with-ipam"
 	ipamConfig := network.IPAM{
@@ -69,6 +74,7 @@ func Test_NetworkWithIPAM(t *testing.T) {
 			IPAM:           &ipamConfig,
 		},
 	})
+	// }
 	if err != nil {
 		t.Fatal("cannot create network: ", err)
 	}

@@ -74,13 +74,13 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		req.Cmd = []string{"/bin/bash", "-c", defaultPulsarCmd}
 
-		// add the waiting strategy for the functions worker
-		defaultWaitStrategies.Strategies = append(
-			defaultWaitStrategies.Strategies,
+		ss := []wait.Strategy{
 			wait.ForLog("Function worker service started"),
-		)
+		}
 
-		req.WaitingFor = defaultWaitStrategies
+		ss = append(ss, defaultWaitStrategies.Strategies...)
+
+		req.WaitingFor = wait.ForAll(ss...)
 	}
 }
 
@@ -89,7 +89,8 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 // but it's a responsibility of the caller to stop them calling StopLogProducer
 func (c *Container) WithLogConsumers(ctx context.Context, consumer ...testcontainers.LogConsumer) {
 	if len(c.LogConsumers) > 0 {
-		c.StartLogProducer(ctx)
+		// not handling the error because it will return an error if and only if the producer is already started
+		_ = c.StartLogProducer(ctx)
 	}
 	for _, lc := range c.LogConsumers {
 		c.FollowOutput(lc)
@@ -107,15 +108,16 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		WithPulsarEnv("transactionCoordinatorEnabled", "true")(req)
 
-		// add the waiting strategy for the transaction topic
-		defaultWaitStrategies.Strategies = append(
-			defaultWaitStrategies.Strategies,
+		// clone defaultWaitStrategies
+		ss := []wait.Strategy{
 			wait.ForHTTP(transactionTopicEndpoint).WithPort(defaultPulsarAdminPort).WithStatusCodeMatcher(func(statusCode int) bool {
 				return statusCode == 200
 			}),
-		)
+		}
 
-		req.WaitingFor = defaultWaitStrategies
+		ss = append(ss, defaultWaitStrategies.Strategies...)
+
+		req.WaitingFor = wait.ForAll(ss...)
 	}
 }
 

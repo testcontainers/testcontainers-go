@@ -15,12 +15,10 @@ import (
 func TestMariaDB(t *testing.T) {
 	ctx := context.Background()
 
-	// createMariaDBContainer {
 	container, err := RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
@@ -32,10 +30,10 @@ func TestMariaDB(t *testing.T) {
 	// connectionString {
 	// By default, MariaDB transmits data between the server and clients without encrypting it.
 	connectionString, err := container.ConnectionString(ctx, "tls=false")
+	// }
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -71,7 +69,6 @@ func TestMariaDBWithNonRootUserAndEmptyPassword(t *testing.T) {
 func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	// customInitialization {
 	container, err := RunContainer(ctx,
 		WithDatabase("foo"),
 		WithUsername("root"),
@@ -79,7 +76,6 @@ func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
@@ -115,13 +111,11 @@ func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 func TestMariaDBWithMySQLEnvVars(t *testing.T) {
 	ctx := context.Background()
 
-	// withMySQLVars {
 	container, err := RunContainer(ctx, testcontainers.WithImage("mariadb:10.3.29"),
 		WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	t.Cleanup(func() {
 		if err := container.Terminate(ctx); err != nil {
@@ -135,13 +129,11 @@ func TestMariaDBWithMySQLEnvVars(t *testing.T) {
 func TestMariaDBWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	// withConfigFile {
 	container, err := RunContainer(ctx, testcontainers.WithImage("mariadb:11.0.3"),
 		WithConfigFile(filepath.Join("testdata", "my.cnf")))
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
@@ -188,13 +180,11 @@ func TestMariaDBWithConfigFile(t *testing.T) {
 func TestMariaDBWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	// withScripts {
 	container, err := RunContainer(ctx,
 		WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {

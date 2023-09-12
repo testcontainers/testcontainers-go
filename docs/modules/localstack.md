@@ -19,54 +19,11 @@ go get github.com/testcontainers/testcontainers-go/modules/localstack
 Running LocalStack as a stand-in for multiple AWS services during a test:
 
 <!--codeinclude-->
-[Creating a LocalStack container](../../modules/localstack/v1/s3_test.go) inside_block:localStackCreateContainer
+[Creating a LocalStack container](../../modules/localstack/examples_test.go) inside_block:runLocalstackContainer
 <!--/codeinclude-->
 
 Environment variables listed in [Localstack's README](https://github.com/localstack/localstack#configurations) may be used to customize Localstack's configuration. 
 Use the `OverrideContainerRequest` option when creating the `LocalStackContainer` to apply configuration settings.
-
-## Creating a client using the AWS SDK for Go
-
-### Version 1
-
-<!--codeinclude-->
-[Test for a LocalStack container, usinv AWS SDK v1](../../modules/localstack/v1/s3_test.go) inside_block:awsSDKClientV1
-<!--/codeinclude-->
-
-For further reference on the SDK v1, please check out the AWS docs [here](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/setting-up.html).
-
-### Version 2
-
-<!--codeinclude-->
-[Test for a LocalStack container, usinv AWS SDK v2](../../modules/localstack/v2/s3_test.go) inside_block:awsSDKClientV2
-<!--/codeinclude-->
-
-For further reference on the SDK v2, please check out the AWS docs [here](https://aws.github.io/aws-sdk-go-v2/docs/getting-started)
-
-## Accessing hostname-sensitive services
-
-Some Localstack APIs, such as SQS, require the container to be aware of the hostname that it is accessible on - for example, for construction of queue URLs in responses.
-
-Testcontainers will inform Localstack of the best hostname automatically, using the an environment variable for that:
-
-* for Localstack versions 0.10.0 and above, the `HOSTNAME_EXTERNAL` environment variable will be set to hostname in the container request.
-* for Localstack versions 2.0.0 and above, the `LOCALSTACK_HOST` environment variable will be set to the hostname in the container request.
-
-Once the variable is set:
-
-* when running the Localstack container directly without a custom network defined, it is expected that all calls to the container will be from the test host. As such, the container address will be used (typically localhost or the address where the Docker daemon is running).
-
-    <!--codeinclude-->
-    [Localstack container running without a custom network](../../modules/localstack/localstack_test.go) inside_block:withoutNetwork
-    <!--/codeinclude-->
-
-* when running the Localstack container [with a custom network defined](/features/networking/#advanced-networking), it is expected that all calls to the container will be **from other containers on that network**. `HOSTNAME_EXTERNAL` will be set to the *last* network alias that has been configured for the Localstack container.
-
-    <!--codeinclude-->
-    [Localstack container running with a custom network](../../modules/localstack/localstack_test.go) inside_block:withNetwork
-    <!--/codeinclude-->
-
-* Other usage scenarios, such as where the Localstack container is used from both the test host and containers on a custom network are not automatically supported. If you have this use case, you should set `HOSTNAME_EXTERNAL` manually.
 
 ## Module reference
 
@@ -83,13 +40,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 When starting the Localstack container, you can pass options in a variadic way to configure it.
 
-#### Set Image
+#### Image
 
 By default, the image used is `localstack:1.4.0`.  If you need to use a different image, you can use `testcontainers.WithImage` option.
-
-<!--codeinclude-->
-[Custom Image](../../modules/localstack/localstack_test.go) inside_block:withImage
-<!--/codeinclude-->
 
 #### Customize the container request
 
@@ -104,14 +57,49 @@ With simply passing the `testcontainers.CustomizeRequest` functional option to t
 In the following example you check how it's possible to set certain environment variables that are needed by the tests, the most important of them the AWS services you want to use. Besides, the container runs in a separate Docker network with an alias:
 
 <!--codeinclude-->
-[Overriding the default container request](../../modules/localstack/localstack_test.go) inside_block:withNetwork
+[Overriding the default container request](../../modules/localstack/localstack_test.go) inside_block:withCustomContainerRequest
 <!--/codeinclude-->
 
-If you do not need to override the container request, you can simply pass the Go context to the `RunContainer` function.
+## Accessing hostname-sensitive services
+
+Some Localstack APIs, such as SQS, require the container to be aware of the hostname that it is accessible on - for example, for construction of queue URLs in responses.
+
+Testcontainers will inform Localstack of the best hostname automatically, using the an environment variable for that:
+
+* for Localstack versions 0.10.0 and above, the `HOSTNAME_EXTERNAL` environment variable will be set to hostname in the container request.
+* for Localstack versions 2.0.0 and above, the `LOCALSTACK_HOST` environment variable will be set to the hostname in the container request.
+
+Once the variable is set:
+
+* when running the Localstack container directly without a custom network defined, it is expected that all calls to the container will be from the test host. As such, the container address will be used (typically localhost or the address where the Docker daemon is running).
+
+* when running the Localstack container [with a custom network defined](/features/networking/#advanced-networking), it is expected that all calls to the container will be **from other containers on that network**. `HOSTNAME_EXTERNAL` will be set to the *last* network alias that has been configured for the Localstack container.
+
+    <!--codeinclude-->
+    [Localstack container running with a custom network](../../modules/localstack/examples_test.go) inside_block:localstackWithNetwork
+    <!--/codeinclude-->
+
+* Other usage scenarios, such as where the Localstack container is used from both the test host and containers on a custom network, are not automatically supported. If you have this use case, you should set `HOSTNAME_EXTERNAL` manually.
+
+## Obtaining a client using the AWS SDK for Go
+
+You can use the AWS SDK for Go to create a client for the LocalStack container. The following examples show how to create a client for the S3 service, using both the SDK v1 and v2.
+
+### Using the AWS SDK v1
 
 <!--codeinclude-->
-[Skip overriding the default container request](../../modules/localstack/localstack_test.go) inside_block:noOverrideContainerRequest
+[AWS SDK v1](../../modules/localstack/v1/s3_test.go) inside_block:awsSDKClientV1
 <!--/codeinclude-->
+
+For further reference on the SDK v1, please check out the AWS docs [here](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/setting-up.html).
+
+### Using the AWS SDK v2
+
+<!--codeinclude-->
+[AWS SDK v2](../../modules/localstack/v2/s3_test.go) inside_block:awsSDKClientV2
+<!--/codeinclude-->
+
+For further reference on the SDK v2, please check out the AWS docs [here](https://aws.github.io/aws-sdk-go-v2/docs/getting-started)
 
 ## Testing the module
 
@@ -123,6 +111,5 @@ make test
 ```
 
 !!!info
-
 	At this moment, the tests for the module include tests for the S3 service, only. They live in two different Go packages of the LocalStack module,
     `v1` and `v2`, where it'll be easier to add more examples for the rest of services.

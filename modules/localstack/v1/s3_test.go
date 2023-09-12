@@ -62,10 +62,8 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*sessio
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	// localStackCreateContainer {
 	container, err := localstack.RunContainer(ctx)
 	require.Nil(t, err)
-	// }
 
 	session, err := awsSession(ctx, container)
 	require.Nil(t, err)

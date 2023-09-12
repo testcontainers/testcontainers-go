@@ -1,57 +1,66 @@
-package k3s
+package k3s_test
 
 import (
 	"context"
-	"testing"
+	"fmt"
 
-	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/testcontainers/testcontainers-go/modules/k3s"
 )
 
-func TestK3s(t *testing.T) {
+func ExampleRunContainer() {
+	// runK3sContainer {
 	ctx := context.Background()
 
-	// k3sRunContainer {
-	container, err := RunContainer(ctx,
-		testcontainers.WithWaitStrategy(wait.ForLog("Starting node config controller")))
+	k3sContainer, err := k3s.RunContainer(ctx,
+		testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1"),
+	)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
-	// }
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
+	// Clean up the container
+	defer func() {
+		if err := k3sContainer.Terminate(ctx); err != nil {
+			panic(err)
 		}
-	})
-
-	// GetKubeConfig {
-	kubeConfigYaml, err := container.GetKubeConfig(ctx)
-	if err != nil {
-		t.Fatalf("failed to get kube-config : %s", err)
-	}
+	}()
 	// }
+
+	state, err := k3sContainer.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	kubeConfigYaml, err := k3sContainer.GetKubeConfig(ctx)
+	if err != nil {
+		panic(err)
+	}
 
 	restcfg, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigYaml)
 	if err != nil {
-		t.Fatalf("failed to create rest client for kubernetes : %s", err)
+		panic(err)
 	}
 
 	k8s, err := kubernetes.NewForConfig(restcfg)
 	if err != nil {
-		t.Fatalf("failed to place config in k8s clientset : %s", err)
+		panic(err)
 	}
 
 	nodes, err := k8s.CoreV1().Nodes().List(ctx, v1.ListOptions{})
 	if err != nil {
-		t.Fatalf("failed to get list of nodes : %s", err)
+		panic(err)
 	}
 
-	assert.Equal(t, len(nodes.Items), 1)
+	fmt.Println(len(nodes.Items))
+
+	// Output:
+	// true
+	// 1
 }

@@ -792,7 +792,8 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	err = backoff.Retry(func() error {
 		resp, err = p.client.ImageBuild(ctx, buildContext, buildOptions)
 		if err != nil {
-			if _, ok := err.(errdefs.ErrNotFound); ok {
+			var enf errdefs.ErrNotFound
+			if errors.As(err, &enf) {
 				return backoff.Permanent(err)
 			}
 			Logger.Printf("Failed to build image: %s, will retry", err)
@@ -1155,7 +1156,8 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	err = backoff.Retry(func() error {
 		pull, err = p.client.ImagePull(ctx, tag, pullOpt)
 		if err != nil {
-			if _, ok := err.(errdefs.ErrNotFound); ok {
+			var enf errdefs.ErrNotFound
+			if errors.As(err, &enf) {
 				return backoff.Permanent(err)
 			}
 			Logger.Printf("Failed to pull image: %s, will retry", err)

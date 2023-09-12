@@ -2,7 +2,6 @@ package testcontainers
 
 import (
 	"context"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -24,7 +23,7 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 	tag, err := provider.BuildImage(ctx, &ContainerRequest{
 		// fromDockerfileIncludingRepo {
 		FromDockerfile: FromDockerfile{
-			Context:    filepath.Join("testdata"),
+			Context:    "testdata",
 			Dockerfile: "echo.Dockerfile",
 			Repo:       "test-repo",
 			Tag:        "test-tag",
@@ -61,7 +60,7 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 
 	tag, err := provider.BuildImage(ctx, &ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:    filepath.Join("testdata"),
+			Context:    "testdata",
 			Dockerfile: "echo.Dockerfile",
 			Repo:       "test-repo",
 		},
@@ -96,7 +95,7 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 
 	tag, err := provider.BuildImage(ctx, &ContainerRequest{
 		FromDockerfile: FromDockerfile{
-			Context:    filepath.Join("testdata"),
+			Context:    "testdata",
 			Dockerfile: "echo.Dockerfile",
 			Tag:        "test-tag",
 		},

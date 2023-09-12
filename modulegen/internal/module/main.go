@@ -26,11 +26,12 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 
 func generateGoFiles(moduleDir string, tcModule context.TestcontainersModule) error {
 	funcMap := template.FuncMap{
-		"Entrypoint":    func() string { return tcModule.Entrypoint() },
-		"ContainerName": func() string { return tcModule.ContainerName() },
-		"ParentDir":     func() string { return tcModule.ParentDir() },
-		"ToLower":       func() string { return tcModule.Lower() },
-		"Title":         func() string { return tcModule.Title() },
+		"Entrypoint":    tcModule.Entrypoint,
+		"ContainerName": tcModule.ContainerName,
+		"Image":         func() string { return tcModule.Image },
+		"ParentDir":     tcModule.ParentDir,
+		"ToLower":       tcModule.Lower,
+		"Title":         tcModule.Title,
 	}
 	return GenerateFiles(moduleDir, tcModule.Lower(), funcMap, tcModule)
 }
@@ -52,13 +53,13 @@ func generateGoModFile(moduleDir string, tcModule context.TestcontainersModule) 
 }
 
 func GenerateFiles(moduleDir string, moduleName string, funcMap template.FuncMap, tcModule any) error {
-	for _, tmpl := range []string{"example_test.go", "example.go"} {
+	for _, tmpl := range []string{"examples_test.go", "module_test.go", "module.go"} {
 		name := tmpl + ".tmpl"
 		t, err := template.New(name).Funcs(funcMap).ParseFiles(filepath.Join("_template", name))
 		if err != nil {
 			return err
 		}
-		moduleFilePath := filepath.Join(moduleDir, strings.ReplaceAll(tmpl, "example", moduleName))
+		moduleFilePath := filepath.Join(moduleDir, strings.ReplaceAll(tmpl, "module", moduleName))
 
 		err = internal_template.GenerateFile(t, moduleFilePath, name, tcModule)
 		if err != nil {

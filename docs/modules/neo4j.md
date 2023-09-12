@@ -19,7 +19,7 @@ go get github.com/testcontainers/testcontainers-go/modules/neo4j
 Running Neo4j as a single-instance server, with the [APOC plugin](https://neo4j.com/developer/neo4j-apoc/) enabled:
 
 <!--codeinclude-->
-[Creating a Neo4j container](../../modules/neo4j/neo4j_test.go) inside_block:neo4jCreateContainer
+[Creating a Neo4j container](../../modules/neo4j/examples_test.go) inside_block:runNeo4jContainer
 <!--/codeinclude-->
 
 ## Module Reference
@@ -90,11 +90,7 @@ This option sets a custom logger to be used by the container. Consider calling t
 #### Authentication
 
 By default, the Neo4j container will be started with authentication disabled. If you need to enable authentication, you can
-use the `WithAuthentication` option.
-
-<!--codeinclude-->
-[With Authentication](../../modules/neo4j/neo4j_test.go) inside_block:neo4jCreateContainer
-<!--/codeinclude-->
+use the `WithAuthentication(pwd string)` option.
 
 By default, the container will not use authentication, automatically prepending the `WithoutAuthentication` option to the options list.
 
@@ -103,7 +99,7 @@ By default, the container will not use authentication, automatically prepending 
 By default, the Neo4j container will start without any Labs plugins enabled, but you can enable them using the `WithLabsPlugin` optional function.
 
 <!--codeinclude-->
-[Adding Labs Plugins](../../modules/neo4j/neo4j_test.go) inside_block:neo4jCreateContainer
+[Adding Labs Plugins](../../modules/neo4j/neo4j_test.go) inside_block:withLabsPlugin
 <!--/codeinclude-->
 
 The list of available plugins is:

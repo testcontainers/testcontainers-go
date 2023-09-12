@@ -18,8 +18,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// containerPorts {
 const (
+	// containerPorts {
 	MGMT_PORT     = "8091"
 	MGMT_SSL_PORT = "18091"
 
@@ -40,7 +40,11 @@ const (
 
 	KV_PORT     = "11210"
 	KV_SSL_PORT = "11207"
+	// }
 )
+
+// defaultImage {
+const defaultImage = "couchbase:6.5.1"
 
 // }
 
@@ -65,9 +69,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	req := testcontainers.ContainerRequest{
-		// defaultImage {
-		Image: "couchbase:6.5.1",
-		// }
+		Image:        defaultImage,
 		ExposedPorts: []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"},
 	}
 

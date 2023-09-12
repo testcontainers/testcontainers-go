@@ -47,7 +47,7 @@ require (
 	github.com/containerd/continuity v0.4.1 // indirect
 	github.com/containerd/typeurl/v2 v2.1.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
-	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
+	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/distribution/v3 v3.0.0-20230601133803-97b1d649c493 // indirect
 	github.com/docker/buildx v0.11.2 // indirect

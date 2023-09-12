@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mariadb
 ## Usage example
 
 <!--codeinclude-->
-[Creating a MariaDB container](../../modules/mariadb/mariadb_test.go) inside_block:createMariaDBContainer
+[Creating a MariaDB container](../../modules/mariadb/examples_test.go) inside_block:runMariaDBContainer
 <!--/codeinclude-->
 
 ## Module reference
@@ -43,10 +43,6 @@ When starting the MariaDB container, you can pass options in a variadic way to c
 
 If you need to set a different MariaDB Docker image, you can use `testcontainers.WithImage` with a valid Docker image
 for MariaDB. E.g. `testcontainers.WithImage("mariadb:11.0.3")`.
-
-<!--codeinclude-->
-[Custom Image](../../modules/mariadb/mariadb_test.go) inside_block:withConfigFile
-<!--/codeinclude-->
 
 !!!info
     From MariaDB [docs](https://github.com/docker-library/docs/tree/master/mariadb#environment-variables):
@@ -80,11 +76,7 @@ Please read the [Create containers: Advanced Settings](../features/creating_cont
 #### Set username, password and database name
 
 If you need to set a different database, and its credentials, you can use `WithUsername`, `WithPassword`, `WithDatabase`
-options.  By default, the username, the password and the database name is `test`.
-
-<!--codeinclude-->
-[Custom Database initialization](../../modules/mariadb/mariadb_test.go) inside_block:customInitialization
-<!--/codeinclude-->
+options.
 
 !!!info
     The default values for the username is `root`, for password is `test` and for the default database name is `test`.
@@ -95,16 +87,12 @@ If you would like to perform DDL or DML operations in the MariaDB container, add
 scripts to the container request. Those files will be copied under `/docker-entrypoint-initdb.d`.
 
 <!--codeinclude-->
-[Include init scripts](../../modules/mariadb/mariadb_test.go) inside_block:withScripts
+[Example of Init script](../../modules/mariadb/testdata/schema.sql)
 <!--/codeinclude-->
 
 #### Custom configuration
 
-If you need to set a custom configuration, you can use `WithConfigFile` option.
-
-<!--codeinclude-->
-[Custom MariaDB config file](../../modules/mariadb/mariadb_test.go) inside_block:withConfigFile
-<!--/codeinclude-->
+If you need to set a custom configuration, you can use `WithConfigFile` option to pass the path to a custom configuration file.
 
 ### Container Methods
 
