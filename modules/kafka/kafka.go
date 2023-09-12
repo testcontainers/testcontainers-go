@@ -80,7 +80,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 					},
 					// 2. wait for the Kafka server to be ready
 					func(ctx context.Context, c testcontainers.Container) error {
-						return wait.ForLog("Kafka Server started").WaitUntilReady(ctx, c)
+						return wait.ForLog(".*Transitioning from RECOVERY to RUNNING.*").AsRegexp().WaitUntilReady(ctx, c)
 					},
 				},
 			},
