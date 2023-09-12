@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/IBM/sarama"
+
 	"github.com/testcontainers/testcontainers-go"
 )
 
