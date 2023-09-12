@@ -26,7 +26,9 @@ func TestKafka(t *testing.T) {
 		}
 	})
 
+	// getBrokers {
 	brokers, err := kafkaContainer.Brokers(ctx)
+	// }
 	if err != nil {
 		t.Fatal(err)
 	}

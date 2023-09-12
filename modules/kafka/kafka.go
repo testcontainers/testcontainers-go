@@ -15,6 +15,7 @@ const publicPort = nat.Port("9093/tcp")
 const (
 	starterScript = "/usr/sbin/testcontainers_start.sh"
 
+	// starterScript {
 	starterScriptContent = `#!/bin/bash
 source /etc/confluent/docker/bash-config
 export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://%s:%d,BROKER://%s:9092
@@ -24,6 +25,7 @@ echo 'kafka-storage format --ignore-formatted -t "$(kafka-storage random-uuid)" 
 echo '' > /etc/confluent/docker/ensure
 /etc/confluent/docker/configure
 /etc/confluent/docker/launch`
+	// }
 )
 
 // KafkaContainer represents the Kafka container type used in the module
@@ -37,6 +39,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		Image:        "confluentinc/cp-kafka:7.3.3",
 		ExposedPorts: []string{string(publicPort)},
 		Env: map[string]string{
+			// envVars {
 			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
 			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT",
 			"KAFKA_INTER_BROKER_LISTENER_NAME":               "BROKER",
@@ -51,6 +54,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"KAFKA_PROCESS_ROLES":                            "broker,controller",
 			"KAFKA_CONTROLLER_QUORUM_VOTERS":                 "1@localhost:9094",
 			"KAFKA_CONTROLLER_LISTENER_NAMES":                "CONTROLLER",
+			// }
 		},
 		Entrypoint: []string{"sh"},
 		// this CMD will wait for the starter script to be copied into the container and then execute it
@@ -100,7 +104,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &KafkaContainer{Container: container}, nil
 }
 
-// Brokers retrieves the broker connection strings from Kafka
+// Brokers retrieves the broker connection strings from Kafka with only one entry,
+// defined by the exposed public port.
 func (kc *KafkaContainer) Brokers(ctx context.Context) ([]string, error) {
 	host, err := kc.Host(ctx)
 	if err != nil {
@@ -111,5 +116,6 @@ func (kc *KafkaContainer) Brokers(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return []string{fmt.Sprintf("%s:%d", host, port.Int())}, nil
 }

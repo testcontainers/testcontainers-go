@@ -40,6 +40,22 @@ When starting the Kafka container, you can pass options in a variadic way to con
 If you need to set a different Kafka Docker image, you can use `testcontainers.WithImage` with a valid Docker image
 for Kafka. E.g. `testcontainers.WithImage("confluentinc/cp-kafka:7.3.3")`.
 
+#### Init script
+
+The Kafka container will be started using a custom shell script:
+
+<!--codeinclude-->
+[Init script](../../modules/kafka/kafka.go) inside_block:starterScript
+<!--/codeinclude-->
+
+#### Environment variables
+
+The environment variables that are already set by default are:
+
+<!--codeinclude-->
+[Environment variables](../../modules/kafka/kafka.go) inside_block:envVars
+<!--/codeinclude-->
+
 #### Wait Strategies
 
 If you need to set a different wait strategy for Kafka, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
@@ -63,3 +79,11 @@ Please read the [Create containers: Advanced Settings](../features/creating_cont
 ### Container Methods
 
 The Kafka container exposes the following methods:
+
+#### Brokers
+
+The `Brokers(ctx)` method returns the Kafka brokers as a string slice, containing the host and the random port defined by Kafka's public port (`9093/tcp`).
+
+<!--codeinclude-->
+[Get Kafka brokers](../../modules/kafka/kafka_test.go) inside_block:getBrokers
+<!--/codeinclude-->
