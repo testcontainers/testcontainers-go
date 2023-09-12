@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
 )
 
@@ -11,7 +12,7 @@ func ExampleRunContainer() {
 	// runKafkaContainer {
 	ctx := context.Background()
 
-	kafkaContainer, err := kafka.RunContainer(ctx)
+	kafkaContainer, err := kafka.RunContainer(ctx, testcontainers.WithImage("confluentinc/cp-kafka:7.3.3"))
 	if err != nil {
 		panic(err)
 	}
