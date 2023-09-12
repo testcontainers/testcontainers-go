@@ -107,15 +107,17 @@ jobs:
         run: |
             go install gotest.tools/gotestsum@latest
             make test-unit
-            
-      - name: Analyze with SonarCloud
-        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.run-tests && !inputs.rootless-docker && inputs.project-directory == '.' }}
-        uses: sonarsource/sonarcloud-github-action@master
+
+      - name: Upload SonarCloud files
+        if: ${{ inputs.run-tests && !inputs.rootless-docker }}
+        #if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.run-tests && !inputs.rootless-docker }}
+        uses: actions/upload-artifact@v3
         with:
-          projectBaseDir: ${{ inputs.project-directory }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          name: sonarcloud
+          path: |
+            ./.gitignore
+            ${{ inputs.project-directory }}/unit-tests.xml
+            ${{ inputs.project-directory }}/coverage.out
 
       - name: Run checker
         run: |

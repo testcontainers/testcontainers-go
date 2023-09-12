@@ -16,7 +16,7 @@ test-%:
 		--format short-verbose \
 		--rerun-fails=5 \
 		--packages="./..." \
-		--junitfile TEST-$*.xml \
+		--junitfile unit-tests.xml \
 		-- \
                 -coverprofile=coverage.out \
 		-timeout=30m
