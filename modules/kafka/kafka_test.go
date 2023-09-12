@@ -84,6 +84,15 @@ func TestKafka(t *testing.T) {
 	}
 }
 
+func TestKafka_invalidVersion(t *testing.T) {
+	ctx := context.Background()
+
+	_, err := RunContainer(ctx, WithClusterID("kraftCluster"), testcontainers.WithImage("confluentinc/cp-kafka:6.3.3"))
+	if err == nil {
+		t.Fatal(err)
+	}
+}
+
 func TestConfigureQuorumVoters(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -139,4 +148,47 @@ func TestConfigureQuorumVoters(t *testing.T) {
 		})
 	}
 
+}
+
+func TestVAlidateKRaftVersion(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		wantErr bool
+	}{
+		{
+			name:    "valid version",
+			version: "7.3.3",
+			wantErr: false,
+		},
+		{
+			name:    "valid version: limit",
+			version: "7.0.0",
+			wantErr: false,
+		},
+		{
+			name:    "invalid version: low version",
+			version: "6.99.99",
+			wantErr: true,
+		},
+		{
+			name:    "invalid version: too low",
+			version: "5.0.0",
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateKRaftVersion("test-kafka:" + test.version)
+
+			if test.wantErr && err == nil {
+				t.Fatalf("expected error, got nil")
+			}
+
+			if !test.wantErr && err != nil {
+				t.Fatalf("expected no error, got %s", err)
+			}
+		})
+	}
 }

@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/docker/go-connections/nat"
+
+	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -96,6 +99,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		opt.Customize(&genericContainerReq)
 	}
 
+	err := validateKRaftVersion(genericContainerReq.Image)
+	if err != nil {
+		return nil, err
+	}
+
 	clusterID := genericContainerReq.Env["CLUSTER_ID"]
 
 	configureControllerQuorumVoters(&genericContainerReq)
@@ -150,4 +158,25 @@ func configureControllerQuorumVoters(req *testcontainers.GenericContainerRequest
 		req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"] = fmt.Sprintf("1@%s:9094", host)
 	}
 	// }
+}
+
+// validateKRaftVersion validates if the image version is compatible with KRaft mode,
+// which is available since version 7.0.0.
+func validateKRaftVersion(image string) error {
+	if image == "" {
+		return fmt.Errorf("image cannot be empty")
+	}
+
+	version := image[strings.LastIndex(image, ":")+1:]
+
+	// semver requires the version to start with a "v"
+	if !strings.HasPrefix(version, "v") {
+		version = fmt.Sprintf("v%s", version)
+	}
+
+	if semver.Compare(version, "v7.0.0") < 0 { // version < v7.0.0
+		return fmt.Errorf("version=%s. KRaft mode is only available since version 7.0.0", version)
+	}
+
+	return nil
 }
