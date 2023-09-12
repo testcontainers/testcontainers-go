@@ -15,7 +15,7 @@ func TestKafka(t *testing.T) {
 
 	ctx := context.Background()
 
-	kafkaContainer, err := RunContainer(ctx, testcontainers.WithImage("confluentinc/cp-kafka:7.3.3"))
+	kafkaContainer, err := RunContainer(ctx, WithClusterID("kraftCluster"), testcontainers.WithImage("confluentinc/cp-kafka:7.3.3"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,6 +26,10 @@ func TestKafka(t *testing.T) {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
+
+	if !strings.EqualFold(kafkaContainer.ClusterID, "kraftCluster") {
+		t.Fatalf("expected clusterID to be %s, got %s", "kraftCluster", kafkaContainer.ClusterID)
+	}
 
 	// getBrokers {
 	brokers, err := kafkaContainer.Brokers(ctx)

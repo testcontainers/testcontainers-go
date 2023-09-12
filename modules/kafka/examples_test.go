@@ -12,7 +12,10 @@ func ExampleRunContainer() {
 	// runKafkaContainer {
 	ctx := context.Background()
 
-	kafkaContainer, err := kafka.RunContainer(ctx, testcontainers.WithImage("confluentinc/cp-kafka:7.3.3"))
+	kafkaContainer, err := kafka.RunContainer(ctx,
+		kafka.WithClusterID("test-cluster"),
+		testcontainers.WithImage("confluentinc/cp-kafka:7.3.3"),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -30,8 +33,10 @@ func ExampleRunContainer() {
 		panic(err)
 	}
 
+	fmt.Println(kafkaContainer.ClusterID)
 	fmt.Println(state.Running)
 
 	// Output:
+	// test-cluster
 	// true
 }

@@ -31,6 +31,7 @@ echo '' > /etc/confluent/docker/ensure
 // KafkaContainer represents the Kafka container type used in the module
 type KafkaContainer struct {
 	testcontainers.Container
+	ClusterID string
 }
 
 // RunContainer creates an instance of the Kafka container type
@@ -96,12 +97,20 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		opt.Customize(&genericContainerReq)
 	}
 
+	clusterID := genericContainerReq.Env["CLUSTER_ID"]
+
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
 	}
 
-	return &KafkaContainer{Container: container}, nil
+	return &KafkaContainer{Container: container, ClusterID: clusterID}, nil
+}
+
+func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Env["CLUSTER_ID"] = clusterID
+	}
 }
 
 // Brokers retrieves the broker connection strings from Kafka with only one entry,
