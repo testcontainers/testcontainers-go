@@ -430,13 +430,14 @@ func assertExamplesTestContent(t *testing.T, module context.TestcontainersModule
 
 	data := sanitiseContent(content)
 	assert.Equal(t, data[0], "package "+lower+"_test")
-	assert.Equal(t, data[6], "\t\"github.com/testcontainers/testcontainers-go/modules/"+lower+"\"")
-	assert.Equal(t, data[9], "func Example"+entrypoint+"() {")
-	assert.Equal(t, data[10], "\t// run"+title+"Container {")
-	assert.Equal(t, data[13], "\t"+lower+"Container, err := "+lower+"."+entrypoint+"(ctx)")
-	assert.Equal(t, data[31], "\tfmt.Println(state.Running)")
-	assert.Equal(t, data[33], "\t// Output:")
-	assert.Equal(t, data[34], "\t// true")
+	assert.Equal(t, data[6], "\t\"github.com/testcontainers/testcontainers-go\"")
+	assert.Equal(t, data[7], "\t\"github.com/testcontainers/testcontainers-go/modules/"+lower+"\"")
+	assert.Equal(t, data[10], "func Example"+entrypoint+"() {")
+	assert.Equal(t, data[11], "\t// run"+title+"Container {")
+	assert.Equal(t, data[14], "\t"+lower+"Container, err := "+lower+"."+entrypoint+"(ctx, testcontainers.WithImage(\""+module.Image+"\"))")
+	assert.Equal(t, data[32], "\tfmt.Println(state.Running)")
+	assert.Equal(t, data[34], "\t// Output:")
+	assert.Equal(t, data[35], "\t// true")
 }
 
 // assert content module test
@@ -446,8 +447,8 @@ func assertModuleTestContent(t *testing.T, module context.TestcontainersModule, 
 
 	data := sanitiseContent(content)
 	assert.Equal(t, data[0], "package "+module.Lower())
-	assert.Equal(t, data[7], "func Test"+module.Title()+"(t *testing.T) {")
-	assert.Equal(t, data[10], "\tcontainer, err := "+module.Entrypoint()+"(ctx)")
+	assert.Equal(t, data[9], "func Test"+module.Title()+"(t *testing.T) {")
+	assert.Equal(t, data[12], "\tcontainer, err := "+module.Entrypoint()+"(ctx, testcontainers.WithImage(\""+module.Image+"\"))")
 }
 
 // assert content module
