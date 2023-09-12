@@ -79,7 +79,7 @@ jobs:
           # Optional: working directory, useful for monorepos
           working-directory: ${{ inputs.project-directory }}
           # Optional: golangci-lint command line arguments.
-          args: --verbose
+          args: --verbose --out-format=checkstyle:golangci-lint.report.xml
           # Optional: if set to true then the all caching functionality will be complete disabled,
           #           takes precedence over all other caching options.
           skip-cache: true
@@ -109,7 +109,7 @@ jobs:
             make test-unit
             
       - name: Analyze with SonarCloud
-        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.run-tests && inputs.project-directory == '.' }}
+        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.run-tests && !inputs.rootless-docker && inputs.project-directory == '.' }}
         uses: sonarsource/sonarcloud-github-action@master
         with:
           projectBaseDir: ${{ inputs.project-directory }}
