@@ -109,6 +109,105 @@ func ExampleRunContainer_withPlugins() {
 	// true
 }
 
+func ExampleRunContainer_withCustomConfigFile() {
+	ctx := context.Background()
+
+	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
+		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
+		rabbitmq.WithConfig(filepath.Join("testdata", "rabbitmq-custom.conf")),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err := rabbitmqContainer.Terminate(ctx); err != nil {
+			panic(err)
+		}
+	}()
+
+	logs, err := rabbitmqContainer.Logs(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	bytes, err := io.ReadAll(logs)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(strings.Contains(string(bytes), "[debug]"))
+
+	// Output:
+	// true
+}
+
+func ExampleRunContainer_withCustomConfigFileWrongExtension() {
+	ctx := context.Background()
+
+	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
+		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
+		rabbitmq.WithConfig(filepath.Join("testdata", "rabbitmq-custom.config")), // .config means Erlang config file
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err := rabbitmqContainer.Terminate(ctx); err != nil {
+			panic(err)
+		}
+	}()
+
+	logs, err := rabbitmqContainer.Logs(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	bytes, err := io.ReadAll(logs)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(strings.Contains(string(bytes), "[debug]"))
+
+	// Output:
+	// false
+}
+
+func ExampleRunContainer_withCustomErlangConfigFile() {
+	ctx := context.Background()
+
+	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
+		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
+		rabbitmq.WithConfigErlang(filepath.Join("testdata", "rabbitmq-custom.config")),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err := rabbitmqContainer.Terminate(ctx); err != nil {
+			panic(err)
+		}
+	}()
+
+	logs, err := rabbitmqContainer.Logs(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	bytes, err := io.ReadAll(logs)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(strings.Contains(string(bytes), "[debug]"))
+
+	// Output:
+	// true
+}
+
 func ExampleRunContainer_withAllSettings() {
 	ctx := context.Background()
 

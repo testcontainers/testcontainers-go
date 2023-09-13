@@ -86,6 +86,13 @@ If you need to set the username and/or password for the admin user, you can use 
 !!!info
     By default, the admin username is `guest` and the password is `guest`.
 
+#### Custom Configuration
+
+If you need to set a custom configuration, you can use `WithConfig(filePath string)` option to pass the path to a custom configuration file in Sysctl format, or user `WithConfigErlang(filePath string)` to pass the path to a custom configuration file in Erlang format.
+
+!!!warning
+    The `WithConfig` option doesn't work with RabbitMQ &lt; 3.7, and it's recommended for RabbitMQ &gt;= 3.7.
+
 #### Enable plugins
 
 It's possible to enable plugins with the `WithEnabledPlugins(plugins ...string)` option. E.g. `WithEnabledPlugins("rabbitmq_shovel")`.
