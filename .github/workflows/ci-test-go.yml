@@ -116,7 +116,7 @@ jobs:
           name: sonarcloud
           path: |
             ./.gitignore
-            ${{ inputs.project-directory }}/unit-tests.xml
+            ${{ inputs.project-directory }}/TEST-unit.xml
             ${{ inputs.project-directory }}/coverage.out
 
       - name: Run checker
