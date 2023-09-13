@@ -67,3 +67,17 @@ Please read the [Create containers: Advanced Settings](../features/creating_cont
 ### Container Methods
 
 The RabbitMQ container exposes the following methods:
+
+#### AMQP URLs
+
+The RabbitMQ container exposes two methods to retrieve the AMQP URLs in order to connect to the RabbitMQ instance using AMQP clients:
+
+- `AmqpURL()`, returns the AMQP URL.
+- `AmqpsURL()`, returns the AMQPS URL.
+
+#### HTTP management URLs
+
+The RabbitMQ container exposes two methods to retrieve the HTTP URLs for management:
+
+- `HttpURL()`, returns the management URL over HTTP.
+- `HttpsURL()`, returns the management URL over HTTPS.
