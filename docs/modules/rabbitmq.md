@@ -50,6 +50,10 @@ for RabbitMQ.
 
 At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
 
+#### Admin password
+
+If you need to set a password for the admin user, you can use the `WithAdminPassword(pwd string)` option.
+
 #### Docker type modifiers
 
 If you need an advanced configuration for RabbitMQ, you can leverage the following Docker type modifiers:

@@ -33,3 +33,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 	return &RabbitMQContainer{Container: container}, nil
 }
+
+// WithAdminPassword sets the password for the default admin user
+func WithAdminPassword(password string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Env["RABBITMQ_DEFAULT_PASS"] = password
+	}
+}
