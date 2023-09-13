@@ -5,7 +5,7 @@ go 1.20
 require (
 	dario.cat/mergo v1.0.0
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/containerd/containerd v1.7.3
+	github.com/containerd/containerd v1.7.6
 	github.com/cpuguy83/dockercfg v0.3.1
 	github.com/docker/docker v24.0.6+incompatible
 	github.com/docker/go-connections v0.4.0
@@ -22,6 +22,7 @@ require (
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
+	github.com/Microsoft/hcsshim v0.11.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
