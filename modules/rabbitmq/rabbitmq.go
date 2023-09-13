@@ -21,6 +21,8 @@ const (
 // RabbitMQContainer represents the RabbitMQ container type used in the module
 type RabbitMQContainer struct {
 	testcontainers.Container
+	AdminPassword string
+	AdminUsername string
 }
 
 // AmqpURL returns the URL for AMQP clients.
@@ -94,7 +96,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	return &RabbitMQContainer{Container: container}, nil
+	user := genericContainerReq.Env["RABBITMQ_DEFAULT_USER"]
+	password := genericContainerReq.Env["RABBITMQ_DEFAULT_PASS"]
+
+	c := &RabbitMQContainer{Container: container, AdminUsername: user, AdminPassword: password}
+
+	return c, nil
 }
 
 // WithAdminPassword sets the password for the default admin user
