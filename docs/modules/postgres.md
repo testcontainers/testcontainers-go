@@ -69,7 +69,7 @@ Please read the [Create containers: Advanced Settings](../features/creating_cont
 
 #### Initial Database
 
-If you need to set a different database, and its credentials, you can use the `WithDatabase(db string)` option.
+If you need to set a different database, and its credentials, you can use the `WithDatabase(db string)`, `WithUsername(user string)` and `WithPassword(pwd string)` options.
 
 #### Init Scripts
 
