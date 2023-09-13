@@ -58,6 +58,33 @@ func isVersion2(image string) bool {
 	return true
 }
 
+// WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
+// on that network to the given alias.
+func WithNetwork(networkName string, alias string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		_, err := testcontainers.GenericNetwork(context.Background(), testcontainers.GenericNetworkRequest{
+			NetworkRequest: testcontainers.NetworkRequest{
+				Name: networkName,
+			},
+		})
+		if err != nil {
+			logger := req.Logger
+			if logger == nil {
+				logger = testcontainers.Logger
+			}
+			logger.Printf("Failed to create network '%s'. Container won't be attached to this network: %v", networkName, err)
+			return
+		}
+
+		req.Networks = append(req.Networks, networkName)
+
+		if req.NetworkAliases == nil {
+			req.NetworkAliases = make(map[string][]string)
+		}
+		req.NetworkAliases[networkName] = []string{alias}
+	}
+}
+
 // RunContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error) {
