@@ -114,7 +114,7 @@ jobs:
         with:
           name: sonarcloud
           path: |
-            ./.gitignore
+            ./sonar-project.properties
             ${{ inputs.project-directory }}/TEST-unit.xml
             ${{ inputs.project-directory }}/coverage.out
 
