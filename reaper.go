@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"math/rand"
 	"net"
 	"strings"
 	"sync"
@@ -63,9 +64,15 @@ func lookUpReaperContainer(ctx context.Context) (*DockerContainer, error) {
 	// the backoff will take at most 5 seconds to find the reaper container
 	// doing each attempt every 100ms
 	exp := backoff.NewExponentialBackOff()
-	exp.InitialInterval = 100 * time.Millisecond // check every 100ms plus randomization and multiplier
-	exp.RandomizationFactor = 0.5
-	exp.Multiplier = 2.0
+
+	// we want random intervals between 100ms and 500ms for concurrent executions
+	// to not be synchronized: it could be the case that multiple executions of this
+	// function happen at the same time (specially when called from a different test
+	// process execution), and we want to avoid that they all try to find the reaper
+	// container at the same time.
+	exp.InitialInterval = time.Duration(rand.Intn(5)*100) * time.Millisecond
+	exp.RandomizationFactor = rand.Float64() * 0.5
+	exp.Multiplier = rand.Float64() * 2.0
 	exp.MaxInterval = 5.0 * time.Second  // max interval between attempts
 	exp.MaxElapsedTime = 1 * time.Minute // max time to keep trying
 
