@@ -66,6 +66,10 @@
             "path": "../modules/k3s"
         },
         {
+            "name": "module / kafka",
+            "path": "../modules/kafka"
+        },
+        {
             "name": "module / localstack",
             "path": "../modules/localstack"
         },
@@ -96,6 +100,10 @@
         {
             "name": "module / pulsar",
             "path": "../modules/pulsar"
+        },
+        {
+            "name": "module / rabbitmq",
+            "path": "../modules/rabbitmq"
         },
         {
             "name": "module / redis",
