@@ -23,7 +23,7 @@ func ExampleRunContainer() {
 		panic(err)
 	}
 
-	// Clean up the container after
+	// Clean up the container
 	defer func() {
 		if err := rabbitmqContainer.Terminate(ctx); err != nil {
 			panic(err)
