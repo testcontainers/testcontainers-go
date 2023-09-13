@@ -176,20 +176,18 @@ func WithPluginsEnabled(plugins ...Plugin) testcontainers.CustomizeRequestOption
 	return withExecutable(ps...)
 }
 
-func addPostStartFunction(postStarts []testcontainers.ContainerHook, cmd []string) []testcontainers.ContainerHook {
-	return append(postStarts, func(ctx context.Context, c testcontainers.Container) error {
-		_, _, err := c.Exec(ctx, cmd)
-		return err
-	})
-}
-
 // withExecutable will execute the command representation of the Executable into the container.
 // It will leverage the container lifecycle hooks to call "rabbitmqadmin" right after the container
 // is started.
 func withExecutable(execs ...Executable) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		for _, exec := range execs {
-			req.LifecycleHooks[0].PostStarts = addPostStartFunction(req.LifecycleHooks[0].PostStarts, exec.AsCommand())
+			execFn := func(ctx context.Context, c testcontainers.Container) error {
+				_, _, err := c.Exec(ctx, exec.AsCommand())
+				return err
+			}
+
+			req.LifecycleHooks[0].PostStarts = append(req.LifecycleHooks[0].PostStarts, execFn)
 		}
 	}
 }
