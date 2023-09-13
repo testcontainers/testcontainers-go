@@ -201,6 +201,16 @@ func (p permission) AsCommand() []string {
 
 // --------- Permission ---------
 
+// --------- Plugin ---------
+
+type Plugin string
+
+// --------- Plugin ---------
+
+func (p Plugin) AsCommand() []string {
+	return []string{"rabbitmq-plugins", "enable", string(p)}
+}
+
 // --------- Policy ---------
 
 type Policy struct {

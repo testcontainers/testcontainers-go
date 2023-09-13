@@ -167,12 +167,13 @@ func WithUser(u User) testcontainers.CustomizeRequestOption {
 // WithPluginsEnabled enables the specified plugins on the RabbitMQ container.
 // It will leverage the container lifecycle hooks to call "rabbitmq-plugins"
 // right after the container is started, enabling the plugins.
-func WithPluginsEnabled(plugins ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		for _, plugin := range plugins {
-			req.LifecycleHooks[0].PostStarts = addPostStartFunction(req.LifecycleHooks[0].PostStarts, []string{"rabbitmq-plugins", "enable", plugin})
-		}
+func WithPluginsEnabled(plugins ...Plugin) testcontainers.CustomizeRequestOption {
+	ps := make([]Executable, len(plugins))
+	for i, p := range plugins {
+		ps[i] = p
 	}
+
+	return withExecutable(ps...)
 }
 
 func addPostStartFunction(postStarts []testcontainers.ContainerHook, cmd []string) []testcontainers.ContainerHook {
