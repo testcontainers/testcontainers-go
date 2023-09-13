@@ -104,6 +104,13 @@ func WithAdminPassword(password string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// WithAdminUsername sets the default admin username
+func WithAdminUsername(username string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Env["RABBITMQ_DEFAULT_USER"] = username
+	}
+}
+
 // WithBinding declares the bindings on the RabbitMQ container, using "rabbitmqadmin".
 // See withExecutable.
 func WithBinding(b Binding) testcontainers.CustomizeRequestOption {

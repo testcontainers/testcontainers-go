@@ -79,9 +79,12 @@ If you need an advanced configuration for RabbitMQ, you can leverage the followi
 
 Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
 
-#### Admin password
+#### Default Admin
 
-If you need to set a password for the admin user, you can use the `WithAdminPassword(pwd string)` option.
+If you need to set the username and/or password for the admin user, you can use the `WithAdminUsername(username string)` and `WithAdminPassword(pwd string)` options.
+
+!!!info
+    By default, the admin username is `guest` and the password is `guest`.
 
 #### Enable plugins
 
