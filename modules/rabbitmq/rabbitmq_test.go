@@ -10,7 +10,7 @@ import (
 func TestRabbitMQ(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("rabbitmq:3.12-management-alpine"))
+	container, err := RunContainer(ctx, testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -38,7 +38,26 @@ When starting the RabbitMQ container, you can pass options in a variadic way to 
 #### Image
 
 If you need to set a different RabbitMQ Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for RabbitMQ. E.g. `testcontainers.WithImage("rabbitmq:3.12-management-alpine")`.
+for RabbitMQ. E.g. `testcontainers.WithImage("rabbitmq:3.7.25-management-alpine")`.
+
+!!!warning
+    From [https://hub.docker.com/_/rabbitmq](https://hub.docker.com/_/rabbitmq): "As of RabbitMQ 3.9, all of the docker-specific variables listed below are deprecated and no longer used. Please use a configuration file instead; visit [rabbitmq.com/configure](https://rabbitmq.com/configure) to learn more about the configuration file. For a starting point, the 3.8 images will print out the config file it generated from supplied environment variables."
+
+    - RABBITMQ_DEFAULT_PASS_FILE
+    - RABBITMQ_DEFAULT_USER_FILE
+    - RABBITMQ_MANAGEMENT_SSL_CACERTFILE
+    - RABBITMQ_MANAGEMENT_SSL_CERTFILE
+    - RABBITMQ_MANAGEMENT_SSL_DEPTH
+    - RABBITMQ_MANAGEMENT_SSL_FAIL_IF_NO_PEER_CERT
+    - RABBITMQ_MANAGEMENT_SSL_KEYFILE
+    - RABBITMQ_MANAGEMENT_SSL_VERIFY
+    - RABBITMQ_SSL_CACERTFILE
+    - RABBITMQ_SSL_CERTFILE
+    - RABBITMQ_SSL_DEPTH
+    - RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT
+    - RABBITMQ_SSL_KEYFILE
+    - RABBITMQ_SSL_VERIFY
+    - RABBITMQ_VM_MEMORY_HIGH_WATERMARK
 
 #### Wait Strategies
 
