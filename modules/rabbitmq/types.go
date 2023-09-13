@@ -174,7 +174,7 @@ func (p Parameter) AsCommand() []string {
 
 // --------- Permission ---------
 
-type permission struct {
+type Permission struct {
 	VHost     string
 	User      string
 	Configure string
@@ -182,8 +182,8 @@ type permission struct {
 	Read      string
 }
 
-func NewPermission(vhost string, user string, configure string, write string, read string) permission {
-	return permission{
+func NewPermission(vhost string, user string, configure string, write string, read string) Permission {
+	return Permission{
 		VHost:     vhost,
 		User:      user,
 		Configure: configure,
@@ -192,7 +192,7 @@ func NewPermission(vhost string, user string, configure string, write string, re
 	}
 }
 
-func (p permission) AsCommand() []string {
+func (p Permission) AsCommand() []string {
 	return []string{"rabbitmqadmin", "declare", "permission",
 		fmt.Sprintf("vhost=%s", p.VHost), fmt.Sprintf("user=%s", p.User),
 		fmt.Sprintf("configure=%s", p.Configure), fmt.Sprintf("write=%s", p.Write), fmt.Sprintf("read=%s", p.Read),

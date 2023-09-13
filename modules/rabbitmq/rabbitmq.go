@@ -130,7 +130,7 @@ func WithParameter(p Parameter) testcontainers.CustomizeRequestOption {
 
 // WithPermission declares the permission on the RabbitMQ container, using "rabbitmqadmin".
 // See withExecutable.
-func WithPermission(p permission) testcontainers.CustomizeRequestOption {
+func WithPermission(p Permission) testcontainers.CustomizeRequestOption {
 	return withExecutable(p)
 }
 
