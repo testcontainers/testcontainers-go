@@ -135,7 +135,7 @@ jobs:
       ryuk-disabled: false
 
   sonarcloud:
-    if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
+    if: ${{ always() && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
     needs: test-examples
     runs-on: ubuntu-latest 
     steps:
