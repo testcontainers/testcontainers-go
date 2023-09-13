@@ -109,8 +109,7 @@ jobs:
             make test-unit
 
       - name: Upload SonarCloud files
-        if: ${{ inputs.run-tests && !inputs.rootless-docker }}
-        #if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.run-tests && !inputs.rootless-docker }}
+        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.run-tests && !inputs.rootless-docker }}
         uses: actions/upload-artifact@v3
         with:
           name: sonarcloud
