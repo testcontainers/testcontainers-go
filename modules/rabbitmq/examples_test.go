@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	amqp "github.com/rabbitmq/amqp091-go"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/rabbitmq"
 )
@@ -41,6 +43,45 @@ func ExampleRunContainer() {
 
 	// Output:
 	// true
+}
+
+func ExampleRunContainer_connectUsingAmqp() {
+	ctx := context.Background()
+
+	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
+		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
+		rabbitmq.WithAdminUsername("admin"),
+		rabbitmq.WithAdminPassword("password"),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := rabbitmqContainer.Terminate(ctx); err != nil {
+			panic(err)
+		}
+	}()
+
+	amqpURL, err := rabbitmqContainer.AmqpURL(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	amqpConnection, err := amqp.Dial(amqpURL)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		err := amqpConnection.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	fmt.Println(amqpConnection.IsClosed())
+
+	// Output:
+	// false
 }
 
 func ExampleRunContainer_withSSL() {

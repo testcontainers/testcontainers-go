@@ -6,15 +6,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
-	defaultAMQPSPort              = "5671/tcp"
-	defaultAMQPPort               = "5672/tcp"
-	defaultHTTPSPort              = "15671/tcp"
-	defaultHTTPPort               = "15672/tcp"
+	DefaultAMQPSPort              = "5671/tcp"
+	DefaultAMQPPort               = "5672/tcp"
+	DefaultHTTPSPort              = "15671/tcp"
+	DefaultHTTPPort               = "15672/tcp"
 	defaultPassword               = "guest"
 	defaultUser                   = "guest"
 	defaultCustomConfPath         = "/etc/rabbitmq/rabbitmq-custom.conf"
@@ -30,36 +31,32 @@ type RabbitMQContainer struct {
 
 // AmqpURL returns the URL for AMQP clients.
 func (c *RabbitMQContainer) AmqpURL(ctx context.Context) (string, error) {
-	return buildURL(ctx, c, "amqp")
+	endpoint, err := c.PortEndpoint(ctx, nat.Port(DefaultAMQPPort), "")
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("amqp://%s:%s@%s", c.AdminUsername, c.AdminPassword, endpoint), nil
 }
 
 // AmqpURL returns the URL for AMQPS clients.
 func (c *RabbitMQContainer) AmqpsURL(ctx context.Context) (string, error) {
-	return buildURL(ctx, c, "amqps")
+	endpoint, err := c.PortEndpoint(ctx, nat.Port(DefaultAMQPPort), "")
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("amqps://%s:%s@%s", c.AdminUsername, c.AdminPassword, endpoint), nil
 }
 
 // HttpURL returns the URL for HTTP management.
 func (c *RabbitMQContainer) HttpURL(ctx context.Context) (string, error) {
-	return buildURL(ctx, c, "http")
+	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPPort), "http")
 }
 
 // HttpsURL returns the URL for HTTPS management.
 func (c *RabbitMQContainer) HttpsURL(ctx context.Context) (string, error) {
-	return buildURL(ctx, c, "https")
-}
-
-func buildURL(ctx context.Context, c *RabbitMQContainer, proto string) (string, error) {
-	containerPort, err := c.MappedPort(ctx, defaultAMQPPort)
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%s://%s:%d", proto, host, containerPort.Int()), nil
+	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPSPort), "https")
 }
 
 // RunContainer creates an instance of the RabbitMQ container type
@@ -71,10 +68,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"RABBITMQ_DEFAULT_PASS": defaultPassword,
 		},
 		ExposedPorts: []string{
-			defaultAMQPPort,
-			defaultAMQPSPort,
-			defaultHTTPSPort,
-			defaultHTTPPort,
+			DefaultAMQPPort,
+			DefaultAMQPSPort,
+			DefaultHTTPSPort,
+			DefaultHTTPPort,
 		},
 		WaitingFor: wait.ForLog(".*Server startup complete.*").AsRegexp().WithStartupTimeout(60 * time.Second),
 		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{

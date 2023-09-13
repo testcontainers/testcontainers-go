@@ -2,7 +2,10 @@ module github.com/testcontainers/testcontainers-go/modules/rabbitmq
 
 go 1.20
 
-require github.com/testcontainers/testcontainers-go v0.23.0
+require (
+	github.com/rabbitmq/amqp091-go v1.8.1
+	github.com/testcontainers/testcontainers-go v0.23.0
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
