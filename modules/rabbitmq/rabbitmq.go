@@ -98,6 +98,28 @@ func WithAdminPassword(password string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// WithPluginsEnabled enables the specified plugins on the RabbitMQ container.
+// It will leverage the container lifecycle hooks to call "rabbitmq-plugins"
+// right after the container is started, enabling the plugins.
+func WithPluginsEnabled(plugins ...string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		if len(req.LifecycleHooks) == 0 {
+			req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
+				PostStarts: []testcontainers.ContainerHook{},
+			})
+		} else if len(req.LifecycleHooks[0].PostStarts) == 0 {
+			req.LifecycleHooks[0].PostStarts = []testcontainers.ContainerHook{}
+		}
+
+		for _, plugin := range plugins {
+			req.LifecycleHooks[0].PostStarts = append(req.LifecycleHooks[0].PostStarts, func(ctx context.Context, c testcontainers.Container) error {
+				_, _, err := c.Exec(ctx, []string{"rabbitmq-plugins", "enable", plugin})
+				return err
+			})
+		}
+	}
+}
+
 // WithSSL enables SSL on the RabbitMQ container, adding the necessary environment variables,
 // files and waiting conditions.
 // From https://hub.docker.com/_/rabbitmq: "As of RabbitMQ 3.9, all of the docker-specific variables

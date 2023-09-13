@@ -69,10 +69,6 @@ for RabbitMQ.
 
 At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
 
-#### Admin password
-
-If you need to set a password for the admin user, you can use the `WithAdminPassword(pwd string)` option.
-
 #### Docker type modifiers
 
 If you need an advanced configuration for RabbitMQ, you can leverage the following Docker type modifiers:
@@ -82,6 +78,32 @@ If you need an advanced configuration for RabbitMQ, you can leverage the followi
 - `testcontainers.WithEndpointSettingsModifier`
 
 Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+
+#### Admin password
+
+If you need to set a password for the admin user, you can use the `WithAdminPassword(pwd string)` option.
+
+#### Enable plugins
+
+It's possible to enable plugins with the `WithEnabledPlugins(plugins ...string)` option. E.g. `WithEnabledPlugins("rabbitmq_shovel")`.
+
+<!--codeinclude-->
+[Enabling Plugins](../../modules/rabbitmq/examples_test.go) inside_block:enablePlugins
+<!--/codeinclude-->
+
+#### SSL settings
+
+In the case you need to enable SSL, you can use the `WithSSL(settings SSLSettings)` option. This option will enable SSL with the passed settings:
+
+<!--codeinclude-->
+[Enabling SSL](../../modules/rabbitmq/examples_test.go) inside_block:enableSSL
+<!--/codeinclude-->
+
+You'll find a log entry similar to this one in the container logs:
+
+```
+2023-09-13 13:05:10.213 [info] <0.548.0> started TLS (SSL) listener on [::]:5671
+```
 
 ### Container Methods
 
