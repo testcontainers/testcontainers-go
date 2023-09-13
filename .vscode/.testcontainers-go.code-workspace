@@ -66,10 +66,6 @@
             "path": "../modules/k3s"
         },
         {
-            "name": "module / kafka",
-            "path": "../modules/kafka"
-        },
-        {
             "name": "module / localstack",
             "path": "../modules/localstack"
         },
