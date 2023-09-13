@@ -91,6 +91,46 @@ It's possible to enable plugins with the `WithEnabledPlugins(plugins ...string)`
 [Enabling Plugins](../../modules/rabbitmq/examples_test.go) inside_block:enablePlugins
 <!--/codeinclude-->
 
+#### Virtual Hosts
+
+If you need to add a virtual host, you can use the `WithVirtualHost(v VirtualHost)` option.
+
+#### Virtual Hosts limits
+
+If you need to add a virtual host limit, you can use the `WithVirtualHostLimit(l VirtualHostLimit)` option.
+
+#### Exchanges
+
+If you need to add an exchange, you can use the `WithExchange(e Exchange)` option.
+
+#### Queue
+
+If you need to add an queue, you can use the `WithQueue(q Queue)` option.
+
+#### Bindings
+
+If you need to add a binding, a relationship between an exchange and a queue, you can use the `WithBinding(b Binding)` option.
+
+#### Policies
+
+If you need to add a policy, you can use the `WithPolicy(p Policy)` option.
+
+#### Operator Policies
+
+If you need to add an operator policy, you can use the `WithOperatorPolicy(op OperatorPolicy)` option.
+
+#### Parameters
+
+If you need to add a parameter, you can use the `WithParameter(p Parameter)` option.
+
+#### Permissions
+
+If you need to add a permission, you can use the `WithPermission(p Permission)` option.
+
+#### Users
+
+If you need to add a user, you can use the `WithUser(u User)` option.
+
 #### SSL settings
 
 In the case you need to enable SSL, you can use the `WithSSL(settings SSLSettings)` option. This option will enable SSL with the passed settings:

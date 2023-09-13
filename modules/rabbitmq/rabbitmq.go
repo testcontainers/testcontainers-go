@@ -72,10 +72,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			defaultHTTPPort,
 		},
 		WaitingFor: wait.ForLog(".*Server startup complete.*").AsRegexp().WithStartupTimeout(60 * time.Second),
+		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+			{
+				PostStarts: []testcontainers.ContainerHook{},
+			},
+		},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
+		Logger:           testcontainers.Logger,
 		Started:          true,
 	}
 
@@ -98,24 +104,91 @@ func WithAdminPassword(password string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// WithBinding declares the bindings on the RabbitMQ container.
+// See withExecutable.
+func WithBinding(b Binding) testcontainers.CustomizeRequestOption {
+	return withExecutable(b)
+}
+
+// WithExchange declares the exchange on the RabbitMQ container.
+// See withExecutable.
+func WithExchange(e Exchange) testcontainers.CustomizeRequestOption {
+	return withExecutable(e)
+}
+
+// WithOperatorPolicy declares the operator policy on the RabbitMQ container.
+// See withExecutable.
+func WithOperatorPolicy(op OperatorPolicy) testcontainers.CustomizeRequestOption {
+	return withExecutable(op)
+}
+
+// WithParameter declares the parameter on the RabbitMQ container.
+// See withExecutable.
+func WithParameter(p Parameter) testcontainers.CustomizeRequestOption {
+	return withExecutable(p)
+}
+
+// WithPermission declares the permission on the RabbitMQ container.
+// See withExecutable.
+func WithPermission(p permission) testcontainers.CustomizeRequestOption {
+	return withExecutable(p)
+}
+
+// WithPolicy declares the policy on the RabbitMQ container.
+// See withExecutable.
+func WithPolicy(p Policy) testcontainers.CustomizeRequestOption {
+	return withExecutable(p)
+}
+
+// WithQueue declares the queue on the RabbitMQ container.
+// See withExecutable.
+func WithQueue(q Queue) testcontainers.CustomizeRequestOption {
+	return withExecutable(q)
+}
+
+// WithVirtualHost declares the virtual host on the RabbitMQ container.
+// See withExecutable.
+func WithVirtualHost(v VirtualHost) testcontainers.CustomizeRequestOption {
+	return withExecutable(v)
+}
+
+// WithVirtualHostLimit declares the virtual host limit on the RabbitMQ container.
+// See withExecutable.
+func WithVirtualHostLimit(l VirtualHostLimit) testcontainers.CustomizeRequestOption {
+	return withExecutable(l)
+}
+
+// WithVirWithusertualHost declares the user on the RabbitMQ container.
+// See withExecutable.
+func WithUser(u User) testcontainers.CustomizeRequestOption {
+	return withExecutable(u)
+}
+
 // WithPluginsEnabled enables the specified plugins on the RabbitMQ container.
 // It will leverage the container lifecycle hooks to call "rabbitmq-plugins"
 // right after the container is started, enabling the plugins.
 func WithPluginsEnabled(plugins ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
-		if len(req.LifecycleHooks) == 0 {
-			req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
-				PostStarts: []testcontainers.ContainerHook{},
-			})
-		} else if len(req.LifecycleHooks[0].PostStarts) == 0 {
-			req.LifecycleHooks[0].PostStarts = []testcontainers.ContainerHook{}
-		}
-
 		for _, plugin := range plugins {
-			req.LifecycleHooks[0].PostStarts = append(req.LifecycleHooks[0].PostStarts, func(ctx context.Context, c testcontainers.Container) error {
-				_, _, err := c.Exec(ctx, []string{"rabbitmq-plugins", "enable", plugin})
-				return err
-			})
+			req.LifecycleHooks[0].PostStarts = addPostStartFunction(req.LifecycleHooks[0].PostStarts, []string{"rabbitmq-plugins", "enable", plugin})
+		}
+	}
+}
+
+func addPostStartFunction(postStarts []testcontainers.ContainerHook, cmd []string) []testcontainers.ContainerHook {
+	return append(postStarts, func(ctx context.Context, c testcontainers.Container) error {
+		_, _, err := c.Exec(ctx, cmd)
+		return err
+	})
+}
+
+// withExecutable will execute the command representation of the Executable into the container.
+// It will leverage the container lifecycle hooks to call "rabbitmqadmin" right after the container
+// is started.
+func withExecutable(execs ...Executable) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		for _, exec := range execs {
+			req.LifecycleHooks[0].PostStarts = addPostStartFunction(req.LifecycleHooks[0].PostStarts, exec.AsCommand())
 		}
 	}
 }
