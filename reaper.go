@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -15,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/go-connections/nat"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
@@ -34,7 +34,7 @@ const (
 
 var (
 	reaperInstance *Reaper // We would like to create reaper only once
-	mutex          sync.Mutex
+	singleGroup    singleflight.Group
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
@@ -82,6 +82,7 @@ func lookUpReaperContainer(ctx context.Context) (*DockerContainer, error) {
 			filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, testcontainerssession.SessionID())),
 			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelReaper, true)),
 			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelRyuk, true)),
+			filters.Arg("status", "created"),
 		}
 
 		resp, err := dockerClient.ContainerList(ctx, types.ContainerListOptions{
@@ -122,18 +123,27 @@ func lookUpReaperContainer(ctx context.Context) (*DockerContainer, error) {
 // reuseOrCreateReaper returns an existing Reaper instance if it exists and is running. Otherwise, a new Reaper instance
 // will be created with a sessionID to identify containers and a provider to use
 func reuseOrCreateReaper(ctx context.Context, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
 	// Verify this instance is still running by checking state.
 	reaperContainer, err := lookUpReaperContainer(ctx)
 	if err != nil || reaperContainer == nil {
-		r, err := newReaper(ctx, provider, opts...)
+		singleReaper, err, shared := singleGroup.Do(testcontainerssession.SessionID(), func() (interface{}, error) {
+			r, err := newReaper(ctx, provider, opts...)
+			if err != nil {
+				return nil, err
+			}
+
+			return r, nil
+		})
 		if err != nil {
 			return nil, err
 		}
 
-		reaperInstance = r
+		if shared {
+			Logger.Printf("🔄 Reaper is being reused for this test session %s", testcontainerssession.SessionID())
+		}
+
+		reaperInstance = singleReaper.(*Reaper)
+
 		return reaperInstance, nil
 	}
 
