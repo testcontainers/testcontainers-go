@@ -207,11 +207,11 @@ func (p Permission) AsCommand() []string {
 
 type Plugin string
 
-// --------- Plugin ---------
-
 func (p Plugin) AsCommand() []string {
 	return []string{"rabbitmq-plugins", "enable", string(p)}
 }
+
+// --------- Plugin ---------
 
 // --------- Policy ---------
 

@@ -93,53 +93,43 @@ If you need to set a custom configuration, you can use `WithConfig(filePath stri
 !!!warning
     The `WithConfig` option doesn't work with RabbitMQ &lt; 3.7, and it's recommended for RabbitMQ &gt;= 3.7.
 
-#### Enable plugins
+#### Startup Commands
 
-It's possible to enable plugins with the `WithEnabledPlugins(plugins ...string)` option. E.g. `WithEnabledPlugins("rabbitmq_shovel")`.
+It's possible to run arbitraty commands in the container right after it's started.
+
+!!!info
+    To better understand how this feature works, please read the [Create containers: Lifecycle Hooks](../../features/creating_container/#lifecycle-hooks) documentation.
+
+Testcontainers exposes the `WithStartupCommand(e ...Executable)` option to run arbitrary commands in the container. The also exported `Executable` interface defines a `AsCommand()` method, which returns a slice of strings to represent the command and positional arguments to be executed in the container.
+
+!!!info
+    The RabbitMQ module includes a couple of test implementations of the `Executable` interface: Binding, Exchange, OperatorPolicy, Parameter, Permission, Plugin, Policy, Queue, User, VirtualHost and VirtualHostLimit. You could use them as reference, but consider the implementation could not be complete for your use case.
+
+You could use this feature to run a custom script, or to run a command that is not supported by the module. RabbitMQ examples of this could be:
+
+- Enable plugins
+- Add virtual hosts and virtual hosts limits
+- Add exchanges
+- Add queues
+- Add bindings
+- Add policies
+- Add operator policies
+- Add parameters
+- Add permissions
+- Add users
+
+Please refer to the RabbitMQ documentation to build your own commands.
 
 <!--codeinclude-->
-[Enabling Plugins](../../modules/rabbitmq/examples_test.go) inside_block:enablePlugins
+[Add Virtual Hosts](../../modules/rabbitmq/rabbitmq_test.go) inside_block:addVirtualHosts
+[Add Exchanges](../../modules/rabbitmq/rabbitmq_test.go) inside_block:addExchanges
+[Add Queues](../../modules/rabbitmq/rabbitmq_test.go) inside_block:addQueues
+[Add Bindings](../../modules/rabbitmq/rabbitmq_test.go) inside_block:addBindings
+[Add Policies](../../modules/rabbitmq/rabbitmq_test.go) inside_block:addPolicies
+[Add Permissions](../../modules/rabbitmq/rabbitmq_test.go) inside_block:addPermissions
+[Add Users](../../modules/rabbitmq/rabbitmq_test.go) inside_block:addUsers
+[Enabling Plugins](../../modules/rabbitmq/rabbitmq_test.go) inside_block:enablePlugins
 <!--/codeinclude-->
-
-#### Virtual Hosts
-
-If you need to add a virtual host, you can use the `WithVirtualHost(v VirtualHost)` option.
-
-#### Virtual Hosts limits
-
-If you need to add a virtual host limit, you can use the `WithVirtualHostLimit(l VirtualHostLimit)` option.
-
-#### Exchanges
-
-If you need to add an exchange, you can use the `WithExchange(e Exchange)` option.
-
-#### Queue
-
-If you need to add an queue, you can use the `WithQueue(q Queue)` option.
-
-#### Bindings
-
-If you need to add a binding, a relationship between an exchange and a queue, you can use the `WithBinding(b Binding)` option.
-
-#### Policies
-
-If you need to add a policy, you can use the `WithPolicy(p Policy)` option.
-
-#### Operator Policies
-
-If you need to add an operator policy, you can use the `WithOperatorPolicy(op OperatorPolicy)` option.
-
-#### Parameters
-
-If you need to add a parameter, you can use the `WithParameter(p Parameter)` option.
-
-#### Permissions
-
-If you need to add a permission, you can use the `WithPermission(p Permission)` option.
-
-#### Users
-
-If you need to add a user, you can use the `WithUser(u User)` option.
 
 #### SSL settings
 

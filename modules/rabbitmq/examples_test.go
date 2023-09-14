@@ -126,17 +126,15 @@ func ExampleRunContainer_withSSL() {
 }
 
 func ExampleRunContainer_withPlugins() {
-	// enablePlugins {
 	ctx := context.Background()
 
 	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
 		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
-		rabbitmq.WithPluginsEnabled("rabbitmq_shovel", "rabbitmq_random_exchange"),
+		rabbitmq.WithStartupCommand(rabbitmq.Plugin("rabbitmq_shovel"), rabbitmq.Plugin("rabbitmq_random_exchange")),
 	)
 	if err != nil {
 		panic(err)
 	}
-	// }
 
 	defer func() {
 		if err := rabbitmqContainer.Terminate(ctx); err != nil {
