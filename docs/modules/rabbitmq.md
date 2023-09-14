@@ -79,20 +79,6 @@ If you need an advanced configuration for RabbitMQ, you can leverage the followi
 
 Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
 
-#### Default Admin
-
-If you need to set the username and/or password for the admin user, you can use the `WithAdminUsername(username string)` and `WithAdminPassword(pwd string)` options.
-
-!!!info
-    By default, the admin username is `guest` and the password is `guest`.
-
-#### Custom Configuration
-
-If you need to set a custom configuration, you can use `WithConfig(filePath string)` option to pass the path to a custom configuration file in Sysctl format, or user `WithConfigErlang(filePath string)` to pass the path to a custom configuration file in Erlang format.
-
-!!!warning
-    The `WithConfig` option doesn't work with RabbitMQ &lt; 3.7, and it's recommended for RabbitMQ &gt;= 3.7.
-
 #### Startup Commands
 
 It's possible to run arbitraty commands in the container right after it's started.
@@ -130,6 +116,20 @@ Please refer to the RabbitMQ documentation to build your own commands.
 [Add Users](../../modules/rabbitmq/rabbitmq_test.go) inside_block:addUsers
 [Enabling Plugins](../../modules/rabbitmq/rabbitmq_test.go) inside_block:enablePlugins
 <!--/codeinclude-->
+
+#### Default Admin
+
+If you need to set the username and/or password for the admin user, you can use the `WithAdminUsername(username string)` and `WithAdminPassword(pwd string)` options.
+
+!!!info
+    By default, the admin username is `guest` and the password is `guest`.
+
+#### Custom Configuration
+
+If you need to set a custom configuration, you can use `WithConfig(filePath string)` option to pass the path to a custom configuration file in Sysctl format, or user `WithConfigErlang(filePath string)` to pass the path to a custom configuration file in Erlang format.
+
+!!!warning
+    The `WithConfig` option doesn't work with RabbitMQ &lt; 3.7, and it's recommended for RabbitMQ &gt;= 3.7.
 
 #### SSL settings
 
