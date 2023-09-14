@@ -165,7 +165,8 @@ func NewParameter(component string, name string, value string) Parameter {
 }
 
 func (p Parameter) AsCommand() []string {
-	return []string{"rabbitmqadmin", "declare", "parameter",
+	return []string{
+		"rabbitmqadmin", "declare", "parameter",
 		fmt.Sprintf("component=%s", p.Component), fmt.Sprintf("name=%s", p.Name), fmt.Sprintf("value=%s", p.Value),
 	}
 }
@@ -193,7 +194,8 @@ func NewPermission(vhost string, user string, configure string, write string, re
 }
 
 func (p Permission) AsCommand() []string {
-	return []string{"rabbitmqadmin", "declare", "permission",
+	return []string{
+		"rabbitmqadmin", "declare", "permission",
 		fmt.Sprintf("vhost=%s", p.VHost), fmt.Sprintf("user=%s", p.User),
 		fmt.Sprintf("configure=%s", p.Configure), fmt.Sprintf("write=%s", p.Write), fmt.Sprintf("read=%s", p.Read),
 	}
@@ -337,7 +339,8 @@ func (u User) AsCommand() []string {
 		uniqueTags = append(uniqueTags, tag)
 	}
 
-	return []string{"rabbitmqadmin", "declare", "user",
+	return []string{
+		"rabbitmqadmin", "declare", "user",
 		fmt.Sprintf("name=%s", u.Name), fmt.Sprintf("password=%s", u.Password),
 		fmt.Sprintf("tags=%s", strings.Join(uniqueTags, ",")),
 	}
