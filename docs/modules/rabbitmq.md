@@ -81,12 +81,17 @@ Please read the [Create containers: Advanced Settings](../features/creating_cont
 
 #### Startup Commands
 
-It's possible to run arbitraty commands in the container right after it's started.
+!!!info
+    Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Testcontainers exposes the `WithStartupCommand(e ...Executable)` option to run arbitrary commands in the container right after it's started.
 
 !!!info
     To better understand how this feature works, please read the [Create containers: Lifecycle Hooks](../../features/creating_container/#lifecycle-hooks) documentation.
 
-Testcontainers exposes the `WithStartupCommand(e ...Executable)` option to run arbitrary commands in the container. The also exported `Executable` interface defines a `AsCommand()` method, which returns a slice of strings to represent the command and positional arguments to be executed in the container.
+It also exports an `Executable` interface, defining one single method: `AsCommand()`, which returns a slice of strings to represent the command and positional arguments to be executed in the container.
+
+You could use this feature to run a custom script, or to run a command that is not supported by the module right after the RabbitMQ container is started.
 
 !!!info
     The RabbitMQ module includes a couple of test implementations of the `Executable` interface: Binding, Exchange, OperatorPolicy, Parameter, Permission, Plugin, Policy, Queue, User, VirtualHost and VirtualHostLimit. You could use them as reference, but consider the implementation could not be complete for your use case.
