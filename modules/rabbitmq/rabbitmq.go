@@ -155,22 +155,6 @@ func withConfig(hostPath string, containerPath string, validateFn func(string) b
 	}
 }
 
-// WithStartupCommand will execute the command representation of each Executable into the container.
-// It will leverage the container lifecycle hooks to call the command right after the container
-// is started.
-func WithStartupCommand(execs ...Executable) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		for _, exec := range execs {
-			execFn := func(ctx context.Context, c testcontainers.Container) error {
-				_, _, err := c.Exec(ctx, exec.AsCommand())
-				return err
-			}
-
-			req.LifecycleHooks[0].PostStarts = append(req.LifecycleHooks[0].PostStarts, execFn)
-		}
-	}
-}
-
 // WithSSL enables SSL on the RabbitMQ container, adding the necessary environment variables,
 // files and waiting conditions.
 // From https://hub.docker.com/_/rabbitmq: "As of RabbitMQ 3.9, all of the docker-specific variables

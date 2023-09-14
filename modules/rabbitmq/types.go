@@ -6,12 +6,6 @@ import (
 	"strings"
 )
 
-// Executable represents an executable command to be sent to the RabbitMQ container
-// as part of the PostStart lifecycle hook.
-type Executable interface {
-	AsCommand() []string
-}
-
 // --------- Bindings ---------
 
 type Binding struct {

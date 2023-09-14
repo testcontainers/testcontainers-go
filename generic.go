@@ -93,6 +93,28 @@ func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Stra
 	}
 }
 
+// Executable represents an executable command to be sent to the RabbitMQ container
+// as part of the PostStart lifecycle hook.
+type Executable interface {
+	AsCommand() []string
+}
+
+// WithStartupCommand will execute the command representation of each Executable into the container.
+// It will leverage the container lifecycle hooks to call the command right after the container
+// is started.
+func WithStartupCommand(execs ...Executable) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) {
+		for _, exec := range execs {
+			execFn := func(ctx context.Context, c Container) error {
+				_, _, err := c.Exec(ctx, exec.AsCommand())
+				return err
+			}
+
+			req.LifecycleHooks[0].PostStarts = append(req.LifecycleHooks[0].PostStarts, execFn)
+		}
+	}
+}
+
 // GenericNetworkRequest represents parameters to a generic network
 type GenericNetworkRequest struct {
 	NetworkRequest              // embedded request for provider

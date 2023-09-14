@@ -130,7 +130,7 @@ func ExampleRunContainer_withPlugins() {
 
 	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
 		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
-		rabbitmq.WithStartupCommand(rabbitmq.Plugin("rabbitmq_shovel"), rabbitmq.Plugin("rabbitmq_random_exchange")),
+		testcontainers.WithStartupCommand(rabbitmq.Plugin("rabbitmq_shovel"), rabbitmq.Plugin("rabbitmq_random_exchange")),
 	)
 	if err != nil {
 		panic(err)
