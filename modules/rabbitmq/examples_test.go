@@ -130,7 +130,8 @@ func ExampleRunContainer_withPlugins() {
 
 	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
 		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
-		testcontainers.WithStartupCommand(rabbitmq.Plugin("rabbitmq_shovel"), rabbitmq.Plugin("rabbitmq_random_exchange")),
+		// Plugin is a test implementation of an Executable, please check types_test.go file for more details
+		testcontainers.WithStartupCommand(Plugin("rabbitmq_shovel"), Plugin("rabbitmq_random_exchange")),
 	)
 	if err != nil {
 		panic(err)
