@@ -18,13 +18,34 @@ import (
 )
 
 type mockReaperProvider struct {
-	req             ContainerRequest
-	hostConfig      *container.HostConfig
-	enpointSettings map[string]*network.EndpointSettings
-	config          TestcontainersConfig
+	req               ContainerRequest
+	hostConfig        *container.HostConfig
+	enpointSettings   map[string]*network.EndpointSettings
+	config            TestcontainersConfig
+	initialReaper     *Reaper
+	initialReaperOnce sync.Once
+	t                 *testing.T
+}
+
+func newMockReaperProvider(t *testing.T) *mockReaperProvider {
+	return &mockReaperProvider{
+		config:        TestcontainersConfig{},
+		t:             t,
+		initialReaper: reaperInstance,
+		//nolint:govet
+		initialReaperOnce: reaperOnce,
+	}
 }
 
 var errExpected = errors.New("expected")
+
+func (m *mockReaperProvider) Cleanup() {
+	m.t.Cleanup(func() {
+		reaperInstance = m.initialReaper
+		//nolint:govet
+		reaperOnce = m.initialReaperOnce
+	})
+}
 
 func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	m.req = req
@@ -113,18 +134,9 @@ func Test_NewReaper(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			initialReaper := reaperInstance
-			//nolint:govet
-			initialReaperOnce := reaperOnce
-			t.Cleanup(func() {
-				reaperInstance = initialReaper
-				//nolint:govet
-				reaperOnce = initialReaperOnce
-			})
-
-			provider := &mockReaperProvider{
-				config: test.config,
-			}
+			provider := newMockReaperProvider(t)
+			provider.config = test.config
+			t.Cleanup(provider.Cleanup)
 
 			if test.ctx == nil {
 				test.ctx = context.TODO()
@@ -148,14 +160,8 @@ func Test_NewReaper(t *testing.T) {
 }
 
 func Test_ReaperForNetwork(t *testing.T) {
-	initialReaper := reaperInstance
-	//nolint:govet
-	initialReaperOnce := reaperOnce
-	t.Cleanup(func() {
-		reaperInstance = initialReaper
-		//nolint:govet
-		reaperOnce = initialReaperOnce
-	})
+	provider := newMockReaperProvider(t)
+	t.Cleanup(provider.Cleanup)
 
 	ctx := context.Background()
 
@@ -171,10 +177,6 @@ func Test_ReaperForNetwork(t *testing.T) {
 		},
 	}
 
-	provider := &mockReaperProvider{
-		config: TestcontainersConfig{},
-	}
-
 	_, err := reuseOrCreateReaper(ctx, testcontainerssession.SessionID(), provider, req.ReaperOptions...)
 	assert.EqualError(t, err, "expected")
 
@@ -183,14 +185,8 @@ func Test_ReaperForNetwork(t *testing.T) {
 }
 
 func Test_ReaperReusedIfHealthy(t *testing.T) {
-	initialReaper := reaperInstance
-	//nolint:govet
-	initialReaperOnce := reaperOnce
-	t.Cleanup(func() {
-		reaperInstance = initialReaper
-		//nolint:govet
-		reaperOnce = initialReaperOnce
-	})
+	testProvider := newMockReaperProvider(t)
+	t.Cleanup(testProvider.Cleanup)
 
 	SkipIfProviderIsNotHealthy(&testing.T{})
 
@@ -224,14 +220,13 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 }
 
 func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
-	initialReaper := reaperInstance
-	//nolint:govet
-	initialReaperOnce := reaperOnce
-	t.Cleanup(func() {
-		reaperInstance = initialReaper
+	mockProvider := &mockReaperProvider{
+		initialReaper: reaperInstance,
 		//nolint:govet
-		reaperOnce = initialReaperOnce
-	})
+		initialReaperOnce: reaperOnce,
+		t:                 t,
+	}
+	t.Cleanup(mockProvider.Cleanup)
 
 	// explicitly set the reaperInstance to nil to simulate another test program in the same session accessing the same reaper
 	reaperInstance = nil
