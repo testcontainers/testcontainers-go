@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -14,7 +15,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/go-connections/nat"
-	"golang.org/x/sync/singleflight"
 
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
@@ -34,7 +34,8 @@ const (
 
 var (
 	reaperInstance *Reaper // We would like to create reaper only once
-	singleGroup    singleflight.Group
+	reaperMutex    sync.Mutex
+	reaperOnce     sync.Once
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
@@ -82,7 +83,6 @@ func lookUpReaperContainer(ctx context.Context) (*DockerContainer, error) {
 			filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, testcontainerssession.SessionID())),
 			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelReaper, true)),
 			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelRyuk, true)),
-			filters.Arg("status", "created"),
 		}
 
 		resp, err := dockerClient.ContainerList(ctx, types.ContainerListOptions{
@@ -94,8 +94,7 @@ func lookUpReaperContainer(ctx context.Context) (*DockerContainer, error) {
 		}
 
 		if len(resp) == 0 {
-			// reaper container not found in the running state:
-			// do not look for it again
+			// reaper container not found in the running state: do not look for it again
 			return nil
 		}
 
@@ -121,43 +120,44 @@ func lookUpReaperContainer(ctx context.Context) (*DockerContainer, error) {
 }
 
 // reuseOrCreateReaper returns an existing Reaper instance if it exists and is running. Otherwise, a new Reaper instance
-// will be created with a sessionID to identify containers and a provider to use
+// will be created with a sessionID to identify containers in the same test session/program.
 func reuseOrCreateReaper(ctx context.Context, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
-	// Verify this instance is still running by checking state.
-	reaperContainer, err := lookUpReaperContainer(ctx)
-	if err != nil || reaperContainer == nil {
-		singleReaper, err, shared := singleGroup.Do(testcontainerssession.SessionID(), func() (interface{}, error) {
-			r, err := newReaper(ctx, provider, opts...)
+	reaperMutex.Lock()
+	defer reaperMutex.Unlock()
+
+	var reaperErr error
+	reaperOnce.Do(func() {
+		reaperContainer, err := lookUpReaperContainer(context.Background())
+		if err == nil && reaperContainer != nil {
+			// The reaper container exists as a Docker container: re-use it
+			endpoint, err := reaperContainer.PortEndpoint(ctx, "8080", "")
 			if err != nil {
-				return nil, err
+				reaperErr = err
+				return
 			}
 
-			return r, nil
-		})
+			Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", testcontainerssession.SessionID())
+			reaperInstance, reaperErr = &Reaper{
+				Provider:  provider,
+				SessionID: testcontainerssession.SessionID(),
+				Endpoint:  endpoint,
+				container: reaperContainer,
+			}, nil
+			return
+		}
+
+		// the container is not found at the Docker level: create it for first time in this test session
+		r, err := newReaper(ctx, provider, opts...)
 		if err != nil {
-			return nil, err
+			reaperErr = err
+			return
 		}
 
-		if shared {
-			Logger.Printf("🔄 Reaper is being reused for this test session %s", testcontainerssession.SessionID())
-		}
-
-		reaperInstance = singleReaper.(*Reaper)
-
-		return reaperInstance, nil
-	}
-
-	// The reaper already exists and healthy, re-use it
-	endpoint, err := reaperContainer.PortEndpoint(ctx, "8080", "")
-	if err != nil {
-		return nil, err
-	}
-
-	reaperInstance = &Reaper{
-		Provider:  provider,
-		SessionID: testcontainerssession.SessionID(),
-		Endpoint:  endpoint,
-		container: reaperContainer,
+		reaperInstance, reaperErr = r, nil
+	})
+	if reaperErr != nil {
+		reaperOnce = sync.Once{}
+		return nil, reaperErr
 	}
 
 	return reaperInstance, nil

@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/docker/docker/api/types/container"
@@ -173,7 +174,52 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), provider)
 	assert.NoError(t, err, "creating the Reaper should not error")
 
-	reaperReused, _ := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), provider)
+	reaperReused, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), provider)
+	assert.NoError(t, err, "reusing the Reaper should not error")
+	// assert that the internal state of both reaper instances is the same
+	assert.Equal(t, reaper.SessionID, reaperReused.SessionID, "expecting the same SessionID")
+	assert.Equal(t, reaper.Endpoint, reaperReused.Endpoint, "expecting the same reaper endpoint")
+	assert.Equal(t, reaper.Provider, reaperReused.Provider, "expecting the same container provider")
+	assert.Equal(t, reaper.container.GetContainerID(), reaperReused.container.GetContainerID(), "expecting the same container ID")
+	assert.Equal(t, reaper.container.SessionID(), reaperReused.container.SessionID(), "expecting the same session ID")
+
+	terminate, err := reaper.Connect()
+	defer func(term chan bool) {
+		term <- true
+	}(terminate)
+	assert.NoError(t, err, "connecting to Reaper should be successful")
+
+	if !wasReaperRunning {
+		terminateContainerOnEnd(t, ctx, reaper.container)
+	}
+}
+
+func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
+	initialReaper := reaperInstance
+	//nolint:govet
+	initialReaperOnce := reaperOnce
+	t.Cleanup(func() {
+		reaperInstance = initialReaper
+		//nolint:govet
+		reaperOnce = initialReaperOnce
+	})
+
+	SkipIfProviderIsNotHealthy(&testing.T{})
+
+	ctx := context.Background()
+	// As other integration tests run with the (shared) Reaper as well, re-use the instance to not interrupt other tests
+	wasReaperRunning := reaperInstance != nil
+
+	provider, _ := ProviderDocker.GetProvider()
+	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), provider)
+	assert.NoError(t, err, "creating the Reaper should not error")
+
+	// expicitly set the reaperInstance to nil to simulate another test program in the same session accessing the same reaper
+	reaperInstance = nil
+	reaperOnce = sync.Once{}
+
+	reaperReused, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), provider)
+	assert.NoError(t, err, "reusing the Reaper should not error")
 	// assert that the internal state of both reaper instances is the same
 	assert.Equal(t, reaper.SessionID, reaperReused.SessionID, "expecting the same SessionID")
 	assert.Equal(t, reaper.Endpoint, reaperReused.Endpoint, "expecting the same reaper endpoint")
