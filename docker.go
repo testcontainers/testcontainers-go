@@ -1294,6 +1294,9 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	}
 
 	sessionID := testcontainerssession.SessionID()
+	if reaperInstance != nil {
+		sessionID = reaperInstance.SessionID
+	}
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
@@ -1308,7 +1311,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	}
 
 	// add the labels that the reaper will use to terminate the network to the request
-	for k, v := range testcontainersdocker.DefaultLabels(reaperInstance.SessionID) {
+	for k, v := range testcontainersdocker.DefaultLabels(sessionID) {
 		req.Labels[k] = v
 	}
 
