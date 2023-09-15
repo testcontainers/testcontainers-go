@@ -193,6 +193,12 @@ func Test_ReaperForNetwork(t *testing.T) {
 }
 
 func Test_ReaperReusedIfHealthy(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
 	testProvider := newMockReaperProvider(t)
 	t.Cleanup(testProvider.RestoreReaperState)
 
@@ -227,6 +233,12 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 }
 
 func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
 	mockProvider := &mockReaperProvider{
 		initialReaper: reaperInstance,
 		//nolint:govet
