@@ -148,6 +148,15 @@ func Test_NewReaper(t *testing.T) {
 }
 
 func Test_ReaperForNetwork(t *testing.T) {
+	initialReaper := reaperInstance
+	//nolint:govet
+	initialReaperOnce := reaperOnce
+	t.Cleanup(func() {
+		reaperInstance = initialReaper
+		//nolint:govet
+		reaperOnce = initialReaperOnce
+	})
+
 	ctx := context.Background()
 
 	networkName := "test-network-with-custom-reaper"
@@ -174,6 +183,15 @@ func Test_ReaperForNetwork(t *testing.T) {
 }
 
 func Test_ReaperReusedIfHealthy(t *testing.T) {
+	initialReaper := reaperInstance
+	//nolint:govet
+	initialReaperOnce := reaperOnce
+	t.Cleanup(func() {
+		reaperInstance = initialReaper
+		//nolint:govet
+		reaperOnce = initialReaperOnce
+	})
+
 	SkipIfProviderIsNotHealthy(&testing.T{})
 
 	ctx := context.Background()
