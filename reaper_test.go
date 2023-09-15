@@ -113,6 +113,15 @@ func Test_NewReaper(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			initialReaper := reaperInstance
+			//nolint:govet
+			initialReaperOnce := reaperOnce
+			t.Cleanup(func() {
+				reaperInstance = initialReaper
+				//nolint:govet
+				reaperOnce = initialReaperOnce
+			})
+
 			provider := &mockReaperProvider{
 				config: test.config,
 			}
@@ -206,6 +215,10 @@ func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
 		reaperOnce = initialReaperOnce
 	})
 
+	// explicitly set the reaperInstance to nil to simulate another test program in the same session accessing the same reaper
+	reaperInstance = nil
+	reaperOnce = sync.Once{}
+
 	SkipIfProviderIsNotHealthy(&testing.T{})
 
 	ctx := context.Background()
@@ -218,7 +231,7 @@ func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
 	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), sessionID, provider)
 	assert.NoError(t, err, "creating the Reaper should not error")
 
-	// expicitly set the reaperInstance to nil to simulate another test program in the same session accessing the same reaper
+	// explicitly set the reaperInstance to nil to simulate another test program in the same session accessing the same reaper
 	reaperInstance = nil
 	reaperOnce = sync.Once{}
 
