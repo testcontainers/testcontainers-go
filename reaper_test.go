@@ -5,14 +5,17 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -101,6 +104,210 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 	}
 
 	return customize(req)
+}
+
+func TestContainerStartsWithoutTheReaper(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if !tcConfig.RyukDisabled {
+		t.Skip("Ryuk is enabled, skipping test")
+	}
+
+	ctx := context.Background()
+
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: nginxAlpineImage,
+			ExposedPorts: []string{
+				nginxDefaultPort,
+			},
+		},
+		Started: true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, container)
+
+	sessionID := testcontainerssession.SessionID()
+	if reaperInstance != nil {
+		sessionID = reaperInstance.SessionID
+	}
+
+	reaperContainer, err := lookUpReaperContainer(ctx, sessionID)
+	if err != nil {
+		t.Fatal(err, "expected reaper container not found.")
+	}
+	if reaperContainer != nil {
+		t.Fatal("expected zero reaper running.")
+	}
+}
+
+func TestContainerStartsWithTheReaper(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
+	ctx := context.Background()
+
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: nginxAlpineImage,
+			ExposedPorts: []string{
+				nginxDefaultPort,
+			},
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	terminateContainerOnEnd(t, ctx, c)
+
+	sessionID := testcontainerssession.SessionID()
+	if reaperInstance != nil {
+		sessionID = reaperInstance.SessionID
+	}
+
+	reaperContainer, err := lookUpReaperContainer(ctx, sessionID)
+	if err != nil {
+		t.Fatal(err, "expected reaper container running.")
+	}
+	if reaperContainer == nil {
+		t.Fatal("expected one reaper to be running.")
+	}
+}
+
+func TestContainerStopWithReaper(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
+	ctx := context.Background()
+
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: nginxAlpineImage,
+			ExposedPorts: []string{
+				nginxDefaultPort,
+			},
+		},
+		Started: true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginxA)
+
+	state, err := nginxA.State(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.Running != true {
+		t.Fatal("The container shoud be in running state")
+	}
+	stopTimeout := 10 * time.Second
+	err = nginxA.Stop(ctx, &stopTimeout)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	state, err = nginxA.State(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.Running != false {
+		t.Fatal("The container shoud not be running")
+	}
+	if state.Status != "exited" {
+		t.Fatal("The container shoud be in exited state")
+	}
+}
+
+func TestContainerTerminationWithReaper(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
+	ctx := context.Background()
+
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: nginxAlpineImage,
+			ExposedPorts: []string{
+				nginxDefaultPort,
+			},
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	state, err := nginxA.State(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.Running != true {
+		t.Fatal("The container shoud be in running state")
+	}
+	err = nginxA.Terminate(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = nginxA.State(ctx)
+	if err == nil {
+		t.Fatal("expected error from container inspect.")
+	}
+}
+
+func TestContainerTerminationWithoutReaper(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if !tcConfig.RyukDisabled {
+		t.Skip("Ryuk is enabled, skipping test")
+	}
+
+	ctx := context.Background()
+
+	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: nginxAlpineImage,
+			ExposedPorts: []string{
+				nginxDefaultPort,
+			},
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	state, err := nginxA.State(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.Running != true {
+		t.Fatal("The container shoud be in running state")
+	}
+	err = nginxA.Terminate(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = nginxA.State(ctx)
+	if err == nil {
+		t.Fatal("expected error from container inspect.")
+	}
 }
 
 func Test_NewReaper(t *testing.T) {
