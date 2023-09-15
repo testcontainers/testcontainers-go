@@ -2,7 +2,6 @@ package testcontainersdocker
 
 import (
 	"github.com/testcontainers/testcontainers-go/internal"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 )
 
 const (
@@ -14,11 +13,11 @@ const (
 	LabelVersion   = LabelBase + ".version"
 )
 
-func DefaultLabels() map[string]string {
+func DefaultLabels(sessionID string) map[string]string {
 	return map[string]string{
 		LabelBase:      "true",
 		LabelLang:      "go",
-		LabelSessionID: testcontainerssession.SessionID(),
+		LabelSessionID: sessionID,
 		LabelVersion:   internal.Version,
 	}
 }

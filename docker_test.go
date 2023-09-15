@@ -25,6 +25,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -342,7 +343,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, container)
 
-	reaperContainer, err := lookUpReaperContainer(ctx)
+	reaperContainer, err := lookUpReaperContainer(ctx, testcontainerssession.SessionID())
 	if err != nil {
 		t.Fatal(err, "expected reaper container not found.")
 	}
@@ -380,7 +381,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	}
 	terminateContainerOnEnd(t, ctx, c)
 
-	reaperContainer, err := lookUpReaperContainer(ctx)
+	reaperContainer, err := lookUpReaperContainer(ctx, testcontainerssession.SessionID())
 	if err != nil {
 		t.Fatal(err, "expected reaper container running.")
 	}

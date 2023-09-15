@@ -13,6 +13,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -55,7 +56,7 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		Image:        "reaperImage",
 		ReaperImage:  "reaperImage",
 		ExposedPorts: []string{"8080/tcp"},
-		Labels:       testcontainersdocker.DefaultLabels(),
+		Labels:       testcontainersdocker.DefaultLabels(testcontainerssession.SessionID()),
 		Mounts:       Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock")),
 		WaitingFor:   wait.ForListeningPort(nat.Port("8080/tcp")),
 		ReaperOptions: []ContainerOption{
@@ -120,7 +121,7 @@ func Test_NewReaper(t *testing.T) {
 				test.ctx = context.TODO()
 			}
 
-			_, err := reuseOrCreateReaper(test.ctx, provider, test.req.ReaperOptions...)
+			_, err := reuseOrCreateReaper(test.ctx, testcontainerssession.SessionID(), provider, test.req.ReaperOptions...)
 			// we should have errored out see mockReaperProvider.RunContainer
 			assert.EqualError(t, err, "expected")
 
@@ -156,7 +157,7 @@ func Test_ReaperForNetwork(t *testing.T) {
 		config: TestcontainersConfig{},
 	}
 
-	_, err := reuseOrCreateReaper(ctx, provider, req.ReaperOptions...)
+	_, err := reuseOrCreateReaper(ctx, testcontainerssession.SessionID(), provider, req.ReaperOptions...)
 	assert.EqualError(t, err, "expected")
 
 	assert.Equal(t, "reaperImage", provider.req.Image)
@@ -170,11 +171,12 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 	// As other integration tests run with the (shared) Reaper as well, re-use the instance to not interrupt other tests
 	wasReaperRunning := reaperInstance != nil
 
+	sessionID := testcontainerssession.SessionID()
 	provider, _ := ProviderDocker.GetProvider()
-	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), provider)
+	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), sessionID, provider)
 	assert.NoError(t, err, "creating the Reaper should not error")
 
-	reaperReused, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), provider)
+	reaperReused, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), sessionID, provider)
 	assert.NoError(t, err, "reusing the Reaper should not error")
 	// assert that the internal state of both reaper instances is the same
 	assert.Equal(t, reaper.SessionID, reaperReused.SessionID, "expecting the same SessionID")
@@ -210,15 +212,17 @@ func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
 	// As other integration tests run with the (shared) Reaper as well, re-use the instance to not interrupt other tests
 	wasReaperRunning := reaperInstance != nil
 
+	sessionID := "this-is-a-different-session-id"
+
 	provider, _ := ProviderDocker.GetProvider()
-	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), provider)
+	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), sessionID, provider)
 	assert.NoError(t, err, "creating the Reaper should not error")
 
 	// expicitly set the reaperInstance to nil to simulate another test program in the same session accessing the same reaper
 	reaperInstance = nil
 	reaperOnce = sync.Once{}
 
-	reaperReused, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), provider)
+	reaperReused, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), sessionID, provider)
 	assert.NoError(t, err, "reusing the Reaper should not error")
 	// assert that the internal state of both reaper instances is the same
 	assert.Equal(t, reaper.SessionID, reaperReused.SessionID, "expecting the same SessionID")
