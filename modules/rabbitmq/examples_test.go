@@ -101,6 +101,7 @@ func ExampleRunContainer_withSSL() {
 
 	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
 		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
+		rabbitmq.WithConfigErlang(filepath.Join("testdata", "rabbitmq-custom-tls.config")),
 		rabbitmq.WithSSL(sslSettings),
 	)
 	if err != nil {

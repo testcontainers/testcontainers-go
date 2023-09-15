@@ -144,6 +144,12 @@ In the case you need to enable SSL, you can use the `WithSSL(settings SSLSetting
 [Enabling SSL](../../modules/rabbitmq/examples_test.go) inside_block:enableSSL
 <!--/codeinclude-->
 
+An example of the configuration file, in Erlang format, for the SSL settings could be:
+
+<!--codeinclude-->
+[SSL Config](../../modules/rabbitmq/testdata/rabbitmq-custom-tls.config)
+<!--/codeinclude-->
+
 You'll find a log entry similar to this one in the container logs:
 
 ```
