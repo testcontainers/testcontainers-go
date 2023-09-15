@@ -1402,12 +1402,17 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 		}
 	}
 
+	sessionID := testcontainerssession.SessionID()
+	if reaperInstance != nil {
+		sessionID = reaperInstance.SessionID
+	}
+
 	// Create a bridge network for the container communications
 	if !reaperNetworkExists {
 		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
 			Driver:     Bridge,
 			Attachable: true,
-			Labels:     testcontainersdocker.DefaultLabels(reaperInstance.SessionID),
+			Labels:     testcontainersdocker.DefaultLabels(sessionID),
 		})
 
 		if err != nil {
