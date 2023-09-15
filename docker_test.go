@@ -322,14 +322,8 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	client, err := NewDockerClientWithOpts(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer client.Close()
 
-	var container Container
-	container, err = GenericContainer(ctx, GenericContainerRequest{
+	container, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
@@ -360,11 +354,6 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	client, err := NewDockerClientWithOpts(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer client.Close()
 
 	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
