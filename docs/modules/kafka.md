@@ -38,10 +38,10 @@ When starting the Kafka container, you can pass options in a variadic way to con
 #### Image
 
 If you need to set a different Kafka Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Kafka. E.g. `testcontainers.WithImage("confluentinc/cp-kafka:7.3.3")`.
+for Kafka. E.g. `testcontainers.WithImage("confluentinc/confluent-local:7.5.0")`.
 
 !!! warning
-    The minimal required version of Kafka for KRaft mode is `confluentinc/cp-kafka:7.0.0`. If you are using an image that
+    The minimal required version of Kafka for KRaft mode is `confluentinc/confluent-local:7.4.0`. If you are using an image that
     is different from the official one, please make sure that it's compatible with KRaft mode, as the module won't check
     the version for you.
 

@@ -14,7 +14,7 @@ func ExampleRunContainer() {
 
 	kafkaContainer, err := kafka.RunContainer(ctx,
 		kafka.WithClusterID("test-cluster"),
-		testcontainers.WithImage("confluentinc/cp-kafka:7.3.3"),
+		testcontainers.WithImage("confluentinc/confluent-local:7.5.0"),
 	)
 	if err != nil {
 		panic(err)

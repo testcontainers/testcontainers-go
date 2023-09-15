@@ -39,11 +39,12 @@ type KafkaContainer struct {
 // RunContainer creates an instance of the Kafka container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "confluentinc/cp-kafka:7.3.3",
+		Image:        "confluentinc/confluent-local:7.5.0",
 		ExposedPorts: []string{string(publicPort)},
 		Env: map[string]string{
 			// envVars {
 			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
+			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
 			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT",
 			"KAFKA_INTER_BROKER_LISTENER_NAME":               "BROKER",
 			"KAFKA_BROKER_ID":                                "1",
@@ -169,7 +170,7 @@ func validateKRaftVersion(fqName string) error {
 	image := fqName[:strings.LastIndex(fqName, ":")]
 	version := fqName[strings.LastIndex(fqName, ":")+1:]
 
-	if !strings.EqualFold(image, "confluentinc/cp-kafka") {
+	if !strings.EqualFold(image, "confluentinc/confluent-local") {
 		// do not validate if the image is not the official one.
 		// not raising an error here, letting the image to start and
 		// eventually evaluate an error if it exists.
@@ -181,8 +182,8 @@ func validateKRaftVersion(fqName string) error {
 		version = fmt.Sprintf("v%s", version)
 	}
 
-	if semver.Compare(version, "v7.0.0") < 0 { // version < v7.0.0
-		return fmt.Errorf("version=%s. KRaft mode is only available since version 7.0.0", version)
+	if semver.Compare(version, "v7.4.0") < 0 { // version < v7.4.0
+		return fmt.Errorf("version=%s. KRaft mode is only available since version 7.4.0", version)
 	}
 
 	return nil

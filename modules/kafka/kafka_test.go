@@ -15,7 +15,7 @@ func TestKafka(t *testing.T) {
 
 	ctx := context.Background()
 
-	kafkaContainer, err := RunContainer(ctx, WithClusterID("kraftCluster"), testcontainers.WithImage("confluentinc/cp-kafka:7.3.3"))
+	kafkaContainer, err := RunContainer(ctx, WithClusterID("kraftCluster"), testcontainers.WithImage("confluentinc/confluent-local:7.5.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func TestKafka(t *testing.T) {
 func TestKafka_invalidVersion(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := RunContainer(ctx, WithClusterID("kraftCluster"), testcontainers.WithImage("confluentinc/cp-kafka:6.3.3"))
+	_, err := RunContainer(ctx, WithClusterID("kraftCluster"), testcontainers.WithImage("confluentinc/confluent-local:6.3.3"))
 	if err == nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,7 @@ func TestConfigureQuorumVoters(t *testing.T) {
 	}
 }
 
-func TestVAlidateKRaftVersion(t *testing.T) {
+func TestValidateKRaftVersion(t *testing.T) {
 	tests := []struct {
 		name    string
 		image   string
@@ -157,22 +157,22 @@ func TestVAlidateKRaftVersion(t *testing.T) {
 	}{
 		{
 			name:    "Official: valid version",
-			image:   "confluentinc/cp-kafka:7.3.3",
+			image:   "confluentinc/confluent-local:7.5.0",
 			wantErr: false,
 		},
 		{
 			name:    "Official: valid, limit version",
-			image:   "confluentinc/cp-kafka:7.0.0",
+			image:   "confluentinc/confluent-local:7.4.0",
 			wantErr: false,
 		},
 		{
 			name:    "Official: invalid, low version",
-			image:   "confluentinc/cp-kafka:6.99.99",
+			image:   "confluentinc/confluent-local:7.3.99",
 			wantErr: true,
 		},
 		{
 			name:    "Official: invalid, too low version",
-			image:   "confluentinc/cp-kafka:5.0.0",
+			image:   "confluentinc/confluent-local:5.0.0",
 			wantErr: true,
 		},
 		{
