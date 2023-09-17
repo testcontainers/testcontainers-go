@@ -156,4 +156,5 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 type GenericProvider interface {
 	ContainerProvider
 	NetworkProvider
+	ImageProvider
 }
