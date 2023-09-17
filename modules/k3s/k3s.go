@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -162,4 +163,22 @@ func unmarshal(bytes []byte) (*KubeConfigValue, error) {
 		return nil, err
 	}
 	return &kubeConfig, nil
+}
+
+// LoadImages loads images into the k3s container.
+func (c *K3sContainer) LoadImages(ctx context.Context, images string) error {
+	imageFile := path.Base(images)
+	containerPath := fmt.Sprintf("/tmp/%s", imageFile)
+
+	err := c.Container.CopyFileToContainer(ctx, images, containerPath, 0x644)
+	if err != nil {
+		return fmt.Errorf("copying image to container %w", err)
+	}
+
+	_, _, err = c.Container.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", containerPath})
+	if err != nil {
+		return fmt.Errorf("importing image %w", err)
+	}
+
+	return nil
 }
