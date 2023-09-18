@@ -1077,7 +1077,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		WaitingFor:        req.WaitingFor,
 		Image:             tag,
 		imageWasBuilt:     req.ShouldBuildImage(),
-		sessionID:         testcontainerssession.SessionID(),
+		sessionID:         sessionID,
 		provider:          p,
 		terminationSignal: termSignal,
 		stopProducer:      nil,
@@ -1125,6 +1125,10 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	}
 
 	sessionID := testcontainerssession.SessionID()
+	if reaperInstance != nil {
+		sessionID = reaperInstance.SessionID
+	}
+
 	tcConfig := p.Config().Config
 
 	var termSignal chan bool
@@ -1143,7 +1147,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		ID:                c.ID,
 		WaitingFor:        req.WaitingFor,
 		Image:             c.Image,
-		sessionID:         testcontainerssession.SessionID(),
+		sessionID:         sessionID,
 		provider:          p,
 		terminationSignal: termSignal,
 		stopProducer:      nil,
@@ -1443,7 +1447,12 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	}
 	container.provider = provider
 
-	container.sessionID = testcontainerssession.SessionID()
+	sessionID := testcontainerssession.SessionID()
+	if reaperInstance != nil {
+		sessionID = reaperInstance.SessionID
+	}
+
+	container.sessionID = sessionID
 	container.consumers = []LogConsumer{}
 	container.stopProducer = nil
 	container.isRunning = response.State == "running"
