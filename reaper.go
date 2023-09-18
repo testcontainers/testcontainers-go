@@ -124,28 +124,38 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 	reaperMutex.Lock()
 	defer reaperMutex.Unlock()
 
-	var reaperErr error
-	reaperOnce.Do(func() {
-		reaperContainer, err := lookUpReaperContainer(context.Background(), sessionID)
-		if err == nil && reaperContainer != nil {
-			// The reaper container exists as a Docker container: re-use it
-			endpoint, err := reaperContainer.PortEndpoint(ctx, "8080", "")
-			if err != nil {
-				reaperErr = err
-				return
-			}
+	// 1. if the reaper instance has been already created, return it
+	if reaperInstance != nil {
+		return reaperInstance, nil
+	}
 
-			Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", sessionID)
-			reaperInstance, reaperErr = &Reaper{
-				Provider:  provider,
-				SessionID: sessionID,
-				Endpoint:  endpoint,
-				container: reaperContainer,
-			}, nil
-			return
+	// 2. because the reaper instance has not been created yet, look for it in the Docker daemon, which
+	// will happen if the reaper container has been created in the same test session but in a different
+	// test process execution (e.g. when running tests in parallel), not having initialized the reaper
+	// instance yet.
+	reaperContainer, err := lookUpReaperContainer(context.Background(), sessionID)
+	if err == nil && reaperContainer != nil {
+		// The reaper container exists as a Docker container: re-use it
+		endpoint, err := reaperContainer.PortEndpoint(ctx, "8080", "")
+		if err != nil {
+			return nil, err
 		}
 
-		// the container is not found at the Docker level: create it for first time in this test session
+		Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", sessionID)
+		reaperInstance = &Reaper{
+			Provider:  provider,
+			SessionID: sessionID,
+			Endpoint:  endpoint,
+			container: reaperContainer,
+		}
+
+		return reaperInstance, nil
+	}
+
+	// 3. the reaper container does not exist in the Docker daemon: create it, and do it using the
+	// synchronization primitive to avoid multiple executions of this function to create the reaper
+	var reaperErr error
+	reaperOnce.Do(func() {
 		r, err := newReaper(ctx, sessionID, provider, opts...)
 		if err != nil {
 			reaperErr = err
