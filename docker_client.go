@@ -10,6 +10,7 @@ import (
 	"github.com/docker/docker/client"
 
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 )
 
 // DockerClient is a wrapper around the docker client that is used by testcontainers-go.
@@ -51,6 +52,8 @@ func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
   Total Memory: %v MB
   Resolved Docker Host: %s
   Resolved Docker Socket Path: %s
+  Test SessionID: %s
+  Test ProcessID: %s
 `
 
 		Logger.Printf(infoMessage, packagePath,
@@ -58,6 +61,8 @@ func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
 			dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
 			testcontainersdocker.ExtractDockerHost(ctx),
 			testcontainersdocker.ExtractDockerSocket(ctx),
+			testcontainerssession.SessionID(),
+			testcontainerssession.ProcessID(),
 		)
 	})
 
