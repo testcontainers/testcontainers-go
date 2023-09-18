@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/firestore v1.12.0
 	github.com/testcontainers/testcontainers-go v0.23.0
 	google.golang.org/api v0.138.0
-	google.golang.org/grpc v1.57.0
+	google.golang.org/grpc v1.58.1
 )
 
 require (
