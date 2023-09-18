@@ -79,3 +79,19 @@ to the Kubernetes Rest Client API using a Kubernetes client. It'll be returned i
 <!--codeinclude-->
 [Get KubeConifg](../../modules/k3s/k3s_test.go) inside_block:GetKubeConfig
 <!--/codeinclude-->
+
+#### LoadImages
+
+The `LoadImages` method loads images from a `.tar` file into the kubernetes cluster and makes them available to pods. This is useful for testing images generated locally without having to push them to a docker registry.
+
+The `.tar` file can be created, for example, using the [docker save](https://docs.docker.com/engine/reference/commandline/save/) command:
+
+```sh
+docker save -o images.tar <image> <image> ...
+```
+
+Also, the [DockerProvider](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#DockerProvider) offers methods for pulling and saving images, which can be used from the test code, as shown in the following example:
+
+<!--codeinclude-->
+[Load Images](../../modules/k3s/k3s_image_test.go) inside_block:LoadImages
+<!--/codeinclude-->
