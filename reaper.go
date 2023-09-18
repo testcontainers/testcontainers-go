@@ -141,7 +141,7 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 			return nil, err
 		}
 
-		Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", sessionID)
+		Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", reaperContainer.ID)
 		reaperInstance = &Reaper{
 			Provider:  provider,
 			SessionID: sessionID,
