@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/nats
 go 1.20
 
 require (
-	github.com/nats-io/nats.go v1.28.0
+	github.com/nats-io/nats.go v1.29.0
 	github.com/testcontainers/testcontainers-go v0.23.0
 )
 
