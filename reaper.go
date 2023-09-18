@@ -98,7 +98,7 @@ func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContai
 		}
 
 		if len(resp) > 1 {
-			panic(fmt.Sprintf("not possible to have multiple reaper containers found for session ID %s", sessionID))
+			return fmt.Errorf("not possible to have multiple reaper containers found for session ID %s", sessionID)
 		}
 
 		r, err := containerFromDockerResponse(ctx, resp[0])
