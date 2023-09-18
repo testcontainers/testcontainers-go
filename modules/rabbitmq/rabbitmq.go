@@ -1,9 +1,14 @@
 package rabbitmq
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/docker/go-connections/nat"
@@ -21,6 +26,11 @@ const (
 	defaultUser                   = "guest"
 	defaultCustomConfPath         = "/etc/rabbitmq/rabbitmq-custom.conf"
 	defaultCustomConfigErlangPath = "/etc/rabbitmq/rabbitmq-custom.config"
+)
+
+var (
+	//go:embed mounts/rabbitmq-custom.config.tpl
+	customConfigTpl string
 )
 
 // RabbitMQContainer represents the RabbitMQ container type used in the module
@@ -88,9 +98,31 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		Started:          true,
 	}
 
+	// Gather all config options (defaults and then apply provided options)
+	settings := defaultOptions()
 	for _, opt := range opts {
+		if apply, ok := opt.(Option); ok {
+			apply(&settings)
+		}
 		opt.Customize(&genericContainerReq)
 	}
+
+	if settings.SSLSettings != nil {
+		applySSLSettings(settings.SSLSettings)(&genericContainerReq)
+	}
+
+	nodeConfig, err := renderRabbitMQConfig(settings)
+	if err != nil {
+		return nil, err
+	}
+
+	tmpConfigFile := filepath.Join(os.TempDir(), "rabbitmq-custom.config")
+	err = os.WriteFile(tmpConfigFile, nodeConfig, 0o600)
+	if err != nil {
+		return nil, err
+	}
+
+	WithConfigErlang(tmpConfigFile)(&genericContainerReq)
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
@@ -155,13 +187,8 @@ func withConfig(hostPath string, containerPath string, validateFn func(string) b
 	}
 }
 
-// WithSSL enables SSL on the RabbitMQ container, adding the necessary environment variables,
-// files and waiting conditions.
-// From https://hub.docker.com/_/rabbitmq: "As of RabbitMQ 3.9, all of the docker-specific variables
-// listed below are deprecated and no longer used. Please use a configuration file instead;
-// visit https://rabbitmq.com/configure to learn more about the configuration file. For a starting point,
-// the 3.8 images will print out the config file it generated from supplied environment variables.
-func WithSSL(sslSettings SSLSettings) testcontainers.CustomizeRequestOption {
+// applySSLSettings transfers the SSL settings to the container request.
+func applySSLSettings(sslSettings *SSLSettings) testcontainers.CustomizeRequestOption {
 	const rabbitCaCertPath = "/etc/rabbitmq/ca_cert.pem"
 	const rabbitCertPath = "/etc/rabbitmq/rabbitmq_cert.pem"
 	const rabbitKeyPath = "/etc/rabbitmq/rabbitmq_key.pem"
@@ -169,18 +196,6 @@ func WithSSL(sslSettings SSLSettings) testcontainers.CustomizeRequestOption {
 	const defaultPermission = 0o644
 
 	return func(req *testcontainers.GenericContainerRequest) {
-		req.Env["RABBITMQ_SSL_VERIFY"] = string(sslSettings.VerificationMode)
-
-		req.Env["RABBITMQ_SSL_CACERTFILE"] = rabbitCaCertPath
-		req.Env["RABBITMQ_SSL_CERTFILE"] = rabbitCertPath
-		req.Env["RABBITMQ_SSL_KEYFILE"] = rabbitKeyPath
-
-		if sslSettings.VerificationDepth > 0 {
-			req.Env["RABBITMQ_SSL_DEPTH"] = fmt.Sprintf("%d", sslSettings.VerificationDepth)
-		}
-
-		req.Env["RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT"] = fmt.Sprintf("%t", sslSettings.FailIfNoCert)
-
 		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      sslSettings.CACertFile,
 			ContainerFilePath: rabbitCaCertPath,
@@ -201,4 +216,18 @@ func WithSSL(sslSettings SSLSettings) testcontainers.CustomizeRequestOption {
 		// See https://www.rabbitmq.com/ssl.html#enabling-tls-verify-configuration
 		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForLog("started TLS (SSL) listener on [::]:5671"))
 	}
+}
+
+func renderRabbitMQConfig(opts options) ([]byte, error) {
+	rabbitCustomConfigTpl, err := template.New("rabbitmq-custom.config").Parse(customConfigTpl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse RabbitMQ config file template: %w", err)
+	}
+
+	var rabbitMQConfig bytes.Buffer
+	if err := rabbitCustomConfigTpl.Execute(&rabbitMQConfig, opts); err != nil {
+		return nil, fmt.Errorf("failed to render RabbitMQ config template: %w", err)
+	}
+
+	return rabbitMQConfig.Bytes(), nil
 }

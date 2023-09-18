@@ -3,6 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/rabbitmq
 go 1.20
 
 require (
+	github.com/docker/go-connections v0.4.0
 	github.com/rabbitmq/amqp091-go v1.8.1
 	github.com/testcontainers/testcontainers-go v0.23.0
 )
@@ -17,7 +18,6 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v24.0.6+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
