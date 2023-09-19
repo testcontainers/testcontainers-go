@@ -1,4 +1,4 @@
-package k3s_test
+package k3s
 
 import (
 	"context"
