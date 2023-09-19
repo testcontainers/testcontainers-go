@@ -6,8 +6,8 @@ import (
 
 // ImageInfo represents a summary information of an image
 type ImageInfo struct {
-	ID     string
-	Name   string
+	ID   string
+	Name string
 }
 
 // ImageProvider allows manipulating images

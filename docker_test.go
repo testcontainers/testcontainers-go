@@ -2080,4 +2080,3 @@ func TestDockerProviderFindContainerByName(t *testing.T) {
 	require.NotNil(t, c)
 	assert.Contains(t, c.Names, c1Name)
 }
-
