@@ -18,7 +18,6 @@ import (
 )
 
 func ExampleLoadImages() {
-	// runK3sContainer {
 	ctx := context.Background()
 
 	k3sContainer, err := RunContainer(ctx,
@@ -35,7 +34,6 @@ func ExampleLoadImages() {
 			panic(err)
 		}
 	}()
-	// }
 
 	kubeConfigYaml, err := k3sContainer.GetKubeConfig(ctx)
 	if err != nil {

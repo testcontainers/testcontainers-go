@@ -167,7 +167,7 @@ func unmarshal(bytes []byte) (*KubeConfigValue, error) {
 
 // LoadImages loads images into the k3s container.
 func (c *K3sContainer) LoadImages(ctx context.Context, images string) error {
-	imageFile := path.Base(images)
+	imageFile := filepath.Base(images)
 	containerPath := fmt.Sprintf("/tmp/%s", imageFile)
 
 	err := c.Container.CopyFileToContainer(ctx, images, containerPath, 0x644)
