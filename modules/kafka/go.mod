@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/IBM/sarama v1.41.1
 	github.com/docker/go-connections v0.4.0
-	github.com/testcontainers/testcontainers-go v0.23.0
+	github.com/testcontainers/testcontainers-go v0.24.0
 	golang.org/x/mod v0.12.0
 )
 
