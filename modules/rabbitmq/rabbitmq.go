@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"text/template"
 	"time"
 
@@ -18,14 +17,13 @@ import (
 )
 
 const (
-	DefaultAMQPSPort              = "5671/tcp"
-	DefaultAMQPPort               = "5672/tcp"
-	DefaultHTTPSPort              = "15671/tcp"
-	DefaultHTTPPort               = "15672/tcp"
-	defaultPassword               = "guest"
-	defaultUser                   = "guest"
-	defaultCustomConfPath         = "/etc/rabbitmq/rabbitmq-custom.conf"
-	defaultCustomConfigErlangPath = "/etc/rabbitmq/rabbitmq-custom.config"
+	DefaultAMQPSPort      = "5671/tcp"
+	DefaultAMQPPort       = "5672/tcp"
+	DefaultHTTPSPort      = "15671/tcp"
+	DefaultHTTPPort       = "15672/tcp"
+	defaultPassword       = "guest"
+	defaultUser           = "guest"
+	defaultCustomConfPath = "/etc/rabbitmq/rabbitmq-custom.config"
 )
 
 var (
@@ -122,7 +120,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	WithConfigErlang(tmpConfigFile)(&genericContainerReq)
+	withConfig(tmpConfigFile)(&genericContainerReq)
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
@@ -151,37 +149,13 @@ func WithAdminUsername(username string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithConfig overwrites the default RabbitMQ configuration file with the supplied one.
-// This function (which uses the Sysctl format) is recommended for RabbitMQ >= 3.7
-// It's important to notice that this function does not work with RabbitMQ < 3.7.
-// The "configFilePath" parameter holds the path to the file to use (in sysctl format, don't forget empty line in the end of file)
-// and it will check if the file has the ".conf" extension.
-func WithConfig(confFilePath string) testcontainers.CustomizeRequestOption {
-	return withConfig(confFilePath, defaultCustomConfPath, func(s string) bool {
-		return strings.HasSuffix(s, ".conf")
-	})
-}
-
-// WithConfigErlang overwrites the default RabbitMQ configuration file with the supplied one.
-// The "configFilePath" parameter holds the path to the file to use (in sysctl format, don't forget empty line in the end of file)
-// and it will check if the file has the ".config" extension.
-func WithConfigErlang(confFilePath string) testcontainers.CustomizeRequestOption {
-	return withConfig(confFilePath, defaultCustomConfigErlangPath, func(s string) bool {
-		return strings.HasSuffix(s, ".config")
-	})
-}
-
-func withConfig(hostPath string, containerPath string, validateFn func(string) bool) testcontainers.CustomizeRequestOption {
+func withConfig(hostPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
-		if !validateFn(hostPath) {
-			return
-		}
-
-		req.Env["RABBITMQ_CONFIG_FILE"] = containerPath
+		req.Env["RABBITMQ_CONFIG_FILE"] = defaultCustomConfPath
 
 		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      hostPath,
-			ContainerFilePath: containerPath,
+			ContainerFilePath: defaultCustomConfPath,
 			FileMode:          0o644,
 		})
 	}
