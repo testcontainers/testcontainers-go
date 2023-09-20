@@ -56,6 +56,20 @@ With simply passing the `testcontainers.CustomizeRequest` functional option to t
 
 In the above example you can check how it's possible to set certain environment variables that are needed by the tests, the most important ones are the AWS services you want to use. Besides, the container runs in a separate Docker network with an alias.
 
+#### Startup Commands
+
+!!!info
+    Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Testcontainers exposes the `WithStartupCommand(e ...Executable)` option to run arbitrary commands in the container right after it's started.
+
+!!!info
+    To better understand how this feature works, please read the [Create containers: Lifecycle Hooks](../../features/creating_container/#lifecycle-hooks) documentation.
+
+It also exports an `Executable` interface, defining one single method: `AsCommand()`, which returns a slice of strings to represent the command and positional arguments to be executed in the container.
+
+You could use this feature to run a custom script, or to run a command that is not supported by the module right after the LocalStack container is started.
+
 #### WithNetwork
 
 By default, the LocalStack container is started in the default Docker network. If you want to use a different Docker network, you can use the `WithNetwork(networkName string, alias string)` option, which receives the new network name and an alias as parameters, creating the new network, attaching the container to it, and setting the network alias for that network.
