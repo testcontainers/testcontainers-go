@@ -40,8 +40,6 @@ func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
 	dockerInfoOnce.Do(func() {
 		dockerInfo, err = c.Client.Info(ctx)
 		if err != nil {
-			// reset the state of the sync.Once so that the next call to Info will try again
-			dockerInfoOnce = sync.Once{}
 			return
 		}
 
@@ -65,6 +63,11 @@ func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
 			testcontainerssession.ProcessID(),
 		)
 	})
+
+	if err != nil {
+		// reset the state of the sync.Once so that the next call to Info will try again
+		dockerInfoOnce = sync.Once{}
+	}
 
 	return dockerInfo, err
 }
