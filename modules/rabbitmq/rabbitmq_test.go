@@ -137,42 +137,44 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 		}
 	}()
 
-	if !assertEntity(rabbitmqContainer, "queues", "queue1", "queue2", "queue3", "queue4") {
+	if !assertEntity(t, rabbitmqContainer, "queues", "queue1", "queue2", "queue3", "queue4") {
 		t.Fatal(err)
 	}
-	if !assertEntity(rabbitmqContainer, "exchanges", "direct-exchange", "topic-exchange", "topic-exchange-2", "topic-exchange-3", "topic-exchange-4") {
+	if !assertEntity(t, rabbitmqContainer, "exchanges", "direct-exchange", "topic-exchange", "topic-exchange-2", "topic-exchange-3", "topic-exchange-4") {
 		t.Fatal(err)
 	}
-	if !assertEntity(rabbitmqContainer, "users", "user1", "user2") {
+	if !assertEntity(t, rabbitmqContainer, "users", "user1", "user2") {
 		t.Fatal(err)
 	}
-	if !assertEntity(rabbitmqContainer, "policies", "max length policy", "alternate exchange policy") {
+	if !assertEntity(t, rabbitmqContainer, "policies", "max length policy", "alternate exchange policy") {
 		t.Fatal(err)
 	}
-	if !assertEntityWithVHost(rabbitmqContainer, "policies", 2, "max length policy", "alternate exchange policy") {
+	if !assertEntityWithVHost(t, rabbitmqContainer, "policies", 2, "max length policy", "alternate exchange policy") {
 		t.Fatal(err)
 	}
-	if !assertEntity(rabbitmqContainer, "operator_policies", "operator policy 1") {
+	if !assertEntity(t, rabbitmqContainer, "operator_policies", "operator policy 1") {
 		t.Fatal(err)
 	}
-	if !assertPluginIsEnabled(rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange") {
+	if !assertPluginIsEnabled(t, rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange") {
 		t.Fatal(err)
 	}
 }
 
-func assertEntity(container testcontainers.Container, listCommand string, entities ...string) bool {
+func assertEntity(t *testing.T, container testcontainers.Container, listCommand string, entities ...string) bool {
+	t.Helper()
+
 	ctx := context.Background()
 
 	cmd := []string{"rabbitmqadmin", "list", listCommand}
 
 	_, out, err := container.Exec(ctx, cmd)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	check, err := io.ReadAll(out)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	for _, e := range entities {
@@ -184,7 +186,9 @@ func assertEntity(container testcontainers.Container, listCommand string, entiti
 	return true
 }
 
-func assertEntityWithVHost(container testcontainers.Container, listCommand string, vhostID int, entities ...string) bool {
+func assertEntityWithVHost(t *testing.T, container testcontainers.Container, listCommand string, vhostID int, entities ...string) bool {
+	t.Helper()
+
 	ctx := context.Background()
 
 	cmd := []string{"rabbitmqadmin", "list", listCommand}
@@ -194,12 +198,12 @@ func assertEntityWithVHost(container testcontainers.Container, listCommand strin
 
 	_, out, err := container.Exec(ctx, cmd)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	check, err := io.ReadAll(out)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	for _, e := range entities {
@@ -211,19 +215,21 @@ func assertEntityWithVHost(container testcontainers.Container, listCommand strin
 	return true
 }
 
-func assertPluginIsEnabled(container testcontainers.Container, plugins ...string) bool {
+func assertPluginIsEnabled(t *testing.T, container testcontainers.Container, plugins ...string) bool {
+	t.Helper()
+
 	ctx := context.Background()
 
 	for _, plugin := range plugins {
 
 		_, out, err := container.Exec(ctx, []string{"rabbitmq-plugins", "is_enabled", plugin})
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 
 		check, err := io.ReadAll(out)
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 
 		if !strings.Contains(string(check), plugin+" is enabled") {

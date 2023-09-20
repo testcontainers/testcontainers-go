@@ -141,7 +141,7 @@ func ExampleRunContainer_withPlugins() {
 		}
 	}()
 
-	fmt.Println(assertPluginIsEnabled(rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange"))
+	fmt.Println(assertPlugins(rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange"))
 
 	// Output:
 	// true
@@ -177,4 +177,27 @@ func ExampleRunContainer_withCustomConfigFile() {
 
 	// Output:
 	// true
+}
+
+func assertPlugins(container testcontainers.Container, plugins ...string) bool {
+	ctx := context.Background()
+
+	for _, plugin := range plugins {
+
+		_, out, err := container.Exec(ctx, []string{"rabbitmq-plugins", "is_enabled", plugin})
+		if err != nil {
+			panic(err)
+		}
+
+		check, err := io.ReadAll(out)
+		if err != nil {
+			panic(err)
+		}
+
+		if !strings.Contains(string(check), plugin+" is enabled") {
+			return false
+		}
+	}
+
+	return true
 }
