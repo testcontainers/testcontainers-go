@@ -26,10 +26,8 @@ const (
 	defaultCustomConfPath = "/etc/rabbitmq/rabbitmq-testcontainers.conf"
 )
 
-var (
-	//go:embed mounts/rabbitmq-testcontainers.conf.tpl
-	customConfigTpl string
-)
+//go:embed mounts/rabbitmq-testcontainers.conf.tpl
+var customConfigTpl string
 
 // RabbitMQContainer represents the RabbitMQ container type used in the module
 type RabbitMQContainer struct {
