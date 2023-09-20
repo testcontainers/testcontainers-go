@@ -40,25 +40,7 @@ When starting the {{ $title }} container, you can pass options in a variadic way
 If you need to set a different {{ $title }} Docker image, you can use `testcontainers.WithImage` with a valid Docker image
 for {{ $title }}. E.g. `testcontainers.WithImage("{{ .Image }}")`.
 
-#### Wait Strategies
-
-If you need to set a different wait strategy for {{ $title }}, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
-for {{ $title }}.
-
-!!!info
-    The default deadline for the wait strategy is 60 seconds.
-
-At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
-
-#### Docker type modifiers
-
-If you need an advanced configuration for {{ $title }}, you can leverage the following Docker type modifiers:
-
-- `testcontainers.WithConfigModifier`
-- `testcontainers.WithHostConfigModifier`
-- `testcontainers.WithEndpointSettingsModifier`
-
-Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+{% include "../features/common_functional_options.md" %}
 
 #### Startup Commands
 
