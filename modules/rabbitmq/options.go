@@ -10,12 +10,15 @@ const (
 )
 
 type options struct {
-	SSLSettings *SSLSettings
+	AdminUsername string
+	AdminPassword string
+	SSLSettings   *SSLSettings
 }
 
 func defaultOptions() options {
 	return options{
-		SSLSettings: nil,
+		AdminUsername: defaultUser,
+		AdminPassword: defaultPassword,
 	}
 }
 
@@ -43,6 +46,20 @@ type Option func(*options)
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
 func (o Option) Customize(*testcontainers.GenericContainerRequest) {
 	// NOOP to satisfy interface.
+}
+
+// WithAdminPassword sets the password for the default admin user
+func WithAdminPassword(password string) Option {
+	return func(o *options) {
+		o.AdminPassword = password
+	}
+}
+
+// WithAdminUsername sets the default admin username
+func WithAdminUsername(username string) Option {
+	return func(o *options) {
+		o.AdminUsername = username
+	}
 }
 
 // WithSSL enables SSL on the RabbitMQ container, configuring the Erlang config file with the provided settings.

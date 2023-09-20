@@ -23,11 +23,11 @@ const (
 	DefaultHTTPPort       = "15672/tcp"
 	defaultPassword       = "guest"
 	defaultUser           = "guest"
-	defaultCustomConfPath = "/etc/rabbitmq/rabbitmq-custom.config"
+	defaultCustomConfPath = "/etc/rabbitmq/rabbitmq-custom.conf"
 )
 
 var (
-	//go:embed mounts/rabbitmq-custom.config.tpl
+	//go:embed mounts/rabbitmq-custom.conf.tpl
 	customConfigTpl string
 )
 
@@ -114,7 +114,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	tmpConfigFile := filepath.Join(os.TempDir(), "rabbitmq-custom.config")
+	tmpConfigFile := filepath.Join(os.TempDir(), "rabbitmq-custom.conf")
 	err = os.WriteFile(tmpConfigFile, nodeConfig, 0o600)
 	if err != nil {
 		return nil, err
@@ -127,26 +127,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	user := genericContainerReq.Env["RABBITMQ_DEFAULT_USER"]
-	password := genericContainerReq.Env["RABBITMQ_DEFAULT_PASS"]
-
-	c := &RabbitMQContainer{Container: container, AdminUsername: user, AdminPassword: password}
+	c := &RabbitMQContainer{
+		Container:     container,
+		AdminUsername: settings.AdminUsername,
+		AdminPassword: settings.AdminPassword,
+	}
 
 	return c, nil
-}
-
-// WithAdminPassword sets the password for the default admin user
-func WithAdminPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Env["RABBITMQ_DEFAULT_PASS"] = password
-	}
-}
-
-// WithAdminUsername sets the default admin username
-func WithAdminUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Env["RABBITMQ_DEFAULT_USER"] = username
-	}
 }
 
 func withConfig(hostPath string) testcontainers.CustomizeRequestOption {
@@ -193,7 +180,7 @@ func applySSLSettings(sslSettings *SSLSettings) testcontainers.CustomizeRequestO
 }
 
 func renderRabbitMQConfig(opts options) ([]byte, error) {
-	rabbitCustomConfigTpl, err := template.New("rabbitmq-custom.config").Parse(customConfigTpl)
+	rabbitCustomConfigTpl, err := template.New("rabbitmq-custom.conf").Parse(customConfigTpl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse RabbitMQ config file template: %w", err)
 	}
