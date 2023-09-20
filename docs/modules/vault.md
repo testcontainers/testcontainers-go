@@ -75,20 +75,6 @@ for Vault. E.g. `testcontainers.WithImage("hashicorp/vault:1.13.0")`.
 
 {% include "../features/common_functional_options.md" %}
 
-#### Startup Commands
-
-!!!info
-    Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-Testcontainers exposes the `WithStartupCommand(e ...Executable)` option to run arbitrary commands in the container right after it's started.
-
-!!!info
-    To better understand how this feature works, please read the [Create containers: Lifecycle Hooks](../../features/creating_container/#lifecycle-hooks) documentation.
-
-It also exports an `Executable` interface, defining one single method: `AsCommand()`, which returns a slice of strings to represent the command and positional arguments to be executed in the container.
-
-You could use this feature to run a custom script, or to run a command that is not supported by the module right after the Vault container is started.
-
 #### Token
 
 If you need to add token authentication, you can use the `WithToken`.

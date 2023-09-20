@@ -45,20 +45,6 @@ for Redis. E.g. `testcontainers.WithImage("docker.io/redis:7")`.
 
 {% include "../features/common_functional_options.md" %}
 
-#### Startup Commands
-
-!!!info
-    Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-Testcontainers exposes the `WithStartupCommand(e ...Executable)` option to run arbitrary commands in the container right after it's started.
-
-!!!info
-    To better understand how this feature works, please read the [Create containers: Lifecycle Hooks](../../features/creating_container/#lifecycle-hooks) documentation.
-
-It also exports an `Executable` interface, defining one single method: `AsCommand()`, which returns a slice of strings to represent the command and positional arguments to be executed in the container.
-
-You could use this feature to run a custom script, or to run a command that is not supported by the module right after the Redis container is started.
-
 #### Snapshotting
 
 By default Redis saves snapshots of the dataset on disk, in a binary file called dump.rdb. You can configure Redis to have it save the dataset every `N` seconds if there are at least `M` changes in the dataset. E.g. `WithSnapshotting(10, 1)`.
