@@ -88,10 +88,8 @@ func ExampleRunContainer_withSSL() {
 	// enableSSL {
 	ctx := context.Background()
 
-	serverCa := filepath.Join("testdata", "certs", "server_ca.pem")
-
 	sslSettings := rabbitmq.SSLSettings{
-		CACertFile:        serverCa,
+		CACertFile:        filepath.Join("testdata", "certs", "server_ca.pem"),
 		CertFile:          filepath.Join("testdata", "certs", "server_cert.pem"),
 		KeyFile:           filepath.Join("testdata", "certs", "server_key.pem"),
 		VerificationMode:  rabbitmq.SSLVerificationModePeer,

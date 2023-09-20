@@ -23,11 +23,11 @@ const (
 	DefaultHTTPPort       = "15672/tcp"
 	defaultPassword       = "guest"
 	defaultUser           = "guest"
-	defaultCustomConfPath = "/etc/rabbitmq/rabbitmq-custom.conf"
+	defaultCustomConfPath = "/etc/rabbitmq/rabbitmq-testcontainers.conf"
 )
 
 var (
-	//go:embed mounts/rabbitmq-custom.conf.tpl
+	//go:embed mounts/rabbitmq-testcontainers.conf.tpl
 	customConfigTpl string
 )
 
@@ -114,7 +114,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	tmpConfigFile := filepath.Join(os.TempDir(), "rabbitmq-custom.conf")
+	tmpConfigFile := filepath.Join(os.TempDir(), "rabbitmq-testcontainers.conf")
 	err = os.WriteFile(tmpConfigFile, nodeConfig, 0o600)
 	if err != nil {
 		return nil, err
@@ -180,7 +180,7 @@ func applySSLSettings(sslSettings *SSLSettings) testcontainers.CustomizeRequestO
 }
 
 func renderRabbitMQConfig(opts options) ([]byte, error) {
-	rabbitCustomConfigTpl, err := template.New("rabbitmq-custom.conf").Parse(customConfigTpl)
+	rabbitCustomConfigTpl, err := template.New("rabbitmq-testcontainers.conf").Parse(customConfigTpl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse RabbitMQ config file template: %w", err)
 	}

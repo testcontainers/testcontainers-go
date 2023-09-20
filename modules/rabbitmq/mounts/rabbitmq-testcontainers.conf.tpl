@@ -3,10 +3,11 @@ default_user = {{ .AdminUsername }}
 default_pass = {{ .AdminPassword }}
 
 {{- if .SSLSettings }}
-ssl_listeners = 5671
-ssl_options.cacertfile = {{ .SSLSettings.CACertFile }}
-ssl_options.certfile = {{ .SSLSettings.CertFile }}
-ssl_options.keyfile = {{ .SSLSettings.KeyFile }}
+listeners.tcp = none
+listeners.ssl.default = 5671
+ssl_options.cacertfile = /etc/rabbitmq/ca_cert.pem
+ssl_options.certfile = /etc/rabbitmq/rabbitmq_cert.pem
+ssl_options.keyfile = /etc/rabbitmq/rabbitmq_key.pem
 ssl_options.depth = {{ .SSLSettings.VerificationDepth }}
 ssl_options.verify = {{ .SSLSettings.VerificationMode }}
 ssl_options.fail_if_no_peer_cert = {{ .SSLSettings.FailIfNoCert }}
