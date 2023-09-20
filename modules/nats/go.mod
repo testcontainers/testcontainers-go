@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/nats-io/nats.go v1.28.0
-	github.com/testcontainers/testcontainers-go v0.24.0
+	github.com/testcontainers/testcontainers-go v0.24.1
 )
 
 require (

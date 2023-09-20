@@ -73,25 +73,7 @@ for Vault. E.g. `testcontainers.WithImage("hashicorp/vault:1.13.0")`.
 [Set image name](../../modules/vault/vault_test.go) inside_block:WithImageName
 <!--/codeinclude-->
 
-#### Wait Strategies
-
-If you need to set a different wait strategy for Vault, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
-for Vault.
-
-!!!info
-    The default deadline for the wait strategy is 60 seconds.
-
-At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
-
-#### Docker type modifiers
-
-If you need an advanced configuration for Vault, you can leverage the following Docker type modifiers:
-
-- `testcontainers.WithConfigModifier`
-- `testcontainers.WithHostConfigModifier`
-- `testcontainers.WithEndpointSettingsModifier`
-
-Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+{% include "../features/common_functional_options.md" %}
 
 #### Startup Commands
 

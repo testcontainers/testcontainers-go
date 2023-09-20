@@ -81,19 +81,7 @@ func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) Cus
 	}
 }
 
-// WithWaitStrategy sets the wait strategy for a container, using 60 seconds as deadline
-func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
-	return WithWaitStrategyAndDeadline(60*time.Second, strategies...)
-}
-
-// WithWaitStrategyAndDeadline sets the wait strategy for a container, including deadline
-func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Strategy) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) {
-		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
-	}
-}
-
-// Executable represents an executable command to be sent to the RabbitMQ container
+// Executable represents an executable command to be sent to a container
 // as part of the PostStart lifecycle hook.
 type Executable interface {
 	AsCommand() []string
@@ -104,14 +92,32 @@ type Executable interface {
 // is started.
 func WithStartupCommand(execs ...Executable) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) {
+		startupCommandsHook := ContainerLifecycleHooks{
+			PostStarts: []ContainerHook{},
+		}
+
 		for _, exec := range execs {
 			execFn := func(ctx context.Context, c Container) error {
 				_, _, err := c.Exec(ctx, exec.AsCommand())
 				return err
 			}
 
-			req.LifecycleHooks[0].PostStarts = append(req.LifecycleHooks[0].PostStarts, execFn)
+			startupCommandsHook.PostStarts = append(startupCommandsHook.PostStarts, execFn)
 		}
+
+		req.LifecycleHooks = append(req.LifecycleHooks, startupCommandsHook)
+	}
+}
+
+// WithWaitStrategy sets the wait strategy for a container, using 60 seconds as deadline
+func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
+	return WithWaitStrategyAndDeadline(60*time.Second, strategies...)
+}
+
+// WithWaitStrategyAndDeadline sets the wait strategy for a container, including deadline
+func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Strategy) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) {
+		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
 	}
 }
 

@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/examples/nginx
 
 go 1.20
 
-require github.com/testcontainers/testcontainers-go v0.24.0
+require github.com/testcontainers/testcontainers-go v0.24.1
 
 replace github.com/testcontainers/testcontainers-go => ../..
 

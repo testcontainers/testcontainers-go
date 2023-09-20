@@ -4,6 +4,7 @@ site_url: https://golang.testcontainers.org
 plugins:
     - search
     - codeinclude
+    - include-markdown
     - markdownextradata
 theme:
     name: material
@@ -112,4 +113,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.24.0
+    latest_version: v0.24.1
