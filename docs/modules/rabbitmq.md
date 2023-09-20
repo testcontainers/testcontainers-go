@@ -59,42 +59,11 @@ for RabbitMQ. E.g. `testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"
     - RABBITMQ_SSL_VERIFY
     - RABBITMQ_VM_MEMORY_HIGH_WATERMARK
 
-#### Wait Strategies
+{% include "../features/common_functional_options.md" %}
 
-If you need to set a different wait strategy for RabbitMQ, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
-for RabbitMQ.
+#### Startup Commands for RabbitMQ
 
-!!!info
-    The default deadline for the wait strategy is 60 seconds.
-
-At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
-
-#### Docker type modifiers
-
-If you need an advanced configuration for RabbitMQ, you can leverage the following Docker type modifiers:
-
-- `testcontainers.WithConfigModifier`
-- `testcontainers.WithHostConfigModifier`
-- `testcontainers.WithEndpointSettingsModifier`
-
-Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
-
-#### Startup Commands
-
-!!!info
-    Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-Testcontainers exposes the `WithStartupCommand(e ...Executable)` option to run arbitrary commands in the container right after it's started.
-
-!!!info
-    To better understand how this feature works, please read the [Create containers: Lifecycle Hooks](../../features/creating_container/#lifecycle-hooks) documentation.
-
-It also exports an `Executable` interface, defining one single method: `AsCommand()`, which returns a slice of strings to represent the command and positional arguments to be executed in the container.
-
-You could use this feature to run a custom script, or to run a command that is not supported by the module right after the RabbitMQ container is started.
-
-!!!info
-    The RabbitMQ module includes a couple of test implementations of the `Executable` interface: Binding, Exchange, OperatorPolicy, Parameter, Permission, Plugin, Policy, Queue, User, VirtualHost and VirtualHostLimit. You could use them as reference, but consider the implementation could not be complete for your use case.
+The RabbitMQ module includes several test implementations of the `testcontainers.Executable` interface: Binding, Exchange, OperatorPolicy, Parameter, Permission, Plugin, Policy, Queue, User, VirtualHost and VirtualHostLimit. You could use them as reference to understand how the startup commands are generated, but please consider this test implementation could not be complete for your use case.
 
 You could use this feature to run a custom script, or to run a command that is not supported by the module. RabbitMQ examples of this could be:
 
@@ -135,12 +104,6 @@ In the case you need to enable SSL, you can use the `WithSSL(settings SSLSetting
 
 <!--codeinclude-->
 [Enabling SSL](../../modules/rabbitmq/examples_test.go) inside_block:enableSSL
-<!--/codeinclude-->
-
-An example of the configuration file, in Erlang format, for the SSL settings could be:
-
-<!--codeinclude-->
-[SSL Config](../../modules/rabbitmq/testdata/rabbitmq-custom-tls.config)
 <!--/codeinclude-->
 
 You'll find a log entry similar to this one in the container logs:
