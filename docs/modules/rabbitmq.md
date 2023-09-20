@@ -33,7 +33,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 ### Container Options
 
-When starting the RabbitMQ container, you can pass options in a variadic way to configure it.
+When starting the RabbitMQ container, you can pass options in a variadic way to configure it. All these options will be automatically rendered into the RabbitMQ's custom configuration file, located at `/etc/rabbitmq/rabbitmq-custom.conf`.
 
 #### Image
 
