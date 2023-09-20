@@ -125,7 +125,10 @@ func TestWithStartupCommand(t *testing.T) {
 
 	c, err := GenericContainer(context.Background(), req)
 	require.NoError(t, err)
-	defer c.Terminate(context.Background())
+	defer func() {
+		err = c.Terminate(context.Background())
+		require.NoError(t, err)
+	}()
 
 	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
 	require.NoError(t, err)
