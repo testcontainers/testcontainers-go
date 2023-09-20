@@ -81,7 +81,7 @@ func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) Cus
 	}
 }
 
-// Executable represents an executable command to be sent to the RabbitMQ container
+// Executable represents an executable command to be sent to a container
 // as part of the PostStart lifecycle hook.
 type Executable interface {
 	AsCommand() []string
