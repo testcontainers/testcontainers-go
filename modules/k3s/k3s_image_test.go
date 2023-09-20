@@ -14,13 +14,15 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/k3s"
 	"github.com/testcontainers/testcontainers-go/wait"
+
 )
 
 func ExampleLoadImages() {
 	ctx := context.Background()
 
-	k3sContainer, err := RunContainer(ctx,
+	k3sContainer, err := k3s.RunContainer(ctx,
 		testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1"),
 		testcontainers.WithWaitStrategy(wait.ForLog(".*Node controller sync successful.*").AsRegexp()),
 	)
