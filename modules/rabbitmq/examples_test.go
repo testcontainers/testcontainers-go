@@ -173,7 +173,7 @@ func ExampleRunContainer_withCustomConfigFile() {
 		panic(err)
 	}
 
-	fmt.Println(strings.Contains(string(bytes), "config file(s) : /etc/rabbitmq/rabbitmq-custom.config"))
+	fmt.Println(strings.Contains(string(bytes), "config file(s) : /etc/rabbitmq/rabbitmq-testcontainers.conf"))
 
 	// Output:
 	// true
