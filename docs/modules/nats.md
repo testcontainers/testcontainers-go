@@ -60,6 +60,20 @@ If you need an advanced configuration for NATS, you can leverage the following D
 
 Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
 
+#### Startup Commands
+
+!!!info
+    Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Testcontainers exposes the `WithStartupCommand(e ...Executable)` option to run arbitrary commands in the container right after it's started.
+
+!!!info
+    To better understand how this feature works, please read the [Create containers: Lifecycle Hooks](../../features/creating_container/#lifecycle-hooks) documentation.
+
+It also exports an `Executable` interface, defining one single method: `AsCommand()`, which returns a slice of strings to represent the command and positional arguments to be executed in the container.
+
+You could use this feature to run a custom script, or to run a command that is not supported by the module right after the NATS container is started.
+
 #### Set username and password
 
 If you need to set different credentials, you can use `WithUsername` and `WithPassword`
