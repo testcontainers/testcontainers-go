@@ -4,6 +4,7 @@ site_url: https://golang.testcontainers.org
 plugins:
     - search
     - codeinclude
+    - include-markdown
     - markdownextradata
 theme:
     name: material

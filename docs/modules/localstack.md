@@ -44,6 +44,8 @@ When starting the Localstack container, you can pass options in a variadic way t
 
 By default, the image used is `localstack:1.4.0`.  If you need to use a different image, you can use `testcontainers.WithImage` option.
 
+{% include "../features/common_functional_options.md" %}
+
 #### Customize the container request
 
 It's possible to entirely override the default LocalStack container request:
@@ -55,20 +57,6 @@ It's possible to entirely override the default LocalStack container request:
 With simply passing the `testcontainers.CustomizeRequest` functional option to the `RunContainer` function, you'll be able to configure the LocalStack container with your own needs, as this new container request will be merged with the original one.
 
 In the above example you can check how it's possible to set certain environment variables that are needed by the tests, the most important ones are the AWS services you want to use. Besides, the container runs in a separate Docker network with an alias.
-
-#### Startup Commands
-
-!!!info
-    Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-Testcontainers exposes the `WithStartupCommand(e ...Executable)` option to run arbitrary commands in the container right after it's started.
-
-!!!info
-    To better understand how this feature works, please read the [Create containers: Lifecycle Hooks](../../features/creating_container/#lifecycle-hooks) documentation.
-
-It also exports an `Executable` interface, defining one single method: `AsCommand()`, which returns a slice of strings to represent the command and positional arguments to be executed in the container.
-
-You could use this feature to run a custom script, or to run a command that is not supported by the module right after the LocalStack container is started.
 
 #### WithNetwork
 

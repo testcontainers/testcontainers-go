@@ -120,7 +120,6 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 		require.NotNil(t, container)
 	})
 	t.Run("custom query", func(t *testing.T) {
-		// withWaitStrategy {
 		container, err := RunContainer(
 			ctx,
 			WithDatabase(dbname),
@@ -128,7 +127,6 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			WithPassword(password),
 			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
 		)
-		// }
 		require.NoError(t, err)
 		require.NotNil(t, container)
 	})
