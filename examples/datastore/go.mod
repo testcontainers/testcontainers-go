@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	cloud.google.com/go/datastore v1.14.0
-	github.com/testcontainers/testcontainers-go v0.24.0
+	github.com/testcontainers/testcontainers-go v0.24.1
 	google.golang.org/api v0.138.0
 	google.golang.org/grpc v1.57.0
 )
