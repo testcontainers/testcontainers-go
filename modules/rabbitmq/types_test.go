@@ -6,6 +6,11 @@ import (
 	"strings"
 )
 
+// The following structs are added as a demonstration for the RabbitMQ management API therefore,
+// they are not used in the RabbitMQ module.
+// All of them implement the testcontainers.Executable interface, which is used to generate
+// the command that will be executed, with the "AsCommand" method.
+
 // --------- Bindings ---------
 
 type Binding struct {
