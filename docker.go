@@ -1468,3 +1468,53 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 
 	return &container, nil
 }
+
+// ListImages list images from the provider. If an image has multiple Tags, each tag is reported
+// individually with the same ID and same labels
+func (p *DockerProvider) ListImages(ctx context.Context) ([]ImageInfo, error) {
+	images := []ImageInfo{}
+
+	imageList, err := p.client.ImageList(ctx, types.ImageListOptions{})
+	if err != nil {
+		return images, fmt.Errorf("listing images %w", err)
+	}
+
+	for _, img := range imageList {
+		for _, tag := range img.RepoTags {
+			images = append(images, ImageInfo{ID: img.ID, Name: tag})
+		}
+	}
+
+	return images, nil
+}
+
+// SaveImages exports a list of images as an uncompressed tar
+func (p *DockerProvider) SaveImages(ctx context.Context, output string, images ...string) error {
+	outputFile, err := os.Create(output)
+	if err != nil {
+		return fmt.Errorf("opening output file %w", err)
+	}
+	defer func() {
+		_ = outputFile.Close()
+	}()
+
+	imageReader, err := p.client.ImageSave(ctx, images)
+	if err != nil {
+		return fmt.Errorf("saving images %w", err)
+	}
+	defer func() {
+		_ = imageReader.Close()
+	}()
+
+	_, err = io.Copy(outputFile, imageReader)
+	if err != nil {
+		return fmt.Errorf("writing images to output %w", err)
+	}
+
+	return nil
+}
+
+// PullImage pulls image from registry
+func (p *DockerProvider) PullImage(ctx context.Context, image string) error {
+	return p.attemptToPullImage(ctx, image, types.ImagePullOptions{})
+}
