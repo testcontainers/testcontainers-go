@@ -60,14 +60,14 @@ func Test_LoadImages(t *testing.T) {
 	}
 
 	t.Run("Test load image not available", func(t *testing.T) {
-		err = k3sContainer.LoadImages(context.Background(), "nginx", "fake.registry/fake:non-existing")
+		err := k3sContainer.LoadImages(context.Background(), "fake.registry/fake:non-existing")
 		if err == nil {
 			t.Fatal("should had failed")
 		}
 	})
 
 	t.Run("Test load image in cluster", func(t *testing.T) {
-		err = k3sContainer.LoadImages(context.Background(), "nginx")
+		err := k3sContainer.LoadImages(context.Background(), "nginx")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -101,8 +101,8 @@ func Test_LoadImages(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		if pod.Status.ContainerStatuses[0].State.Waiting.Reason == "ErrImageNeverPull" {
+		waiting := pod.Status.ContainerStatuses[0].State.Waiting
+		if waiting != nil && waiting.Reason == "ErrImageNeverPull" {
 			t.Fatal("Image was not loaded")
 		}
 	})
