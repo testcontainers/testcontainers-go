@@ -47,7 +47,7 @@ for Postgres. E.g. `testcontainers.WithImage("docker.io/postgres:9.6")`.
 
 #### Initial Database
 
-If you need to set a different database, and its credentials, you can use the `WithDatabase(db string)` option.
+If you need to set a different database, and its credentials, you can use the `WithDatabase(db string)`, `WithUsername(user string)` and `WithPassword(pwd string)` options.
 
 #### Init Scripts
 

@@ -102,6 +102,10 @@
             "path": "../modules/pulsar"
         },
         {
+            "name": "module / rabbitmq",
+            "path": "../modules/rabbitmq"
+        },
+        {
             "name": "module / redis",
             "path": "../modules/redis"
         },
