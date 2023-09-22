@@ -7,8 +7,10 @@ require (
 	cloud.google.com/go/datastore v1.13.0
 	cloud.google.com/go/firestore v1.11.0
 	cloud.google.com/go/pubsub v1.33.0
+	cloud.google.com/go/spanner v1.47.0
 	github.com/testcontainers/testcontainers-go v0.24.1
 	google.golang.org/api v0.142.0
+	google.golang.org/genproto v0.0.0-20230803162519-f966b187b2e5
 	google.golang.org/grpc v1.58.1
 )
 
@@ -75,7 +77,6 @@ require (
 	golang.org/x/tools v0.10.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230803162519-f966b187b2e5 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230803162519-f966b187b2e5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230913181813-007df8e322eb // indirect
 	google.golang.org/protobuf v1.31.0 // indirect

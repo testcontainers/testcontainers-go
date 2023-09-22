@@ -18,10 +18,6 @@
             "path": "../examples/nginx"
         },
         {
-            "name": "example / spanner",
-            "path": "../examples/spanner"
-        },
-        {
             "name": "example / toxiproxy",
             "path": "../examples/toxiproxy"
         },

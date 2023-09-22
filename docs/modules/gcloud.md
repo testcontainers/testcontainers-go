@@ -40,6 +40,12 @@ go get github.com/testcontainers/testcontainers-go/modules/gcloud
 [Creating a Pubsub container](../../modules/gcloud/examples_test.go) inside_block:runPubsubContainer
 <!--/codeinclude-->
 
+### Spanner
+
+<!--codeinclude-->
+[Creating a Spanner container](../../modules/gcloud/examples_test.go) inside_block:runSpannerContainer
+<!--/codeinclude-->
+
 ## Module reference
 
 The GCloud module exposes one entrypoint function to create the different GCloud emulators, and each function receives two parameters:
@@ -49,6 +55,7 @@ func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerC
 func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DatastoreContainer, error)
 func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*FirestoreContainer, error)
 func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PubsubContainer, error)
+func RunSpannerContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*SpannerContainer, error)
 ```
 
 - `context.Context`, the Go context.
