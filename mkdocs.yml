@@ -67,6 +67,7 @@ nav:
         - modules/clickhouse.md
         - modules/couchbase.md
         - modules/elasticsearch.md
+        - modules/gcloud.md
         - modules/k3s.md
         - modules/kafka.md
         - modules/localstack.md
@@ -83,14 +84,9 @@ nav:
         - modules/vault.md
     - Examples:
         - examples/index.md
-        - examples/bigtable.md
         - examples/cockroachdb.md
         - examples/consul.md
-        - examples/datastore.md
-        - examples/firestore.md
         - examples/nginx.md
-        - examples/pubsub.md
-        - examples/spanner.md
         - examples/toxiproxy.md
     - System Requirements:
         - system_requirements/index.md

@@ -6,10 +6,6 @@
             "path": "../"
         },
         {
-            "name": "example / bigtable",
-            "path": "../examples/bigtable"
-        },
-        {
             "name": "example / cockroachdb",
             "path": "../examples/cockroachdb"
         },
@@ -18,24 +14,8 @@
             "path": "../examples/consul"
         },
         {
-            "name": "example / datastore",
-            "path": "../examples/datastore"
-        },
-        {
-            "name": "example / firestore",
-            "path": "../examples/firestore"
-        },
-        {
             "name": "example / nginx",
             "path": "../examples/nginx"
-        },
-        {
-            "name": "example / pubsub",
-            "path": "../examples/pubsub"
-        },
-        {
-            "name": "example / spanner",
-            "path": "../examples/spanner"
         },
         {
             "name": "example / toxiproxy",
@@ -60,6 +40,10 @@
         {
             "name": "module / elasticsearch",
             "path": "../modules/elasticsearch"
+        },
+        {
+            "name": "module / gcloud",
+            "path": "../modules/gcloud"
         },
         {
             "name": "module / k3s",

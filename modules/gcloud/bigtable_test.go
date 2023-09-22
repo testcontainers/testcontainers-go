@@ -1,74 +1,92 @@
-package bigtable
+package gcloud_test
 
 import (
 	"context"
-	"testing"
+	"fmt"
 
 	"cloud.google.com/go/bigtable"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
-const (
-	projectId  = "test-project"
-	instanceId = "test-instance"
-	tableName  = "test-table"
-)
-
-func TestBigtable(t *testing.T) {
+func ExampleRunBigTableContainer() {
+	// runBigTableContainer {
 	ctx := context.Background()
 
-	container, err := startContainer(ctx)
+	bigTableContainer, err := gcloud.RunBigTableContainer(
+		ctx,
+		testcontainers.WithImage("gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators"),
+		gcloud.WithProjectID("bigtable-project"),
+	)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
+	// Clean up the container
+	defer func() {
+		if err := bigTableContainer.Terminate(ctx); err != nil {
+			panic(err)
 		}
-	})
+	}()
+	// }
+
+	// bigTableAdminClient {
+	projectId := bigTableContainer.Settings.ProjectID
+
+	const (
+		instanceId = "test-instance"
+		tableName  = "test-table"
+	)
 
 	options := []option.ClientOption{
-		option.WithEndpoint(container.URI),
+		option.WithEndpoint(bigTableContainer.URI),
 		option.WithoutAuthentication(),
 		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 	}
 	adminClient, err := bigtable.NewAdminClient(ctx, projectId, instanceId, options...)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
+	defer adminClient.Close()
+	// }
+
 	err = adminClient.CreateTable(ctx, tableName)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 	err = adminClient.CreateColumnFamily(ctx, tableName, "name")
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 
+	// bigTableClient {
 	client, err := bigtable.NewClient(ctx, projectId, instanceId, options...)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
+	defer client.Close()
+	// }
+
 	tbl := client.Open(tableName)
 
 	mut := bigtable.NewMutation()
 	mut.Set("name", "firstName", bigtable.Now(), []byte("Gopher"))
 	err = tbl.Apply(ctx, "1", mut)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 
 	row, err := tbl.ReadRow(ctx, "1", bigtable.RowFilter(bigtable.FamilyFilter("name")))
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
-	// perform assertions
-	name := string(row["name"][0].Value)
-	if name != "Gopher" {
-		t.Fatalf("expected row key to be 'Gopher', got '%s'", name)
-	}
+
+	fmt.Println(string(row["name"][0].Value))
+
+	// Output:
+	// Gopher
 }
