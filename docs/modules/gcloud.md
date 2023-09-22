@@ -16,6 +16,12 @@ go get github.com/testcontainers/testcontainers-go/modules/gcloud
 
 ## Usage example
 
+### BigQuery
+
+<!--codeinclude-->
+[Creating a BigQuery container](../../modules/gcloud/examples_test.go) inside_block:runBigQueryContainer
+<!--/codeinclude-->
+
 ### BigTable
 
 <!--codeinclude-->
@@ -51,6 +57,7 @@ go get github.com/testcontainers/testcontainers-go/modules/gcloud
 The GCloud module exposes one entrypoint function to create the different GCloud emulators, and each function receives two parameters:
 
 ```golang
+func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*BigQueryContainer, error)
 func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*BigTableContainer, error)
 func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DatastoreContainer, error)
 func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*FirestoreContainer, error)

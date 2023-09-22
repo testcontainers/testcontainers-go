@@ -8,7 +8,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// BigTableContainer represents the GCloud container type used in the module for BigQuery
+// BigTableContainer represents the GCloud container type used in the module for BigTable
 type BigTableContainer struct {
 	testcontainers.Container
 	URI string
@@ -29,7 +29,7 @@ func (c *BigTableContainer) uri(ctx context.Context) (string, error) {
 	return uri, nil
 }
 
-// RunBigTableContainer creates an instance of the GCloud container type for BigQuery
+// RunBigTableContainer creates an instance of the GCloud container type for BigTable
 func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*BigTableContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
