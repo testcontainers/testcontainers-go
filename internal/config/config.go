@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/magiconair/properties"
 )
@@ -18,12 +19,14 @@ var (
 // Config represents the configuration for Testcontainers
 // testcontainersConfig {
 type Config struct {
-	Host               string `properties:"docker.host,default="`
-	TLSVerify          int    `properties:"docker.tls.verify,default=0"`
-	CertPath           string `properties:"docker.cert.path,default="`
-	RyukDisabled       bool   `properties:"ryuk.disabled,default=false"`
-	RyukPrivileged     bool   `properties:"ryuk.container.privileged,default=false"`
-	TestcontainersHost string `properties:"tc.host,default="`
+	Host                    string        `properties:"docker.host,default="`
+	TLSVerify               int           `properties:"docker.tls.verify,default=0"`
+	CertPath                string        `properties:"docker.cert.path,default="`
+	RyukDisabled            bool          `properties:"ryuk.disabled,default=false"`
+	RyukPrivileged          bool          `properties:"ryuk.container.privileged,default=false"`
+	RyukReconnectionTimeout time.Duration `properties:"ryuk.reconnection.timeout,default=10s"`
+	RyukConnectionTimeout   time.Duration `properties:"ryuk.connection.timeout,default=1m"`
+	TestcontainersHost      string        `properties:"tc.host,default="`
 }
 
 // }
@@ -93,8 +96,6 @@ func read() Config {
 }
 
 func parseBool(input string) bool {
-	if _, err := strconv.ParseBool(input); err == nil {
-		return true
-	}
-	return false
+	_, err := strconv.ParseBool(input)
+	return err == nil
 }
