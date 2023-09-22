@@ -8,7 +8,8 @@ require (
 	cloud.google.com/go/datastore v1.13.0
 	cloud.google.com/go/firestore v1.11.0
 	cloud.google.com/go/pubsub v1.33.0
-	cloud.google.com/go/spanner v1.47.0
+	cloud.google.com/go/spanner v1.49.0
+	github.com/docker/go-connections v0.4.0
 	github.com/testcontainers/testcontainers-go v0.24.1
 	google.golang.org/api v0.142.0
 	google.golang.org/grpc v1.58.1
@@ -36,7 +37,6 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v24.0.6+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/envoyproxy/go-control-plane v0.11.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.2 // indirect
