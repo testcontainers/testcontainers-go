@@ -16,6 +16,9 @@ go get github.com/testcontainers/testcontainers-go/modules/gcloud
 
 ## Usage example
 
+!!!info
+    By default, the all the emulators use `gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators` as the default Docker image, except for the BigQuery emulator, which uses `ghcr.io/goccy/bigquery-emulator:0.4.3`, and Spanner, which uses `gcr.io/cloud-spanner-emulator/emulator:1.4.0`.
+
 ### BigQuery
 
 <!--codeinclude-->
