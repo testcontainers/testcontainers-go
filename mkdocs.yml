@@ -86,7 +86,6 @@ nav:
         - examples/index.md
         - examples/cockroachdb.md
         - examples/consul.md
-        - examples/datastore.md
         - examples/firestore.md
         - examples/nginx.md
         - examples/pubsub.md

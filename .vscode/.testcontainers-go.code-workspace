@@ -14,10 +14,6 @@
             "path": "../examples/consul"
         },
         {
-            "name": "example / datastore",
-            "path": "../examples/datastore"
-        },
-        {
             "name": "example / firestore",
             "path": "../examples/firestore"
         },
