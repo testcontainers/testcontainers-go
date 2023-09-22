@@ -29,7 +29,11 @@ func ExampleRunBigQueryContainer() {
 	// runBigQueryContainer {
 	ctx := context.Background()
 
-	bigQueryContainer, err := gcloud.RunBigQueryContainer(ctx, testcontainers.WithImage("ghcr.io/goccy/bigquery-emulator:0.4.3"))
+	bigQueryContainer, err := gcloud.RunBigQueryContainer(
+		ctx,
+		testcontainers.WithImage("ghcr.io/goccy/bigquery-emulator:0.4.3"),
+		gcloud.WithProjectID("bigquery-project"),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -42,11 +46,9 @@ func ExampleRunBigQueryContainer() {
 	}()
 	// }
 
-	const (
-		projectID = "test-project"
-	)
-
 	// bigQueryClient {
+	projectID := bigQueryContainer.Settings.ProjectID
+
 	opts := []option.ClientOption{
 		option.WithEndpoint(bigQueryContainer.URI),
 		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
@@ -94,7 +96,11 @@ func ExampleRunBigTableContainer() {
 	// runBigTableContainer {
 	ctx := context.Background()
 
-	bigTableContainer, err := gcloud.RunBigTableContainer(ctx, testcontainers.WithImage("gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators"))
+	bigTableContainer, err := gcloud.RunBigTableContainer(
+		ctx,
+		testcontainers.WithImage("gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators"),
+		gcloud.WithProjectID("bigtable-project"),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -108,8 +114,9 @@ func ExampleRunBigTableContainer() {
 	// }
 
 	// bigTableAdminClient {
+	projectId := bigTableContainer.Settings.ProjectID
+
 	const (
-		projectId  = "test-project"
 		instanceId = "test-instance"
 		tableName  = "test-table"
 	)
@@ -167,7 +174,11 @@ func ExampleRunDatastoreContainer() {
 	// runDatastoreContainer {
 	ctx := context.Background()
 
-	datastoreContainer, err := gcloud.RunDatastoreContainer(ctx, testcontainers.WithImage("gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators"))
+	datastoreContainer, err := gcloud.RunDatastoreContainer(
+		ctx,
+		testcontainers.WithImage("gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators"),
+		gcloud.WithProjectID("datastore-project"),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -181,13 +192,15 @@ func ExampleRunDatastoreContainer() {
 	// }
 
 	// datastoreClient {
+	projectID := datastoreContainer.Settings.ProjectID
+
 	options := []option.ClientOption{
 		option.WithEndpoint(datastoreContainer.URI),
 		option.WithoutAuthentication(),
 		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 	}
 
-	dsClient, err := datastore.NewClient(ctx, "test-project", options...)
+	dsClient, err := datastore.NewClient(ctx, projectID, options...)
 	if err != nil {
 		panic(err)
 	}
@@ -233,7 +246,11 @@ func ExampleRunFirestoreContainer() {
 	// runFirestoreContainer {
 	ctx := context.Background()
 
-	firestoreContainer, err := gcloud.RunFirestoreContainer(ctx, testcontainers.WithImage("gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators"))
+	firestoreContainer, err := gcloud.RunFirestoreContainer(
+		ctx,
+		testcontainers.WithImage("gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators"),
+		gcloud.WithProjectID("firestore-project"),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -247,13 +264,15 @@ func ExampleRunFirestoreContainer() {
 	// }
 
 	// firestoreClient {
+	projectID := firestoreContainer.Settings.ProjectID
+
 	conn, err := grpc.Dial(firestoreContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(emulatorCreds{}))
 	if err != nil {
 		panic(err)
 	}
 
 	options := []option.ClientOption{option.WithGRPCConn(conn)}
-	client, err := firestore.NewClient(ctx, "test-project", options...)
+	client, err := firestore.NewClient(ctx, projectID, options...)
 	if err != nil {
 		panic(err)
 	}
@@ -297,7 +316,11 @@ func ExampleRunPubsubContainer() {
 	// runPubsubContainer {
 	ctx := context.Background()
 
-	pubsubContainer, err := gcloud.RunPubsubContainer(ctx, testcontainers.WithImage("gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators"))
+	pubsubContainer, err := gcloud.RunPubsubContainer(
+		ctx,
+		testcontainers.WithImage("gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators"),
+		gcloud.WithProjectID("pubsub-project"),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -311,13 +334,15 @@ func ExampleRunPubsubContainer() {
 	// }
 
 	// pubsubClient {
+	projectID := pubsubContainer.Settings.ProjectID
+
 	conn, err := grpc.Dial(pubsubContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
 
 	options := []option.ClientOption{option.WithGRPCConn(conn)}
-	client, err := pubsub.NewClient(ctx, "my-project-id", options...)
+	client, err := pubsub.NewClient(ctx, projectID, options...)
 	if err != nil {
 		panic(err)
 	}
@@ -360,7 +385,11 @@ func ExampleRunSpannerContainer() {
 	// runSpannerContainer {
 	ctx := context.Background()
 
-	spannerContainer, err := gcloud.RunSpannerContainer(ctx, testcontainers.WithImage("gcr.io/cloud-spanner-emulator/emulator:1.4.0"))
+	spannerContainer, err := gcloud.RunSpannerContainer(
+		ctx,
+		testcontainers.WithImage("gcr.io/cloud-spanner-emulator/emulator:1.4.0"),
+		gcloud.WithProjectID("spanner-project"),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -374,8 +403,9 @@ func ExampleRunSpannerContainer() {
 	// }
 
 	// spannerAdminClient {
+	projectId := spannerContainer.Settings.ProjectID
+
 	const (
-		projectId    = "test-project"
 		instanceId   = "test-instance"
 		databaseName = "test-db"
 	)

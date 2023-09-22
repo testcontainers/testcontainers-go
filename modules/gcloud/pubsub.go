@@ -11,7 +11,8 @@ import (
 // PubsubContainer represents the pubsub container type used in the module
 type PubsubContainer struct {
 	testcontainers.Container
-	URI string
+	Settings options
+	URI      string
 }
 
 func (c *PubsubContainer) uri(ctx context.Context) (string, error) {
@@ -31,26 +32,31 @@ func (c *PubsubContainer) uri(ctx context.Context) (string, error) {
 
 // RunPubsubContainer creates an instance of the GCloud container type for Pubsub
 func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PubsubContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
-		ExposedPorts: []string{"8085/tcp"},
-		WaitingFor:   wait.ForLog("started"),
-		Cmd: []string{
-			"/bin/sh",
-			"-c",
-			"gcloud beta emulators pubsub start --host-port 0.0.0.0:8085",
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
+			ExposedPorts: []string{"8085/tcp"},
+			WaitingFor:   wait.ForLog("started"),
 		},
+		Started: true,
 	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+
+	settings := applyOptions(req, opts)
+
+	req.Cmd = []string{
+		"/bin/sh",
+		"-c",
+		"gcloud beta emulators pubsub start --host-port 0.0.0.0:8085 " + fmt.Sprintf("--project=%s", settings.ProjectID),
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	pubsubContainer := PubsubContainer{
 		Container: container,
+		Settings:  settings,
 	}
 
 	uri, err := containerURI(ctx, &pubsubContainer)

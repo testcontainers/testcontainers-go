@@ -12,7 +12,8 @@ import (
 // BigQueryContainer represents the GCloud container type used in the module for BigQuery
 type BigQueryContainer struct {
 	testcontainers.Container
-	URI string
+	Settings options
+	URI      string
 }
 
 func (c *BigQueryContainer) uri(ctx context.Context) (string, error) {
@@ -32,29 +33,27 @@ func (c *BigQueryContainer) uri(ctx context.Context) (string, error) {
 
 // RunBigQueryContainer creates an instance of the GCloud container type for BigQuery
 func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*BigQueryContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        "ghcr.io/goccy/bigquery-emulator:0.4.3",
-		ExposedPorts: []string{"9050/tcp", "9060/tcp"},
-		Cmd:          []string{"--project", "test-project"},
-		WaitingFor:   wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort("9050/tcp").WithStartupTimeout(time.Second * 5),
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "ghcr.io/goccy/bigquery-emulator:0.4.3",
+			ExposedPorts: []string{"9050/tcp", "9060/tcp"},
+			WaitingFor:   wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort("9050/tcp").WithStartupTimeout(time.Second * 5),
+		},
+		Started: true,
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	settings := applyOptions(req, opts)
 
-	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
-	}
+	req.Cmd = []string{"--project", settings.ProjectID}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.GenericContainer(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	bigQueryContainer := BigQueryContainer{
 		Container: container,
+		Settings:  settings,
 	}
 
 	uri, err := containerURI(ctx, &bigQueryContainer)
