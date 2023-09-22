@@ -8,30 +8,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// BigTableContainer represents the GCloud container type used in the module for BigTable
-type BigTableContainer struct {
-	testcontainers.Container
-	Settings options
-	URI      string
-}
-
-func (c *BigTableContainer) uri(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, "9000")
-	if err != nil {
-		return "", err
-	}
-
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	uri := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
-	return uri, nil
-}
-
 // RunBigTableContainer creates an instance of the GCloud container type for BigTable
-func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*BigTableContainer, error) {
+func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
@@ -54,17 +32,5 @@ func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerC
 		return nil, err
 	}
 
-	bigTableContainer := BigTableContainer{
-		Container: container,
-		Settings:  settings,
-	}
-
-	uri, err := containerURI(ctx, &bigTableContainer)
-	if err != nil {
-		return nil, err
-	}
-
-	bigTableContainer.URI = uri
-
-	return &bigTableContainer, nil
+	return newGCloudContainer(ctx, 9000, container, settings)
 }

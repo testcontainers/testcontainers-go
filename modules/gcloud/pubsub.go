@@ -31,7 +31,7 @@ func (c *PubsubContainer) uri(ctx context.Context) (string, error) {
 }
 
 // RunPubsubContainer creates an instance of the GCloud container type for Pubsub
-func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PubsubContainer, error) {
+func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
@@ -54,17 +54,5 @@ func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCus
 		return nil, err
 	}
 
-	pubsubContainer := PubsubContainer{
-		Container: container,
-		Settings:  settings,
-	}
-
-	uri, err := containerURI(ctx, &pubsubContainer)
-	if err != nil {
-		return nil, err
-	}
-
-	pubsubContainer.URI = uri
-
-	return &pubsubContainer, nil
+	return newGCloudContainer(ctx, 8085, container, settings)
 }

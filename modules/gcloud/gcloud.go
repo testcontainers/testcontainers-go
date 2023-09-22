@@ -2,18 +2,41 @@ package gcloud
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 )
 
 const defaultProjectID = "test-project"
 
-type GCloudContainer interface {
-	uri(ctx context.Context) (string, error)
+type GCloudContainer struct {
+	testcontainers.Container
+	Settings options
+	URI      string
 }
 
-func containerURI(ctx context.Context, container GCloudContainer) (string, error) {
-	return container.uri(ctx)
+// newGCloudContainer creates a new GCloud container, obtaining the URL to access the container from the specified port.
+func newGCloudContainer(ctx context.Context, port int, c testcontainers.Container, settings options) (*GCloudContainer, error) {
+	mappedPort, err := c.MappedPort(ctx, nat.Port(fmt.Sprintf("%d/tcp", port)))
+	if err != nil {
+		return nil, err
+	}
+
+	hostIP, err := c.Host(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	uri := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
+
+	gCloudContainer := &GCloudContainer{
+		Container: c,
+		Settings:  settings,
+		URI:       uri,
+	}
+
+	return gCloudContainer, nil
 }
 
 type options struct {

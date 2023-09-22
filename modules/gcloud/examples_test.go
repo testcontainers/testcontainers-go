@@ -411,7 +411,7 @@ func ExampleRunSpannerContainer() {
 	)
 
 	options := []option.ClientOption{
-		option.WithEndpoint(spannerContainer.GRPCEndpoint),
+		option.WithEndpoint(spannerContainer.URI),
 		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 		option.WithoutAuthentication(),
 		internaloption.SkipDialSettingsValidation(),

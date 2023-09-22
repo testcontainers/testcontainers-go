@@ -31,7 +31,7 @@ func (c *DatastoreContainer) uri(ctx context.Context) (string, error) {
 }
 
 // RunDatastoreContainer creates an instance of the GCloud container type for Datastore
-func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DatastoreContainer, error) {
+func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
@@ -54,17 +54,5 @@ func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.Container
 		return nil, err
 	}
 
-	datastoreContainer := DatastoreContainer{
-		Container: container,
-		Settings:  settings,
-	}
-
-	uri, err := containerURI(ctx, &datastoreContainer)
-	if err != nil {
-		return nil, err
-	}
-
-	datastoreContainer.URI = uri
-
-	return &datastoreContainer, nil
+	return newGCloudContainer(ctx, 8081, container, settings)
 }
