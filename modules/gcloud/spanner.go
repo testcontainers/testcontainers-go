@@ -44,13 +44,16 @@ func RunSpannerContainer(ctx context.Context, opts ...testcontainers.ContainerCu
 		return nil, err
 	}
 
-	uri, err := (&SpannerContainer{Container: container}).uri(ctx)
+	spannerContainer := SpannerContainer{
+		Container: container,
+	}
+
+	uri, err := containerURI(ctx, &spannerContainer)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SpannerContainer{
-		Container:    container,
-		GRPCEndpoint: uri,
-	}, nil
+	spannerContainer.GRPCEndpoint = uri
+
+	return &spannerContainer, nil
 }

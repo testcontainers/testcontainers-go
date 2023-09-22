@@ -56,13 +56,16 @@ func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerC
 		return nil, err
 	}
 
-	uri, err := (&BigTableContainer{Container: container}).uri(ctx)
+	bigTableContainer := BigTableContainer{
+		Container: container,
+	}
+
+	uri, err := containerURI(ctx, &bigTableContainer)
 	if err != nil {
 		return nil, err
 	}
 
-	return &BigTableContainer{
-		Container: container,
-		URI:       uri,
-	}, nil
+	bigTableContainer.URI = uri
+
+	return &bigTableContainer, nil
 }

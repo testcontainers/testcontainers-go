@@ -49,13 +49,16 @@ func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCus
 		return nil, err
 	}
 
-	uri, err := (&PubsubContainer{Container: container}).uri(ctx)
+	pubsubContainer := PubsubContainer{
+		Container: container,
+	}
+
+	uri, err := containerURI(ctx, &pubsubContainer)
 	if err != nil {
 		return nil, err
 	}
 
-	return &PubsubContainer{
-		Container: container,
-		URI:       uri,
-	}, nil
+	pubsubContainer.URI = uri
+
+	return &pubsubContainer, nil
 }

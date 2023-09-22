@@ -49,13 +49,16 @@ func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.Container
 		return nil, err
 	}
 
-	uri, err := (&FirestoreContainer{Container: container}).uri(ctx)
+	firestoreContainer := FirestoreContainer{
+		Container: container,
+	}
+
+	uri, err := containerURI(ctx, &firestoreContainer)
 	if err != nil {
 		return nil, err
 	}
 
-	return &FirestoreContainer{
-		Container: container,
-		URI:       uri,
-	}, nil
+	firestoreContainer.URI = uri
+
+	return &firestoreContainer, nil
 }

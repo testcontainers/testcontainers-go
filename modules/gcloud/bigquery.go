@@ -50,13 +50,16 @@ func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerC
 		return nil, err
 	}
 
-	uri, err := (&BigQueryContainer{Container: container}).uri(ctx)
+	bigQueryContainer := BigQueryContainer{
+		Container: container,
+	}
+
+	uri, err := containerURI(ctx, &bigQueryContainer)
 	if err != nil {
 		return nil, err
 	}
 
-	return &BigQueryContainer{
-		Container: container,
-		URI:       uri,
-	}, nil
+	bigQueryContainer.URI = uri
+
+	return &bigQueryContainer, nil
 }

@@ -49,13 +49,16 @@ func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.Container
 		return nil, err
 	}
 
-	uri, err := (&DatastoreContainer{Container: container}).uri(ctx)
+	datastoreContainer := DatastoreContainer{
+		Container: container,
+	}
+
+	uri, err := containerURI(ctx, &datastoreContainer)
 	if err != nil {
 		return nil, err
 	}
 
-	return &DatastoreContainer{
-		Container: container,
-		URI:       uri,
-	}, nil
+	datastoreContainer.URI = uri
+
+	return &datastoreContainer, nil
 }
