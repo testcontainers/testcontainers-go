@@ -18,10 +18,6 @@
             "path": "../examples/nginx"
         },
         {
-            "name": "example / pubsub",
-            "path": "../examples/pubsub"
-        },
-        {
             "name": "example / spanner",
             "path": "../examples/spanner"
         },

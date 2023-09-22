@@ -87,7 +87,6 @@ nav:
         - examples/cockroachdb.md
         - examples/consul.md
         - examples/nginx.md
-        - examples/pubsub.md
         - examples/spanner.md
         - examples/toxiproxy.md
     - System Requirements:

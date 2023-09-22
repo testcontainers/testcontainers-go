@@ -8,14 +8,14 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// FirestoreContainer represents the GCloud container type used in the module for Firestore
-type FirestoreContainer struct {
+// PubsubContainer represents the pubsub container type used in the module
+type PubsubContainer struct {
 	testcontainers.Container
 	URI string
 }
 
-func (c *FirestoreContainer) uri(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, "8080")
+func (c *PubsubContainer) uri(ctx context.Context) (string, error) {
+	mappedPort, err := c.MappedPort(ctx, "8085")
 	if err != nil {
 		return "", err
 	}
@@ -29,16 +29,16 @@ func (c *FirestoreContainer) uri(ctx context.Context) (string, error) {
 	return uri, nil
 }
 
-// RunFirestoreContainer creates an instance of the GCloud container type for Firestore
-func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*FirestoreContainer, error) {
+// RunPubsubContainer creates an instance of the GCloud container type for Pubsub
+func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PubsubContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
-		ExposedPorts: []string{"8080/tcp"},
-		WaitingFor:   wait.ForLog("running"),
+		ExposedPorts: []string{"8085/tcp"},
+		WaitingFor:   wait.ForLog("started"),
 		Cmd: []string{
 			"/bin/sh",
 			"-c",
-			"gcloud beta emulators firestore start --host-port 0.0.0.0:8080",
+			"gcloud beta emulators pubsub start --host-port 0.0.0.0:8085",
 		},
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -49,12 +49,12 @@ func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.Container
 		return nil, err
 	}
 
-	uri, err := (&FirestoreContainer{Container: container}).uri(ctx)
+	uri, err := (&PubsubContainer{Container: container}).uri(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &FirestoreContainer{
+	return &PubsubContainer{
 		Container: container,
 		URI:       uri,
 	}, nil

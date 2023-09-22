@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/bigtable v1.19.0
 	cloud.google.com/go/datastore v1.13.0
 	cloud.google.com/go/firestore v1.11.0
+	cloud.google.com/go/pubsub v1.33.0
 	github.com/testcontainers/testcontainers-go v0.24.1
 	google.golang.org/api v0.142.0
 	google.golang.org/grpc v1.58.1

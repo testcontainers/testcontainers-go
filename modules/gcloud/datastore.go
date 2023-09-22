@@ -8,7 +8,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// DatastoreContainer represents the GCloud container type used in the module for DatastoreContainer
+// DatastoreContainer represents the GCloud container type used in the module for Datastore
 type DatastoreContainer struct {
 	testcontainers.Container
 	URI string
@@ -29,7 +29,7 @@ func (c *DatastoreContainer) uri(ctx context.Context) (string, error) {
 	return uri, nil
 }
 
-// RunDatastoreContainer  creates an instance of the GCloud container type for Datastore
+// RunDatastoreContainer creates an instance of the GCloud container type for Datastore
 func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DatastoreContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
