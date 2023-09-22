@@ -14,10 +14,6 @@
             "path": "../examples/consul"
         },
         {
-            "name": "example / firestore",
-            "path": "../examples/firestore"
-        },
-        {
             "name": "example / nginx",
             "path": "../examples/nginx"
         },

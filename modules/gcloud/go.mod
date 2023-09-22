@@ -5,6 +5,7 @@ go 1.20
 require (
 	cloud.google.com/go/bigtable v1.19.0
 	cloud.google.com/go/datastore v1.13.0
+	cloud.google.com/go/firestore v1.11.0
 	github.com/testcontainers/testcontainers-go v0.24.1
 	google.golang.org/api v0.142.0
 	google.golang.org/grpc v1.58.1
@@ -69,6 +70,7 @@ require (
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.10.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

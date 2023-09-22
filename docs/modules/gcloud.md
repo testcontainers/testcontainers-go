@@ -28,6 +28,12 @@ go get github.com/testcontainers/testcontainers-go/modules/gcloud
 [Creating a Datastore container](../../modules/gcloud/examples_test.go) inside_block:runDatastoreContainer
 <!--/codeinclude-->
 
+### Firestore
+
+<!--codeinclude-->
+[Creating a Firestore container](../../modules/gcloud/examples_test.go) inside_block:runFirestoreContainer
+<!--/codeinclude-->
+
 ## Module reference
 
 The GCloud module exposes one entrypoint function to create the different GCloud emulators, and each function receives two parameters:
@@ -35,6 +41,7 @@ The GCloud module exposes one entrypoint function to create the different GCloud
 ```golang
 func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*BigTableContainer, error)
 func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DatastoreContainer, error)
+func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*FirestoreContainer, error)
 ```
 
 - `context.Context`, the Go context.
