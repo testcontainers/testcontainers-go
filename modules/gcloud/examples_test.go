@@ -45,6 +45,7 @@ func ExampleRunBigQueryContainer() {
 		projectID = "test-project"
 	)
 
+	// bigQueryClient {
 	opts := []option.ClientOption{
 		option.WithEndpoint(bigQueryContainer.URI),
 		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
@@ -57,6 +58,7 @@ func ExampleRunBigQueryContainer() {
 		panic(err)
 	}
 	defer client.Close()
+	// }
 
 	createFnQuery := client.Query("CREATE FUNCTION testr(arr ARRAY<STRUCT<name STRING, val INT64>>) AS ((SELECT SUM(IF(elem.name = \"foo\",elem.val,null)) FROM UNNEST(arr) AS elem))")
 	_, err = createFnQuery.Read(ctx)
@@ -104,6 +106,7 @@ func ExampleRunBigTableContainer() {
 	}()
 	// }
 
+	// bigTableAdminClient {
 	const (
 		projectId  = "test-project"
 		instanceId = "test-instance"
@@ -119,6 +122,9 @@ func ExampleRunBigTableContainer() {
 	if err != nil {
 		panic(err)
 	}
+	defer adminClient.Close()
+	// }
+
 	err = adminClient.CreateTable(ctx, tableName)
 	if err != nil {
 		panic(err)
@@ -128,10 +134,14 @@ func ExampleRunBigTableContainer() {
 		panic(err)
 	}
 
+	// bigTableClient {
 	client, err := bigtable.NewClient(ctx, projectId, instanceId, options...)
 	if err != nil {
 		panic(err)
 	}
+	defer client.Close()
+	// }
+
 	tbl := client.Open(tableName)
 
 	mut := bigtable.NewMutation()
@@ -169,16 +179,19 @@ func ExampleRunDatastoreContainer() {
 	}()
 	// }
 
+	// datastoreClient {
 	options := []option.ClientOption{
 		option.WithEndpoint(datastoreContainer.URI),
 		option.WithoutAuthentication(),
 		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 	}
+
 	dsClient, err := datastore.NewClient(ctx, "test-project", options...)
 	if err != nil {
 		panic(err)
 	}
 	defer dsClient.Close()
+	// }
 
 	type Task struct {
 		Description string
@@ -232,16 +245,19 @@ func ExampleRunFirestoreContainer() {
 	}()
 	// }
 
+	// firestoreClient {
 	conn, err := grpc.Dial(firestoreContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(emulatorCreds{}))
 	if err != nil {
 		panic(err)
 	}
+
 	options := []option.ClientOption{option.WithGRPCConn(conn)}
 	client, err := firestore.NewClient(ctx, "test-project", options...)
 	if err != nil {
 		panic(err)
 	}
 	defer client.Close()
+	// }
 
 	users := client.Collection("users")
 	docRef := users.Doc("alovelace")
@@ -293,16 +309,19 @@ func ExampleRunPubsubContainer() {
 	}()
 	// }
 
+	// pubsubClient {
 	conn, err := grpc.Dial(pubsubContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
+
 	options := []option.ClientOption{option.WithGRPCConn(conn)}
 	client, err := pubsub.NewClient(ctx, "my-project-id", options...)
 	if err != nil {
 		panic(err)
 	}
 	defer client.Close()
+	// }
 
 	topic, err := client.CreateTopic(ctx, "greetings")
 	if err != nil {
@@ -319,7 +338,6 @@ func ExampleRunPubsubContainer() {
 		panic(err)
 	}
 
-	// perform assertions
 	var data []byte
 	cctx, cancel := context.WithCancel(ctx)
 	err = subscription.Receive(cctx, func(ctx context.Context, m *pubsub.Message) {
@@ -354,6 +372,7 @@ func ExampleRunSpannerContainer() {
 	}()
 	// }
 
+	// spannerAdminClient {
 	const (
 		projectId    = "test-project"
 		instanceId   = "test-instance"
@@ -372,6 +391,7 @@ func ExampleRunSpannerContainer() {
 		panic(err)
 	}
 	defer instanceAdmin.Close()
+	// }
 
 	instanceOp, err := instanceAdmin.CreateInstance(ctx, &instancepb.CreateInstanceRequest{
 		Parent:     fmt.Sprintf("projects/%s", projectId),
@@ -389,11 +409,13 @@ func ExampleRunSpannerContainer() {
 		panic(err)
 	}
 
+	// spannerDBAdminClient {
 	c, err := database.NewDatabaseAdminClient(ctx, options...)
 	if err != nil {
 		panic(err)
 	}
 	defer c.Close()
+	// }
 
 	databaseOp, err := c.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
 		Parent:          fmt.Sprintf("projects/%s/instances/%s", projectId, instanceId),
