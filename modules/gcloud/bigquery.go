@@ -3,8 +3,10 @@ package gcloud
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // BigQueryContainer represents the GCloud container type used in the module for BigQuery
@@ -34,6 +36,7 @@ func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerC
 		Image:        "ghcr.io/goccy/bigquery-emulator:0.4.3",
 		ExposedPorts: []string{"9050/tcp", "9060/tcp"},
 		Cmd:          []string{"--project", "test-project"},
+		WaitingFor:   wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort("9050/tcp").WithStartupTimeout(time.Second * 5),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{

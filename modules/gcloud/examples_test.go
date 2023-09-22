@@ -58,14 +58,14 @@ func ExampleRunBigQueryContainer() {
 	}
 	defer client.Close()
 
-	createFn := client.Query("CREATE FUNCTION testr(arr ARRAY<STRUCT<name STRING, val INT64>>) AS ((SELECT SUM(IF(elem.name = \"foo\",elem.val,null)) FROM UNNEST(arr) AS elem))")
-	it, err := createFn.Read(ctx)
+	createFnQuery := client.Query("CREATE FUNCTION testr(arr ARRAY<STRUCT<name STRING, val INT64>>) AS ((SELECT SUM(IF(elem.name = \"foo\",elem.val,null)) FROM UNNEST(arr) AS elem))")
+	_, err = createFnQuery.Read(ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	result := client.Query("SELECT testr([STRUCT<name STRING, val INT64>(\"foo\", 10), STRUCT<name STRING, val INT64>(\"bar\", 40), STRUCT<name STRING, val INT64>(\"foo\", 20)])")
-	it, err = result.Read(ctx)
+	selectQuery := client.Query("SELECT testr([STRUCT<name STRING, val INT64>(\"foo\", 10), STRUCT<name STRING, val INT64>(\"bar\", 40), STRUCT<name STRING, val INT64>(\"foo\", 20)])")
+	it, err := selectQuery.Read(ctx)
 	if err != nil {
 		panic(err)
 	}
