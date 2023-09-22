@@ -8,28 +8,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// DatastoreContainer represents the GCloud container type used in the module for Datastore
-type DatastoreContainer struct {
-	testcontainers.Container
-	Settings options
-	URI      string
-}
-
-func (c *DatastoreContainer) uri(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, "8081")
-	if err != nil {
-		return "", err
-	}
-
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	uri := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
-	return uri, nil
-}
-
 // RunDatastoreContainer creates an instance of the GCloud container type for Datastore
 func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{

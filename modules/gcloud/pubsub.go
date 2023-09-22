@@ -8,28 +8,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// PubsubContainer represents the pubsub container type used in the module
-type PubsubContainer struct {
-	testcontainers.Container
-	Settings options
-	URI      string
-}
-
-func (c *PubsubContainer) uri(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, "8085")
-	if err != nil {
-		return "", err
-	}
-
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	uri := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
-	return uri, nil
-}
-
 // RunPubsubContainer creates an instance of the GCloud container type for Pubsub
 func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
