@@ -22,8 +22,8 @@ go get github.com/testcontainers/testcontainers-go/modules/gcloud
 ### BigQuery
 
 <!--codeinclude-->
-[Creating a BigQuery container](../../modules/gcloud/examples_test.go) inside_block:runBigQueryContainer
-[Obtaining a BigQuery client](../../modules/gcloud/examples_test.go) inside_block:bigQueryClient
+[Creating a BigQuery container](../../modules/gcloud/bigquery_test.go) inside_block:runBigQueryContainer
+[Obtaining a BigQuery client](../../modules/gcloud/bigquery_test.go) inside_block:bigQueryClient
 <!--/codeinclude-->
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the client example above.
@@ -31,9 +31,9 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 ### BigTable
 
 <!--codeinclude-->
-[Creating a BigTable container](../../modules/gcloud/examples_test.go) inside_block:runBigTableContainer
-[Obtaining a BigTable Admin client](../../modules/gcloud/examples_test.go) inside_block:bigTableAdminClient
-[Obtaining a BigTable client](../../modules/gcloud/examples_test.go) inside_block:bigTableClient
+[Creating a BigTable container](../../modules/gcloud/bigtable_test.go) inside_block:runBigTableContainer
+[Obtaining a BigTable Admin client](../../modules/gcloud/bigtable_test.go) inside_block:bigTableAdminClient
+[Obtaining a BigTable client](../../modules/gcloud/bigtable_test.go) inside_block:bigTableClient
 <!--/codeinclude-->
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the Admin client example above.
@@ -41,8 +41,8 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 ### Datastore
 
 <!--codeinclude-->
-[Creating a Datastore container](../../modules/gcloud/examples_test.go) inside_block:runDatastoreContainer
-[Obtaining a Datastore client](../../modules/gcloud/examples_test.go) inside_block:datastoreClient
+[Creating a Datastore container](../../modules/gcloud/datastore_test.go) inside_block:runDatastoreContainer
+[Obtaining a Datastore client](../../modules/gcloud/datastore_test.go) inside_block:datastoreClient
 <!--/codeinclude-->
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the client example above.
@@ -50,8 +50,8 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 ### Firestore
 
 <!--codeinclude-->
-[Creating a Firestore container](../../modules/gcloud/examples_test.go) inside_block:runFirestoreContainer
-[Obtaining a Firestore client](../../modules/gcloud/examples_test.go) inside_block:firestoreClient
+[Creating a Firestore container](../../modules/gcloud/firestore_test.go) inside_block:runFirestoreContainer
+[Obtaining a Firestore client](../../modules/gcloud/firestore_test.go) inside_block:firestoreClient
 <!--/codeinclude-->
 
 It's important to set the target string of the `grpc.Dial` method using the container's URI, as shown in the client example above.
@@ -59,8 +59,8 @@ It's important to set the target string of the `grpc.Dial` method using the cont
 ### Pubsub
 
 <!--codeinclude-->
-[Creating a Pubsub container](../../modules/gcloud/examples_test.go) inside_block:runPubsubContainer
-[Obtaining a Pubsub client](../../modules/gcloud/examples_test.go) inside_block:pubsubClient
+[Creating a Pubsub container](../../modules/gcloud/pubsub_test.go) inside_block:runPubsubContainer
+[Obtaining a Pubsub client](../../modules/gcloud/examplpubsub_testes_test.go) inside_block:pubsubClient
 <!--/codeinclude-->
 
 It's important to set the target string of the `grpc.Dial` method using the container's URI, as shown in the client example above.
@@ -68,9 +68,9 @@ It's important to set the target string of the `grpc.Dial` method using the cont
 ### Spanner
 
 <!--codeinclude-->
-[Creating a Spanner container](../../modules/gcloud/examples_test.go) inside_block:runSpannerContainer
-[Obtaining a Spanner Admin client](../../modules/gcloud/examples_test.go) inside_block:spannerAdminClient
-[Obtaining a Spanner Database Admin client](../../modules/gcloud/examples_test.go) inside_block:spannerDBAdminClient
+[Creating a Spanner container](../../modules/gcloud/spanner_test.go) inside_block:runSpannerContainer
+[Obtaining a Spanner Admin client](../../modules/gcloud/spanner_test.go) inside_block:spannerAdminClient
+[Obtaining a Spanner Database Admin client](../../modules/gcloud/spanner_test.go) inside_block:spannerDBAdminClient
 <!--/codeinclude-->
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the Admin client example above.
