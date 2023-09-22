@@ -1,4 +1,4 @@
-module github.com/testcontainers/testcontainers-go/examples/bigtable
+module github.com/testcontainers/testcontainers-go/modules/gcloud
 
 go 1.20
 

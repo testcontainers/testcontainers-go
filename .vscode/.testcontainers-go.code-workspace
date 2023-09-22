@@ -6,10 +6,6 @@
             "path": "../"
         },
         {
-            "name": "example / bigtable",
-            "path": "../examples/bigtable"
-        },
-        {
             "name": "example / cockroachdb",
             "path": "../examples/cockroachdb"
         },
@@ -60,6 +56,10 @@
         {
             "name": "module / elasticsearch",
             "path": "../modules/elasticsearch"
+        },
+        {
+            "name": "module / gcloud",
+            "path": "../modules/gcloud"
         },
         {
             "name": "module / k3s",
