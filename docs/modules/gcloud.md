@@ -60,7 +60,7 @@ It's important to set the target string of the `grpc.Dial` method using the cont
 
 <!--codeinclude-->
 [Creating a Pubsub container](../../modules/gcloud/pubsub_test.go) inside_block:runPubsubContainer
-[Obtaining a Pubsub client](../../modules/gcloud/examplpubsub_testes_test.go) inside_block:pubsubClient
+[Obtaining a Pubsub client](../../modules/gcloud/pubsub_test.go) inside_block:pubsubClient
 <!--/codeinclude-->
 
 It's important to set the target string of the `grpc.Dial` method using the container's URI, as shown in the client example above.
