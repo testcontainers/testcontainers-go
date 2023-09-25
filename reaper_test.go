@@ -94,6 +94,10 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		ReaperOptions: []ContainerOption{
 			WithImageName("reaperImage"),
 		},
+		Env: map[string]string{
+			"RYUK_CONNECTION_TIMEOUT":   "1m0s",
+			"RYUK_RECONNECTION_TIMEOUT": "10s",
+		},
 	}
 
 	req.Labels[testcontainersdocker.LabelReaper] = "true"
@@ -320,9 +324,12 @@ func Test_NewReaper(t *testing.T) {
 
 	tests := []cases{
 		{
-			name:   "non-privileged",
-			req:    createContainerRequest(nil),
-			config: TestcontainersConfig{},
+			name: "non-privileged",
+			req:  createContainerRequest(nil),
+			config: TestcontainersConfig{Config: config.Config{
+				RyukConnectionTimeout:   time.Minute,
+				RyukReconnectionTimeout: 10 * time.Second,
+			}},
 		},
 		{
 			name: "privileged",
@@ -330,11 +337,26 @@ func Test_NewReaper(t *testing.T) {
 				req.Privileged = true
 				return req
 			}),
-			config: TestcontainersConfig{
-				Config: config.Config{
-					RyukPrivileged: true,
-				},
-			},
+			config: TestcontainersConfig{Config: config.Config{
+				RyukPrivileged:          true,
+				RyukConnectionTimeout:   time.Minute,
+				RyukReconnectionTimeout: 10 * time.Second,
+			}},
+		},
+		{
+			name: "configured non-default timeouts",
+			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
+				req.Env = map[string]string{
+					"RYUK_CONNECTION_TIMEOUT":   "1m0s",
+					"RYUK_RECONNECTION_TIMEOUT": "10m0s",
+				}
+				return req
+			}),
+			config: TestcontainersConfig{Config: config.Config{
+				RyukPrivileged:          true,
+				RyukConnectionTimeout:   time.Minute,
+				RyukReconnectionTimeout: 10 * time.Minute,
+			}},
 		},
 		{
 			name: "docker-host in context",
@@ -342,8 +364,11 @@ func Test_NewReaper(t *testing.T) {
 				req.Mounts = Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock"))
 				return req
 			}),
-			config: TestcontainersConfig{},
-			ctx:    context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, testcontainersdocker.DockerSocketPathWithSchema),
+			config: TestcontainersConfig{Config: config.Config{
+				RyukConnectionTimeout:   time.Minute,
+				RyukReconnectionTimeout: 10 * time.Second,
+			}},
+			ctx: context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, testcontainersdocker.DockerSocketPathWithSchema),
 		},
 	}
 
@@ -366,6 +391,7 @@ func Test_NewReaper(t *testing.T) {
 			assert.Equal(t, test.req.Labels, provider.req.Labels, "expected labels don't match the submitted request")
 			assert.Equal(t, test.req.Mounts, provider.req.Mounts, "expected mounts don't match the submitted request")
 			assert.Equal(t, test.req.WaitingFor, provider.req.WaitingFor, "expected waitingFor don't match the submitted request")
+			assert.Equal(t, test.req.Env, provider.req.Env, "expected env doesn't match the submitted request")
 
 			// checks for reaper's preCreationCallback fields
 			assert.Equal(t, container.NetworkMode(Bridge), provider.hostConfig.NetworkMode, "expected networkMode doesn't match the submitted request")
