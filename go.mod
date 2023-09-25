@@ -13,7 +13,7 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/magiconair/properties v1.8.7
 	github.com/moby/term v0.5.0
-	github.com/opencontainers/image-spec v1.1.0-rc4
+	github.com/opencontainers/image-spec v1.1.0-rc5
 	github.com/shirou/gopsutil/v3 v3.23.7
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
