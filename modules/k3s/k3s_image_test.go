@@ -12,7 +12,6 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/k3s"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func Test_LoadImages(t *testing.T) {
@@ -20,7 +19,6 @@ func Test_LoadImages(t *testing.T) {
 
 	k3sContainer, err := k3s.RunContainer(ctx,
 		testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1"),
-		testcontainers.WithWaitStrategy(wait.ForLog(".*Node controller sync successful.*").AsRegexp()),
 	)
 	if err != nil {
 		t.Fatal(err)
