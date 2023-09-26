@@ -24,13 +24,6 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
-      directory: /examples/bigtable
-      schedule:
-        interval: monthly
-        day: sunday
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
       directory: /examples/cockroachdb
       schedule:
         interval: monthly
@@ -45,35 +38,7 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
-      directory: /examples/datastore
-      schedule:
-        interval: monthly
-        day: sunday
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
-      directory: /examples/firestore
-      schedule:
-        interval: monthly
-        day: sunday
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
       directory: /examples/nginx
-      schedule:
-        interval: monthly
-        day: sunday
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
-      directory: /examples/pubsub
-      schedule:
-        interval: monthly
-        day: sunday
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
-      directory: /examples/spanner
       schedule:
         interval: monthly
         day: sunday
@@ -123,6 +88,13 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/elasticsearch
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/gcloud
       schedule:
         interval: monthly
         day: sunday
