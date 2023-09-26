@@ -47,14 +47,15 @@ We have provided a command line tool to generate the scaffolding for the code of
 From the [`modulegen` directory]({{repo_url}}/tree/main/modulegen), please run:
 
 ```shell
-go run . new example --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
-```
-
-or for creating a Go module:
-
-```shell
 go run . new module --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
 ```
+
+!!!info
+    In the case you just want to create [an example module](../examples/index.md), with no public API, please run:
+
+    ```shell
+    go run . new example --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
+    ```
 
 ### Adding types and methods to the module
 
