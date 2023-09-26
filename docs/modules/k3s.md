@@ -59,7 +59,7 @@ The `GetKubeConfig` method returns the K3s cluster's `kubeconfig`, including the
 to the Kubernetes Rest Client API using a Kubernetes client. It'll be returned in the format of `[]bytes`.
 
 <!--codeinclude-->
-[Get KubeConifg](../../modules/k3s/k3s_test.go) inside_block:GetKubeConfig
+[Get KubeConfig](../../modules/k3s/k3s_example_test.go) inside_block:GetKubeConfig
 <!--/codeinclude-->
 
 #### LoadImages
