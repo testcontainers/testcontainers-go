@@ -8,7 +8,7 @@ replace (
 )
 
 require (
-	github.com/compose-spec/compose-go v1.18.3
+	github.com/compose-spec/compose-go v1.19.0
 	github.com/docker/cli v24.0.6+incompatible
 	github.com/docker/compose/v2 v2.21.0
 	github.com/docker/docker v24.0.6+incompatible
@@ -50,6 +50,7 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/distribution/v3 v3.0.0-20230601133803-97b1d649c493 // indirect
+	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/buildx v0.11.2 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
