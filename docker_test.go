@@ -1836,7 +1836,7 @@ func TestContainerCapAdd(t *testing.T) {
 func TestContainerRunningCheckingStatusCode(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "influxdb:1.8.10-alpine",
+		Image:        "influxdb:1.8.10", // influxdb doesn't provide an alpine+arm build (https://github.com/influxdata/influxdata-docker/issues/335)
 		ExposedPorts: []string{"8086/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForHTTP("/ping").WithPort("8086/tcp").WithStatusCodeMatcher(
