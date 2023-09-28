@@ -1265,7 +1265,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 	})
 
 	t.Run("the context cancellation is propagated to container creation", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
 		c, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
