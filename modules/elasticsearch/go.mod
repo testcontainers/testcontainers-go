@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/elastic/go-elasticsearch/v8 v8.10.0
 	github.com/stretchr/testify v1.8.4
-	github.com/testcontainers/testcontainers-go v0.24.1
+	github.com/testcontainers/testcontainers-go v0.25.0
 	golang.org/x/mod v0.12.0
 )
 
