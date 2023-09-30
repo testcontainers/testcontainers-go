@@ -68,6 +68,7 @@ nav:
         - modules/couchbase.md
         - modules/elasticsearch.md
         - modules/gcloud.md
+        - modules/influxdb.md
         - modules/k3s.md
         - modules/kafka.md
         - modules/localstack.md

@@ -11,3 +11,5 @@ src/pip-delete-this-directory.txt
 .DS_Store
 
 TEST-*.xml
+
+**/go.work
