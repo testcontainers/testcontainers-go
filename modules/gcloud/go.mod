@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/gcloud
 go 1.20
 
 require (
-	cloud.google.com/go/bigquery v1.53.0
+	cloud.google.com/go/bigquery v1.55.0
 	cloud.google.com/go/bigtable v1.19.0
 	cloud.google.com/go/datastore v1.14.0
 	cloud.google.com/go/firestore v1.12.0
