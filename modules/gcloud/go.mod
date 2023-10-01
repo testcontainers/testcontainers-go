@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/bigquery v1.53.0
 	cloud.google.com/go/bigtable v1.19.0
 	cloud.google.com/go/datastore v1.14.0
-	cloud.google.com/go/firestore v1.12.0
+	cloud.google.com/go/firestore v1.13.0
 	cloud.google.com/go/pubsub v1.33.0
 	cloud.google.com/go/spanner v1.49.0
 	github.com/docker/go-connections v0.4.0
