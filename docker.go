@@ -861,6 +861,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
+	tag := req.Image
+
 	env := []string{}
 	for envKey, envVar := range req.Env {
 		env = append(env, envKey+"="+envVar)
@@ -881,7 +883,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	var termSignal chan bool
 	// the reaper does not need to start a reaper for itself
-	isReaperContainer := strings.EqualFold(req.Image, reaperImage(reaperOpts.ImageName))
+	isReaperContainer := strings.EqualFold(tag, reaperImage(reaperOpts.ImageName))
 	if !tcConfig.RyukDisabled && !isReaperContainer {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.SessionID(), p, req.ReaperOptions...)
 		if err != nil {
@@ -904,7 +906,12 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		return nil, err
 	}
 
-	var tag string
+	for _, is := range req.ImageSubstitutors {
+		modifiedTag := is.Substitute(tag)
+		p.Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), tag, modifiedTag)
+		tag = modifiedTag
+	}
+
 	var platform *specs.Platform
 
 	if req.ShouldBuildImage() {
@@ -913,8 +920,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			return nil, err
 		}
 	} else {
-		tag = req.Image
-
 		if req.ImagePlatform != "" {
 			p, err := platforms.Parse(req.ImagePlatform)
 			if err != nil {
@@ -946,14 +951,14 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				Platform: req.ImagePlatform, // may be empty
 			}
 
-			registry, imageAuth, err := DockerImageAuth(ctx, req.Image)
+			registry, imageAuth, err := DockerImageAuth(ctx, tag)
 			if err != nil {
-				p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, req.Image, err)
+				p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, tag, err)
 			} else {
 				// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
 				encodedJSON, err := json.Marshal(imageAuth)
 				if err != nil {
-					p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", req.Image, err)
+					p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", tag, err)
 				} else {
 					pullOpt.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 				}

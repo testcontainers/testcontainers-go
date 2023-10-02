@@ -324,6 +324,85 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 	}
 }
 
+type dockerImageSubstitutor struct{}
+
+func (s dockerImageSubstitutor) Description() string {
+	return "DockerImageSubstitutor (prepends docker.io)"
+}
+
+func (s dockerImageSubstitutor) Substitute(image string) string {
+	return "docker.io/" + image
+}
+
+// noopImageSubstitutor {
+type NoopImageSubstitutor struct{}
+
+// Description returns a description of what is expected from this Substitutor,
+// which is used in logs.
+func (s NoopImageSubstitutor) Description() string {
+	return "NoopImageSubstitutor (noop)"
+}
+
+// Substitute returns the original image, without any change
+func (s NoopImageSubstitutor) Substitute(image string) string {
+	return image
+}
+
+// }
+
+func TestImageSubstitutors(t *testing.T) {
+	tests := []struct {
+		name          string
+		image         string // must be a valid image, as the test will try to create a container from it
+		substitutors  []ImageSubstitutor
+		expectedImage string
+	}{
+		{
+			name:          "No substitutors",
+			image:         "alpine",
+			expectedImage: "alpine",
+		},
+		{
+			name:          "Noop substitutor",
+			image:         "alpine",
+			substitutors:  []ImageSubstitutor{NoopImageSubstitutor{}},
+			expectedImage: "alpine",
+		},
+		{
+			name:          "Prepend namespace",
+			image:         "alpine",
+			substitutors:  []ImageSubstitutor{dockerImageSubstitutor{}},
+			expectedImage: "docker.io/alpine",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			req := ContainerRequest{
+				Image:             test.image,
+				ImageSubstitutors: test.substitutors,
+			}
+
+			container, err := GenericContainer(ctx, GenericContainerRequest{
+				ContainerRequest: req,
+				Started:          true,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() {
+				terminateContainerOnEnd(t, ctx, container)
+			}()
+
+			// enforce the concrete type, as GenericContainer returns an interface,
+			// which will be changed in future implementations of the library
+			dockerContainer := container.(*DockerContainer)
+			assert.Equal(t, test.expectedImage, dockerContainer.Image)
+		})
+	}
+}
+
 func TestShouldStartContainersInParallel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	t.Cleanup(cancel)
