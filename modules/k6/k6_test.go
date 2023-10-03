@@ -1,20 +1,25 @@
 package k6
 
 import (
+	"bytes"
 	"context"
+	"path/filepath"
+	"strings"
 	"testing"
-
-	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestK6(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("szkiba/k6x"))
+	absPath, err := filepath.Abs("./scripts/test.js")
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	container, err := RunContainer(ctx, WithTestScript(absPath))
+	if err != nil {
+		t.Fatal(err)
+	}
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
 		if err := container.Terminate(ctx); err != nil {
@@ -22,5 +27,19 @@ func TestK6(t *testing.T) {
 		}
 	})
 
-	// perform assertions
+	// assert the test script was executed
+	logs, err := container.Logs(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	buffer := bytes.Buffer{}
+	_, err = buffer.ReadFrom(logs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(buffer.String(), "Test executed") {
+		t.Fatalf("expected 'Test executed'. got %q", buffer.String())
+	}
 }
