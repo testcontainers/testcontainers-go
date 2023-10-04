@@ -14,10 +14,6 @@
             "path": "../examples/consul"
         },
         {
-            "name": "example / k6",
-            "path": "../examples/k6"
-        },
-        {
             "name": "example / nginx",
             "path": "../examples/nginx"
         },
