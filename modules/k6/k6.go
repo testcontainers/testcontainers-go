@@ -14,7 +14,6 @@ type K6Container struct {
 	testcontainers.Container
 }
 
-
 // WithTestScript mounts the given script into the ./test directory in the container
 // and passes it to k6 as the test to run.
 // The path to the script must be an absolute path
@@ -24,7 +23,7 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 		target := fmt.Sprintf("/tests/%s", script)
 		mount := testcontainers.ContainerMount{
 			Source: testcontainers.GenericBindMountSource{
-			    HostPath: scriptPath,
+				HostPath: scriptPath,
 			},
 			Target: testcontainers.ContainerMountTarget(target),
 		}
@@ -34,7 +33,7 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 }
 
 // WithCmdOptions pass the given options to the k6 run command
-func WithCmdOptions(options...string) testcontainers.CustomizeRequestOption {
+func WithCmdOptions(options ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		req.Cmd = append(req.Cmd, options...)
 	}
@@ -43,8 +42,8 @@ func WithCmdOptions(options...string) testcontainers.CustomizeRequestOption {
 // RunContainer creates an instance of the K6 container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K6Container, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "szkiba/k6x:v0.3.1",
-		Cmd:   []string{"run"},
+		Image:      "szkiba/k6x:v0.3.1",
+		Cmd:        []string{"run"},
 		WaitingFor: wait.ForExit(),
 	}
 
