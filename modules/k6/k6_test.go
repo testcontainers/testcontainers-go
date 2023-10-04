@@ -11,7 +11,7 @@ import (
 func TestK6(t *testing.T) {
 	ctx := context.Background()
 
-	absPath, err := filepath.Abs("./scripts/test.js")
+	absPath, err := filepath.Abs(filepath.Join("scripts", "test.js"))
 	if err != nil {
 		t.Fatal(err)
 	}

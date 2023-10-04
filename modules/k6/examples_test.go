@@ -20,7 +20,11 @@ func ExampleRunContainer() {
 	if err != nil {
 		panic(err)
 	}
-	//}
 
-	container.Terminate(ctx)
+	defer func() {
+		if err := container.Terminate(ctx); err != nil {
+			panic(err)
+		}
+	}()
+	// }
 }
