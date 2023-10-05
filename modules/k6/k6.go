@@ -39,6 +39,13 @@ func WithCmdOptions(options ...string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// WithEnvVar sets an environment variable for the test script
+func WithEnvVar(variable string, value string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Cmd = append(req.Cmd, "--env", fmt.Sprintf("%s=%s", variable, value))
+	}
+}
+
 // WithCache uses the given directory as a cache directory building the k6 binary.
 // The path to the directory must be an absolute path
 // Note: The container must run using an user that
