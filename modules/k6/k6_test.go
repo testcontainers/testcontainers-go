@@ -1,45 +1,58 @@
 package k6
 
 import (
-	"bytes"
 	"context"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
 func TestK6(t *testing.T) {
 	ctx := context.Background()
 
-	absPath, err := filepath.Abs(filepath.Join("scripts", "test.js"))
-	if err != nil {
-		t.Fatal(err)
+	testCases := []struct {
+		title  string
+		script string
+		expect int
+	}{
+		{
+			title:  "Passing test",
+			script: "pass.js",
+			expect: 0,
+		},
+		{
+			title:  "Failing test",
+			script: "fail.js",
+			expect: 108,
+		},
 	}
 
-	container, err := RunContainer(ctx, WithTestScript(absPath))
-	if err != nil {
-		t.Fatal(err)
-	}
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.title, func(t *testing.T) {
+			absPath, err := filepath.Abs(filepath.Join("scripts", tc.script))
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	// assert the test script was executed
-	logs, err := container.Logs(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+			container, err := RunContainer(ctx, WithTestScript(absPath))
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Clean up the container after the test is complete
+			t.Cleanup(func() {
+				if err := container.Terminate(ctx); err != nil {
+					t.Fatalf("failed to terminate container: %s", err)
+				}
+			})
 
-	buffer := bytes.Buffer{}
-	_, err = buffer.ReadFrom(logs)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !strings.Contains(buffer.String(), "Test executed") {
-		t.Fatalf("expected 'Test executed'. got %q", buffer.String())
+			// assert the result of the test
+			state, err := container.State(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if state.ExitCode != tc.expect {
+				t.Fatalf("expected %d got %d", tc.expect, state.ExitCode)
+			}
+		})
 	}
 }
