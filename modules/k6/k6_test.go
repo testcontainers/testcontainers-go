@@ -7,8 +7,6 @@ import (
 )
 
 func TestK6(t *testing.T) {
-	ctx := context.Background()
-
 	testCases := []struct {
 		title  string
 		script string
@@ -29,6 +27,8 @@ func TestK6(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
+			ctx := context.Background()
+
 			absPath, err := filepath.Abs(filepath.Join("scripts", tc.script))
 			if err != nil {
 				t.Fatal(err)
