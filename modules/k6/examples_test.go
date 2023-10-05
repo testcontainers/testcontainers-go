@@ -5,36 +5,69 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/k6"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func ExampleRunContainer() {
 	// runK6Container {
 	ctx := context.Background()
 
-	absPath, err := filepath.Abs("./scripts/pass.js")
-	if err != nil {
-		panic(err)
+	gcr := testcontainers.GenericContainerRequest{
+		ProviderType: testcontainers.ProviderDocker,
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "kennethreitz/httpbin",
+			ExposedPorts: []string{
+				"80",
+			},
+			WaitingFor: wait.ForExposedPort(),
+		},
+		Started: true,
 	}
-
-	container, err := k6.RunContainer(ctx, k6.WithTestScript(absPath))
+	httpbin, err := testcontainers.GenericContainer(ctx, gcr)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to create httpbin container %v", err))
 	}
 
 	defer func() {
-		if err := container.Terminate(ctx); err != nil {
-			panic(err)
+		if err := httpbin.Terminate(ctx); err != nil {
+			panic(fmt.Errorf("failed to terminate container: %s", err))
+		}
+	}()
+
+	httpbinIP, err := httpbin.ContainerIP(ctx)
+	if err != nil {
+		panic(fmt.Errorf("failed to get httpbin IP:\n%v", err))
+	}
+
+	absPath, err := filepath.Abs(filepath.Join("scripts", "httpbin.js"))
+	if err != nil {
+		panic(fmt.Errorf("failed to get path to test script: %s", err))
+	}
+
+	k6, err := k6.RunContainer(
+		ctx,
+		k6.WithTestScript(absPath),
+		k6.WithEnvVar("HTTPBIN", httpbinIP),
+	)
+	if err != nil {
+		panic(fmt.Errorf("failed to start k6 container: %s", err))
+	}
+
+	defer func() {
+		if err := k6.Terminate(ctx); err != nil {
+			panic(fmt.Errorf("failed to terminate container: %s", err))
 		}
 	}()
 
 	// assert the result of the test
-	state, err := container.State(ctx)
+	state, err := k6.State(ctx)
 	if err != nil {
 		panic(err)
 	}
 	if state.ExitCode != 0 {
-		panic(fmt.Errorf("test failed with exit code %d", state.ExitCode))
+		panic("k6 test failed")
 	}
-	// }
+	//}
 }
