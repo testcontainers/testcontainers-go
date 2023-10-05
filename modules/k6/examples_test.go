@@ -27,23 +27,23 @@ func ExampleRunContainer() {
 	}
 	httpbin, err := testcontainers.GenericContainer(ctx, gcr)
 	if err != nil {
-		panic(fmt.Errorf("failed to create httpbin container %v", err))
+		panic(fmt.Errorf("failed to create httpbin container %w", err))
 	}
 
 	defer func() {
 		if err := httpbin.Terminate(ctx); err != nil {
-			panic(fmt.Errorf("failed to terminate container: %s", err))
+			panic(fmt.Errorf("failed to terminate container: %w", err))
 		}
 	}()
 
 	httpbinIP, err := httpbin.ContainerIP(ctx)
 	if err != nil {
-		panic(fmt.Errorf("failed to get httpbin IP:\n%v", err))
+		panic(fmt.Errorf("failed to get httpbin IP: %w", err))
 	}
 
 	absPath, err := filepath.Abs(filepath.Join("scripts", "httpbin.js"))
 	if err != nil {
-		panic(fmt.Errorf("failed to get path to test script: %s", err))
+		panic(fmt.Errorf("failed to get path to test script: %w", err))
 	}
 
 	k6, err := k6.RunContainer(
@@ -52,12 +52,12 @@ func ExampleRunContainer() {
 		k6.WithEnvVar("HTTPBIN", httpbinIP),
 	)
 	if err != nil {
-		panic(fmt.Errorf("failed to start k6 container: %s", err))
+		panic(fmt.Errorf("failed to start k6 container: %w", err))
 	}
 
 	defer func() {
 		if err := k6.Terminate(ctx); err != nil {
-			panic(fmt.Errorf("failed to terminate container: %s", err))
+			panic(fmt.Errorf("failed to terminate container: %w", err))
 		}
 	}()
 
