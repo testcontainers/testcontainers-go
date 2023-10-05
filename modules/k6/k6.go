@@ -39,6 +39,29 @@ func WithCmdOptions(options ...string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// WithCache uses the given directory as a cache directory building the k6 binary.
+// The path to the directory must be an absolute path
+// Note: The container must run using an user that
+// has access to the directory. See AsUser option
+func WithCache(cacheDir string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		mount := testcontainers.ContainerMount{
+			Source: testcontainers.GenericBindMountSource{
+				HostPath: cacheDir,
+			},
+			Target: "/cache",
+		}
+		req.Mounts = append(req.Mounts, mount)
+	}
+}
+
+// AsUser sets the user id and group id to be used when running the container
+func AsUser(userId int, groupId int) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.User = fmt.Sprintf("%d:%d", userId, groupId)
+	}
+}
+
 // RunContainer creates an instance of the K6 container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K6Container, error) {
 	req := testcontainers.ContainerRequest{
