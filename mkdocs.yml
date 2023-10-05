@@ -103,6 +103,7 @@ nav:
             - system_requirements/ci/travis.md
         - system_requirements/using_colima.md
         - system_requirements/using_podman.md
+        - system_requirements/rancher.md
     - Contributing:
         - contributing.md
         - contributing_docs.md
