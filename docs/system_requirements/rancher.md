@@ -21,6 +21,6 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 export TESTCONTAINERS_HOST_OVERRIDE=$(rdctl shell ip a show vznat | awk '/inet / {sub("/.*",""); print $2}')
 ```
 
-As always, remeber that environment variables are not persisted unless you add them to the relevant file for your default shell e.g. `~/.zshrc`.
+As always, remember that environment variables are not persisted unless you add them to the relevant file for your default shell e.g. `~/.zshrc`.
 
 Credit: Thank you to @pdrosos on GitHub.
