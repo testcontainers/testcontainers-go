@@ -49,7 +49,7 @@ func ExampleRunContainer() {
 	k6, err := k6.RunContainer(
 		ctx,
 		k6.WithTestScript(absPath),
-		k6.WithEnvVar("HTTPBIN", httpbinIP),
+		k6.SetEnvVar("HTTPBIN", httpbinIP),
 	)
 	if err != nil {
 		panic(fmt.Errorf("failed to start k6 container: %w", err))

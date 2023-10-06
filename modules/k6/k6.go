@@ -39,8 +39,8 @@ func WithCmdOptions(options ...string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithEnvVar sets an environment variable for the test script
-func WithEnvVar(variable string, value string) testcontainers.CustomizeRequestOption {
+// SetEnvVar sets an environment variable for the test script
+func SetEnvVar(variable string, value string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		req.Cmd = append(req.Cmd, "--env", fmt.Sprintf("%s=%s", variable, value))
 	}
