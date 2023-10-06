@@ -1,6 +1,6 @@
 # Using Rancher Desktop
 
-It is possible to use Rancher Desktop to satisfy the system requiremetns instead of Docker.
+It is possible to use Rancher Desktop to satisfy the system requirements instead of Docker.
 
 **IMPORTANT**: Please ensure you are running an up-to-date version of Rancher Desktop. There were some key fixes made in earlier versions (especially around v1.6). It is highly unlikely you will be able to get Rancher Desktop working with testcontainers if you are on an old version.
 
