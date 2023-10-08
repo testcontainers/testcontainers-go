@@ -19,7 +19,7 @@ req := ContainerRequest{
           wait.ForLog("port: 3306  MySQL Community Server - GPL"),              // Timeout: 120s (from ForAll.WithStartupTimeoutDefault)
           wait.ForExposedPort().WithStartupTimeout(180*time.Second),            // Timeout: 180s
           wait.ForListeningPort("3306/tcp").WithStartupTimeout(10*time.Second), // Timeout: 10s
-    ).WithStartupTimeoutDefault(120*time.Second).                               // Applies default StartupTimeout when not explictly defined
+    ).WithStartupTimeoutDefault(120*time.Second).                               // Applies default StartupTimeout when not explicitly defined
       WithDeadline(360*time.Second)                                             // Applies deadline for all Wait Strategies
 }
 ```

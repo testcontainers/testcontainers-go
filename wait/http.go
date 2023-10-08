@@ -146,8 +146,10 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 
 	var mappedPort nat.Port
 	if ws.Port == "" {
-		ports, err := target.Ports(ctx)
-		for err != nil {
+		var err error
+		var ports nat.PortMap
+		// we wait one polling interval before we grab the ports otherwise they might not be bound yet on startup
+		for err != nil || ports == nil {
 			select {
 			case <-ctx.Done():
 				return fmt.Errorf("%w: %w", ctx.Err(), err)

@@ -59,7 +59,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		Env: map[string]string{
 			"K3S_KUBECONFIG_MODE": "644",
 		},
-		WaitingFor: wait.ForLog("k3s is up and running"),
+		WaitingFor: wait.ForLog(".*Node controller sync successful.*").AsRegexp(),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{

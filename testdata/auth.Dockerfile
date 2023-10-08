@@ -1,1 +1,1 @@
-FROM localhost:5000/redis:5.0-alpine
+FROM localhost:5001/redis:5.0-alpine
