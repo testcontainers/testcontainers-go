@@ -26,6 +26,10 @@
             "path": "../modules/artemis"
         },
         {
+            "name": "module / cassandra",
+            "path": "../modules/cassandra"
+        },
+        {
             "name": "module / clickhouse",
             "path": "../modules/clickhouse"
         },
