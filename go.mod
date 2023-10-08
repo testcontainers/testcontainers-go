@@ -12,6 +12,7 @@ require (
 	github.com/docker/go-units v0.5.0
 	github.com/google/uuid v1.3.1
 	github.com/magiconair/properties v1.8.7
+	github.com/moby/patternmatcher v0.6.0
 	github.com/moby/term v0.5.0
 	github.com/opencontainers/image-spec v1.1.0-rc4
 	github.com/shirou/gopsutil/v3 v3.23.9
@@ -32,7 +33,6 @@ require (
 	github.com/klauspost/compress v1.16.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/moby/patternmatcher v0.5.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
