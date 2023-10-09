@@ -20,14 +20,17 @@ type K6Container struct {
 func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		script := filepath.Base(scriptPath)
-		target := fmt.Sprintf("/tests/%s", script)
-		mount := testcontainers.ContainerMount{
-			Source: testcontainers.GenericBindMountSource{
-				HostPath: scriptPath,
+		target := filepath.Join("/home/k6x", script)
+		req.Files = append(
+			req.Files,
+			testcontainers.ContainerFile{
+				HostFilePath:      scriptPath,
+				ContainerFilePath: target,
+				FileMode:          0o644,
 			},
-			Target: testcontainers.ContainerMountTarget(target),
-		}
-		req.Mounts = append(req.Mounts, mount)
+		)
+
+		// add script to the k6 run command
 		req.Cmd = append(req.Cmd, target)
 	}
 }
