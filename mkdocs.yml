@@ -104,10 +104,11 @@ nav:
             - system_requirements/ci/travis.md
         - system_requirements/using_colima.md
         - system_requirements/using_podman.md
+        - system_requirements/rancher.md
     - Contributing:
         - contributing.md
         - contributing_docs.md
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.24.1
+    latest_version: v0.25.0
