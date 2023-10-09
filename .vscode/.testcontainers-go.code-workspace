@@ -50,6 +50,10 @@
             "path": "../modules/k3s"
         },
         {
+            "name": "module / k6",
+            "path": "../modules/k6"
+        },
+        {
             "name": "module / kafka",
             "path": "../modules/kafka"
         },
