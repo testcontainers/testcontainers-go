@@ -62,6 +62,8 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 				FileMode:          0o755,
 			}
 			initScripts = append(initScripts, cf)
+
+			testcontainers.WithStartupCommand(initScript{File: cf.ContainerFilePath})(req)
 		}
 		req.Files = append(req.Files, initScripts...)
 	}
@@ -82,9 +84,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort(port),
-			wait.ForExec([]string{"cqlsh", "-e", "SELECT release_version FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
+			wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
-				return strings.Contains(string(data), "4.1.3")
+				return strings.Contains(string(data), "COMPLETED")
 			}),
 		),
 	}
@@ -101,16 +103,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(genericContainerReq.Files) > 0 {
-		for _, file := range genericContainerReq.Files {
-			if strings.HasSuffix(file.ContainerFilePath, ".cql") {
-				container.Exec(ctx, []string{"cqlsh", "-f", file.ContainerFilePath})
-			} else if strings.HasSuffix(file.ContainerFilePath, ".sh") {
-				container.Exec(ctx, []string{"/bin/sh", file.ContainerFilePath})
-			}
-		}
 	}
 
 	return &CassandraContainer{Container: container}, nil

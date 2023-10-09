@@ -2,6 +2,7 @@ package cassandra
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/gocql/gocql"
@@ -56,7 +57,7 @@ func TestCassandra(t *testing.T) {
 func TestCassandraWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, WithConfigFile("testdata/config.yaml"))
+	container, err := RunContainer(ctx, WithConfigFile(filepath.Join("testdata", "config.yaml")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +88,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		ctx := context.Background()
 
 		// withInitScripts {
-		container, err := RunContainer(ctx, WithInitScripts("testdata/init.cql"))
+		container, err := RunContainer(ctx, WithInitScripts(filepath.Join("testdata", "init.cql")))
 		// }
 		if err != nil {
 			t.Fatal(err)
@@ -119,7 +120,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 	t.Run("with init bash script", func(t *testing.T) {
 		ctx := context.Background()
 
-		container, err := RunContainer(ctx, WithInitScripts("testdata/init.sh"))
+		container, err := RunContainer(ctx, WithInitScripts(filepath.Join("testdata", "init.sh")))
 		if err != nil {
 			t.Fatal(err)
 		}
