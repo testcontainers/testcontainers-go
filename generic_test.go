@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
+	stdexec "os/exec"
 	"regexp"
 	"sync"
 	"testing"
@@ -175,7 +175,7 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 }
 
 func createReuseContainerInSubprocess(t *testing.T) string {
-	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess")
+	cmd := stdexec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
 
 	output, err := cmd.CombinedOutput()
@@ -188,7 +188,7 @@ func createReuseContainerInSubprocess(t *testing.T) string {
 // to start a container in a subprocess. It's not a real test.
 func TestHelperContainerStarterProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
-		return
+		t.Skip("Skipping helper test function. It's not a real test")
 	}
 
 	ctx := context.Background()
