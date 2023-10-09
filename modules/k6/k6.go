@@ -39,7 +39,7 @@ func WithCmdOptions(options ...string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// SetEnvVar sets an environment variable for the test script
+// SetEnvVar adds a '--env' command-line flag to the k6 command in the container for setting an environment variable for the test script.
 func SetEnvVar(variable string, value string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		req.Cmd = append(req.Cmd, "--env", fmt.Sprintf("%s=%s", variable, value))
