@@ -20,7 +20,7 @@ type K6Container struct {
 func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		script := filepath.Base(scriptPath)
-		target := filepath.Join("/home/k6x", script)
+		target := "/home/k6x/" + script
 		req.Files = append(
 			req.Files,
 			testcontainers.ContainerFile{
@@ -49,26 +49,17 @@ func SetEnvVar(variable string, value string) testcontainers.CustomizeRequestOpt
 	}
 }
 
-// WithCache uses the given directory as a cache directory building the k6 binary.
-// The path to the directory must be an absolute path
-// Note: The container must run using an user that
-// has access to the directory. See AsUser option
-func WithCache(cacheDir string) testcontainers.CustomizeRequestOption {
+// WithCache uses the given volume as a cache for building the k6 binary.
+// If the volume does not exists, it is created.
+func WithCache(cache string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		mount := testcontainers.ContainerMount{
-			Source: testcontainers.GenericBindMountSource{
-				HostPath: cacheDir,
+			Source: testcontainers.DockerVolumeMountSource{
+				Name: cache,
 			},
 			Target: "/cache",
 		}
 		req.Mounts = append(req.Mounts, mount)
-	}
-}
-
-// AsUser sets the user id and group id to be used when running the container
-func AsUser(userId int, groupId int) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.User = fmt.Sprintf("%d:%d", userId, groupId)
 	}
 }
 

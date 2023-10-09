@@ -3,8 +3,6 @@ package k6_test
 import (
 	"context"
 	"fmt"
-	"io"
-	"os"
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -71,14 +69,9 @@ func ExampleRunContainer() {
 	if err != nil {
 		panic(err)
 	}
-	if state.ExitCode != 0 {
-		logs, err := k6.Logs(ctx)
-		if err != nil {
-			panic(err)
-		}
 
-		fmt.Println("k6 test failed:")
-		io.Copy(os.Stdout, logs)
-	}
+	fmt.Println(state.ExitCode)
+	// Output: 0
+
 	//}
 }
