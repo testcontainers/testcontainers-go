@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/gocql/gocql"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
 )
