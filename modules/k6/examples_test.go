@@ -63,6 +63,7 @@ func ExampleRunContainer() {
 			panic(fmt.Errorf("failed to terminate container: %w", err))
 		}
 	}()
+	//}
 
 	// assert the result of the test
 	state, err := k6.State(ctx)
@@ -72,6 +73,4 @@ func ExampleRunContainer() {
 
 	fmt.Println(state.ExitCode)
 	// Output: 0
-
-	//}
 }
