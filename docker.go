@@ -839,7 +839,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	return repoTag, nil
 }
 
-func waitContainerReadyWithLog(ctx context.Context, container *DockerContainer) error {
+func waitForContainerReady(ctx context.Context, container *DockerContainer) error {
 	if container.WaitingFor == nil {
 		return nil
 	}
@@ -1054,7 +1054,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 					dockerContainer := c.(*DockerContainer)
 
 					// if a Wait Strategy has been specified, wait before returning
-					if err := waitContainerReadyWithLog(ctx, dockerContainer); err != nil {
+					if err := waitForContainerReady(ctx, dockerContainer); err != nil {
 						return err
 					}
 
@@ -1208,7 +1208,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		logger:            p.Logger,
 	}
 
-	if err := waitContainerReadyWithLog(ctx, dc); err != nil {
+	if err := waitForContainerReady(ctx, dc); err != nil {
 		return nil, err
 	}
 
