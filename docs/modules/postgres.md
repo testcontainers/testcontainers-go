@@ -51,7 +51,7 @@ If you need to set a different database, and its credentials, you can use the `W
 
 #### Init Scripts
 
-If you would like to do additional initialization in the Postgres container, add one or more `*.sql`, `*.sql.gz`, or `*.sh` scripts to the container request with the `WithInitScript` function.
+If you would like to do additional initialization in the Postgres container, add one or more `*.sql`, `*.sql.gz`, or `*.sh` scripts to the container request with the `WithInitScripts` function.
 Those files will be copied after the container is created but before it's started under `/docker-entrypoint-initdb.d`. According to Postgres Docker image,
 it will run any `*.sql` files, run any executable `*.sh` scripts, and source any non-executable `*.sh` scripts found in that directory to do further
 initialization before starting the service.
