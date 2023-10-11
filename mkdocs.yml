@@ -64,6 +64,7 @@ nav:
     - Modules:
         - modules/index.md
         - modules/artemis.md
+        - modules/cassandra.md
         - modules/clickhouse.md
         - modules/couchbase.md
         - modules/elasticsearch.md
