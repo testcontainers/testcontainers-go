@@ -16,7 +16,7 @@ Steps are as follows:
 3. On macOS CLI (e.g. `Terminal` app), set the following environment variables:
 
 ```sh
-export DOCKER_HOST=unix:/$HOME/.rd/docker.sock
+export DOCKER_HOST=unix://$HOME/.rd/docker.sock
 export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 export TESTCONTAINERS_HOST_OVERRIDE=$(rdctl shell ip a show vznat | awk '/inet / {sub("/.*",""); print $2}')
 ```
