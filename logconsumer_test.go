@@ -22,17 +22,33 @@ const lastMessage = "DONE"
 
 type TestLogConsumer struct {
 	Msgs []string
-	Ack  chan bool
+	Done chan bool
+
+	// Accepted provides a blocking way of ensuring the logs messages have been consumed.
+	// This allows for proper synchronization during Test_StartStop in particular.
+	// Please see func devNullAcceptorChan if you're not interested in this synchronization.
+	Accepted chan string
 }
 
 func (g *TestLogConsumer) Accept(l Log) {
 	s := string(l.Content)
 	if s == fmt.Sprintf("echo %s\n", lastMessage) {
-		g.Ack <- true
+		g.Done <- true
 		return
 	}
-
+	g.Accepted <- s
 	g.Msgs = append(g.Msgs, s)
+}
+
+// devNullAcceptorChan returns string channel that essentially sends all strings to dev null
+func devNullAcceptorChan() chan string {
+	c := make(chan string)
+	go func(c <-chan string) {
+		for range c {
+			// do nothing, just pull off channel
+		}
+	}(c)
+	return c
 }
 
 func Test_LogConsumerGetsCalled(t *testing.T) {
@@ -58,8 +74,9 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	require.NoError(t, err)
 
 	g := TestLogConsumer{
-		Msgs: []string{},
-		Ack:  make(chan bool),
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
 	}
 
 	c.FollowOutput(&g)
@@ -77,7 +94,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	require.NoError(t, err)
 
 	select {
-	case <-g.Ack:
+	case <-g.Done:
 	case <-time.After(5 * time.Second):
 		t.Fatal("never received final log message")
 	}
@@ -174,8 +191,16 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
 
-	first := TestLogConsumer{Msgs: []string{}, Ack: make(chan bool)}
-	second := TestLogConsumer{Msgs: []string{}, Ack: make(chan bool)}
+	first := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
+	second := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
 
 	c.FollowOutput(&first)
 	c.FollowOutput(&second)
@@ -189,8 +214,8 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
 	require.NoError(t, err)
 
-	<-first.Ack
-	<-second.Ack
+	<-first.Done
+	<-second.Done
 	assert.Nil(t, c.StopLogProducer())
 
 	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, first.Msgs)
@@ -220,27 +245,38 @@ func Test_StartStop(t *testing.T) {
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
 
-	g := TestLogConsumer{Msgs: []string{}, Ack: make(chan bool)}
-
+	g := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: make(chan string),
+	}
 	c.FollowOutput(&g)
 
 	require.NoError(t, c.StopLogProducer(), "nothing should happen even if the producer is not started")
+
 	require.NoError(t, c.StartLogProducer(ctx))
+	require.Equal(t, <-g.Accepted, "ready\n")
+
 	require.Error(t, c.StartLogProducer(ctx), "log producer is already started")
 
 	_, err = http.Get(ep + "/stdout?echo=mlem")
 	require.NoError(t, err)
+	require.Equal(t, <-g.Accepted, "echo mlem\n")
 
 	require.NoError(t, c.StopLogProducer())
+
 	require.NoError(t, c.StartLogProducer(ctx))
+	require.Equal(t, <-g.Accepted, "ready\n")
+	require.Equal(t, <-g.Accepted, "echo mlem\n")
 
 	_, err = http.Get(ep + "/stdout?echo=mlem2")
 	require.NoError(t, err)
+	require.Equal(t, <-g.Accepted, "echo mlem2\n")
 
 	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
 	require.NoError(t, err)
 
-	<-g.Ack
+	<-g.Done
 	// Do not close producer here, let's delegate it to c.Terminate
 
 	assert.Equal(t, []string{
@@ -333,7 +369,12 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var consumer TestLogConsumer
+	consumer := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
+
 	if err = nginx.StartLogProducer(ctx); err != nil {
 		t.Fatal(err)
 	}
