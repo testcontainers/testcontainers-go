@@ -11,7 +11,7 @@ import (
 )
 
 func ExampleRunContainer() {
-	// runK6Container {
+	// runHTTPBin {
 	ctx := context.Background()
 
 	// create a container with the httpbin application that will be the target
@@ -37,17 +37,21 @@ func ExampleRunContainer() {
 			panic(fmt.Errorf("failed to terminate container: %w", err))
 		}
 	}()
+	// }
 
+	// getHTTPBinIP {
 	httpbinIP, err := httpbin.ContainerIP(ctx)
 	if err != nil {
 		panic(fmt.Errorf("failed to get httpbin IP: %w", err))
 	}
+	// }
 
 	absPath, err := filepath.Abs(filepath.Join("scripts", "httpbin.js"))
 	if err != nil {
 		panic(fmt.Errorf("failed to get path to test script: %w", err))
 	}
 
+	// runK6Container {
 	// run the httpbin.js test scripts passing the IP address the httpbin container
 	k6, err := k6.RunContainer(
 		ctx,
