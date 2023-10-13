@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/docker/go-connections v0.4.0
-	github.com/neo4j/neo4j-go-driver/v5 v5.12.0
+	github.com/neo4j/neo4j-go-driver/v5 v5.13.0
 	github.com/testcontainers/testcontainers-go v0.25.0
 )
 
@@ -35,7 +35,7 @@ require (
 	github.com/opencontainers/runc v1.1.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/shirou/gopsutil/v3 v3.23.8 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.9 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect

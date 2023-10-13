@@ -26,6 +26,10 @@
             "path": "../modules/artemis"
         },
         {
+            "name": "module / cassandra",
+            "path": "../modules/cassandra"
+        },
+        {
             "name": "module / clickhouse",
             "path": "../modules/clickhouse"
         },
@@ -48,6 +52,10 @@
         {
             "name": "module / k3s",
             "path": "../modules/k3s"
+        },
+        {
+            "name": "module / k6",
+            "path": "../modules/k6"
         },
         {
             "name": "module / kafka",
