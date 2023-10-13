@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -350,12 +351,28 @@ func (s NoopImageSubstitutor) Substitute(image string) (string, error) {
 
 // }
 
+type errorSubstitutor struct{}
+
+var errSubstitution = errors.New("substitution error")
+
+// Description returns a description of what is expected from this Substitutor,
+// which is used in logs.
+func (s errorSubstitutor) Description() string {
+	return "errorSubstitutor"
+}
+
+// Substitute returns the original image, but returns an error
+func (s errorSubstitutor) Substitute(image string) (string, error) {
+	return image, errSubstitution
+}
+
 func TestImageSubstitutors(t *testing.T) {
 	tests := []struct {
 		name          string
 		image         string // must be a valid image, as the test will try to create a container from it
 		substitutors  []ImageSubstitutor
 		expectedImage string
+		expectedError error
 	}{
 		{
 			name:          "No substitutors",
@@ -374,6 +391,13 @@ func TestImageSubstitutors(t *testing.T) {
 			substitutors:  []ImageSubstitutor{dockerImageSubstitutor{}},
 			expectedImage: "docker.io/alpine",
 		},
+		{
+			name:          "Substitution with error",
+			image:         "alpine",
+			substitutors:  []ImageSubstitutor{errorSubstitutor{}},
+			expectedImage: "alpine",
+			expectedError: errSubstitution,
+		},
 	}
 
 	for _, test := range tests {
@@ -388,6 +412,11 @@ func TestImageSubstitutors(t *testing.T) {
 				ContainerRequest: req,
 				Started:          true,
 			})
+			if test.expectedError != nil {
+				require.ErrorIs(t, err, test.expectedError)
+				return
+			}
+
 			if err != nil {
 				t.Fatal(err)
 			}
