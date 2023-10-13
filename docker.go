@@ -861,7 +861,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
-	tag := req.Image
+	imageName := req.Image
 
 	env := []string{}
 	for envKey, envVar := range req.Env {
@@ -883,7 +883,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	var termSignal chan bool
 	// the reaper does not need to start a reaper for itself
-	isReaperContainer := strings.EqualFold(tag, reaperImage(reaperOpts.ImageName))
+	isReaperContainer := strings.EqualFold(imageName, reaperImage(reaperOpts.ImageName))
 	if !tcConfig.RyukDisabled && !isReaperContainer {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.SessionID(), p, req.ReaperOptions...)
 		if err != nil {
@@ -907,19 +907,19 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	for _, is := range req.ImageSubstitutors {
-		modifiedTag, err := is.Substitute(tag)
+		modifiedTag, err := is.Substitute(imageName)
 		if err != nil {
-			return nil, fmt.Errorf("failed to substitute image %s with %s: %w", tag, is.Description(), err)
+			return nil, fmt.Errorf("failed to substitute image %s with %s: %w", imageName, is.Description(), err)
 		}
 
-		p.Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), tag, modifiedTag)
-		tag = modifiedTag
+		p.Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), imageName, modifiedTag)
+		imageName = modifiedTag
 	}
 
 	var platform *specs.Platform
 
 	if req.ShouldBuildImage() {
-		tag, err = p.BuildImage(ctx, &req)
+		imageName, err = p.BuildImage(ctx, &req)
 		if err != nil {
 			return nil, err
 		}
@@ -937,7 +937,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if req.AlwaysPullImage {
 			shouldPullImage = true // If requested always attempt to pull image
 		} else {
-			image, _, err := p.client.ImageInspectWithRaw(ctx, tag)
+			image, _, err := p.client.ImageInspectWithRaw(ctx, imageName)
 			if err != nil {
 				if client.IsErrNotFound(err) {
 					shouldPullImage = true
@@ -955,20 +955,20 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				Platform: req.ImagePlatform, // may be empty
 			}
 
-			registry, imageAuth, err := DockerImageAuth(ctx, tag)
+			registry, imageAuth, err := DockerImageAuth(ctx, imageName)
 			if err != nil {
-				p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, tag, err)
+				p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, imageName, err)
 			} else {
 				// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
 				encodedJSON, err := json.Marshal(imageAuth)
 				if err != nil {
-					p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", tag, err)
+					p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", imageName, err)
 				} else {
 					pullOpt.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 				}
 			}
 
-			if err := p.attemptToPullImage(ctx, tag, pullOpt); err != nil {
+			if err := p.attemptToPullImage(ctx, imageName, pullOpt); err != nil {
 				return nil, err
 			}
 		}
@@ -983,7 +983,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	dockerInput := &container.Config{
 		Entrypoint: req.Entrypoint,
-		Image:      tag,
+		Image:      imageName,
 		Env:        env,
 		Labels:     req.Labels,
 		Cmd:        req.Cmd,
@@ -1079,7 +1079,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	c := &DockerContainer{
 		ID:                resp.ID,
 		WaitingFor:        req.WaitingFor,
-		Image:             tag,
+		Image:             imageName,
 		imageWasBuilt:     req.ShouldBuildImage(),
 		sessionID:         testcontainerssession.SessionID(),
 		provider:          p,
