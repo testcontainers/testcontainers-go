@@ -77,6 +77,30 @@ func ExampleHTTPStrategy_WithPort() {
 	// Here you have a running container
 }
 
+func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "nginx:latest",
+		ExposedPorts: []string{"8080/tcp", "80/tcp"},
+		WaitingFor:   wait.ForHTTP("/").WithForcedIPv4LocalHost(),
+	}
+
+	gogs, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err := gogs.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
+
+}
+
 func ExampleHTTPStrategy_WithBasicAuth() {
 	// waitForBasicAuth {
 	ctx := context.Background()
