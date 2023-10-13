@@ -330,8 +330,8 @@ func (s dockerImageSubstitutor) Description() string {
 	return "DockerImageSubstitutor (prepends docker.io)"
 }
 
-func (s dockerImageSubstitutor) Substitute(image string) string {
-	return "docker.io/" + image
+func (s dockerImageSubstitutor) Substitute(image string) (string, error) {
+	return "docker.io/" + image, nil
 }
 
 // noopImageSubstitutor {
@@ -344,8 +344,8 @@ func (s NoopImageSubstitutor) Description() string {
 }
 
 // Substitute returns the original image, without any change
-func (s NoopImageSubstitutor) Substitute(image string) string {
-	return image
+func (s NoopImageSubstitutor) Substitute(image string) (string, error) {
+	return image, nil
 }
 
 // }

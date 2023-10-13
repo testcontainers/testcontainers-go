@@ -66,7 +66,7 @@ type ImageSubstitutor interface {
 	// Description returns the name of the type and a short description of how it modifies the image.
 	// Useful to be printed in logs
 	Description() string
-	Substitute(image string) string
+	Substitute(image string) (string, error)
 }
 
 // }

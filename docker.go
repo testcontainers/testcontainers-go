@@ -907,7 +907,11 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	for _, is := range req.ImageSubstitutors {
-		modifiedTag := is.Substitute(tag)
+		modifiedTag, err := is.Substitute(tag)
+		if err != nil {
+			return nil, fmt.Errorf("failed to substitute image %s with %s: %w", tag, is.Description(), err)
+		}
+
 		p.Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), tag, modifiedTag)
 		tag = modifiedTag
 	}
