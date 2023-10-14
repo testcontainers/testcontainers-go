@@ -192,7 +192,7 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 
 	// based on https://github.com/docker/cli/blob/master/cli/command/image/build/dockerignore.go#L14
 	var excluded []string
-	if f, err := os.Open(filepath.Join(abs, ".dockerignore")); err != nil {
+	if f, openErr := os.Open(filepath.Join(abs, ".dockerignore")); openErr == nil {
 		var err error
 		excluded, err = ignorefile.ReadAll(f)
 		if err != nil {
