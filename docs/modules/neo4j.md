@@ -48,7 +48,7 @@ When starting the Neo4j container, you can pass options in a variadic way to con
 #### Image
 
 If you need to set a different Neo4j Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Couchbase. E.g. `testcontainers.WithImage("docker.io/neo4j:4.4")`.
+for Neo4j. E.g. `testcontainers.WithImage("docker.io/neo4j:4.4")`.
 
 By default, the container will use the following Docker image:
 
