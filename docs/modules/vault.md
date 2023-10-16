@@ -17,27 +17,33 @@ go get github.com/testcontainers/testcontainers-go/modules/vault
 ## Usage example
 The **RunContainer** function is the main entry point to create a new VaultContainer instance. 
 It takes a context and zero or more Option values to configure the container.
+
 <!--codeinclude-->
-[Creating a Vault container](../../modules/vault/vault_test.go) inside_block:RunContainer
+[Creating a Vault container](../../modules/vault/examples_test.go) inside_block:runVaultContainer
 <!--/codeinclude-->
 
 ### Use CLI to read data from Vault container:
 <!--codeinclude-->
-[Use CLI to read data](../../modules/vault/vault_test.go) inside_block:TestVaultGetSecretPathWithCLI
+[Use CLI to read data](../../modules/vault/vault_test.go) inside_block:containerCliRead
 <!--/codeinclude-->
+
+The `vaultContainer` is the container instance obtained from `RunContainer`.
 
 ### Use HTTP API to read data from Vault container:
 <!--codeinclude-->
-[Use HTTP API to read data](../../modules/vault/vault_test.go) inside_block:TestVaultGetSecretPathWithHTTP
+[Use HTTP API to read data](../../modules/vault/vault_test.go) inside_block:httpRead
 <!--/codeinclude-->
+
+The `hostAddress` is obtained from the container instance. Please see [here](#httphostaddress) for more details.
 
 ### Use client library to read data from Vault container:
 Add Vault Client module to your Go dependencies:
+
 ```
 go get -u github.com/hashicorp/vault-client-go
 ```
 <!--codeinclude-->
-[Use library to read data](../../modules/vault/vault_test.go) inside_block:TestVaultGetSecretPathWithClient
+[Use library to read data](../../modules/vault/vault_test.go) inside_block:clientLibRead
 <!--/codeinclude-->
 
 ## Module Reference
@@ -67,25 +73,7 @@ for Vault. E.g. `testcontainers.WithImage("hashicorp/vault:1.13.0")`.
 [Set image name](../../modules/vault/vault_test.go) inside_block:WithImageName
 <!--/codeinclude-->
 
-#### Wait Strategies
-
-If you need to set a different wait strategy for Vault, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
-for Vault.
-
-!!!info
-    The default deadline for the wait strategy is 60 seconds.
-
-At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
-
-#### Docker type modifiers
-
-If you need an advanced configuration for Vault, you can leverage the following Docker type modifiers:
-
-- `testcontainers.WithConfigModifier`
-- `testcontainers.WithHostConfigModifier`
-- `testcontainers.WithEndpointSettingsModifier`
-
-Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+{% include "../features/common_functional_options.md" %}
 
 #### Token
 
@@ -96,7 +84,7 @@ If you need to add token authentication, you can use the `WithToken`.
 
 #### Command
 
-If you need to run vault command in the container, you can use the `WithInitCommand`.
+If you need to run a vault command in the container, you can use the `WithInitCommand`.
 <!--codeinclude-->
 [Run init command](../../modules/vault/vault_test.go) inside_block:WithInitCommand
 <!--/codeinclude-->

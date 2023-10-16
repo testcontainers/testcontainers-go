@@ -7,3 +7,8 @@ test-all: tools test-unit
 test-examples:
 	@echo "Running example tests..."
 	make -C examples test
+
+.PHONY: tidy-all
+tidy-all:
+	make -C examples tidy-examples
+	make -C modules tidy-modules

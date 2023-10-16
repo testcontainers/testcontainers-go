@@ -58,10 +58,36 @@ func isVersion2(image string) bool {
 	return true
 }
 
+// WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
+// on that network to the given alias.
+func WithNetwork(networkName string, alias string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		_, err := testcontainers.GenericNetwork(context.Background(), testcontainers.GenericNetworkRequest{
+			NetworkRequest: testcontainers.NetworkRequest{
+				Name: networkName,
+			},
+		})
+		if err != nil {
+			logger := req.Logger
+			if logger == nil {
+				logger = testcontainers.Logger
+			}
+			logger.Printf("Failed to create network '%s'. Container won't be attached to this network: %v", networkName, err)
+			return
+		}
+
+		req.Networks = append(req.Networks, networkName)
+
+		if req.NetworkAliases == nil {
+			req.NetworkAliases = make(map[string][]string)
+		}
+		req.NetworkAliases[networkName] = []string{alias}
+	}
+}
+
 // RunContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error) {
-	// defaultContainerRequest {
 	dockerHost := testcontainersdocker.ExtractDockerSocket(ctx)
 
 	req := testcontainers.ContainerRequest{
@@ -71,11 +97,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
 		Env:          map[string]string{},
 	}
-	// }
 
 	localStackReq := LocalStackContainerRequest{
 		GenericContainerRequest: testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
+			Logger:           testcontainers.Logger,
 			Started:          true,
 		},
 	}
@@ -88,19 +114,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("version=%s. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0", localStackReq.Image)
 	}
 
+	envVar := hostnameExternalEnvVar
 	if isVersion2(localStackReq.Image) {
-		hostnameExternalReason, err := configureDockerHost(&localStackReq, localstackHostEnvVar)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("Setting %s to %s (%s)\n", localstackHostEnvVar, req.Env[localstackHostEnvVar], hostnameExternalReason)
-	} else {
-		hostnameExternalReason, err := configureDockerHost(&localStackReq, hostnameExternalEnvVar)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("Setting %s to %s (%s)\n", hostnameExternalEnvVar, req.Env[hostnameExternalEnvVar], hostnameExternalReason)
+		envVar = localstackHostEnvVar
 	}
+
+	hostnameExternalReason, err := configureDockerHost(&localStackReq, envVar)
+	if err != nil {
+		return nil, err
+	}
+	localStackReq.GenericContainerRequest.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
 
 	container, err := testcontainers.GenericContainer(ctx, localStackReq.GenericContainerRequest)
 	if err != nil {

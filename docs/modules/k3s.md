@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/k3s
 ## Usage example
 
 <!--codeinclude-->
-[Test for a K3s container](../../modules/k3s/k3s_test.go) inside_block: k3sRunContainer
+[Test for a K3s container](../../modules/k3s/k3s_test.go) inside_block:runK3sContainer
 <!--/codeinclude-->
 
 ## Module reference
@@ -47,25 +47,7 @@ When starting the K3s container, you can pass options in a variadic way to confi
 If you need to set a different K3s Docker image, you can use `testcontainers.WithImage` with a valid Docker image
 for K3s. E.g. `testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1")`.
 
-#### Wait Strategies
-
-If you need to set a different wait strategy for K3s, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
-for K3s.
-
-!!!info
-    The default deadline for the wait strategy is 60 seconds.
-
-At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
-
-#### Docker type modifiers
-
-If you need an advanced configuration for K3s, you can leverage the following Docker type modifiers:
-
-- `testcontainers.WithConfigModifier`
-- `testcontainers.WithHostConfigModifier`
-- `testcontainers.WithEndpointSettingsModifier`
-
-Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+{% include "../features/common_functional_options.md" %}
 
 ### Container Methods
 
@@ -77,5 +59,13 @@ The `GetKubeConfig` method returns the K3s cluster's `kubeconfig`, including the
 to the Kubernetes Rest Client API using a Kubernetes client. It'll be returned in the format of `[]bytes`.
 
 <!--codeinclude-->
-[Get KubeConifg](../../modules/k3s/k3s_test.go) inside_block:GetKubeConfig
+[Get KubeConfig](../../modules/k3s/k3s_example_test.go) inside_block:GetKubeConfig
 <!--/codeinclude-->
+
+#### LoadImages
+
+The `LoadImages` method loads a list of images into the kubernetes cluster and makes them available to pods.
+
+This is useful for testing images generated locally without having to push them to a public docker registry or having to configure `k3s` to [use a private registry](https://docs.k3s.io/installation/private-registry).
+
+The images must be already present in the node running the test. [DockerProvider](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#DockerProvider) offers a method for pulling images, which can be used from the test code to ensure the image is present locally before loading them to the cluster.

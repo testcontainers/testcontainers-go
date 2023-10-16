@@ -1,57 +1,163 @@
-package k3s
+package k3s_test
 
 import (
 	"context"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/testcontainers/testcontainers-go/modules/k3s"
 )
 
-func TestK3s(t *testing.T) {
+func Test_LoadImages(t *testing.T) {
 	ctx := context.Background()
 
-	// k3sRunContainer {
-	container, err := RunContainer(ctx,
-		testcontainers.WithWaitStrategy(wait.ForLog("Starting node config controller")))
+	k3sContainer, err := k3s.RunContainer(ctx,
+		testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// }
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
+	// Clean up the container
+	defer func() {
+		if err := k3sContainer.Terminate(ctx); err != nil {
+			t.Fatal(err)
 		}
-	})
+	}()
 
-	// GetKubeConfig {
-	kubeConfigYaml, err := container.GetKubeConfig(ctx)
+	kubeConfigYaml, err := k3sContainer.GetKubeConfig(ctx)
 	if err != nil {
-		t.Fatalf("failed to get kube-config : %s", err)
+		t.Fatal(err)
 	}
-	// }
 
 	restcfg, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigYaml)
 	if err != nil {
-		t.Fatalf("failed to create rest client for kubernetes : %s", err)
+		t.Fatal(err)
 	}
 
 	k8s, err := kubernetes.NewForConfig(restcfg)
 	if err != nil {
-		t.Fatalf("failed to place config in k8s clientset : %s", err)
+		t.Fatal(err)
 	}
 
-	nodes, err := k8s.CoreV1().Nodes().List(ctx, v1.ListOptions{})
+	provider, err := testcontainers.ProviderDocker.GetProvider()
 	if err != nil {
-		t.Fatalf("failed to get list of nodes : %s", err)
+		t.Fatal(err)
 	}
 
-	assert.Equal(t, len(nodes.Items), 1)
+	// ensure nginx image is available locally
+	err = provider.PullImage(context.Background(), "nginx")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("Test load image not available", func(t *testing.T) {
+		err := k3sContainer.LoadImages(context.Background(), "fake.registry/fake:non-existing")
+		if err == nil {
+			t.Fatal("should had failed")
+		}
+	})
+
+	t.Run("Test load image in cluster", func(t *testing.T) {
+		err := k3sContainer.LoadImages(context.Background(), "nginx")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		pod := &corev1.Pod{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Pod",
+				APIVersion: "v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test-pod",
+			},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name:            "nginx",
+						Image:           "nginx",
+						ImagePullPolicy: corev1.PullNever, // use image only if already present
+					},
+				},
+			},
+		}
+
+		_, err = k8s.CoreV1().Pods("default").Create(context.Background(), pod, metav1.CreateOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(1 * time.Second)
+		pod, err = k8s.CoreV1().Pods("default").Get(context.Background(), "test-pod", metav1.GetOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		waiting := pod.Status.ContainerStatuses[0].State.Waiting
+		if waiting != nil && waiting.Reason == "ErrImageNeverPull" {
+			t.Fatal("Image was not loaded")
+		}
+	})
+}
+
+func Test_APIServerReady(t *testing.T) {
+	ctx := context.Background()
+
+	k3sContainer, err := k3s.RunContainer(ctx,
+		testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Clean up the container
+	defer func() {
+		if err := k3sContainer.Terminate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	kubeConfigYaml, err := k3sContainer.GetKubeConfig(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	restcfg, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigYaml)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	k8s, err := kubernetes.NewForConfig(restcfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pod := &corev1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-pod",
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "nginx",
+					Image: "nginx",
+				},
+			},
+		},
+	}
+
+	_, err = k8s.CoreV1().Pods("default").Create(context.Background(), pod, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("failed to create pod %v", err)
+	}
 }

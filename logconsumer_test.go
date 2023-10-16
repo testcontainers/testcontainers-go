@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -15,70 +14,41 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const lastMessage = "DONE"
 
 type TestLogConsumer struct {
-	mu         sync.Mutex
-	msgs       []string
-	Ack        chan bool
-	waitingFor string
-	ackWait    chan bool
-}
+	Msgs []string
+	Done chan bool
 
-func NewTestLogConsumer() *TestLogConsumer {
-	return &TestLogConsumer{
-		msgs: []string{},
-		Ack:  make(chan bool),
-	}
+	// Accepted provides a blocking way of ensuring the logs messages have been consumed.
+	// This allows for proper synchronization during Test_StartStop in particular.
+	// Please see func devNullAcceptorChan if you're not interested in this synchronization.
+	Accepted chan string
 }
 
 func (g *TestLogConsumer) Accept(l Log) {
 	s := string(l.Content)
 	if s == fmt.Sprintf("echo %s\n", lastMessage) {
-		g.Ack <- true
+		g.Done <- true
 		return
 	}
-
-	// Accept is called from a different goroutine than WaitFor.
-	// We need to synchronize access and notify the waiting goroutine so that it always sees the updated msgs.
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.msgs = append(g.msgs, s)
-	if g.waitingFor != "" && s == fmt.Sprintf("echo %s\n", g.waitingFor) {
-		close(g.ackWait)
-		g.waitingFor = ""
-	}
+	g.Accepted <- s
+	g.Msgs = append(g.Msgs, s)
 }
 
-// WaitFor waits for s to appear in the output.
-// It returns an error if another wait is already in progress or the context is canceled.
-func (g *TestLogConsumer) WaitFor(ctx context.Context, s string) error {
-	g.mu.Lock()
-	if g.waitingFor != "" {
-		g.mu.Unlock()
-		return fmt.Errorf("already waiting")
-	}
-	g.waitingFor = s
-	g.ackWait = make(chan bool)
-	g.mu.Unlock()
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-g.ackWait:
-		return nil
-	}
-}
-
-// Msgs returns messages received so far.
-// The caller must not modify the contents of the slice.
-func (g *TestLogConsumer) Msgs() []string {
-	g.mu.Lock()
-	v := g.msgs[0:len(g.msgs):len(g.msgs)]
-	g.mu.Unlock()
-	return v
+// devNullAcceptorChan returns string channel that essentially sends all strings to dev null
+func devNullAcceptorChan() chan string {
+	c := make(chan string)
+	go func(c <-chan string) {
+		for range c {
+			// do nothing, just pull off channel
+		}
+	}(c)
+	return c
 }
 
 func Test_LogConsumerGetsCalled(t *testing.T) {
@@ -103,9 +73,13 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
 
-	g := NewTestLogConsumer()
+	g := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
 
-	c.FollowOutput(g)
+	c.FollowOutput(&g)
 
 	err = c.StartLogProducer(ctx)
 	require.NoError(t, err)
@@ -120,12 +94,12 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	require.NoError(t, err)
 
 	select {
-	case <-g.Ack:
+	case <-g.Done:
 	case <-time.After(5 * time.Second):
 		t.Fatal("never received final log message")
 	}
 	assert.Nil(t, c.StopLogProducer())
-	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
+	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs)
 
 	terminateContainerOnEnd(t, ctx, c)
 }
@@ -217,11 +191,19 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
 
-	first := NewTestLogConsumer()
-	second := NewTestLogConsumer()
+	first := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
+	second := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
 
-	c.FollowOutput(first)
-	c.FollowOutput(second)
+	c.FollowOutput(&first)
+	c.FollowOutput(&second)
 
 	err = c.StartLogProducer(ctx)
 	require.NoError(t, err)
@@ -232,12 +214,12 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
 	require.NoError(t, err)
 
-	<-first.Ack
-	<-second.Ack
+	<-first.Done
+	<-second.Done
 	assert.Nil(t, c.StopLogProducer())
 
-	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, first.Msgs())
-	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, second.Msgs())
+	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, first.Msgs)
+	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, second.Msgs)
 	assert.Nil(t, c.Terminate(ctx))
 }
 
@@ -263,32 +245,38 @@ func Test_StartStop(t *testing.T) {
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
 
-	g := NewTestLogConsumer()
-
-	c.FollowOutput(g)
+	g := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: make(chan string),
+	}
+	c.FollowOutput(&g)
 
 	require.NoError(t, c.StopLogProducer(), "nothing should happen even if the producer is not started")
+
 	require.NoError(t, c.StartLogProducer(ctx))
+	require.Equal(t, <-g.Accepted, "ready\n")
+
 	require.Error(t, c.StartLogProducer(ctx), "log producer is already started")
 
 	_, err = http.Get(ep + "/stdout?echo=mlem")
 	require.NoError(t, err)
-
-	waitCtx, cancelWait := context.WithTimeout(ctx, 5*time.Second)
-	err = g.WaitFor(waitCtx, "mlem")
-	cancelWait()
-	require.NoError(t, err)
+	require.Equal(t, <-g.Accepted, "echo mlem\n")
 
 	require.NoError(t, c.StopLogProducer())
+
 	require.NoError(t, c.StartLogProducer(ctx))
+	require.Equal(t, <-g.Accepted, "ready\n")
+	require.Equal(t, <-g.Accepted, "echo mlem\n")
 
 	_, err = http.Get(ep + "/stdout?echo=mlem2")
 	require.NoError(t, err)
+	require.Equal(t, <-g.Accepted, "echo mlem2\n")
 
 	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
 	require.NoError(t, err)
 
-	<-g.Ack
+	<-g.Done
 	// Do not close producer here, let's delegate it to c.Terminate
 
 	assert.Equal(t, []string{
@@ -297,11 +285,15 @@ func Test_StartStop(t *testing.T) {
 		"ready\n",
 		"echo mlem\n",
 		"echo mlem2\n",
-	}, g.Msgs())
+	}, g.Msgs)
 	assert.Nil(t, c.Terminate(ctx))
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {
+	t.Cleanup(func() {
+		config.Reset()
+	})
+
 	if providerType == ProviderPodman {
 		t.Skip("Docker-in-Docker does not work with rootless Podman")
 	}
@@ -377,7 +369,12 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var consumer TestLogConsumer
+	consumer := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
+
 	if err = nginx.StartLogProducer(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -388,7 +385,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	// Gather the initial container logs
 	time.Sleep(time.Second * 1)
-	existingLogs := len(consumer.Msgs())
+	existingLogs := len(consumer.Msgs)
 
 	hitNginx := func() {
 		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + port.Port()})
@@ -399,11 +396,10 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	hitNginx()
 	time.Sleep(time.Second * 1)
-	logs2 := consumer.Msgs()
-	if len(logs2)-existingLogs != 1 {
-		t.Fatalf("logConsumer should have 1 new log message, instead has: %v", logs2[existingLogs:])
+	if len(consumer.Msgs)-existingLogs != 1 {
+		t.Fatalf("logConsumer should have 1 new log message, instead has: %v", consumer.Msgs[existingLogs:])
 	}
-	existingLogs = len(consumer.Msgs())
+	existingLogs = len(consumer.Msgs)
 
 	iptableArgs := []string{
 		"INPUT", "-p", "tcp", "--dport", "2375",
@@ -423,11 +419,10 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	hitNginx()
 	hitNginx()
 	time.Sleep(time.Second * 1)
-	logs3 := consumer.Msgs()
-	if len(logs3)-existingLogs != 2 {
+	if len(consumer.Msgs)-existingLogs != 2 {
 		t.Fatalf(
 			"LogConsumer should have 2 new log messages after detecting closed connection and"+
-				" re-requesting logs. Instead has:\n%s", logs3[existingLogs:],
+				" re-requesting logs. Instead has:\n%s", consumer.Msgs[existingLogs:],
 		)
 	}
 }

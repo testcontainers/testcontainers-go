@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -100,10 +101,10 @@ func TestParallelContainers(t *testing.T) {
 			res, err := ParallelContainers(context.Background(), tc.reqs, ParallelContainersOptions{})
 			if err != nil {
 				require.NotZero(t, tc.expErrors)
-				e, _ := err.(ParallelContainersError)
-
+				var e ParallelContainersError
+				errors.As(err, &e)
 				if len(e.Errors) != tc.expErrors {
-					t.Fatalf("expected erorrs: %d, got: %d\n", tc.expErrors, len(e.Errors))
+					t.Fatalf("expected errors: %d, got: %d\n", tc.expErrors, len(e.Errors))
 				}
 			}
 
@@ -157,7 +158,8 @@ func TestParallelContainersWithReuse(t *testing.T) {
 
 	res, err := ParallelContainers(ctx, parallelRequest, ParallelContainersOptions{})
 	if err != nil {
-		e, _ := err.(ParallelContainersError)
+		var e ParallelContainersError
+		errors.As(err, &e)
 		t.Fatalf("expected errors: %d, got: %d\n", 0, len(e.Errors))
 	}
 	// Container is reused, only terminate first container

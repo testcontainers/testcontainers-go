@@ -112,7 +112,7 @@ func extractDockerHost(ctx context.Context) string {
 	for _, dockerHostFn := range dockerHostFns {
 		dockerHost, err := dockerHostFn(ctx)
 		if err != nil {
-			outerErr = fmt.Errorf("%w: %v", outerErr, err)
+			outerErr = fmt.Errorf("%w: %w", outerErr, err)
 			continue
 		}
 
@@ -212,12 +212,7 @@ func dockerHostFromProperties(ctx context.Context) (string, error) {
 	cfg := config.Read()
 	socketPath := cfg.Host
 	if socketPath != "" {
-		parsed, err := parseURL(socketPath)
-		if err != nil {
-			return "", err
-		}
-
-		return parsed, nil
+		return socketPath, nil
 	}
 
 	return "", ErrDockerSocketNotSetInProperties

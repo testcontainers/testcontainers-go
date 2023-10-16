@@ -1,47 +1,78 @@
-package mongodb
+package mongodb_test
 
 import (
 	"context"
 	"fmt"
-	"testing"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/mongodb"
 )
 
-func TestMongoDB(t *testing.T) {
+func ExampleRunContainer() {
+	// runMongoDBContainer {
 	ctx := context.Background()
 
-	// createMongoDBContainer {
-	container, err := RunContainer(ctx)
+	mongodbContainer, err := mongodb.RunContainer(ctx, testcontainers.WithImage("mongo:6"))
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
-	// }
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
+	// Clean up the container
+	defer func() {
+		if err := mongodbContainer.Terminate(ctx); err != nil {
+			panic(err)
 		}
-	})
-
-	// perform assertions
-
-	// connectionString {
-	endpoint, err := container.ConnectionString(ctx)
-	if err != nil {
-		t.Error(fmt.Errorf("failed to get connection string: %w", err))
-	}
+	}()
 	// }
+
+	state, err := mongodbContainer.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
+}
+
+func ExampleRunContainer_connect() {
+	// connectToMongo {
+	ctx := context.Background()
+
+	mongodbContainer, err := mongodb.RunContainer(ctx, testcontainers.WithImage("mongo:6"))
+	if err != nil {
+		panic(err)
+	}
+
+	// Clean up the container
+	defer func() {
+		if err := mongodbContainer.Terminate(ctx); err != nil {
+			panic(err)
+		}
+	}()
+
+	endpoint, err := mongodbContainer.ConnectionString(ctx)
+	if err != nil {
+		panic(err)
+	}
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint))
 	if err != nil {
-		t.Fatal(fmt.Errorf("error creating mongo client: %w", err))
+		panic(err)
 	}
+	// }
 
 	err = mongoClient.Ping(ctx, nil)
 	if err != nil {
-		t.Fatal(fmt.Errorf("error pinging mongo: %w", err))
+		panic(err)
 	}
+
+	fmt.Println(mongoClient.Database("test").Name())
+
+	// Output:
+	// test
 }

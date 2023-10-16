@@ -23,14 +23,12 @@ go get github.com/testcontainers/testcontainers-go/modules/pulsar
 Create a `Pulsar` container to use it in your tests:
 
 <!--codeinclude-->
-[Creating a Pulsar container](../../modules/pulsar/pulsar_test.go) inside_block:startPulsarContainer
+[Creating a Pulsar container](../../modules/pulsar/examples_test.go) inside_block:runPulsarContainer
 <!--/codeinclude-->
-
-where the `tt.opts` are the options to configure the container. See the [Container Options](#container-options) section for more details.
 
 ## Module Reference
 
-The Redis module exposes one entrypoint function to create the containerr, and this function receives two parameters:
+The Pulsar module exposes one entrypoint function to create the containerr, and this function receives two parameters:
 
 ```golang
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error)
@@ -48,33 +46,13 @@ When starting the Pulsar container, you can pass options in a variadic way to co
 If you need to set a different Pulsar Docker image, you can use `testcontainers.WithImage` with a valid Docker image
 for Pulsar. E.g. `testcontainers.WithImage("docker.io/apachepulsar/pulsar:2.10.2")`.
 
-<!--codeinclude-->
-[Set Pulsar image](../../modules/pulsar/pulsar_test.go) inside_block:setPulsarImage
-<!--/codeinclude-->
-
-#### Wait Strategies
-
-If you need to set a different wait strategy for Pulsar, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
-for Pulsar.
-
-!!!info
-    The default deadline for the wait strategy is 60 seconds.
-
-At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
-
-#### Docker type modifiers
-
-If you need an advanced configuration for Pulsar, you can leverage the following Docker type modifiers:
-
-- `testcontainers.WithConfigModifier`
-- `testcontainers.WithHostConfigModifier`
-- `testcontainers.WithEndpointSettingsModifier`
-
-Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+{% include "../features/common_functional_options.md" %}
 
 <!--codeinclude-->
 [Advanced Docker settings](../../modules/pulsar/pulsar_test.go) inside_block:advancedDockerSettings
 <!--/codeinclude-->
+
+Here, the `nwName` relates to the name of a previously created Docker network. Please see the [How to create a network](../features/creating_networks.md) documentation for more information.
 
 #### Pulsar Configuration
 If you need to set Pulsar configuration variables you can use the `WithPulsarEnv` to set Pulsar environment variables: the `PULSAR_PREFIX_` prefix will be automatically added for you.

@@ -17,7 +17,6 @@ import (
 func TestIntegrationSetGet(t *testing.T) {
 	ctx := context.Background()
 
-	// createRedisContainer {
 	redisContainer, err := RunContainer(ctx)
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -25,7 +24,6 @@ func TestIntegrationSetGet(t *testing.T) {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
-	// }
 
 	assertSetsGets(t, ctx, redisContainer, 1)
 }
@@ -33,7 +31,6 @@ func TestIntegrationSetGet(t *testing.T) {
 func TestRedisWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	// withConfigFile {
 	redisContainer, err := RunContainer(ctx, WithConfigFile(filepath.Join("testdata", "redis7.conf")))
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -41,7 +38,6 @@ func TestRedisWithConfigFile(t *testing.T) {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
-	// }
 
 	assertSetsGets(t, ctx, redisContainer, 1)
 }
@@ -77,7 +73,6 @@ func TestRedisWithImage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// withImage {
 			redisContainer, err := RunContainer(ctx, testcontainers.WithImage(tt.image), WithConfigFile(filepath.Join("testdata", "redis6.conf")))
 			require.NoError(t, err)
 			t.Cleanup(func() {
@@ -85,7 +80,6 @@ func TestRedisWithImage(t *testing.T) {
 					t.Fatalf("failed to terminate container: %s", err)
 				}
 			})
-			// }
 
 			assertSetsGets(t, ctx, redisContainer, 1)
 		})
@@ -95,7 +89,6 @@ func TestRedisWithImage(t *testing.T) {
 func TestRedisWithLogLevel(t *testing.T) {
 	ctx := context.Background()
 
-	// withLogLevel {
 	redisContainer, err := RunContainer(ctx, WithLogLevel(LogLevelVerbose))
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -103,7 +96,6 @@ func TestRedisWithLogLevel(t *testing.T) {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
-	// }
 
 	assertSetsGets(t, ctx, redisContainer, 10)
 }
@@ -111,7 +103,6 @@ func TestRedisWithLogLevel(t *testing.T) {
 func TestRedisWithSnapshotting(t *testing.T) {
 	ctx := context.Background()
 
-	// withSnapshotting {
 	redisContainer, err := RunContainer(ctx, WithSnapshotting(10, 1))
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -119,7 +110,6 @@ func TestRedisWithSnapshotting(t *testing.T) {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
-	// }
 
 	assertSetsGets(t, ctx, redisContainer, 10)
 }
@@ -127,8 +117,8 @@ func TestRedisWithSnapshotting(t *testing.T) {
 func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *RedisContainer, keyCount int) {
 	// connectionString {
 	uri, err := redisContainer.ConnectionString(ctx)
-	require.NoError(t, err)
 	// }
+	require.NoError(t, err)
 
 	// You will likely want to wrap your Redis package of choice in an
 	// interface to aid in unit testing and limit lock-in throughout your

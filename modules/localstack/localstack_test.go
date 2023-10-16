@@ -106,128 +106,63 @@ func TestIsLegacyMode(t *testing.T) {
 	}
 }
 
-func TestRun(t *testing.T) {
-	ctx := context.Background()
+func TestRunContainer(t *testing.T) {
+	tests := []struct {
+		version string
+	}{
+		{defaultVersion},
+		{"2.0.0"},
+	}
 
-	// withImage {
-	container, err := RunContainer(
-		ctx,
-		testcontainers.WithImage(fmt.Sprintf("localstack/localstack:%s", defaultVersion)),
-	)
-	// }
+	for _, tt := range tests {
+		ctx := context.Background()
 
-	t.Run("multiple services should be exposed using the same port", func(t *testing.T) {
-		require.Nil(t, err)
-		assert.NotNil(t, container)
+		container, err := RunContainer(
+			ctx,
+			testcontainers.WithImage(fmt.Sprintf("localstack/localstack:%s", tt.version)),
+		)
 
-		rawPorts, err := container.Ports(ctx)
-		require.Nil(t, err)
+		t.Run("Localstack:"+tt.version+" - multiple services exposed on same port", func(t *testing.T) {
+			require.Nil(t, err)
+			assert.NotNil(t, container)
 
-		ports := 0
-		// only one port is exposed among all the ports in the container
-		for _, v := range rawPorts {
-			if len(v) > 0 {
-				ports++
+			rawPorts, err := container.Ports(ctx)
+			require.Nil(t, err)
+
+			ports := 0
+			// only one port is exposed among all the ports in the container
+			for _, v := range rawPorts {
+				if len(v) > 0 {
+					ports++
+				}
 			}
-		}
 
-		assert.Equal(t, 1, ports) // a single port is exposed
-	})
-}
-
-func TestStart(t *testing.T) {
-	ctx := context.Background()
-
-	// withoutNetwork {
-	container, err := StartContainer(
-		ctx,
-		OverrideContainerRequest(testcontainers.ContainerRequest{
-			Image: fmt.Sprintf("localstack/localstack:%s", "2.0.0"),
-		}),
-	)
-	// }
-
-	t.Run("multiple services should be exposed using the same port", func(t *testing.T) {
-		require.Nil(t, err)
-		assert.NotNil(t, container)
-
-		rawPorts, err := container.Ports(ctx)
-		require.Nil(t, err)
-
-		ports := 0
-		// only one port is exposed among all the ports in the container
-		for _, v := range rawPorts {
-			if len(v) > 0 {
-				ports++
-			}
-		}
-
-		assert.Equal(t, 1, ports) // a single port is exposed
-	})
+			assert.Equal(t, 1, ports) // a single port is exposed
+		})
+	}
 }
 
 func TestStartWithoutOverride(t *testing.T) {
-	// noOverrideContainerRequest {
 	ctx := context.Background()
 
 	container, err := RunContainer(ctx)
 	require.Nil(t, err)
 	assert.NotNil(t, container)
-	// }
-}
-
-func TestStartWithNetwork(t *testing.T) {
-	// withNetwork {
-	ctx := context.Background()
-
-	nw, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
-		NetworkRequest: testcontainers.NetworkRequest{
-			Name: "localstack-network",
-		},
-	})
-	require.Nil(t, err)
-	assert.NotNil(t, nw)
-
-	container, err := RunContainer(
-		ctx,
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Image:          "localstack/localstack:0.13.0",
-				Env:            map[string]string{"SERVICES": "s3,sqs"},
-				Networks:       []string{"localstack-network"},
-				NetworkAliases: map[string][]string{"localstack-network": {"localstack"}},
-			},
-		}),
-	)
-	require.Nil(t, err)
-	assert.NotNil(t, container)
-	// }
-
-	networks, err := container.Networks(ctx)
-	require.Nil(t, err)
-	require.Equal(t, 1, len(networks))
-	require.Equal(t, "localstack-network", networks[0])
 }
 
 func TestStartV2WithNetwork(t *testing.T) {
 	ctx := context.Background()
 
-	nw, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
-		NetworkRequest: testcontainers.NetworkRequest{
-			Name: "localstack-network-v2",
-		},
-	})
-	require.Nil(t, err)
-	assert.NotNil(t, nw)
-
 	// withCustomContainerRequest {
+	networkName := "localstack-network-v2"
+
 	localstack, err := RunContainer(
 		ctx,
+		WithNetwork(networkName, "localstack"),
 		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:          "localstack/localstack:2.0.0",
-				Networks:       []string{"localstack-network-v2"},
-				NetworkAliases: map[string][]string{"localstack-network-v2": {"localstack"}},
+				Image: "localstack/localstack:2.0.0",
+				Env:   map[string]string{"SERVICES": "s3,sqs"},
 			},
 		}),
 	)
@@ -238,7 +173,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 	cli, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:      "amazon/aws-cli:2.7.27",
-			Networks:   []string{"localstack-network-v2"},
+			Networks:   []string{networkName},
 			Entrypoint: []string{"tail"},
 			Cmd:        []string{"-f", "/dev/null"},
 			Env: map[string]string{

@@ -22,7 +22,7 @@ go get github.com/testcontainers/testcontainers-go/modules/redpanda
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Redpanda container](../../modules/redpanda/redpanda_test.go) inside_block:redpandaCreateContainer
+[Creating a Redpanda container](../../modules/redpanda/examples_test.go) inside_block:runRedpandaContainer
 <!--/codeinclude-->
 
 ## Module reference
@@ -45,29 +45,11 @@ When starting the Redpanda container, you can pass options in a variadic way to 
 If you need to set a different Redpanda Docker image, you can use `testcontainers.WithImage` with a valid Docker image
 for Redpanda. E.g. `testcontainers.WithImage("docker.redpanda.com/redpandadata/redpanda:v23.1.7")`.
 
-#### Wait Strategies
-
-If you need to set a different wait strategy for Redpanda, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
-for Redpanda.
-
-!!!info
-    The default deadline for the wait strategy is 60 seconds.
-
-At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+{% include "../features/common_functional_options.md" %}
 
 #### TLS Encryption
 
 If you need to enable TLS use `WithTLS` with a valid PEM encoded certificate and key.
-
-#### Docker type modifiers
-
-If you need an advanced configuration for Redpanda, you can leverage the following Docker type modifiers:
-
-- `testcontainers.WithConfigModifier`
-- `testcontainers.WithHostConfigModifier`
-- `testcontainers.WithEndpointSettingsModifier`
-
-Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
 
 ### Container Methods
 

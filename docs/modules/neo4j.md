@@ -19,7 +19,7 @@ go get github.com/testcontainers/testcontainers-go/modules/neo4j
 Running Neo4j as a single-instance server, with the [APOC plugin](https://neo4j.com/developer/neo4j-apoc/) enabled:
 
 <!--codeinclude-->
-[Creating a Neo4j container](../../modules/neo4j/neo4j_test.go) inside_block:neo4jCreateContainer
+[Creating a Neo4j container](../../modules/neo4j/examples_test.go) inside_block:runNeo4jContainer
 <!--/codeinclude-->
 
 ## Module Reference
@@ -48,7 +48,7 @@ When starting the Neo4j container, you can pass options in a variadic way to con
 #### Image
 
 If you need to set a different Neo4j Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Couchbase. E.g. `testcontainers.WithImage("docker.io/neo4j:4.4")`.
+for Neo4j. E.g. `testcontainers.WithImage("docker.io/neo4j:4.4")`.
 
 By default, the container will use the following Docker image:
 
@@ -56,25 +56,7 @@ By default, the container will use the following Docker image:
 [Default Docker image](../../modules/neo4j/neo4j.go) inside_block:defaultImage
 <!--/codeinclude-->
 
-#### Wait Strategies
-
-If you need to set a different wait strategy for Neo4j, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy
-for Neo4j.
-
-!!!info
-    The default deadline for the wait strategy is 60 seconds.
-
-At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
-
-#### Docker type modifiers
-
-If you need an advanced configuration for Neo4j, you can leverage the following Docker type modifiers:
-
-- `testcontainers.WithConfigModifier`
-- `testcontainers.WithHostConfigModifier`
-- `testcontainers.WithEndpointSettingsModifier`
-
-Please read the [Create containers: Advanced Settings](../features/creating_container.md#advanced-settings) documentation for more information.
+{% include "../features/common_functional_options.md" %}
 
 #### Logger
 
@@ -90,11 +72,7 @@ This option sets a custom logger to be used by the container. Consider calling t
 #### Authentication
 
 By default, the Neo4j container will be started with authentication disabled. If you need to enable authentication, you can
-use the `WithAuthentication` option.
-
-<!--codeinclude-->
-[With Authentication](../../modules/neo4j/neo4j_test.go) inside_block:neo4jCreateContainer
-<!--/codeinclude-->
+use the `WithAuthentication(pwd string)` option.
 
 By default, the container will not use authentication, automatically prepending the `WithoutAuthentication` option to the options list.
 
@@ -103,7 +81,7 @@ By default, the container will not use authentication, automatically prepending 
 By default, the Neo4j container will start without any Labs plugins enabled, but you can enable them using the `WithLabsPlugin` optional function.
 
 <!--codeinclude-->
-[Adding Labs Plugins](../../modules/neo4j/neo4j_test.go) inside_block:neo4jCreateContainer
+[Adding Labs Plugins](../../modules/neo4j/neo4j_test.go) inside_block:withLabsPlugin
 <!--/codeinclude-->
 
 The list of available plugins is:

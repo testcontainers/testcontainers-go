@@ -81,6 +81,34 @@ func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) Cus
 	}
 }
 
+// Executable represents an executable command to be sent to a container
+// as part of the PostStart lifecycle hook.
+type Executable interface {
+	AsCommand() []string
+}
+
+// WithStartupCommand will execute the command representation of each Executable into the container.
+// It will leverage the container lifecycle hooks to call the command right after the container
+// is started.
+func WithStartupCommand(execs ...Executable) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) {
+		startupCommandsHook := ContainerLifecycleHooks{
+			PostStarts: []ContainerHook{},
+		}
+
+		for _, exec := range execs {
+			execFn := func(ctx context.Context, c Container) error {
+				_, _, err := c.Exec(ctx, exec.AsCommand())
+				return err
+			}
+
+			startupCommandsHook.PostStarts = append(startupCommandsHook.PostStarts, execFn)
+		}
+
+		req.LifecycleHooks = append(req.LifecycleHooks, startupCommandsHook)
+	}
+}
+
 // WithWaitStrategy sets the wait strategy for a container, using 60 seconds as deadline
 func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
 	return WithWaitStrategyAndDeadline(60*time.Second, strategies...)
@@ -156,4 +184,5 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 type GenericProvider interface {
 	ContainerProvider
 	NetworkProvider
+	ImageProvider
 }

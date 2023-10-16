@@ -1,4 +1,4 @@
-package main_test
+package main
 
 import (
 	"os"
@@ -9,14 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	main "github.com/testcontainers/testcontainers-go/modulegen"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 )
 
 func TestGetDependabotConfigFile(t *testing.T) {
-	tmp := t.TempDir()
-
-	ctx := &main.Context{RootDir: filepath.Join(tmp, "testcontainers-go")}
+	ctx := context.New(filepath.Join(t.TempDir(), "testcontainers-go"))
 
 	githubDir := ctx.GithubDir()
 	cfgFile := ctx.DependabotConfigFile()
@@ -33,9 +31,7 @@ func TestGetDependabotConfigFile(t *testing.T) {
 }
 
 func TestExamplesHasDependabotEntry(t *testing.T) {
-	rootDir, err := getRootDir()
-	require.NoError(t, err)
-	ctx := &main.Context{RootDir: rootDir}
+	ctx := getTestRootContext(t)
 	examples, err := ctx.GetExamples()
 	require.NoError(t, err)
 	dependabotUpdates, err := dependabot.GetUpdates(ctx.DependabotConfigFile())
@@ -69,9 +65,7 @@ func TestExamplesHasDependabotEntry(t *testing.T) {
 }
 
 func TestModulesHasDependabotEntry(t *testing.T) {
-	rootDir, err := getRootDir()
-	require.NoError(t, err)
-	ctx := &main.Context{RootDir: rootDir}
+	ctx := getTestRootContext(t)
 	modules, err := ctx.GetModules()
 	require.NoError(t, err)
 	dependabotUpdates, err := dependabot.GetUpdates(ctx.DependabotConfigFile())
@@ -103,11 +97,8 @@ func TestModulesHasDependabotEntry(t *testing.T) {
 	}
 }
 
-func getRootDir() (string, error) {
+func getTestRootContext(t *testing.T) context.Context {
 	current, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Dir(current), nil
+	require.NoError(t, err)
+	return context.New(filepath.Dir(current))
 }

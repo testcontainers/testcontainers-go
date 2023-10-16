@@ -6,10 +6,11 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-mkdocs = "*"
-mkdocs-codeinclude-plugin = "*"
-mkdocs-material = "*"
-mkdocs-markdownextradata-plugin = "*"
+mkdocs = "==1.5.3"
+mkdocs-codeinclude-plugin = "==0.2.1"
+mkdocs-include-markdown-plugin = "==6.0.1"
+mkdocs-material = "==9.3.2"
+mkdocs-markdownextradata-plugin = "==0.2.5"
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"

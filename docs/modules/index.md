@@ -11,12 +11,14 @@ We have provided a command line tool to generate the scaffolding for the code of
     - a Go package named after the module, in lowercase
     - a Go file for the creation of the container, using a dedicated struct in which the image flag is set as Docker image.
     - a Go test file for running a simple test for your container, consuming the above struct.
+    - a Go examples file for running the example in the docs site, also adding them to [https://pkg.go.dev](https://pkg.go.dev).
     - a Makefile to run the tests in a consistent manner
 - a markdown file in the docs/modules directory including the snippets for both the creation of the container and a simple test. By default, this generated file will contain all the documentation for the module, including:
     - the version of _Testcontainers for Go_ in which the module was added.
     - a short introduction to the module.
     - a section for adding the module to the project dependencies.
-    - a section for a usage example.
+    - a section for a usage example, including:
+        - a snippet for creating the container, from the `examples_test.go` file in the Go module.
     - a section for the module reference, including:
         - the entrypoint function for creating the container.
         - the options for creating the container.
@@ -24,15 +26,16 @@ We have provided a command line tool to generate the scaffolding for the code of
 - a new Nav entry for the module in the docs site, adding it to the `mkdocs.yml` file located at the root directory of the project.
 - a GitHub workflow file in the .github/workflows directory to run the tests for the example.
 - an entry in Dependabot's configuration file, in order to receive dependency updates.
+- an entry in the VSCode workspace file, in order to include the new module in the project's workspace.
 
 ### Command line flags
 
-| Flag       | Type   | Required | Description                                                                                                                                                    |
-|------------|--------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| -name      | string | Yes      | Name of the module, use camel-case when needed. Only alphanumerical characters are allowed (leading character must be a letter).                               |
-| -image     | string | Yes      | Fully-qualified name of the Docker image to be used by the module (i.e. 'docker.io/org/project:tag')                                                           |
-| -title     | string | No       | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphanumerical characters are allowed (leading character must be a letter).               |
-| -as-module | bool   | No       | If set, the module will be generated as a Go module, under the modules directory. Otherwise, it will be generated as a subdirectory of the examples directory. |
+| Flag    | Short | Type   | Required | Description                                                                                                                                      |
+|---------|-------|--------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| --name  | -n    | string | Yes      | Name of the module, use camel-case when needed. Only alphanumerical characters are allowed (leading character must be a letter).                 |
+| --image | -i    | string | Yes      | Fully-qualified name of the Docker image to be used by the module (i.e. 'docker.io/org/project:tag')                                             |
+| --title | -t    | string | No       | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphanumerical characters are allowed (leading character must be a letter). |
+
 
 ### What is this tool not doing?
 
@@ -44,14 +47,15 @@ We have provided a command line tool to generate the scaffolding for the code of
 From the [`modulegen` directory]({{repo_url}}/tree/main/modulegen), please run:
 
 ```shell
-go run . --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
+go run . new module --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
 ```
 
-or for creating a Go module:
+!!!info
+    In the case you just want to create [an example module](../examples/index.md), with no public API, please run:
 
-```shell
-go run . --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE} --as-module
-```
+    ```shell
+    go run . new example --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
+    ```
 
 ### Adding types and methods to the module
 

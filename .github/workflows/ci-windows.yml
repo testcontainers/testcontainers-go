@@ -13,11 +13,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Create pending status
-        uses: actions/github-script@0.9.0
+        uses: actions/github-script@6.4.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.repos.createStatus({
+            github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               sha: context.payload.client_payload.pull_request.head.sha,
@@ -27,7 +27,7 @@ jobs:
             })
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
@@ -55,12 +55,12 @@ jobs:
           gotestsum --format short-verbose --rerun-fails=5 --packages="./..."  --junitfile TEST-unit.xml -- -timeout=30m
 
       - name: Create success status
-        uses: actions/github-script@0.9.0
+        uses: actions/github-script@6.4.1
         if: success()
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            github.repos.createStatus({
+            github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               sha: context.payload.client_payload.pull_request.head.sha,
@@ -70,12 +70,12 @@ jobs:
             })
 
       - name: Create failure status
-        uses: actions/github-script@0.9.0
+        uses: actions/github-script@6.4.1
         if: failure()
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            github.repos.createStatus({
+            github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               sha: context.payload.client_payload.pull_request.head.sha,

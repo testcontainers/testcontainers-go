@@ -9,12 +9,6 @@ type Config struct {
 	Updates Updates `yaml:"updates"`
 }
 
-type Group struct {
-	Patterns []string `yaml:"patterns"`
-}
-
-type Groups map[string]Group
-
 type Schedule struct {
 	Interval string `yaml:"interval"`
 	Day      string `yaml:"day"`
@@ -26,7 +20,6 @@ type Update struct {
 	Schedule              Schedule `yaml:"schedule"`
 	OpenPullRequestsLimit int      `yaml:"open-pull-requests-limit"`
 	RebaseStrategy        string   `yaml:"rebase-strategy"`
-	Groups                Groups   `yaml:"groups,omitempty"`
 }
 
 type Updates []Update
@@ -40,11 +33,6 @@ func newUpdate(directory string, packageExosystem string) Update {
 		Schedule: Schedule{
 			Interval: "monthly",
 			Day:      "sunday",
-		},
-		Groups: Groups{
-			"all": Group{
-				Patterns: []string{"*"},
-			},
 		},
 	}
 }
