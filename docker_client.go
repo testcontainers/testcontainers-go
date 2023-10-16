@@ -18,12 +18,14 @@ import (
 // It implements the SystemAPIClient interface in order to cache the docker info and reuse it.
 type DockerClient struct {
 	*client.Client // client is embedded into our own client
+}
 
+var (
 	// dockerInfo stores the docker info to be reused in the Info method
 	dockerInfo     types.Info
 	dockerInfoSet  bool
 	dockerInfoLock sync.Mutex
-}
+)
 
 // implements SystemAPIClient interface
 var _ client.SystemAPIClient = &DockerClient{}
@@ -37,18 +39,18 @@ func (c *DockerClient) Events(ctx context.Context, options types.EventsOptions) 
 // and reused every time Info is called.
 // It will also print out the docker server info, and the resolved Docker paths, to the default logger.
 func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
-	c.dockerInfoLock.Lock()
-	defer c.dockerInfoLock.Unlock()
-	if c.dockerInfoSet {
-		return c.dockerInfo, nil
+	dockerInfoLock.Lock()
+	defer dockerInfoLock.Unlock()
+	if dockerInfoSet {
+		return dockerInfo, nil
 	}
 
 	info, err := c.Client.Info(ctx)
 	if err != nil {
 		return info, fmt.Errorf("failed to retrieve docker info: %w", err)
 	}
-	c.dockerInfo = info
-	c.dockerInfoSet = true
+	dockerInfo = info
+	dockerInfoSet = true
 
 	infoMessage := `%v - Connected to docker: 
   Server Version: %v
@@ -62,15 +64,15 @@ func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
 `
 
 	Logger.Printf(infoMessage, packagePath,
-		c.dockerInfo.ServerVersion, c.Client.ClientVersion(),
-		c.dockerInfo.OperatingSystem, c.dockerInfo.MemTotal/1024/1024,
+		dockerInfo.ServerVersion, c.Client.ClientVersion(),
+		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
 		testcontainersdocker.ExtractDockerHost(ctx),
 		testcontainersdocker.ExtractDockerSocket(ctx),
 		testcontainerssession.SessionID(),
 		testcontainerssession.ProcessID(),
 	)
 
-	return c.dockerInfo, nil
+	return dockerInfo, nil
 }
 
 // RegistryLogin logs into a Docker registry.
