@@ -66,6 +66,13 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /modules/cassandra
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /modules/clickhouse
       schedule:
         interval: monthly
@@ -102,6 +109,13 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/k3s
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/k6
       schedule:
         interval: monthly
         day: sunday

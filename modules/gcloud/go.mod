@@ -4,11 +4,11 @@ go 1.20
 
 require (
 	cloud.google.com/go/bigquery v1.55.0
-	cloud.google.com/go/bigtable v1.19.0
-	cloud.google.com/go/datastore v1.14.0
+	cloud.google.com/go/bigtable v1.20.0
+	cloud.google.com/go/datastore v1.15.0
 	cloud.google.com/go/firestore v1.13.0
 	cloud.google.com/go/pubsub v1.33.0
-	cloud.google.com/go/spanner v1.49.0
+	cloud.google.com/go/spanner v1.50.0
 	github.com/docker/go-connections v0.4.0
 	github.com/testcontainers/testcontainers-go v0.25.0
 	google.golang.org/api v0.143.0
@@ -77,13 +77,13 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/crypto v0.13.0 // indirect
+	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
 	golang.org/x/mod v0.11.0 // indirect
-	golang.org/x/net v0.15.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.12.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.10.0 // indirect
