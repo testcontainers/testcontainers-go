@@ -71,6 +71,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				"redpanda",
 				"start",
 				"--mode=dev-container",
+				"--smp=1",
+				"--memory=1G",
 			},
 		},
 		Started: true,

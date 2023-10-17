@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
+	"github.com/moby/patternmatcher/ignorefile"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
@@ -188,12 +190,30 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	}
 	c.Context = abs
 
-	buildContext, err := archive.TarWithOptions(c.Context, &archive.TarOptions{})
+	excluded, err := parseDockerIgnore(abs)
+	if err != nil {
+		return nil, err
+	}
+	buildContext, err := archive.TarWithOptions(c.Context, &archive.TarOptions{ExcludePatterns: excluded})
 	if err != nil {
 		return nil, err
 	}
 
 	return buildContext, nil
+}
+
+func parseDockerIgnore(targetDir string) ([]string, error) {
+	// based on https://github.com/docker/cli/blob/master/cli/command/image/build/dockerignore.go#L14
+	fileLocation := filepath.Join(targetDir, ".dockerignore")
+	var excluded []string
+	if f, openErr := os.Open(fileLocation); openErr == nil {
+		var err error
+		excluded, err = ignorefile.ReadAll(f)
+		if err != nil {
+			return excluded, fmt.Errorf("error reading .dockerignore: %w", err)
+		}
+	}
+	return excluded, nil
 }
 
 // GetBuildArgs returns the env args to be used when creating from Dockerfile

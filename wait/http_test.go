@@ -562,7 +562,8 @@ func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
 		},
 		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
 			return &types.ContainerState{
-				Status: "running",
+				Status:  "running",
+				Running: true,
 			}, nil
 		},
 		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
@@ -602,7 +603,8 @@ func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
 		},
 		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
 			return &types.ContainerState{
-				Status: "running",
+				Running: true,
+				Status:  "running",
 			}, nil
 		},
 		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
@@ -649,7 +651,8 @@ func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.
 		},
 		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
 			return &types.ContainerState{
-				Status: "running",
+				Running: true,
+				Status:  "running",
 			}, nil
 		},
 		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
