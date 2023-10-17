@@ -636,7 +636,13 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				return
 			}
 			c.logger.Printf("cannot get logs for container %q: %v", c.ID, err)
-			time.Sleep(1 * time.Second)
+
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(1 * time.Second):
+			}
+
 			goto BEGIN
 		}
 		defer c.provider.Close()
@@ -669,7 +675,12 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 					_, _ = fmt.Fprintf(os.Stderr, "read log header: %+v. %s", err, logRestartedForOutOfSyncMessage)
 					// if we would continue here, the next header-read will result into random data...
 					// we need to restart the whole request.
-					time.Sleep(1 * time.Second)
+					select {
+					case <-ctx.Done():
+						return
+					case <-time.After(1 * time.Second):
+					}
+
 					goto BEGIN
 				}
 
@@ -700,7 +711,13 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 					// if we would continue here, the next header-read will result into random data...
 					// we need to restart the whole request.
 					_, _ = fmt.Fprintf(os.Stderr, "read log message: %+v. %s", err, logRestartedForOutOfSyncMessage)
-					time.Sleep(1 * time.Second)
+
+					select {
+					case <-ctx.Done():
+						return
+					case <-time.After(1 * time.Second):
+					}
+
 					goto BEGIN
 				}
 				for _, c := range c.consumers {
