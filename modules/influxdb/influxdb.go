@@ -19,7 +19,7 @@ type InfluxDbContainer struct {
 	testcontainers.Container
 }
 
-// RunContainer creates an instance of the MySQL container type
+// RunContainer creates an instance of the InfluxDB container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*InfluxDbContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImage,
