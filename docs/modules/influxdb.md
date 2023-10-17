@@ -37,7 +37,7 @@ When starting the container, you can pass options in a variadic way to configure
 
 !!!tip
 
-    You can find configuration information for the InfluxDB image on [Docker Hub](https://hub.docker.com/_/mysql) and a list of possible 
+    You can find configuration information for the InfluxDB image on [Docker Hub](https://hub.docker.com/_/influxdb) and a list of possible 
     environment variables on [InfluxDB documentation](https://docs.influxdata.com/influxdb/v1/administration/config/).
 
 #### Image
