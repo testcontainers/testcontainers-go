@@ -158,7 +158,7 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
 		"auths": {
-				"localhost:5000": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
+				"localhost:5001": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
 		},
 		"credsStore": "desktop"
 	}`)
@@ -187,7 +187,7 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 	base64 := "Zm9vOmJhcg==" // foo:bar
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
 		"auths": {
-			"localhost:5000": { "username": "foo", "password": "bar", "auth": "`+base64+`" }
+			"localhost:5001": { "username": "foo", "password": "bar", "auth": "`+base64+`" }
 		},
 		"credsStore": "desktop"
 	}`)
@@ -216,7 +216,7 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
 		"auths": {
-				"localhost:5000": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
+				"localhost:5001": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
 		},
 		"credsStore": "desktop"
 	}`)
@@ -225,7 +225,7 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:           "localhost:5000/redis:5.0-alpine",
+		Image:           "localhost:5001/redis:5.0-alpine",
 		AlwaysPullImage: true, // make sure the authentication takes place
 		ExposedPorts:    []string{"6379/tcp"},
 		WaitingFor:      wait.ForLog("Ready to accept connections"),
@@ -246,7 +246,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 	// bindMounts {
 	req := ContainerRequest{
 		Image:        "registry:2",
-		ExposedPorts: []string{"5000:5000/tcp"},
+		ExposedPorts: []string{"5001:5000/tcp"},
 		Env: map[string]string{
 			"REGISTRY_AUTH":                             "htpasswd",
 			"REGISTRY_AUTH_HTPASSWD_REALM":              "Registry",
@@ -281,7 +281,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
-		removeImageFromLocalCache(t, "localhost:5000/redis:5.0-alpine")
+		removeImageFromLocalCache(t, "localhost:5001/redis:5.0-alpine")
 	})
 	t.Cleanup(func() {
 		assert.NoError(t, registryC.Terminate(context.Background()))

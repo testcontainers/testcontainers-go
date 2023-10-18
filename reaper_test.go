@@ -134,9 +134,6 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, container)
 
 	sessionID := testcontainerssession.SessionID()
-	if reaperInstance != nil {
-		sessionID = reaperInstance.SessionID
-	}
 
 	reaperContainer, err := lookUpReaperContainer(ctx, sessionID)
 	if err != nil {
@@ -172,9 +169,6 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, c)
 
 	sessionID := testcontainerssession.SessionID()
-	if reaperInstance != nil {
-		sessionID = reaperInstance.SessionID
-	}
 
 	reaperContainer, err := lookUpReaperContainer(ctx, sessionID)
 	if err != nil {

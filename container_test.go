@@ -412,3 +412,28 @@ func TestOverrideContainerRequest(t *testing.T) {
 	assert.Equal(t, []string{"bar"}, req.NetworkAliases["foo1"])
 	assert.Equal(t, wait.ForLog("foo"), req.WaitingFor)
 }
+
+func TestParseDockerIgnore(t *testing.T) {
+	testCases := []struct {
+		filePath         string
+		expectedErr      error
+		expectedExcluded []string
+	}{
+		{
+			filePath:         "./testdata/dockerignore",
+			expectedErr:      nil,
+			expectedExcluded: []string{"vendor", "foo", "bar"},
+		},
+		{
+			filePath:         "./testdata",
+			expectedErr:      nil,
+			expectedExcluded: []string(nil),
+		},
+	}
+
+	for _, testCase := range testCases {
+		excluded, err := parseDockerIgnore(testCase.filePath)
+		assert.Equal(t, testCase.expectedErr, err)
+		assert.Equal(t, testCase.expectedExcluded, excluded)
+	}
+}

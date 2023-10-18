@@ -1265,7 +1265,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 	})
 
 	t.Run("the context cancellation is propagated to container creation", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
 		c, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
@@ -1836,8 +1836,9 @@ func TestContainerCapAdd(t *testing.T) {
 func TestContainerRunningCheckingStatusCode(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "influxdb:1.8.10-alpine",
-		ExposedPorts: []string{"8086/tcp"},
+		Image:         "influxdb:1.8.10-alpine",
+		ExposedPorts:  []string{"8086/tcp"},
+		ImagePlatform: "linux/amd64", // influxdb doesn't provide an alpine+arm build (https://github.com/influxdata/influxdata-docker/issues/335)
 		WaitingFor: wait.ForAll(
 			wait.ForHTTP("/ping").WithPort("8086/tcp").WithStatusCodeMatcher(
 				func(status int) bool {
