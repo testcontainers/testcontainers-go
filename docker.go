@@ -635,7 +635,15 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				// context done.
 				return
 			}
-			c.logger.Printf("cannot get logs for container %q: %v", c.ID, err)
+
+			// we need a separate select here in order to be able to print the error
+			// and this cannot be done in the same select that checks for the timeout.
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				c.logger.Printf("cannot get logs for container %q: %v", c.ID, err)
+			}
 
 			select {
 			case <-ctx.Done():
@@ -672,7 +680,14 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 						// If the outer context is done, loop will exit in the next iteration.
 						continue
 					}
-					_, _ = fmt.Fprintf(os.Stderr, "read log header: %+v. %s", err, logRestartedForOutOfSyncMessage)
+
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						c.logger.Printf("read log header: %+v. %s", err, logRestartedForOutOfSyncMessage)
+					}
+
 					// if we would continue here, the next header-read will result into random data...
 					// we need to restart the whole request.
 					select {
@@ -690,7 +705,13 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 				logType := h[0]
 				if logType > 2 {
-					_, _ = fmt.Fprintf(os.Stderr, "received invalid log type: %d", logType)
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						c.logger.Printf("received invalid log type: %d", logType)
+					}
+
 					// sometimes docker returns logType = 3 which is an undocumented log type, so treat it as stdout
 					logType = 1
 				}
@@ -701,8 +722,12 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				b := make([]byte, count)
 				_, err = io.ReadFull(r, b)
 				if err != nil {
-					// TODO: add-logger: use logger to log out this error
-					_, _ = fmt.Fprintf(os.Stderr, "error occurred reading log with known length %s", err.Error())
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						c.logger.Printf("error occurred reading log with known length %s", err.Error())
+					}
 
 					if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 						// If the outer context is done, loop will exit in the next iteration.
@@ -710,7 +735,13 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 					}
 					// if we would continue here, the next header-read will result into random data...
 					// we need to restart the whole request.
-					_, _ = fmt.Fprintf(os.Stderr, "read log message: %+v. %s", err, logRestartedForOutOfSyncMessage)
+
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						c.logger.Printf("read log message: %+v. %s", err, logRestartedForOutOfSyncMessage)
+					}
 
 					select {
 					case <-ctx.Done():
