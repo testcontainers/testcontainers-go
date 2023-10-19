@@ -289,6 +289,79 @@ func Test_StartStop(t *testing.T) {
 	assert.Nil(t, c.Terminate(ctx))
 }
 
+// Test_StopOnCrashedProducer tests similarly to Test_StartStop but crashes the
+// container during the test.
+func Test_StopOnCrashedProducer(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:    "./testdata/",
+			Dockerfile: "echoserver.Dockerfile",
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		WaitingFor:   wait.ForLog("ready"),
+	}
+
+	gReq := GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	c, err := GenericContainer(ctx, gReq)
+	require.NoError(t, err)
+
+	ep, err := c.Endpoint(ctx, "http")
+	require.NoError(t, err)
+
+	g := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: make(chan string),
+	}
+	c.FollowOutput(&g)
+
+	require.NoError(t, c.StopLogProducer(), "nothing should happen even if the producer is not started")
+
+	require.NoError(t, c.StartLogProducer(ctx))
+	require.Equal(t, <-g.Accepted, "ready\n")
+
+	require.Error(t, c.StartLogProducer(ctx), "log producer is already started")
+
+	_, err = http.Get(ep + "/stdout?echo=mlem")
+	require.NoError(t, err)
+	require.Equal(t, <-g.Accepted, "echo mlem\n")
+
+	require.NoError(t, c.StopLogProducer())
+
+	require.NoError(t, c.StartLogProducer(ctx))
+	require.Equal(t, <-g.Accepted, "ready\n")
+	require.Equal(t, <-g.Accepted, "echo mlem\n")
+
+	_, err = http.Get(ep + "/stdout?echo=mlem2")
+	require.NoError(t, err)
+	require.Equal(t, <-g.Accepted, "echo mlem2\n")
+
+	// Here, we crash the container which should make the log producer stop.
+	_, _ = http.Get(ep + "/crash") // Will return an error.
+
+	// Wait for an arbitrary time to make sure that the log producer definitely
+	// exited.
+	<-time.After(200 * time.Millisecond)
+
+	// Stop the log producer. It should have already exited now.
+	err = c.StopLogProducer()
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{
+		"ready\n",
+		"echo mlem\n",
+		"ready\n",
+		"echo mlem\n",
+		"echo mlem2\n",
+	}, g.Msgs)
+	assert.Nil(t, c.Terminate(ctx))
+}
+
 func TestContainerLogWithErrClosed(t *testing.T) {
 	t.Cleanup(func() {
 		config.Reset()

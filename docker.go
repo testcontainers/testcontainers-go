@@ -68,10 +68,13 @@ type DockerContainer struct {
 	terminationSignal chan bool
 	consumers         []LogConsumer
 	raw               *types.ContainerJSON
-	stopProducer      chan bool
-	producerDone      chan bool
-	logger            Logging
-	lifecycleHooks    []ContainerLifecycleHooks
+	// stopProducer should be closed when the current log producer should be stopped.
+	// This allows the producer to exit in case of error while still avoiding
+	// StopLogProducer blocking indefinitely.
+	stopProducer   chan bool
+	producerDone   chan bool
+	logger         Logging
+	lifecycleHooks []ContainerLifecycleHooks
 }
 
 // SetLogger sets the logger for the container
@@ -718,7 +721,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 // and sending them to each added LogConsumer
 func (c *DockerContainer) StopLogProducer() error {
 	if c.stopProducer != nil {
-		c.stopProducer <- true
+		close(c.stopProducer)
 		// block until the producer is actually done in order to avoid strange races
 		<-c.producerDone
 		c.stopProducer = nil
