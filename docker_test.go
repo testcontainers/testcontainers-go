@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/docker/docker/api/types"
 	"io"
 	"log"
 	"math/rand"
@@ -2080,4 +2081,58 @@ func TestDockerProviderFindContainerByName(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, c)
 	assert.Contains(t, c.Names, c1Name)
+}
+
+func TestImageBuiltFromDockerfile_NoKeep(t *testing.T) {
+	test := func(t *testing.T, keepImage bool) {
+		ctx := context.Background()
+		// Set up CLI.
+		provider, err := NewDockerProvider()
+		require.NoError(t, err, "get docker provider should not fail")
+		defer func() { _ = provider.Close() }()
+		cli := provider.Client()
+		// Create container.
+		c, err := GenericContainer(ctx, GenericContainerRequest{
+			ProviderType: providerType,
+			ContainerRequest: ContainerRequest{
+				FromDockerfile: FromDockerfile{
+					Context:    "testdata",
+					Dockerfile: "echo.Dockerfile",
+				},
+				KeepImage: keepImage,
+			},
+		})
+		require.NoError(t, err, "create container should not fail")
+		defer func() { _ = c.Terminate(context.Background()) }()
+		// Get the image ID.
+		containerName, err := c.Name(ctx)
+		require.NoError(t, err, "get container name should not fail")
+		containerDetails, err := cli.ContainerInspect(ctx, containerName)
+		require.NoError(t, err, "inspect container should not fail")
+		containerImage := containerDetails.Image
+		t.Cleanup(func() {
+			_, _ = cli.ImageRemove(ctx, containerImage, types.ImageRemoveOptions{
+				Force:         true,
+				PruneChildren: true,
+			})
+		})
+		// Now, we terminate the container and check whether the image still exists.
+		err = c.Terminate(ctx)
+		require.NoError(t, err, "terminate container should not fail")
+		if keepImage {
+			_, _, err = cli.ImageInspectWithRaw(ctx, containerImage)
+			assert.Nil(t, err, "image should still exist")
+		} else {
+			_, _, err = cli.ImageInspectWithRaw(ctx, containerImage)
+			assert.NotNil(t, err, "image should not exist anymore")
+		}
+	}
+
+	t.Run("do_not_keep_image", func(t *testing.T) {
+		test(t, false)
+	})
+
+	t.Run("keep_image", func(t *testing.T) {
+		test(t, true)
+	})
 }

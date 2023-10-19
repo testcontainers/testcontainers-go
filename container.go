@@ -131,6 +131,10 @@ type ContainerRequest struct {
 	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 	LifecycleHooks          []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
+	// KeepImage describes whether DockerContainer.Terminate should not delete the
+	// container image. Useful for images that are built from a Dockerfile and take a
+	// long time to build. Keeping the image also Docker to reuse it.
+	KeepImage bool
 }
 
 // containerOptions functional options for a container
@@ -273,6 +277,10 @@ func (c *ContainerRequest) GetAuthConfigs() map[string]registry.AuthConfig {
 
 func (c *ContainerRequest) ShouldBuildImage() bool {
 	return c.FromDockerfile.Context != "" || c.FromDockerfile.ContextArchive != nil
+}
+
+func (c *ContainerRequest) ShouldKeepImage() bool {
+	return c.KeepImage
 }
 
 func (c *ContainerRequest) ShouldPrintBuildLog() bool {
