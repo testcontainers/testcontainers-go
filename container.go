@@ -98,6 +98,7 @@ type ContainerFile struct {
 type ContainerRequest struct {
 	FromDockerfile
 	Image                   string
+	ImageSubstitutors       []ImageSubstitutor
 	Entrypoint              []string
 	Env                     map[string]string
 	ExposedPorts            []string // allow specifying protocol info
