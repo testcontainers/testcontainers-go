@@ -1,6 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/compose
 
-go 1.20
+go 1.21
+
+toolchain go1.21.3
 
 replace (
 	github.com/cucumber/godog => github.com/laurazard/godog v0.0.0-20220831081700-c35ea0b236ed

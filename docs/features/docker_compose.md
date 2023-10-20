@@ -10,7 +10,7 @@ dependent upon.
 ## Using `docker-compose` directly
 
 !!!warning
-	The minimal version of Go required to use this module is **1.20**.
+	The minimal version of Go required to use this module is **1.21**.
 
 ```
 go get github.com/testcontainers/testcontainers-go/modules/compose
@@ -18,7 +18,7 @@ go get github.com/testcontainers/testcontainers-go/modules/compose
 
 !!!warning
 
-	Given the version includes the Compose dependency, and the Docker folks added a replace directive in their [go.mod](https://github.com/docker/compose/blob/v2/go.mod#L175-L188),
+	Given the version includes the Compose dependency, and the Docker folks added a replace directive in their [go.mod](https://github.com/docker/compose/blob/44d21280e7ced49b0bbea8e2a1df6550f5a6127c/go.mod#L189),
 	we were forced to add it as well. As a result, users of _Testcontainers for Go_ need to add the following replace directive to their `go.mod` files.
 
 	```
