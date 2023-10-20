@@ -34,7 +34,7 @@ func TestK6(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			container, err := RunContainer(ctx, WithTestScript(absPath))
+			container, err := RunContainer(ctx, WithCache(), WithTestScript(absPath))
 			if err != nil {
 				t.Fatal(err)
 			}
