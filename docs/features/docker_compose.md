@@ -16,17 +16,6 @@ dependent upon.
 go get github.com/testcontainers/testcontainers-go/modules/compose
 ```
 
-!!!warning
-
-	Given the version includes the Compose dependency, and the Docker folks added a replace directive in their [go.mod](https://github.com/docker/compose/blob/44d21280e7ced49b0bbea8e2a1df6550f5a6127c/go.mod#L189),
-	we were forced to add it as well. As a result, users of _Testcontainers for Go_ need to add the following replace directive to their `go.mod` files.
-
-	```
-	replace (
-		github.com/cucumber/godog => github.com/laurazard/godog v0.0.0-20220922095256-4c4b17abdae7
-	)
-	```
-
 Because `docker-compose` v2 is implemented in Go it's possible for _Testcontainers for Go_ to
 use [`github.com/docker/compose`](https://github.com/docker/compose) directly and skip any process execution/_docker-compose-in-a-container_ scenario.
 The `ComposeStack` API exposes this variant of using `docker-compose` in an easy way.
