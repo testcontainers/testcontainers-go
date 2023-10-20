@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/compose
 go 1.20
 
 replace (
-	github.com/cucumber/godog => github.com/laurazard/godog v0.0.0-20220922095256-4c4b17abdae7
+	github.com/cucumber/godog => github.com/laurazard/godog v0.0.0-20220831081700-c35ea0b236ed
 	github.com/testcontainers/testcontainers-go => ../..
 )
 
