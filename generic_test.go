@@ -211,7 +211,11 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 	require.NoError(t, err)
 
 	// check is reuse container with WaitingFor work correctly.
-	resp, err := http.Get(origin)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, origin, nil)
+	require.NoError(t, err)
+	req.Close = true
+
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
