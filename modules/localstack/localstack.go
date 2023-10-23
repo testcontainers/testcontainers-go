@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/mod/semver"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -92,10 +93,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 	req := testcontainers.ContainerRequest{
 		Image:        fmt.Sprintf("localstack/localstack:%s", defaultVersion),
-		Binds:        []string{fmt.Sprintf("%s:/var/run/docker.sock", dockerHost)},
 		WaitingFor:   wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120 * time.Second),
 		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
 		Env:          map[string]string{},
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			hostConfig.Binds = []string{fmt.Sprintf("%s:/var/run/docker.sock", dockerHost)}
+		},
 	}
 
 	localStackReq := LocalStackContainerRequest{
