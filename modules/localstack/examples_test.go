@@ -117,7 +117,7 @@ func ExampleRunContainer_legacyMode() {
 	// version=localstack/localstack:0.10.0. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0
 }
 
-func ExampleRunContainer_UsingLambdas() {
+func ExampleRunContainer_usingLambdas() {
 	ctx := context.Background()
 
 	flagsFn := func() string {
