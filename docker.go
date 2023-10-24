@@ -730,10 +730,6 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 						c.logger.Printf("error occurred reading log with known length %s", err.Error())
 					}
 
-					if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-						// If the outer context is done, loop will exit in the next iteration.
-						continue
-					}
 					// if we would continue here, the next header-read will result into random data...
 					// we need to restart the whole request.
 
