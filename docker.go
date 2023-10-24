@@ -656,15 +656,16 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 		defer c.provider.Close()
 
 		for {
-			if ctx.Err() != nil {
-				err := r.Close()
-				if err != nil {
-					// we can't close the read closer, this should never happen
-					panic(err)
-				}
-			}
 			select {
 			case <-ctx.Done():
+				if ctx.Err() != nil {
+					err := r.Close()
+					if err != nil {
+						// we can't close the read closer, this should never happen
+						panic(err)
+					}
+				}
+
 				continue
 			default:
 				h := make([]byte, 8)
