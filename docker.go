@@ -677,10 +677,6 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 						since = fmt.Sprintf("%d.%09d", now.Unix(), int64(now.Nanosecond()))
 						goto BEGIN
 					}
-					if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-						// If the outer context is done, loop will exit in the next iteration.
-						continue
-					}
 
 					select {
 					case <-ctx.Done():
