@@ -153,7 +153,12 @@ func ExampleRunContainer_UsingLambdas() {
 	if err != nil {
 		panic(err)
 	}
-	defer container.Terminate(ctx)
+	defer func() {
+		err := container.Terminate(ctx)
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	// the three commands below are doing the following:
 	// 1. create a lambda function
