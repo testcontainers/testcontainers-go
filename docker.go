@@ -67,6 +67,7 @@ type DockerContainer struct {
 	consumers         []LogConsumer
 	raw               *types.ContainerJSON
 	stopProducer      chan bool
+	producerDone      chan bool
 	logger            Logging
 	lifecycleHooks    []ContainerLifecycleHooks
 }
@@ -616,8 +617,12 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 	}
 
 	c.stopProducer = make(chan bool)
+	c.producerDone = make(chan bool)
 
-	go func(stop <-chan bool) {
+	go func(stop <-chan bool, done chan<- bool) {
+		// signal the producer is done once go routine exits, this prevents race conditions around start/stop
+		defer close(done)
+
 		since := ""
 		// if the socket is closed we will make additional logs request with updated Since timestamp
 	BEGIN:
@@ -702,7 +707,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 			}
 		}
-	}(c.stopProducer)
+	}(c.stopProducer, c.producerDone)
 
 	return nil
 }
@@ -712,7 +717,10 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 func (c *DockerContainer) StopLogProducer() error {
 	if c.stopProducer != nil {
 		c.stopProducer <- true
+		// block until the producer is actually done in order to avoid strange races
+		<-c.producerDone
 		c.stopProducer = nil
+		c.producerDone = nil
 	}
 	return nil
 }

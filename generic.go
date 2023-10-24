@@ -11,6 +11,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -203,4 +205,9 @@ type GenericProvider interface {
 	ContainerProvider
 	NetworkProvider
 	ImageProvider
+}
+
+// GenericLabels returns a map of labels that can be used to identify containers created by this library
+func GenericLabels() map[string]string {
+	return testcontainersdocker.DefaultLabels(testcontainerssession.SessionID())
 }
