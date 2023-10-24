@@ -138,10 +138,8 @@ func ExampleRunContainer_UsingLambdas() {
 		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Env: map[string]string{
-					"SERVICES":                 "lambda",
-					"LAMBDA_EXECUTOR":          "docker",
-					"PROVIDER_OVERRIDE_LAMBDA": "asf",
-					"LAMBDA_DOCKER_FLAGS":      flagsFn(),
+					"SERVICES":            "lambda",
+					"LAMBDA_DOCKER_FLAGS": flagsFn(),
 				},
 				Files: []testcontainers.ContainerFile{
 					{
