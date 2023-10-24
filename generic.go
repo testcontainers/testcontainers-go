@@ -60,6 +60,24 @@ func WithImage(image string) CustomizeRequestOption {
 	}
 }
 
+// imageSubstitutor {
+// ImageSubstitutor represents a way to substitute container image names
+type ImageSubstitutor interface {
+	// Description returns the name of the type and a short description of how it modifies the image.
+	// Useful to be printed in logs
+	Description() string
+	Substitute(image string) (string, error)
+}
+
+// }
+
+// WithImageSubstitutors sets the image substitutors for a container
+func WithImageSubstitutors(fn ...ImageSubstitutor) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) {
+		req.ImageSubstitutors = fn
+	}
+}
+
 // WithConfigModifier allows to override the default container config
 func WithConfigModifier(modifier func(config *container.Config)) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) {
