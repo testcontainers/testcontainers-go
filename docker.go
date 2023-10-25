@@ -636,14 +636,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				return
 			}
 
-			// we need a separate select here in order to be able to print the error
-			// and this cannot be done in the same select that checks for the timeout.
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				c.logger.Printf("cannot get logs for container %q: %v", c.ID, err)
-			}
+			c.logger.Printf("cannot get logs for container %q: %v", c.ID, err)
 
 			select {
 			case <-ctx.Done():
@@ -678,12 +671,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 						goto BEGIN
 					}
 
-					select {
-					case <-ctx.Done():
-						return
-					default:
-						c.logger.Printf("read log header: %+v. %s", err, logRestartedForOutOfSyncMessage)
-					}
+					c.logger.Printf("read log header: %+v. %s", err, logRestartedForOutOfSyncMessage)
 
 					// if we would continue here, the next header-read will result into random data...
 					// we need to restart the whole request.
@@ -729,12 +717,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 					// if we would continue here, the next header-read will result into random data...
 					// we need to restart the whole request.
 
-					select {
-					case <-ctx.Done():
-						return
-					default:
-						c.logger.Printf("read log message: %+v. %s", err, logRestartedForOutOfSyncMessage)
-					}
+					c.logger.Printf("read log message: %+v. %s", err, logRestartedForOutOfSyncMessage)
 
 					select {
 					case <-ctx.Done():
