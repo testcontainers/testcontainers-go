@@ -51,10 +51,7 @@ func TestSessionID(t *testing.T) {
 		args := []string{"test", "./...", "-v", "-run", "TestSessionIDHelper"}
 		env := append(os.Environ(), "TESTCONTAINERS_SESSION_ID_HELPER=1")
 
-		re, err := regexp.Compile(">>>(.*)<<<")
-		if err != nil {
-			t.Errorf("regexp.Compile() failed with %s", err)
-		}
+		re := regexp.MustCompile(">>>(.*)<<<")
 
 		cmd1 := exec.Command("go", args...)
 		cmd1.Env = env
