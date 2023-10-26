@@ -66,3 +66,20 @@ req := ContainerRequest{
 	},
 }
 ```
+
+## Keeping built images
+
+Per default, built images are deleted after being used.
+However, some images you build might have no or only minor changes during development.
+Building them for each test run might take a lot of time.
+You can avoid this by setting `KeepImage` in `FromDockerfile`.
+If the image is being kept, cached layers might be reused during building or even the whole image.
+
+```go
+req := ContainerRequest{
+    FromDockerfile: testcontainers.FromDockerfile{
+        // ...
+		KeepImage: true,
+	},
+}
+```

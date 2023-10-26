@@ -86,6 +86,10 @@ type FromDockerfile struct {
 	BuildArgs      map[string]*string             // enable user to pass build args to docker daemon
 	PrintBuildLog  bool                           // enable user to print build log
 	AuthConfigs    map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Enable auth configs to be able to pull from an authenticated docker registry
+	// KeepImage describes whether DockerContainer.Terminate should not delete the
+	// container image. Useful for images that are built from a Dockerfile and take a
+	// long time to build. Keeping the image also Docker to reuse it.
+	KeepImage bool
 }
 
 type ContainerFile struct {
@@ -274,6 +278,10 @@ func (c *ContainerRequest) GetAuthConfigs() map[string]registry.AuthConfig {
 
 func (c *ContainerRequest) ShouldBuildImage() bool {
 	return c.FromDockerfile.Context != "" || c.FromDockerfile.ContextArchive != nil
+}
+
+func (c *ContainerRequest) ShouldKeepBuiltImage() bool {
+	return c.FromDockerfile.KeepImage
 }
 
 func (c *ContainerRequest) ShouldPrintBuildLog() bool {
