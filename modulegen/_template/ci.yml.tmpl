@@ -107,6 +107,9 @@ jobs:
         go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
         module: [{{ .Modules }}]
+        exclude:
+          - go-version: 1.20.x
+            module: compose
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}

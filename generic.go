@@ -11,6 +11,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 
+	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -57,6 +59,24 @@ func CustomizeRequest(src GenericContainerRequest) CustomizeRequestOption {
 func WithImage(image string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) {
 		req.Image = image
+	}
+}
+
+// imageSubstitutor {
+// ImageSubstitutor represents a way to substitute container image names
+type ImageSubstitutor interface {
+	// Description returns the name of the type and a short description of how it modifies the image.
+	// Useful to be printed in logs
+	Description() string
+	Substitute(image string) (string, error)
+}
+
+// }
+
+// WithImageSubstitutors sets the image substitutors for a container
+func WithImageSubstitutors(fn ...ImageSubstitutor) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) {
+		req.ImageSubstitutors = fn
 	}
 }
 
@@ -185,4 +205,9 @@ type GenericProvider interface {
 	ContainerProvider
 	NetworkProvider
 	ImageProvider
+}
+
+// GenericLabels returns a map of labels that can be used to identify containers created by this library
+func GenericLabels() map[string]string {
+	return testcontainersdocker.DefaultLabels(testcontainerssession.SessionID())
 }
