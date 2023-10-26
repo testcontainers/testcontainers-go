@@ -3,7 +3,6 @@ module github.com/testcontainers/testcontainers-go/modules/mongodb
 go 1.20
 
 require (
-	github.com/docker/docker v24.0.6+incompatible
 	github.com/testcontainers/testcontainers-go v0.25.0
 	go.mongodb.org/mongo-driver v1.12.1
 )
@@ -17,6 +16,7 @@ require (
 	github.com/containerd/containerd v1.7.6 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
+	github.com/docker/docker v24.0.6+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
