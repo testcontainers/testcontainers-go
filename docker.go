@@ -61,8 +61,8 @@ type DockerContainer struct {
 
 	isRunning     bool
 	imageWasBuilt bool
-	// keepImage makes Terminate not remove the image if imageWasBuilt.
-	keepImage         bool
+	// keepBuiltImage makes Terminate not remove the image if imageWasBuilt.
+	keepBuiltImage    bool
 	provider          *DockerProvider
 	sessionID         string
 	terminationSignal chan bool
@@ -275,7 +275,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		return err
 	}
 
-	if c.imageWasBuilt && !c.keepImage {
+	if c.imageWasBuilt && !c.keepBuiltImage {
 		_, err := c.provider.client.ImageRemove(ctx, c.Image, types.ImageRemoveOptions{
 			Force:         true,
 			PruneChildren: true,
@@ -1074,7 +1074,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		WaitingFor:        req.WaitingFor,
 		Image:             tag,
 		imageWasBuilt:     req.ShouldBuildImage(),
-		keepImage:         req.ShouldKeepImage(),
+		keepBuiltImage:    req.ShouldKeepBuiltImage(),
 		sessionID:         testcontainerssession.SessionID(),
 		provider:          p,
 		terminationSignal: termSignal,
