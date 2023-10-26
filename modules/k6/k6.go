@@ -3,7 +3,10 @@ package k6
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
+
+	"github.com/docker/docker/api/types/mount"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -49,13 +52,27 @@ func SetEnvVar(variable string, value string) testcontainers.CustomizeRequestOpt
 	}
 }
 
-// WithCache uses the given volume as a cache for building the k6 binary.
-// If the volume does not exists, it is created.
-func WithCache(cache string) testcontainers.CustomizeRequestOption {
+// WithCache sets a volume as a cache for building the k6 binary
+// If a volume name is provided in the TC_K6_BUILD_CACHE, this volume is used and it will
+// persist across test sessions.
+// If no value is provided, a volume is created and automatically deleted when the test session ends.
+func WithCache() testcontainers.CustomizeRequestOption {
+	var volOptions *mount.VolumeOptions
+
+	cacheVol := os.Getenv("TC_K6_BUILD_CACHE")
+	// if no volume is provided, create one and ensure add labels for garbage collection
+	if cacheVol == "" {
+		cacheVol = fmt.Sprintf("k6-cache-%s", testcontainers.SessionID())
+		volOptions = &mount.VolumeOptions{
+			Labels: testcontainers.GenericLabels(),
+		}
+	}
+
 	return func(req *testcontainers.GenericContainerRequest) {
 		mount := testcontainers.ContainerMount{
 			Source: testcontainers.DockerVolumeMountSource{
-				Name: cache,
+				Name:          cacheVol,
+				VolumeOptions: volOptions,
 			},
 			Target: "/cache",
 		}
