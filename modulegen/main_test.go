@@ -292,7 +292,7 @@ func TestGenerate(t *testing.T) {
 	assertModuleGithubWorkflowContent(t, module, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, moduleNameLower)
-	assertExamplesTestContent(t, module, filepath.Join(generatedTemplatesDir, "examples_test.go"))
+	// do not generate examples_test.go for examples
 	assertModuleTestContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+"_test.go"))
 	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
 	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
@@ -485,7 +485,7 @@ func assertModuleGithubWorkflowContent(t *testing.T, module context.Testcontaine
 
 	examplesList, err := ctx.GetExamples()
 	assert.Nil(t, err)
-	assert.Equal(t, "        module: ["+strings.Join(examplesList, ", ")+"]", data[125])
+	assert.Equal(t, "        module: ["+strings.Join(examplesList, ", ")+"]", data[128])
 }
 
 // assert content go.mod

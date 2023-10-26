@@ -66,7 +66,7 @@ options.
 #### Init Scripts
 
 If you would like to perform DDL or DML operations in the MariaDB container, add one or more `*.sql`, `*.sql.gz`, or `*.sh`
-scripts to the container request. Those files will be copied under `/docker-entrypoint-initdb.d`.
+scripts to the container request, using the `WithScripts(scriptPaths ...string)`. Those files will be copied under `/docker-entrypoint-initdb.d`.
 
 <!--codeinclude-->
 [Example of Init script](../../modules/mariadb/testdata/schema.sql)

@@ -40,6 +40,7 @@ nav:
     - Quickstart: quickstart.md
     - Features:
         - features/creating_container.md
+        - features/image_name_substitution.md
         - features/files_and_mounts.md
         - features/creating_networks.md
         - features/configuration.md
@@ -64,11 +65,13 @@ nav:
     - Modules:
         - modules/index.md
         - modules/artemis.md
+        - modules/cassandra.md
         - modules/clickhouse.md
         - modules/couchbase.md
         - modules/elasticsearch.md
         - modules/gcloud.md
         - modules/k3s.md
+        - modules/k6.md
         - modules/kafka.md
         - modules/localstack.md
         - modules/mariadb.md
@@ -103,10 +106,11 @@ nav:
             - system_requirements/ci/travis.md
         - system_requirements/using_colima.md
         - system_requirements/using_podman.md
+        - system_requirements/rancher.md
     - Contributing:
         - contributing.md
         - contributing_docs.md
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.24.1
+    latest_version: v0.25.0

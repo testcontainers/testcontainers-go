@@ -87,6 +87,15 @@ function bumpVersion() {
       mv ${module_file}.tmp ${module_file}
     fi
   done
+
+  readonly commonFile="${ROOT_DIR}/docs/features/common_functional_options.md"
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "sed \"s/${NON_RELEASED_STRING}/${RELEASED_STRING}/g\" ${commonFile} > ${commonFile}.tmp"
+    echo "mv ${commonFile}.tmp ${commonFile}"
+  else
+    sed "s/${NON_RELEASED_STRING}/${RELEASED_STRING}/g" ${commonFile} > ${commonFile}.tmp
+    mv ${commonFile}.tmp ${commonFile}
+  fi
 }
 
 # This function reads the version.go file and extracts the current version.

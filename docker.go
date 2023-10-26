@@ -67,6 +67,7 @@ type DockerContainer struct {
 	consumers         []LogConsumer
 	raw               *types.ContainerJSON
 	stopProducer      chan bool
+	producerDone      chan bool
 	logger            Logging
 	lifecycleHooks    []ContainerLifecycleHooks
 }
@@ -616,8 +617,12 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 	}
 
 	c.stopProducer = make(chan bool)
+	c.producerDone = make(chan bool)
 
-	go func(stop <-chan bool) {
+	go func(stop <-chan bool, done chan<- bool) {
+		// signal the producer is done once go routine exits, this prevents race conditions around start/stop
+		defer close(done)
+
 		since := ""
 		// if the socket is closed we will make additional logs request with updated Since timestamp
 	BEGIN:
@@ -702,7 +707,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 			}
 		}
-	}(c.stopProducer)
+	}(c.stopProducer, c.producerDone)
 
 	return nil
 }
@@ -712,7 +717,10 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 func (c *DockerContainer) StopLogProducer() error {
 	if c.stopProducer != nil {
 		c.stopProducer <- true
+		// block until the producer is actually done in order to avoid strange races
+		<-c.producerDone
 		c.stopProducer = nil
+		c.producerDone = nil
 	}
 	return nil
 }
@@ -861,6 +869,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
+	imageName := req.Image
+
 	env := []string{}
 	for envKey, envVar := range req.Env {
 		env = append(env, envKey+"="+envVar)
@@ -877,18 +887,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		opt(&reaperOpts)
 	}
 
-	sessionID := testcontainerssession.SessionID()
-	if reaperInstance != nil {
-		sessionID = reaperInstance.SessionID
-	}
-
 	tcConfig := p.Config().Config
 
 	var termSignal chan bool
 	// the reaper does not need to start a reaper for itself
-	isReaperContainer := strings.EqualFold(req.Image, reaperImage(reaperOpts.ImageName))
+	isReaperContainer := strings.EqualFold(imageName, reaperImage(reaperOpts.ImageName))
 	if !tcConfig.RyukDisabled && !isReaperContainer {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID, p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.SessionID(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -909,17 +914,24 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		return nil, err
 	}
 
-	var tag string
+	for _, is := range req.ImageSubstitutors {
+		modifiedTag, err := is.Substitute(imageName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to substitute image %s with %s: %w", imageName, is.Description(), err)
+		}
+
+		p.Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), imageName, modifiedTag)
+		imageName = modifiedTag
+	}
+
 	var platform *specs.Platform
 
 	if req.ShouldBuildImage() {
-		tag, err = p.BuildImage(ctx, &req)
+		imageName, err = p.BuildImage(ctx, &req)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		tag = req.Image
-
 		if req.ImagePlatform != "" {
 			p, err := platforms.Parse(req.ImagePlatform)
 			if err != nil {
@@ -933,7 +945,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if req.AlwaysPullImage {
 			shouldPullImage = true // If requested always attempt to pull image
 		} else {
-			image, _, err := p.client.ImageInspectWithRaw(ctx, tag)
+			image, _, err := p.client.ImageInspectWithRaw(ctx, imageName)
 			if err != nil {
 				if client.IsErrNotFound(err) {
 					shouldPullImage = true
@@ -951,20 +963,20 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				Platform: req.ImagePlatform, // may be empty
 			}
 
-			registry, imageAuth, err := DockerImageAuth(ctx, req.Image)
+			registry, imageAuth, err := DockerImageAuth(ctx, imageName)
 			if err != nil {
-				p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, req.Image, err)
+				p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, imageName, err)
 			} else {
 				// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
 				encodedJSON, err := json.Marshal(imageAuth)
 				if err != nil {
-					p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", req.Image, err)
+					p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", imageName, err)
 				} else {
 					pullOpt.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 				}
 			}
 
-			if err := p.attemptToPullImage(ctx, tag, pullOpt); err != nil {
+			if err := p.attemptToPullImage(ctx, imageName, pullOpt); err != nil {
 				return nil, err
 			}
 		}
@@ -972,14 +984,14 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	if !isReaperContainer {
 		// add the labels that the reaper will use to terminate the container to the request
-		for k, v := range testcontainersdocker.DefaultLabels(sessionID) {
+		for k, v := range testcontainersdocker.DefaultLabels(testcontainerssession.SessionID()) {
 			req.Labels[k] = v
 		}
 	}
 
 	dockerInput := &container.Config{
 		Entrypoint: req.Entrypoint,
-		Image:      tag,
+		Image:      imageName,
 		Env:        env,
 		Labels:     req.Labels,
 		Cmd:        req.Cmd,
@@ -1075,9 +1087,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	c := &DockerContainer{
 		ID:                resp.ID,
 		WaitingFor:        req.WaitingFor,
-		Image:             tag,
+		Image:             imageName,
 		imageWasBuilt:     req.ShouldBuildImage(),
-		sessionID:         sessionID,
+		sessionID:         testcontainerssession.SessionID(),
 		provider:          p,
 		terminationSignal: termSignal,
 		stopProducer:      nil,
@@ -1125,9 +1137,6 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	}
 
 	sessionID := testcontainerssession.SessionID()
-	if reaperInstance != nil {
-		sessionID = reaperInstance.SessionID
-	}
 
 	tcConfig := p.Config().Config
 
@@ -1298,9 +1307,6 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	}
 
 	sessionID := testcontainerssession.SessionID()
-	if reaperInstance != nil {
-		sessionID = reaperInstance.SessionID
-	}
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
@@ -1406,17 +1412,12 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 		}
 	}
 
-	sessionID := testcontainerssession.SessionID()
-	if reaperInstance != nil {
-		sessionID = reaperInstance.SessionID
-	}
-
 	// Create a bridge network for the container communications
 	if !reaperNetworkExists {
 		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
 			Driver:     Bridge,
 			Attachable: true,
-			Labels:     testcontainersdocker.DefaultLabels(sessionID),
+			Labels:     testcontainersdocker.DefaultLabels(testcontainerssession.SessionID()),
 		})
 
 		if err != nil {
@@ -1447,12 +1448,7 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	}
 	container.provider = provider
 
-	sessionID := testcontainerssession.SessionID()
-	if reaperInstance != nil {
-		sessionID = reaperInstance.SessionID
-	}
-
-	container.sessionID = sessionID
+	container.sessionID = testcontainerssession.SessionID()
 	container.consumers = []LogConsumer{}
 	container.stopProducer = nil
 	container.isRunning = response.State == "running"
