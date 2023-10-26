@@ -2092,7 +2092,7 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("keep_built_image_%t", tt.keepBuiltImage), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Keep built image: %t", tt.keepBuiltImage), func(t *testing.T) {
 			ctx := context.Background()
 			// Set up CLI.
 			provider, err := NewDockerProvider()
