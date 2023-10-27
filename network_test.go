@@ -50,9 +50,15 @@ func ExampleNetworkProvider_CreateNetwork() {
 
 	nginxC.GetContainerID()
 
-	fmt.Print("you have a running container")
+	state, err := nginxC.State(ctx)
+	if err != nil {
+		panic(err)
+	}
 
-	// Output: you have a running container
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func Test_NetworkWithIPAM(t *testing.T) {

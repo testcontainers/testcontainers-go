@@ -39,9 +39,15 @@ func ExampleExecStrategy() {
 		}
 	}()
 
-	fmt.Print("you have a running container")
+	state, err := localstack.State(ctx)
+	if err != nil {
+		panic(err)
+	}
 
-	// Output: you have a running container
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 type mockExecTarget struct {

@@ -47,9 +47,15 @@ func ExampleHTTPStrategy() {
 		}
 	}()
 
-	fmt.Print("you have a running container")
+	state, err := gogs.State(ctx)
+	if err != nil {
+		panic(err)
+	}
 
-	// Output: you have a running container
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func ExampleHTTPStrategy_WithPort() {
@@ -76,9 +82,15 @@ func ExampleHTTPStrategy_WithPort() {
 		}
 	}()
 
-	fmt.Print("you have a running container")
+	state, err := gogs.State(ctx)
+	if err != nil {
+		panic(err)
+	}
 
-	// Output: you have a running container
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func ExampleHTTPStrategy_WithBasicAuth() {
@@ -105,9 +117,15 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 		}
 	}()
 
-	fmt.Print("you have a running container")
+	state, err := gogs.State(ctx)
+	if err != nil {
+		panic(err)
+	}
 
-	// Output: you have a running container
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func TestHTTPStrategyWaitUntilReady(t *testing.T) {
