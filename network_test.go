@@ -49,6 +49,10 @@ func ExampleNetworkProvider_CreateNetwork() {
 	}()
 
 	nginxC.GetContainerID()
+
+	fmt.Print("you have a running container")
+
+	// Output: you have a running container
 }
 
 func Test_NetworkWithIPAM(t *testing.T) {

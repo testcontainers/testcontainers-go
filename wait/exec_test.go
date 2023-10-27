@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"testing"
@@ -38,7 +39,9 @@ func ExampleExecStrategy() {
 		}
 	}()
 
-	// Here you have a running container
+	fmt.Print("you have a running container")
+
+	// Output: you have a running container
 }
 
 type mockExecTarget struct {

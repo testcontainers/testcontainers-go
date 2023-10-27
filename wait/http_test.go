@@ -47,7 +47,9 @@ func ExampleHTTPStrategy() {
 		}
 	}()
 
-	// Here you have a running container
+	fmt.Print("you have a running container")
+
+	// Output: you have a running container
 }
 
 func ExampleHTTPStrategy_WithPort() {
@@ -74,7 +76,9 @@ func ExampleHTTPStrategy_WithPort() {
 		}
 	}()
 
-	// Here you have a running container
+	fmt.Print("you have a running container")
+
+	// Output: you have a running container
 }
 
 func ExampleHTTPStrategy_WithBasicAuth() {
@@ -101,7 +105,9 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 		}
 	}()
 
-	// Here you have a running container
+	fmt.Print("you have a running container")
+
+	// Output: you have a running container
 }
 
 func TestHTTPStrategyWaitUntilReady(t *testing.T) {

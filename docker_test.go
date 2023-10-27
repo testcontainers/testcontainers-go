@@ -1075,6 +1075,10 @@ func ExampleDockerProvider_CreateContainer() {
 			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
+
+	fmt.Print("you have a running container")
+
+	// Output: you have a running container
 }
 
 func ExampleContainer_Host() {
@@ -1097,6 +1101,10 @@ func ExampleContainer_Host() {
 	ip, _ := nginxC.Host(ctx)
 	// }
 	println(ip)
+
+	fmt.Print("you have a running container")
+
+	// Output: you have a running container
 }
 
 func ExampleContainer_Start() {
@@ -1115,6 +1123,10 @@ func ExampleContainer_Start() {
 		}
 	}()
 	_ = nginxC.Start(ctx)
+
+	fmt.Print("you have a running container")
+
+	// Output: you have a running container
 }
 
 func ExampleContainer_Stop() {
@@ -1134,6 +1146,10 @@ func ExampleContainer_Stop() {
 	}()
 	timeout := 10 * time.Second
 	_ = nginxC.Stop(ctx, &timeout)
+
+	fmt.Print("you have a running and stop the container")
+
+	// Output: you have a running and stop the container
 }
 
 func ExampleContainer_MappedPort() {
@@ -1157,6 +1173,10 @@ func ExampleContainer_MappedPort() {
 	port, _ := nginxC.MappedPort(ctx, "80")
 	_, _ = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
 	// }
+
+	fmt.Print("you have a running container")
+
+	// Output: you have a running container
 }
 
 func TestContainerCreationWithBindAndVolume(t *testing.T) {
