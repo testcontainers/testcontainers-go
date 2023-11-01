@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/elasticsearch
 go 1.20
 
 require (
-	github.com/elastic/go-elasticsearch/v8 v8.10.0
+	github.com/elastic/go-elasticsearch/v8 v8.10.1
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.26.0
 	golang.org/x/mod v0.13.0
@@ -23,7 +23,7 @@ require (
 	github.com/docker/docker v24.0.6+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/elastic/elastic-transport-go/v8 v8.0.0-20230329154755-1a3c63de0db6 // indirect
+	github.com/elastic/elastic-transport-go/v8 v8.3.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
