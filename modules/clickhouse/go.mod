@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/clickhouse
 go 1.20
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.14.2
+	github.com/ClickHouse/clickhouse-go/v2 v2.15.0
 	github.com/docker/go-connections v0.4.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.26.0
@@ -15,7 +15,7 @@ require (
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Microsoft/hcsshim v0.11.1 // indirect
-	github.com/andybalholm/brotli v1.0.5 // indirect
+	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/containerd/containerd v1.7.7 // indirect
 	github.com/containerd/log v0.1.0 // indirect
