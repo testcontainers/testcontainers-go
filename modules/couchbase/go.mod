@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/couchbase/gocb/v2 v2.6.4
+	github.com/couchbase/gocb/v2 v2.6.5
 	github.com/docker/go-connections v0.4.0
 	github.com/testcontainers/testcontainers-go v0.26.0
 	github.com/tidwall/gjson v1.17.0
@@ -17,7 +17,7 @@ require (
 	github.com/Microsoft/hcsshim v0.11.1 // indirect
 	github.com/containerd/containerd v1.7.7 // indirect
 	github.com/containerd/log v0.1.0 // indirect
-	github.com/couchbase/gocbcore/v10 v10.2.8 // indirect
+	github.com/couchbase/gocbcore/v10 v10.2.9 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v24.0.6+incompatible // indirect
