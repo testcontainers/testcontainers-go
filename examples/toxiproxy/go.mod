@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/examples/toxiproxy
 go 1.20
 
 require (
-	github.com/Shopify/toxiproxy/v2 v2.6.0
+	github.com/Shopify/toxiproxy/v2 v2.7.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.1
 	github.com/testcontainers/testcontainers-go v0.26.0
@@ -52,7 +52,7 @@ require (
 	golang.org/x/tools v0.7.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230525234030-28d5490b6b19 // indirect
 	google.golang.org/grpc v1.57.1 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 )
 
 replace github.com/testcontainers/testcontainers-go => ../..
