@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/k6
 go 1.20
 
 require (
-	github.com/docker/docker v24.0.6+incompatible
+	github.com/docker/docker v24.0.7+incompatible
 	github.com/testcontainers/testcontainers-go v0.26.0
 )
 
