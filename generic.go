@@ -101,6 +101,33 @@ func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) Cus
 	}
 }
 
+// WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
+// on that network to the given alias.
+func WithNetwork(networkName string, alias string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) {
+		_, err := GenericNetwork(context.Background(), GenericNetworkRequest{
+			NetworkRequest: NetworkRequest{
+				Name: networkName,
+			},
+		})
+		if err != nil {
+			logger := req.Logger
+			if logger == nil {
+				logger = Logger
+			}
+			logger.Printf("Failed to create network '%s'. Container won't be attached to this network: %v", networkName, err)
+			return
+		}
+
+		req.Networks = append(req.Networks, networkName)
+
+		if req.NetworkAliases == nil {
+			req.NetworkAliases = make(map[string][]string)
+		}
+		req.NetworkAliases[networkName] = []string{alias}
+	}
+}
+
 // Executable represents an executable command to be sent to a container
 // as part of the PostStart lifecycle hook.
 type Executable interface {

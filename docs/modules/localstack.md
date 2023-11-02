@@ -58,10 +58,6 @@ With simply passing the `testcontainers.CustomizeRequest` functional option to t
 
 In the above example you can check how it's possible to set certain environment variables that are needed by the tests, the most important ones are the AWS services you want to use. Besides, the container runs in a separate Docker network with an alias.
 
-#### WithNetwork
-
-By default, the LocalStack container is started in the default Docker network. If you want to use a different Docker network, you can use the `WithNetwork(networkName string, alias string)` option, which receives the new network name and an alias as parameters, creating the new network, attaching the container to it, and setting the network alias for that network.
-
 ## Accessing hostname-sensitive services
 
 Some Localstack APIs, such as SQS, require the container to be aware of the hostname that it is accessible on - for example, for construction of queue URLs in responses.
