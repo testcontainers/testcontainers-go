@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -103,14 +104,16 @@ func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) Cus
 
 // WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
 // on that network to the given alias.
+// If the network already exists, checking if the network name already exists, it will be reused.
 func WithNetwork(networkName string, alias string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) {
 		_, err := GenericNetwork(context.Background(), GenericNetworkRequest{
 			NetworkRequest: NetworkRequest{
-				Name: networkName,
+				Name:           networkName,
+				CheckDuplicate: true, // force the Docker provider to reuse an existing network
 			},
 		})
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "already exists") {
 			logger := req.Logger
 			if logger == nil {
 				logger = Logger
@@ -119,6 +122,7 @@ func WithNetwork(networkName string, alias string) CustomizeRequestOption {
 			return
 		}
 
+		// attaching to the network because it was created with success or it already existed.
 		req.Networks = append(req.Networks, networkName)
 
 		if req.NetworkAliases == nil {
