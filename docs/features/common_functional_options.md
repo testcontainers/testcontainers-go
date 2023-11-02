@@ -28,6 +28,14 @@ It also exports an `Executable` interface, defining one single method: `AsComman
 
 You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is started.
 
+#### WithNetwork
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+By default, the container is started in the default Docker network. If you want to use a different Docker network, you can use the `WithNetwork(networkName string, alias string)` option, which receives the new network name and an alias as parameters, creating the new network, attaching the container to it, and setting the network alias for that network.
+
+If the network already exists, _Testcontainers for Go_ won't create a new one, but it will attach the container to it and set the network alias.
+
 #### Docker type modifiers
 
 If you need an advanced configuration for the container, you can leverage the following Docker type modifiers:
