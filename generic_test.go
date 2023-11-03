@@ -6,6 +6,8 @@ import (
 	"io"
 	"testing"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -136,4 +138,55 @@ func TestWithStartupCommand(t *testing.T) {
 	content, err := io.ReadAll(reader)
 	require.NoError(t, err)
 	assert.Equal(t, "/tmp/.testcontainers\n", string(content))
+}
+
+func TestWithNetwork(t *testing.T) {
+	req := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{},
+	}
+
+	WithNetwork("new-network", "alias")(&req)
+
+	assert.Equal(t, []string{"new-network"}, req.Networks)
+	assert.Equal(t, map[string][]string{"new-network": {"alias"}}, req.NetworkAliases)
+
+	client, err := NewDockerClientWithOpts(context.Background())
+	require.NoError(t, err)
+
+	args := filters.NewArgs()
+	args.Add("name", "new-network")
+
+	resources, err := client.NetworkList(context.Background(), types.NetworkListOptions{
+		Filters: args,
+	})
+	require.NoError(t, err)
+	assert.Len(t, resources, 1)
+
+	assert.Equal(t, "new-network", resources[0].Name)
+}
+
+func TestWithNetworkMultipleCallsWithSameNameReuseTheNetwork(t *testing.T) {
+	for int := 0; int < 100; int++ {
+		req := GenericContainerRequest{
+			ContainerRequest: ContainerRequest{},
+		}
+
+		WithNetwork("new-network", "alias")(&req)
+		assert.Equal(t, []string{"new-network"}, req.Networks)
+		assert.Equal(t, map[string][]string{"new-network": {"alias"}}, req.NetworkAliases)
+	}
+
+	client, err := NewDockerClientWithOpts(context.Background())
+	require.NoError(t, err)
+
+	args := filters.NewArgs()
+	args.Add("name", "new-network")
+
+	resources, err := client.NetworkList(context.Background(), types.NetworkListOptions{
+		Filters: args,
+	})
+	require.NoError(t, err)
+	assert.Len(t, resources, 1)
+
+	assert.Equal(t, "new-network", resources[0].Name)
 }
