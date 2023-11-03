@@ -88,6 +88,9 @@ func TestWithStartupCommand(t *testing.T) {
 
 	testcontainers.WithStartupCommand(testExec)(&req)
 
+	assert.Equal(t, 1, len(req.LifecycleHooks))
+	assert.Equal(t, 1, len(req.LifecycleHooks[0].PostStarts))
+
 	c, err := testcontainers.GenericContainer(context.Background(), req)
 	require.NoError(t, err)
 	defer func() {
