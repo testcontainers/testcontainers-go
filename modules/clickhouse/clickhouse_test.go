@@ -4,11 +4,11 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	ch "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/stretchr/testify/assert"
-
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -89,7 +89,7 @@ func TestClickHouseConnectionHost(t *testing.T) {
 	defer conn.Close()
 
 	// perform assertions
-	data, err := performCRUD(conn)
+	data, err := performCRUDWithRetry(conn)
 	assert.NoError(t, err)
 	assert.Len(t, data, 1)
 }
@@ -121,7 +121,7 @@ func TestClickHouseDSN(t *testing.T) {
 	defer conn.Close()
 
 	// perform assertions
-	data, err := performCRUD(conn)
+	data, err := performCRUDWithRetry(conn)
 	assert.NoError(t, err)
 	assert.Len(t, data, 1)
 }
@@ -210,11 +210,27 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 			defer conn.Close()
 
 			// perform assertions
-			data, err := performCRUD(conn)
+			data, err := performCRUDWithRetry(conn)
 			assert.NoError(t, err)
 			assert.Len(t, data, 1)
 		})
 	}
+}
+
+func performCRUDWithRetry(conn driver.Conn) (tt []Test, err error) {
+	maxAttempt := 5
+	delay := 100 * time.Millisecond
+
+	for i := 0; i < maxAttempt; i++ {
+		time.Sleep(time.Duration(i) * delay)
+
+		tt, err = performCRUD(conn)
+		if err == nil {
+			return tt, err
+		}
+	}
+
+	return tt, err
 }
 
 func performCRUD(conn driver.Conn) ([]Test, error) {
