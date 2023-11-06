@@ -283,7 +283,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 			if reaperContainer == nil {
 				return nil, fmt.Errorf("look up reaper container returned nil although creation failed due to name conflict")
 			}
-			Logger.Printf("🔥 Canceling creation - Reaper obtained from Docker for this test session %s", reaperContainer.ID)
+			Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", reaperContainer.ID)
 			reaper, err := reuseReaperContainer(ctx, sessionID, provider, reaperContainer)
 			if err != nil {
 				return nil, err
