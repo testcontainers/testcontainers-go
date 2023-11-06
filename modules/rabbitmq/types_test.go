@@ -10,6 +10,7 @@ import (
 // they are not used in the RabbitMQ module.
 // All of them implement the testcontainers.Executable interface, which is used to generate
 // the command that will be executed, with the "AsCommand" method.
+// Please be aware that they could be outdated, as they are not actively maintained, just here for reference.
 
 // --------- Bindings ---------
 

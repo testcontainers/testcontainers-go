@@ -120,6 +120,14 @@ type Executable interface {
 	AsCommand() []string
 }
 
+// RawCommand is a type that implements Executable and represents a command to be sent to a container
+type RawCommand []string
+
+// AsCommand returns the command as a slice of strings
+func (r RawCommand) AsCommand() []string {
+	return r
+}
+
 // WithStartupCommand will execute the command representation of each Executable into the container.
 // It will leverage the container lifecycle hooks to call the command right after the container
 // is started.
