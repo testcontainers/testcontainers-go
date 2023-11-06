@@ -91,10 +91,7 @@ func RunContainer(ctx context.Context, options ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: request,
-		Started:          true,
-	})
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
 	}
