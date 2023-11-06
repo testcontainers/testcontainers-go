@@ -261,8 +261,13 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 		// already existing due to race conditions. We manually match the error message
 		// as we do not have any error types to check against.
 		if createContainerFailDueToNameConflictRegex.MatchString(err.Error()) {
-			// Manually retrieve the already running reaper container. As it may take a while
-			// to observe the container, despite creation failure, we retry a few times.
+			// Manually retrieve the already running reaper container. However, we need to
+			// use retries here as there are two possible race conditions that might lead to
+			// errors: In most cases, there is a small delay between container creation and
+			// actually being visible in list-requests. This means that creation might fail
+			// due to name conflicts, but when we list containers with this name, we do not
+			// get any results. In another case, the container might have simply died in the
+			// meantime and therefore cannot be found.
 			const timeout = 5 * time.Second
 			const cooldown = 100 * time.Millisecond
 			start := time.Now()
@@ -280,6 +285,10 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 			if err != nil {
 				return nil, fmt.Errorf("look up reaper container because creation failed due to name conflict: %w", err)
 			}
+			// If the reaper container was not found, it is most likely to have died in
+			// between as we can exclude any client errors because of the previous error
+			// check. Because the reaper should only die if it performed clean-ups, we can
+			// fail here as the reaper timeout needs to be increased, anyway.
 			if reaperContainer == nil {
 				return nil, fmt.Errorf("look up reaper container returned nil although creation failed due to name conflict")
 			}
