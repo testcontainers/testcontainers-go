@@ -114,6 +114,7 @@ type ContainerRequest struct {
 	WaitingFor              wait.Strategy
 	Name                    string // for specifying container name
 	Hostname                string
+	WorkingDir              string                                     // specify the working directory of the container
 	ExtraHosts              []string                                   // Deprecated: Use HostConfigModifier instead
 	Privileged              bool                                       // For starting privileged container
 	Networks                []string                                   // for specifying network names
@@ -136,7 +137,6 @@ type ContainerRequest struct {
 	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 	LifecycleHooks          []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
-	WorkingDir              string                                     // specify the working directory of the container
 }
 
 // containerOptions functional options for a container
