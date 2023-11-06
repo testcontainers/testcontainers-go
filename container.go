@@ -114,6 +114,7 @@ type ContainerRequest struct {
 	WaitingFor              wait.Strategy
 	Name                    string // for specifying container name
 	Hostname                string
+	WorkingDir              string                                     // specify the working directory of the container
 	ExtraHosts              []string                                   // Deprecated: Use HostConfigModifier instead
 	Privileged              bool                                       // For starting privileged container
 	Networks                []string                                   // for specifying network names
