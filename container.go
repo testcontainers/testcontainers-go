@@ -305,6 +305,8 @@ func (c *ContainerRequest) validateContextOrImageIsSpecified() error {
 	return nil
 }
 
+// validateMounts ensures that the mounts do not have duplicate targets.
+// It will check the Mounts and HostConfigModifier.Binds fields.
 func (c *ContainerRequest) validateMounts() error {
 	targets := make(map[string]bool, len(c.Mounts))
 
@@ -317,5 +319,29 @@ func (c *ContainerRequest) validateMounts() error {
 			targets[targetPath] = true
 		}
 	}
+
+	if c.HostConfigModifier == nil {
+		return nil
+	}
+
+	hostConfig := container.HostConfig{}
+
+	c.HostConfigModifier(&hostConfig)
+
+	if hostConfig.Binds != nil && len(hostConfig.Binds) > 0 {
+		for _, bind := range hostConfig.Binds {
+			parts := strings.Split(bind, ":")
+			if len(parts) != 2 {
+				return fmt.Errorf("%w: %s", ErrInvalidBindMount, bind)
+			}
+			targetPath := parts[1]
+			if targets[targetPath] {
+				return fmt.Errorf("%w: %s", ErrDuplicateMountTarget, targetPath)
+			} else {
+				targets[targetPath] = true
+			}
+		}
+	}
+
 	return nil
 }

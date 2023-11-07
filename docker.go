@@ -39,8 +39,6 @@ import (
 var (
 	// Implement interfaces
 	_ Container = (*DockerContainer)(nil)
-
-	ErrDuplicateMountTarget = errors.New("duplicate mount target detected")
 )
 
 const (

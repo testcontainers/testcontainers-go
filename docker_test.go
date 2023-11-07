@@ -18,7 +18,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
-	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-units"
 	"github.com/stretchr/testify/assert"
@@ -142,8 +141,13 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:  nginxAlpineImage,
-			Mounts: Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Image: nginxAlpineImage,
+			Files: []ContainerFile{
+				{
+					HostFilePath:      absPath,
+					ContainerFilePath: "/etc/nginx/conf.d/default.conf",
+				},
+			},
 			ExposedPorts: []string{
 				nginxHighPort,
 			},
@@ -258,7 +262,12 @@ func TestContainerWithHostNetwork(t *testing.T) {
 		ContainerRequest: ContainerRequest{
 			Image:      nginxAlpineImage,
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
-			Mounts:     Mounts(BindMount(absPath, "/etc/nginx/conf.d/default.conf")),
+			Files: []ContainerFile{
+				{
+					HostFilePath:      absPath,
+					ContainerFilePath: "/etc/nginx/conf.d/default.conf",
+				},
+			},
 			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.NetworkMode = "host"
 			},
@@ -1187,43 +1196,29 @@ func ExampleContainer_MappedPort() {
 	// }
 }
 
-func TestContainerCreationWithBindAndVolume(t *testing.T) {
+func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 	absPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cnl()
-	// Create a Docker client.
-	dockerCli, err := NewDockerClientWithOpts(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	// Create the volume.
-	vol, err := dockerCli.VolumeCreate(ctx, volume.CreateOptions{
-		Driver: "local",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	volumeName := vol.Name
-	t.Cleanup(func() {
-		ctx, cnl := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cnl()
-		defer dockerCli.Close()
+	volumeName := "volumeName"
 
-		err := dockerCli.VolumeRemove(ctx, volumeName, true)
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
 	// Create the container that writes into the mounted volume.
 	bashC, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:      "docker.io/bash",
-			Mounts:     Mounts(BindMount(absPath, "/hello.sh"), VolumeMount(volumeName, "/data")),
+			Image: "docker.io/bash",
+			Files: []ContainerFile{
+				{
+					HostFilePath:      absPath,
+					ContainerFilePath: "/hello.sh",
+				},
+			},
+			Mounts:     Mounts(VolumeMount(volumeName, "/data")),
 			Cmd:        []string{"bash", "/hello.sh"},
 			WaitingFor: wait.ForLog("done"),
 		},
