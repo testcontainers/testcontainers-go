@@ -283,7 +283,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 				}
 			}
 			if err != nil {
-				return nil, fmt.Errorf("look up reaper container because creation failed due to name conflict: %w", err)
+				return nil, fmt.Errorf("look up reaper container due to name conflict failed: %w", err)
 			}
 			// If the reaper container was not found, it is most likely to have died in
 			// between as we can exclude any client errors because of the previous error
