@@ -1059,6 +1059,34 @@ func TestEntrypoint(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, c)
 }
 
+func TestWorkingDir(t *testing.T) {
+	/*
+		print the current working directory to ensure that
+		we can specify working directory in the
+		ContainerRequest and it will be used for the container
+	*/
+
+	ctx := context.Background()
+
+	req := ContainerRequest{
+		Image: "docker.io/alpine",
+		WaitingFor: wait.ForAll(
+			wait.ForLog("/var/tmp/test"),
+		),
+		Entrypoint: []string{"pwd"},
+		WorkingDir: "/var/tmp/test",
+	}
+
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, c)
+}
+
 func ExampleDockerProvider_CreateContainer() {
 	ctx := context.Background()
 	req := ContainerRequest{

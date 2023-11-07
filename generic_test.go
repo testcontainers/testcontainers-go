@@ -3,7 +3,6 @@ package testcontainers
 import (
 	"context"
 	"errors"
-	"io"
 	"net/http"
 	"os"
 	stdexec "os/exec"
@@ -11,10 +10,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -103,44 +100,6 @@ func TestGenericReusableContainer(t *testing.T) {
 			}
 		})
 	}
-}
-
-type testExecutable struct {
-	cmds []string
-}
-
-func (t testExecutable) AsCommand() []string {
-	return t.cmds
-}
-
-func TestWithStartupCommand(t *testing.T) {
-	req := GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			Image:      "alpine",
-			Entrypoint: []string{"tail", "-f", "/dev/null"},
-		},
-		Started: true,
-	}
-
-	testExec := testExecutable{
-		cmds: []string{"touch", "/tmp/.testcontainers"},
-	}
-
-	WithStartupCommand(testExec)(&req)
-
-	c, err := GenericContainer(context.Background(), req)
-	require.NoError(t, err)
-	defer func() {
-		err = c.Terminate(context.Background())
-		require.NoError(t, err)
-	}()
-
-	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
-	require.NoError(t, err)
-
-	content, err := io.ReadAll(reader)
-	require.NoError(t, err)
-	assert.Equal(t, "/tmp/.testcontainers\n", string(content))
 }
 
 func TestGenericReusableContainerInSubprocess(t *testing.T) {
