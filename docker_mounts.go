@@ -8,7 +8,7 @@ var mountTypeMapping = map[MountType]mount.Type{
 	MountTypePipe:   mount.TypeNamedPipe,
 }
 
-// Deprecated: use HostConfigModifier in the ContainerRequest to make containers portable across Docker environments
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 // BindMounter can optionally be implemented by mount sources
 // to support advanced scenarios based on mount.BindOptions
 type BindMounter interface {
@@ -27,7 +27,7 @@ type TmpfsMounter interface {
 	GetTmpfsOptions() *mount.TmpfsOptions
 }
 
-// Deprecated: use HostConfigModifier in the ContainerRequest to make containers portable across Docker environments
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 type DockerBindMountSource struct {
 	*mount.BindOptions
 
@@ -36,17 +36,17 @@ type DockerBindMountSource struct {
 	HostPath string
 }
 
-// Deprecated: use HostConfigModifier in the ContainerRequest to make containers portable across Docker environments
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 func (s DockerBindMountSource) Source() string {
 	return s.HostPath
 }
 
-// Deprecated: use HostConfigModifier in the ContainerRequest to make containers portable across Docker environments
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 func (DockerBindMountSource) Type() MountType {
 	return MountTypeBind
 }
 
-// Deprecated: use HostConfigModifier in the ContainerRequest to make containers portable across Docker environments
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 func (s DockerBindMountSource) GetBindOptions() *mount.BindOptions {
 	return s.BindOptions
 }

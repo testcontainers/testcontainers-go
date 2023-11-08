@@ -15,7 +15,7 @@ var (
 )
 
 var (
-	_ ContainerMountSource = (*GenericBindMountSource)(nil) // Deprecated: use HostConfigModifier in the ContainerRequest to make containers portable across Docker environments
+	_ ContainerMountSource = (*GenericBindMountSource)(nil) // Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 	_ ContainerMountSource = (*GenericVolumeMountSource)(nil)
 	_ ContainerMountSource = (*GenericTmpfsMountSource)(nil)
 )
@@ -37,7 +37,7 @@ type ContainerMountSource interface {
 	Type() MountType
 }
 
-// Deprecated: use HostConfigModifier in the ContainerRequest to make containers portable across Docker environments
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 // GenericBindMountSource implements ContainerMountSource and represents a bind mount
 // Optionally mount.BindOptions might be added for advanced scenarios
 type GenericBindMountSource struct {
@@ -46,12 +46,12 @@ type GenericBindMountSource struct {
 	HostPath string
 }
 
-// Deprecated: use HostConfigModifier in the ContainerRequest to make containers portable across Docker environments
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 func (s GenericBindMountSource) Source() string {
 	return s.HostPath
 }
 
-// Deprecated: use HostConfigModifier in the ContainerRequest to make containers portable across Docker environments
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 func (GenericBindMountSource) Type() MountType {
 	return MountTypeBind
 }
@@ -91,7 +91,7 @@ func (t ContainerMountTarget) Target() string {
 	return string(t)
 }
 
-// Deprecated: use HostConfigModifier in the ContainerRequest to make containers portable across Docker environments
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 // BindMount returns a new ContainerMount with a GenericBindMountSource as source
 // This is a convenience method to cover typical use cases.
 func BindMount(hostPath string, mountTarget ContainerMountTarget) ContainerMount {
