@@ -1164,7 +1164,7 @@ func ExampleContainer_Stop() {
 	}()
 	fmt.Println("Container has been started")
 	timeout := 10 * time.Second
-	err = nginxC.Stop(ctx, &timeout)
+	err := nginxC.Stop(ctx, &timeout)
 	if err != nil {
 		panic(err)
 	}
