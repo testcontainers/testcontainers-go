@@ -1162,12 +1162,18 @@ func ExampleContainer_Stop() {
 			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
+	fmt.Println("Container has been started")
 	timeout := 10 * time.Second
-	_ = nginxC.Stop(ctx, &timeout)
+	err = nginxC.Stop(ctx, &timeout)
+	if err != nil {
+		panic(err)
+	}
 
-	fmt.Print("you have a running and stop the container")
+	fmt.Println("Container has been stopped")
 
-	// Output: you have a running and stop the container
+	// Output:
+	// Container has been started
+	// Container has been stopped
 }
 
 func ExampleContainer_MappedPort() {
