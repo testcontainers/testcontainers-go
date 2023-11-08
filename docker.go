@@ -36,12 +36,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var (
-	// Implement interfaces
-	_ Container = (*DockerContainer)(nil)
-
-	ErrDuplicateMountTarget = errors.New("duplicate mount target detected")
-)
+// Implement interfaces
+var _ Container = (*DockerContainer)(nil)
 
 const (
 	Bridge        = "bridge" // Bridge network name (as well as driver)

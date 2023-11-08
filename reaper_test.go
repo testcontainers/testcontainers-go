@@ -89,8 +89,10 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		ReaperImage:  "reaperImage",
 		ExposedPorts: []string{"8080/tcp"},
 		Labels:       testcontainersdocker.DefaultLabels(testSessionID),
-		Mounts:       Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock")),
-		WaitingFor:   wait.ForListeningPort(nat.Port("8080/tcp")),
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			hostConfig.Binds = []string{testcontainersdocker.ExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
+		},
+		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
 		ReaperOptions: []ContainerOption{
 			WithImageName("reaperImage"),
 		},
@@ -355,7 +357,9 @@ func Test_NewReaper(t *testing.T) {
 		{
 			name: "docker-host in context",
 			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
-				req.Mounts = Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock"))
+				req.HostConfigModifier = func(hostConfig *container.HostConfig) {
+					hostConfig.Binds = []string{testcontainersdocker.ExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
+				}
 				return req
 			}),
 			config: TestcontainersConfig{Config: config.Config{

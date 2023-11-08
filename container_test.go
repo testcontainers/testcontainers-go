@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -55,16 +56,30 @@ func Test_ContainerValidation(t *testing.T) {
 			Name:          "Can mount same source to multiple targets",
 			ExpectedError: nil,
 			ContainerRequest: ContainerRequest{
-				Image:  "redis:latest",
-				Mounts: Mounts(BindMount("/data", "/srv"), BindMount("/data", "/data")),
+				Image: "redis:latest",
+				HostConfigModifier: func(hc *container.HostConfig) {
+					hc.Binds = []string{"/data:/srv", "/data:/data"}
+				},
 			},
 		},
 		{
 			Name:          "Cannot mount multiple sources to same target",
 			ExpectedError: errors.New("duplicate mount target detected: /data"),
 			ContainerRequest: ContainerRequest{
-				Image:  "redis:latest",
-				Mounts: Mounts(BindMount("/srv", "/data"), BindMount("/data", "/data")),
+				Image: "redis:latest",
+				HostConfigModifier: func(hc *container.HostConfig) {
+					hc.Binds = []string{"/data:/data", "/data:/data"}
+				},
+			},
+		},
+		{
+			Name:          "Invalid bind mount",
+			ExpectedError: errors.New("invalid bind mount: /data:/data:/data"),
+			ContainerRequest: ContainerRequest{
+				Image: "redis:latest",
+				HostConfigModifier: func(hc *container.HostConfig) {
+					hc.Binds = []string{"/data:/data:/data"}
+				},
 			},
 		},
 	}
