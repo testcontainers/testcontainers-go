@@ -71,7 +71,7 @@ func (hp *HostPortStrategy) Timeout() *time.Duration {
 }
 
 // WaitUntilReady implements Strategy.WaitUntilReady
-func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
+func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
 	timeout := defaultStartupTimeout()
 	if hp.timeout != nil {
 		timeout = *hp.timeout
@@ -82,7 +82,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 
 	ipAddress, err := target.Host(ctx)
 	if err != nil {
-		return
+		return err
 	}
 
 	waitInterval := hp.PollInterval
@@ -92,7 +92,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		var ports nat.PortMap
 		ports, err = target.Ports(ctx)
 		if err != nil {
-			return
+			return err
 		}
 		if len(ports) > 0 {
 			for p := range ports {
@@ -103,8 +103,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	}
 
 	if internalPort == "" {
-		err = fmt.Errorf("no port to wait for")
-		return
+		return fmt.Errorf("no port to wait for")
 	}
 
 	var port nat.Port
