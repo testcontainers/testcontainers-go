@@ -126,13 +126,11 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 	return RunContainer(ctx, overrideReq)
 }
 
-func configureDockerHost(req *LocalStackContainerRequest, envVar string) (reason string, err error) {
-	err = nil
-	reason = ""
+func configureDockerHost(req *LocalStackContainerRequest, envVar string) (string, error) {
+	reason := ""
 
 	if _, ok := req.Env[envVar]; ok {
-		reason = "explicitly as environment variable"
-		return
+		return "explicitly as environment variable", nil
 	}
 
 	// if the container is not connected to the default network, use the last network alias in the first network
@@ -141,25 +139,20 @@ func configureDockerHost(req *LocalStackContainerRequest, envVar string) (reason
 		alias := req.NetworkAliases[req.Networks[0]][len(req.NetworkAliases[req.Networks[0]])-1]
 
 		req.Env[envVar] = alias
-		reason = "to match last network alias on container with non-default network"
-		return
+		return "to match last network alias on container with non-default network", nil
 	}
 
-	var dockerProvider *testcontainers.DockerProvider
-	dockerProvider, err = testcontainers.NewDockerProvider()
+	dockerProvider, err := testcontainers.NewDockerProvider()
 	if err != nil {
-		return
+		return reason, err
 	}
 	defer dockerProvider.Close()
 
-	var daemonHost string
-	daemonHost, err = dockerProvider.DaemonHost(context.Background())
+	daemonHost, err := dockerProvider.DaemonHost(context.Background())
 	if err != nil {
-		return
+		return reason, err
 	}
 
 	req.Env[envVar] = daemonHost
-	reason = "to match host-routable address for container"
-
-	return
+	return "to match host-routable address for container", nil
 }
