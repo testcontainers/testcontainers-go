@@ -41,6 +41,7 @@ func ExampleNetworkProvider_CreateNetwork() {
 				networkName,
 			},
 		},
+		Started: true,
 	})
 	defer func() {
 		if err := nginxC.Terminate(ctx); err != nil {
