@@ -89,7 +89,7 @@ func TestClickHouseConnectionHost(t *testing.T) {
 	defer conn.Close()
 
 	// perform assertions
-	data, err := performCRUDWithRetry(conn)
+	data, err := performCRUD(conn)
 	assert.NoError(t, err)
 	assert.Len(t, data, 1)
 }
@@ -121,7 +121,7 @@ func TestClickHouseDSN(t *testing.T) {
 	defer conn.Close()
 
 	// perform assertions
-	data, err := performCRUDWithRetry(conn)
+	data, err := performCRUD(conn)
 	assert.NoError(t, err)
 	assert.Len(t, data, 1)
 }
@@ -210,46 +210,43 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 			defer conn.Close()
 
 			// perform assertions
-			data, err := performCRUDWithRetry(conn)
+			data, err := performCRUD(conn)
 			assert.NoError(t, err)
 			assert.Len(t, data, 1)
 		})
 	}
 }
 
-func performCRUDWithRetry(conn driver.Conn) (tt []Test, err error) {
-	maxAttempt := 5
-	delay := 100 * time.Millisecond
+func performCRUD(conn driver.Conn) ([]Test, error) {
+	var (
+		maxRetry = 5
+		delay    = 100 * time.Millisecond
+		err      error
+		rows     []Test
+	)
 
-	for i := 0; i < maxAttempt; i++ {
+	for i := 0; i < maxRetry; i++ {
 		time.Sleep(time.Duration(i) * delay)
 
-		tt, err = performCRUD(conn)
-		if err == nil {
-			return tt, err
+		err = conn.Exec(context.Background(), "create table if not exists test_table (id UInt64) engine = MergeTree PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
+		if err != nil {
+			continue
 		}
+
+		err = conn.Exec(context.Background(), "INSERT INTO test_table (id) VALUES (1);")
+		if err != nil {
+			continue
+		}
+
+		rows, err = getAllRows(conn)
+		if err != nil {
+			continue
+		}
+
+		return rows, err
 	}
 
-	return tt, err
-}
-
-func performCRUD(conn driver.Conn) ([]Test, error) {
-	err := conn.Exec(context.Background(), "create table if not exists test_table (id UInt64) engine = MergeTree PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
-	if err != nil {
-		return nil, err
-	}
-
-	err = conn.Exec(context.Background(), "INSERT INTO test_table (id) VALUES (1);")
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := getAllRows(conn)
-	if err != nil {
-		return nil, err
-	}
-
-	return rows, nil
+	return rows, err
 }
 
 func getAllRows(conn driver.Conn) ([]Test, error) {
