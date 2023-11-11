@@ -610,6 +610,11 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 // StartLogProducer will start a concurrent process that will continuously read logs
 // from the container and will send them to each added LogConsumer
 func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
+	// Short cirtuit.
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	if c.stopProducer != nil {
 		return errors.New("log producer already started")
 	}
@@ -636,14 +641,18 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 
 		r, err := c.provider.client.ContainerLogs(ctx, c.GetContainerID(), options)
 		if err != nil {
-			// if we can't get the logs, panic, we can't return an error to anything
-			// from within this goroutine
-			panic(err)
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return
+			}
+			// If the context is not canceled and deadline is not exceeded then retry.
+			goto BEGIN
 		}
 		defer c.provider.Close()
 
 		for {
 			select {
+			case <-ctx.Done():
+				return
 			case <-stop:
 				err := r.Close()
 				if err != nil {
@@ -714,9 +723,17 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 // and sending them to each added LogConsumer
 func (c *DockerContainer) StopLogProducer() error {
 	if c.stopProducer != nil {
-		c.stopProducer <- true
-		// block until the producer is actually done in order to avoid strange races
-		<-c.producerDone
+		// Producer might have been stopped already in case of an error.
+		// In that case, we don't want to block so we check if something is still
+		// listening on stopProducer or if we're able to read from the producerDone
+		// channel (this would indicate it's closed, hence producer goroutine has
+		// finished).
+		select {
+		case c.stopProducer <- true:
+		case <-c.producerDone:
+		default:
+		}
+
 		c.stopProducer = nil
 		c.producerDone = nil
 	}

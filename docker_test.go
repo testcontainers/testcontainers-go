@@ -32,6 +32,7 @@ const (
 	nginxDelayedImage = "docker.io/menedev/delayed-nginx:1.15.2"
 	nginxImage        = "docker.io/nginx"
 	nginxAlpineImage  = "docker.io/nginx:alpine"
+	pauseImage        = "registry.k8s.io/pause:3.9"
 	nginxDefaultPort  = "80/tcp"
 	nginxHighPort     = "8080/tcp"
 	daemonMaxVersion  = "1.41"
@@ -2156,6 +2157,95 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			} else {
 				assert.NotNil(t, err, "image should not exist anymore")
 			}
+		})
+	}
+}
+
+func TestLogs(t *testing.T) {
+	ctx := context.Background()
+
+	testcases := []struct {
+		name string
+		test func(ctx context.Context, t *testing.T, c Container)
+	}{
+		{
+			name: "StartLogProducer doesn't panic when provided context is cancelled",
+			test: func(ctx context.Context, t *testing.T, c Container) {
+				ctx, cancel := context.WithCancel(ctx)
+				cancel()
+
+				require.ErrorIs(t, c.StartLogProducer(ctx), context.Canceled)
+				t.Cleanup(func() { assert.NoError(t, c.StopLogProducer()) })
+			},
+		},
+		{
+			name: "StartLogProducer doesn't panic when provided context gets cancelled",
+			test: func(ctx context.Context, t *testing.T, c Container) {
+				ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
+				defer cancel()
+
+				require.NoError(t, c.StartLogProducer(ctx))
+				t.Cleanup(func() { assert.NoError(t, c.StopLogProducer()) })
+				<-ctx.Done()
+			},
+		},
+		{
+			name: "StartLogProducer and StopLogProducer work",
+			test: func(ctx context.Context, t *testing.T, c Container) {
+				ctx, cancel := context.WithCancel(ctx)
+				defer cancel()
+
+				require.NoError(t, c.StartLogProducer(ctx))
+				_, err := c.Logs(ctx)
+				require.NoError(t, err)
+				require.NoError(t, c.StopLogProducer())
+				_, err = c.Logs(ctx)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "StartLogProducer doesn't panic when provided context exceeds deadline",
+			test: func(ctx context.Context, t *testing.T, c Container) {
+				ctx, cancel := context.WithDeadline(ctx, time.Now().Add(time.Nanosecond))
+				defer cancel()
+
+				require.ErrorIs(t, c.StartLogProducer(ctx), context.DeadlineExceeded)
+				t.Cleanup(func() { assert.NoError(t, c.StopLogProducer()) })
+			},
+		},
+		{
+			name: "Logs doesn't panic when context is cancelled",
+			test: func(ctx context.Context, t *testing.T, c Container) {
+				ctx, cancel := context.WithCancel(ctx)
+				cancel()
+
+				_, err := c.Logs(ctx)
+				require.ErrorIs(t, err, context.Canceled)
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			container, err := GenericContainer(ctx,
+				GenericContainerRequest{
+					ContainerRequest: ContainerRequest{
+						Image: pauseImage,
+					},
+					Started: true,
+					Logger:  TestLogger(t),
+				})
+			require.NoError(t, err, container)
+
+			t.Cleanup(func() {
+				assert.NoError(t, container.Terminate(context.Background()))
+			})
+
+			tc.test(ctx, t, container)
 		})
 	}
 }
