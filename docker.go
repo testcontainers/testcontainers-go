@@ -378,6 +378,15 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 	return inspect.Name, nil
 }
 
+// ContainerImage gets the image of the container.
+func (c *DockerContainer) ContainerImage(ctx context.Context) (string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return "", err
+	}
+	return inspect.Image, nil
+}
+
 // State returns container's running state
 func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
 	inspect, err := c.inspectRawContainer(ctx)
