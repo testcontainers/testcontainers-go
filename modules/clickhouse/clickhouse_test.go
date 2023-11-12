@@ -4,10 +4,10 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
-	"time"
 
 	ch "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -219,32 +219,28 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 
 func performCRUD(conn driver.Conn) ([]Test, error) {
 	var (
-		maxRetry = 5
-		delay    = 100 * time.Millisecond
-		err      error
-		rows     []Test
+		err  error
+		rows []Test
 	)
 
-	for i := 0; i < maxRetry; i++ {
-		time.Sleep(time.Duration(i) * delay)
-
+	err = backoff.Retry(func() error {
 		err = conn.Exec(context.Background(), "create table if not exists test_table (id UInt64) engine = MergeTree PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
 		if err != nil {
-			continue
+			return err
 		}
 
 		err = conn.Exec(context.Background(), "INSERT INTO test_table (id) VALUES (1);")
 		if err != nil {
-			continue
+			return err
 		}
 
 		rows, err = getAllRows(conn)
 		if err != nil {
-			continue
+			return err
 		}
 
-		return rows, err
-	}
+		return nil
+	}, backoff.NewExponentialBackOff())
 
 	return rows, err
 }
