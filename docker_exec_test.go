@@ -89,9 +89,9 @@ func TestExecWithOptions(t *testing.T) {
 
 			// always append the multiplexed option for having the output
 			// in a readable format
-			opts := append(tt.opts, tcexec.Multiplexed())
+			tt.opts = append(tt.opts, tcexec.Multiplexed())
 
-			code, reader, err := container.Exec(ctx, tt.cmds, opts...)
+			code, reader, err := container.Exec(ctx, tt.cmds, tt.opts...)
 			require.NoError(t, err)
 			require.Zero(t, code)
 			require.NotNil(t, reader)
