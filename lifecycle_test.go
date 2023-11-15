@@ -556,7 +556,7 @@ func TestLifecycleHooks(t *testing.T) {
 			err = c.Terminate(ctx)
 			require.Nil(t, err)
 
-			lifecycleHooksIsHonouredFn(t, ctx, c, prints)
+			lifecycleHooksIsHonouredFn(t, ctx, prints)
 		})
 	}
 }
@@ -705,7 +705,7 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	}
 }
 
-func lifecycleHooksIsHonouredFn(t *testing.T, ctx context.Context, container Container, prints []string) {
+func lifecycleHooksIsHonouredFn(t *testing.T, ctx context.Context, prints []string) {
 	require.Equal(t, 20, len(prints))
 
 	assert.True(t, strings.HasPrefix(prints[0], "pre-create hook 1: "))
