@@ -17,7 +17,7 @@ import (
 // --------- Bindings ---------
 
 type Binding struct {
-	testcontainers.ConfigurableExec
+	testcontainers.ExecOptions
 	VHost           string
 	Source          string
 	Destination     string
@@ -75,7 +75,7 @@ func (b Binding) AsCommand() []string {
 // --------- Exchange ---------
 
 type Exchange struct {
-	testcontainers.ConfigurableExec
+	testcontainers.ExecOptions
 	Name       string
 	VHost      string
 	Type       string
@@ -121,7 +121,7 @@ func (e Exchange) AsCommand() []string {
 // --------- OperatorPolicy ---------
 
 type OperatorPolicy struct {
-	testcontainers.ConfigurableExec
+	testcontainers.ExecOptions
 	Name       string
 	Pattern    string
 	Definition map[string]interface{}
@@ -156,7 +156,7 @@ func (op OperatorPolicy) AsCommand() []string {
 // --------- Parameter ---------
 
 type Parameter struct {
-	testcontainers.ConfigurableExec
+	testcontainers.ExecOptions
 	Component string
 	Name      string
 	Value     string
@@ -182,7 +182,7 @@ func (p Parameter) AsCommand() []string {
 // --------- Permission ---------
 
 type Permission struct {
-	testcontainers.ConfigurableExec
+	testcontainers.ExecOptions
 	VHost     string
 	User      string
 	Configure string
@@ -213,7 +213,7 @@ func (p Permission) AsCommand() []string {
 // --------- Plugin ---------
 
 type Plugin struct {
-	testcontainers.ConfigurableExec
+	testcontainers.ExecOptions
 	Name string
 }
 
@@ -226,7 +226,7 @@ func (p Plugin) AsCommand() []string {
 // --------- Policy ---------
 
 type Policy struct {
-	testcontainers.ConfigurableExec
+	testcontainers.ExecOptions
 	VHost      string
 	Name       string
 	Pattern    string
@@ -268,7 +268,7 @@ func (p Policy) AsCommand() []string {
 // --------- Queue ---------
 
 type Queue struct {
-	testcontainers.ConfigurableExec
+	testcontainers.ExecOptions
 	Name       string
 	VHost      string
 	AutoDelete bool
@@ -309,7 +309,7 @@ func (q Queue) AsCommand() []string {
 // --------- User ---------
 
 type User struct {
-	testcontainers.ConfigurableExec
+	testcontainers.ExecOptions
 	Name     string
 	Password string
 	Tags     []string
@@ -338,7 +338,7 @@ func (u User) AsCommand() []string {
 // --------- Virtual Hosts --------
 
 type VirtualHost struct {
-	testcontainers.ConfigurableExec
+	testcontainers.ExecOptions
 	Name    string
 	Tracing bool
 }
@@ -354,7 +354,7 @@ func (v VirtualHost) AsCommand() []string {
 }
 
 type VirtualHostLimit struct {
-	testcontainers.ConfigurableExec
+	testcontainers.ExecOptions
 	VHost string
 	Name  string
 	Value int
