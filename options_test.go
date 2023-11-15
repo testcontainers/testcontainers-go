@@ -120,14 +120,6 @@ func TestWithNetworkMultipleCallsWithSameNameReuseTheNetwork(t *testing.T) {
 	assert.Equal(t, "new-network", resources[0].Name)
 }
 
-type testExecutable struct {
-	cmds []string
-}
-
-func (t testExecutable) AsCommand() []string {
-	return t.cmds
-}
-
 func TestWithStartupCommand(t *testing.T) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -137,9 +129,7 @@ func TestWithStartupCommand(t *testing.T) {
 		Started: true,
 	}
 
-	testExec := testExecutable{
-		cmds: []string{"touch", "/tmp/.testcontainers"},
-	}
+	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
 
 	testcontainers.WithStartupCommand(testExec)(&req)
 

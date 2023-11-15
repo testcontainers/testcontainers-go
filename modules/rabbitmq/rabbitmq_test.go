@@ -124,7 +124,7 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 		}),
 		// }
 		// enablePlugins {
-		testcontainers.WithStartupCommand(Plugin("rabbitmq_shovel"), Plugin("rabbitmq_random_exchange")),
+		testcontainers.WithStartupCommand(Plugin{Name: "rabbitmq_shovel"}, Plugin{Name: "rabbitmq_random_exchange"}),
 		// }
 	)
 	if err != nil {

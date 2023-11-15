@@ -10,6 +10,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -118,14 +119,37 @@ func WithNetwork(networkName string, alias string) CustomizeRequestOption {
 // as part of the PostStart lifecycle hook.
 type Executable interface {
 	AsCommand() []string
+	Options() []tcexec.ProcessOption
+}
+
+// ExecOptions is a struct that provides a default implementation for the Options method
+// of the Executable interface.
+type ExecOptions struct {
+	opts []tcexec.ProcessOption
+}
+
+func (ce ExecOptions) Options() []tcexec.ProcessOption {
+	return ce.opts
 }
 
 // RawCommand is a type that implements Executable and represents a command to be sent to a container
-type RawCommand []string
+type RawCommand struct {
+	ExecOptions
+	cmds []string
+}
+
+func NewRawCommand(cmds []string) RawCommand {
+	return RawCommand{
+		cmds: cmds,
+		ExecOptions: ExecOptions{
+			opts: []tcexec.ProcessOption{},
+		},
+	}
+}
 
 // AsCommand returns the command as a slice of strings
 func (r RawCommand) AsCommand() []string {
-	return r
+	return r.cmds
 }
 
 // WithStartupCommand will execute the command representation of each Executable into the container.
@@ -139,7 +163,7 @@ func WithStartupCommand(execs ...Executable) CustomizeRequestOption {
 
 		for _, exec := range execs {
 			execFn := func(ctx context.Context, c Container) error {
-				_, _, err := c.Exec(ctx, exec.AsCommand())
+				_, _, err := c.Exec(ctx, exec.AsCommand(), exec.Options()...)
 				return err
 			}
 
