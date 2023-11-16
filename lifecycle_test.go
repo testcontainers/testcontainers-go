@@ -561,6 +561,7 @@ func TestLifecycleHooks(t *testing.T) {
 	}
 }
 
+// customLoggerImplementation {
 type inMemoryLogger struct {
 	data []string
 }
@@ -568,6 +569,8 @@ type inMemoryLogger struct {
 func (l *inMemoryLogger) Printf(format string, args ...interface{}) {
 	l.data = append(l.data, fmt.Sprintf(format, args...))
 }
+
+// }
 
 func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 	ctx := context.Background()

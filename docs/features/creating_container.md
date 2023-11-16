@@ -122,10 +122,11 @@ In the following example, we are going to create a container using all the lifec
 
 #### Default Logging Hook
 
-_Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event. You can enable it by passing the `testcontainers.DefaultLoggingHook` option to the `ContainerRequest`, passing a reference to the container logger like this:
+_Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event, using the default logger. You can add your own logger by passing the `testcontainers.DefaultLoggingHook` option to the `ContainerRequest`, passing a reference to your preferred logger:
 
 <!--codeinclude-->
-[Extending container with life cycle hooks](../../lifecycle_test.go) inside_block:reqWithDefaultLogginHook
+[Use a custom logger for container hooks](../../lifecycle_test.go) inside_block:reqWithDefaultLogginHook
+[Custom Logger implementation](../../lifecycle_test.go) inside_block:customLoggerImplementation
 <!--/codeinclude-->
 
 ### Advanced Settings
