@@ -1052,8 +1052,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		},
 	}
 
-	// always prepend default lifecycle hooks to user-defined hooks
-	req.LifecycleHooks = append(defaultHooks, req.LifecycleHooks...)
+	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
 
 	err = req.creatingHook(ctx)
 	if err != nil {

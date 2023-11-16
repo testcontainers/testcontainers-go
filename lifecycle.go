@@ -352,6 +352,64 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	return nil
 }
 
+// combineContainerHooks it returns just one ContainerLifecycle hook, as the result of combining
+// the default hooks with the user-defined hooks. The function will loop over all the default hooks,
+// storing each of the hooks in a slice, and then it will loop over all the user-defined hooks,
+// appending or prepending them to the slice of hooks. The order of hooks is the following:
+// - for Pre-hooks, always run the default hooks first, then append the user-defined hooks
+// - for Post-hooks, always run the user-defined hooks first, then the default hooks
+func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHooks) ContainerLifecycleHooks {
+
+	preCreates := []ContainerRequestHook{}
+	postCreates := []ContainerHook{}
+	preStarts := []ContainerHook{}
+	postStarts := []ContainerHook{}
+	preStops := []ContainerHook{}
+	postStops := []ContainerHook{}
+	preTerminates := []ContainerHook{}
+	postTerminates := []ContainerHook{}
+
+	for _, defaultHook := range defaultHooks {
+		preCreates = append(preCreates, defaultHook.PreCreates...)
+		preStarts = append(preStarts, defaultHook.PreStarts...)
+		preStops = append(preStops, defaultHook.PreStops...)
+		preTerminates = append(preTerminates, defaultHook.PreTerminates...)
+	}
+
+	// append the user-defined hooks after the default pre-hooks
+	// and because the post hooks are still empty, the user-defined post-hooks
+	// will be the first ones to be executed
+	for _, userDefinedHook := range userDefinedHooks {
+		preCreates = append(preCreates, userDefinedHook.PreCreates...)
+		postCreates = append(postCreates, userDefinedHook.PostCreates...)
+		preStarts = append(preStarts, userDefinedHook.PreStarts...)
+		postStarts = append(postStarts, userDefinedHook.PostStarts...)
+		preStops = append(preStops, userDefinedHook.PreStops...)
+		postStops = append(postStops, userDefinedHook.PostStops...)
+		preTerminates = append(preTerminates, userDefinedHook.PreTerminates...)
+		postTerminates = append(postTerminates, userDefinedHook.PostTerminates...)
+	}
+
+	// finally, append the default post-hooks
+	for _, defaultHook := range defaultHooks {
+		postCreates = append(postCreates, defaultHook.PostCreates...)
+		postStarts = append(postStarts, defaultHook.PostStarts...)
+		postStops = append(postStops, defaultHook.PostStops...)
+		postTerminates = append(postTerminates, defaultHook.PostTerminates...)
+	}
+
+	return ContainerLifecycleHooks{
+		PreCreates:     preCreates,
+		PostCreates:    postCreates,
+		PreStarts:      preStarts,
+		PostStarts:     postStarts,
+		PreStops:       preStops,
+		PostStops:      postStops,
+		PreTerminates:  preTerminates,
+		PostTerminates: postTerminates,
+	}
+}
+
 func mergePortBindings(configPortMap, exposedPortMap nat.PortMap, exposedPorts []string) nat.PortMap {
 	if exposedPortMap == nil {
 		exposedPortMap = make(map[nat.Port][]nat.PortBinding)
