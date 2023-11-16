@@ -52,7 +52,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS":             "1",
 			"KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR": "1",
 			"KAFKA_TRANSACTION_STATE_LOG_MIN_ISR":            "1",
-			"KAFKA_LOG_FLUSH_INTERVAL_MESSAGES":              fmt.Sprintf("%d", math.MaxInt64),
+			"KAFKA_LOG_FLUSH_INTERVAL_MESSAGES":              fmt.Sprintf("%d", math.MaxInt),
 			"KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS":         "0",
 			"KAFKA_NODE_ID":                                  "1",
 			"KAFKA_PROCESS_ROLES":                            "broker,controller",
