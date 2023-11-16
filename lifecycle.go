@@ -85,7 +85,7 @@ var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
 		},
 		PostStops: []ContainerHook{
 			func(ctx context.Context, c Container) error {
-				logger.Printf("✋ Container stopped: %s", shortContainerID(c))
+				logger.Printf("✅ Container stopped: %s", shortContainerID(c))
 				return nil
 			},
 		},
@@ -153,6 +153,7 @@ var defaultWaitStrategyHook = func() ContainerLifecycleHooks {
 					if err := dockerContainer.WaitingFor.WaitUntilReady(ctx, c); err != nil {
 						return err
 					}
+					dockerContainer.logger.Printf("✅ Finished waiting for container id %s.", dockerContainer.ID[:12])
 				}
 
 				dockerContainer.isRunning = true
