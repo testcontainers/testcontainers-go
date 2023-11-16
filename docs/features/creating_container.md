@@ -91,9 +91,7 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 
 _Testcontainers for Go_ allows you to define your own lifecycle hooks for better control over your containers. You just need to define functions that return an error and receive the Go context as first argument, and a `ContainerRequest` for the `Creating` hook, and a `Container` for the rest of them as second argument.
 
-You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an array of `testcontainers.ContainerLifecycleHooks`, which will be processed one by one in the order they are passed.
-
-The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecycle hooks, each of them backed by an array of functions representing the hooks:
+You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an array of `testcontainers.ContainerLifecycleHooks`. The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecycle hooks, each of them backed by an array of functions representing the hooks:
 
 * `PreCreates` - hooks that are executed before the container is created
 * `PostCreates` - hooks that are executed after the container is created
@@ -103,6 +101,18 @@ The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecy
 * `PostStops` - hooks that are executed after the container is stopped
 * `PreTerminates` - hooks that are executed before the container is terminated
 * `PostTerminates` - hooks that are executed after the container is terminated
+
+_Testcontainers for Go_ defines some default lifecycle hooks that cannot be skipped, but you can add your own hooks to the default ones. The execution order will be the following:
+
+1. default `pre` hooks.
+2. user-defined `pre` hooks.
+3. user-defined `post` hooks.
+4. default `post` hooks.
+
+Inside each group, the hooks will be executed in the order they were defined.
+
+!!!info
+	The default hooks are for logging (applies to all hooks), customising the Docker config (applies to the pre-create hook), copying files in to the container (applies to the post-create hook), and waiting for the container to be ready (applies to the post-start hook).
 
 In the following example, we are going to create a container using all the lifecycle hooks, all of them printing a message when any of the lifecycle hooks is called:
 
