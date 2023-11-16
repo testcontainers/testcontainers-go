@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
 
@@ -45,6 +46,7 @@ type ContainerLifecycleHooks struct {
 	PostTerminates []ContainerHook
 }
 
+// DefaultLoggingHook is a hook that will log the container lifecycle events
 var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
 	shortContainerID := func(c Container) string {
 		return c.GetContainerID()[:12]
@@ -96,6 +98,65 @@ var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
 		PostTerminates: []ContainerHook{
 			func(ctx context.Context, c Container) error {
 				logger.Printf("🚫 Container terminated: %s", shortContainerID(c))
+				return nil
+			},
+		},
+	}
+}
+
+// defaultPreCreateHook is a hook that will apply the default configuration to the container
+var defaultPreCreateHook = func(ctx context.Context, p *DockerProvider, req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) ContainerLifecycleHooks {
+	return ContainerLifecycleHooks{
+		PreCreates: []ContainerRequestHook{
+			func(ctx context.Context, req ContainerRequest) error {
+				return p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
+			},
+		},
+	}
+}
+
+// defaultCopyFileToContainerHook is a hook that will copy files to the container after it's created
+// but before it's started
+var defaultCopyFileToContainerHook = func(files []ContainerFile) ContainerLifecycleHooks {
+	return ContainerLifecycleHooks{
+		PostCreates: []ContainerHook{
+			// copy files to container after it's created
+			func(ctx context.Context, c Container) error {
+				for _, f := range files {
+					err := c.CopyFileToContainer(ctx, f.HostFilePath, f.ContainerFilePath, f.FileMode)
+					if err != nil {
+						return fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
+					}
+				}
+
+				return nil
+			},
+		},
+	}
+}
+
+// defaultWaitStrategyHook is a hook that will wait for the container to be ready.
+// It's executed after the container is started, and after all the user-defined hooks are executed.
+var defaultWaitStrategyHook = func() ContainerLifecycleHooks {
+	return ContainerLifecycleHooks{
+		PostStarts: []ContainerHook{
+			// first post-start hook is to wait for the container to be ready
+			func(ctx context.Context, c Container) error {
+				dockerContainer := c.(*DockerContainer)
+
+				// if a Wait Strategy has been specified, wait before returning
+				if dockerContainer.WaitingFor != nil {
+					dockerContainer.logger.Printf(
+						"🚧 Waiting for container id %s image: %s. Waiting for: %+v",
+						dockerContainer.ID[:12], dockerContainer.Image, dockerContainer.WaitingFor,
+					)
+					if err := dockerContainer.WaitingFor.WaitUntilReady(ctx, c); err != nil {
+						return err
+					}
+				}
+
+				dockerContainer.isRunning = true
+
 				return nil
 			},
 		},
