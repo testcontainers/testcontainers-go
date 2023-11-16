@@ -421,7 +421,6 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 // - for Pre-hooks, always run the default hooks first, then append the user-defined hooks
 // - for Post-hooks, always run the user-defined hooks first, then the default hooks
 func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHooks) ContainerLifecycleHooks {
-
 	preCreates := []ContainerRequestHook{}
 	postCreates := []ContainerHook{}
 	preStarts := []ContainerHook{}
