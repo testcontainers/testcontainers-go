@@ -27,7 +27,7 @@ Testcontainers exposes the `WithStartupCommand(e ...Executable)` option to run a
 It also exports an `Executable` interface, defining the following methods:
 
 - `AsCommand()`, which returns a slice of strings to represent the command and positional arguments to be executed in the container;
-- `Options()` to set the command options, such as the working directory, environment variables, user executing the command, etc. It returns a slice of functional options to configure the command.
+- `Options()`, which returns the slice of functional options with the Docker's ExecConfigs used to create the command in the container (the working directory, environment variables, user executing the command, etc) and the possible output format (Multiplexed).
 
 You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is started.
 

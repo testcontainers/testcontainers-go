@@ -115,10 +115,13 @@ func WithNetwork(networkName string, alias string) CustomizeRequestOption {
 	}
 }
 
-// Executable represents an executable command to be sent to a container
-// as part of the PostStart lifecycle hook.
+// Executable represents an executable command to be sent to a container, including options,
+// as part of the different lifecycle hooks.
 type Executable interface {
 	AsCommand() []string
+	// Options can container two different types of options:
+	// - Docker's ExecConfigs (WithUser, WithWorkingDir, WithEnv, etc.)
+	// - testcontainers' ProcessOptions (i.e. Multiplexed response)
 	Options() []tcexec.ProcessOption
 }
 
