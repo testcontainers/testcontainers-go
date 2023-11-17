@@ -199,11 +199,6 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 		return err
 	}
 
-	err = c.readyingHook(ctx)
-	if err != nil {
-		return err
-	}
-
 	// if a Wait Strategy has been specified, wait before returning
 	if c.WaitingFor != nil {
 		c.logger.Printf(

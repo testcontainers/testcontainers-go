@@ -489,16 +489,6 @@ func TestLifecycleHooks(t *testing.T) {
 								return nil
 							},
 						},
-						PreReadies: []ContainerHook{
-							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("pre-ready hook 1: %#v", c))
-								return nil
-							},
-							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("pre-ready hook 2: %#v", c))
-								return nil
-							},
-						},
 						PostReadies: []ContainerHook{
 							func(ctx context.Context, c Container) error {
 								prints = append(prints, fmt.Sprintf("post-ready hook 1: %#v", c))
@@ -623,7 +613,7 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 	err = c.Terminate(ctx)
 	require.Nil(t, err)
 
-	require.Equal(t, 14, len(dl.data))
+	require.Equal(t, 12, len(dl.data))
 }
 
 func TestCombineLifecycleHooks(t *testing.T) {
@@ -654,7 +644,6 @@ func TestCombineLifecycleHooks(t *testing.T) {
 			PostCreates:    []ContainerHook{postFunc(prefix, "create", lifecycleID, 1), postFunc(prefix, "create", lifecycleID, 2)},
 			PreStarts:      []ContainerHook{preFunc(prefix, "start", lifecycleID, 1), preFunc(prefix, "start", lifecycleID, 2)},
 			PostStarts:     []ContainerHook{postFunc(prefix, "start", lifecycleID, 1), postFunc(prefix, "start", lifecycleID, 2)},
-			PreReadies:     []ContainerHook{preFunc(prefix, "ready", lifecycleID, 1), preFunc(prefix, "ready", lifecycleID, 2)},
 			PostReadies:    []ContainerHook{postFunc(prefix, "ready", lifecycleID, 1), postFunc(prefix, "ready", lifecycleID, 2)},
 			PreStops:       []ContainerHook{preFunc(prefix, "stop", lifecycleID, 1), preFunc(prefix, "stop", lifecycleID, 2)},
 			PostStops:      []ContainerHook{postFunc(prefix, "stop", lifecycleID, 1), postFunc(prefix, "stop", lifecycleID, 2)},
@@ -682,8 +671,6 @@ func TestCombineLifecycleHooks(t *testing.T) {
 	require.Nil(t, err)
 	err = hooks.Started(context.Background())(c)
 	require.Nil(t, err)
-	err = hooks.Readying(context.Background())(c)
-	require.Nil(t, err)
 	err = hooks.Readied(context.Background())(c)
 	require.Nil(t, err)
 	err = hooks.Stopping(context.Background())(c)
@@ -701,8 +688,9 @@ func TestCombineLifecycleHooks(t *testing.T) {
 	// Each lifecycle hook has 2 pre-create hooks and 2 post-create hooks.
 	// That results in 16 hooks per lifecycle (8 defaults + 12 user-defined = 20)
 
-	// There are 5 lifecycles (create, start, ready, stop, terminate), so 100 hooks in total.
-	assert.Equal(t, 100, len(prints))
+	// There are 5 lifecycles (create, start, ready, stop, terminate),
+	// but ready has only half of the hooks (it only has post), so we have 90 hooks in total.
+	assert.Equal(t, 90, len(prints))
 
 	// The order of the hooks is:
 	// - pre-X hooks: first default (2*2), then user-defined (3*2)
@@ -725,20 +713,25 @@ func TestCombineLifecycleHooks(t *testing.T) {
 		}
 
 		initialIndex := i * 20
+		if i >= 2 {
+			initialIndex = initialIndex - 10
+		}
 
-		// default pre-hooks: 4 hooks
-		assert.Equal(t, fmt.Sprintf("[default] pre-%s hook 1.1", hookType), prints[initialIndex])
-		assert.Equal(t, fmt.Sprintf("[default] pre-%s hook 1.2", hookType), prints[initialIndex+1])
-		assert.Equal(t, fmt.Sprintf("[default] pre-%s hook 2.1", hookType), prints[initialIndex+2])
-		assert.Equal(t, fmt.Sprintf("[default] pre-%s hook 2.2", hookType), prints[initialIndex+3])
+		if hookType != "ready" {
+			// default pre-hooks: 4 hooks
+			assert.Equal(t, fmt.Sprintf("[default] pre-%s hook 1.1", hookType), prints[initialIndex])
+			assert.Equal(t, fmt.Sprintf("[default] pre-%s hook 1.2", hookType), prints[initialIndex+1])
+			assert.Equal(t, fmt.Sprintf("[default] pre-%s hook 2.1", hookType), prints[initialIndex+2])
+			assert.Equal(t, fmt.Sprintf("[default] pre-%s hook 2.2", hookType), prints[initialIndex+3])
 
-		// user-defined pre-hooks: 6 hooks
-		assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 1.1", hookType), prints[initialIndex+4])
-		assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 1.2", hookType), prints[initialIndex+5])
-		assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 2.1", hookType), prints[initialIndex+6])
-		assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 2.2", hookType), prints[initialIndex+7])
-		assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 3.1", hookType), prints[initialIndex+8])
-		assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 3.2", hookType), prints[initialIndex+9])
+			// user-defined pre-hooks: 6 hooks
+			assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 1.1", hookType), prints[initialIndex+4])
+			assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 1.2", hookType), prints[initialIndex+5])
+			assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 2.1", hookType), prints[initialIndex+6])
+			assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 2.2", hookType), prints[initialIndex+7])
+			assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 3.1", hookType), prints[initialIndex+8])
+			assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 3.2", hookType), prints[initialIndex+9])
+		}
 
 		// user-defined post-hooks: 6 hooks
 		assert.Equal(t, fmt.Sprintf("[user-defined] post-%s hook 1.1", hookType), prints[initialIndex+10])
@@ -786,7 +779,7 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 	err = c.Terminate(ctx)
 	require.Nil(t, err)
 
-	require.Equal(t, 28, len(dl.data))
+	require.Equal(t, 24, len(dl.data))
 }
 
 type linesTestLogger struct {
@@ -854,7 +847,7 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 }
 
 func lifecycleHooksIsHonouredFn(t *testing.T, ctx context.Context, prints []string) {
-	require.Equal(t, 28, len(prints))
+	require.Equal(t, 24, len(prints))
 
 	assert.True(t, strings.HasPrefix(prints[0], "pre-create hook 1: "))
 	assert.True(t, strings.HasPrefix(prints[1], "pre-create hook 2: "))
@@ -868,33 +861,27 @@ func lifecycleHooksIsHonouredFn(t *testing.T, ctx context.Context, prints []stri
 	assert.True(t, strings.HasPrefix(prints[6], "post-start hook 1: "))
 	assert.True(t, strings.HasPrefix(prints[7], "post-start hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[8], "pre-ready hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[9], "pre-ready hook 2: "))
+	assert.True(t, strings.HasPrefix(prints[8], "post-ready hook 1: "))
+	assert.True(t, strings.HasPrefix(prints[9], "post-ready hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[10], "post-ready hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[11], "post-ready hook 2: "))
+	assert.True(t, strings.HasPrefix(prints[10], "pre-stop hook 1: "))
+	assert.True(t, strings.HasPrefix(prints[11], "pre-stop hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[12], "pre-stop hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[13], "pre-stop hook 2: "))
+	assert.True(t, strings.HasPrefix(prints[12], "post-stop hook 1: "))
+	assert.True(t, strings.HasPrefix(prints[13], "post-stop hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[14], "post-stop hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[15], "post-stop hook 2: "))
+	assert.True(t, strings.HasPrefix(prints[14], "pre-start hook 1: "))
+	assert.True(t, strings.HasPrefix(prints[15], "pre-start hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[16], "pre-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[17], "pre-start hook 2: "))
+	assert.True(t, strings.HasPrefix(prints[16], "post-start hook 1: "))
+	assert.True(t, strings.HasPrefix(prints[17], "post-start hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[18], "post-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[19], "post-start hook 2: "))
+	assert.True(t, strings.HasPrefix(prints[18], "post-ready hook 1: "))
+	assert.True(t, strings.HasPrefix(prints[19], "post-ready hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[20], "pre-ready hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[21], "pre-ready hook 2: "))
+	assert.True(t, strings.HasPrefix(prints[20], "pre-terminate hook 1: "))
+	assert.True(t, strings.HasPrefix(prints[21], "pre-terminate hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[22], "post-ready hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[23], "post-ready hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[24], "pre-terminate hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[25], "pre-terminate hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[26], "post-terminate hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[27], "post-terminate hook 2: "))
+	assert.True(t, strings.HasPrefix(prints[22], "post-terminate hook 1: "))
+	assert.True(t, strings.HasPrefix(prints[23], "post-terminate hook 2: "))
 }

@@ -25,7 +25,6 @@ type ContainerRequestHook func(ctx context.Context, req ContainerRequest) error
 // - Created
 // - Starting
 // - Started
-// - Readying
 // - Readied
 // - Stopping
 // - Stopped
@@ -42,7 +41,6 @@ type ContainerLifecycleHooks struct {
 	PostCreates    []ContainerHook
 	PreStarts      []ContainerHook
 	PostStarts     []ContainerHook
-	PreReadies     []ContainerHook
 	PostReadies    []ContainerHook
 	PreStops       []ContainerHook
 	PostStops      []ContainerHook
@@ -78,12 +76,6 @@ var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
 		PostStarts: []ContainerHook{
 			func(ctx context.Context, c Container) error {
 				logger.Printf("✅ Container started: %s", shortContainerID(c))
-				return nil
-			},
-		},
-		PreReadies: []ContainerHook{
-			func(ctx context.Context, c Container) error {
-				logger.Printf("🐳 Checking readiness: %s", shortContainerID(c))
 				return nil
 			},
 		},
@@ -192,19 +184,6 @@ func (c *DockerContainer) startingHook(ctx context.Context) error {
 func (c *DockerContainer) startedHook(ctx context.Context) error {
 	for _, lifecycleHooks := range c.lifecycleHooks {
 		err := containerHookFn(ctx, lifecycleHooks.PostStarts)(c)
-		if err != nil {
-			c.printLogs(ctx, err)
-			return err
-		}
-	}
-
-	return nil
-}
-
-// readyingHook is a hook that will be called before a container is ready
-func (c *DockerContainer) readyingHook(ctx context.Context) error {
-	for _, lifecycleHooks := range c.lifecycleHooks {
-		err := containerHookFn(ctx, lifecycleHooks.PreReadies)(c)
 		if err != nil {
 			c.printLogs(ctx, err)
 			return err
@@ -335,11 +314,6 @@ func (c ContainerLifecycleHooks) Started(ctx context.Context) func(container Con
 	return containerHookFn(ctx, c.PostStarts)
 }
 
-// Readying is a hook that will be called before a container is ready
-func (c ContainerLifecycleHooks) Readying(ctx context.Context) func(container Container) error {
-	return containerHookFn(ctx, c.PreReadies)
-}
-
 // Readied is a hook that will be called after a container is ready
 func (c ContainerLifecycleHooks) Readied(ctx context.Context) func(container Container) error {
 	return containerHookFn(ctx, c.PostReadies)
@@ -448,7 +422,6 @@ func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHo
 	postCreates := []ContainerHook{}
 	preStarts := []ContainerHook{}
 	postStarts := []ContainerHook{}
-	preReadies := []ContainerHook{}
 	postReadies := []ContainerHook{}
 	preStops := []ContainerHook{}
 	postStops := []ContainerHook{}
@@ -458,7 +431,6 @@ func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHo
 	for _, defaultHook := range defaultHooks {
 		preCreates = append(preCreates, defaultHook.PreCreates...)
 		preStarts = append(preStarts, defaultHook.PreStarts...)
-		preReadies = append(preReadies, defaultHook.PreReadies...)
 		preStops = append(preStops, defaultHook.PreStops...)
 		preTerminates = append(preTerminates, defaultHook.PreTerminates...)
 	}
@@ -471,7 +443,6 @@ func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHo
 		postCreates = append(postCreates, userDefinedHook.PostCreates...)
 		preStarts = append(preStarts, userDefinedHook.PreStarts...)
 		postStarts = append(postStarts, userDefinedHook.PostStarts...)
-		preReadies = append(preReadies, userDefinedHook.PreReadies...)
 		postReadies = append(postReadies, userDefinedHook.PostReadies...)
 		preStops = append(preStops, userDefinedHook.PreStops...)
 		postStops = append(postStops, userDefinedHook.PostStops...)
@@ -493,7 +464,6 @@ func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHo
 		PostCreates:    postCreates,
 		PreStarts:      preStarts,
 		PostStarts:     postStarts,
-		PreReadies:     preReadies,
 		PostReadies:    postReadies,
 		PreStops:       preStops,
 		PostStops:      postStops,

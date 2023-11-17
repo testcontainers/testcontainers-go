@@ -97,7 +97,6 @@ You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an 
 * `PostCreates` - hooks that are executed after the container is created
 * `PreStarts` - hooks that are executed before the container is started
 * `PostStarts` - hooks that are executed after the container is started
-* `PreReadies` - hooks that are executed before checking container readiness
 * `PostReadies` - hooks that are executed after the container is ready
 * `PreStops` - hooks that are executed before the container is stopped
 * `PostStops` - hooks that are executed after the container is stopped
@@ -116,7 +115,7 @@ Inside each group, the hooks will be executed in the order they were defined.
 !!!info
 	The default hooks are for logging (applies to all hooks), customising the Docker config (applies to the pre-create hook) and copying files in to the container (applies to the post-create hook).
 
-It's important to notice that the `Readiness` of a container is defined by the wait strategies defined for the container. **This hook will be executed right after the `PostStarts` hook**. For consistency with the rest of hooks, the `PreReadies` and `PostReadies` hooks exist, that will apply before and after the execution of the wait strategies, respectively.
+It's important to notice that the `Readiness` of a container is defined by the wait strategies defined for the container. **This hook will be executed right after the `PostStarts` hook**. If you want to add your own readiness checks, you can do it by adding a `PostReadies` hook to the container request, which will execute your own readiness check after the default ones. That said, the `PostStarts` hooks don't warrant that the container is ready, so you should not rely on that.
 
 In the following example, we are going to create a container using all the lifecycle hooks, all of them printing a message when any of the lifecycle hooks is called:
 
