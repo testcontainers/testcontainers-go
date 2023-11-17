@@ -186,7 +186,7 @@ func WithReadyCommand(execs ...Executable) CustomizeRequestOption {
 
 		for _, exec := range execs {
 			execFn := func(ctx context.Context, c Container) error {
-				_, _, err := c.Exec(ctx, exec.AsCommand())
+				_, _, err := c.Exec(ctx, exec.AsCommand(), exec.Options()...)
 				return err
 			}
 
