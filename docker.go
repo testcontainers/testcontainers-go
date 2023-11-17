@@ -466,12 +466,16 @@ func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]stri
 
 func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
 	cli := c.provider.client
-	response, err := cli.ContainerExecCreate(ctx, c.ID, types.ExecConfig{
-		Cmd:          cmd,
-		Detach:       false,
-		AttachStdout: true,
-		AttachStderr: true,
-	})
+
+	processOptions := tcexec.NewProcessOptions(cmd)
+
+	// processing all the options in a first loop because for the multiplexed option
+	// we first need to have a containerExecCreateResponse
+	for _, o := range options {
+		o.Apply(processOptions)
+	}
+
+	response, err := cli.ContainerExecCreate(ctx, c.ID, processOptions.ExecConfig)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -481,12 +485,12 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 		return 0, nil, err
 	}
 
-	opt := &tcexec.ProcessOptions{
-		Reader: hijack.Reader,
-	}
+	processOptions.Reader = hijack.Reader
 
+	// second loop to process the multiplexed option, as now we have a reader
+	// from the created exec response.
 	for _, o := range options {
-		o.Apply(opt)
+		o.Apply(processOptions)
 	}
 
 	var exitCode int
@@ -504,7 +508,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	return exitCode, opt.Reader, nil
+	return exitCode, processOptions.Reader, nil
 }
 
 type FileFromContainer struct {
