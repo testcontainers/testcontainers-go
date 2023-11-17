@@ -28,6 +28,19 @@ It also exports an `Executable` interface, defining one single method: `AsComman
 
 You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is started.
 
+#### Ready Commands
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Testcontainers exposes the `WithReadyCommand(e ...Executable)` option to run arbitrary commands in the container right after it's ready, which happens when the defined wait strategies have finished with success.
+
+!!!info
+    To better understand how this feature works, please read the [Create containers: Lifecycle Hooks](/features/creating_container/#lifecycle-hooks) documentation.
+
+It leverages the `Executable` interface to represent the command and positional arguments to be executed in the container.
+
+You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is ready   .
+
 #### WithNetwork
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
