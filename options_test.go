@@ -150,3 +150,34 @@ func TestWithStartupCommand(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "/tmp/.testcontainers\n", string(content))
 }
+
+func TestWithReadyCommand(t *testing.T) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:      "alpine",
+			Entrypoint: []string{"tail", "-f", "/dev/null"},
+		},
+		Started: true,
+	}
+
+	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
+
+	testcontainers.WithReadyCommand(testExec)(&req)
+
+	assert.Equal(t, 1, len(req.LifecycleHooks))
+	assert.Equal(t, 1, len(req.LifecycleHooks[0].PostReadies))
+
+	c, err := testcontainers.GenericContainer(context.Background(), req)
+	require.NoError(t, err)
+	defer func() {
+		err = c.Terminate(context.Background())
+		require.NoError(t, err)
+	}()
+
+	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
+	require.NoError(t, err)
+
+	content, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	assert.Equal(t, "/tmp/.testcontainers\n", string(content))
+}
