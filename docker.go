@@ -199,6 +199,31 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 		return err
 	}
 
+	err = c.readyingHook(ctx)
+	if err != nil {
+		return err
+	}
+
+	// if a Wait Strategy has been specified, wait before returning
+	if c.WaitingFor != nil {
+		c.logger.Printf(
+			"🚧 Waiting for container id %s image: %s. Waiting for: %+v",
+			c.ID[:12], c.Image, c.WaitingFor,
+		)
+		if err := c.WaitingFor.WaitUntilReady(ctx, c); err != nil {
+			c.printLogs(ctx, err)
+			return err
+		}
+		c.logger.Printf("✅ Finished waiting for container id %s.", c.ID[:12])
+	}
+
+	c.isRunning = true
+
+	err = c.readiedHook(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1011,7 +1036,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		DefaultLoggingHook(p.Logger),
 		defaultPreCreateHook(ctx, p, req, dockerInput, hostConfig, networkingConfig),
 		defaultCopyFileToContainerHook(req.Files),
-		defaultWaitStrategyHook(),
 	}
 
 	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
