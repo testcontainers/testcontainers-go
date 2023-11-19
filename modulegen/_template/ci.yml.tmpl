@@ -153,7 +153,7 @@ jobs:
           name: sonarcloud
             
       - name: Analyze with SonarCloud
-        uses: sonarsource/sonarcloud-github-action@5ee47de3c96f0c1c51b09d2ff1fec0cfeefcf67c # master
+        uses: sonarsource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: {{ "${{ secrets.GITHUB_TOKEN }}" }}
           SONAR_TOKEN: {{ "${{ secrets.SONAR_TOKEN }}" }}
