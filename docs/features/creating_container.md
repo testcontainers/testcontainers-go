@@ -103,7 +103,7 @@ You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an 
 * `PreTerminates` - hooks that are executed before the container is terminated
 * `PostTerminates` - hooks that are executed after the container is terminated
 
-_Testcontainers for Go_ defines some default lifecycle hooks that cannot be skipped, but you can add your own hooks to the default ones. The execution order will be the following:
+_Testcontainers for Go_ defines some default lifecycle hooks that that are always executed in a specific order with respect to the user-defined hooks. The order of execution is the following:
 
 1. default `pre` hooks.
 2. user-defined `pre` hooks.
@@ -113,7 +113,7 @@ _Testcontainers for Go_ defines some default lifecycle hooks that cannot be skip
 Inside each group, the hooks will be executed in the order they were defined.
 
 !!!info
-	The default hooks are for logging (applies to all hooks), customising the Docker config (applies to the pre-create hook) and copying files in to the container (applies to the post-create hook).
+	The default hooks are for logging (applied to all hooks), customising the Docker config (applied to the pre-create hook) and copying files in to the container (applied to the post-create hook).
 
 It's important to notice that the `Readiness` of a container is defined by the wait strategies defined for the container. **This hook will be executed right after the `PostStarts` hook**. If you want to add your own readiness checks, you can do it by adding a `PostReadies` hook to the container request, which will execute your own readiness check after the default ones. That said, the `PostStarts` hooks don't warrant that the container is ready, so you should not rely on that.
 
