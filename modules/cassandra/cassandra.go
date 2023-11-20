@@ -68,7 +68,7 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 		}
 
 		req.Files = append(req.Files, initScripts...)
-		testcontainers.WithReadyCommand(execs...)(req)
+		testcontainers.WithAfterReadyCommand(execs...)(req)
 	}
 }
 

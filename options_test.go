@@ -151,7 +151,7 @@ func TestWithStartupCommand(t *testing.T) {
 	assert.Equal(t, "/tmp/.testcontainers\n", string(content))
 }
 
-func TestWithReadyCommand(t *testing.T) {
+func TestWithAfterReadyCommand(t *testing.T) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:      "alpine",
@@ -162,7 +162,7 @@ func TestWithReadyCommand(t *testing.T) {
 
 	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
 
-	testcontainers.WithReadyCommand(testExec)(&req)
+	testcontainers.WithAfterReadyCommand(testExec)(&req)
 
 	assert.Equal(t, 1, len(req.LifecycleHooks))
 	assert.Equal(t, 1, len(req.LifecycleHooks[0].PostReadies))

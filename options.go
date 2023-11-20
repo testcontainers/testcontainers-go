@@ -180,7 +180,7 @@ func WithStartupCommand(execs ...Executable) CustomizeRequestOption {
 // WithAfterReadyCommand will execute the command representation of each Executable into the container.
 // It will leverage the container lifecycle hooks to call the command right after the container
 // is ready.
-func WithReadyCommand(execs ...Executable) CustomizeRequestOption {
+func WithAfterReadyCommand(execs ...Executable) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) {
 		postReadiesHook := []ContainerHook{}
 
