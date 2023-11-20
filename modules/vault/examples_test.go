@@ -36,7 +36,7 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainerWithToken() {
+func ExampleRunContainer_withToken() {
 	// runVaultContainerWithToken {
 	ctx := context.Background()
 
@@ -75,7 +75,7 @@ func ExampleRunContainerWithToken() {
 	// 0
 }
 
-func ExampleRunContainerWithInitCommand() {
+func ExampleRunContainer_withInitCommand() {
 	// runVaultContainerWithInitCommand {
 	ctx := context.Background()
 
