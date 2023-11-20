@@ -17,7 +17,7 @@ import (
 func ExampleNetworkProvider_CreateNetwork() {
 	// createNetwork {
 	ctx := context.Background()
-	networkName := "new-network"
+	networkName := "new-generic-network"
 	net, _ := GenericNetwork(ctx, GenericNetworkRequest{
 		NetworkRequest: NetworkRequest{
 			Name:           networkName,
