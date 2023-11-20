@@ -714,7 +714,7 @@ func TestCombineLifecycleHooks(t *testing.T) {
 
 		initialIndex := i * 20
 		if i >= 2 {
-			initialIndex = initialIndex - 10
+			initialIndex -= 10
 		}
 
 		if hookType != "ready" {
