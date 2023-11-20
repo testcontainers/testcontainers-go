@@ -5,6 +5,7 @@ linters:
     - gocritic
     - gofumpt
     - misspell
+    - nonamedreturns
 
 linters-settings:
   errorlint:

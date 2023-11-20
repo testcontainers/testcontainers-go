@@ -8,7 +8,7 @@ verify_ssl = true
 [packages]
 mkdocs = "==1.5.3"
 mkdocs-codeinclude-plugin = "==0.2.1"
-mkdocs-include-markdown-plugin = "==6.0.1"
+mkdocs-include-markdown-plugin = "==6.0.3"
 mkdocs-material = "==9.3.2"
 mkdocs-markdownextradata-plugin = "==0.2.5"
 

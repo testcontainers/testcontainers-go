@@ -15,7 +15,7 @@ type TestKafkaConsumer struct {
 	message *sarama.ConsumerMessage
 }
 
-func NewTestKafkaConsumer(t *testing.T) (consumer *TestKafkaConsumer, ready <-chan bool, done <-chan bool, cancel func()) {
+func NewTestKafkaConsumer(t *testing.T) (*TestKafkaConsumer, <-chan bool, <-chan bool, func()) {
 	kc := &TestKafkaConsumer{
 		t:      t,
 		ready:  make(chan bool, 1),

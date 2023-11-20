@@ -64,7 +64,7 @@ func (w *waitForSql) Timeout() *time.Duration {
 // WaitUntilReady repeatedly tries to run "SELECT 1" or user defined query on the given port using sql and driver.
 //
 // If it doesn't succeed until the timeout value which defaults to 60 seconds, it will return an error.
-func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
+func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
 	timeout := defaultStartupTimeout()
 	if w.timeout != nil {
 		timeout = *w.timeout
@@ -75,7 +75,7 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 
 	host, err := target.Host(ctx)
 	if err != nil {
-		return
+		return err
 	}
 
 	ticker := time.NewTicker(w.PollInterval)

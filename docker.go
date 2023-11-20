@@ -36,12 +36,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var (
-	// Implement interfaces
-	_ Container = (*DockerContainer)(nil)
-
-	ErrDuplicateMountTarget = errors.New("duplicate mount target detected")
-)
+// Implement interfaces
+var _ Container = (*DockerContainer)(nil)
 
 const (
 	Bridge        = "bridge" // Bridge network name (as well as driver)
@@ -470,12 +466,16 @@ func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]stri
 
 func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
 	cli := c.provider.client
-	response, err := cli.ContainerExecCreate(ctx, c.ID, types.ExecConfig{
-		Cmd:          cmd,
-		Detach:       false,
-		AttachStdout: true,
-		AttachStderr: true,
-	})
+
+	processOptions := tcexec.NewProcessOptions(cmd)
+
+	// processing all the options in a first loop because for the multiplexed option
+	// we first need to have a containerExecCreateResponse
+	for _, o := range options {
+		o.Apply(processOptions)
+	}
+
+	response, err := cli.ContainerExecCreate(ctx, c.ID, processOptions.ExecConfig)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -485,12 +485,12 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 		return 0, nil, err
 	}
 
-	opt := &tcexec.ProcessOptions{
-		Reader: hijack.Reader,
-	}
+	processOptions.Reader = hijack.Reader
 
+	// second loop to process the multiplexed option, as now we have a reader
+	// from the created exec response.
 	for _, o := range options {
-		o.Apply(opt)
+		o.Apply(processOptions)
 	}
 
 	var exitCode int
@@ -508,7 +508,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	return exitCode, opt.Reader, nil
+	return exitCode, processOptions.Reader, nil
 }
 
 type FileFromContainer struct {
@@ -999,6 +999,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		Cmd:        req.Cmd,
 		Hostname:   req.Hostname,
 		User:       req.User,
+		WorkingDir: req.WorkingDir,
 	}
 
 	hostConfig := &container.HostConfig{
@@ -1203,8 +1204,8 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 
 // Health measure the healthiness of the provider. Right now we leverage the
 // docker-client Info endpoint to see if the daemon is reachable.
-func (p *DockerProvider) Health(ctx context.Context) (err error) {
-	_, err = p.client.Info(ctx)
+func (p *DockerProvider) Health(ctx context.Context) error {
+	_, err := p.client.Info(ctx)
 	defer p.Close()
 
 	return err

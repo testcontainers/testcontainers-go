@@ -243,7 +243,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 	ctx := context.Background()
 	wd, err := os.Getwd()
 	assert.NoError(t, err)
-	// bindMounts {
+	// copyDirectoryToContainer {
 	req := ContainerRequest{
 		Image:        "registry:2",
 		ExposedPorts: []string{"5001:5000/tcp"},
@@ -253,18 +253,14 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 			"REGISTRY_AUTH_HTPASSWD_PATH":               "/auth/htpasswd",
 			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY": "/data",
 		},
-		Mounts: ContainerMounts{
-			ContainerMount{
-				Source: GenericBindMountSource{
-					HostPath: fmt.Sprintf("%s/testdata/auth", wd),
-				},
-				Target: "/auth",
+		Files: []ContainerFile{
+			{
+				HostFilePath:      fmt.Sprintf("%s/testdata/auth", wd),
+				ContainerFilePath: "/auth",
 			},
-			ContainerMount{
-				Source: GenericBindMountSource{
-					HostPath: fmt.Sprintf("%s/testdata/data", wd),
-				},
-				Target: "/data",
+			{
+				HostFilePath:      fmt.Sprintf("%s/testdata/data", wd),
+				ContainerFilePath: "/data",
 			},
 		},
 		WaitingFor: wait.ForExposedPort(),

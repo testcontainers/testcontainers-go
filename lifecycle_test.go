@@ -35,10 +35,10 @@ func TestPreCreateModifierHook(t *testing.T) {
 			},
 			Mounts: ContainerMounts{
 				{
-					Source: DockerBindMountSource{
-						HostPath: "/var/lib/app/data",
-						BindOptions: &mount.BindOptions{
-							Propagation: mount.PropagationPrivate,
+					Source: DockerVolumeMountSource{
+						Name: "appdata",
+						VolumeOptions: &mount.VolumeOptions{
+							Labels: GenericLabels(),
 						},
 					},
 					Target: "/data",
@@ -90,11 +90,11 @@ func TestPreCreateModifierHook(t *testing.T) {
 			t,
 			[]mount.Mount{
 				{
-					Type:   mount.TypeBind,
-					Source: "/var/lib/app/data",
+					Type:   mount.TypeVolume,
+					Source: "appdata",
 					Target: "/data",
-					BindOptions: &mount.BindOptions{
-						Propagation: mount.PropagationPrivate,
+					VolumeOptions: &mount.VolumeOptions{
+						Labels: GenericLabels(),
 					},
 				},
 			},

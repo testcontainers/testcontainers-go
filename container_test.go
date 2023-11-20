@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -55,16 +56,30 @@ func Test_ContainerValidation(t *testing.T) {
 			Name:          "Can mount same source to multiple targets",
 			ExpectedError: nil,
 			ContainerRequest: ContainerRequest{
-				Image:  "redis:latest",
-				Mounts: Mounts(BindMount("/data", "/srv"), BindMount("/data", "/data")),
+				Image: "redis:latest",
+				HostConfigModifier: func(hc *container.HostConfig) {
+					hc.Binds = []string{"/data:/srv", "/data:/data"}
+				},
 			},
 		},
 		{
 			Name:          "Cannot mount multiple sources to same target",
 			ExpectedError: errors.New("duplicate mount target detected: /data"),
 			ContainerRequest: ContainerRequest{
-				Image:  "redis:latest",
-				Mounts: Mounts(BindMount("/srv", "/data"), BindMount("/data", "/data")),
+				Image: "redis:latest",
+				HostConfigModifier: func(hc *container.HostConfig) {
+					hc.Binds = []string{"/data:/data", "/data:/data"}
+				},
+			},
+		},
+		{
+			Name:          "Invalid bind mount",
+			ExpectedError: errors.New("invalid bind mount: /data:/data:/data"),
+			ContainerRequest: ContainerRequest{
+				Image: "redis:latest",
+				HostConfigModifier: func(hc *container.HostConfig) {
+					hc.Binds = []string{"/data:/data:/data"}
+				},
 			},
 		},
 	}
@@ -465,60 +480,6 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 			t.Logf("Parallel container [iteration_%d] listening on %d\n", i, port.Int())
 		})
 	}
-}
-
-func TestOverrideContainerRequest(t *testing.T) {
-	req := GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			Env: map[string]string{
-				"BAR": "BAR",
-			},
-			Image:        "foo",
-			ExposedPorts: []string{"12345/tcp"},
-			WaitingFor: wait.ForNop(
-				func(ctx context.Context, target wait.StrategyTarget) error {
-					return nil
-				},
-			),
-			Networks: []string{"foo", "bar", "baaz"},
-			NetworkAliases: map[string][]string{
-				"foo": {"foo0", "foo1", "foo2", "foo3"},
-			},
-		},
-	}
-
-	toBeMergedRequest := GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			Env: map[string]string{
-				"FOO": "FOO",
-			},
-			Image:        "bar",
-			ExposedPorts: []string{"67890/tcp"},
-			Networks:     []string{"foo1", "bar1"},
-			NetworkAliases: map[string][]string{
-				"foo1": {"bar"},
-			},
-			WaitingFor: wait.ForLog("foo"),
-		},
-	}
-
-	// the toBeMergedRequest should be merged into the req
-	CustomizeRequest(toBeMergedRequest)(&req)
-
-	// toBeMergedRequest should not be changed
-	assert.Equal(t, "", toBeMergedRequest.Env["BAR"])
-	assert.Equal(t, 1, len(toBeMergedRequest.ExposedPorts))
-	assert.Equal(t, "67890/tcp", toBeMergedRequest.ExposedPorts[0])
-
-	// req should be merged with toBeMergedRequest
-	assert.Equal(t, "FOO", req.Env["FOO"])
-	assert.Equal(t, "BAR", req.Env["BAR"])
-	assert.Equal(t, "bar", req.Image)
-	assert.Equal(t, []string{"12345/tcp", "67890/tcp"}, req.ExposedPorts)
-	assert.Equal(t, []string{"foo", "bar", "baaz", "foo1", "bar1"}, req.Networks)
-	assert.Equal(t, []string{"foo0", "foo1", "foo2", "foo3"}, req.NetworkAliases["foo"])
-	assert.Equal(t, []string{"bar"}, req.NetworkAliases["foo1"])
-	assert.Equal(t, wait.ForLog("foo"), req.WaitingFor)
 }
 
 func TestParseDockerIgnore(t *testing.T) {

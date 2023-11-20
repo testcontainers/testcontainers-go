@@ -89,8 +89,10 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		ReaperImage:  "reaperImage",
 		ExposedPorts: []string{"8080/tcp"},
 		Labels:       testcontainersdocker.DefaultLabels(testSessionID),
-		Mounts:       Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock")),
-		WaitingFor:   wait.ForListeningPort(nat.Port("8080/tcp")),
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			hostConfig.Binds = []string{testcontainersdocker.ExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
+		},
+		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
 		ReaperOptions: []ContainerOption{
 			WithImageName("reaperImage"),
 		},
@@ -355,7 +357,9 @@ func Test_NewReaper(t *testing.T) {
 		{
 			name: "docker-host in context",
 			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
-				req.Mounts = Mounts(BindMount(testcontainersdocker.ExtractDockerSocket(context.Background()), "/var/run/docker.sock"))
+				req.HostConfigModifier = func(hostConfig *container.HostConfig) {
+					hostConfig.Binds = []string{testcontainersdocker.ExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
+				}
 				return req
 			}),
 			config: TestcontainersConfig{Config: config.Config{
@@ -509,5 +513,51 @@ func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
 
 	if !wasReaperRunning {
 		terminateContainerOnEnd(t, ctx, reaper.container)
+	}
+}
+
+// TestReaper_ReuseRunning tests whether reusing the reaper if using
+// testcontainers from concurrently multiple packages works as expected. In this
+// case, global locks are without any effect as Go tests different packages
+// isolated. Therefore, this test does not use the same logic with locks on
+// purpose. We expect reaper creation to still succeed in case a reaper is
+// already running for the same session id by returning its container instance
+// instead.
+func TestReaper_ReuseRunning(t *testing.T) {
+	const concurrency = 64
+
+	timeout, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	sessionID := SessionID()
+
+	dockerProvider, err := NewDockerProvider()
+	require.NoError(t, err, "new docker provider should not fail")
+
+	obtainedReaperContainerIDs := make([]string, concurrency)
+	var wg sync.WaitGroup
+	for i := 0; i < concurrency; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			reaperContainer, err := lookUpReaperContainer(timeout, sessionID)
+			if err == nil && reaperContainer != nil {
+				// Found.
+				obtainedReaperContainerIDs[i] = reaperContainer.GetContainerID()
+				return
+			}
+			// Not found -> create.
+			createdReaper, err := newReaper(timeout, sessionID, dockerProvider)
+			require.NoError(t, err, "new reaper should not fail")
+			obtainedReaperContainerIDs[i] = createdReaper.container.GetContainerID()
+		}()
+	}
+	wg.Wait()
+
+	// Assure that all calls returned the same container.
+	firstContainerID := obtainedReaperContainerIDs[0]
+	for i, containerID := range obtainedReaperContainerIDs {
+		assert.Equal(t, firstContainerID, containerID, "call %d should have returned same container id", i)
 	}
 }

@@ -6,44 +6,7 @@ import (
 
 	"github.com/docker/docker/api/types/mount"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
-
-func TestBindMount(t *testing.T) {
-	t.Parallel()
-
-	dockerSocket := testcontainersdocker.ExtractDockerSocket(context.Background())
-	t.Log("Docker Socket Path: ", dockerSocket)
-
-	type args struct {
-		hostPath    string
-		mountTarget ContainerMountTarget
-	}
-	tests := []struct {
-		name string
-		args args
-		want ContainerMount
-	}{
-		{
-			name: dockerSocket + ":" + dockerSocket,
-			args: args{hostPath: dockerSocket, mountTarget: "/var/run/docker.sock"},
-			want: ContainerMount{Source: GenericBindMountSource{HostPath: dockerSocket}, Target: "/var/run/docker.sock"},
-		},
-		{
-			name: "/var/lib/app/data:/data",
-			args: args{hostPath: "/var/lib/app/data", mountTarget: "/data"},
-			want: ContainerMount{Source: GenericBindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data"},
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equalf(t, tt.want, BindMount(tt.args.hostPath, tt.args.mountTarget), "BindMount(%v, %v)", tt.args.hostPath, tt.args.mountTarget)
-		})
-	}
-}
 
 func TestVolumeMount(t *testing.T) {
 	t.Parallel()
@@ -87,53 +50,6 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			name:   "Empty",
 			mounts: nil,
 			want:   make([]mount.Mount, 0),
-		},
-		{
-			name:   "Single bind mount",
-			mounts: ContainerMounts{{Source: GenericBindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data"}},
-			want: []mount.Mount{
-				{
-					Type:   mount.TypeBind,
-					Source: "/var/lib/app/data",
-					Target: "/data",
-				},
-			},
-		},
-		{
-			name:   "Single bind mount - read-only",
-			mounts: ContainerMounts{{Source: GenericBindMountSource{HostPath: "/var/lib/app/data"}, Target: "/data", ReadOnly: true}},
-			want: []mount.Mount{
-				{
-					Type:     mount.TypeBind,
-					Source:   "/var/lib/app/data",
-					Target:   "/data",
-					ReadOnly: true,
-				},
-			},
-		},
-		{
-			name: "Single bind mount - with options",
-			mounts: ContainerMounts{
-				{
-					Source: DockerBindMountSource{
-						HostPath: "/var/lib/app/data",
-						BindOptions: &mount.BindOptions{
-							Propagation: mount.PropagationPrivate,
-						},
-					},
-					Target: "/data",
-				},
-			},
-			want: []mount.Mount{
-				{
-					Type:   mount.TypeBind,
-					Source: "/var/lib/app/data",
-					Target: "/data",
-					BindOptions: &mount.BindOptions{
-						Propagation: mount.PropagationPrivate,
-					},
-				},
-			},
 		},
 		{
 			name:   "Single volume mount",
