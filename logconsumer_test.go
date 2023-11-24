@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -290,6 +291,10 @@ func Test_StartStop(t *testing.T) {
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Skip("Skipping as flaky on GitHub Actions, Please see https://github.com/testcontainers/testcontainers-go/issues/1924")
+	}
+
 	t.Cleanup(func() {
 		config.Reset()
 	})
