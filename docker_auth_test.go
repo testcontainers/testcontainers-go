@@ -30,14 +30,14 @@ func TestGetDockerConfig(t *testing.T) {
 	// Then, we can safely run the tests that rely on it.
 	defaultCfg, err := dockercfg.LoadDefaultConfig()
 	require.Nil(t, err)
-	require.NotNil(t, defaultCfg)
+	require.NotEmpty(t, defaultCfg)
 
 	t.Run("without DOCKER_CONFIG env var retrieves default", func(t *testing.T) {
 		t.Setenv("DOCKER_CONFIG", "")
 
 		cfg, err := getDockerConfig()
 		require.Nil(t, err)
-		require.NotNil(t, cfg)
+		require.NotEmpty(t, cfg)
 
 		assert.Equal(t, defaultCfg, cfg)
 	})
@@ -55,7 +55,7 @@ func TestGetDockerConfig(t *testing.T) {
 
 		cfg, err := getDockerConfig()
 		require.Nil(t, err)
-		require.NotNil(t, cfg)
+		require.NotEmpty(t, cfg)
 
 		assert.Equal(t, 3, len(cfg.AuthConfigs))
 
@@ -83,7 +83,7 @@ func TestGetDockerConfig(t *testing.T) {
 
 		cfg, err := getDockerConfig()
 		require.Nil(t, err)
-		require.NotNil(t, cfg)
+		require.NotEmpty(t, cfg)
 
 		assert.Equal(t, 1, len(cfg.AuthConfigs))
 
@@ -109,12 +109,54 @@ func TestGetDockerConfig(t *testing.T) {
 
 		registry, cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
 		require.Nil(t, err)
-		require.NotNil(t, cfg)
+		require.NotEmpty(t, cfg)
 
 		assert.Equal(t, exampleAuth, registry)
 		assert.Equal(t, "gopher", cfg.Username)
 		assert.Equal(t, "secret", cfg.Password)
 		assert.Equal(t, base64, cfg.Auth)
+	})
+
+	t.Run("match registry authentication by host", func(t *testing.T) {
+		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
+		imageReg := "example-auth.com"
+		imagePath := "/my/image:latest"
+
+		t.Setenv("DOCKER_AUTH_CONFIG", `{
+			"auths": {
+					"`+exampleAuth+`": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
+			},
+			"credsStore": "desktop"
+		}`)
+
+		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
+		require.Nil(t, err)
+		require.NotEmpty(t, cfg)
+
+		assert.Equal(t, imageReg, registry)
+		assert.Equal(t, "gopher", cfg.Username)
+		assert.Equal(t, "secret", cfg.Password)
+		assert.Equal(t, base64, cfg.Auth)
+	})
+
+	t.Run("fail to match registry authentication due to invalid host", func(t *testing.T) {
+		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
+		imageReg := "example-auth.com"
+		imagePath := "/my/image:latest"
+		invalidRegistryURL := "://invalid-host"
+
+		t.Setenv("DOCKER_AUTH_CONFIG", `{
+			"auths": {
+					"`+invalidRegistryURL+`": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
+			},
+			"credsStore": "desktop"
+		}`)
+
+		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
+		require.Equal(t, err, dockercfg.ErrCredentialsNotFound)
+		require.Empty(t, cfg)
+
+		assert.Equal(t, imageReg, registry)
 	})
 }
 
