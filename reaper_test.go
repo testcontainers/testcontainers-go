@@ -34,7 +34,11 @@ type mockReaperProvider struct {
 
 func newMockReaperProvider(t *testing.T) *mockReaperProvider {
 	m := &mockReaperProvider{
-		config:        TestcontainersConfig{},
+		config: TestcontainersConfig{
+			Config: config.Config{
+				RyukImage: "reaperImage",
+			},
+		},
 		t:             t,
 		initialReaper: reaperInstance,
 		//nolint:govet
@@ -86,16 +90,12 @@ func (m *mockReaperProvider) Config() TestcontainersConfig {
 func createContainerRequest(customize func(ContainerRequest) ContainerRequest) ContainerRequest {
 	req := ContainerRequest{
 		Image:        "reaperImage",
-		ReaperImage:  "reaperImage",
 		ExposedPorts: []string{"8080/tcp"},
 		Labels:       testcontainersdocker.DefaultLabels(testSessionID),
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
 			hostConfig.Binds = []string{testcontainersdocker.ExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
 		},
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
-		ReaperOptions: []ContainerOption{
-			WithImageName("reaperImage"),
-		},
 		Env: map[string]string{
 			"RYUK_CONNECTION_TIMEOUT":   "1m0s",
 			"RYUK_RECONNECTION_TIMEOUT": "10s",
@@ -324,6 +324,7 @@ func Test_NewReaper(t *testing.T) {
 			req:  createContainerRequest(nil),
 			config: TestcontainersConfig{Config: config.Config{
 				RyukConnectionTimeout:   time.Minute,
+				RyukImage:               "reaperImage",
 				RyukReconnectionTimeout: 10 * time.Second,
 			}},
 		},
@@ -336,6 +337,7 @@ func Test_NewReaper(t *testing.T) {
 			config: TestcontainersConfig{Config: config.Config{
 				RyukPrivileged:          true,
 				RyukConnectionTimeout:   time.Minute,
+				RyukImage:               "reaperImage",
 				RyukReconnectionTimeout: 10 * time.Second,
 			}},
 		},
@@ -351,6 +353,7 @@ func Test_NewReaper(t *testing.T) {
 			config: TestcontainersConfig{Config: config.Config{
 				RyukPrivileged:          true,
 				RyukConnectionTimeout:   time.Minute,
+				RyukImage:               "reaperImage",
 				RyukReconnectionTimeout: 10 * time.Minute,
 			}},
 		},
@@ -364,6 +367,7 @@ func Test_NewReaper(t *testing.T) {
 			}),
 			config: TestcontainersConfig{Config: config.Config{
 				RyukConnectionTimeout:   time.Minute,
+				RyukImage:               "reaperImage",
 				RyukReconnectionTimeout: 10 * time.Second,
 			}},
 			ctx: context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, testcontainersdocker.DockerSocketPathWithSchema),
@@ -380,7 +384,7 @@ func Test_NewReaper(t *testing.T) {
 				test.ctx = context.TODO()
 			}
 
-			_, err := reuseOrCreateReaper(test.ctx, testSessionID, provider, test.req.ReaperOptions...)
+			_, err := reuseOrCreateReaper(test.ctx, testSessionID, provider)
 			// we should have errored out see mockReaperProvider.RunContainer
 			assert.EqualError(t, err, "expected")
 
@@ -396,31 +400,6 @@ func Test_NewReaper(t *testing.T) {
 			assert.Equal(t, true, provider.hostConfig.AutoRemove, "expected networkMode doesn't match the submitted request")
 		})
 	}
-}
-
-func Test_ReaperForNetwork(t *testing.T) {
-	provider := newMockReaperProvider(t)
-	t.Cleanup(provider.RestoreReaperState)
-
-	ctx := context.Background()
-
-	networkName := "test-network-with-custom-reaper"
-
-	req := GenericNetworkRequest{
-		NetworkRequest: NetworkRequest{
-			Name:           networkName,
-			CheckDuplicate: true,
-			ReaperOptions: []ContainerOption{
-				WithImageName("reaperImage"),
-			},
-		},
-	}
-
-	_, err := reuseOrCreateReaper(ctx, testSessionID, provider, req.ReaperOptions...)
-	assert.EqualError(t, err, "expected")
-
-	assert.Equal(t, "reaperImage", provider.req.Image)
-	assert.Equal(t, "reaperImage", provider.req.ReaperImage)
 }
 
 func Test_ReaperReusedIfHealthy(t *testing.T) {
