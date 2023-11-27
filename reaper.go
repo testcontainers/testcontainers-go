@@ -217,7 +217,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 	tcConfig := provider.Config().Config
 
 	req := ContainerRequest{
-		Image:        fmt.Sprintf("%s%s", tcConfig.HubImageNamePrefix, config.ReaperDefaultImage),
+		Image:        config.ReaperDefaultImage,
 		ExposedPorts: []string{string(listeningPort)},
 		Labels:       testcontainersdocker.DefaultLabels(sessionID),
 		Privileged:   tcConfig.RyukPrivileged,

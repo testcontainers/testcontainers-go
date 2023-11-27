@@ -371,12 +371,12 @@ func Test_NewReaper(t *testing.T) {
 		{
 			name: "Reaper including custom Hub prefix",
 			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
-				req.Image = "registry.mycompany.com/mirror/" + config.ReaperDefaultImage
+				req.Image = config.ReaperDefaultImage
 				req.Privileged = true
 				return req
 			}),
 			config: TestcontainersConfig{Config: config.Config{
-				HubImageNamePrefix:      "registry.mycompany.com/mirror/",
+				HubImageNamePrefix:      "registry.mycompany.com/mirror",
 				RyukPrivileged:          true,
 				RyukConnectionTimeout:   time.Minute,
 				RyukReconnectionTimeout: 10 * time.Second,
@@ -385,7 +385,7 @@ func Test_NewReaper(t *testing.T) {
 		{
 			name: "Reaper including custom Hub prefix as env var",
 			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
-				req.Image = "registry.mycompany.com/mirror/" + config.ReaperDefaultImage
+				req.Image = config.ReaperDefaultImage
 				req.Privileged = true
 				return req
 			}),
@@ -395,7 +395,7 @@ func Test_NewReaper(t *testing.T) {
 				RyukReconnectionTimeout: 10 * time.Second,
 			}},
 			env: map[string]string{
-				"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": "registry.mycompany.com/mirror/",
+				"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": "registry.mycompany.com/mirror",
 			},
 		},
 	}

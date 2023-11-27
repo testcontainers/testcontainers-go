@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -77,6 +78,35 @@ type ImageSubstitutor interface {
 }
 
 // }
+
+// prependHubRegistry represents a way to prepend a custom Hub registry to the image name,
+// using the HubImageNamePrefix configuration value
+type prependHubRegistry struct {
+	prefix string
+}
+
+// newPrependHubRegistry creates a new prependHubRegistry
+func newPrependHubRegistry() prependHubRegistry {
+	hubPrefix := config.Read().HubImageNamePrefix
+
+	return prependHubRegistry{
+		prefix: hubPrefix,
+	}
+}
+
+// Description returns the name of the type and a short description of how it modifies the image.
+func (p prependHubRegistry) Description() string {
+	return fmt.Sprintf("HubImageSubstitutor (prepends %s)", p.prefix)
+}
+
+// Substitute prepends the Hub prefix to the image name
+func (p prependHubRegistry) Substitute(image string) (string, error) {
+	if p.prefix == "" {
+		return image, nil
+	}
+
+	return fmt.Sprintf("%s/%s", p.prefix, image), nil
+}
 
 // WithImageSubstitutors sets the image substitutors for a container
 func WithImageSubstitutors(fn ...ImageSubstitutor) CustomizeRequestOption {

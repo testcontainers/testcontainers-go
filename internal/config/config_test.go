@@ -54,7 +54,7 @@ func TestReadConfig(t *testing.T) {
 func TestReadTCConfig(t *testing.T) {
 	resetTestEnv(t)
 
-	const defaultHubPrefix string = "registry.mycompany.com/mirror/"
+	const defaultHubPrefix string = "registry.mycompany.com/mirror"
 
 	t.Run("HOME is not set", func(t *testing.T) {
 		t.Setenv("HOME", "")
@@ -395,10 +395,10 @@ func TestReadTCConfig(t *testing.T) {
 			},
 			{
 				"With Hub image name prefix set as a property",
-				`hub.image.name.prefix=` + defaultHubPrefix + `props/`,
+				`hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
 				map[string]string{},
 				Config{
-					HubImageNamePrefix:      defaultHubPrefix + "props/",
+					HubImageNamePrefix:      defaultHubPrefix + "/props/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
@@ -407,22 +407,22 @@ func TestReadTCConfig(t *testing.T) {
 				"With Hub image name prefix set as env var",
 				``,
 				map[string]string{
-					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "env/",
+					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
 				},
 				Config{
-					HubImageNamePrefix:      defaultHubPrefix + "env/",
+					HubImageNamePrefix:      defaultHubPrefix + "/env/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
 			{
 				"With Hub image name prefix set as env var and properties: Env var wins",
-				`hub.image.name.prefix=` + defaultHubPrefix + `props/`,
+				`hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
 				map[string]string{
-					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "env/",
+					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
 				},
 				Config{
-					HubImageNamePrefix:      defaultHubPrefix + "env/",
+					HubImageNamePrefix:      defaultHubPrefix + "/env/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
