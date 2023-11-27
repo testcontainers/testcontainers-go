@@ -46,7 +46,7 @@ docker.cert.path=/some/path                 # Equivalent to the DOCKER_CERT_PATH
 1. If your environment already implements automatic cleanup of containers after the execution,
 but does not allow starting privileged containers, you can turn off the Ryuk container by setting
 `TESTCONTAINERS_RYUK_DISABLED` **environment variable** to `true`.
-1. You can change the default Docker image for Ryuk by setting the `TESTCONTAINERS_RYUK_CONTAINER_IMAGE` **environment variable**, or the `ryuk.container.image` **property**.
+1. You can prepend the prefix for your own Docker registry for the Ryuk image, by setting the `TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX` **environment variable**, or the `hub.image.name.prefix` **property**.
 1. You can specify the connection timeout for Ryuk by setting the `ryuk.connection.timeout` **property**. The default value is 1 minute.
 1. You can specify the reconnection timeout for Ryuk by setting the `ryuk.reconnection.timeout` **property**. The default value is 10 seconds.
 

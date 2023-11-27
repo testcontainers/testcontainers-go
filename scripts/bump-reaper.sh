@@ -30,20 +30,16 @@ function main() {
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo "sed \"s/ReaperDefaultImage = \".*\"/ReaperDefaultImage = \"${escapedRyukVersion}\"/g\" ${REAPER_FILE} > ${REAPER_FILE}.tmp"
     echo "mv ${REAPER_FILE}.tmp ${REAPER_FILE}"
-    echo "sed \"s/ryuk.container.image,default=\".*\"/ryuk.container.image,default=\"${escapedRyukVersion}\"/g\" ${REAPER_FILE} > ${REAPER_FILE}.tmp"
-    echo "mv ${REAPER_FILE}.tmp ${REAPER_FILE}"
   else
     # replace using sed the version in the config.go file
     sed "s/ReaperDefaultImage = \".*\"/ReaperDefaultImage = \"${escapedRyukVersion}\"/g" ${REAPER_FILE} > ${REAPER_FILE}.tmp
-    mv ${REAPER_FILE}.tmp ${REAPER_FILE}
-    sed "s/ryuk.container.image,default=.*\"/ryuk.container.image,default=${escapedRyukVersion}\"/g" ${REAPER_FILE} > ${REAPER_FILE}.tmp
     mv ${REAPER_FILE}.tmp ${REAPER_FILE}
   fi
 }
 
 # This function reads the reaper.go file and extracts the current version.
 function extractCurrentVersion() {
-  cat "${REAPER_FILE}" | grep 'ryuk.container.image,default=' | cut -d '=' -f 2 | cut -d '"' -f 1
+  cat "${REAPER_FILE}" | grep 'ReaperDefaultImage = ' | cut -d '=' -f 2 | cut -d '"' -f 1
 }
 
 main "$@"

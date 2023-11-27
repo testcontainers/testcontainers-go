@@ -24,8 +24,8 @@ type Config struct {
 	Host                    string        `properties:"docker.host,default="`
 	TLSVerify               int           `properties:"docker.tls.verify,default=0"`
 	CertPath                string        `properties:"docker.cert.path,default="`
+	HubImageNamePrefix      string        `properties:"hub.image.name.prefix,default="`
 	RyukDisabled            bool          `properties:"ryuk.disabled,default=false"`
-	RyukImage               string        `properties:"ryuk.container.image,default=docker.io/testcontainers/ryuk:0.5.1"`
 	RyukPrivileged          bool          `properties:"ryuk.container.privileged,default=false"`
 	RyukReconnectionTimeout time.Duration `properties:"ryuk.reconnection.timeout,default=10s"`
 	RyukConnectionTimeout   time.Duration `properties:"ryuk.connection.timeout,default=1m"`
@@ -70,9 +70,9 @@ func read() Config {
 			config.RyukDisabled = ryukDisabledEnv == "true"
 		}
 
-		ryukContainerImageEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_IMAGE")
-		if ryukContainerImageEnv != "" {
-			config.RyukImage = ryukContainerImageEnv
+		hubImageNamePrefix := os.Getenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX")
+		if hubImageNamePrefix != "" {
+			config.HubImageNamePrefix = hubImageNamePrefix
 		}
 
 		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")

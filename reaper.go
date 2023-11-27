@@ -17,6 +17,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/go-connections/nat"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -216,7 +217,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 	tcConfig := provider.Config().Config
 
 	req := ContainerRequest{
-		Image:        tcConfig.RyukImage,
+		Image:        fmt.Sprintf("%s%s", tcConfig.HubImageNamePrefix, config.ReaperDefaultImage),
 		ExposedPorts: []string{string(listeningPort)},
 		Labels:       testcontainersdocker.DefaultLabels(sessionID),
 		Privileged:   tcConfig.RyukPrivileged,

@@ -19,8 +19,8 @@ const (
 // unset environment variables to avoid side effects
 // execute this function before each test
 func resetTestEnv(t *testing.T) {
+	t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", "")
 	t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "")
-	t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_IMAGE", "")
 	t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "")
 }
 
@@ -54,6 +54,8 @@ func TestReadConfig(t *testing.T) {
 func TestReadTCConfig(t *testing.T) {
 	resetTestEnv(t)
 
+	const defaultHubPrefix string = "registry.mycompany.com/mirror/"
+
 	t.Run("HOME is not set", func(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("USERPROFILE", "") // Windows support
@@ -69,16 +71,16 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("USERPROFILE", "") // Windows support
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_IMAGE", "test-image")
+		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := read()
 
 		expected := Config{
-			RyukDisabled:   true,
-			RyukImage:      "test-image",
-			RyukPrivileged: true,
-			Host:           "", // docker socket is empty at the properties file
+			HubImageNamePrefix: defaultHubPrefix,
+			RyukDisabled:       true,
+			RyukPrivileged:     true,
+			Host:               "", // docker socket is empty at the properties file
 		}
 
 		assert.Equal(t, expected, config)
@@ -113,14 +115,14 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("HOME", tmpDir)
 		t.Setenv("USERPROFILE", tmpDir) // Windows support
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_IMAGE", "test-image")
+		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := read()
 		expected := Config{
-			RyukDisabled:   true,
-			RyukImage:      "test-image",
-			RyukPrivileged: true,
+			HubImageNamePrefix: defaultHubPrefix,
+			RyukDisabled:       true,
+			RyukPrivileged:     true,
 		}
 
 		assert.Equal(t, expected, config)
@@ -131,7 +133,6 @@ func TestReadTCConfig(t *testing.T) {
 		defaultRyukReonnectionTimeout := 10 * time.Second
 		defaultConfig := Config{
 			RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-			RyukImage:               ReaperDefaultImage,
 			RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 		}
 
@@ -148,7 +149,6 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					Host:                    tcpDockerHost33293,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -161,7 +161,6 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					Host:                    tcpDockerHost4711,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -177,7 +176,6 @@ func TestReadTCConfig(t *testing.T) {
 					Host:                    tcpDockerHost1234,
 					TLSVerify:               1,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -187,7 +185,6 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{},
 				Config{
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -200,7 +197,6 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					Host:                    tcpDockerHost1234,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -211,7 +207,6 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					Host:                    tcpDockerHost33293,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -232,7 +227,6 @@ func TestReadTCConfig(t *testing.T) {
 					Host:                    tcpDockerHost1234,
 					CertPath:                "/tmp/certs",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -243,7 +237,6 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -254,7 +247,6 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -265,7 +257,6 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{},
 				Config{
 					RyukReconnectionTimeout: 13 * time.Second,
-					RyukImage:               ReaperDefaultImage,
 					RyukConnectionTimeout:   12 * time.Second,
 				},
 			},
@@ -278,7 +269,6 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -291,7 +281,6 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -304,7 +293,6 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -317,7 +305,6 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -346,7 +333,6 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -359,7 +345,6 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukImage:               ReaperDefaultImage,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
@@ -385,12 +370,10 @@ func TestReadTCConfig(t *testing.T) {
 				docker.tls.verify = ERROR`,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED":             "true",
-					"TESTCONTAINERS_RYUK_CONTAINER_IMAGE":      "test-image-env",
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				Config{
 					RyukDisabled:   true,
-					RyukImage:      "test-image-env",
 					RyukPrivileged: true,
 				},
 			},
@@ -411,35 +394,35 @@ func TestReadTCConfig(t *testing.T) {
 				defaultConfig,
 			},
 			{
-				"With Ryuk container image set as a property",
-				`ryuk.container.image=test-image-props`,
+				"With Hub image name prefix set as a property",
+				`hub.image.name.prefix=` + defaultHubPrefix + `props/`,
 				map[string]string{},
 				Config{
-					RyukImage:               "test-image-props",
+					HubImageNamePrefix:      defaultHubPrefix + "props/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
 			{
-				"With Ryuk container image set as env var",
+				"With Hub image name prefix set as env var",
 				``,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_CONTAINER_IMAGE": "test-image-env",
+					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "env/",
 				},
 				Config{
-					RyukImage:               "test-image-env",
+					HubImageNamePrefix:      defaultHubPrefix + "env/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},
 			},
 			{
-				"With Ryuk container image set as env var and properties: Env var wins",
-				`ryuk.container.image=test-image-props`,
+				"With Hub image name prefix set as env var and properties: Env var wins",
+				`hub.image.name.prefix=` + defaultHubPrefix + `props/`,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_CONTAINER_IMAGE": "test-image-env",
+					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "env/",
 				},
 				Config{
-					RyukImage:               "test-image-env",
+					HubImageNamePrefix:      defaultHubPrefix + "env/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
 				},

@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"context"
 	"errors"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -35,9 +36,7 @@ type mockReaperProvider struct {
 func newMockReaperProvider(t *testing.T) *mockReaperProvider {
 	m := &mockReaperProvider{
 		config: TestcontainersConfig{
-			Config: config.Config{
-				RyukImage: "reaperImage",
-			},
+			Config: config.Config{},
 		},
 		t:             t,
 		initialReaper: reaperInstance,
@@ -89,7 +88,7 @@ func (m *mockReaperProvider) Config() TestcontainersConfig {
 // createContainerRequest creates the expected request and allows for customization
 func createContainerRequest(customize func(ContainerRequest) ContainerRequest) ContainerRequest {
 	req := ContainerRequest{
-		Image:        "reaperImage",
+		Image:        config.ReaperDefaultImage,
 		ExposedPorts: []string{"8080/tcp"},
 		Labels:       testcontainersdocker.DefaultLabels(testSessionID),
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
@@ -316,6 +315,7 @@ func Test_NewReaper(t *testing.T) {
 		req    ContainerRequest
 		config TestcontainersConfig
 		ctx    context.Context
+		env    map[string]string
 	}
 
 	tests := []cases{
@@ -324,7 +324,6 @@ func Test_NewReaper(t *testing.T) {
 			req:  createContainerRequest(nil),
 			config: TestcontainersConfig{Config: config.Config{
 				RyukConnectionTimeout:   time.Minute,
-				RyukImage:               "reaperImage",
 				RyukReconnectionTimeout: 10 * time.Second,
 			}},
 		},
@@ -337,7 +336,6 @@ func Test_NewReaper(t *testing.T) {
 			config: TestcontainersConfig{Config: config.Config{
 				RyukPrivileged:          true,
 				RyukConnectionTimeout:   time.Minute,
-				RyukImage:               "reaperImage",
 				RyukReconnectionTimeout: 10 * time.Second,
 			}},
 		},
@@ -353,7 +351,6 @@ func Test_NewReaper(t *testing.T) {
 			config: TestcontainersConfig{Config: config.Config{
 				RyukPrivileged:          true,
 				RyukConnectionTimeout:   time.Minute,
-				RyukImage:               "reaperImage",
 				RyukReconnectionTimeout: 10 * time.Minute,
 			}},
 		},
@@ -367,15 +364,55 @@ func Test_NewReaper(t *testing.T) {
 			}),
 			config: TestcontainersConfig{Config: config.Config{
 				RyukConnectionTimeout:   time.Minute,
-				RyukImage:               "reaperImage",
 				RyukReconnectionTimeout: 10 * time.Second,
 			}},
 			ctx: context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, testcontainersdocker.DockerSocketPathWithSchema),
+		},
+		{
+			name: "Reaper including custom Hub prefix",
+			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
+				req.Image = "registry.mycompany.com/mirror/" + config.ReaperDefaultImage
+				req.Privileged = true
+				return req
+			}),
+			config: TestcontainersConfig{Config: config.Config{
+				HubImageNamePrefix:      "registry.mycompany.com/mirror/",
+				RyukPrivileged:          true,
+				RyukConnectionTimeout:   time.Minute,
+				RyukReconnectionTimeout: 10 * time.Second,
+			}},
+		},
+		{
+			name: "Reaper including custom Hub prefix as env var",
+			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
+				req.Image = "registry.mycompany.com/mirror/" + config.ReaperDefaultImage
+				req.Privileged = true
+				return req
+			}),
+			config: TestcontainersConfig{Config: config.Config{
+				RyukPrivileged:          true,
+				RyukConnectionTimeout:   time.Minute,
+				RyukReconnectionTimeout: 10 * time.Second,
+			}},
+			env: map[string]string{
+				"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": "registry.mycompany.com/mirror/",
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			if test.env != nil {
+				config.Reset() // reset the config using the internal method to avoid the sync.Once
+				for k, v := range test.env {
+					t.Setenv(k, v)
+				}
+			}
+
+			if prefix := os.Getenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX"); prefix != "" {
+				test.config.Config.HubImageNamePrefix = prefix
+			}
+
 			provider := newMockReaperProvider(t)
 			provider.config = test.config
 			t.Cleanup(provider.RestoreReaperState)
