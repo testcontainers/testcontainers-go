@@ -29,14 +29,14 @@ const (
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
 	// Deprecated: it has been replaced by the internal testcontainersdocker.LabelReaper
 	TestcontainerLabelIsReaper = TestcontainerLabel + ".reaper"
-
-	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.5.1"
 )
 
 var (
-	reaperInstance *Reaper // We would like to create reaper only once
-	reaperMutex    sync.Mutex
-	reaperOnce     sync.Once
+	// Deprecated: it has been replaced by an internal value
+	ReaperDefaultImage = config.ReaperDefaultImage
+	reaperInstance     *Reaper // We would like to create reaper only once
+	reaperMutex        sync.Mutex
+	reaperOnce         sync.Once
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
