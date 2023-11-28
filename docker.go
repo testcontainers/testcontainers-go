@@ -31,6 +31,7 @@ import (
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -882,20 +883,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		req.Labels = make(map[string]string)
 	}
 
-	reaperOpts := containerOptions{
-		ImageName: req.ReaperImage,
-	}
-	for _, opt := range req.ReaperOptions {
-		opt(&reaperOpts)
-	}
-
 	tcConfig := p.Config().Config
 
 	var termSignal chan bool
 	// the reaper does not need to start a reaper for itself
-	isReaperContainer := strings.EqualFold(imageName, reaperImage(reaperOpts.ImageName))
+	isReaperContainer := strings.HasSuffix(imageName, config.ReaperDefaultImage)
 	if !tcConfig.RyukDisabled && !isReaperContainer {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.SessionID(), p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.SessionID(), p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -916,14 +910,19 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		return nil, err
 	}
 
+	// always append the hub substitutor after the user-defined ones
+	req.ImageSubstitutors = append(req.ImageSubstitutors, newPrependHubRegistry())
+
 	for _, is := range req.ImageSubstitutors {
 		modifiedTag, err := is.Substitute(imageName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to substitute image %s with %s: %w", imageName, is.Description(), err)
 		}
 
-		p.Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), imageName, modifiedTag)
-		imageName = modifiedTag
+		if modifiedTag != imageName {
+			p.Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), imageName, modifiedTag)
+			imageName = modifiedTag
+		}
 	}
 
 	var platform *specs.Platform
@@ -1146,7 +1145,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID, p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1314,7 +1313,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID, p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}

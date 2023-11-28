@@ -125,7 +125,7 @@ type ContainerRequest struct {
 	User                    string                                     // for specifying uid:gid
 	SkipReaper              bool                                       // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
 	ReaperImage             string                                     // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image
-	ReaperOptions           []ContainerOption                          // options for the reaper
+	ReaperOptions           []ContainerOption                          // Deprecated: the reaper is configured at the properties level, for an entire test session
 	AutoRemove              bool                                       // Deprecated: Use HostConfigModifier instead. If set to true, the container will be removed from the host when stopped
 	AlwaysPullImage         bool                                       // Always pull image
 	ImagePlatform           string                                     // ImagePlatform describes the platform which the image runs on.
@@ -145,9 +145,11 @@ type containerOptions struct {
 	RegistryCredentials string // Deprecated: Testcontainers will detect registry credentials automatically
 }
 
+// Deprecated: it will be removed in the next major release
 // functional option for setting the reaper image
 type ContainerOption func(*containerOptions)
 
+// Deprecated: it will be removed in the next major release
 // WithImageName sets the reaper image name
 func WithImageName(imageName string) ContainerOption {
 	return func(o *containerOptions) {
@@ -155,7 +157,7 @@ func WithImageName(imageName string) ContainerOption {
 	}
 }
 
-// Deprecated: Testcontainers will detect registry credentials automatically
+// Deprecated: Testcontainers will detect registry credentials automatically, and it will be removed in the next major release
 // WithRegistryCredentials sets the reaper registry credentials
 func WithRegistryCredentials(registryCredentials string) ContainerOption {
 	return func(o *containerOptions) {

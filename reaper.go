@@ -17,6 +17,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/go-connections/nat"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -28,14 +29,14 @@ const (
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
 	// Deprecated: it has been replaced by the internal testcontainersdocker.LabelReaper
 	TestcontainerLabelIsReaper = TestcontainerLabel + ".reaper"
-
-	ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.5.1"
 )
 
 var (
-	reaperInstance *Reaper // We would like to create reaper only once
-	reaperMutex    sync.Mutex
-	reaperOnce     sync.Once
+	// Deprecated: it has been replaced by an internal value
+	ReaperDefaultImage = config.ReaperDefaultImage
+	reaperInstance     *Reaper // We would like to create reaper only once
+	reaperMutex        sync.Mutex
+	reaperOnce         sync.Once
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
@@ -48,7 +49,7 @@ type ReaperProvider interface {
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
 // Deprecated: it's not possible to create a reaper anymore.
 func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
-	return reuseOrCreateReaper(ctx, sessionID, provider, WithImageName(reaperImageName))
+	return reuseOrCreateReaper(ctx, sessionID, provider)
 }
 
 // reaperContainerNameFromSessionID returns the container name that uniquely
@@ -130,7 +131,7 @@ func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContai
 
 // reuseOrCreateReaper returns an existing Reaper instance if it exists and is running. Otherwise, a new Reaper instance
 // will be created with a sessionID to identify containers in the same test session/program.
-func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
+func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
 	reaperMutex.Lock()
 	defer reaperMutex.Unlock()
 
@@ -168,7 +169,7 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 	// synchronization primitive to avoid multiple executions of this function to create the reaper
 	var reaperErr error
 	reaperOnce.Do(func() {
-		r, err := newReaper(ctx, sessionID, provider, opts...)
+		r, err := newReaper(ctx, sessionID, provider)
 		if err != nil {
 			reaperErr = err
 			return
@@ -203,7 +204,7 @@ func reuseReaperContainer(ctx context.Context, sessionID string, provider Reaper
 
 // newReaper creates a Reaper with a sessionID to identify containers and a
 // provider to use. Do not call this directly, use reuseOrCreateReaper instead.
-func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, opts ...ContainerOption) (*Reaper, error) {
+func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
 	dockerHostMount := testcontainersdocker.ExtractDockerSocket(ctx)
 
 	reaper := &Reaper{
@@ -215,20 +216,13 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 
 	tcConfig := provider.Config().Config
 
-	reaperOpts := containerOptions{}
-
-	for _, opt := range opts {
-		opt(&reaperOpts)
-	}
-
 	req := ContainerRequest{
-		Image:         reaperImage(reaperOpts.ImageName),
-		ExposedPorts:  []string{string(listeningPort)},
-		Labels:        testcontainersdocker.DefaultLabels(sessionID),
-		Privileged:    tcConfig.RyukPrivileged,
-		WaitingFor:    wait.ForListeningPort(listeningPort),
-		Name:          reaperContainerNameFromSessionID(sessionID),
-		ReaperOptions: opts,
+		Image:        config.ReaperDefaultImage,
+		ExposedPorts: []string{string(listeningPort)},
+		Labels:       testcontainersdocker.DefaultLabels(sessionID),
+		Privileged:   tcConfig.RyukPrivileged,
+		WaitingFor:   wait.ForListeningPort(listeningPort),
+		Name:         reaperContainerNameFromSessionID(sessionID),
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.AutoRemove = true
 			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
@@ -242,9 +236,6 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider, o
 	if to := tcConfig.RyukReconnectionTimeout; to > time.Duration(0) {
 		req.Env["RYUK_RECONNECTION_TIMEOUT"] = to.String()
 	}
-
-	// keep backwards compatibility
-	req.ReaperImage = req.Image
 
 	// include reaper-specific labels to the reaper container
 	req.Labels[testcontainersdocker.LabelReaper] = "true"
@@ -375,11 +366,4 @@ func (r *Reaper) Labels() map[string]string {
 		testcontainersdocker.LabelLang:      "go",
 		testcontainersdocker.LabelSessionID: r.SessionID,
 	}
-}
-
-func reaperImage(reaperImageName string) string {
-	if reaperImageName == "" {
-		return ReaperDefaultImage
-	}
-	return reaperImageName
 }
