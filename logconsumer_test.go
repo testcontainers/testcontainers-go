@@ -81,7 +81,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 
 	c.FollowOutput(&g)
 
-	err = c.StartLogProducer(ctx)
+	err = c.StartLogProducer(ctx, time.Duration(5*time.Second))
 	require.NoError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=hello")
@@ -148,7 +148,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 
 	c.FollowOutput(&g)
 
-	err = c.StartLogProducer(ctx)
+	err = c.StartLogProducer(ctx, time.Duration(5*time.Second))
 	require.NoError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=this-is-stdout")
@@ -205,7 +205,7 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	c.FollowOutput(&first)
 	c.FollowOutput(&second)
 
-	err = c.StartLogProducer(ctx)
+	err = c.StartLogProducer(ctx, time.Duration(5*time.Second))
 	require.NoError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=mlem")
@@ -254,10 +254,10 @@ func Test_StartStop(t *testing.T) {
 
 	require.NoError(t, c.StopLogProducer(), "nothing should happen even if the producer is not started")
 
-	require.NoError(t, c.StartLogProducer(ctx))
+	require.NoError(t, c.StartLogProducer(ctx, time.Duration(5*time.Second)))
 	require.Equal(t, <-g.Accepted, "ready\n")
 
-	require.Error(t, c.StartLogProducer(ctx), "log producer is already started")
+	require.Error(t, c.StartLogProducer(ctx, time.Duration(5*time.Second)), "log producer is already started")
 
 	_, err = http.Get(ep + "/stdout?echo=mlem")
 	require.NoError(t, err)
@@ -265,7 +265,7 @@ func Test_StartStop(t *testing.T) {
 
 	require.NoError(t, c.StopLogProducer())
 
-	require.NoError(t, c.StartLogProducer(ctx))
+	require.NoError(t, c.StartLogProducer(ctx, time.Duration(5*time.Second)))
 	require.Equal(t, <-g.Accepted, "ready\n")
 	require.Equal(t, <-g.Accepted, "echo mlem\n")
 
@@ -375,7 +375,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	if err = nginx.StartLogProducer(ctx); err != nil {
+	if err = nginx.StartLogProducer(ctx, time.Duration(5*time.Second)); err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
@@ -452,4 +452,72 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, "0", strings.TrimSpace(string(b)))
+}
+
+func Test_StartLogProducerErrorsAndIsRunAgain(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:    "./testdata/",
+			Dockerfile: "echoserver.Dockerfile",
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		WaitingFor:   wait.ForLog("ready"),
+	}
+
+	gReq := GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	c, err := GenericContainer(ctx, gReq)
+	require.NoError(t, err)
+
+	ep, err := c.Endpoint(ctx, "http")
+	require.NoError(t, err)
+
+	g := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
+
+	c.FollowOutput(&g)
+
+	err = c.StartLogProducer(ctx, time.Duration(0)) // this will result in "context deadline exceeded" error
+	require.NoError(t, err)
+
+	var lastErr error
+
+	select {
+	case err := <-c.GetLogProducerErrorChannel():
+		lastErr = err
+	case <-time.After(5 * time.Second):
+		t.Fatal("never received any error")
+	}
+
+	assert.Contains(t, lastErr.Error(), "context deadline exceeded")
+	assert.Nil(t, c.StopLogProducer(), "log producer wasn't stopped after it errored")
+
+	err = c.StartLogProducer(ctx, time.Duration(5*time.Second))
+	require.NoError(t, err)
+
+	_, err = http.Get(ep + "/stdout?echo=hello")
+	require.NoError(t, err)
+
+	_, err = http.Get(ep + "/stdout?echo=there")
+	require.NoError(t, err)
+
+	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
+	require.NoError(t, err)
+
+	select {
+	case <-g.Done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("never received final log message")
+	}
+	assert.Nil(t, c.StopLogProducer())
+	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs)
+
+	terminateContainerOnEnd(t, ctx, c)
 }
