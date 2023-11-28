@@ -31,7 +31,7 @@ Consider this if:
 In this case, image name references in code are **unchanged**.
 i.e. you would leave as-is:
 
-<!--codeinclude--> 
+<!--codeinclude-->
 [Unchanged direct Docker Hub image name](../../container_test.go) inside_block:directDockerHubReference
 <!--/codeinclude-->
 
@@ -39,7 +39,7 @@ You can then configure _Testcontainers for Go_ to apply a given prefix (e.g. `re
 
 * Setting the `TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX=registry.mycompany.com/mirror` environment variable.
 * Via config file, setting `hub.image.name.prefix` in the `~/.testcontainers.properties` file in your user home directory.
-    
+
 _Testcontainers for Go_ will automatically apply the prefix to every image that it pulls from Docker Hub - please verify that all [the required images](#images-used-by-testcontainers) exist in your registry.
 
 _Testcontainers for Go_ will not apply the prefix to:
@@ -59,7 +59,7 @@ Consider this if:
 
 In this case, image name references in code are **unchanged**. i.e. you would leave as-is:
 
-<!--codeinclude--> 
+<!--codeinclude-->
 [Unchanged direct Docker Hub image name](../../container_test.go) inside_block:directDockerHubReference
 <!--/codeinclude-->
 
