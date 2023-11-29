@@ -309,7 +309,6 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	buildOptions := types.ImageBuildOptions{
 		BuildArgs:   c.GetBuildArgs(),
 		Dockerfile:  c.GetDockerfile(),
-		Tags:        []string{fmt.Sprintf("%s:%s", c.GetRepo(), c.GetTag())},
 		Remove:      true,
 		ForceRemove: true,
 	}
@@ -333,6 +332,15 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 
 	for registry, authConfig := range authsFromDockerfile {
 		buildOptions.AuthConfigs[registry] = authConfig
+	}
+
+	// make sure the first tag is the one defined in the ContainerRequest
+	tag := fmt.Sprintf("%s:%s", c.GetRepo(), c.GetTag())
+	if len(buildOptions.Tags) > 0 {
+		// prepend the tag
+		buildOptions.Tags = append([]string{tag}, buildOptions.Tags...)
+	} else {
+		buildOptions.Tags = []string{tag}
 	}
 
 	return buildOptions, nil
