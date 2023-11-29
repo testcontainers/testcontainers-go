@@ -2,11 +2,15 @@ package testcontainers
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildImageFromDockerfile(t *testing.T) {
@@ -115,4 +119,44 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func TestBuildImageFromDockerfile_Target(t *testing.T) {
+	// there are thre targets: target0, target1 and target2.
+	for i := 0; i < 3; i++ {
+		ctx := context.Background()
+		if i == 3 {
+			timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel()
+			ctx = timeoutCtx
+		}
+
+		c, err := GenericContainer(ctx, GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				FromDockerfile: FromDockerfile{
+					Context:       "testdata",
+					Dockerfile:    "target.Dockerfile",
+					PrintBuildLog: true,
+					KeepImage:     false,
+					BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+						buildOptions.Target = fmt.Sprintf("target%d", i)
+					},
+				},
+			},
+			Started: true,
+		})
+		require.NoError(t, err)
+
+		r, err := c.Logs(ctx)
+		require.NoError(t, err)
+
+		logs, err := io.ReadAll(r)
+		require.NoError(t, err)
+
+		assert.Equal(t, fmt.Sprintf("target%d\n\n", i), string(logs))
+
+		t.Cleanup(func() {
+			require.NoError(t, c.Terminate(ctx))
+		})
+	}
 }

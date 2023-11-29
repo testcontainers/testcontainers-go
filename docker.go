@@ -782,26 +782,11 @@ var _ ContainerProvider = (*DockerProvider)(nil)
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
-	repoTag := fmt.Sprintf("%s:%s", img.GetRepo(), img.GetTag())
-
-	buildContext, err := img.GetContext()
-	if err != nil {
-		return "", err
-	}
-
-	buildOptions := types.ImageBuildOptions{
-		BuildArgs:   img.GetBuildArgs(),
-		Dockerfile:  img.GetDockerfile(),
-		AuthConfigs: img.GetAuthConfigs(),
-		Context:     buildContext,
-		Tags:        []string{repoTag},
-		Remove:      true,
-		ForceRemove: true,
-	}
+	buildOptions, err := img.BuildOptions()
 
 	var resp types.ImageBuildResponse
 	err = backoff.Retry(func() error {
-		resp, err = p.client.ImageBuild(ctx, buildContext, buildOptions)
+		resp, err = p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 		if err != nil {
 			var enf errdefs.ErrNotFound
 			if errors.As(err, &enf) {
@@ -836,7 +821,8 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 
 	_ = resp.Body.Close()
 
-	return repoTag, nil
+	// the first tag is the one we want
+	return buildOptions.Tags[0], nil
 }
 
 // CreateContainer fulfills a request for a container without starting it
