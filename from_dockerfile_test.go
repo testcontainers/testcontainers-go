@@ -2,11 +2,15 @@ package testcontainers
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildImageFromDockerfile(t *testing.T) {
@@ -115,4 +119,100 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func TestBuildImageFromDockerfile_Target(t *testing.T) {
+	// there are thre targets: target0, target1 and target2.
+	for i := 0; i < 3; i++ {
+		ctx := context.Background()
+		c, err := GenericContainer(ctx, GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				FromDockerfile: FromDockerfile{
+					Context:       "testdata",
+					Dockerfile:    "target.Dockerfile",
+					PrintBuildLog: true,
+					KeepImage:     false,
+					BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+						buildOptions.Target = fmt.Sprintf("target%d", i)
+					},
+				},
+			},
+			Started: true,
+		})
+		require.NoError(t, err)
+
+		r, err := c.Logs(ctx)
+		require.NoError(t, err)
+
+		logs, err := io.ReadAll(r)
+		require.NoError(t, err)
+
+		assert.Equal(t, fmt.Sprintf("target%d\n\n", i), string(logs))
+
+		t.Cleanup(func() {
+			require.NoError(t, c.Terminate(ctx))
+		})
+	}
+}
+
+func ExampleGenericContainer_buildFromDockerfile() {
+	ctx := context.Background()
+
+	// buildFromDockerfileWithModifier {
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			FromDockerfile: FromDockerfile{
+				Context:       "testdata",
+				Dockerfile:    "target.Dockerfile",
+				PrintBuildLog: true,
+				KeepImage:     false,
+				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+					buildOptions.Target = "target2"
+				},
+			},
+		},
+		Started: true,
+	})
+	// }
+	if err != nil {
+		panic(err)
+	}
+
+	r, err := c.Logs(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	logs, err := io.ReadAll(r)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(logs))
+
+	// Output: target2
+}
+
+func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
+	// the context cancellation will happen with enough time for the build to fail.
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			FromDockerfile: FromDockerfile{
+				Context:       "testdata",
+				Dockerfile:    "target.Dockerfile",
+				PrintBuildLog: true,
+				KeepImage:     false,
+				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+					buildOptions.Target = "target-foo"
+				},
+			},
+		},
+		Started: true,
+	})
+	require.Error(t, err)
+
+	assert.Contains(t, err.Error(), "failed to reach build target target-foo in Dockerfile")
 }
