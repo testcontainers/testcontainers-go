@@ -37,7 +37,7 @@ When starting the MongoDB container, you can pass options in a variadic way to c
 
 #### Image
 
-If you need to set a different MongoDB Docker image, you can use `testcontainers.WithUsername` with a valid Docker image
+If you need to set a different MongoDB Docker image, you can use `testcontainers.WithImage` with a valid Docker image
 for MongoDB. E.g. `testcontainers.WithImage("mongo:6")`.
 
 #### WithUsername
