@@ -784,10 +784,12 @@ var _ ContainerProvider = (*DockerProvider)(nil)
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
 	buildOptions, err := img.BuildOptions()
 
+	var buildError error
 	var resp types.ImageBuildResponse
 	err = backoff.Retry(func() error {
 		resp, err = p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 		if err != nil {
+			buildError = errors.Join(buildError, err)
 			var enf errdefs.ErrNotFound
 			if errors.As(err, &enf) {
 				return backoff.Permanent(err)
@@ -800,7 +802,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		return nil
 	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 	if err != nil {
-		return "", err
+		return "", errors.Join(buildError, err)
 	}
 
 	if img.ShouldPrintBuildLog() {
