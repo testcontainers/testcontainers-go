@@ -307,21 +307,23 @@ func (c *ContainerRequest) ShouldPrintBuildLog() bool {
 // if set.
 func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	buildOptions := types.ImageBuildOptions{
-		BuildArgs:   c.GetBuildArgs(),
-		Dockerfile:  c.GetDockerfile(),
 		Remove:      true,
 		ForceRemove: true,
 	}
+
+	if c.FromDockerfile.BuildOptionsModifier != nil {
+		c.FromDockerfile.BuildOptionsModifier(&buildOptions)
+	}
+
+	// apply mandatory values after the modifier
+	buildOptions.BuildArgs = c.GetBuildArgs()
+	buildOptions.Dockerfile = c.GetDockerfile()
 
 	buildContext, err := c.GetContext()
 	if err != nil {
 		return buildOptions, err
 	}
 	buildOptions.Context = buildContext
-
-	if c.FromDockerfile.BuildOptionsModifier != nil {
-		c.FromDockerfile.BuildOptionsModifier(&buildOptions)
-	}
 
 	// Make sure the auth configs from the Dockerfile are set right after the user-defined build options.
 	authsFromDockerfile := getAuthConfigsFromDockerfile(c)
