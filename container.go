@@ -270,6 +270,7 @@ func (c *ContainerRequest) GetAuthConfigs() map[string]registry.AuthConfig {
 	return getAuthConfigsFromDockerfile(c)
 }
 
+// getAuthConfigsFromDockerfile returns the auth configs to be able to pull from an authenticated docker registry
 func getAuthConfigsFromDockerfile(c *ContainerRequest) map[string]registry.AuthConfig {
 	images, err := testcontainersdocker.ExtractImagesFromDockerfile(filepath.Join(c.Context, c.GetDockerfile()), c.GetBuildArgs())
 	if err != nil {
@@ -308,7 +309,6 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	buildOptions := types.ImageBuildOptions{
 		BuildArgs:   c.GetBuildArgs(),
 		Dockerfile:  c.GetDockerfile(),
-		AuthConfigs: getAuthConfigsFromDockerfile(c),
 		Tags:        []string{fmt.Sprintf("%s:%s", c.GetRepo(), c.GetTag())},
 		Remove:      true,
 		ForceRemove: true,
@@ -322,6 +322,17 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 
 	if c.FromDockerfile.BuildOptionsModifier != nil {
 		c.FromDockerfile.BuildOptionsModifier(&buildOptions)
+	}
+
+	// Make sure the auth configs from the Dockerfile are set right after the user-defined build options.
+	authsFromDockerfile := getAuthConfigsFromDockerfile(c)
+
+	if buildOptions.AuthConfigs == nil {
+		buildOptions.AuthConfigs = map[string]registry.AuthConfig{}
+	}
+
+	for registry, authConfig := range authsFromDockerfile {
+		buildOptions.AuthConfigs[registry] = authConfig
 	}
 
 	return buildOptions, nil
