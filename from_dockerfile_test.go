@@ -125,12 +125,6 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 	// there are thre targets: target0, target1 and target2.
 	for i := 0; i < 3; i++ {
 		ctx := context.Background()
-		if i == 3 {
-			timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-			defer cancel()
-			ctx = timeoutCtx
-		}
-
 		c, err := GenericContainer(ctx, GenericContainerRequest{
 			ContainerRequest: ContainerRequest{
 				FromDockerfile: FromDockerfile{
@@ -159,6 +153,45 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 			require.NoError(t, c.Terminate(ctx))
 		})
 	}
+}
+
+func ExampleGenericContainer_buildFromDockerfile() {
+	ctx := context.Background()
+
+	// buildFromDockerfileWithModifier {
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			FromDockerfile: FromDockerfile{
+				Context:       "testdata",
+				Dockerfile:    "target.Dockerfile",
+				PrintBuildLog: true,
+				KeepImage:     false,
+				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+					buildOptions.Target = "target2"
+				},
+			},
+		},
+		Started: true,
+	})
+	// }
+	if err != nil {
+		panic(err)
+	}
+
+	r, err := c.Logs(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	logs, err := io.ReadAll(r)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(logs))
+
+	// Output: target2
+
 }
 
 func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
