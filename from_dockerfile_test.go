@@ -191,7 +191,6 @@ func ExampleGenericContainer_buildFromDockerfile() {
 	fmt.Println(string(logs))
 
 	// Output: target2
-
 }
 
 func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
