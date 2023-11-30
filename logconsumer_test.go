@@ -454,7 +454,7 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	assert.Equal(t, "0", strings.TrimSpace(string(b)))
 }
 
-func Test_StartLogProducerErrorsAndIsRunAgain(t *testing.T) {
+func Test_StartLogProducerErrorsWithTooLowTimeout(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
@@ -473,7 +473,36 @@ func Test_StartLogProducerErrorsAndIsRunAgain(t *testing.T) {
 	c, err := GenericContainer(ctx, gReq)
 	require.NoError(t, err)
 
-	ep, err := c.Endpoint(ctx, "http")
+	g := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
+
+	c.FollowOutput(&g)
+
+	err = c.StartLogProducer(ctx, time.Duration(4*time.Second))
+	require.Error(t, err)
+	require.Equal(t, "timeout must be between 5 and 60 seconds", err.Error())
+}
+
+func Test_StartLogProducerErrorsWithTooHighTimeout(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:    "./testdata/",
+			Dockerfile: "echoserver.Dockerfile",
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		WaitingFor:   wait.ForLog("ready"),
+	}
+
+	gReq := GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	c, err := GenericContainer(ctx, gReq)
 	require.NoError(t, err)
 
 	g := TestLogConsumer{
@@ -484,40 +513,7 @@ func Test_StartLogProducerErrorsAndIsRunAgain(t *testing.T) {
 
 	c.FollowOutput(&g)
 
-	err = c.StartLogProducer(ctx, time.Duration(0)) // this will result in "context deadline exceeded" error
-	require.NoError(t, err)
-
-	var lastErr error
-
-	select {
-	case err := <-c.GetLogProducerErrorChannel():
-		lastErr = err
-	case <-time.After(5 * time.Second):
-		t.Fatal("never received any error")
-	}
-
-	assert.Contains(t, lastErr.Error(), "context deadline exceeded")
-	assert.Nil(t, c.StopLogProducer(), "log producer wasn't stopped after it errored")
-
-	err = c.StartLogProducer(ctx, time.Duration(5*time.Second))
-	require.NoError(t, err)
-
-	_, err = http.Get(ep + "/stdout?echo=hello")
-	require.NoError(t, err)
-
-	_, err = http.Get(ep + "/stdout?echo=there")
-	require.NoError(t, err)
-
-	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
-	require.NoError(t, err)
-
-	select {
-	case <-g.Done:
-	case <-time.After(5 * time.Second):
-		t.Fatal("never received final log message")
-	}
-	assert.Nil(t, c.StopLogProducer())
-	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs)
-
-	terminateContainerOnEnd(t, ctx, c)
+	err = c.StartLogProducer(ctx, time.Duration(61*time.Second))
+	require.Error(t, err)
+	require.Equal(t, "timeout must be between 5 and 60 seconds", err.Error())
 }
