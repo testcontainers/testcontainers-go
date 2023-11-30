@@ -616,13 +616,21 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 
 // StartLogProducer will start a concurrent process that will continuously read logs
 // from the container and will send them to each added LogConsumer
+// timeout accepts values between 5 and 60s and will be used to set the context timeout
+// which means that each log-reading loop will last at least the specified timeout
+// and that it cannot be cancelled earlier
 func (c *DockerContainer) StartLogProducer(ctx context.Context, timeout time.Duration) error {
 	{
 		c.producerMutex.Lock()
 		defer c.producerMutex.Unlock()
+
 		if c.stopProducer != nil {
 			return errors.New("log producer already started")
 		}
+	}
+
+	if timeout < time.Duration(5*time.Second) || timeout > time.Duration(60*time.Second) {
+		return errors.New("timeout must be between 5 and 60 seconds")
 	}
 
 	c.stopProducer = make(chan bool)
