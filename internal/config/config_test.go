@@ -19,6 +19,7 @@ const (
 // unset environment variables to avoid side effects
 // execute this function before each test
 func resetTestEnv(t *testing.T) {
+	t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", "")
 	t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "")
 	t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "")
 }
@@ -53,6 +54,8 @@ func TestReadConfig(t *testing.T) {
 func TestReadTCConfig(t *testing.T) {
 	resetTestEnv(t)
 
+	const defaultHubPrefix string = "registry.mycompany.com/mirror"
+
 	t.Run("HOME is not set", func(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("USERPROFILE", "") // Windows support
@@ -68,14 +71,16 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("USERPROFILE", "") // Windows support
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
+		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := read()
 
 		expected := Config{
-			RyukDisabled:   true,
-			RyukPrivileged: true,
-			Host:           "", // docker socket is empty at the properties file
+			HubImageNamePrefix: defaultHubPrefix,
+			RyukDisabled:       true,
+			RyukPrivileged:     true,
+			Host:               "", // docker socket is empty at the properties file
 		}
 
 		assert.Equal(t, expected, config)
@@ -110,12 +115,14 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("HOME", tmpDir)
 		t.Setenv("USERPROFILE", tmpDir) // Windows support
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
+		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 
 		config := read()
 		expected := Config{
-			RyukDisabled:   true,
-			RyukPrivileged: true,
+			HubImageNamePrefix: defaultHubPrefix,
+			RyukDisabled:       true,
+			RyukPrivileged:     true,
 		}
 
 		assert.Equal(t, expected, config)
@@ -385,6 +392,40 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "foo",
 				},
 				defaultConfig,
+			},
+			{
+				"With Hub image name prefix set as a property",
+				`hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
+				map[string]string{},
+				Config{
+					HubImageNamePrefix:      defaultHubPrefix + "/props/",
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
+				},
+			},
+			{
+				"With Hub image name prefix set as env var",
+				``,
+				map[string]string{
+					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
+				},
+				Config{
+					HubImageNamePrefix:      defaultHubPrefix + "/env/",
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
+				},
+			},
+			{
+				"With Hub image name prefix set as env var and properties: Env var wins",
+				`hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
+				map[string]string{
+					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
+				},
+				Config{
+					HubImageNamePrefix:      defaultHubPrefix + "/env/",
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
+				},
 			},
 		}
 		for _, tt := range tests {

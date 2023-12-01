@@ -40,6 +40,24 @@ When starting the MongoDB container, you can pass options in a variadic way to c
 If you need to set a different MongoDB Docker image, you can use `testcontainers.WithImage` with a valid Docker image
 for MongoDB. E.g. `testcontainers.WithImage("mongo:6")`.
 
+#### WithUsername
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option sets the initial username to be created when the container starts.
+It is used in conjunction with `WithPassword` to set a username and its password, creating the specified user with superuser power.
+
+E.g. `testcontainers.WithUsername("mymongouser")`.
+
+#### WithPassword
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option sets the initial password to be created when the container starts.
+It is used in conjunction with `WithUsername` to set a username and its password, setting the password for the superuser power.
+
+E.g. `testcontainers.WithPassword("mymongopwd")`.
+
 {% include "../features/common_functional_options.md" %}
 
 ### Container Methods

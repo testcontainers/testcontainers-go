@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"context"
 	"errors"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -34,7 +35,9 @@ type mockReaperProvider struct {
 
 func newMockReaperProvider(t *testing.T) *mockReaperProvider {
 	m := &mockReaperProvider{
-		config:        TestcontainersConfig{},
+		config: TestcontainersConfig{
+			Config: config.Config{},
+		},
 		t:             t,
 		initialReaper: reaperInstance,
 		//nolint:govet
@@ -85,17 +88,13 @@ func (m *mockReaperProvider) Config() TestcontainersConfig {
 // createContainerRequest creates the expected request and allows for customization
 func createContainerRequest(customize func(ContainerRequest) ContainerRequest) ContainerRequest {
 	req := ContainerRequest{
-		Image:        "reaperImage",
-		ReaperImage:  "reaperImage",
+		Image:        config.ReaperDefaultImage,
 		ExposedPorts: []string{"8080/tcp"},
 		Labels:       testcontainersdocker.DefaultLabels(testSessionID),
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
 			hostConfig.Binds = []string{testcontainersdocker.ExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
 		},
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
-		ReaperOptions: []ContainerOption{
-			WithImageName("reaperImage"),
-		},
 		Env: map[string]string{
 			"RYUK_CONNECTION_TIMEOUT":   "1m0s",
 			"RYUK_RECONNECTION_TIMEOUT": "10s",
@@ -316,6 +315,7 @@ func Test_NewReaper(t *testing.T) {
 		req    ContainerRequest
 		config TestcontainersConfig
 		ctx    context.Context
+		env    map[string]string
 	}
 
 	tests := []cases{
@@ -368,10 +368,51 @@ func Test_NewReaper(t *testing.T) {
 			}},
 			ctx: context.WithValue(context.TODO(), testcontainersdocker.DockerHostContextKey, testcontainersdocker.DockerSocketPathWithSchema),
 		},
+		{
+			name: "Reaper including custom Hub prefix",
+			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
+				req.Image = config.ReaperDefaultImage
+				req.Privileged = true
+				return req
+			}),
+			config: TestcontainersConfig{Config: config.Config{
+				HubImageNamePrefix:      "registry.mycompany.com/mirror",
+				RyukPrivileged:          true,
+				RyukConnectionTimeout:   time.Minute,
+				RyukReconnectionTimeout: 10 * time.Second,
+			}},
+		},
+		{
+			name: "Reaper including custom Hub prefix as env var",
+			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
+				req.Image = config.ReaperDefaultImage
+				req.Privileged = true
+				return req
+			}),
+			config: TestcontainersConfig{Config: config.Config{
+				RyukPrivileged:          true,
+				RyukConnectionTimeout:   time.Minute,
+				RyukReconnectionTimeout: 10 * time.Second,
+			}},
+			env: map[string]string{
+				"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": "registry.mycompany.com/mirror",
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			if test.env != nil {
+				config.Reset() // reset the config using the internal method to avoid the sync.Once
+				for k, v := range test.env {
+					t.Setenv(k, v)
+				}
+			}
+
+			if prefix := os.Getenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX"); prefix != "" {
+				test.config.Config.HubImageNamePrefix = prefix
+			}
+
 			provider := newMockReaperProvider(t)
 			provider.config = test.config
 			t.Cleanup(provider.RestoreReaperState)
@@ -380,7 +421,7 @@ func Test_NewReaper(t *testing.T) {
 				test.ctx = context.TODO()
 			}
 
-			_, err := reuseOrCreateReaper(test.ctx, testSessionID, provider, test.req.ReaperOptions...)
+			_, err := reuseOrCreateReaper(test.ctx, testSessionID, provider)
 			// we should have errored out see mockReaperProvider.RunContainer
 			assert.EqualError(t, err, "expected")
 
@@ -396,31 +437,6 @@ func Test_NewReaper(t *testing.T) {
 			assert.Equal(t, true, provider.hostConfig.AutoRemove, "expected networkMode doesn't match the submitted request")
 		})
 	}
-}
-
-func Test_ReaperForNetwork(t *testing.T) {
-	provider := newMockReaperProvider(t)
-	t.Cleanup(provider.RestoreReaperState)
-
-	ctx := context.Background()
-
-	networkName := "test-network-with-custom-reaper"
-
-	req := GenericNetworkRequest{
-		NetworkRequest: NetworkRequest{
-			Name:           networkName,
-			CheckDuplicate: true,
-			ReaperOptions: []ContainerOption{
-				WithImageName("reaperImage"),
-			},
-		},
-	}
-
-	_, err := reuseOrCreateReaper(ctx, testSessionID, provider, req.ReaperOptions...)
-	assert.EqualError(t, err, "expected")
-
-	assert.Equal(t, "reaperImage", provider.req.Image)
-	assert.Equal(t, "reaperImage", provider.req.ReaperImage)
 }
 
 func Test_ReaperReusedIfHealthy(t *testing.T) {

@@ -40,10 +40,10 @@ nav:
     - Quickstart: quickstart.md
     - Features:
         - features/creating_container.md
+        - features/configuration.md
         - features/image_name_substitution.md
         - features/files_and_mounts.md
         - features/creating_networks.md
-        - features/configuration.md
         - features/networking.md
         - features/garbage_collector.md
         - features/build_from_dockerfile.md

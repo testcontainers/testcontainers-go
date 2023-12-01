@@ -306,11 +306,13 @@ func Test_BuildImageWithContexts(t *testing.T) {
 
 func Test_GetLogsFromFailedContainer(t *testing.T) {
 	ctx := context.Background()
+	// directDockerHubReference {
 	req := ContainerRequest{
 		Image:      "docker.io/alpine",
 		Cmd:        []string{"echo", "-n", "I was not expecting this"},
 		WaitingFor: wait.ForLog("I was expecting this").WithStartupTimeout(5 * time.Second),
 	}
+	// }
 
 	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
@@ -340,6 +342,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 	}
 }
 
+// dockerImageSubstitutor {
 type dockerImageSubstitutor struct{}
 
 func (s dockerImageSubstitutor) Description() string {
@@ -349,6 +352,8 @@ func (s dockerImageSubstitutor) Description() string {
 func (s dockerImageSubstitutor) Substitute(image string) (string, error) {
 	return "docker.io/" + image, nil
 }
+
+// }
 
 // noopImageSubstitutor {
 type NoopImageSubstitutor struct{}
@@ -505,4 +510,36 @@ func TestParseDockerIgnore(t *testing.T) {
 		assert.Equal(t, testCase.expectedErr, err)
 		assert.Equal(t, testCase.expectedExcluded, excluded)
 	}
+}
+
+func ExampleGenericContainer_withSubstitutors() {
+	ctx := context.Background()
+
+	// applyImageSubstitutors {
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:             "alpine:latest",
+			ImageSubstitutors: []ImageSubstitutor{dockerImageSubstitutor{}},
+		},
+		Started: true,
+	})
+	// }
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		err := container.Terminate(ctx)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	// enforce the concrete type, as GenericContainer returns an interface,
+	// which will be changed in future implementations of the library
+	dockerContainer := container.(*DockerContainer)
+
+	fmt.Println(dockerContainer.Image)
+
+	// Output: docker.io/alpine:latest
 }

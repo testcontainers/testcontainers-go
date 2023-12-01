@@ -40,11 +40,19 @@ docker.tls.verify=1                         # Equivalent to the DOCKER_TLS_VERIF
 docker.cert.path=/some/path                 # Equivalent to the DOCKER_CERT_PATH environment variable
 ```
 
-### Disabling Ryuk
-Ryuk must be started as a privileged container.  
-If your environment already implements automatic cleanup of containers after the execution,
+## Customizing images
+
+Please read more about customizing images in the [Image name substitution](image_name_substitution.md) section.
+
+## Customizing Ryuk, the resource reaper
+
+1. Ryuk must be started as a privileged container. For that, you can set the `TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED` **environment variable**, or the  `ryuk.container.privileged` **property** to `true`.
+1. If your environment already implements automatic cleanup of containers after the execution,
 but does not allow starting privileged containers, you can turn off the Ryuk container by setting
 `TESTCONTAINERS_RYUK_DISABLED` **environment variable** to `true`.
+1. You can specify the connection timeout for Ryuk by setting the `ryuk.connection.timeout` **property**. The default value is 1 minute.
+1. You can specify the reconnection timeout for Ryuk by setting the `ryuk.reconnection.timeout` **property**. The default value is 10 seconds.
+
 
 !!!info
     For more information about Ryuk, see [Garbage Collector](garbage_collector.md).
