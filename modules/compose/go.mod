@@ -7,7 +7,7 @@ toolchain go1.21.3
 replace github.com/testcontainers/testcontainers-go => ../..
 
 require (
-	github.com/compose-spec/compose-go v1.20.0
+	github.com/compose-spec/compose-go v1.20.2
 	github.com/docker/cli v24.0.7+incompatible
 	github.com/docker/compose/v2 v2.23.0
 	github.com/docker/docker v24.0.7+incompatible
