@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/datastore v1.15.0
 	cloud.google.com/go/firestore v1.14.0
 	cloud.google.com/go/pubsub v1.33.0
-	cloud.google.com/go/spanner v1.51.0
+	cloud.google.com/go/spanner v1.53.0
 	github.com/docker/go-connections v0.4.0
 	github.com/testcontainers/testcontainers-go v0.26.0
 	google.golang.org/api v0.152.0
