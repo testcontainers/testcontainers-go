@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modulegen
 go 1.20
 
 require (
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
 	golang.org/x/mod v0.13.0
