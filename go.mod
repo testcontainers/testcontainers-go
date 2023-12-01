@@ -18,7 +18,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.23.10
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
-	golang.org/x/sys v0.13.0
+	golang.org/x/sys v0.15.0
 )
 
 require (
