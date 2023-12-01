@@ -6,8 +6,8 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
-	golang.org/x/mod v0.13.0
-	golang.org/x/text v0.13.0
+	golang.org/x/mod v0.14.0
+	golang.org/x/text v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
