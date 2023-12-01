@@ -1112,6 +1112,16 @@ func ExampleDockerProvider_CreateContainer() {
 			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
+
+	state, err := nginxC.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func ExampleContainer_Host() {
@@ -1134,6 +1144,16 @@ func ExampleContainer_Host() {
 	ip, _ := nginxC.Host(ctx)
 	// }
 	println(ip)
+
+	state, err := nginxC.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func ExampleContainer_Start() {
@@ -1152,6 +1172,16 @@ func ExampleContainer_Start() {
 		}
 	}()
 	_ = nginxC.Start(ctx)
+
+	state, err := nginxC.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func ExampleContainer_Stop() {
@@ -1169,8 +1199,18 @@ func ExampleContainer_Stop() {
 			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
+	fmt.Println("Container has been started")
 	timeout := 10 * time.Second
-	_ = nginxC.Stop(ctx, &timeout)
+	err := nginxC.Stop(ctx, &timeout)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Container has been stopped")
+
+	// Output:
+	// Container has been started
+	// Container has been stopped
 }
 
 func ExampleContainer_MappedPort() {
@@ -1194,6 +1234,16 @@ func ExampleContainer_MappedPort() {
 	port, _ := nginxC.MappedPort(ctx, "80")
 	_, _ = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
 	// }
+
+	state, err := nginxC.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {

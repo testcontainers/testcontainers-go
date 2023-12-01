@@ -65,6 +65,7 @@ type Container interface {
 
 // ImageBuildInfo defines what is needed to build an image
 type ImageBuildInfo interface {
+	BuildOptions() (types.ImageBuildOptions, error) // converts the ImageBuildInfo to a types.ImageBuildOptions
 	GetContext() (io.Reader, error)                 // the path to the build context
 	GetDockerfile() string                          // the relative path to the Dockerfile, including the fileitself
 	GetRepo() string                                // get repo label for image
@@ -72,7 +73,7 @@ type ImageBuildInfo interface {
 	ShouldPrintBuildLog() bool                      // allow build log to be printed to stdout
 	ShouldBuildImage() bool                         // return true if the image needs to be built
 	GetBuildArgs() map[string]*string               // return the environment args used to build the from Dockerfile
-	GetAuthConfigs() map[string]registry.AuthConfig // return the auth configs to be able to pull from an authenticated docker registry
+	GetAuthConfigs() map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Return the auth configs to be able to pull from an authenticated docker registry
 }
 
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
@@ -90,6 +91,10 @@ type FromDockerfile struct {
 	// container image. Useful for images that are built from a Dockerfile and take a
 	// long time to build. Keeping the image also Docker to reuse it.
 	KeepImage bool
+	// BuildOptionsModifier Modifier for the build options before image build. Use it for
+	// advanced configurations while building the image. Please consider that the modifier
+	// is called after the default build options are set.
+	BuildOptionsModifier func(*types.ImageBuildOptions)
 }
 
 type ContainerFile struct {
@@ -125,7 +130,7 @@ type ContainerRequest struct {
 	User                    string                                     // for specifying uid:gid
 	SkipReaper              bool                                       // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
 	ReaperImage             string                                     // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image
-	ReaperOptions           []ContainerOption                          // options for the reaper
+	ReaperOptions           []ContainerOption                          // Deprecated: the reaper is configured at the properties level, for an entire test session
 	AutoRemove              bool                                       // Deprecated: Use HostConfigModifier instead. If set to true, the container will be removed from the host when stopped
 	AlwaysPullImage         bool                                       // Always pull image
 	ImagePlatform           string                                     // ImagePlatform describes the platform which the image runs on.
@@ -145,9 +150,11 @@ type containerOptions struct {
 	RegistryCredentials string // Deprecated: Testcontainers will detect registry credentials automatically
 }
 
+// Deprecated: it will be removed in the next major release
 // functional option for setting the reaper image
 type ContainerOption func(*containerOptions)
 
+// Deprecated: it will be removed in the next major release
 // WithImageName sets the reaper image name
 func WithImageName(imageName string) ContainerOption {
 	return func(o *containerOptions) {
@@ -155,7 +162,7 @@ func WithImageName(imageName string) ContainerOption {
 	}
 }
 
-// Deprecated: Testcontainers will detect registry credentials automatically
+// Deprecated: Testcontainers will detect registry credentials automatically, and it will be removed in the next major release
 // WithRegistryCredentials sets the reaper registry credentials
 func WithRegistryCredentials(registryCredentials string) ContainerOption {
 	return func(o *containerOptions) {
@@ -257,8 +264,14 @@ func (c *ContainerRequest) GetTag() string {
 	return strings.ToLower(t)
 }
 
+// Deprecated: Testcontainers will detect registry credentials automatically, and it will be removed in the next major release
 // GetAuthConfigs returns the auth configs to be able to pull from an authenticated docker registry
 func (c *ContainerRequest) GetAuthConfigs() map[string]registry.AuthConfig {
+	return getAuthConfigsFromDockerfile(c)
+}
+
+// getAuthConfigsFromDockerfile returns the auth configs to be able to pull from an authenticated docker registry
+func getAuthConfigsFromDockerfile(c *ContainerRequest) map[string]registry.AuthConfig {
 	images, err := testcontainersdocker.ExtractImagesFromDockerfile(filepath.Join(c.Context, c.GetDockerfile()), c.GetBuildArgs())
 	if err != nil {
 		return map[string]registry.AuthConfig{}
@@ -287,6 +300,52 @@ func (c *ContainerRequest) ShouldKeepBuiltImage() bool {
 
 func (c *ContainerRequest) ShouldPrintBuildLog() bool {
 	return c.FromDockerfile.PrintBuildLog
+}
+
+// BuildOptions returns the image build options when building a Docker image from a Dockerfile.
+// It will apply some defaults and finally call the BuildOptionsModifier from the FromDockerfile struct,
+// if set.
+func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
+	buildOptions := types.ImageBuildOptions{
+		Remove:      true,
+		ForceRemove: true,
+	}
+
+	if c.FromDockerfile.BuildOptionsModifier != nil {
+		c.FromDockerfile.BuildOptionsModifier(&buildOptions)
+	}
+
+	// apply mandatory values after the modifier
+	buildOptions.BuildArgs = c.GetBuildArgs()
+	buildOptions.Dockerfile = c.GetDockerfile()
+
+	buildContext, err := c.GetContext()
+	if err != nil {
+		return buildOptions, err
+	}
+	buildOptions.Context = buildContext
+
+	// Make sure the auth configs from the Dockerfile are set right after the user-defined build options.
+	authsFromDockerfile := getAuthConfigsFromDockerfile(c)
+
+	if buildOptions.AuthConfigs == nil {
+		buildOptions.AuthConfigs = map[string]registry.AuthConfig{}
+	}
+
+	for registry, authConfig := range authsFromDockerfile {
+		buildOptions.AuthConfigs[registry] = authConfig
+	}
+
+	// make sure the first tag is the one defined in the ContainerRequest
+	tag := fmt.Sprintf("%s:%s", c.GetRepo(), c.GetTag())
+	if len(buildOptions.Tags) > 0 {
+		// prepend the tag
+		buildOptions.Tags = append([]string{tag}, buildOptions.Tags...)
+	} else {
+		buildOptions.Tags = []string{tag}
+	}
+
+	return buildOptions, nil
 }
 
 func (c *ContainerRequest) validateContextAndImage() error {

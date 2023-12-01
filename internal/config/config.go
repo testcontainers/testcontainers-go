@@ -11,6 +11,8 @@ import (
 	"github.com/magiconair/properties"
 )
 
+const ReaperDefaultImage = "docker.io/testcontainers/ryuk:0.5.1"
+
 var (
 	tcConfig     Config
 	tcConfigOnce *sync.Once = new(sync.Once)
@@ -22,6 +24,7 @@ type Config struct {
 	Host                    string        `properties:"docker.host,default="`
 	TLSVerify               int           `properties:"docker.tls.verify,default=0"`
 	CertPath                string        `properties:"docker.cert.path,default="`
+	HubImageNamePrefix      string        `properties:"hub.image.name.prefix,default="`
 	RyukDisabled            bool          `properties:"ryuk.disabled,default=false"`
 	RyukPrivileged          bool          `properties:"ryuk.container.privileged,default=false"`
 	RyukReconnectionTimeout time.Duration `properties:"ryuk.reconnection.timeout,default=10s"`
@@ -65,6 +68,11 @@ func read() Config {
 		ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
 		if parseBool(ryukDisabledEnv) {
 			config.RyukDisabled = ryukDisabledEnv == "true"
+		}
+
+		hubImageNamePrefix := os.Getenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX")
+		if hubImageNamePrefix != "" {
+			config.HubImageNamePrefix = hubImageNamePrefix
 		}
 
 		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")

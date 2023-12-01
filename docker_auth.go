@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"net/url"
 	"os"
 
 	"github.com/cpuguy83/dockercfg"
@@ -24,11 +25,31 @@ func DockerImageAuth(ctx context.Context, image string) (string, registry.AuthCo
 		return reg, registry.AuthConfig{}, err
 	}
 
-	if cfg, ok := cfgs[reg]; ok {
+	if cfg, ok := getRegistryAuth(reg, cfgs); ok {
 		return reg, cfg, nil
 	}
 
 	return reg, registry.AuthConfig{}, dockercfg.ErrCredentialsNotFound
+}
+
+func getRegistryAuth(reg string, cfgs map[string]registry.AuthConfig) (registry.AuthConfig, bool) {
+	if cfg, ok := cfgs[reg]; ok {
+		return cfg, true
+	}
+
+	// fallback match using authentication key host
+	for k, cfg := range cfgs {
+		keyURL, err := url.Parse(k)
+		if err != nil {
+			continue
+		}
+
+		if keyURL.Host == reg {
+			return cfg, true
+		}
+	}
+
+	return registry.AuthConfig{}, false
 }
 
 // defaultRegistry returns the default registry to use when pulling images

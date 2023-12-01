@@ -17,7 +17,7 @@ import (
 func ExampleNetworkProvider_CreateNetwork() {
 	// createNetwork {
 	ctx := context.Background()
-	networkName := "new-network"
+	networkName := "new-generic-network"
 	net, _ := GenericNetwork(ctx, GenericNetworkRequest{
 		NetworkRequest: NetworkRequest{
 			Name:           networkName,
@@ -41,6 +41,7 @@ func ExampleNetworkProvider_CreateNetwork() {
 				networkName,
 			},
 		},
+		Started: true,
 	})
 	defer func() {
 		if err := nginxC.Terminate(ctx); err != nil {
@@ -49,6 +50,16 @@ func ExampleNetworkProvider_CreateNetwork() {
 	}()
 
 	nginxC.GetContainerID()
+
+	state, err := nginxC.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func Test_NetworkWithIPAM(t *testing.T) {

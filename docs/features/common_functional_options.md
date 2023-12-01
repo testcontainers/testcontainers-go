@@ -2,7 +2,16 @@
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.26.0"><span class="tc-version">:material-tag: v0.26.0</span></a>
 
-{% include "./image_name_substitution.md" %}
+In more locked down / secured environments, it can be problematic to pull images from Docker Hub and run them without additional precautions.
+
+An image name substitutor converts a Docker image name, as may be specified in code, to an alternative name. This is intended to provide a way to override image names, for example to enforce pulling of images from a private registry.
+
+_Testcontainers for Go_ exposes an interface to perform this operations: `ImageSubstitutor`, and a No-operation implementation to be used as reference for custom implementations:
+
+<!--codeinclude-->
+[Image Substitutor Interface](../../options.go) inside_block:imageSubstitutor
+[Noop Image Substitutor](../../container_test.go) inside_block:noopImageSubstitutor
+<!--/codeinclude-->
 
 Using the `WithImageSubstitutors` options, you could define your own substitutions to the container images. E.g. adding a prefix to the images so that they can be pulled from a Docker registry other than Docker Hub. This is the usual mechanism for using Docker image proxies, caches, etc.
 
@@ -24,7 +33,10 @@ Testcontainers exposes the `WithStartupCommand(e ...Executable)` option to run a
 !!!info
     To better understand how this feature works, please read the [Create containers: Lifecycle Hooks](/features/creating_container/#lifecycle-hooks) documentation.
 
-It also exports an `Executable` interface, defining one single method: `AsCommand()`, which returns a slice of strings to represent the command and positional arguments to be executed in the container.
+It also exports an `Executable` interface, defining the following methods:
+
+- `AsCommand()`, which returns a slice of strings to represent the command and positional arguments to be executed in the container;
+- `Options()`, which returns the slice of functional options with the Docker's ExecConfigs used to create the command in the container (the working directory, environment variables, user executing the command, etc) and the possible output format (Multiplexed).
 
 You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is started.
 
