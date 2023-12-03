@@ -17,8 +17,15 @@ go get github.com/testcontainers/testcontainers-go/modules/mssql
 ## Usage example
 
 <!--codeinclude-->
+
 [Creating a MSSQLServer container](../../modules/mssql/examples_test.go) inside_block:runMSSQLServerContainer
+
 <!--/codeinclude-->
+
+!!! warning "EULA Acceptance"
+Due to licencing restrictions you are required to accept an End User License Agreement (EULA) for this container image. To indicate that you accept the MS SQL Server image EULA, call the `WithAcceptEULA("Y")` method passing a "yes" parameter as `"Y"` to indicate EULA acceptance.
+
+    Please see the [`microsoft-mssql-server` image documentation](https://hub.docker.com/_/microsoft-mssql-server#environment-variables) for a link to the EULA document.
 
 ## Module reference
 
@@ -45,3 +52,14 @@ for MSSQLServer. E.g. `testcontainers.WithImage("mcr.microsoft.com/mssql/server:
 ### Container Methods
 
 The MSSQLServer container exposes the following methods:
+
+#### ConnectionString
+
+This method returns the connection string to connect to the Microsoft SQL Server container, using the default `1433` port.
+It's possible to pass extra parameters to the connection string, e.g. `encrypt=false` or `TrustServerCertificate=true`, in a variadic way.
+
+<!--codeinclude-->
+
+[Get connection string](../../modules/mssql/mssql_test.go) inside_block:connectionString
+
+<!--/codeinclude-->
