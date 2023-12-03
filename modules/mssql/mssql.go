@@ -39,15 +39,6 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithEnv sets multiple environment variables for the MSSQL container.
-func WithEnv(envVars map[string]string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		for key, value := range envVars {
-			req.Env[key] = value
-		}
-	}
-}
-
 // RunContainer creates an instance of the MSSQLServer container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MSSQLServerContainer, error) {
 	req := testcontainers.ContainerRequest{
