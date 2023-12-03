@@ -2,19 +2,61 @@ package mssql
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+)
+
+const defaultImage = "mcr.microsoft.com/mssql/server:2022-latest"
+
+const (
+	defaultPort     = "1433/tcp"
+	defaultUsername = "sa" // default microsoft system administrator
+	defaultPassword = "Strong@Passw0rd"
 )
 
 // MSSQLServerContainer represents the MSSQLServer container type used in the module
 type MSSQLServerContainer struct {
 	testcontainers.Container
+	password string
+	username string
+}
+
+func WithAcceptEULA(acceptEula string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Env["ACCEPT_EULA"] = acceptEula
+	}
+}
+
+func WithPassword(password string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		if password == "" {
+			password = defaultPassword
+		}
+		req.Env["MSSQL_SA_PASSWORD"] = password
+	}
+}
+
+// WithEnv sets multiple environment variables for the MSSQL container.
+func WithEnv(envVars map[string]string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		for key, value := range envVars {
+			req.Env[key] = value
+		}
+	}
 }
 
 // RunContainer creates an instance of the MSSQLServer container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MSSQLServerContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "mcr.microsoft.com/mssql/server:2022-latest",
+		Image:        defaultImage,
+		ExposedPorts: []string{defaultPort},
+		Env: map[string]string{
+			"MSSQL_SA_PASSWORD": defaultPassword,
+		},
+		WaitingFor: wait.ForLog("Recovery is complete."),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -31,5 +73,26 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	return &MSSQLServerContainer{Container: container}, nil
+	username := defaultUsername
+	password := req.Env["MSSQL_SA_PASSWORD"]
+
+	return &MSSQLServerContainer{Container: container, password: password, username: username}, nil
+}
+
+func (c *MSSQLServerContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	containerPort, err := c.MappedPort(ctx, defaultPort)
+	if err != nil {
+		return "", err
+	}
+
+	extraArgs := strings.Join(args, "&")
+
+	connStr := fmt.Sprintf("sqlserver://%s:%s@%s:%s?%s", c.username, c.password, host, containerPort.Port(), extraArgs)
+
+	return connStr, nil
 }
