@@ -61,6 +61,60 @@ func TestMSSQLServer(t *testing.T) {
 	}
 }
 
+func TestMSSQLServerWithInvalidEulaOption(t *testing.T) {
+	ctx := context.Background()
+
+	container, err := RunContainer(ctx)
+	testcontainers.WithWaitStrategy(
+		wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted"))
+
+	if container == nil && err != nil {
+		t.Log("Success: Confirmed proper handling of missing EULA, so container is nil.")
+	} else {
+		t.Fatalf("Expected a log to confirm missing EULA but got error: %s", err)
+	}
+}
+
+// Microsoft requires that the EULA be accepted in order to run the container
+// but this can be done by passing ANY value to the ACCEPT_EULA environment variable
+// however, passing "Y" as the value is standard convention as seen throughout this module.
+// This will test that the container can, in fact, be run with an alternative EULA option value.
+func TestMSSQLServerWithValidAlternateEula(t *testing.T) {
+	ctx := context.Background()
+
+	container, err := RunContainer(ctx,
+		WithAcceptEULA("alternativeValue"),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Clean up the container after the test is complete
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	// perform assertions
+	connectionString, err := container.ConnectionString(ctx)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := sql.Open("sqlserver", connectionString)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	if err = db.Ping(); err != nil {
+		t.Errorf("error pinging db: %+v\n", err)
+	}
+}
+
 func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 	ctx := context.Background()
 
