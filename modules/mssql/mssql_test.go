@@ -14,7 +14,7 @@ func TestMSSQLServer(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := RunContainer(ctx,
-		WithAcceptEULA("Y"),
+		WithAcceptEULA(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -61,7 +61,7 @@ func TestMSSQLServer(t *testing.T) {
 	}
 }
 
-func TestMSSQLServerWithInvalidEulaOption(t *testing.T) {
+func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := RunContainer(ctx)
@@ -75,51 +75,11 @@ func TestMSSQLServerWithInvalidEulaOption(t *testing.T) {
 	}
 }
 
-// Microsoft requires that the EULA be accepted in order to run the container
-// but this can be done by passing ANY value to the ACCEPT_EULA environment variable
-// however, passing "Y" as the value is standard convention as seen throughout this module.
-// This will test that the container can, in fact, be run with an alternative EULA option value.
-func TestMSSQLServerWithValidAlternateEula(t *testing.T) {
-	ctx := context.Background()
-
-	container, err := RunContainer(ctx,
-		WithAcceptEULA("alternativeValue"),
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
-	// perform assertions
-	connectionString, err := container.ConnectionString(ctx)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	db, err := sql.Open("sqlserver", connectionString)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		t.Errorf("error pinging db: %+v\n", err)
-	}
-}
-
 func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := RunContainer(ctx,
-		WithAcceptEULA("Y"),
+		WithAcceptEULA(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -170,7 +130,7 @@ func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := RunContainer(ctx,
-		WithAcceptEULA("Y"),
+		WithAcceptEULA(),
 		WithPassword("Strong@Passw0rd"),
 	)
 	if err != nil {
@@ -209,7 +169,7 @@ func TestMSSQLServerWithInvalidPassword(t *testing.T) {
 	container, err := RunContainer(ctx,
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Password validation failed")),
-		WithAcceptEULA("Y"),
+		WithAcceptEULA(),
 		WithPassword("weakPassword"),
 	)
 
@@ -232,7 +192,7 @@ func TestMSSQLServerWithAlternativeImage(t *testing.T) {
 
 	container, err := RunContainer(ctx,
 		testcontainers.WithImage("mcr.microsoft.com/mssql/server:2019-latest"),
-		WithAcceptEULA("Y"),
+		WithAcceptEULA(),
 	)
 	if err != nil {
 		t.Fatalf("Failed to create the container with alternative image: %s", err)

@@ -23,8 +23,8 @@ go get github.com/testcontainers/testcontainers-go/modules/mssql
 <!--/codeinclude-->
 
 !!! warning "EULA Acceptance"
-    Due to licensing restrictions you are required to accept an End User License Agreement (EULA) for this container image. To indicate that you accept the MS SQL Server image EULA, call the `WithAcceptEULA("Y")` method passing a "yes" parameter as `"Y"` to indicate EULA acceptance.
-    
+Due to licensing restrictions you are required to accept an End User License Agreement (EULA) for this container image. To indicate that you accept the MS SQL Server image EULA, call the `WithAcceptEULA()` method to indicate EULA acceptance.
+
     Please see the [`microsoft-mssql-server` image documentation](https://hub.docker.com/_/microsoft-mssql-server#environment-variables) for a link to the EULA document.
 
 ## Module reference

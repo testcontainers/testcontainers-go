@@ -24,9 +24,9 @@ type MSSQLServerContainer struct {
 	username string
 }
 
-func WithAcceptEULA(acceptEula string) testcontainers.CustomizeRequestOption {
+func WithAcceptEULA() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
-		req.Env["ACCEPT_EULA"] = acceptEula
+		req.Env["ACCEPT_EULA"] = "Y"
 	}
 }
 

@@ -12,12 +12,11 @@ func ExampleRunContainer() {
 	// runMSSQLServerContainer {
 	ctx := context.Background()
 
-	acceptEula := "Y"
 	password := "Strong@Passw0rd"
 
 	mssqlContainer, err := mssql.RunContainer(ctx,
 		testcontainers.WithImage("mcr.microsoft.com/mssql/server:2022-latest"),
-		mssql.WithAcceptEULA(acceptEula),
+		mssql.WithAcceptEULA(),
 		mssql.WithPassword(password),
 	)
 	if err != nil {
