@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/testcontainers/testcontainers-go v0.26.0
-	go.mongodb.org/mongo-driver v1.12.1
+	go.mongodb.org/mongo-driver v1.13.0
 )
 
 require (

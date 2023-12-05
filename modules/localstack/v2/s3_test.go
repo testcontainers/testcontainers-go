@@ -96,7 +96,7 @@ func TestS3(t *testing.T) {
 			Bucket:             aws.String(bucketName),
 			Key:                aws.String(s3Key1),
 			Body:               bytes.NewReader(body1),
-			ContentLength:      int64(len(body1)),
+			ContentLength:      aws.Int64(int64(len(body1))),
 			ContentType:        aws.String("application/text"),
 			ContentDisposition: aws.String("attachment"),
 		})
@@ -124,7 +124,7 @@ func TestS3(t *testing.T) {
 
 			assert.Equal(t, 1, len(objects))
 			assert.Equal(t, s3Key1, *objects[0].Key)
-			assert.Equal(t, int64(len(body1)), objects[0].Size)
+			assert.Equal(t, aws.Int64(int64(len(body1))), objects[0].Size)
 		})
 	})
 }
