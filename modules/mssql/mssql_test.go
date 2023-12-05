@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	_ "github.com/microsoft/go-mssqldb"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -29,7 +30,6 @@ func TestMSSQLServer(t *testing.T) {
 
 	// perform assertions
 	connectionString, err := container.ConnectionString(ctx)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,20 +44,13 @@ func TestMSSQLServer(t *testing.T) {
 		t.Errorf("error pinging db: %+v\n", err)
 	}
 
-	var tableName string
-	err = db.QueryRow("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = N'a_table'").Scan(&tableName)
-
-	if err == sql.ErrNoRows {
-		_, err = db.Exec("CREATE TABLE a_table ( " +
-			" [col_1] NVARCHAR(128) NOT NULL, " +
-			" [col_2] NVARCHAR(128) NOT NULL, " +
-			" PRIMARY KEY ([col_1], [col_2]) " +
-			")")
-		if err != nil {
-			t.Errorf("error creating table: %+v\n", err)
-		}
-	} else if err != nil {
-		t.Fatal(err)
+	_, err = db.Exec("CREATE TABLE a_table ( " +
+		" [col_1] NVARCHAR(128) NOT NULL, " +
+		" [col_2] NVARCHAR(128) NOT NULL, " +
+		" PRIMARY KEY ([col_1], [col_2]) " +
+		")")
+	if err != nil {
+		t.Errorf("error creating table: %+v\n", err)
 	}
 }
 
@@ -94,7 +87,6 @@ func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 
 	// perform assertions
 	connectionString, err := container.ConnectionString(ctx, "encrypt=false", "TrustServerCertificate=true")
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,20 +101,13 @@ func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 		t.Errorf("error pinging db: %+v\n", err)
 	}
 
-	var tableName string
-	err = db.QueryRow("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = N'a_table'").Scan(&tableName)
-
-	if err == sql.ErrNoRows {
-		_, err = db.Exec("CREATE TABLE a_table ( " +
-			" [col_1] NVARCHAR(128) NOT NULL, " +
-			" [col_2] NVARCHAR(128) NOT NULL, " +
-			" PRIMARY KEY ([col_1], [col_2]) " +
-			")")
-		if err != nil {
-			t.Errorf("error creating table: %+v\n", err)
-		}
-	} else if err != nil {
-		t.Fatal(err)
+	_, err = db.Exec("CREATE TABLE a_table ( " +
+		" [col_1] NVARCHAR(128) NOT NULL, " +
+		" [col_2] NVARCHAR(128) NOT NULL, " +
+		" PRIMARY KEY ([col_1], [col_2]) " +
+		")")
+	if err != nil {
+		t.Errorf("error creating table: %+v\n", err)
 	}
 }
 
@@ -146,7 +131,6 @@ func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 
 	// perform assertions
 	connectionString, err := container.ConnectionString(ctx)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +191,6 @@ func TestMSSQLServerWithAlternativeImage(t *testing.T) {
 
 	// perform assertions
 	connectionString, err := container.ConnectionString(ctx)
-
 	if err != nil {
 		t.Fatal(err)
 	}
