@@ -23,7 +23,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mssql
 <!--/codeinclude-->
 
 !!! warning "EULA Acceptance"
-Due to licensing restrictions you are required to explicitly accept an End User License Agreement (EULA) for the MS SQL Server container image. This is facilitated through the `WithAcceptEULA` function.
+    Due to licensing restrictions you are required to explicitly accept an End User License Agreement (EULA) for the MS SQL Server container image. This is facilitated through the `WithAcceptEULA` function.
 
     Please see the [`microsoft-mssql-server` image documentation](https://hub.docker.com/_/microsoft-mssql-server#environment-variables) for a link to the EULA document.
 
@@ -49,14 +49,14 @@ for MS SQL Server. E.g. `testcontainers.WithImage("mcr.microsoft.com/mssql/serve
 
 #### End User License Agreement
 
-Due to licencing restrictions you are required to explicitly accept an EULA for this container image. To do so, you must use the function `mssql.WithAcceptEula()`. Failure to include this will result in the container failing to start.
+Due to licensing restrictions you are required to explicitly accept an EULA for this container image. To do so, you must use the function `mssql.WithAcceptEula()`. Failure to include this will result in the container failing to start.
 
 #### Password
 
 If you need to set a different MS SQL Server password, you can use `mssql.WithPassword` with a valid password for MS SQL Server. E.g. `mssql.WithPassword("SuperStrong@Passw0rd")`.
 
 !!!info
-If you set a custom password string, it must adhere to the MS SQL Server [Password Policy](https://learn.microsoft.com/en-us/sql/relational-databases/security/password-policy?view=sql-server-ver16).
+    If you set a custom password string, it must adhere to the MS SQL Server [Password Policy](https://learn.microsoft.com/en-us/sql/relational-databases/security/password-policy?view=sql-server-ver16).
 
 {% include "../features/common_functional_options.md" %}
 
