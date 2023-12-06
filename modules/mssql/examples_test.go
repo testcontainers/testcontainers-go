@@ -12,10 +12,10 @@ func ExampleRunContainer() {
 	// runMSSQLServerContainer {
 	ctx := context.Background()
 
-	password := "Strong@Passw0rd"
+	password := "SuperStrong@Passw0rd"
 
 	mssqlContainer, err := mssql.RunContainer(ctx,
-		testcontainers.WithImage("mcr.microsoft.com/mssql/server:2022-latest"),
+		testcontainers.WithImage("mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04"),
 		mssql.WithAcceptEULA(),
 		mssql.WithPassword(password),
 	)

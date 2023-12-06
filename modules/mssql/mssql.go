@@ -9,9 +9,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const defaultImage = "mcr.microsoft.com/mssql/server:2022-latest"
-
 const (
+	defaultImage    = "mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04"
 	defaultPort     = "1433/tcp"
 	defaultUsername = "sa" // default microsoft system administrator
 	defaultPassword = "Strong@Passw0rd"

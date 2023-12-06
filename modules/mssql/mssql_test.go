@@ -175,7 +175,7 @@ func TestMSSQLServerWithAlternativeImage(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := RunContainer(ctx,
-		testcontainers.WithImage("mcr.microsoft.com/mssql/server:2019-latest"),
+		testcontainers.WithImage("mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04"),
 		WithAcceptEULA(),
 	)
 	if err != nil {
