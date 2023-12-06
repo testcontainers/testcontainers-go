@@ -4,14 +4,14 @@ go 1.20
 
 require (
 	cloud.google.com/go/bigquery v1.57.1
-	cloud.google.com/go/bigtable v1.20.0
+	cloud.google.com/go/bigtable v1.21.0
 	cloud.google.com/go/datastore v1.15.0
 	cloud.google.com/go/firestore v1.14.0
 	cloud.google.com/go/pubsub v1.33.0
-	cloud.google.com/go/spanner v1.53.0
+	cloud.google.com/go/spanner v1.53.1
 	github.com/docker/go-connections v0.4.0
 	github.com/testcontainers/testcontainers-go v0.26.0
-	google.golang.org/api v0.152.0
+	google.golang.org/api v0.153.0
 	google.golang.org/grpc v1.59.0
 )
 
