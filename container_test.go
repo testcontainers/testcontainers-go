@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -474,7 +475,7 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 				t.Fatalf("could not start container: %v", err)
 			}
 			// mappedPort {
-			port, err := container.MappedPort(ctx, nginxDefaultPort)
+			port, err := container.MappedPort(ctx, nat.Port(nginxDefaultPort))
 			// }
 			if err != nil {
 				t.Fatalf("could not get mapped port: %v", err)
