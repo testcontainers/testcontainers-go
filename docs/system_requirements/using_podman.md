@@ -35,6 +35,15 @@ func TestSomething(t *testing.T) {
 }
 ```
 
+If using the [Podman Desktop Docker compatibility mode](https://podman-desktop.io/docs/migrating-from-docker/using-podman-mac-helper),
+where the `DOCKER_HOST` still points to the Docker socket,
+you can also configure the provider explicitly in a `.testcontainers.properties` file
+or the `TESTCONTAINERS_PROVIDER_TYPE` env variable.
+```properties
+provider.type=podman
+```
+
+
 The `ProviderPodman` configures the `DockerProvider` with the correct default network for Podman to ensure complex network scenarios are working as with Docker.
 
 ## Podman socket activation

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"os"
 	"strings"
 
@@ -102,12 +103,21 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 		o.ApplyGenericTo(opt)
 	}
 
-	pt := t
-	if pt == ProviderDefault && strings.Contains(os.Getenv("DOCKER_HOST"), "podman.sock") {
-		pt = ProviderPodman
+	providerType := t
+	if providerType == ProviderDefault {
+		cfg := config.Read()
+		var err error
+		providerType, err = getProviderType(cfg.ProviderType)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	switch pt {
+	if providerType == ProviderDefault && strings.Contains(os.Getenv("DOCKER_HOST"), "podman.sock") {
+		providerType = ProviderPodman
+	}
+
+	switch providerType {
 	case ProviderDefault, ProviderDocker:
 		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Bridge))
 		provider, err := NewDockerProvider(providerOptions...)
@@ -156,4 +166,17 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 	}
 
 	return p, nil
+}
+
+// getProviderType maps a human-readable string to a corresponding ProviderType.
+func getProviderType(providerType string) (ProviderType, error) {
+	switch providerType {
+	case "":
+		return ProviderDefault, nil
+	case "docker":
+		return ProviderDocker, nil
+	case "podman":
+		return ProviderPodman, nil
+	}
+	return 0, errors.New(fmt.Sprintf("unknown provider: %s", providerType))
 }
