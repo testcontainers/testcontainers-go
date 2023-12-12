@@ -74,6 +74,10 @@
             "path": "../modules/mongodb"
         },
         {
+            "name": "module / mssql",
+            "path": "../modules/mssql"
+        },
+        {
             "name": "module / mysql",
             "path": "../modules/mysql"
         },

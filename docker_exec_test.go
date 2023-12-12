@@ -106,6 +106,34 @@ func TestExecWithOptions(t *testing.T) {
 	}
 }
 
+func TestExecWithMultiplexedStderrResponse(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image: nginxAlpineImage,
+	}
+
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, container)
+
+	code, reader, err := container.Exec(ctx, []string{"ls", "/non-existing-directory"}, tcexec.Multiplexed())
+	require.NoError(t, err)
+	require.NotZero(t, code)
+	require.NotNil(t, reader)
+
+	b, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	require.NotNil(t, b)
+
+	str := string(b)
+	require.Contains(t, str, "No such file or directory")
+}
+
 func TestExecWithNonMultiplexedResponse(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{

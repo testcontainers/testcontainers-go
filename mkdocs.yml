@@ -75,6 +75,7 @@ nav:
         - modules/localstack.md
         - modules/mariadb.md
         - modules/mongodb.md
+        - modules/mssql.md
         - modules/mysql.md
         - modules/nats.md
         - modules/neo4j.md
