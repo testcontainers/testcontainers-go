@@ -73,7 +73,12 @@ func TestToxiproxy(t *testing.T) {
 		t.Fatal(err)
 	}
 	redisClient := redis.NewClient(options)
-	defer flushRedis(ctx, *redisClient)
+	defer func() {
+		err := flushRedis(ctx, *redisClient)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	// Set data
 	key := fmt.Sprintf("{user.%s}.favoritefood", uuid.NewString())
