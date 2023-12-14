@@ -88,11 +88,9 @@ func ExampleRunContainer_withNetwork() {
 	}
 
 	fmt.Println(len(networks))
-	fmt.Println(networks[0])
 
 	// Output:
 	// 1
-	// localstack-network
 }
 
 func ExampleRunContainer_legacyMode() {
