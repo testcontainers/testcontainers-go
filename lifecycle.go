@@ -157,13 +157,13 @@ func (c *DockerContainer) startedHook(ctx context.Context) error {
 func (c *DockerContainer) printLogs(ctx context.Context, cause error) {
 	reader, err := c.Logs(ctx)
 	if err != nil {
-		c.logger.Printf("failed accessing container logs: %w\n", err)
+		c.logger.Printf("failed accessing container logs: %v\n", err)
 		return
 	}
 
 	b, err := io.ReadAll(reader)
 	if err != nil {
-		c.logger.Printf("failed reading container logs: %w\n", err)
+		c.logger.Printf("failed reading container logs: %v\n", err)
 		return
 	}
 

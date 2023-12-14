@@ -53,17 +53,17 @@ jobs:
     steps:
       - name: Setup rootless Docker
         if: ${{ inputs.rootless-docker }}
-        uses: ScribeMD/rootless-docker@0.2.2
+        uses: ScribeMD/rootless-docker@6bd157a512c2fafa4e0243a8aa87d964eb890886  # v0.2.2
 
       - name: Remove Docket root socket
         if: ${{ inputs.rootless-docker }}
         run: sudo rm -rf /var/run/docker.sock
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4
         with:
             go-version: '${{ inputs.go-version }}'
             cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
@@ -72,7 +72,7 @@ jobs:
       - name: golangci-lint
         # TODO: Remove each example/module once it passes the golangci-lint
         if: ${{ inputs.platform == 'ubuntu-latest' && inputs.go-version == '1.20.x' && !contains(fromJSON('["examples/cockroachdb", "examples/toxiproxy", "modules/compose", "modules/pulsar", "modules/redis"]'), inputs.project-directory) }}
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc # v3
         with:
           # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
           version: v1.54.1
@@ -110,7 +110,7 @@ jobs:
 
       - name: Upload SonarCloud files
         if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.run-tests && !inputs.rootless-docker }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
         with:
           name: sonarcloud
           path: |
@@ -123,7 +123,7 @@ jobs:
             ./scripts/check_environment.sh
 
       - name: Test Summary
-        uses: test-summary/action@62bc5c68de2a6a0d02039763b8c754569df99e3f
+        uses: test-summary/action@62bc5c68de2a6a0d02039763b8c754569df99e3f # v2
         with:
             paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
         if: always()

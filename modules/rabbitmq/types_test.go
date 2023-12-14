@@ -4,16 +4,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/testcontainers/testcontainers-go"
 )
 
 // The following structs are added as a demonstration for the RabbitMQ management API therefore,
 // they are not used in the RabbitMQ module.
 // All of them implement the testcontainers.Executable interface, which is used to generate
 // the command that will be executed, with the "AsCommand" method.
+// Please be aware that they could be outdated, as they are not actively maintained, just here for reference.
 
 // --------- Bindings ---------
 
 type Binding struct {
+	testcontainers.ExecOptions
 	VHost           string
 	Source          string
 	Destination     string
@@ -71,6 +75,7 @@ func (b Binding) AsCommand() []string {
 // --------- Exchange ---------
 
 type Exchange struct {
+	testcontainers.ExecOptions
 	Name       string
 	VHost      string
 	Type       string
@@ -116,6 +121,7 @@ func (e Exchange) AsCommand() []string {
 // --------- OperatorPolicy ---------
 
 type OperatorPolicy struct {
+	testcontainers.ExecOptions
 	Name       string
 	Pattern    string
 	Definition map[string]interface{}
@@ -150,6 +156,7 @@ func (op OperatorPolicy) AsCommand() []string {
 // --------- Parameter ---------
 
 type Parameter struct {
+	testcontainers.ExecOptions
 	Component string
 	Name      string
 	Value     string
@@ -175,6 +182,7 @@ func (p Parameter) AsCommand() []string {
 // --------- Permission ---------
 
 type Permission struct {
+	testcontainers.ExecOptions
 	VHost     string
 	User      string
 	Configure string
@@ -204,10 +212,13 @@ func (p Permission) AsCommand() []string {
 
 // --------- Plugin ---------
 
-type Plugin string
+type Plugin struct {
+	testcontainers.ExecOptions
+	Name string
+}
 
 func (p Plugin) AsCommand() []string {
-	return []string{"rabbitmq-plugins", "enable", string(p)}
+	return []string{"rabbitmq-plugins", "enable", p.Name}
 }
 
 // --------- Plugin ---------
@@ -215,6 +226,7 @@ func (p Plugin) AsCommand() []string {
 // --------- Policy ---------
 
 type Policy struct {
+	testcontainers.ExecOptions
 	VHost      string
 	Name       string
 	Pattern    string
@@ -256,6 +268,7 @@ func (p Policy) AsCommand() []string {
 // --------- Queue ---------
 
 type Queue struct {
+	testcontainers.ExecOptions
 	Name       string
 	VHost      string
 	AutoDelete bool
@@ -296,6 +309,7 @@ func (q Queue) AsCommand() []string {
 // --------- User ---------
 
 type User struct {
+	testcontainers.ExecOptions
 	Name     string
 	Password string
 	Tags     []string
@@ -324,6 +338,7 @@ func (u User) AsCommand() []string {
 // --------- Virtual Hosts --------
 
 type VirtualHost struct {
+	testcontainers.ExecOptions
 	Name    string
 	Tracing bool
 }
@@ -339,6 +354,7 @@ func (v VirtualHost) AsCommand() []string {
 }
 
 type VirtualHostLimit struct {
+	testcontainers.ExecOptions
 	VHost string
 	Name  string
 	Value int

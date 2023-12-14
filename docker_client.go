@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/docker/docker/api/types"
@@ -20,8 +21,10 @@ type DockerClient struct {
 }
 
 var (
-	dockerInfo     types.Info // dockerInfo stores the docker info to be reused in the Info method
-	dockerInfoOnce sync.Once
+	// dockerInfo stores the docker info to be reused in the Info method
+	dockerInfo     types.Info
+	dockerInfoSet  bool
+	dockerInfoLock sync.Mutex
 )
 
 // implements SystemAPIClient interface
@@ -36,14 +39,20 @@ func (c *DockerClient) Events(ctx context.Context, options types.EventsOptions) 
 // and reused every time Info is called.
 // It will also print out the docker server info, and the resolved Docker paths, to the default logger.
 func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
-	var err error
-	dockerInfoOnce.Do(func() {
-		dockerInfo, err = c.Client.Info(ctx)
-		if err != nil {
-			return
-		}
+	dockerInfoLock.Lock()
+	defer dockerInfoLock.Unlock()
+	if dockerInfoSet {
+		return dockerInfo, nil
+	}
 
-		infoMessage := `%v - Connected to docker: 
+	info, err := c.Client.Info(ctx)
+	if err != nil {
+		return info, fmt.Errorf("failed to retrieve docker info: %w", err)
+	}
+	dockerInfo = info
+	dockerInfoSet = true
+
+	infoMessage := `%v - Connected to docker: 
   Server Version: %v
   API Version: %v
   Operating System: %v
@@ -54,22 +63,16 @@ func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
   Test ProcessID: %s
 `
 
-		Logger.Printf(infoMessage, packagePath,
-			dockerInfo.ServerVersion, c.Client.ClientVersion(),
-			dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
-			testcontainersdocker.ExtractDockerHost(ctx),
-			testcontainersdocker.ExtractDockerSocket(ctx),
-			testcontainerssession.SessionID(),
-			testcontainerssession.ProcessID(),
-		)
-	})
+	Logger.Printf(infoMessage, packagePath,
+		dockerInfo.ServerVersion, c.Client.ClientVersion(),
+		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
+		testcontainersdocker.ExtractDockerHost(ctx),
+		testcontainersdocker.ExtractDockerSocket(ctx),
+		testcontainerssession.SessionID(),
+		testcontainerssession.ProcessID(),
+	)
 
-	if err != nil {
-		// reset the state of the sync.Once so that the next call to Info will try again
-		dockerInfoOnce = sync.Once{}
-	}
-
-	return dockerInfo, err
+	return dockerInfo, nil
 }
 
 // RegistryLogin logs into a Docker registry.

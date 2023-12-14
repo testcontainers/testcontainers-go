@@ -139,7 +139,7 @@ func (ws *HTTPStrategy) Timeout() *time.Duration {
 }
 
 // WaitUntilReady implements Strategy.WaitUntilReady
-func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
+func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
 	timeout := defaultStartupTimeout()
 	if ws.timeout != nil {
 		timeout = *ws.timeout
@@ -150,7 +150,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 
 	ipAddress, err := target.Host(ctx)
 	if err != nil {
-		return
+		return err
 	}
 	// to avoid ipv6 docker bugs https://github.com/moby/moby/issues/42442 https://github.com/moby/moby/issues/42375
 	if ws.ForceIPv4LocalHost {
@@ -265,7 +265,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	if ws.Body != nil {
 		body, err = io.ReadAll(ws.Body)
 		if err != nil {
-			return
+			return err
 		}
 	}
 

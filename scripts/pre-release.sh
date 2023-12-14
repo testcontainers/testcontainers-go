@@ -71,14 +71,14 @@ function bumpVersion() {
     make "tidy-${directory}"
   done
 
-  cd "${ROOT_DIR}/docs/modules"
+  cd "${ROOT_DIR}/docs"
 
   versionEscapingDots="${versionToBumpWithoutV/./\.}"
   NON_RELEASED_STRING='Not available until the next release of testcontainers-go <a href=\"https:\/\/github.com\/testcontainers\/testcontainers-go\"><span class=\"tc-version\">:material-tag: main<\/span><\/a>'
   RELEASED_STRING="Since testcontainers-go <a href=\\\"https:\/\/github.com\/testcontainers\/testcontainers-go\/releases\/tag\/v${versionEscapingDots}\\\"><span class=\\\"tc-version\\\">:material-tag: v${versionEscapingDots}<\/span><\/a>"
 
-  # Update the since-version in those modules that were added in the current version
-  ls | grep -v "index.md" | while read -r module_file; do
+  # find all markdown files, and for each of them, replace the release string
+  find . -name "*.md" | while read -r module_file; do
     if [[ "${DRY_RUN}" == "true" ]]; then
       echo "sed \"s/${NON_RELEASED_STRING}/${RELEASED_STRING}/g\" ${module_file} > ${module_file}.tmp"
       echo "mv ${module_file}.tmp ${module_file}"
@@ -87,15 +87,6 @@ function bumpVersion() {
       mv ${module_file}.tmp ${module_file}
     fi
   done
-
-  readonly commonFile="${ROOT_DIR}/docs/features/common_functional_options.md"
-  if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "sed \"s/${NON_RELEASED_STRING}/${RELEASED_STRING}/g\" ${commonFile} > ${commonFile}.tmp"
-    echo "mv ${commonFile}.tmp ${commonFile}"
-  else
-    sed "s/${NON_RELEASED_STRING}/${RELEASED_STRING}/g" ${commonFile} > ${commonFile}.tmp
-    mv ${commonFile}.tmp ${commonFile}
-  fi
 }
 
 # This function reads the version.go file and extracts the current version.

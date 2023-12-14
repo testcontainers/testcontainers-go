@@ -66,3 +66,31 @@ req := ContainerRequest{
 	},
 }
 ```
+
+## Keeping built images
+
+Per default, built images are deleted after being used.
+However, some images you build might have no or only minor changes during development.
+Building them for each test run might take a lot of time.
+You can avoid this by setting `KeepImage` in `FromDockerfile`.
+If the image is being kept, cached layers might be reused during building or even the whole image.
+
+```go
+req := ContainerRequest{
+    FromDockerfile: testcontainers.FromDockerfile{
+        // ...
+		KeepImage: true,
+	},
+}
+```
+
+## Advanced usage
+
+In the case you need to pass additional arguments to the `docker build` command, you can use the `BuildOptionsModifier` attribute in the `FromDockerfile` struct.
+
+This field holds a function that has access to Docker's ImageBuildOptions type, which is used to build the image. You can use this modifier **on your own risk** to modify the build options with as many options as you need.
+
+<!--codeinclude-->
+[Building From a Dockerfile including build options modifier](../../from_dockerfile_test.go) inside_block:buildFromDockerfileWithModifier
+[Dockerfile including target](../../testdata/target.Dockerfile)
+<!--/codeinclude-->

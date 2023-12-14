@@ -55,6 +55,7 @@ func ExampleRunContainer() {
 	// run the httpbin.js test scripts passing the IP address the httpbin container
 	k6, err := k6.RunContainer(
 		ctx,
+		k6.WithCache(),
 		k6.WithTestScript(absPath),
 		k6.SetEnvVar("HTTPBIN", httpbinIP),
 	)

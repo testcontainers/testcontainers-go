@@ -216,6 +216,9 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 
 	err = d.composeService.Up(ctx, d.project, api.UpOptions{
 		Create: api.CreateOptions{
+			Build: &api.BuildOptions{
+				Services: upOptions.Services,
+			},
 			Services:             upOptions.Services,
 			Recreate:             upOptions.Recreate,
 			RecreateDependencies: upOptions.RecreateDependencies,

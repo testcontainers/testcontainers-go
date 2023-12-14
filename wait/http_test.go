@@ -47,7 +47,15 @@ func ExampleHTTPStrategy() {
 		}
 	}()
 
-	// Here you have a running container
+	state, err := gogs.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func ExampleHTTPStrategy_WithPort() {
@@ -74,7 +82,15 @@ func ExampleHTTPStrategy_WithPort() {
 		}
 	}()
 
-	// Here you have a running container
+	state, err := gogs.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
@@ -125,7 +141,15 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 		}
 	}()
 
-	// Here you have a running container
+	state, err := gogs.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func TestHTTPStrategyWaitUntilReady(t *testing.T) {

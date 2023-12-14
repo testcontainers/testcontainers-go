@@ -41,5 +41,5 @@ type NetworkRequest struct {
 
 	SkipReaper    bool              // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
 	ReaperImage   string            // Deprecated: use WithImageName ContainerOption instead. Alternative reaper registry
-	ReaperOptions []ContainerOption // Reaper options to use for this network
+	ReaperOptions []ContainerOption // Deprecated: the reaper is configured at the properties level, for an entire test session
 }
