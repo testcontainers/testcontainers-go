@@ -24,12 +24,14 @@ type GenericContainerRequest struct {
 	Reuse            bool         // reuse an existing container if it exists or create a new one. a container name mustn't be empty
 }
 
+// Deprecated: will be removed in the future.
 // GenericNetworkRequest represents parameters to a generic network
 type GenericNetworkRequest struct {
 	NetworkRequest              // embedded request for provider
 	ProviderType   ProviderType // which provider to use, Docker if empty
 }
 
+// Deprecated: use network.New instead
 // GenericNetwork creates a generic network with parameters
 func GenericNetwork(ctx context.Context, req GenericNetworkRequest) (Network, error) {
 	provider, err := req.ProviderType.GetProvider()

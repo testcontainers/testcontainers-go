@@ -1266,6 +1266,7 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 	return p.hostCache, nil
 }
 
+// Deprecated: use network.New instead
 // CreateNetwork returns the object representing a new network identified by its name
 func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) (Network, error) {
 	var err error

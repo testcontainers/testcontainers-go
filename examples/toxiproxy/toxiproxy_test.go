@@ -10,29 +10,25 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 
-	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/network"
 )
 
 func TestToxiproxy(t *testing.T) {
 	ctx := context.Background()
 
-	newNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
-		ProviderType: testcontainers.ProviderDocker,
-		NetworkRequest: testcontainers.NetworkRequest{
-			Name:           "newNetwork",
-			CheckDuplicate: true,
-		},
-	})
+	newNetwork, err := network.New(ctx, network.WithCheckDuplicate())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	toxiproxyContainer, err := startContainer(ctx, "newNetwork", []string{"toxiproxy"})
+	networkName := newNetwork.Name
+
+	toxiproxyContainer, err := startContainer(ctx, networkName, []string{"toxiproxy"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	redisContainer, err := setupRedis(ctx, "newNetwork", []string{"redis"})
+	redisContainer, err := setupRedis(ctx, networkName, []string{"redis"})
 	if err != nil {
 		t.Fatal(err)
 	}
