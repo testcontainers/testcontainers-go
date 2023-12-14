@@ -19,64 +19,15 @@ req := ContainerRequest{
 
 You can execute a command inside a running container, similar to a `docker exec` call:
 
-```go
-func TestIntegrationNginxLatestReturn(t *testing.T) {
-    ctx := context.Background()
-    req := ContainerRequest{
-    Image: "docker.io/busybox",
-        Cmd:   []string{"sleep", "10"},
-           Tmpfs: map[string]string{"/testtmpfs": "rw"},
-    }
-
-    container, err := GenericContainer(ctx, GenericContainerRequest{
-        ContainerRequest: req,
-        Started:          true,
-    })
-
-    require.NoError(t, err)
-
-    t.Cleanup(func() {
-        t.Log("terminating container")
-        require.NoError(t, container.Terminate(ctx))
-    })
-
-    path := "/testtmpfs/test.file"
-
-    c, _, err := container.Exec(ctx, []string{"ls", path})
-    if err != nil {
-        t.Fatal(err)
-    }
-}
-```
+<!--codeinclude-->
+[Executing a command](../../docker_test.go) inside_block:exec_example
+<!--/codeinclude-->
 
 This can be useful for software that has a command line administration tool. You can also get the logs of the command execution (from an object that implements the [io.Reader](https://pkg.go.dev/io#Reader) interface). For example:
 
-```go
-import (
-    "fmt"
-    "io"
-    "log"
-    "strings"
-    "testing"
-)
 
-func TestIntegrationNginxLatestReturn(t *testing.T) {
-    // ...
-
-    c, reader, err := container.Exec(ctx, []string{"ls", path})
-    if err != nil {
-        t.Fatal(err)
-    }
-
-    buf := new(strings.Builder)
-    _, err := io.Copy(buf, reader)
-    if err != nil {
-        t.Fatal(err)
-    }
-
-    // See the logs of the command execution.
-    t.Log(buf.String())
-}
-```
+<!--codeinclude-->
+[Command logs](../../docker_test.go) inside_block:exec_reader_example
+<!--/codeinclude-->
 
 This is done this way, because it brings more flexibility to the user, rather than returning a string.
