@@ -1298,7 +1298,8 @@ func TestContainerWithTmpFs(t *testing.T) {
 
 	path := "/testtmpfs/test.file"
 
-	c, _, err := container.Exec(ctx, []string{"ls", path})
+	// exec_reader_example {
+	c, reader, err := container.Exec(ctx, []string{"ls", path})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1306,6 +1307,17 @@ func TestContainerWithTmpFs(t *testing.T) {
 		t.Fatalf("File %s should not have existed, expected return code 1, got %v", path, c)
 	}
 
+	buf := new(strings.Builder)
+	_, err = io.Copy(buf, reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// See the logs from the command execution.
+	t.Log(buf.String())
+	// }
+
+	// exec_example {
 	c, _, err = container.Exec(ctx, []string{"touch", path})
 	if err != nil {
 		t.Fatal(err)
@@ -1313,6 +1325,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 	if c != 0 {
 		t.Fatalf("File %s should have been created successfully, expected return code 0, got %v", path, c)
 	}
+	// }
 
 	c, _, err = container.Exec(ctx, []string{"ls", path})
 	if err != nil {
