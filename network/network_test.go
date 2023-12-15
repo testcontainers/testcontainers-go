@@ -67,7 +67,8 @@ func ExampleNew() {
 
 	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
-		log.Fatalf("failed to create docker client: %s", err)
+		fmt.Println(err)
+		return
 	}
 
 	args := filters.NewArgs()
