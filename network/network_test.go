@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"testing"
-	"time"
 
 	dockernetwork "github.com/docker/docker/api/types/network"
 	"github.com/stretchr/testify/assert"
@@ -258,44 +257,28 @@ func TestMultipleContainersInTheNewNetwork(t *testing.T) {
 
 	networkName := net.Name
 
-	env := make(map[string]string)
-	env["POSTGRES_PASSWORD"] = "Password1"
-	dbContainerRequest := testcontainers.ContainerRequest{
-		Image:        "postgres:12",
-		ExposedPorts: []string{"5432/tcp"},
-		AutoRemove:   true,
-		Env:          env,
-		WaitingFor:   wait.ForListeningPort("5432/tcp"),
-		Networks:     []string{networkName},
+	req1 := testcontainers.ContainerRequest{
+		Image:    nginxAlpineImage,
+		Networks: []string{networkName},
 	}
 
-	postgres, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: dbContainerRequest,
+	c1, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req1,
 		Started:          true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
-		require.NoError(t, postgres.Terminate(ctx))
+		require.NoError(t, c1.Terminate(ctx))
 	}()
 
-	env = make(map[string]string)
-	env["RABBITMQ_ERLANG_COOKIE"] = "f2a2d3d27c75"
-	env["RABBITMQ_DEFAULT_USER"] = "admin"
-	env["RABBITMQ_DEFAULT_PASS"] = "Password1"
-	hp := wait.ForListeningPort("5672/tcp")
-	hp.WithStartupTimeout(3 * time.Minute)
-	amqpRequest := testcontainers.ContainerRequest{
-		Image:        "rabbitmq:3.8.19-management-alpine",
-		ExposedPorts: []string{"15672/tcp", "5672/tcp"},
-		Env:          env,
-		AutoRemove:   true,
-		WaitingFor:   hp,
-		Networks:     []string{networkName},
+	req2 := testcontainers.ContainerRequest{
+		Image:    nginxAlpineImage,
+		Networks: []string{networkName},
 	}
-	rabbitmq, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: amqpRequest,
+	c2, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req2,
 		Started:          true,
 	})
 	if err != nil {
@@ -303,13 +286,13 @@ func TestMultipleContainersInTheNewNetwork(t *testing.T) {
 		return
 	}
 	defer func() {
-		require.NoError(t, rabbitmq.Terminate(ctx))
+		require.NoError(t, c2.Terminate(ctx))
 	}()
 
-	pNets, err := postgres.Networks(ctx)
+	pNets, err := c1.Networks(ctx)
 	require.NoError(t, err)
 
-	rNets, err := rabbitmq.Networks(ctx)
+	rNets, err := c2.Networks(ctx)
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, len(pNets))
