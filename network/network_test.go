@@ -78,7 +78,8 @@ func ExampleNew() {
 		Filters: args,
 	})
 	if err != nil {
-		log.Fatalf("failed to list networks: %s", err)
+		fmt.Println(err)
+		return
 	}
 
 	fmt.Println(len(resources))
@@ -94,7 +95,8 @@ func ExampleNew() {
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 
 	fmt.Println(state.Running)
