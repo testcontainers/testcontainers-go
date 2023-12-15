@@ -44,9 +44,9 @@ You could use this feature to run a custom script, or to run a command that is n
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-By default, the container is started in the default Docker network. If you want to use a different Docker network, you can use the `WithNetwork(networkName string, alias string)` option, which receives the new network name and an alias as parameters, creating the new network, attaching the container to it, and setting the network alias for that network.
+By default, the container is started in the default Docker network. If you want to use a different Docker network, you can use the `network.WithNetwork(alias string)` option, which receives an alias as parameter, creating the new network with a random name, attaching the container to it, and setting the network alias for that network.
 
-If the network already exists, _Testcontainers for Go_ won't create a new one, but it will attach the container to it and set the network alias.
+In the case you need to retrieve the network name, you can use the `Networks(ctx)` method of the `Container` interface, which returns a slice of strings with the names of the networks where the container is attached.
 
 #### Docker type modifiers
 

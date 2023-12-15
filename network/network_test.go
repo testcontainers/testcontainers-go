@@ -6,6 +6,8 @@ import (
 	"log"
 	"testing"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	dockernetwork "github.com/docker/docker/api/types/network"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +28,12 @@ func ExampleNew() {
 	// createNetwork {
 	ctx := context.Background()
 
-	net, err := network.New(ctx, network.WithCheckDuplicate())
+	net, err := network.New(ctx,
+		network.WithCheckDuplicate(),
+		network.WithAttachable(),
+		network.WithInternal(),
+		network.WithLabels(map[string]string{"this-is-a-test": "value"}),
+	)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -58,7 +65,31 @@ func ExampleNew() {
 		}
 	}()
 
-	nginxC.GetContainerID()
+	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	if err != nil {
+		log.Fatalf("failed to create docker client: %s", err)
+	}
+
+	args := filters.NewArgs()
+	args.Add("name", networkName)
+
+	resources, err := client.NetworkList(context.Background(), types.NetworkListOptions{
+		Filters: args,
+	})
+	if err != nil {
+		log.Fatalf("failed to list networks: %s", err)
+	}
+
+	fmt.Println(len(resources))
+
+	newNetwork := resources[0]
+
+	expectedLabels := testcontainers.GenericLabels()
+	expectedLabels["this-is-a-test"] = "true"
+
+	fmt.Println(newNetwork.Attachable)
+	fmt.Println(newNetwork.Internal)
+	fmt.Println(newNetwork.Labels["this-is-a-test"])
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
@@ -68,6 +99,10 @@ func ExampleNew() {
 	fmt.Println(state.Running)
 
 	// Output:
+	// 1
+	// true
+	// true
+	// value
 	// true
 }
 
@@ -363,4 +398,41 @@ func TestNew_withOptions(t *testing.T) {
 		t.Fatal("Cannot get created network by name")
 	}
 	assert.Equal(t, ipamConfig, foundNetwork.IPAM)
+}
+
+func TestWithNetwork(t *testing.T) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{},
+	}
+
+	network.WithNetwork("alias", network.WithAttachable(), network.WithInternal(), network.WithLabels(map[string]string{"this-is-a-test": "value"}))(&req)
+
+	assert.Equal(t, 1, len(req.Networks))
+
+	networkName := req.Networks[0]
+
+	assert.Equal(t, 1, len(req.NetworkAliases))
+	assert.Equal(t, map[string][]string{networkName: {"alias"}}, req.NetworkAliases)
+
+	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	require.NoError(t, err)
+
+	args := filters.NewArgs()
+	args.Add("name", networkName)
+
+	resources, err := client.NetworkList(context.Background(), types.NetworkListOptions{
+		Filters: args,
+	})
+	require.NoError(t, err)
+	assert.Len(t, resources, 1)
+
+	newNetwork := resources[0]
+
+	expectedLabels := testcontainers.GenericLabels()
+	expectedLabels["this-is-a-test"] = "value"
+
+	assert.Equal(t, networkName, newNetwork.Name)
+	assert.True(t, newNetwork.Attachable)
+	assert.True(t, newNetwork.Internal)
+	assert.Equal(t, expectedLabels, newNetwork.Labels)
 }

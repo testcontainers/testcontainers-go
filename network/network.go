@@ -120,3 +120,29 @@ func WithIPAM(ipam *network.IPAM) CustomizeNetworkOption {
 		original.IPAM = ipam
 	}
 }
+
+// WithNetwork creates a network with random name and customizers, and attaches the container to it.
+// Finally it sets the network alias on that network to the given alias.
+func WithNetwork(alias string, opts ...NetworkCustomizer) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		newNetwork, err := New(context.Background(), opts...)
+		if err != nil {
+			logger := req.Logger
+			if logger == nil {
+				logger = testcontainers.Logger
+			}
+			logger.Printf("failed to create network. Container won't be attached to it: %v", err)
+			return
+		}
+
+		networkName := newNetwork.Name
+
+		// attaching to the network because it was created with success or it already existed.
+		req.Networks = append(req.Networks, networkName)
+
+		if req.NetworkAliases == nil {
+			req.NetworkAliases = make(map[string][]string)
+		}
+		req.NetworkAliases[networkName] = []string{alias}
+	}
+}
