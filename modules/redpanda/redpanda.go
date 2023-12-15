@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -31,6 +32,7 @@ const (
 	defaultKafkaAPIPort       = "9092/tcp"
 	defaultAdminAPIPort       = "9644/tcp"
 	defaultSchemaRegistryPort = "8081/tcp"
+	defaultDockerKafkaApiPort = "29092"
 
 	redpandaDir         = "/etc/redpanda"
 	entrypointFile      = "/entrypoint-tc.sh"
@@ -98,6 +100,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("failed to create entrypoint file: %w", err)
 	}
 
+	// 4. Register extra kafka listeners if provided, network aliases will be
+	// set
+	if err := registerListeners(ctx, settings, req); err != nil {
+		return nil, fmt.Errorf("failed to register listeners: %w", err)
+	}
+
 	// Bootstrap config file contains cluster configurations which will only be considered
 	// the very first time you start a cluster.
 	bootstrapConfigPath := filepath.Join(tmpDir, bootstrapConfigFile)
@@ -122,7 +130,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		},
 	)
 
-	// 4. Create certificate and key for TLS connections.
+	// 5. Create certificate and key for TLS connections.
 	if settings.EnableTLS {
 		certPath := filepath.Join(tmpDir, certFile)
 		if err := os.WriteFile(certPath, settings.cert, 0o600); err != nil {
@@ -152,7 +160,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	// 5. Get mapped port for the Kafka API, so that we can render and then mount
+	// 6. Get mapped port for the Kafka API, so that we can render and then mount
 	// the Redpanda config with the advertised Kafka address.
 	hostIP, err := container.Host(ctx)
 	if err != nil {
@@ -164,7 +172,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("failed to get mapped Kafka port: %w", err)
 	}
 
-	// 6. Render redpanda.yaml config and mount it.
+	// 7. Render redpanda.yaml config and mount it.
 	nodeConfig, err := renderNodeConfig(settings, hostIP, kafkaPort.Int())
 	if err != nil {
 		return nil, fmt.Errorf("failed to render node config: %w", err)
@@ -175,7 +183,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("failed to copy redpanda.yaml into container: %w", err)
 	}
 
-	// 6. Wait until Redpanda is ready to serve requests
+	// 8. Wait until Redpanda is ready to serve requests
 	err = wait.ForAll(
 		wait.ForListeningPort(defaultKafkaAPIPort),
 		wait.ForLog("Successfully started Redpanda!").WithPollInterval(100*time.Millisecond)).
@@ -185,7 +193,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
 	}
 
-	// 7. Create Redpanda Service Accounts if configured to do so.
+	// 9. Create Redpanda Service Accounts if configured to do so.
 	if len(settings.ServiceAccounts) > 0 {
 		adminAPIPort, err := container.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
 		if err != nil {
@@ -252,6 +260,29 @@ func renderBootstrapConfig(settings options) ([]byte, error) {
 	return bootstrapConfig.Bytes(), nil
 }
 
+// registerListeners validates that the provided listeners are valid and set network aliases for the provided addresses.
+// The container must be attached to at least one network.
+func registerListeners(ctx context.Context, settings options, req testcontainers.GenericContainerRequest) error {
+	if len(settings.Listeners) == 0 {
+		return nil
+	}
+
+	if len(req.Networks) == 0 {
+		return fmt.Errorf("container must be attached to at least one network")
+	}
+
+	for _, listener := range settings.Listeners {
+		if listener.Port < 0 || listener.Port > math.MaxUint16 {
+			return fmt.Errorf("invalid port on listener %s:%d (must be between 0 and 65535)", listener.Address, listener.Port)
+		}
+
+		for _, network := range req.Networks {
+			req.NetworkAliases[network] = append(req.NetworkAliases[network], listener.Address)
+		}
+	}
+	return nil
+}
+
 // renderNodeConfig renders the redpanda.yaml node config and returns it as
 // byte array.
 func renderNodeConfig(settings options, hostIP string, advertisedKafkaPort int) ([]byte, error) {
@@ -262,6 +293,7 @@ func renderNodeConfig(settings options, hostIP string, advertisedKafkaPort int) 
 			AdvertisedPort:       advertisedKafkaPort,
 			AuthenticationMethod: settings.KafkaAuthenticationMethod,
 			EnableAuthorization:  settings.KafkaEnableAuthorization,
+			Listeners:            settings.Listeners,
 		},
 		SchemaRegistry: redpandaConfigTplParamsSchemaRegistry{
 			AuthenticationMethod: settings.SchemaRegistryAuthenticationMethod,
@@ -300,8 +332,15 @@ type redpandaConfigTplParamsKafkaAPI struct {
 	AdvertisedPort       int
 	AuthenticationMethod string
 	EnableAuthorization  bool
+	Listeners            []listener
 }
 
 type redpandaConfigTplParamsSchemaRegistry struct {
+	AuthenticationMethod string
+}
+
+type listener struct {
+	Address              string
+	Port                 int
 	AuthenticationMethod string
 }

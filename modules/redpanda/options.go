@@ -1,6 +1,11 @@
 package redpanda
 
-import "github.com/testcontainers/testcontainers-go"
+import (
+	"net"
+	"strconv"
+
+	"github.com/testcontainers/testcontainers-go"
+)
 
 type options struct {
 	// Superusers is a list of service account names.
@@ -29,7 +34,12 @@ type options struct {
 
 	// EnableTLS is a flag to enable TLS.
 	EnableTLS bool
+
 	cert, key []byte
+
+	// Listeners is a list of custom listeners that can be provided to access the
+	// containers form within docker networks
+	Listeners []listener
 }
 
 func defaultOptions() options {
@@ -41,6 +51,7 @@ func defaultOptions() options {
 		ServiceAccounts:                    make(map[string]string, 0),
 		AutoCreateTopics:                   false,
 		EnableTLS:                          false,
+		Listeners:                          make([]listener, 0),
 	}
 }
 
@@ -86,6 +97,8 @@ func WithEnableKafkaAuthorization() Option {
 	}
 }
 
+// WithEnableSchemaRegistryHTTPBasicAuth enables HTTP basic authentication for
+// Schema Registry.
 func WithEnableSchemaRegistryHTTPBasicAuth() Option {
 	return func(o *options) {
 		o.SchemaRegistryAuthenticationMethod = "http_basic"
@@ -104,5 +117,29 @@ func WithTLS(cert, key []byte) Option {
 		o.EnableTLS = true
 		o.cert = cert
 		o.key = key
+	}
+}
+
+// WithListener adds a custom listener to the Redpanda containers. Listener
+// will be aliases to all networks, so they can be accessed from within docker
+// networks. At leas one network must be attached to the container, if not an
+// error will be thrown when starting the container.
+func WithListener(lis string) Option {
+	host, port, err := net.SplitHostPort(lis)
+	if err != nil {
+		return func(o *options) {}
+	}
+
+	portInt, err := strconv.Atoi(port)
+	if err != nil {
+		return func(o *options) {}
+	}
+
+	return func(o *options) {
+		o.Listeners = append(o.Listeners, listener{
+			Address:              host,
+			Port:                 portInt,
+			AuthenticationMethod: o.KafkaAuthenticationMethod,
+		})
 	}
 }
