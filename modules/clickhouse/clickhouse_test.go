@@ -218,6 +218,90 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 	}
 }
 
+func TestClickHouseWithZookeeper(t *testing.T) {
+	ctx := context.Background()
+
+	// withZookeeper {
+	zk, err := RunZookeeper(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	container, err := RunContainer(ctx,
+		WithUsername(user),
+		WithPassword(password),
+		WithDatabase(dbname),
+		WithZookeeper(zk),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// }
+
+	// Clean up the container after the test is complete
+	t.Cleanup(func() {
+		assert.NoError(t, container.Terminate(ctx))
+	})
+
+	connectionHost, err := container.ConnectionHost(ctx)
+	assert.NoError(t, err)
+
+	conn, err := ch.Open(&ch.Options{
+		Addr: []string{connectionHost},
+		Auth: ch.Auth{
+			Database: dbname,
+			Username: user,
+			Password: password, // --> password is not required
+		},
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+	defer conn.Close()
+
+	// perform assertions
+	data, err := performReplicatedCRUD(conn)
+	assert.NoError(t, err)
+	assert.Len(t, data, 1)
+}
+
+func performReplicatedCRUD(conn driver.Conn) ([]Test, error) {
+	var (
+		err error
+		res []Test
+	)
+
+	err = backoff.Retry(func() error {
+		err = conn.Exec(context.Background(), "CREATE TABLE replicated_test_table (id UInt64) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/mdb.data_transfer_cp_cdc', '{replica}') PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
+		if err != nil {
+			return err
+		}
+
+		err = conn.Exec(context.Background(), "INSERT INTO replicated_test_table (id) VALUES (1);")
+		if err != nil {
+			return err
+		}
+
+		rows, err := conn.Query(context.Background(), "SELECT * FROM replicated_test_table;")
+		if err != nil {
+			return err
+		}
+
+		for rows.Next() {
+			var r Test
+
+			err := rows.Scan(&r.Id)
+			if err != nil {
+				return err
+			}
+
+			res = append(res, r)
+		}
+		return nil
+	}, backoff.NewExponentialBackOff())
+
+	return res, err
+}
+
 func performCRUD(conn driver.Conn) ([]Test, error) {
 	var (
 		err  error

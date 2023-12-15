@@ -73,6 +73,15 @@ initialization before starting the service.
 [Init script content](../../modules/clickhouse/testdata/init-db.sh)
 <!--/codeinclude-->
 
+#### Zookeeper
+
+If you would like to perform queries against clusterized ClickHouse you need to start zookeeper near your cluster and pass link to it via `config.xml`
+
+<!--codeinclude-->
+[Include zookeeper](../../modules/clickhouse/clickhouse_test.go) inside_block:withZookeeper
+<!--/codeinclude-->
+
+
 #### Custom configuration
 
 If you need to set a custom configuration, the module provides the `WithConfigFile` option to pass the path to a custom configuration file in XML format.
