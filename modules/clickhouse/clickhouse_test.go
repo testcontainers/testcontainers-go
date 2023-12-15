@@ -2,6 +2,8 @@ package clickhouse
 
 import (
 	"context"
+	"github.com/docker/go-connections/nat"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"path/filepath"
 	"testing"
 
@@ -222,7 +224,21 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 	ctx := context.Background()
 
 	// withZookeeper {
-	zk, err := RunZookeeper(ctx)
+	zkPort := nat.Port("2181/tcp")
+
+	zkcontainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			ExposedPorts: []string{zkPort.Port()},
+			Image:        "zookeeper:3.7",
+			WaitingFor:   wait.ForListeningPort(zkPort),
+		},
+		Started: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ipaddr, err := zkcontainer.ContainerIP(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -231,7 +247,7 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 		WithUsername(user),
 		WithPassword(password),
 		WithDatabase(dbname),
-		WithZookeeper(zk),
+		WithZookeeper(ipaddr, zkPort.Port()),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -241,6 +257,7 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
 		assert.NoError(t, container.Terminate(ctx))
+		assert.NoError(t, zkcontainer.Terminate(ctx))
 	})
 
 	connectionHost, err := container.ConnectionHost(ctx)
