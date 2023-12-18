@@ -14,6 +14,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/localstack"
+	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -51,16 +52,12 @@ func ExampleRunContainer_withNetwork() {
 	// localstackWithNetwork {
 	ctx := context.Background()
 
-	nwName := "localstack-network"
-
-	_, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
-		NetworkRequest: testcontainers.NetworkRequest{
-			Name: nwName,
-		},
-	})
+	newNetwork, err := network.New(ctx, network.WithCheckDuplicate())
 	if err != nil {
 		panic(err)
 	}
+
+	nwName := newNetwork.Name
 
 	localstackContainer, err := localstack.RunContainer(
 		ctx,
@@ -91,11 +88,9 @@ func ExampleRunContainer_withNetwork() {
 	}
 
 	fmt.Println(len(networks))
-	fmt.Println(networks[0])
 
 	// Output:
 	// 1
-	// localstack-network
 }
 
 func ExampleRunContainer_legacyMode() {

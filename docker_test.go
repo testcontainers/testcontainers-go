@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -44,86 +43,6 @@ func init() {
 		providerType = ProviderPodman
 	}
 }
-
-// testNetworkAliases {
-func TestContainerAttachedToNewNetwork(t *testing.T) {
-	aliases := []string{"alias1", "alias2", "alias3"}
-	networkName := "new-network"
-	ctx := context.Background()
-	gcr := GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-			Networks: []string{
-				networkName,
-			},
-			NetworkAliases: map[string][]string{
-				networkName: aliases,
-			},
-		},
-		Started: true,
-	}
-
-	newNetwork, err := GenericNetwork(ctx, GenericNetworkRequest{
-		ProviderType: providerType,
-		NetworkRequest: NetworkRequest{
-			Name:           networkName,
-			CheckDuplicate: true,
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		require.NoError(t, newNetwork.Remove(ctx))
-	})
-
-	nginx, err := GenericContainer(ctx, gcr)
-
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginx)
-
-	networks, err := nginx.Networks(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(networks) != 1 {
-		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
-	}
-	network := networks[0]
-	if network != networkName {
-		t.Errorf("Expected network name '%s'. Got '%s'.", networkName, network)
-	}
-
-	networkAliases, err := nginx.NetworkAliases(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(networkAliases) != 1 {
-		t.Errorf("Expected network aliases for 1 network. Got '%d'.", len(networkAliases))
-	}
-
-	networkAlias := networkAliases[networkName]
-
-	require.NotEmpty(t, networkAlias)
-
-	for _, alias := range aliases {
-		require.Contains(t, networkAlias, alias)
-	}
-
-	networkIP, err := nginx.ContainerIP(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(networkIP) == 0 {
-		t.Errorf("Expected an IP address, got %v", networkIP)
-	}
-}
-
-// }
 
 func TestContainerWithHostNetworkOptions(t *testing.T) {
 	if os.Getenv("XDG_RUNTIME_DIR") != "" {
@@ -591,54 +510,6 @@ func TestContainerCreation(t *testing.T) {
 	}
 	if len(networkAliases["bridge"]) != 0 {
 		t.Errorf("Expected number of aliases for 'bridge' network %d. Got %d.", 0, len(networkAliases["bridge"]))
-	}
-}
-
-func TestContainerIPs(t *testing.T) {
-	ctx := context.Background()
-
-	networkName := "new-network"
-	newNetwork, err := GenericNetwork(ctx, GenericNetworkRequest{
-		ProviderType: providerType,
-		NetworkRequest: NetworkRequest{
-			Name:           networkName,
-			CheckDuplicate: true,
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Cleanup(func() {
-		require.NoError(t, newNetwork.Remove(ctx))
-	})
-
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-			Networks: []string{
-				"bridge",
-				networkName,
-			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
-		},
-		Started: true,
-	})
-
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
-
-	ips, err := nginxC.ContainerIPs(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(ips) != 2 {
-		t.Errorf("Expected two IP addresses, got %v", len(ips))
 	}
 }
 
@@ -1825,66 +1696,6 @@ func TestDockerContainerResources(t *testing.T) {
 	assert.Equal(t, expected, resp.HostConfig.Ulimits)
 }
 
-func TestContainerWithReaperNetwork(t *testing.T) {
-	if testcontainersdocker.IsWindows() {
-		t.Skip("Skip for Windows. See https://stackoverflow.com/questions/43784916/docker-for-windows-networking-container-with-multiple-network-interfaces")
-	}
-
-	ctx := context.Background()
-	networks := []string{
-		"test_network_" + randomString(),
-		"test_network_" + randomString(),
-	}
-
-	for _, nw := range networks {
-		nr := NetworkRequest{
-			Name:       nw,
-			Attachable: true,
-		}
-		n, err := GenericNetwork(ctx, GenericNetworkRequest{
-			ProviderType:   providerType,
-			NetworkRequest: nr,
-		})
-		assert.Nil(t, err)
-		// use t.Cleanup to run after terminateContainerOnEnd
-		t.Cleanup(func() {
-			err := n.Remove(ctx)
-			assert.NoError(t, err)
-		})
-	}
-
-	req := ContainerRequest{
-		Image:        nginxAlpineImage,
-		ExposedPorts: []string{nginxDefaultPort},
-		WaitingFor: wait.ForAll(
-			wait.ForListeningPort(nginxDefaultPort),
-			wait.ForLog("Configuration complete; ready for start up"),
-		),
-		Networks: networks,
-	}
-
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
-
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
-
-	containerId := nginxC.GetContainerID()
-
-	cli, err := NewDockerClientWithOpts(ctx)
-	assert.Nil(t, err)
-	defer cli.Close()
-
-	cnt, err := cli.ContainerInspect(ctx, containerId)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(cnt.NetworkSettings.Networks))
-	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[0]])
-	assert.NotNil(t, cnt.NetworkSettings.Networks[networks[1]])
-}
-
 func TestContainerCapAdd(t *testing.T) {
 	if providerType == ProviderPodman {
 		t.Skip("Rootless Podman does not support setting cap-add/cap-drop")
@@ -2116,19 +1927,6 @@ func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr Container) 
 		tb.Log("terminating container")
 		require.NoError(tb, ctr.Terminate(ctx))
 	})
-}
-
-func randomString() string {
-	rand.New(rand.NewSource(time.Now().UnixNano()))
-	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-		"abcdefghijklmnopqrstuvwxyz" +
-		"0123456789")
-	length := 8
-	var b strings.Builder
-	for i := 0; i < length; i++ {
-		b.WriteRune(chars[rand.Intn(len(chars))])
-	}
-	return b.String()
 }
 
 func TestDockerProviderFindContainerByName(t *testing.T) {
