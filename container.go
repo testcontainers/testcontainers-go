@@ -48,7 +48,7 @@ type Container interface {
 	Terminate(context.Context) error             // terminate the container
 	Logs(context.Context) (io.ReadCloser, error) // Get logs of the container
 	FollowOutput(LogConsumer)
-	StartLogProducer(context.Context, time.Duration) error
+	StartLogProducer(context.Context, ...LogProducerOption) error
 	StopLogProducer() error
 	Name(context.Context) (string, error)                        // get container name
 	State(context.Context) (*types.ContainerState, error)        // returns container's running state

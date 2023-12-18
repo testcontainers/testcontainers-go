@@ -73,6 +73,7 @@ type DockerContainer struct {
 	producerDone      chan bool
 	producerError     chan error
 	producerMutex     sync.Mutex
+	producerTimeout   *time.Duration
 	logger            Logging
 	lifecycleHooks    []ContainerLifecycleHooks
 }
@@ -614,12 +615,22 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 	return nil
 }
 
+type LogProducerOption func(*DockerContainer)
+
+func WithLogProducerTimeout(timeout time.Duration) LogProducerOption {
+	return func(c *DockerContainer) {
+		c.producerTimeout = &timeout
+	}
+}
+
 // StartLogProducer will start a concurrent process that will continuously read logs
-// from the container and will send them to each added LogConsumer
-// timeout accepts values between 5 and 60s and will be used to set the context timeout
+// from the container and will send them to each added LogConsumer.
+// Default log producer timeout is 5s. It is used to set the context timeout
 // which means that each log-reading loop will last at least the specified timeout
-// and that it cannot be cancelled earlier
-func (c *DockerContainer) StartLogProducer(ctx context.Context, timeout time.Duration) error {
+// and that it cannot be cancelled earlier.
+// Use functional option WithLogProducerTimeout() to override default timeout. If it's
+// lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
+func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProducerOption) error {
 	{
 		c.producerMutex.Lock()
 		defer c.producerMutex.Unlock()
@@ -629,8 +640,23 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context, timeout time.Dur
 		}
 	}
 
-	if timeout < time.Duration(5*time.Second) || timeout > time.Duration(60*time.Second) {
-		return errors.New("timeout must be between 5 and 60 seconds")
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	minProducerTimeout := time.Duration(5 * time.Second)
+	maxProducerTimeout := time.Duration(60 * time.Second)
+
+	if c.producerTimeout == nil {
+		c.producerTimeout = &minProducerTimeout
+	}
+
+	if *c.producerTimeout < minProducerTimeout {
+		c.producerTimeout = &minProducerTimeout
+	}
+
+	if *c.producerTimeout > maxProducerTimeout {
+		c.producerTimeout = &maxProducerTimeout
 	}
 
 	c.stopProducer = make(chan bool)
@@ -660,7 +686,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context, timeout time.Dur
 			Since:      since,
 		}
 
-		ctx, cancel := context.WithTimeout(ctx, timeout)
+		ctx, cancel := context.WithTimeout(ctx, *c.producerTimeout)
 		defer cancel()
 
 		r, err := c.provider.client.ContainerLogs(ctx, c.GetContainerID(), options)

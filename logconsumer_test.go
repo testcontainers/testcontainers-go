@@ -81,7 +81,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 
 	c.FollowOutput(&g)
 
-	err = c.StartLogProducer(ctx, time.Duration(5*time.Second))
+	err = c.StartLogProducer(ctx)
 	require.NoError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=hello")
@@ -148,7 +148,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 
 	c.FollowOutput(&g)
 
-	err = c.StartLogProducer(ctx, time.Duration(5*time.Second))
+	err = c.StartLogProducer(ctx)
 	require.NoError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=this-is-stdout")
@@ -205,7 +205,7 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	c.FollowOutput(&first)
 	c.FollowOutput(&second)
 
-	err = c.StartLogProducer(ctx, time.Duration(5*time.Second))
+	err = c.StartLogProducer(ctx)
 	require.NoError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=mlem")
@@ -254,10 +254,10 @@ func Test_StartStop(t *testing.T) {
 
 	require.NoError(t, c.StopLogProducer(), "nothing should happen even if the producer is not started")
 
-	require.NoError(t, c.StartLogProducer(ctx, time.Duration(5*time.Second)))
+	require.NoError(t, c.StartLogProducer(ctx))
 	require.Equal(t, <-g.Accepted, "ready\n")
 
-	require.Error(t, c.StartLogProducer(ctx, time.Duration(5*time.Second)), "log producer is already started")
+	require.Error(t, c.StartLogProducer(ctx), "log producer is already started")
 
 	_, err = http.Get(ep + "/stdout?echo=mlem")
 	require.NoError(t, err)
@@ -265,7 +265,7 @@ func Test_StartStop(t *testing.T) {
 
 	require.NoError(t, c.StopLogProducer())
 
-	require.NoError(t, c.StartLogProducer(ctx, time.Duration(5*time.Second)))
+	require.NoError(t, c.StartLogProducer(ctx))
 	require.Equal(t, <-g.Accepted, "ready\n")
 	require.Equal(t, <-g.Accepted, "echo mlem\n")
 
@@ -375,7 +375,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	if err = nginx.StartLogProducer(ctx, time.Duration(5*time.Second)); err != nil {
+	if err = nginx.StartLogProducer(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
@@ -454,7 +454,7 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	assert.Equal(t, "0", strings.TrimSpace(string(b)))
 }
 
-func Test_StartLogProducerErrorsWithTooLowTimeout(t *testing.T) {
+func Test_StartLogProducerStillStartssWithTooLowTimeout(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
@@ -481,12 +481,11 @@ func Test_StartLogProducerErrorsWithTooLowTimeout(t *testing.T) {
 
 	c.FollowOutput(&g)
 
-	err = c.StartLogProducer(ctx, time.Duration(4*time.Second))
-	require.Error(t, err)
-	require.Equal(t, "timeout must be between 5 and 60 seconds", err.Error())
+	err = c.StartLogProducer(ctx, WithLogProducerTimeout(4*time.Second))
+	require.NoError(t, err, "should still start with too low timeout")
 }
 
-func Test_StartLogProducerErrorsWithTooHighTimeout(t *testing.T) {
+func Test_StartLogProducerStillStartsWithTooHighTimeout(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
@@ -513,7 +512,6 @@ func Test_StartLogProducerErrorsWithTooHighTimeout(t *testing.T) {
 
 	c.FollowOutput(&g)
 
-	err = c.StartLogProducer(ctx, time.Duration(61*time.Second))
-	require.Error(t, err)
-	require.Equal(t, "timeout must be between 5 and 60 seconds", err.Error())
+	err = c.StartLogProducer(ctx, WithLogProducerTimeout(61*time.Second))
+	require.NoError(t, err, "should still start with too high timeout")
 }
