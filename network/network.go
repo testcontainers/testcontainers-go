@@ -137,9 +137,9 @@ func WithNetwork(alias string, nw *testcontainers.DockerNetwork) testcontainers.
 
 // WithNewNetwork creates a new network with random name and customizers, and attaches the container to it.
 // Finally it sets the network alias on that network to the given alias.
-func WithNewNetwork(alias string, opts ...NetworkCustomizer) testcontainers.CustomizeRequestOption {
+func WithNewNetwork(ctx context.Context, alias string, opts ...NetworkCustomizer) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
-		newNetwork, err := New(context.Background(), opts...)
+		newNetwork, err := New(ctx, opts...)
 		if err != nil {
 			logger := req.Logger
 			if logger == nil {

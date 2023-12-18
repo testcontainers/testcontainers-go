@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"testing"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
@@ -499,7 +500,11 @@ func TestWithNewNetwork(t *testing.T) {
 		ContainerRequest: testcontainers.ContainerRequest{},
 	}
 
-	network.WithNewNetwork("alias", network.WithAttachable(), network.WithInternal(), network.WithLabels(map[string]string{"this-is-a-test": "value"}))(&req)
+	network.WithNewNetwork(context.Background(), "alias",
+		network.WithAttachable(),
+		network.WithInternal(),
+		network.WithLabels(map[string]string{"this-is-a-test": "value"}),
+	)(&req)
 
 	assert.Equal(t, 1, len(req.Networks))
 
@@ -532,4 +537,23 @@ func TestWithNewNetwork(t *testing.T) {
 	assert.True(t, newNetwork.Attachable)
 	assert.True(t, newNetwork.Internal)
 	assert.Equal(t, expectedLabels, newNetwork.Labels)
+}
+
+func TestWithNewNetworkContextTimeout(t *testing.T) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	defer cancel()
+
+	network.WithNewNetwork(ctx, "alias",
+		network.WithAttachable(),
+		network.WithInternal(),
+		network.WithLabels(map[string]string{"this-is-a-test": "value"}),
+	)(&req)
+
+	// we do not want to fail, just skip the network creation
+	assert.Equal(t, 0, len(req.Networks))
+	assert.Equal(t, 0, len(req.NetworkAliases))
 }
