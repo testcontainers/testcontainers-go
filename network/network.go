@@ -121,7 +121,7 @@ func WithIPAM(ipam *network.IPAM) CustomizeNetworkOption {
 
 // WithNetwork reuses an already existing network, attaching the container to it.
 // Finally it sets the network alias on that network to the given alias.
-func WithNetwork(alias string, nw *testcontainers.DockerNetwork) testcontainers.CustomizeRequestOption {
+func WithNetwork(aliases []string, nw *testcontainers.DockerNetwork) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		networkName := nw.Name
 
@@ -131,13 +131,13 @@ func WithNetwork(alias string, nw *testcontainers.DockerNetwork) testcontainers.
 		if req.NetworkAliases == nil {
 			req.NetworkAliases = make(map[string][]string)
 		}
-		req.NetworkAliases[networkName] = []string{alias}
+		req.NetworkAliases[networkName] = aliases
 	}
 }
 
 // WithNewNetwork creates a new network with random name and customizers, and attaches the container to it.
 // Finally it sets the network alias on that network to the given alias.
-func WithNewNetwork(ctx context.Context, alias string, opts ...NetworkCustomizer) testcontainers.CustomizeRequestOption {
+func WithNewNetwork(ctx context.Context, aliases []string, opts ...NetworkCustomizer) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		newNetwork, err := New(ctx, opts...)
 		if err != nil {
@@ -157,6 +157,6 @@ func WithNewNetwork(ctx context.Context, alias string, opts ...NetworkCustomizer
 		if req.NetworkAliases == nil {
 			req.NetworkAliases = make(map[string][]string)
 		}
-		req.NetworkAliases[networkName] = []string{alias}
+		req.NetworkAliases[networkName] = aliases
 	}
 }

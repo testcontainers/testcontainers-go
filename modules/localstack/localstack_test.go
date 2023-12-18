@@ -160,7 +160,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 
 	localstack, err := RunContainer(
 		ctx,
-		network.WithNetwork("localstack", nw),
+		network.WithNetwork([]string{"localstack"}, nw),
 		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "localstack/localstack:2.0.0",

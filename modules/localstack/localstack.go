@@ -62,9 +62,9 @@ func isVersion2(image string) bool {
 
 // WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
 // on that network to the given alias.
-// Deprecated: use network.WithNewNetwork instead
+// Deprecated: use network.WithNetwork or network.WithNewNetwork instead
 func WithNetwork(networkName string, alias string) testcontainers.CustomizeRequestOption {
-	return network.WithNewNetwork(context.Background(), alias, network.WithCheckDuplicate())
+	return network.WithNewNetwork(context.Background(), []string{alias}, network.WithCheckDuplicate())
 }
 
 // RunContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:

@@ -420,7 +420,7 @@ func TestWithNetwork(t *testing.T) {
 			ContainerRequest: testcontainers.ContainerRequest{},
 		}
 
-		network.WithNetwork("alias", nw)(&req)
+		network.WithNetwork([]string{"alias"}, nw)(&req)
 
 		assert.Equal(t, 1, len(req.Networks))
 		assert.Equal(t, networkName, req.Networks[0])
@@ -466,7 +466,7 @@ func TestWithSyntheticNetwork(t *testing.T) {
 		},
 	}
 
-	network.WithNetwork("alias", nw)(&req)
+	network.WithNetwork([]string{"alias"}, nw)(&req)
 
 	assert.Equal(t, 1, len(req.Networks))
 	assert.Equal(t, networkName, req.Networks[0])
@@ -500,7 +500,7 @@ func TestWithNewNetwork(t *testing.T) {
 		ContainerRequest: testcontainers.ContainerRequest{},
 	}
 
-	network.WithNewNetwork(context.Background(), "alias",
+	network.WithNewNetwork(context.Background(), []string{"alias"},
 		network.WithAttachable(),
 		network.WithInternal(),
 		network.WithLabels(map[string]string{"this-is-a-test": "value"}),
@@ -547,7 +547,7 @@ func TestWithNewNetworkContextTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 
-	network.WithNewNetwork(ctx, "alias",
+	network.WithNewNetwork(ctx, []string{"alias"},
 		network.WithAttachable(),
 		network.WithInternal(),
 		network.WithLabels(map[string]string{"this-is-a-test": "value"}),
