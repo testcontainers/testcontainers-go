@@ -13,21 +13,26 @@ type NetworkProvider interface {
 	GetNetwork(context.Context, NetworkRequest) (types.NetworkResource, error) // get a network
 }
 
+// Deprecated: will be removed in the future
 // Network allows getting info about a single network instance
 type Network interface {
 	Remove(context.Context) error // removes the network
 }
 
+// Deprecated: will be removed in the future.
 type DefaultNetwork string
 
+// Deprecated: will be removed in the future.
 func (n DefaultNetwork) ApplyGenericTo(opts *GenericProviderOptions) {
 	opts.DefaultNetwork = string(n)
 }
 
+// Deprecated: will be removed in the future.
 func (n DefaultNetwork) ApplyDockerTo(opts *DockerProviderOptions) {
 	opts.DefaultNetwork = string(n)
 }
 
+// Deprecated: will be removed in the future
 // NetworkRequest represents the parameters used to get a network
 type NetworkRequest struct {
 	Driver         string

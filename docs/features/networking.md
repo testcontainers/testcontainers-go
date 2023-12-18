@@ -72,6 +72,8 @@ Docker provides the ability for you to create custom networks and place containe
 !!! tip
     Note that _Testcontainers for Go_ allows a container to be on multiple networks including network aliases.
 
+For more information about how to create networks using _Testcontainers for Go_, please refer to the [How to create a network](./creating_networks.md) section.
+
 <!--codeinclude-->
-[Creating custom networks](../../docker_test.go) inside_block:testNetworkAliases
+[Creating custom networks](../../network/network_test.go) inside_block:testNetworkAliases
 <!--/codeinclude-->
