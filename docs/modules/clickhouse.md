@@ -75,7 +75,7 @@ initialization before starting the service.
 
 #### Zookeeper
 
-If you would like to perform queries against clusterized ClickHouse you need to start zookeeper near your cluster and pass link to it via `config.xml`
+Clusterized ClickHouse requires to start Zookeeper and pass link to it via `config.xml`.
 
 <!--codeinclude-->
 [Include zookeeper](../../modules/clickhouse/clickhouse_test.go) inside_block:withZookeeper

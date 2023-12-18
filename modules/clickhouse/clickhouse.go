@@ -90,12 +90,12 @@ type ZookeeperOptions struct {
 func renderZookeeperConfig(settings ZookeeperOptions) ([]byte, error) {
 	tpl, err := template.New("bootstrap.yaml").Parse(zookeeperConfigTpl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse redpanda config file template: %w", err)
+		return nil, fmt.Errorf("failed to parse zookeeper config file template: %w", err)
 	}
 
 	var bootstrapConfig bytes.Buffer
 	if err := tpl.Execute(&bootstrapConfig, settings); err != nil {
-		return nil, fmt.Errorf("failed to render redpanda bootstrap config template: %w", err)
+		return nil, fmt.Errorf("failed to render zookeeper bootstrap config template: %w", err)
 	}
 
 	return bootstrapConfig.Bytes(), nil
