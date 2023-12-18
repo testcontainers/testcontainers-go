@@ -155,9 +155,12 @@ func TestStartV2WithNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	// withCustomContainerRequest {
+	nw, err := network.New(ctx)
+	require.Nil(t, err)
+
 	localstack, err := RunContainer(
 		ctx,
-		network.WithNetwork("localstack"),
+		network.WithNetwork("localstack", nw),
 		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "localstack/localstack:2.0.0",
@@ -169,10 +172,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 	require.Nil(t, err)
 	assert.NotNil(t, localstack)
 
-	networks, err := localstack.Networks(ctx)
-	require.Nil(t, err)
-
-	networkName := networks[0]
+	networkName := nw.Name
 
 	cli, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{

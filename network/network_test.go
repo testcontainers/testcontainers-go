@@ -404,11 +404,102 @@ func TestNew_withOptions(t *testing.T) {
 }
 
 func TestWithNetwork(t *testing.T) {
+	// first create the network to be reused
+	nw, err := network.New(context.Background(), network.WithCheckDuplicate(), network.WithLabels(map[string]string{"network-type": "unique"}))
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, nw.Remove(context.Background()))
+	}()
+
+	networkName := nw.Name
+
+	// check that the network is reused, multiple times
+	for i := 0; i < 100; i++ {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{},
+		}
+
+		network.WithNetwork("alias", nw)(&req)
+
+		assert.Equal(t, 1, len(req.Networks))
+		assert.Equal(t, networkName, req.Networks[0])
+
+		assert.Equal(t, 1, len(req.NetworkAliases))
+		assert.Equal(t, map[string][]string{networkName: {"alias"}}, req.NetworkAliases)
+	}
+
+	// verify that the network is created only once
+	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	require.NoError(t, err)
+
+	args := filters.NewArgs()
+	args.Add("name", networkName)
+
+	resources, err := client.NetworkList(context.Background(), types.NetworkListOptions{
+		Filters: args,
+	})
+	require.NoError(t, err)
+	assert.Len(t, resources, 1)
+
+	newNetwork := resources[0]
+
+	expectedLabels := testcontainers.GenericLabels()
+	expectedLabels["network-type"] = "unique"
+
+	assert.Equal(t, networkName, newNetwork.Name)
+	assert.False(t, newNetwork.Attachable)
+	assert.False(t, newNetwork.Internal)
+	assert.Equal(t, expectedLabels, newNetwork.Labels)
+}
+
+func TestWithSyntheticNetwork(t *testing.T) {
+	nw := &testcontainers.DockerNetwork{
+		Name: "synthetic-network",
+	}
+
+	networkName := nw.Name
+
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: nginxAlpineImage,
+		},
+	}
+
+	network.WithNetwork("alias", nw)(&req)
+
+	assert.Equal(t, 1, len(req.Networks))
+	assert.Equal(t, networkName, req.Networks[0])
+
+	assert.Equal(t, 1, len(req.NetworkAliases))
+	assert.Equal(t, map[string][]string{networkName: {"alias"}}, req.NetworkAliases)
+
+	// verify that the network is created only once
+	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	require.NoError(t, err)
+
+	args := filters.NewArgs()
+	args.Add("name", networkName)
+
+	resources, err := client.NetworkList(context.Background(), types.NetworkListOptions{
+		Filters: args,
+	})
+	require.NoError(t, err)
+	assert.Len(t, resources, 0) // no Docker network was created
+
+	c, err := testcontainers.GenericContainer(context.Background(), req)
+	require.NoError(t, err)
+	assert.NotNil(t, c)
+	defer func() {
+		require.NoError(t, c.Terminate(context.Background()))
+	}()
+}
+
+func TestWithNewNetwork(t *testing.T) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{},
 	}
 
-	network.WithNetwork("alias", network.WithAttachable(), network.WithInternal(), network.WithLabels(map[string]string{"this-is-a-test": "value"}))(&req)
+	network.WithNewNetwork("alias", network.WithAttachable(), network.WithInternal(), network.WithLabels(map[string]string{"this-is-a-test": "value"}))(&req)
 
 	assert.Equal(t, 1, len(req.Networks))
 
@@ -430,6 +521,9 @@ func TestWithNetwork(t *testing.T) {
 	assert.Len(t, resources, 1)
 
 	newNetwork := resources[0]
+	defer func() {
+		require.NoError(t, client.NetworkRemove(context.Background(), newNetwork.ID))
+	}()
 
 	expectedLabels := testcontainers.GenericLabels()
 	expectedLabels["this-is-a-test"] = "value"
