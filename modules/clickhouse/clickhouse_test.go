@@ -2,17 +2,17 @@ package clickhouse
 
 import (
 	"context"
-	"github.com/docker/go-connections/nat"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"path/filepath"
 	"testing"
 
 	ch "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (

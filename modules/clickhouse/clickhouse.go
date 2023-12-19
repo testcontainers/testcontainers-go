@@ -16,10 +16,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var (
-	//go:embed mounts/zk_config.xml.tpl
-	zookeeperConfigTpl string
-)
+//go:embed mounts/zk_config.xml.tpl
+var zookeeperConfigTpl string
 
 const (
 	defaultUser         = "default"
@@ -122,7 +120,7 @@ func WithZookeeper(host, port string) testcontainers.CustomizeRequestOption {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      f.Name(),
 			ContainerFilePath: "/etc/clickhouse-server/config.d/zookeeper_config.xml",
-			FileMode:          0755,
+			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
 	}
