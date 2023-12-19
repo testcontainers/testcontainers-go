@@ -306,7 +306,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 	}
 }
 
-func Test_ContainerDependsOnOtherContainer(t *testing.T) {
+func Test_ContainerDependsOn(t *testing.T) {
 	type TestCase struct {
 		name                string
 		configureDependants func(ctx context.Context, t *testing.T) []Container
@@ -318,19 +318,84 @@ func Test_ContainerDependsOnOtherContainer(t *testing.T) {
 		{
 			name: "should start dependant container when it isn't running",
 			configureDependants: func(ctx context.Context, t *testing.T) []Container {
-				cr := ContainerRequest{
-					Image:        "redis:latest",
-					ExposedPorts: []string{"6379/tcp"},
-					WaitingFor:   wait.ForLog("Ready to accept connections"),
-				}
-
-				c, err := GenericContainer(ctx, GenericContainerRequest{
-					ContainerRequest: cr,
-					Started:          false,
+				redisDep, err := GenericContainer(ctx, GenericContainerRequest{
+					ContainerRequest: ContainerRequest{
+						Image:        "redis:latest",
+						ExposedPorts: []string{"6379/tcp"},
+						WaitingFor:   wait.ForLog("Ready to accept connections"),
+					},
+					Started: false,
 				})
 				require.NoError(t, err)
-				require.False(t, c.IsRunning())
-				return []Container{c}
+				require.False(t, redisDep.IsRunning())
+
+				postgresDep, err := GenericContainer(ctx, GenericContainerRequest{
+					ContainerRequest: ContainerRequest{
+						Image:        "docker.io/postgres:11-alpine",
+						ExposedPorts: []string{"5432/tcp"},
+						Cmd:          []string{"postgres", "-c", "fsync=off"},
+					},
+					Started: false,
+				})
+				require.NoError(t, err)
+				require.False(t, postgresDep.IsRunning())
+				return []Container{redisDep, postgresDep}
+			},
+			containerRequest: ContainerRequest{
+				Image:        "nginx",
+				ExposedPorts: []string{"80/tcp"},
+				WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
+			},
+		},
+		{
+			name: "container dependencies can be chained together",
+			configureDependants: func(ctx context.Context, t *testing.T) []Container {
+				redisDep, err := GenericContainer(ctx, GenericContainerRequest{
+					ContainerRequest: ContainerRequest{
+						Image:        "redis:latest",
+						ExposedPorts: []string{"6379/tcp"},
+						WaitingFor:   wait.ForLog("Ready to accept connections"),
+					},
+					Started: false,
+				})
+				require.NoError(t, err)
+				require.False(t, redisDep.IsRunning())
+
+				postgresDep, err := GenericContainer(ctx, GenericContainerRequest{
+					ContainerRequest: ContainerRequest{
+						Image:        "docker.io/postgres:11-alpine",
+						ExposedPorts: []string{"5432/tcp"},
+						Cmd:          []string{"postgres", "-c", "fsync=off"},
+						DependsOn:    []Container{redisDep}, // depends on the redis container.
+					},
+					Started: false,
+				})
+				require.NoError(t, err)
+				require.False(t, postgresDep.IsRunning())
+				// Dependency graph:
+				//   nginx -> postgres
+				//   postgres -> redis
+				return []Container{postgresDep}
+			},
+			containerRequest: ContainerRequest{
+				Image:        "nginx",
+				ExposedPorts: []string{"80/tcp"},
+				WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
+			},
+		},
+		{
+			name: "should continue as normal if dependant container is already running",
+			configureDependants: func(ctx context.Context, t *testing.T) []Container {
+				redisDep, err := GenericContainer(ctx, GenericContainerRequest{
+					ContainerRequest: ContainerRequest{
+						Image:        "redis:latest",
+						ExposedPorts: []string{"6379/tcp"},
+						WaitingFor:   wait.ForLog("Ready to accept connections"),
+					},
+					Started: true,
+				})
+				require.NoError(t, err)
+				return []Container{redisDep}
 			},
 			containerRequest: ContainerRequest{
 				Image:        "nginx",
