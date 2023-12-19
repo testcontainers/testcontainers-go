@@ -51,7 +51,7 @@ Testcontainers exposes the `WithAfterReadyCommand(e ...Executable)` option to ru
 
 It leverages the `Executable` interface to represent the command and positional arguments to be executed in the container.
 
-You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is ready   .
+You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is ready.
 
 #### WithNetwork
 
