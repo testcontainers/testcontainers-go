@@ -29,6 +29,7 @@ type Config struct {
 	RyukPrivileged          bool          `properties:"ryuk.container.privileged,default=false"`
 	RyukReconnectionTimeout time.Duration `properties:"ryuk.reconnection.timeout,default=10s"`
 	RyukConnectionTimeout   time.Duration `properties:"ryuk.connection.timeout,default=1m"`
+	ProviderType            string        `properties:"provider.type,default="`
 	TestcontainersHost      string        `properties:"tc.host,default="`
 }
 
@@ -79,6 +80,8 @@ func read() Config {
 		if parseBool(ryukPrivilegedEnv) {
 			config.RyukPrivileged = ryukPrivilegedEnv == "true"
 		}
+
+		config.ProviderType = os.Getenv("TESTCONTAINERS_PROVIDER_TYPE")
 
 		return config
 	}
