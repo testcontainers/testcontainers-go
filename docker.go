@@ -55,6 +55,7 @@ type DockerContainer struct {
 	// Container ID from Docker
 	ID         string
 	WaitingFor wait.Strategy
+	DependsOn  []Container
 	Image      string
 
 	isRunning     bool
@@ -1076,6 +1077,26 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 					return nil
 				},
 			},
+			PreStarts: []ContainerHook{
+				func(ctx context.Context, c Container) error {
+					dockerContainer := c.(*DockerContainer)
+
+					if dockerContainer.DependsOn != nil {
+						dockerContainer.logger.Printf(
+							"🚧 Waiting on %v dependant containers to run",
+							len(dockerContainer.DependsOn),
+						)
+						for _, dependency := range dockerContainer.DependsOn {
+							if !dependency.IsRunning() {
+								if err := dependency.Start(ctx); err != nil {
+									return fmt.Errorf("%w: dependant container failed to start", err)
+								}
+							}
+						}
+					}
+					return nil
+				},
+			},
 			PostStarts: []ContainerHook{
 				// first post-start hook is to wait for the container to be ready
 				func(ctx context.Context, c Container) error {
@@ -1134,6 +1155,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	c := &DockerContainer{
 		ID:                resp.ID,
 		WaitingFor:        req.WaitingFor,
+		DependsOn:         req.DependsOn,
 		Image:             imageName,
 		imageWasBuilt:     req.ShouldBuildImage(),
 		keepBuiltImage:    req.ShouldKeepBuiltImage(),
