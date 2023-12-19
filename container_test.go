@@ -306,6 +306,91 @@ func Test_BuildImageWithContexts(t *testing.T) {
 	}
 }
 
+func Test_ContainerDependsOnOtherContainer(t *testing.T) {
+	type TestCase struct {
+		name                string
+		configureDependants func(ctx context.Context, t *testing.T) []Container
+		containerRequest    ContainerRequest
+		expectedError       string
+	}
+
+	testCases := []TestCase{
+		{
+			name: "should start dependant container when it isn't running",
+			configureDependants: func(ctx context.Context, t *testing.T) []Container {
+				cr := ContainerRequest{
+					Image:        "redis:latest",
+					ExposedPorts: []string{"6379/tcp"},
+					WaitingFor:   wait.ForLog("Ready to accept connections"),
+				}
+
+				c, err := GenericContainer(ctx, GenericContainerRequest{
+					ContainerRequest: cr,
+					Started:          false,
+				})
+				require.NoError(t, err)
+				require.False(t, c.IsRunning())
+				return []Container{c}
+			},
+			containerRequest: ContainerRequest{
+				Image:        "nginx",
+				ExposedPorts: []string{"80/tcp"},
+				WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
+			},
+		},
+		{
+			name: "should fail when dependant container cannot start",
+			configureDependants: func(ctx context.Context, t *testing.T) []Container {
+				cr := ContainerRequest{
+					Image:      "docker.io/alpine",
+					Cmd:        []string{"echo", "-n", "I was not expecting this"},
+					WaitingFor: wait.ForLog("I was expecting this").WithStartupTimeout(5 * time.Second),
+				}
+				c, err := GenericContainer(ctx, GenericContainerRequest{
+					ContainerRequest: cr,
+					Started:          false,
+				})
+				require.NoError(t, err)
+				require.False(t, c.IsRunning())
+				return []Container{c}
+			},
+			containerRequest: ContainerRequest{
+				Image:        "nginx",
+				ExposedPorts: []string{"80/tcp"},
+				WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
+			},
+			expectedError: "container exited with code 0: dependant container failed to start: failed to start container",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			dependantContainers := tc.configureDependants(ctx, t)
+			tc.containerRequest.DependsOn = dependantContainers
+			c, err := GenericContainer(ctx, GenericContainerRequest{
+				ContainerRequest: tc.containerRequest,
+				Started:          true,
+			})
+
+			if tc.expectedError != "" {
+				require.Equal(t, tc.expectedError, err.Error())
+				require.False(t, c.IsRunning())
+			} else {
+				require.NoError(t, err)
+				require.True(t, c.IsRunning())
+				for _, dc := range dependantContainers {
+					require.True(t, dc.IsRunning())
+				}
+			}
+
+			terminateContainerOnEnd(t, ctx, c)
+			for _, dc := range dependantContainers {
+				terminateContainerOnEnd(t, ctx, dc)
+			}
+		})
+	}
+}
+
 func Test_GetLogsFromFailedContainer(t *testing.T) {
 	ctx := context.Background()
 	// directDockerHubReference {

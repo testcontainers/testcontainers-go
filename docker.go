@@ -58,6 +58,7 @@ type DockerContainer struct {
 	// Container ID from Docker
 	ID         string
 	WaitingFor wait.Strategy
+	DependsOn  []Container
 	Image      string
 
 	isRunning     bool
@@ -1130,6 +1131,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	c := &DockerContainer{
 		ID:                resp.ID,
 		WaitingFor:        req.WaitingFor,
+		DependsOn:         req.DependsOn,
 		Image:             imageName,
 		imageWasBuilt:     req.ShouldBuildImage(),
 		keepBuiltImage:    req.ShouldKeepBuiltImage(),
