@@ -33,6 +33,7 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 
 	opts = append(opts, client.WithHTTPHeaders(
 		map[string]string{
+			"x-tc-pp":    testcontainerssession.ProjectPath(),
 			"x-tc-sid":   testcontainerssession.SessionID(),
 			"User-Agent": "tc-go/" + internal.Version,
 		}),
