@@ -68,3 +68,19 @@ If you need an advanced configuration for the container, you can leverage the fo
 - `testcontainers.WithEndpointSettingsModifier`
 
 Please read the [Create containers: Advanced Settings](/features/creating_container.md#advanced-settings) documentation for more information.
+
+#### DependsOn Another Container
+
+Sometimes, a container may depend on another container to be ready before it can start itself.  For example a web app 
+container may depend on a running database container it can connect to. Use `DependsOn` in `ContainerRequest`
+to list containers that must run before the current one starts. Any container referenced in `DependsOn` will
+be started if not already running.
+
+```golang
+dbContainer, err := testcontainers.GenericContainer(...)
+req = &ContainerRequest{
+    Image: "myapp:latest",
+    Name:  "myapp",
+    DependsOn: []Container{dbContainer}, // myapp depends on dbContainer.
+}
+```
