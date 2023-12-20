@@ -152,3 +152,19 @@ The above example is updating the predefined command of the image, **appending**
 
 !!!info
     This can't be used to replace the command, only to append options.
+
+#### DependsOn Another Container
+
+Sometimes, a container may depend on another container to be ready before it can start itself.  For example a web app 
+container may depend on a running database container it can connect to. Use `DependsOn` in `ContainerRequest`
+to list containers that must run before the current one starts. Any container referenced in `DependsOn` will
+be started if not already running.
+
+```golang
+dbContainer, err := testcontainers.GenericContainer(...)
+req = &ContainerRequest{
+    Image: "myapp:latest",
+    Name:  "myapp",
+    DependsOn: []Container{dbContainer}, // myapp depends on dbContainer.
+}
+```
