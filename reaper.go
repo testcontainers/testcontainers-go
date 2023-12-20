@@ -236,6 +236,9 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 	if to := tcConfig.RyukReconnectionTimeout; to > time.Duration(0) {
 		req.Env["RYUK_RECONNECTION_TIMEOUT"] = to.String()
 	}
+	if tcConfig.RyukVerbose {
+		req.Env["RYUK_VERBOSE"] = "true"
+	}
 
 	// include reaper-specific labels to the reaper container
 	req.Labels[testcontainersdocker.LabelReaper] = "true"
