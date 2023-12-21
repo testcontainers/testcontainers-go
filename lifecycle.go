@@ -330,7 +330,7 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 		if err != nil {
 			return err
 		}
-		for p := range image.ContainerConfig.ExposedPorts {
+		for p := range image.Config.ExposedPorts {
 			exposedPorts = append(exposedPorts, string(p))
 		}
 	}
