@@ -29,6 +29,7 @@ type Config struct {
 	RyukPrivileged          bool          `properties:"ryuk.container.privileged,default=false"`
 	RyukReconnectionTimeout time.Duration `properties:"ryuk.reconnection.timeout,default=10s"`
 	RyukConnectionTimeout   time.Duration `properties:"ryuk.connection.timeout,default=1m"`
+	RyukVerbose             bool          `properties:"ryuk.verbose,default=false"`
 	TestcontainersHost      string        `properties:"tc.host,default="`
 }
 
@@ -78,6 +79,11 @@ func read() Config {
 		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
 		if parseBool(ryukPrivilegedEnv) {
 			config.RyukPrivileged = ryukPrivilegedEnv == "true"
+		}
+
+		ryukVerboseEnv := os.Getenv("TESTCONTAINERS_RYUK_VERBOSE")
+		if parseBool(ryukVerboseEnv) {
+			config.RyukVerbose = ryukVerboseEnv == "true"
 		}
 
 		return config

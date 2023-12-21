@@ -22,6 +22,7 @@ func resetTestEnv(t *testing.T) {
 	t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", "")
 	t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "")
 	t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "")
+	t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "")
 }
 
 func TestReadConfig(t *testing.T) {
@@ -117,12 +118,14 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
+		t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
 
 		config := read()
 		expected := Config{
 			HubImageNamePrefix: defaultHubPrefix,
 			RyukDisabled:       true,
 			RyukPrivileged:     true,
+			RyukVerbose:        true,
 		}
 
 		assert.Equal(t, expected, config)
@@ -261,6 +264,16 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"With Ryuk verbose configured using properties",
+				`ryuk.verbose=true`,
+				map[string]string{},
+				Config{
+					RyukVerbose:             true,
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
+				},
+			},
+			{
 				"With Ryuk disabled using an env var",
 				``,
 				map[string]string{
@@ -321,6 +334,46 @@ func TestReadTCConfig(t *testing.T) {
 				`ryuk.disabled=false`,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "false",
+				},
+				defaultConfig,
+			},
+			{
+				"With Ryuk verbose using an env var and properties. Env var wins (0)",
+				`ryuk.verbose=true`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_VERBOSE": "true",
+				},
+				Config{
+					RyukVerbose:             true,
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
+				},
+			},
+			{
+				"With Ryuk verbose using an env var and properties. Env var wins (1)",
+				`ryuk.verbose=false`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_VERBOSE": "true",
+				},
+				Config{
+					RyukVerbose:             true,
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReonnectionTimeout,
+				},
+			},
+			{
+				"With Ryuk verbose using an env var and properties. Env var wins (2)",
+				`ryuk.verbose=true`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_VERBOSE": "false",
+				},
+				defaultConfig,
+			},
+			{
+				"With Ryuk verbose using an env var and properties. Env var wins (3)",
+				`ryuk.verbose=false`,
+				map[string]string{
+					"TESTCONTAINERS_RYUK_VERBOSE": "false",
 				},
 				defaultConfig,
 			},

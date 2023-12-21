@@ -52,7 +52,7 @@ but does not allow starting privileged containers, you can turn off the Ryuk con
 `TESTCONTAINERS_RYUK_DISABLED` **environment variable** to `true`.
 1. You can specify the connection timeout for Ryuk by setting the `ryuk.connection.timeout` **property**. The default value is 1 minute.
 1. You can specify the reconnection timeout for Ryuk by setting the `ryuk.reconnection.timeout` **property**. The default value is 10 seconds.
-
+1. You can configure Ryuk to run in verbose mode by setting any of the `ryuk.verbose` **property** or the `TESTCONTAINERS_RYUK_VERBOSE` **environment variable**. The default value is `false`.
 
 !!!info
     For more information about Ryuk, see [Garbage Collector](garbage_collector.md).
