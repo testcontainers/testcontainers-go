@@ -454,7 +454,7 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	assert.Equal(t, "0", strings.TrimSpace(string(b)))
 }
 
-func Test_StartLogProducerStillStartssWithTooLowTimeout(t *testing.T) {
+func Test_StartLogProducerStillStartsWithTooLowTimeout(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
