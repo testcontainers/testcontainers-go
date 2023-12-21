@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"testing"
@@ -38,7 +39,15 @@ func ExampleExecStrategy() {
 		}
 	}()
 
-	// Here you have a running container
+	state, err := localstack.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 type mockExecTarget struct {

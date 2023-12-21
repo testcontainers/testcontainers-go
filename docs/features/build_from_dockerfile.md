@@ -83,3 +83,14 @@ req := ContainerRequest{
 	},
 }
 ```
+
+## Advanced usage
+
+In the case you need to pass additional arguments to the `docker build` command, you can use the `BuildOptionsModifier` attribute in the `FromDockerfile` struct.
+
+This field holds a function that has access to Docker's ImageBuildOptions type, which is used to build the image. You can use this modifier **on your own risk** to modify the build options with as many options as you need.
+
+<!--codeinclude-->
+[Building From a Dockerfile including build options modifier](../../from_dockerfile_test.go) inside_block:buildFromDockerfileWithModifier
+[Dockerfile including target](../../testdata/target.Dockerfile)
+<!--/codeinclude-->

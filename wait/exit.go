@@ -60,7 +60,7 @@ func (ws *ExitStrategy) Timeout() *time.Duration {
 }
 
 // WaitUntilReady implements Strategy.WaitUntilReady
-func (ws *ExitStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
+func (ws *ExitStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
 	if ws.timeout != nil {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, *ws.timeout)

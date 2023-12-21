@@ -83,7 +83,7 @@ func (ws *LogStrategy) Timeout() *time.Duration {
 }
 
 // WaitUntilReady implements Strategy.WaitUntilReady
-func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
+func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
 	timeout := defaultStartupTimeout()
 	if ws.timeout != nil {
 		timeout = *ws.timeout

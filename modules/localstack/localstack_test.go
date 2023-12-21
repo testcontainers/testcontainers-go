@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -154,11 +155,12 @@ func TestStartV2WithNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	// withCustomContainerRequest {
-	networkName := "localstack-network-v2"
+	nw, err := network.New(ctx)
+	require.Nil(t, err)
 
 	localstack, err := RunContainer(
 		ctx,
-		WithNetwork(networkName, "localstack"),
+		network.WithNetwork([]string{"localstack"}, nw),
 		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "localstack/localstack:2.0.0",
@@ -169,6 +171,8 @@ func TestStartV2WithNetwork(t *testing.T) {
 	// }
 	require.Nil(t, err)
 	assert.NotNil(t, localstack)
+
+	networkName := nw.Name
 
 	cli, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{

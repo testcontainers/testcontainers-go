@@ -2,9 +2,12 @@ package cassandra
 
 import (
 	"strings"
+
+	"github.com/testcontainers/testcontainers-go"
 )
 
 type initScript struct {
+	testcontainers.ExecOptions
 	File string
 }
 

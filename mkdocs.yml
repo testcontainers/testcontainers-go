@@ -40,10 +40,10 @@ nav:
     - Quickstart: quickstart.md
     - Features:
         - features/creating_container.md
+        - features/configuration.md
         - features/image_name_substitution.md
         - features/files_and_mounts.md
         - features/creating_networks.md
-        - features/configuration.md
         - features/networking.md
         - features/garbage_collector.md
         - features/build_from_dockerfile.md
@@ -51,7 +51,6 @@ nav:
         - features/docker_compose.md
         - features/follow_logs.md
         - features/override_container_command.md
-        - features/copy_file.md
         - Wait Strategies:
             - Introduction: features/wait/introduction.md
             - Exec: features/wait/exec.md
@@ -76,6 +75,7 @@ nav:
         - modules/localstack.md
         - modules/mariadb.md
         - modules/mongodb.md
+        - modules/mssql.md
         - modules/mysql.md
         - modules/nats.md
         - modules/neo4j.md
