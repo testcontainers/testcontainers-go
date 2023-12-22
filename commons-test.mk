@@ -25,6 +25,10 @@ test-%:
 tools:
 	go mod download
 
+.PHONY: test-tools
+test-tools:
+	go install gotest.tools/gotestsum@latest
+
 .PHONY: tools-tidy
 tools-tidy:
 	go mod tidy
