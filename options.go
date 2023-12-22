@@ -10,7 +10,6 @@ import (
 	"github.com/docker/docker/api/types/network"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
-	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -86,9 +85,7 @@ type prependHubRegistry struct {
 }
 
 // newPrependHubRegistry creates a new prependHubRegistry
-func newPrependHubRegistry() prependHubRegistry {
-	hubPrefix := config.Read().HubImageNamePrefix
-
+func newPrependHubRegistry(hubPrefix string) prependHubRegistry {
 	return prependHubRegistry{
 		prefix: hubPrefix,
 	}
