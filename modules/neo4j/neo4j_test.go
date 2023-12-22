@@ -9,6 +9,7 @@ import (
 
 	neo "github.com/neo4j/neo4j-go-driver/v5/neo4j"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 )
 
@@ -57,6 +58,44 @@ func TestNeo4j(outer *testing.T) {
 			t.Fatal("expected to custom setting to be exported but was not")
 		}
 	})
+}
+
+func TestNeo4jWithEnterpriseLicense(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	images := map[string]string{
+		"StandardEdition":   "docker.io/neo4j:4.4",
+		"EnterpriseEdition": "docker.io/neo4j:4.4-enterprise",
+	}
+
+	for edition, image := range images {
+		edition, image := edition, image
+		t.Run(edition, func(t *testing.T) {
+			t.Parallel()
+			container, err := neo4j.RunContainer(ctx,
+				testcontainers.WithImage(image),
+				neo4j.WithAdminPassword(testPassword),
+				neo4j.WithAcceptCommercialLicenseAgreement(),
+			)
+			if err != nil {
+				t.Fatalf("expected container to successfully initialize but did not: %s", err)
+			}
+
+			t.Cleanup(func() {
+				if err := container.Terminate(ctx); err != nil {
+					t.Fatalf("failed to terminate container: %s", err)
+				}
+			})
+
+			env := getContainerEnv(t, ctx, container)
+
+			if !strings.Contains(env, "NEO4J_ACCEPT_LICENSE_AGREEMENT=yes") {
+				t.Fatal("expected to accept license agreement but did not")
+			}
+		})
+	}
 }
 
 func TestNeo4jWithWrongSettings(outer *testing.T) {
