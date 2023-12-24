@@ -29,6 +29,12 @@ func echoHandler(destination *os.File) http.HandlerFunc {
 	}
 }
 
+func crashHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		panic("manual panic via http")
+	}
+}
+
 // a simple server that will echo whatever is in the "echo" parameter to stdout
 // in the /stdout endpoint or to stderr in the /stderr endpoint
 func main() {
@@ -36,6 +42,7 @@ func main() {
 	mux.HandleFunc("/stdout", echoHandler(os.Stdout))
 	mux.HandleFunc("/stderr", echoHandler(os.Stderr))
 	mux.HandleFunc("/env", envHandler())
+	mux.HandleFunc("/crash", crashHandler())
 
 	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {
