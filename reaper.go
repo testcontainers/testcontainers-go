@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/docker/docker/errdefs"
 	"math/rand"
 	"net"
 	"regexp"
@@ -141,13 +142,16 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 		// Can't use Container.IsRunning because the bool is not updated when Reaper is terminated
 		state, err := reaperInstance.container.State(ctx)
 		if err != nil {
-			return nil, err
-		}
-
-		if state.Running {
-			return reaperInstance, nil
+			if !errdefs.IsNotFound(err) {
+				return nil, err
+			}
+		} else {
+			if state.Running {
+				return reaperInstance, nil
+			}
 		}
 		// else: the reaper instance has been terminated, so we need to create a new one
+		reaperOnce = sync.Once{}
 	}
 
 	// 2. because the reaper instance has not been created yet, look for it in the Docker daemon, which

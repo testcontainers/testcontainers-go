@@ -491,6 +491,42 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 	}
 }
 
+func Test_RecreateReaperIfTerminated(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
+	mockProvider := newMockReaperProvider(t)
+	t.Cleanup(mockProvider.RestoreReaperState)
+
+	SkipIfProviderIsNotHealthy(&testing.T{})
+
+	provider, _ := ProviderDocker.GetProvider()
+	ctx := context.Background()
+	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
+	assert.NoError(t, err, "creating the Reaper should not error")
+
+	terminate, err := reaper.Connect()
+	assert.NoError(t, err, "connecting to Reaper should be successful")
+	terminate <- true
+
+	// wait for reaper to timeout and terminate
+	time.Sleep(11 * time.Second)
+
+	recreatedRepear, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
+	assert.NoError(t, err, "creating the Reaper should not error")
+	assert.NotEqual(t, reaper.container.GetContainerID(), recreatedRepear.container.GetContainerID(), "expected different container ID")
+
+	terminate, err = recreatedRepear.Connect()
+	defer func(term chan bool) {
+		term <- true
+	}(terminate)
+	assert.NoError(t, err, "connecting to Reaper should be successful")
+	terminateContainerOnEnd(t, ctx, recreatedRepear.container)
+}
+
 func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
 	config.Reset() // reset the config using the internal method to avoid the sync.Once
 	tcConfig := config.Read()
