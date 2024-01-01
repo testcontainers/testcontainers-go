@@ -123,7 +123,7 @@ jobs:
             ./scripts/check_environment.sh
 
       - name: Test Summary
-        uses: test-summary/action@62bc5c68de2a6a0d02039763b8c754569df99e3f # v2
+        uses: test-summary/action@fee35d7df20790255fe6aa92cf0f6d28092ecf2f # v2
         with:
             paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
         if: always()
