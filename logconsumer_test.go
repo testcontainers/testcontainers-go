@@ -458,3 +458,52 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	}
 	assert.Equal(t, "0", strings.TrimSpace(string(b)))
 }
+
+func TestContainerLogsEnableAtStart(t *testing.T) {
+	ctx := context.Background()
+	g := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
+
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:    "./testdata/",
+			Dockerfile: "echoserver.Dockerfile",
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		WaitingFor:   wait.ForLog("ready"),
+		LogProducer:  true,
+		LogConsumers: []LogConsumer{&g},
+	}
+
+	gReq := GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	c, err := GenericContainer(ctx, gReq)
+	require.NoError(t, err)
+
+	ep, err := c.Endpoint(ctx, "http")
+	require.NoError(t, err)
+
+	_, err = http.Get(ep + "/stdout?echo=hello")
+	require.NoError(t, err)
+
+	_, err = http.Get(ep + "/stdout?echo=there")
+	require.NoError(t, err)
+
+	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
+	require.NoError(t, err)
+
+	select {
+	case <-g.Done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("never received final log message")
+	}
+	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs)
+
+	terminateContainerOnEnd(t, ctx, c)
+}

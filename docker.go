@@ -1020,6 +1020,16 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				},
 			},
 			PostStarts: []ContainerHook{
+				func(ctx context.Context, c Container) error {
+					for _, consumer := range req.LogConsumers {
+						c.FollowOutput(consumer)
+					}
+
+					if req.LogProducer {
+						return c.StartLogProducer(ctx)
+					}
+					return nil
+				},
 				// first post-start hook is to wait for the container to be ready
 				func(ctx context.Context, c Container) error {
 					dockerContainer := c.(*DockerContainer)
