@@ -477,6 +477,7 @@ func Test_StartLogProducerStillStartsWithTooLowTimeout(t *testing.T) {
 
 	c, err := GenericContainer(ctx, gReq)
 	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, c)
 
 	g := TestLogConsumer{
 		Msgs:     []string{},
@@ -508,6 +509,7 @@ func Test_StartLogProducerStillStartsWithTooHighTimeout(t *testing.T) {
 
 	c, err := GenericContainer(ctx, gReq)
 	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, c)
 
 	g := TestLogConsumer{
 		Msgs:     []string{},
