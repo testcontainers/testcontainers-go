@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/hashicorp/consul/api v1.26.1
-	github.com/testcontainers/testcontainers-go v0.26.0
+	github.com/testcontainers/testcontainers-go v0.27.0
 )
 
 require (

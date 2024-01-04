@@ -6,7 +6,7 @@ require (
 	github.com/Shopify/toxiproxy/v2 v2.7.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.4.0
-	github.com/testcontainers/testcontainers-go v0.26.0
+	github.com/testcontainers/testcontainers-go v0.27.0
 )
 
 require (
