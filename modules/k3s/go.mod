@@ -9,7 +9,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.29.0
 	k8s.io/apimachinery v0.29.0
-	k8s.io/client-go v0.28.4
+	k8s.io/client-go v0.29.0
 )
 
 require (
@@ -24,7 +24,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
+	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
