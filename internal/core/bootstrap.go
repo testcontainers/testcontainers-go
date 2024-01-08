@@ -1,4 +1,4 @@
-package testcontainerssession
+package core
 
 import (
 	"crypto/sha256"

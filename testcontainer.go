@@ -1,6 +1,6 @@
 package testcontainers
 
-import "github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
+import "github.com/testcontainers/testcontainers-go/internal/core"
 
 // SessionID returns a unique session ID for the current test session. Because each Go package
 // will be run in a separate process, we need a way to identify the current test session.
@@ -24,5 +24,5 @@ import "github.com/testcontainers/testcontainers-go/internal/testcontainerssessi
 //   - identify the test session, aggregating the test execution of multiple packages in the same test session.
 //   - tag the containers created by testcontainers-go, adding a label to the container with the session ID.
 func SessionID() string {
-	return testcontainerssession.SessionID()
+	return core.SessionID()
 }

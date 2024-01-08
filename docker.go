@@ -32,8 +32,8 @@ import (
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/config"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -877,7 +877,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.HasSuffix(imageName, config.ReaperDefaultImage)
 	if !tcConfig.RyukDisabled && !isReaperContainer {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.SessionID(), p)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), core.SessionID(), p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -973,7 +973,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	if !isReaperContainer {
 		// add the labels that the reaper will use to terminate the container to the request
-		for k, v := range testcontainersdocker.DefaultLabels(testcontainerssession.SessionID()) {
+		for k, v := range testcontainersdocker.DefaultLabels(core.SessionID()) {
 			req.Labels[k] = v
 		}
 	}
@@ -1080,7 +1080,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		Image:             imageName,
 		imageWasBuilt:     req.ShouldBuildImage(),
 		keepBuiltImage:    req.ShouldKeepBuiltImage(),
-		sessionID:         testcontainerssession.SessionID(),
+		sessionID:         core.SessionID(),
 		provider:          p,
 		terminationSignal: termSignal,
 		stopProducer:      nil,
@@ -1127,7 +1127,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		return p.CreateContainer(ctx, req)
 	}
 
-	sessionID := testcontainerssession.SessionID()
+	sessionID := core.SessionID()
 
 	tcConfig := p.Config().Config
 
@@ -1298,7 +1298,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		IPAM:           req.IPAM,
 	}
 
-	sessionID := testcontainerssession.SessionID()
+	sessionID := core.SessionID()
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
@@ -1409,7 +1409,7 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
 			Driver:     Bridge,
 			Attachable: true,
-			Labels:     testcontainersdocker.DefaultLabels(testcontainerssession.SessionID()),
+			Labels:     testcontainersdocker.DefaultLabels(core.SessionID()),
 		})
 
 		if err != nil {
@@ -1440,7 +1440,7 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	}
 	container.provider = provider
 
-	container.sessionID = testcontainerssession.SessionID()
+	container.sessionID = core.SessionID()
 	container.consumers = []LogConsumer{}
 	container.stopProducer = nil
 	container.isRunning = response.State == "running"
