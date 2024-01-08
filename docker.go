@@ -618,6 +618,8 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 
 type LogProducerOption func(*DockerContainer)
 
+// WithLogProducerTimeout is a functional option that sets the timeout for the log producer.
+// If the timeout is lower than 5s or greater than 60s it will be set to 5s or 60s respectively.
 func WithLogProducerTimeout(timeout time.Duration) LogProducerOption {
 	return func(c *DockerContainer) {
 		c.producerTimeout = &timeout
@@ -777,6 +779,8 @@ func (c *DockerContainer) StopLogProducer() error {
 	return nil
 }
 
+// GetLogProducerErrorChannel exposes the only way for the consumer
+// to be able to listen to errors and react to them.
 func (c *DockerContainer) GetLogProducerErrorChannel() <-chan error {
 	return c.producerError
 }
