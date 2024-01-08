@@ -75,6 +75,7 @@ nav:
         - modules/localstack.md
         - modules/mariadb.md
         - modules/mongodb.md
+        - modules/mssql.md
         - modules/mysql.md
         - modules/nats.md
         - modules/neo4j.md
@@ -112,4 +113,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.26.0
+    latest_version: v0.27.0

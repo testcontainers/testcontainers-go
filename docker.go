@@ -899,7 +899,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	// always append the hub substitutor after the user-defined ones
-	req.ImageSubstitutors = append(req.ImageSubstitutors, newPrependHubRegistry())
+	req.ImageSubstitutors = append(req.ImageSubstitutors, newPrependHubRegistry(tcConfig.HubImageNamePrefix))
 
 	for _, is := range req.ImageSubstitutors {
 		modifiedTag, err := is.Substitute(imageName)
@@ -1266,6 +1266,7 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 	return p.hostCache, nil
 }
 
+// Deprecated: use network.New instead
 // CreateNetwork returns the object representing a new network identified by its name
 func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) (Network, error) {
 	var err error

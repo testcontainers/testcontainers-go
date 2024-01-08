@@ -18,6 +18,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	testcontainerspulsar "github.com/testcontainers/testcontainers-go/modules/pulsar"
+	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 )
 
 // logConsumerForTesting {
@@ -35,13 +36,10 @@ func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	nwName := "pulsar-test"
-	nw, err := testcontainers.GenericNetwork(context.Background(), testcontainers.GenericNetworkRequest{
-		NetworkRequest: testcontainers.NetworkRequest{
-			Name: nwName,
-		},
-	})
+	nw, err := tcnetwork.New(ctx, tcnetwork.WithCheckDuplicate())
 	require.NoError(t, err)
+
+	nwName := nw.Name
 
 	tests := []struct {
 		name         string

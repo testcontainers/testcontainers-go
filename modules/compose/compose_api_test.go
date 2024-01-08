@@ -454,6 +454,8 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithBuild(t *testing.T) {
+	t.Skip("Skipping test because of the opentelemetry dependencies issue. See https://github.com/open-telemetry/opentelemetry-go/issues/4476#issuecomment-1840547010")
+
 	path := filepath.Join(testdataPackage, "docker-compose-build.yml")
 	compose, err := NewDockerCompose(path)
 	assert.NoError(t, err, "NewDockerCompose()")

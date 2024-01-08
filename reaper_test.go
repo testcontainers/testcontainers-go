@@ -355,6 +355,19 @@ func Test_NewReaper(t *testing.T) {
 			}},
 		},
 		{
+			name: "configured verbose mode",
+			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
+				req.Env = map[string]string{
+					"RYUK_VERBOSE": "true",
+				}
+				return req
+			}),
+			config: TestcontainersConfig{Config: config.Config{
+				RyukPrivileged: true,
+				RyukVerbose:    true,
+			}},
+		},
+		{
 			name: "docker-host in context",
 			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
 				req.HostConfigModifier = func(hostConfig *container.HostConfig) {
