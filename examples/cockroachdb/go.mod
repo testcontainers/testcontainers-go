@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/examples/cockroachdb
 go 1.20
 
 require (
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.27.0

@@ -11,7 +11,7 @@ require (
 	github.com/docker/cli v24.0.7+incompatible
 	github.com/docker/compose/v2 v2.23.3
 	github.com/docker/docker v24.0.7+incompatible
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.27.0
 	golang.org/x/sync v0.5.0
