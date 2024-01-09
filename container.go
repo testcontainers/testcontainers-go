@@ -48,7 +48,7 @@ type Container interface {
 	Terminate(context.Context) error             // terminate the container
 	Logs(context.Context) (io.ReadCloser, error) // Get logs of the container
 	FollowOutput(LogConsumer)
-	StartLogProducer(context.Context) error
+	StartLogProducer(context.Context, ...LogProducerOption) error
 	StopLogProducer() error
 	Name(context.Context) (string, error)                        // get container name
 	State(context.Context) (*types.ContainerState, error)        // returns container's running state
@@ -61,6 +61,7 @@ type Container interface {
 	CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
 	CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error)
+	GetLogProducerErrorChannel() <-chan error
 }
 
 // ImageBuildInfo defines what is needed to build an image

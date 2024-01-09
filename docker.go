@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -67,6 +68,9 @@ type DockerContainer struct {
 	raw               *types.ContainerJSON
 	stopProducer      chan bool
 	producerDone      chan bool
+	producerError     chan error
+	producerMutex     sync.Mutex
+	producerTimeout   *time.Duration
 	logger            Logging
 	lifecycleHooks    []ContainerLifecycleHooks
 }
@@ -612,19 +616,68 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 	return nil
 }
 
+type LogProducerOption func(*DockerContainer)
+
+// WithLogProducerTimeout is a functional option that sets the timeout for the log producer.
+// If the timeout is lower than 5s or greater than 60s it will be set to 5s or 60s respectively.
+func WithLogProducerTimeout(timeout time.Duration) LogProducerOption {
+	return func(c *DockerContainer) {
+		c.producerTimeout = &timeout
+	}
+}
+
 // StartLogProducer will start a concurrent process that will continuously read logs
-// from the container and will send them to each added LogConsumer
-func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
-	if c.stopProducer != nil {
-		return errors.New("log producer already started")
+// from the container and will send them to each added LogConsumer.
+// Default log producer timeout is 5s. It is used to set the context timeout
+// which means that each log-reading loop will last at least the specified timeout
+// and that it cannot be cancelled earlier.
+// Use functional option WithLogProducerTimeout() to override default timeout. If it's
+// lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
+func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProducerOption) error {
+	{
+		c.producerMutex.Lock()
+		defer c.producerMutex.Unlock()
+
+		if c.stopProducer != nil {
+			return errors.New("log producer already started")
+		}
+	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	minProducerTimeout := time.Duration(5 * time.Second)
+	maxProducerTimeout := time.Duration(60 * time.Second)
+
+	if c.producerTimeout == nil {
+		c.producerTimeout = &minProducerTimeout
+	}
+
+	if *c.producerTimeout < minProducerTimeout {
+		c.producerTimeout = &minProducerTimeout
+	}
+
+	if *c.producerTimeout > maxProducerTimeout {
+		c.producerTimeout = &maxProducerTimeout
 	}
 
 	c.stopProducer = make(chan bool)
 	c.producerDone = make(chan bool)
+	c.producerError = make(chan error, 1)
 
-	go func(stop <-chan bool, done chan<- bool) {
+	go func(stop <-chan bool, done chan<- bool, errorCh chan error) {
 		// signal the producer is done once go routine exits, this prevents race conditions around start/stop
-		defer close(done)
+		// set c.stopProducer to nil so that it can be started again
+		defer func() {
+			defer c.producerMutex.Unlock()
+			close(done)
+			close(errorCh)
+			{
+				c.producerMutex.Lock()
+				c.stopProducer = nil
+			}
+		}()
 
 		since := ""
 		// if the socket is closed we will make additional logs request with updated Since timestamp
@@ -636,25 +689,20 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 			Since:      since,
 		}
 
-		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		ctx, cancel := context.WithTimeout(ctx, *c.producerTimeout)
 		defer cancel()
 
 		r, err := c.provider.client.ContainerLogs(ctx, c.GetContainerID(), options)
 		if err != nil {
-			// if we can't get the logs, panic, we can't return an error to anything
-			// from within this goroutine
-			panic(err)
+			errorCh <- err
+			return
 		}
 		defer c.provider.Close()
 
 		for {
 			select {
 			case <-stop:
-				err := r.Close()
-				if err != nil {
-					// we can't close the read closer, this should never happen
-					panic(err)
-				}
+				errorCh <- r.Close()
 				return
 			default:
 				h := make([]byte, 8)
@@ -710,7 +758,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 			}
 		}
-	}(c.stopProducer, c.producerDone)
+	}(c.stopProducer, c.producerDone, c.producerError)
 
 	return nil
 }
@@ -718,14 +766,23 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 // StopLogProducer will stop the concurrent process that is reading logs
 // and sending them to each added LogConsumer
 func (c *DockerContainer) StopLogProducer() error {
+	c.producerMutex.Lock()
+	defer c.producerMutex.Unlock()
 	if c.stopProducer != nil {
 		c.stopProducer <- true
 		// block until the producer is actually done in order to avoid strange races
 		<-c.producerDone
 		c.stopProducer = nil
 		c.producerDone = nil
+		return <-c.producerError
 	}
 	return nil
+}
+
+// GetLogProducerErrorChannel exposes the only way for the consumer
+// to be able to listen to errors and react to them.
+func (c *DockerContainer) GetLogProducerErrorChannel() <-chan error {
+	return c.producerError
 }
 
 // DockerNetwork represents a network started using Docker
