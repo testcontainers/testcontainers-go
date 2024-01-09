@@ -128,6 +128,13 @@ func WithImageSubstitutors(fn ...ImageSubstitutor) CustomizeRequestOption {
 	}
 }
 
+// WithLogConsumers sets the log consumers for a container
+func WithLogConsumers(consumer ...LogConsumer) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) {
+		req.LogConsumers = consumer
+	}
+}
+
 // Executable represents an executable command to be sent to a container, including options,
 // as part of the different lifecycle hooks.
 type Executable interface {

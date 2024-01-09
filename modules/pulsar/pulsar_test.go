@@ -21,7 +21,6 @@ import (
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 )
 
-// logConsumerForTesting {
 // logConsumer is a testcontainers.LogConsumer that prints the log to stdout
 type testLogConsumer struct{}
 
@@ -29,8 +28,6 @@ type testLogConsumer struct{}
 func (lc *testLogConsumer) Accept(l testcontainers.Log) {
 	fmt.Print(string(l.Content))
 }
-
-// }
 
 func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -42,9 +39,8 @@ func TestPulsar(t *testing.T) {
 	nwName := nw.Name
 
 	tests := []struct {
-		name         string
-		opts         []testcontainers.ContainerCustomizer
-		logConsumers []testcontainers.LogConsumer
+		name string
+		opts []testcontainers.ContainerCustomizer
 	}{
 		{
 			name: "default",
@@ -90,8 +86,12 @@ func TestPulsar(t *testing.T) {
 			},
 		},
 		{
-			name:         "with log consumers",
-			logConsumers: []testcontainers.LogConsumer{&testLogConsumer{}},
+			name: "with log consumers",
+			opts: []testcontainers.ContainerCustomizer{
+				// withLogconsumers {
+				testcontainers.WithLogConsumers(&testLogConsumer{}),
+				// }
+			},
 		},
 	}
 
@@ -106,16 +106,6 @@ func TestPulsar(t *testing.T) {
 				err := c.Terminate(ctx)
 				require.Nil(t, err)
 			}()
-
-			// withLogConsumers {
-			if len(c.LogConsumers) > 0 {
-				c.WithLogConsumers(ctx, tt.logConsumers...)
-				defer func() {
-					// not handling the error because it will never return an error: it's satisfying the current API
-					_ = c.StopLogProducer()
-				}()
-			}
-			// }
 
 			// getBrokerURL {
 			brokerURL, err := c.BrokerURL(ctx)
