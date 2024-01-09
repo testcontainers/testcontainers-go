@@ -1082,7 +1082,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 						c.FollowOutput(consumer)
 					}
 
-					if req.LogProducer {
+					if len(req.LogConsumers) > 0 {
 						return c.StartLogProducer(ctx)
 					}
 					return nil

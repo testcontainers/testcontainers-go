@@ -474,7 +474,6 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 		},
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
-		LogProducer:  true,
 		LogConsumers: []LogConsumer{&g},
 	}
 
