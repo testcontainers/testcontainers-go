@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 )
 
 var (
@@ -94,5 +93,5 @@ type GenericProvider interface {
 
 // GenericLabels returns a map of labels that can be used to identify containers created by this library
 func GenericLabels() map[string]string {
-	return testcontainersdocker.DefaultLabels(core.SessionID())
+	return core.DefaultLabels(core.SessionID())
 }

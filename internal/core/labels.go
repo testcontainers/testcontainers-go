@@ -1,4 +1,4 @@
-package testcontainersdocker
+package core
 
 import (
 	"github.com/testcontainers/testcontainers-go/internal"

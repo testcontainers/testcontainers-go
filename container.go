@@ -20,7 +20,7 @@ import (
 	"github.com/moby/patternmatcher/ignorefile"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -273,7 +273,7 @@ func (c *ContainerRequest) GetAuthConfigs() map[string]registry.AuthConfig {
 
 // getAuthConfigsFromDockerfile returns the auth configs to be able to pull from an authenticated docker registry
 func getAuthConfigsFromDockerfile(c *ContainerRequest) map[string]registry.AuthConfig {
-	images, err := testcontainersdocker.ExtractImagesFromDockerfile(filepath.Join(c.Context, c.GetDockerfile()), c.GetBuildArgs())
+	images, err := core.ExtractImagesFromDockerfile(filepath.Join(c.Context, c.GetDockerfile()), c.GetBuildArgs())
 	if err != nil {
 		return map[string]registry.AuthConfig{}
 	}

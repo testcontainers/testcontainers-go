@@ -34,7 +34,6 @@ import (
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -934,7 +933,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.HasSuffix(imageName, config.ReaperDefaultImage)
 	if !tcConfig.RyukDisabled && !isReaperContainer {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), core.SessionID(), p)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), core.SessionID(), p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1030,7 +1029,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	if !isReaperContainer {
 		// add the labels that the reaper will use to terminate the container to the request
-		for k, v := range testcontainersdocker.DefaultLabels(core.SessionID()) {
+		for k, v := range core.DefaultLabels(core.SessionID()) {
 			req.Labels[k] = v
 		}
 	}
@@ -1190,7 +1189,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID, p)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1304,10 +1303,10 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 	case "http", "https", "tcp":
 		p.hostCache = url.Hostname()
 	case "unix", "npipe":
-		if testcontainersdocker.InAContainer() {
+		if core.InAContainer() {
 			ip, err := p.GetGatewayIP(ctx)
 			if err != nil {
-				ip, err = testcontainersdocker.DefaultGatewayIP()
+				ip, err = core.DefaultGatewayIP()
 				if err != nil {
 					ip = "localhost"
 				}
@@ -1359,7 +1358,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID, p)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}
@@ -1370,7 +1369,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	}
 
 	// add the labels that the reaper will use to terminate the network to the request
-	for k, v := range testcontainersdocker.DefaultLabels(sessionID) {
+	for k, v := range core.DefaultLabels(sessionID) {
 		req.Labels[k] = v
 	}
 
@@ -1466,7 +1465,7 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
 			Driver:     Bridge,
 			Attachable: true,
-			Labels:     testcontainersdocker.DefaultLabels(core.SessionID()),
+			Labels:     core.DefaultLabels(core.SessionID()),
 		})
 
 		if err != nil {

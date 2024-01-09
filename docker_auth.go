@@ -10,7 +10,7 @@ import (
 	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types/registry"
 
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
 // DockerImageAuth returns the auth config for the given Docker image, extracting first its Docker registry.
@@ -18,7 +18,7 @@ import (
 // for that registry, if it exists.
 func DockerImageAuth(ctx context.Context, image string) (string, registry.AuthConfig, error) {
 	defaultRegistry := defaultRegistry(ctx)
-	reg := testcontainersdocker.ExtractRegistry(image, defaultRegistry)
+	reg := core.ExtractRegistry(image, defaultRegistry)
 
 	cfgs, err := getDockerAuthConfigs()
 	if err != nil {
@@ -58,13 +58,13 @@ func getRegistryAuth(reg string, cfgs map[string]registry.AuthConfig) (registry.
 func defaultRegistry(ctx context.Context) string {
 	client, err := NewDockerClientWithOpts(ctx)
 	if err != nil {
-		return testcontainersdocker.IndexDockerIO
+		return core.IndexDockerIO
 	}
 	defer client.Close()
 
 	info, err := client.Info(ctx)
 	if err != nil {
-		return testcontainersdocker.IndexDockerIO
+		return core.IndexDockerIO
 	}
 
 	return info.IndexServerAddress
