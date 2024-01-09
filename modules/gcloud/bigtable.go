@@ -19,7 +19,7 @@ func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerC
 		Started: true,
 	}
 
-	settings := applyOptions(req, opts)
+	settings := applyOptions(&req, opts)
 
 	req.Cmd = []string{
 		"/bin/sh",

@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -21,7 +21,7 @@ const exampleAuth = "https://example-auth.com"
 
 var testDockerConfigDirPath = filepath.Join("testdata", ".docker")
 
-var indexDockerIO = testcontainersdocker.IndexDockerIO
+var indexDockerIO = core.IndexDockerIO
 
 func TestGetDockerConfig(t *testing.T) {
 	const expectedErrorMessage = "Expected to find %s in auth configs"

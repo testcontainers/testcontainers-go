@@ -1,4 +1,4 @@
-package testcontainersdocker
+package core
 
 import (
 	"context"
