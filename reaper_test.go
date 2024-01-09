@@ -15,8 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -134,7 +134,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, container)
 
-	sessionID := testcontainerssession.SessionID()
+	sessionID := core.SessionID()
 
 	reaperContainer, err := lookUpReaperContainer(ctx, sessionID)
 	if err != nil {
@@ -169,7 +169,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	}
 	terminateContainerOnEnd(t, ctx, c)
 
-	sessionID := testcontainerssession.SessionID()
+	sessionID := core.SessionID()
 
 	reaperContainer, err := lookUpReaperContainer(ctx, sessionID)
 	if err != nil {

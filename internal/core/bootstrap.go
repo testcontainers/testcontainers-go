@@ -1,4 +1,4 @@
-package testcontainerssession
+package core
 
 import (
 	"crypto/sha256"
@@ -32,6 +32,11 @@ import (
 //   - tag the containers created by testcontainers-go, adding a label to the container with the session ID.
 var sessionID string
 
+// projectPath returns the current working directory of the parent test process running Testcontainers for Go.
+// If it's not possible to get that directory, the library will use the current working directory. If again
+// it's not possible to get the current working directory, the library will use a temporary directory.
+var projectPath string
+
 // processID returns a unique ID for the current test process. Because each Go package will be run in a separate process,
 // we need a way to identify the current test process, in the form of an UUID
 var processID string
@@ -43,10 +48,16 @@ func init() {
 
 	parentPid := os.Getppid()
 	var createTime int64
+	fallbackCwd, err := os.Getwd()
+	if err != nil {
+		// very unlinke to fail, but if it does, we will use a temp dir
+		fallbackCwd = os.TempDir()
+	}
 
 	processes, err := process.Processes()
 	if err != nil {
 		sessionID = uuid.New().String()
+		projectPath = fallbackCwd
 		return
 	}
 
@@ -54,6 +65,12 @@ func init() {
 		if int(p.Pid) != parentPid {
 			continue
 		}
+
+		cwd, err := p.Cwd()
+		if err != nil {
+			cwd = fallbackCwd
+		}
+		projectPath = cwd
 
 		t, err := p.CreateTime()
 		if err != nil {
@@ -77,6 +94,10 @@ func init() {
 
 func ProcessID() string {
 	return processID
+}
+
+func ProjectPath() string {
+	return projectPath
 }
 
 func SessionID() string {
