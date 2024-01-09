@@ -58,7 +58,7 @@ if err != nil {
 }
 ```
 
-If no parameter is passed a default time out of 5 seconds will be used. Values below 5 seconds and above 60 seconds will
+If no parameter is passed a default timeout of 5 seconds will be used. Values below 5 seconds and above 60 seconds will
 be coerced to these boundary values.
 
 # Listening to errors
@@ -71,26 +71,27 @@ func (c *DockerContainer) GetLogProducerErrorChannel() <-chan error {
 ```
 
 This allows you to, for example, retry restarting log producer if it fails to start the first time. For example:
+
 ```golang
 // start log producer normally
 err = container.StartLogProducer(ctx, WithLogProducerTimeout(10*time.Second))
 
-	// listen to errors in a detached goroutine
-	go func(done chan struct{}, timeout time.Duration, retryLimit int) {
-		for {
-			select {
-			case logErr := <-container.GetLogProducerErrorChannel():
-				if logErr != nil {
-					// do something with error
-					// for example, retry starting log producer 
-					// (here we retry it once, in real life you might want to retry it more times)
-					startErr := container.StartLogProducer(ctx, timeout)
-					if startErr != nil {
-						return 
-					}
-			case <-done:
-				return
-			}
+// listen to errors in a detached goroutine
+go func(done chan struct{}, timeout time.Duration, retryLimit int) {
+	for {
+		select {
+		case logErr := <-container.GetLogProducerErrorChannel():
+			if logErr != nil {
+				// do something with error
+				// for example, retry starting log producer 
+				// (here we retry it once, in real life you might want to retry it more times)
+				startErr := container.StartLogProducer(ctx, timeout)
+				if startErr != nil {
+					return 
+				}
+		case <-done:
+			return
 		}
-	}(cons.logListeningDone, time.Duration(10*time.Second))
-	```
+	}
+}(cons.logListeningDone, time.Duration(10*time.Second))
+```
