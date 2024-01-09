@@ -505,26 +505,26 @@ func Test_RecreateReaperIfTerminated(t *testing.T) {
 
 	provider, _ := ProviderDocker.GetProvider()
 	ctx := context.Background()
-	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
+	reaper, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
 	assert.NoError(t, err, "creating the Reaper should not error")
 
 	terminate, err := reaper.Connect()
 	assert.NoError(t, err, "connecting to Reaper should be successful")
 	terminate <- true
 
-	// wait for reaper to timeout and terminate
+	// Wait for ryuk's default timeout (10s) + 1s to allow for a graceful shutdown/cleanup of the container.
 	time.Sleep(11 * time.Second)
 
-	recreatedRepear, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
+	recreatedReaper, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
 	assert.NoError(t, err, "creating the Reaper should not error")
-	assert.NotEqual(t, reaper.container.GetContainerID(), recreatedRepear.container.GetContainerID(), "expected different container ID")
+	assert.NotEqual(t, reaper.container.GetContainerID(), recreatedReaper.container.GetContainerID(), "expected different container ID")
 
-	terminate, err = recreatedRepear.Connect()
+	terminate, err = recreatedReaper.Connect()
 	defer func(term chan bool) {
 		term <- true
 	}(terminate)
 	assert.NoError(t, err, "connecting to Reaper should be successful")
-	terminateContainerOnEnd(t, ctx, recreatedRepear.container)
+	terminateContainerOnEnd(t, ctx, recreatedReaper.container)
 }
 
 func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
