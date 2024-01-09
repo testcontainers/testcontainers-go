@@ -61,7 +61,7 @@ if err != nil {
 If no parameter is passed a default timeout of 5 seconds will be used. Values below 5 seconds and above 60 seconds will
 be coerced to these boundary values.
 
-# Listening to errors
+## Listening to errors
 
 When log producer fails to start within given timeout (causing a context deadline) or there's an error returned while closing the reader it will no longer panic, but instead will return an error over a channel. You can listen to it using `DockerContainer.GetLogProducerErrorChannel()` method:
 ```golang
