@@ -625,14 +625,19 @@ func WithLogProducerTimeout(timeout time.Duration) LogProducerOption {
 	}
 }
 
-// StartLogProducer will start a concurrent process that will continuously read logs
+// Deprecated: use the ContainerRequest.LogConsumerConfig field instead.
+func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProducerOption) error {
+	return c.startLogProducer(ctx, opts...)
+}
+
+// startLogProducer will start a concurrent process that will continuously read logs
 // from the container and will send them to each added LogConsumer.
 // Default log producer timeout is 5s. It is used to set the context timeout
 // which means that each log-reading loop will last at least the specified timeout
 // and that it cannot be cancelled earlier.
 // Use functional option WithLogProducerTimeout() to override default timeout. If it's
 // lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
-func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProducerOption) error {
+func (c *DockerContainer) startLogProducer(ctx context.Context, opts ...LogProducerOption) error {
 	{
 		c.producerMutex.Lock()
 		defer c.producerMutex.Unlock()
@@ -1090,7 +1095,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 					}
 
 					if len(logConsumerConfig.Consumers) > 0 {
-						return c.StartLogProducer(ctx)
+						return dockerContainer.startLogProducer(ctx, logConsumerConfig.ProducerOpts...)
 					}
 					return nil
 				},
