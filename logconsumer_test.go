@@ -80,9 +80,11 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	c.FollowOutput(&g)
+	dc := c.(*DockerContainer)
 
-	err = c.StartLogProducer(ctx)
+	dc.followOutput(&g)
+
+	err = dc.startLogProducer(ctx)
 	require.NoError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=hello")
@@ -99,7 +101,9 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("never received final log message")
 	}
-	assert.Nil(t, c.StopLogProducer())
+
+	assert.Nil(t, dc.stopLogProducer())
+
 	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs)
 
 	terminateContainerOnEnd(t, ctx, c)
@@ -147,9 +151,11 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 		Ack:      make(chan bool),
 	}
 
-	c.FollowOutput(&g)
+	dc := c.(*DockerContainer)
 
-	err = c.StartLogProducer(ctx)
+	dc.followOutput(&g)
+
+	err = dc.startLogProducer(ctx)
 	require.NoError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=this-is-stdout")
@@ -162,7 +168,8 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	require.NoError(t, err)
 
 	<-g.Ack
-	assert.Nil(t, c.StopLogProducer())
+
+	assert.Nil(t, dc.stopLogProducer())
 
 	assert.Equal(t, map[string]string{
 		StdoutLog: "echo this-is-stdout\n",
@@ -203,10 +210,12 @@ func Test_MultipleLogConsumers(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	c.FollowOutput(&first)
-	c.FollowOutput(&second)
+	dc := c.(*DockerContainer)
 
-	err = c.StartLogProducer(ctx)
+	dc.followOutput(&first)
+	dc.followOutput(&second)
+
+	err = dc.startLogProducer(ctx)
 	require.NoError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=mlem")
@@ -217,7 +226,8 @@ func Test_MultipleLogConsumers(t *testing.T) {
 
 	<-first.Done
 	<-second.Done
-	assert.Nil(t, c.StopLogProducer())
+
+	assert.Nil(t, dc.stopLogProducer())
 
 	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, first.Msgs)
 	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, second.Msgs)
@@ -251,22 +261,25 @@ func Test_StartStop(t *testing.T) {
 		Done:     make(chan bool),
 		Accepted: make(chan string),
 	}
-	c.FollowOutput(&g)
 
-	require.NoError(t, c.StopLogProducer(), "nothing should happen even if the producer is not started")
+	dc := c.(*DockerContainer)
 
-	require.NoError(t, c.StartLogProducer(ctx))
+	dc.followOutput(&g)
+
+	require.NoError(t, dc.stopLogProducer(), "nothing should happen even if the producer is not started")
+
+	require.NoError(t, dc.startLogProducer(ctx))
 	require.Equal(t, <-g.Accepted, "ready\n")
 
-	require.Error(t, c.StartLogProducer(ctx), "log producer is already started")
+	require.Error(t, dc.startLogProducer(ctx), "log producer is already started")
 
 	_, err = http.Get(ep + "/stdout?echo=mlem")
 	require.NoError(t, err)
 	require.Equal(t, <-g.Accepted, "echo mlem\n")
 
-	require.NoError(t, c.StopLogProducer())
+	require.NoError(t, dc.stopLogProducer())
 
-	require.NoError(t, c.StartLogProducer(ctx))
+	require.NoError(t, dc.startLogProducer(ctx))
 	require.Equal(t, <-g.Accepted, "ready\n")
 	require.Equal(t, <-g.Accepted, "echo mlem\n")
 
@@ -380,13 +393,15 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	if err = nginx.StartLogProducer(ctx); err != nil {
+	dockerNginx := nginx.(*DockerContainer)
+
+	if err = dockerNginx.startLogProducer(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
-		_ = nginx.StopLogProducer()
+		_ = dockerNginx.stopLogProducer()
 	}()
-	nginx.FollowOutput(&consumer)
+	dockerNginx.followOutput(&consumer)
 
 	// Gather the initial container logs
 	time.Sleep(time.Second * 1)
@@ -476,7 +491,8 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 		LogConsumerCfg: &LogConsumerConfig{
-			Consumers: []LogConsumer{&g},
+			ProducerOpts: []LogProducerOption{WithLogProducerTimeout(10 * time.Second)},
+			Consumers:    []LogConsumer{&g},
 		},
 	}
 	// }
@@ -537,9 +553,10 @@ func Test_StartLogProducerStillStartsWithTooLowTimeout(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	c.FollowOutput(&g)
+	dc := c.(*DockerContainer)
+	dc.followOutput(&g)
 
-	err = c.StartLogProducer(ctx, WithLogProducerTimeout(4*time.Second))
+	err = dc.startLogProducer(ctx, WithLogProducerTimeout(4*time.Second))
 	require.NoError(t, err, "should still start with too low timeout")
 }
 
@@ -569,8 +586,9 @@ func Test_StartLogProducerStillStartsWithTooHighTimeout(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	c.FollowOutput(&g)
+	dc := c.(*DockerContainer)
+	dc.followOutput(&g)
 
-	err = c.StartLogProducer(ctx, WithLogProducerTimeout(61*time.Second))
+	err = dc.startLogProducer(ctx, WithLogProducerTimeout(61*time.Second))
 	require.NoError(t, err, "should still start with too high timeout")
 }

@@ -43,17 +43,17 @@ type Container interface {
 	Ports(context.Context) (nat.PortMap, error)                     // get all exposed ports
 	SessionID() string                                              // get session id
 	IsRunning() bool
-	Start(context.Context) error                 // start the container
-	Stop(context.Context, *time.Duration) error  // stop the container
-	Terminate(context.Context) error             // terminate the container
-	Logs(context.Context) (io.ReadCloser, error) // Get logs of the container
-	FollowOutput(LogConsumer)
+	Start(context.Context) error                                  // start the container
+	Stop(context.Context, *time.Duration) error                   // stop the container
+	Terminate(context.Context) error                              // terminate the container
+	Logs(context.Context) (io.ReadCloser, error)                  // Get logs of the container
+	FollowOutput(LogConsumer)                                     // Deprecated: it will be removed in the next major release
 	StartLogProducer(context.Context, ...LogProducerOption) error // Deprecated: Use the ContainerRrequest instead
-	StopLogProducer() error
-	Name(context.Context) (string, error)                        // get container name
-	State(context.Context) (*types.ContainerState, error)        // returns container's running state
-	Networks(context.Context) ([]string, error)                  // get container networks
-	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
+	StopLogProducer() error                                       // Deprecated: it will be removed in the next major release
+	Name(context.Context) (string, error)                         // get container name
+	State(context.Context) (*types.ContainerState, error)         // returns container's running state
+	Networks(context.Context) ([]string, error)                   // get container networks
+	NetworkAliases(context.Context) (map[string][]string, error)  // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error)
 	ContainerIP(context.Context) (string, error)    // get container ip
 	ContainerIPs(context.Context) ([]string, error) // get all container IPs

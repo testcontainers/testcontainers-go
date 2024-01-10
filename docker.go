@@ -258,7 +258,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		return err
 	}
 
-	err = c.StopLogProducer()
+	err = c.stopLogProducer()
 	if err != nil {
 		return err
 	}
@@ -367,9 +367,14 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	return pr, nil
 }
 
-// FollowOutput adds a LogConsumer to be sent logs from the container's
-// STDOUT and STDERR
+// Deprecated: use the ContainerRequest.LogConsumerConfig field instead.
 func (c *DockerContainer) FollowOutput(consumer LogConsumer) {
+	c.followOutput(consumer)
+}
+
+// followOutput adds a LogConsumer to be sent logs from the container's
+// STDOUT and STDERR
+func (c *DockerContainer) followOutput(consumer LogConsumer) {
 	c.consumers = append(c.consumers, consumer)
 }
 
@@ -767,9 +772,14 @@ func (c *DockerContainer) startLogProducer(ctx context.Context, opts ...LogProdu
 	return nil
 }
 
+// Deprecated: it will be removed in the next major release.
+func (c *DockerContainer) StopLogProducer() error {
+	return c.stopLogProducer()
+}
+
 // StopLogProducer will stop the concurrent process that is reading logs
 // and sending them to each added LogConsumer
-func (c *DockerContainer) StopLogProducer() error {
+func (c *DockerContainer) stopLogProducer() error {
 	c.producerMutex.Lock()
 	defer c.producerMutex.Unlock()
 	if c.stopProducer != nil {
@@ -1091,7 +1101,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 					}
 
 					for _, consumer := range logConsumerConfig.Consumers {
-						c.FollowOutput(consumer)
+						dockerContainer.followOutput(consumer)
 					}
 
 					if len(logConsumerConfig.Consumers) > 0 {
