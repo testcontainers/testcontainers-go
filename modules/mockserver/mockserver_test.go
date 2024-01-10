@@ -91,9 +91,13 @@ func ExampleRunContainer_connect() {
 	fmt.Println(resp.StatusCode)
 	fmt.Println(string(buf))
 
+	err = ms.Verify(requestMatcher, client.Once())
+	fmt.Println(err == nil)
+
 	// Output:
 	// 200
 	// {
 	//   "test" : "value"
 	// }
+	// true
 }
