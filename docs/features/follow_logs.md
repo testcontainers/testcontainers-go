@@ -40,6 +40,10 @@ type LogProducerOption func(*DockerContainer)
 
 At the moment, _Testcontainers for Go_ exposes an option to set log producer timeout, using the `WithLogProducerTimeout` function.
 
+!!!warning
+	Please note that the using a very high timeout in the `WithLogProducerTimeout` option could cause issues calling container's `Terminate` method.
+	Please adjust this timeout and [the timeout for Ryuk](/features/configuration/#customizing-ryuk-the-resource-reaper) to avoid those issues.
+
 _Testcontainers for Go_ will read this log producer/consumer configuration to automatically start producing logs if an only if the consumers slice contains at least one valid `LogConsumer`.
 
 ## Manually using the FollowOutput function
