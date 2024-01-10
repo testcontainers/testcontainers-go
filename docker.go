@@ -258,11 +258,6 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		return err
 	}
 
-	err = c.stopLogProducer()
-	if err != nil {
-		return err
-	}
-
 	err = c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
 		RemoveVolumes: true,
 		Force:         true,
@@ -1127,6 +1122,23 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 					dockerContainer.isRunning = true
 
 					return nil
+				},
+			},
+			PreTerminates: []ContainerHook{
+				// first pre-terminate hook is to stop the log producer
+				func(ctx context.Context, c Container) error {
+					logConsumerConfig := req.LogConsumerCfg
+
+					if logConsumerConfig == nil {
+						return nil
+					}
+					if len(logConsumerConfig.Consumers) == 0 {
+						return nil
+					}
+
+					dockerContainer := c.(*DockerContainer)
+
+					return dockerContainer.stopLogProducer()
 				},
 			},
 		},
