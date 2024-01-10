@@ -21,14 +21,6 @@ import (
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 )
 
-// logConsumer is a testcontainers.LogConsumer that prints the log to stdout
-type testLogConsumer struct{}
-
-// Accept prints the log to stdout
-func (lc *testLogConsumer) Accept(l testcontainers.Log) {
-	fmt.Print(string(l.Content))
-}
-
 func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -89,7 +81,7 @@ func TestPulsar(t *testing.T) {
 			name: "with log consumers",
 			opts: []testcontainers.ContainerCustomizer{
 				// withLogconsumers {
-				testcontainers.WithLogConsumers(&testLogConsumer{}),
+				testcontainers.WithLogConsumers(&testcontainers.StdoutLogConsumer{}),
 				// }
 			},
 		},
