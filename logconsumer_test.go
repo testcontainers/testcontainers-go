@@ -467,6 +467,7 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
+	// logConsumersAtRequest {
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
 			Context:    "./testdata/",
@@ -474,8 +475,11 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 		},
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
-		LogConsumers: []LogConsumer{&g},
+		LogConsumerCfg: &LogConsumerConfig{
+			Consumers: []LogConsumer{&g},
+		},
 	}
+	// }
 
 	gReq := GenericContainerRequest{
 		ContainerRequest: req,
