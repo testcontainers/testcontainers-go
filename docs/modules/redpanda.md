@@ -51,6 +51,26 @@ for Redpanda. E.g. `testcontainers.WithImage("docker.redpanda.com/redpandadata/r
 
 If you need to enable TLS use `WithTLS` with a valid PEM encoded certificate and key.
 
+#### Additional Listener
+
+There are scenarios where additional listeners are needed, for example if you
+want to consume/from another container in the same network
+
+You can use the `WithListener` option to add a listener to the Redpanda container.
+<!--codeinclude-->
+[Register additional listener](../../modules/redpanda/redpanda_test.go) inside_block:withListenerRP
+<!--/codeinclude-->
+
+Container defined in the same network
+<!--codeinclude-->
+[Start Kcat container](../../modules/redpanda/redpanda_test.go) inside_block:withListenerKcat
+<!--/codeinclude-->
+
+Produce messages using the new registered listener
+<!--codeinclude-->
+[Produce/consume via registered listener](../../modules/redpanda/redpanda_test.go) inside_block:withListenerExec
+<!--/codeinclude-->
+
 ### Container Methods
 
 The Redpanda container exposes the following methods:

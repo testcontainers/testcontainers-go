@@ -283,19 +283,23 @@ func TestRedpandaWithTLS(t *testing.T) {
 
 func TestRedpandaListener_Simple(t *testing.T) {
 	ctx := context.Background()
+
 	// 1. Create network
 	rpNetwork, err := network.New(ctx, network.WithCheckDuplicate())
 	require.NoError(t, err)
 
 	// 2. Start Redpanda container
+	// withListenerRP {
 	container, err := RunContainer(ctx,
 		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
 		network.WithNetwork([]string{"redpanda-host"}, rpNetwork),
 		WithListener("redpanda:29092"), WithAutoCreateTopics(),
 	)
+	// }
 	require.NoError(t, err)
 
 	// 3. Start KCat container
+	// withListenerKcat {
 	kcat, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "confluentinc/cp-kcat:7.4.1",
@@ -312,6 +316,7 @@ func TestRedpandaListener_Simple(t *testing.T) {
 		},
 		Started: true,
 	})
+	// }
 
 	require.NoError(t, err)
 
@@ -319,8 +324,10 @@ func TestRedpandaListener_Simple(t *testing.T) {
 	err = kcat.CopyToContainer(ctx, []byte("Message produced by kcat"), "/tmp/msgs.txt", 700)
 	require.NoError(t, err)
 
-	// 5. Produce mesaage to Redpanda
+	// 5. Produce message to Redpanda
+	// withListenerExec {
 	_, _, err = kcat.Exec(ctx, []string{"kcat", "-b", "redpanda:29092", "-t", "msgs", "-P", "-l", "/tmp/msgs.txt"})
+	// }
 
 	require.NoError(t, err)
 
