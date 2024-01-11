@@ -13,12 +13,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/network"
 )
 
 func TestRedpanda(t *testing.T) {
@@ -362,7 +363,7 @@ func TestRedpandaListener_InvalidPort(t *testing.T) {
 	RPNetwork, err := network.New(ctx, network.WithCheckDuplicate())
 	require.NoError(t, err)
 
-	// 2. Attemp Start Redpanda container
+	// 2. Attempt Start Redpanda container
 	_, err = RunContainer(ctx,
 		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
 		WithListener("redpanda:99092"),
@@ -383,7 +384,7 @@ func TestRedpandaListener_InvalidPort(t *testing.T) {
 func TestRedpandaListener_NoNetwork(t *testing.T) {
 	ctx := context.Background()
 
-	// 1. Attemp Start Redpanda container
+	// 1. Attempt Start Redpanda container
 	_, err := RunContainer(ctx,
 		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
 		WithListener("redpanda:99092"),
