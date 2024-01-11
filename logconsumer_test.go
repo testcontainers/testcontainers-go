@@ -501,7 +501,7 @@ func Test_StartLogProducerStillStartsWithTooHighTimeout(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
-	// because the logProducer timeout is too high, the container should have already been terminated
+	// because the log production timeout is too high, the container should have already been terminated
 	// so no need to terminate it again with "terminateContainerOnEnd(t, ctx, c)"
 	dc := c.(*DockerContainer)
 	require.NoError(t, dc.stopLogProducer())
