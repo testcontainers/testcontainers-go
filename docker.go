@@ -606,7 +606,7 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 		return err
 	}
 
-	err = c.provider.client.CopyToContainer(ctx, c.ID, filepath.Dir(containerFilePath), buffer, types.CopyToContainerOptions{})
+	err = c.provider.client.CopyToContainer(ctx, c.ID, "/", buffer, types.CopyToContainerOptions{})
 	if err != nil {
 		return err
 	}

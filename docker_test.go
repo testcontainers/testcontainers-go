@@ -1335,27 +1335,44 @@ func readHostname(tb testing.TB, containerId string) string {
 func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	ctx := context.Background()
 
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:        nginxImage,
-			ExposedPorts: []string{nginxDefaultPort},
-			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+	tests := []struct {
+		name           string
+		copiedFileName string
+	}{
+		{
+			name:           "success copy",
+			copiedFileName: "/hello_copy.sh",
 		},
-		Started: true,
-	})
-
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
-
-	copiedFileName := "hello_copy.sh"
-	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), "/"+copiedFileName, 700)
-	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
-	if err != nil {
-		t.Fatal(err)
+		{
+			name:           "success copy with dir",
+			copiedFileName: "/test/hello_copy.sh",
+		},
 	}
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+				ProviderType: providerType,
+				ContainerRequest: ContainerRequest{
+					Image:        nginxImage,
+					ExposedPorts: []string{nginxDefaultPort},
+					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+				},
+				Started: true,
+			})
+
+			require.NoError(t, err)
+			terminateContainerOnEnd(t, ctx, nginxC)
+
+			_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), tc.copiedFileName, 700)
+			c, _, err := nginxC.Exec(ctx, []string{"bash", tc.copiedFileName})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if c != 0 {
+				t.Fatalf("File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
+			}
+		})
 	}
 }
 
@@ -1532,32 +1549,51 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 func TestDockerContainerCopyToContainer(t *testing.T) {
 	ctx := context.Background()
 
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:        nginxImage,
-			ExposedPorts: []string{nginxDefaultPort},
-			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+	tests := []struct {
+		name           string
+		copiedFileName string
+	}{
+		{
+			name:           "success copy",
+			copiedFileName: "hello_copy.sh",
 		},
-		Started: true,
-	})
-
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
-
-	copiedFileName := "hello_copy.sh"
-
-	fileContent, err := os.ReadFile(filepath.Join(".", "testdata", "hello.sh"))
-	if err != nil {
-		t.Fatal(err)
+		{
+			name:           "success copy with dir",
+			copiedFileName: "/test/hello_copy.sh",
+		},
 	}
-	_ = nginxC.CopyToContainer(ctx, fileContent, "/"+copiedFileName, 700)
-	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+				ProviderType: providerType,
+				ContainerRequest: ContainerRequest{
+					Image:        nginxImage,
+					ExposedPorts: []string{nginxDefaultPort},
+					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+				},
+				Started: true,
+			})
+
+			require.NoError(t, err)
+			terminateContainerOnEnd(t, ctx, nginxC)
+
+			fileContent, err := os.ReadFile(filepath.Join(".", "testdata", "hello.sh"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = nginxC.CopyToContainer(ctx, fileContent, tc.copiedFileName, 700)
+			if err != nil {
+				t.Fatal(err)
+			}
+			c, _, err := nginxC.Exec(ctx, []string{"bash", tc.copiedFileName})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if c != 0 {
+				t.Fatalf("File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
+			}
+		})
 	}
 }
 
