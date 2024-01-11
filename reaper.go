@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/docker/docker/errdefs"
 	"math/rand"
 	"net"
 	"regexp"
@@ -16,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
