@@ -48,7 +48,7 @@ type Container interface {
 	Terminate(context.Context) error                              // terminate the container
 	Logs(context.Context) (io.ReadCloser, error)                  // Get logs of the container
 	FollowOutput(LogConsumer)                                     // Deprecated: it will be removed in the next major release
-	StartLogProducer(context.Context, ...LogProducerOption) error // Deprecated: Use the ContainerRrequest instead
+	StartLogProducer(context.Context, ...LogProducerOption) error // Deprecated: Use the ContainerRequest instead
 	StopLogProducer() error                                       // Deprecated: it will be removed in the next major release
 	Name(context.Context) (string, error)                         // get container name
 	State(context.Context) (*types.ContainerState, error)         // returns container's running state
