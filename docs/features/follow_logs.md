@@ -33,13 +33,13 @@ This will represent the current way for associating `LogConsumer`s. You simply d
 [Passing LogConsumers](../../logconsumer_test.go) inside_block:logConsumersAtRequest
 <!--/codeinclude-->
 
-Please check that it's possible to configure the log production with an slice of functional options. These options must be of the `LogProducerOption` type:
+Please check that it's possible to configure the log production with an slice of functional options. These options must be of the `LogProductionOption` type:
 
 ```go
-type LogProducerOption func(*DockerContainer)
+type LogProductionOption func(*DockerContainer)
 ```
 
-At the moment, _Testcontainers for Go_ exposes an option to set log production timeout, using the `WithLogProducerTimeout` function.
+At the moment, _Testcontainers for Go_ exposes an option to set log production timeout, using the `WithLogProductionTimeout` function.
 
 _Testcontainers for Go_ will read this log producer/consumer configuration to automatically start producing logs if an only if the consumers slice contains at least one valid `LogConsumer`.
 
@@ -102,28 +102,31 @@ The production of logs is automatically stopped in `c.Terminate()`, so you don't
 
 ## Listening to errors
 
-When the log production fails to start within given timeout (causing a context deadline) or there's an error returned while closing the reader it will no longer panic, but instead will return an error over a channel. You can listen to it using `DockerContainer.GetLogProducerErrorChannel()` method:
+When the log production fails to start within given timeout (causing a context deadline) or there's an error returned while closing the reader it will no longer panic, but instead will return an error over a channel. You can listen to it using `DockerContainer.GetLogProductionErrorChannel()` method:
 
 ```go
-func (c *DockerContainer) GetLogProducerErrorChannel() <-chan error {
+func (c *DockerContainer) GetLogProductionErrorChannel() <-chan error {
 	return c.producerError
 }
 ```
 
-This allows you to, for example, retry restarting the log production if it fails to start the first time. For example:
+This allows you to, for example, retry restarting the log production if it fails to start the first time.
+
+For example, you would start the log production normally, defining the log production configuration at the `ContainerRequest` struct, and then:
 
 ```go
-// start log production normally
-err = container.StartLogProducer(ctx, WithLogProducerTimeout(10*time.Second))
+// start log production normally, using the ContainerRequest struct, or
+// using the deprecated c.StartLogProducer method.
+// err = container.StartLogProducer(ctx, WithLogProductionTimeout(10*time.Second))
 
 // listen to errors in a detached goroutine
-go func(done chan struct{}, timeout time.Duration, retryLimit int) {
+go func(done chan struct{}, timeout time.Duration) {
 	for {
 		select {
-		case logErr := <-container.GetLogProducerErrorChannel():
+		case logErr := <-container.GetLogProductionErrorChannel():
 			if logErr != nil {
 				// do something with error
-				// for example, retry starting log production 
+				// for example, retry starting the log production 
 				// (here we retry it once, in real life you might want to retry it more times)
 				startErr := container.StartLogProducer(ctx, timeout)
 				if startErr != nil {

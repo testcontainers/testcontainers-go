@@ -402,8 +402,8 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 		LogConsumerCfg: &LogConsumerConfig{
-			ProducerOpts: []LogProducerOption{WithLogProducerTimeout(10 * time.Second)},
-			Consumers:    []LogConsumer{&g},
+			Opts:      []LogProductionOption{WithLogProductionTimeout(10 * time.Second)},
+			Consumers: []LogConsumer{&g},
 		},
 	}
 	// }
@@ -438,7 +438,7 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, c)
 }
 
-func Test_StartLogProducerStillStartsWithTooLowTimeout(t *testing.T) {
+func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
 	ctx := context.Background()
 
 	g := TestLogConsumer{
@@ -455,8 +455,8 @@ func Test_StartLogProducerStillStartsWithTooLowTimeout(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 		LogConsumerCfg: &LogConsumerConfig{
-			ProducerOpts: []LogProducerOption{WithLogProducerTimeout(4 * time.Second)},
-			Consumers:    []LogConsumer{&g},
+			Opts:      []LogProductionOption{WithLogProductionTimeout(4 * time.Second)},
+			Consumers: []LogConsumer{&g},
 		},
 	}
 
@@ -470,7 +470,7 @@ func Test_StartLogProducerStillStartsWithTooLowTimeout(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, c)
 }
 
-func Test_StartLogProducerStillStartsWithTooHighTimeout(t *testing.T) {
+func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 	ctx := context.Background()
 
 	g := TestLogConsumer{
@@ -487,8 +487,8 @@ func Test_StartLogProducerStillStartsWithTooHighTimeout(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 		LogConsumerCfg: &LogConsumerConfig{
-			ProducerOpts: []LogProducerOption{WithLogProducerTimeout(61 * time.Second)},
-			Consumers:    []LogConsumer{&g},
+			Opts:      []LogProductionOption{WithLogProductionTimeout(61 * time.Second)},
+			Consumers: []LogConsumer{&g},
 		},
 	}
 
@@ -504,7 +504,7 @@ func Test_StartLogProducerStillStartsWithTooHighTimeout(t *testing.T) {
 	// because the log production timeout is too high, the container should have already been terminated
 	// so no need to terminate it again with "terminateContainerOnEnd(t, ctx, c)"
 	dc := c.(*DockerContainer)
-	require.NoError(t, dc.stopLogProducer())
+	require.NoError(t, dc.stopLogProduction())
 
 	terminateContainerOnEnd(t, ctx, c)
 }

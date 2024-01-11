@@ -29,6 +29,6 @@ type LogConsumer interface {
 
 // LogConsumerConfig is a configuration object for the producer/consumer pattern
 type LogConsumerConfig struct {
-	ProducerOpts []LogProducerOption // options for the producer
-	Consumers    []LogConsumer       // consumers for the logs
+	Opts      []LogProductionOption // options for the production of logs
+	Consumers []LogConsumer         // consumers for the logs
 }
