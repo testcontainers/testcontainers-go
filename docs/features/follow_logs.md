@@ -25,7 +25,7 @@ You can associate `LogConsumer`s in two manners:
 
 ## Passing the LogConsumers in the ContainerRequest
 
-This will represent the only way for associating `LogConsumer`s. You simply define your consumers, and attach them as a slice to the `ContainerRequest` in the
+This will represent the current way for associating `LogConsumer`s. You simply define your consumers, and attach them as a slice to the `ContainerRequest` in the
 `LogConsumerCfg` field. See the following example, where `g` is an instance of a given `LogConsumer` struct.
 
 <!--codeinclude-->
@@ -40,10 +40,6 @@ type LogProducerOption func(*DockerContainer)
 
 At the moment, _Testcontainers for Go_ exposes an option to set log producer timeout, using the `WithLogProducerTimeout` function.
 
-!!!warning
-	Please note that the using a very high timeout in the `WithLogProducerTimeout` option could cause issues calling container's `Terminate` method.
-	Please adjust this timeout and [the timeout for Ryuk](/features/configuration/#customizing-ryuk-the-resource-reaper) to avoid those issues.
-
 _Testcontainers for Go_ will read this log producer/consumer configuration to automatically start producing logs if an only if the consumers slice contains at least one valid `LogConsumer`.
 
 ## Manually using the FollowOutput function
@@ -51,7 +47,7 @@ _Testcontainers for Go_ will read this log producer/consumer configuration to au
 !!!warning
 	This method is not recommended, as it requires you to manually manage the `LogConsumer` lifecycle.
 	We recommend using the `ContainerRequest` struct to associate `LogConsumer`s, as it's the simplest and most straightforward method.
-	If you use both methods, you can get an error, as the `StartLogProducer` function will be called twice, which is not allowed.
+	If you use both methods, you can get an error, as the `StartLogProducer` function could be called twice, which is not allowed.
 
 	As a consequence, this lifecycle (`StartLogProducer`, `FollowOutput` and `StopLogProducer) will be **deprecated** in the future, delegating the control to the library.
 
@@ -105,7 +101,7 @@ The `LogProducer` is automatically stopped in `c.Terminate()`, so you don't have
 
 ## Listening to errors
 
-When log producer fails to start within given timeout (causing a context deadline) or there's an error returned while closing the reader it will no longer panic, but instead will return an error over a channel. You can listen to it using `DockerContainer.GetLogProducerErrorChannel()` method:
+When the log producer fails to start within given timeout (causing a context deadline) or there's an error returned while closing the reader it will no longer panic, but instead will return an error over a channel. You can listen to it using `DockerContainer.GetLogProducerErrorChannel()` method:
 
 ```go
 func (c *DockerContainer) GetLogProducerErrorChannel() <-chan error {
@@ -113,7 +109,7 @@ func (c *DockerContainer) GetLogProducerErrorChannel() <-chan error {
 }
 ```
 
-This allows you to, for example, retry restarting log producer if it fails to start the first time. For example:
+This allows you to, for example, retry restarting the log producer if it fails to start the first time. For example:
 
 ```go
 // start log producer normally
