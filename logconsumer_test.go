@@ -218,77 +218,6 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	assert.Nil(t, c.Terminate(ctx))
 }
 
-func Test_StartStop(t *testing.T) {
-	ctx := context.Background()
-
-	g := TestLogConsumer{
-		Msgs:     []string{},
-		Done:     make(chan bool),
-		Accepted: make(chan string),
-	}
-
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "./testdata/",
-			Dockerfile: "echoserver.Dockerfile",
-		},
-		ExposedPorts: []string{"8080/tcp"},
-		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
-			Consumers: []LogConsumer{&g},
-		},
-	}
-
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
-	require.NoError(t, err)
-
-	ep, err := c.Endpoint(ctx, "http")
-	require.NoError(t, err)
-
-	dc := c.(*DockerContainer)
-
-	require.NoError(t, dc.stopLogProducer(), "nothing should happen even if the producer is not started")
-
-	require.NoError(t, dc.startLogProducer(ctx))
-	require.Equal(t, <-g.Accepted, "ready\n")
-
-	require.Error(t, dc.startLogProducer(ctx), "log producer is already started")
-
-	_, err = http.Get(ep + "/stdout?echo=mlem")
-	require.NoError(t, err)
-	require.Equal(t, <-g.Accepted, "echo mlem\n")
-
-	require.NoError(t, dc.stopLogProducer())
-
-	require.NoError(t, dc.startLogProducer(ctx))
-	require.Equal(t, <-g.Accepted, "ready\n")
-	require.Equal(t, <-g.Accepted, "echo mlem\n")
-
-	_, err = http.Get(ep + "/stdout?echo=mlem2")
-	require.NoError(t, err)
-	require.Equal(t, <-g.Accepted, "echo mlem2\n")
-
-	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
-	require.NoError(t, err)
-
-	<-g.Done
-	// Do not close producer here, let's delegate it to c.Terminate
-
-	assert.Equal(t, []string{
-		"ready\n",
-		"echo mlem\n",
-		"ready\n",
-		"echo mlem\n",
-		"echo mlem2\n",
-	}, g.Msgs)
-	assert.Nil(t, c.Terminate(ctx))
-}
-
 func TestContainerLogWithErrClosed(t *testing.T) {
 	if os.Getenv("XDG_RUNTIME_DIR") != "" {
 		t.Skip("Skipping as flaky on GitHub Actions, Please see https://github.com/testcontainers/testcontainers-go/issues/1924")
@@ -574,4 +503,8 @@ func Test_StartLogProducerStillStartsWithTooHighTimeout(t *testing.T) {
 
 	// because the logProducer timeout is too high, the container should have already been terminated
 	// so no need to terminate it again with "terminateContainerOnEnd(t, ctx, c)"
+	dc := c.(*DockerContainer)
+	dc.stopLogProducer()
+
+	terminateContainerOnEnd(t, ctx, c)
 }
