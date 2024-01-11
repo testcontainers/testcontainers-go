@@ -10,8 +10,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
-	"github.com/testcontainers/testcontainers-go/internal/config"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -86,9 +85,7 @@ type prependHubRegistry struct {
 }
 
 // newPrependHubRegistry creates a new prependHubRegistry
-func newPrependHubRegistry() prependHubRegistry {
-	hubPrefix := config.Read().HubImageNamePrefix
-
+func newPrependHubRegistry(hubPrefix string) prependHubRegistry {
 	return prependHubRegistry{
 		prefix: hubPrefix,
 	}
@@ -105,7 +102,7 @@ func (p prependHubRegistry) Description() string {
 //   - if the image is a Docker Hub image where the hub registry is explicitly part of the name
 //     (i.e. anything with a docker.io or registry.hub.docker.com host part), the image is returned as is.
 func (p prependHubRegistry) Substitute(image string) (string, error) {
-	registry := testcontainersdocker.ExtractRegistry(image, "")
+	registry := core.ExtractRegistry(image, "")
 
 	// add the exclusions in the right order
 	exclusions := []func() bool{
