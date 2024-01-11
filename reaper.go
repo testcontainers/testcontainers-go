@@ -145,10 +145,8 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 			if !errdefs.IsNotFound(err) {
 				return nil, err
 			}
-		} else {
-			if state.Running {
-				return reaperInstance, nil
-			}
+		} else if state.Running {
+			return reaperInstance, nil
 		}
 		// else: the reaper instance has been terminated, so we need to create a new one
 		reaperOnce = sync.Once{}
