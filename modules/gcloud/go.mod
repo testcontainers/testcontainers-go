@@ -9,7 +9,7 @@ require (
 	cloud.google.com/go/firestore v1.14.0
 	cloud.google.com/go/pubsub v1.33.0
 	cloud.google.com/go/spanner v1.54.0
-	github.com/docker/go-connections v0.4.0
+	github.com/docker/go-connections v0.5.0
 	github.com/testcontainers/testcontainers-go v0.27.0
 	google.golang.org/api v0.154.0
 	google.golang.org/grpc v1.60.1
