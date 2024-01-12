@@ -9,7 +9,7 @@ import (
 )
 
 // defaultImage is the default MockServer container image
-const defaultImage = "mockserver/mockserver"
+const defaultImage = "mockserver/mockserver:5.15.0"
 
 // MockServerContainer represents the MockServer container type used in the module
 type MockServerContainer struct {

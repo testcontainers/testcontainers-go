@@ -38,7 +38,7 @@ When starting the MockServer container, you can pass options in a variadic way t
 #### Image
 
 If you need to set a different MockServer Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for MockServer. E.g. `testcontainers.WithImage("mockserver/mockserver")`.
+for MockServer. E.g. `testcontainers.WithImage("mockserver/mockserver:5.15.0")`.
 
 {% include "../features/common_functional_options.md" %}
 

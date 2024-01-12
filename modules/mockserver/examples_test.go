@@ -16,7 +16,7 @@ func ExampleRunContainer() {
 	// runMockServerContainer {
 	ctx := context.Background()
 
-	mockserverContainer, err := mockserver.RunContainer(ctx, testcontainers.WithImage("mockserver/mockserver"))
+	mockserverContainer, err := mockserver.RunContainer(ctx, testcontainers.WithImage("mockserver/mockserver:5.15.0"))
 	if err != nil {
 		panic(err)
 	}
@@ -44,7 +44,7 @@ func ExampleRunContainer_connect() {
 	// connectToMockServer {
 	ctx := context.Background()
 
-	mockserverContainer, err := mockserver.RunContainer(ctx, testcontainers.WithImage("mockserver/mockserver"))
+	mockserverContainer, err := mockserver.RunContainer(ctx, testcontainers.WithImage("mockserver/mockserver:5.15.0"))
 	if err != nil {
 		panic(err)
 	}
