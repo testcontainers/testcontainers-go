@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -16,6 +17,9 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/network"
 )
 
 func TestRedpanda(t *testing.T) {
@@ -276,6 +280,119 @@ func TestRedpandaWithTLS(t *testing.T) {
 	// Test produce to unknown topic
 	results := kafkaCl.ProduceSync(ctx, &kgo.Record{Topic: "test", Value: []byte("test message")})
 	require.Error(t, results.FirstErr(), kerr.UnknownTopicOrPartition)
+}
+
+func TestRedpandaListener_Simple(t *testing.T) {
+	ctx := context.Background()
+
+	// 1. Create network
+	rpNetwork, err := network.New(ctx, network.WithCheckDuplicate())
+	require.NoError(t, err)
+
+	// 2. Start Redpanda container
+	// withListenerRP {
+	container, err := RunContainer(ctx,
+		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+		network.WithNetwork([]string{"redpanda-host"}, rpNetwork),
+		WithListener("redpanda:29092"), WithAutoCreateTopics(),
+	)
+	// }
+	require.NoError(t, err)
+
+	// 3. Start KCat container
+	// withListenerKcat {
+	kcat, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "confluentinc/cp-kcat:7.4.1",
+			Networks: []string{
+				rpNetwork.Name,
+			},
+			Entrypoint: []string{
+				"sh",
+			},
+			Cmd: []string{
+				"-c",
+				"tail -f /dev/null",
+			},
+		},
+		Started: true,
+	})
+	// }
+
+	require.NoError(t, err)
+
+	// 4. Copy message to kcat
+	err = kcat.CopyToContainer(ctx, []byte("Message produced by kcat"), "/tmp/msgs.txt", 700)
+	require.NoError(t, err)
+
+	// 5. Produce message to Redpanda
+	// withListenerExec {
+	_, _, err = kcat.Exec(ctx, []string{"kcat", "-b", "redpanda:29092", "-t", "msgs", "-P", "-l", "/tmp/msgs.txt"})
+	// }
+
+	require.NoError(t, err)
+
+	// 6. Consume message from Redpanda
+	_, stdout, err := kcat.Exec(ctx, []string{"kcat", "-b", "redpanda:29092", "-C", "-t", "msgs", "-c", "1"})
+	require.NoError(t, err)
+
+	// 7. Read Message from stdout
+	out, err := io.ReadAll(stdout)
+	require.NoError(t, err)
+
+	require.Contains(t, string(out), "Message produced by kcat")
+
+	t.Cleanup(func() {
+		if err := kcat.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate kcat container: %s", err)
+		}
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate redpanda container: %s", err)
+		}
+
+		if err := rpNetwork.Remove(ctx); err != nil {
+			t.Fatalf("failed to remove network: %s", err)
+		}
+	})
+}
+
+func TestRedpandaListener_InvalidPort(t *testing.T) {
+	ctx := context.Background()
+
+	// 1. Create network
+	RPNetwork, err := network.New(ctx, network.WithCheckDuplicate())
+	require.NoError(t, err)
+
+	// 2. Attempt Start Redpanda container
+	_, err = RunContainer(ctx,
+		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+		WithListener("redpanda:99092"),
+		network.WithNetwork([]string{"redpanda-host"}, RPNetwork),
+	)
+
+	require.Error(t, err)
+
+	require.Contains(t, err.Error(), "invalid port on listener redpanda:99092")
+
+	t.Cleanup(func() {
+		if err := RPNetwork.Remove(ctx); err != nil {
+			t.Fatalf("failed to remove network: %s", err)
+		}
+	})
+}
+
+func TestRedpandaListener_NoNetwork(t *testing.T) {
+	ctx := context.Background()
+
+	// 1. Attempt Start Redpanda container
+	_, err := RunContainer(ctx,
+		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+		WithListener("redpanda:99092"),
+	)
+
+	require.Error(t, err)
+
+	require.Contains(t, err.Error(), "container must be attached to at least one network")
 }
 
 // localhostCert is a PEM-encoded TLS cert with SAN IPs
