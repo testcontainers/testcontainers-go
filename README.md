@@ -18,6 +18,8 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/testcontainers/testcontainers-go)](https://goreportcard.com/report/github.com/testcontainers/testcontainers-go)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=testcontainers_testcontainers-go&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=testcontainers_testcontainers-go)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/6957/badge)](https://www.bestpractices.dev/projects/6957)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/testcontainers/testcontainers-go/badge)](https://securityscorecards.dev/viewer/?uri=github.com/testcontainers/testcontainers-go)
 
 **License**
 
