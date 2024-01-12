@@ -2,6 +2,7 @@ package mockserver
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -44,16 +45,15 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &MockServerContainer{Container: container}, nil
 }
 
-// GetHost returns the host on which the MockServer container is listening
-func (c *MockServerContainer) GetHost(ctx context.Context) (string, error) {
-	return c.Host(ctx)
-}
-
-// GetPort returns the port on which the MockServer container is listening
-func (c *MockServerContainer) GetPort(ctx context.Context) (int, error) {
+// GetURL returns the URL of the MockServer container
+func (c *MockServerContainer) URL(ctx context.Context) (string, error) {
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", err
+	}
 	port, err := c.MappedPort(ctx, "1080/tcp")
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	return port.Int(), nil
+	return fmt.Sprintf("http://%s:%d", host, port.Int()), nil
 }
