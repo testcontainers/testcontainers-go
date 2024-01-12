@@ -4,7 +4,7 @@ Not available until the next release of testcontainers-go <a href="https://githu
 
 ## Introduction
 
-The Testcontainers module for MockServer.
+The Testcontainers module for MockServer. MockServer can be used to mock HTTP services by matching requests against user-defined expectations.
 
 ## Adding this module to your project dependencies
 
