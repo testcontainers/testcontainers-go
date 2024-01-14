@@ -203,11 +203,11 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 	if len(upOptions.Services) != len(d.project.Services) {
 		sort.Strings(upOptions.Services)
 
-		filteredServices := make(types.Services, 0, len(d.project.Services))
+		filteredServices := types.Services{}
 
-		for i := range d.project.Services {
-			if idx := sort.SearchStrings(upOptions.Services, d.project.Services[i].Name); idx < len(upOptions.Services) && upOptions.Services[idx] == d.project.Services[i].Name {
-				filteredServices = append(filteredServices, d.project.Services[i])
+		for _, srv := range upOptions.Services {
+			if srvConfig, ok := d.project.Services[srv]; ok {
+				filteredServices[srv] = srvConfig
 			}
 		}
 
