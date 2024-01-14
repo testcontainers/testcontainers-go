@@ -11,7 +11,7 @@ import (
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/compose/v2/pkg/api"
-	types2 "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"golang.org/x/sync/errgroup"
@@ -288,7 +288,7 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 		return container, nil
 	}
 
-	listOptions := types2.ContainerListOptions{
+	listOptions := container.ListOptions{
 		All: true,
 		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
