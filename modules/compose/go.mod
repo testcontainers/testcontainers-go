@@ -7,7 +7,7 @@ toolchain go1.21.3
 replace github.com/testcontainers/testcontainers-go => ../..
 
 require (
-	github.com/compose-spec/compose-go v1.20.2
+	github.com/compose-spec/compose-go/v2 v2.0.0-beta.2
 	github.com/docker/cli v25.0.0-rc.1+incompatible
 	github.com/docker/compose/v2 v2.24.0
 	github.com/docker/docker v25.0.0-rc.1+incompatible
@@ -42,7 +42,6 @@ require (
 	github.com/buger/goterm v1.0.4 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/compose-spec/compose-go/v2 v2.0.0-beta.2 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/containerd/containerd v1.7.11 // indirect
 	github.com/containerd/continuity v0.4.2 // indirect
