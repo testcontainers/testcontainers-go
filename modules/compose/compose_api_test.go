@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types/volume"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -36,13 +37,13 @@ func TestDockerComposeAPI(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	assert.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
+	require.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
 }
 
 func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 	path := filepath.Join(testdataPackage, simpleCompose)
 	compose, err := NewDockerCompose(path)
-	assert.NoError(t, err, "NewDockerCompose()")
+	require.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
 		assert.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
@@ -56,7 +57,7 @@ func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 		WaitForService("mysql-1", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Up(ctx, Wait(true))
 
-	assert.Error(t, err, "Expected error to be thrown because service with wait strategy is not running")
+	require.Error(t, err, "Expected error to be thrown because service with wait strategy is not running")
 	assert.Equal(t, err.Error(), "no container found for service name mysql-1")
 
 	serviceNames := compose.Services()
@@ -81,7 +82,7 @@ func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
 		WaitForService("mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Up(ctx, Wait(true))
 
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	serviceNames := compose.Services()
 
@@ -106,7 +107,7 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true), RunServices("nginx"))
 
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	serviceNames := compose.Services()
 
@@ -131,7 +132,7 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	assert.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
+	require.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
 
 	serviceNames := compose.Services()
 
@@ -141,11 +142,11 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 
 	// close mysql container in purpose
 	mysqlContainer, err := compose.ServiceContainer(context.Background(), "mysql")
-	assert.NoError(t, err, "Get mysql container")
+	require.NoError(t, err, "Get mysql container")
 
 	stopTimeout := 10 * time.Second
 	err = mysqlContainer.Stop(ctx, &stopTimeout)
-	assert.NoError(t, err, "Stop mysql container")
+	require.NoError(t, err, "Stop mysql container")
 
 	// check container status
 	state, err := mysqlContainer.State(ctx)
@@ -173,7 +174,7 @@ func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	serviceNames := compose.Services()
 
@@ -200,7 +201,7 @@ func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
 		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	serviceNames := compose.Services()
 
@@ -227,7 +228,7 @@ func TestDockerComposeAPIWithContainerName(t *testing.T) {
 		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	serviceNames := compose.Services()
 
@@ -251,7 +252,7 @@ func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
 		WaitForService("nginx", wait.ForLog("Configuration complete; ready for start up")).
 		Up(ctx, Wait(true))
 
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	serviceNames := compose.Services()
 
@@ -276,7 +277,7 @@ func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	serviceNames := compose.Services()
 
@@ -306,7 +307,7 @@ func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 
 	// Verify that an error is thrown and not nil
 	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
-	assert.Error(t, err, "Expected error to be thrown because of a wrong suplied wait strategy")
+	require.Error(t, err, "Expected error to be thrown because of a wrong suplied wait strategy")
 
 	serviceNames := compose.Services()
 
@@ -326,7 +327,7 @@ func TestDockerComposeAPIComplex(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	assert.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
+	require.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
 
 	serviceNames := compose.Services()
 
@@ -355,8 +356,7 @@ func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 			"bar": "BAR",
 		}).
 		Up(ctx, Wait(true))
-
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	serviceNames := compose.Services()
 
@@ -395,7 +395,7 @@ func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 			"foo": "FOO",
 		}).
 		Up(ctx, Wait(true))
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	serviceNames := compose.Services()
 
@@ -425,7 +425,7 @@ func TestDockerComposeAPIWithVolume(t *testing.T) {
 	t.Cleanup(cancel)
 
 	err = compose.Up(ctx, Wait(true))
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 }
 
 func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
@@ -439,7 +439,7 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 	t.Cleanup(cancel)
 
 	err = compose.Up(ctx, Wait(true))
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	err = compose.Down(context.Background(), RemoveOrphans(true), RemoveVolumes(true), RemoveImagesLocal)
 	assert.NoError(t, err, "compose.Down()")
@@ -471,7 +471,7 @@ func TestDockerComposeAPIWithBuild(t *testing.T) {
 		WaitForService("echo", wait.ForHTTP("/env").WithPort("8080/tcp")).
 		Up(ctx, Wait(true))
 
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 }
 
 func TestDockerComposeApiWithWaitForShortLifespanService(t *testing.T) {
@@ -492,7 +492,7 @@ func TestDockerComposeApiWithWaitForShortLifespanService(t *testing.T) {
 		WaitForService("falafel", wait.ForExit().WithExitTimeout(10*time.Second)).
 		Up(ctx)
 
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	services := compose.Services()
 
