@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/couchbase/gocb/v2 v2.7.0
-	github.com/docker/go-connections v0.4.0
+	github.com/docker/go-connections v0.5.0
 	github.com/testcontainers/testcontainers-go v0.27.0
 	github.com/tidwall/gjson v1.17.0
 )
