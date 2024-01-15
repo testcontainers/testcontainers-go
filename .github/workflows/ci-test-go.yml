@@ -110,7 +110,7 @@ jobs:
 
       - name: Upload SonarCloud files
         if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.run-tests && !inputs.rootless-docker }}
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
         with:
           name: sonarcloud
           path: |
