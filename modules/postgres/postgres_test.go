@@ -76,25 +76,25 @@ func TestPostgres(t *testing.T) {
 			// explicitly set sslmode=disable because the container is not configured to use TLS
 			connStr, err := container.ConnectionString(ctx, "sslmode=disable", "application_name=test")
 			// }
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			// Ensure connection string is using generic format
 			id, err := container.MappedPort(ctx, "5432/tcp")
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&application_name=test", user, password, "localhost", id.Port(), dbname), connStr)
 
 			// perform assertions
 			db, err := sql.Open("postgres", connStr)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, db)
 			defer db.Close()
 
 			result, err := db.Exec("CREATE TABLE IF NOT EXISTS test (id int, name varchar(255));")
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, result)
 
 			result, err = db.Exec("INSERT INTO test (id, name) VALUES (1, 'test');")
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, result)
 		})
 	}
@@ -165,10 +165,10 @@ func TestWithConfigFile(t *testing.T) {
 
 	// explicitly set sslmode=disable because the container is not configured to use TLS
 	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	db, err := sql.Open("postgres", connStr)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, db)
 	defer db.Close()
 }
@@ -196,15 +196,15 @@ func TestWithInitScript(t *testing.T) {
 
 	// explicitly set sslmode=disable because the container is not configured to use TLS
 	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	db, err := sql.Open("postgres", connStr)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, db)
 	defer db.Close()
 
 	// database created in init script. See testdata/init-user-db.sh
 	result, err := db.Exec("SELECT * FROM testdb;")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, result)
 }
