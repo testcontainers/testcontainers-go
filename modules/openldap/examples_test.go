@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-ldap/ldap/v3"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/openldap"
 )

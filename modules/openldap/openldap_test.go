@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-ldap/ldap/v3"
+
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -22,7 +23,6 @@ func TestOpenLDAP(t *testing.T) {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
-
 }
 
 func TestOpenLDAPWithAdminUsernameAndPassword(t *testing.T) {
