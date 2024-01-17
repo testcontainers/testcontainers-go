@@ -62,7 +62,7 @@ func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, len(serviceNames), 1)
+	assert.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "nginx")
 }
 
@@ -86,7 +86,7 @@ func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, len(serviceNames), 2)
+	assert.Len(t, serviceNames, 2)
 	assert.Contains(t, serviceNames, "nginx")
 	assert.Contains(t, serviceNames, "mysql")
 }
@@ -114,7 +114,7 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 	_, err = compose.ServiceContainer(context.Background(), "mysql")
 	require.Error(t, err, "Make sure there is no mysql container")
 
-	assert.Len(t, len(serviceNames), 1)
+	assert.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "nginx")
 }
 
@@ -136,7 +136,7 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, len(serviceNames), 2)
+	assert.Len(t, serviceNames, 2)
 	assert.Contains(t, serviceNames, "nginx")
 	assert.Contains(t, serviceNames, "mysql")
 
@@ -178,7 +178,7 @@ func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, len(serviceNames), 1)
+	assert.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "nginx")
 }
 
@@ -205,7 +205,7 @@ func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, len(serviceNames), 1)
+	assert.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "nginx")
 }
 
@@ -232,7 +232,7 @@ func TestDockerComposeAPIWithContainerName(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, len(serviceNames), 1)
+	assert.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "nginx")
 }
 
@@ -256,7 +256,7 @@ func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, len(serviceNames), 1)
+	assert.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "nginx")
 }
 
@@ -281,7 +281,7 @@ func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, len(serviceNames), 2)
+	assert.Len(t, serviceNames, 2)
 	assert.Contains(t, serviceNames, "nginx")
 	assert.Contains(t, serviceNames, "mysql")
 }
@@ -311,7 +311,7 @@ func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, len(serviceNames), 1)
+	assert.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "nginx")
 }
 
@@ -331,7 +331,7 @@ func TestDockerComposeAPIComplex(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, len(serviceNames), 2)
+	assert.Len(t, serviceNames, 2)
 	assert.Contains(t, serviceNames, "nginx")
 	assert.Contains(t, serviceNames, "mysql")
 }
@@ -360,7 +360,7 @@ func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, len(serviceNames), 1)
+	assert.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "nginx")
 
 	present := map[string]string{
@@ -399,7 +399,7 @@ func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, len(serviceNames), 3)
+	assert.Len(t, serviceNames, 3)
 	assert.Contains(t, serviceNames, "nginx")
 	assert.Contains(t, serviceNames, "mysql")
 	assert.Contains(t, serviceNames, "postgres")
@@ -496,7 +496,7 @@ func TestDockerComposeApiWithWaitForShortLifespanService(t *testing.T) {
 
 	services := compose.Services()
 
-	assert.Len(t, len(services), 2)
+	assert.Len(t, services, 2)
 	assert.Contains(t, services, "falafel")
 	assert.Contains(t, services, "tzatziki")
 }
