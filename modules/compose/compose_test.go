@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/google/uuid"
@@ -479,7 +479,7 @@ func assertContainerEnvironmentVariables(
 		tb.Fatalf("Failed to get provider: %v", err)
 	}
 
-	containers, err := containerClient.ContainerList(context.Background(), types.ContainerListOptions{})
+	containers, err := containerClient.ContainerList(context.Background(), container.ListOptions{})
 	if err != nil {
 		tb.Fatalf("Failed to list containers: %v", err)
 	} else if len(containers) == 0 {
