@@ -47,8 +47,9 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 		}
 	}
 
-	fmt.Println("Please go to", cmdDir, "directory to check the results, where 'go mod tidy', 'go vet' and 'make lint' were executed")
-	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
+	fmt.Println("Please go to", cmdDir, "directory to check the results, where 'go mod tidy', 'go vet' and 'make lint' were executed.")
+	fmt.Println("🙏 Commit the modified files and submit a pull request to include them into the project.")
+	fmt.Println("Remember to run 'make lint' before submitting the pull request.")
 	fmt.Println("Thanks!")
 	return nil
 }
