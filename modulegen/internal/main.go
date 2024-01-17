@@ -34,20 +34,20 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	}
 
 	cmdDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
-	err = tools.GoModTidy(cmdDir)
-	if err != nil {
-		return fmt.Errorf(">> error synchronizing the dependencies: %w", err)
-	}
-	err = tools.GoVet(cmdDir)
-	if err != nil {
-		return fmt.Errorf(">> error checking generated code: %w", err)
-	}
-	err = tools.MakeLint(cmdDir)
-	if err != nil {
-		return fmt.Errorf(">> error linting code: %w", err)
+	lintCmds := []func(string) error{
+		tools.GoModTidy,
+		tools.GoVet,
+		tools.MakeLint,
 	}
 
-	fmt.Println("Please go to", cmdDir, "directory to check the results, where 'go mod tidy' and 'go vet' was executed to synchronize the dependencies")
+	for _, lintCmd := range lintCmds {
+		err = lintCmd(cmdDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	fmt.Println("Please go to", cmdDir, "directory to check the results, where 'go mod tidy', 'go vet' and 'make lint' were executed")
 	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
 	fmt.Println("Thanks!")
 	return nil
