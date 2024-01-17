@@ -42,6 +42,10 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	if err != nil {
 		return fmt.Errorf(">> error checking generated code: %w", err)
 	}
+	err = tools.MakeLint(cmdDir)
+	if err != nil {
+		return fmt.Errorf(">> error linting code: %w", err)
+	}
 
 	fmt.Println("Please go to", cmdDir, "directory to check the results, where 'go mod tidy' and 'go vet' was executed to synchronize the dependencies")
 	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
