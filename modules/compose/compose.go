@@ -23,9 +23,7 @@ const (
 	envComposeFile = "COMPOSE_FILE"
 )
 
-var (
-	ErrNoStackConfigured = errors.New("no stack files configured")
-)
+var ErrNoStackConfigured = errors.New("no stack files configured")
 
 type composeStackOptions struct {
 	Identifier string
