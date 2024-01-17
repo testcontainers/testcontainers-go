@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
@@ -160,14 +161,14 @@ func TestGenerateWrongModuleName(t *testing.T) {
 	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 
 	err := os.MkdirAll(examplesTmp, 0o777)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = os.MkdirAll(examplesDocTmp, 0o777)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	err = copyInitialMkdocsConfig(t, tmpCtx)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name string
@@ -191,7 +192,7 @@ func TestGenerateWrongModuleName(t *testing.T) {
 		}
 
 		err = internal.GenerateFiles(tmpCtx, module)
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 }
 
@@ -202,14 +203,14 @@ func TestGenerateWrongModuleTitle(t *testing.T) {
 	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 
 	err := os.MkdirAll(examplesTmp, 0o777)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = os.MkdirAll(examplesDocTmp, 0o777)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	err = copyInitialMkdocsConfig(t, tmpCtx)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	tests := []struct {
 		title string
@@ -234,7 +235,7 @@ func TestGenerateWrongModuleTitle(t *testing.T) {
 		}
 
 		err = internal.GenerateFiles(tmpCtx, module)
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 }
 
@@ -245,23 +246,23 @@ func TestGenerate(t *testing.T) {
 	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 
 	err := os.MkdirAll(examplesTmp, 0o777)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = os.MkdirAll(examplesDocTmp, 0o777)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	err = copyInitialMkdocsConfig(t, tmpCtx)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	err = copyInitialDependabotConfig(t, tmpCtx)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	originalDependabotConfigUpdates, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	module := context.TestcontainersModule{
 		Name:      "foodb4tw",
@@ -272,21 +273,21 @@ func TestGenerate(t *testing.T) {
 	moduleNameLower := module.Lower()
 
 	err = internal.GenerateFiles(tmpCtx, module)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	moduleDirPath := filepath.Join(examplesTmp, moduleNameLower)
 
 	moduleDirFileInfo, err := os.Stat(moduleDirPath)
-	assert.Nil(t, err) // error nil implies the file exist
+	require.NoError(t, err) // error nil implies the file exist
 	assert.True(t, moduleDirFileInfo.IsDir())
 
 	moduleDocFile := filepath.Join(examplesDocTmp, moduleNameLower+".md")
 	_, err = os.Stat(moduleDocFile)
-	assert.Nil(t, err) // error nil implies the file exist
+	require.NoError(t, err) // error nil implies the file exist
 
 	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
 	_, err = os.Stat(mainWorkflowFile)
-	assert.Nil(t, err) // error nil implies the file exist
+	require.NoError(t, err) // error nil implies the file exist
 
 	assertModuleDocContent(t, module, moduleDocFile)
 	assertModuleGithubWorkflowContent(t, module, mainWorkflowFile)
@@ -308,23 +309,23 @@ func TestGenerateModule(t *testing.T) {
 	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 
 	err := os.MkdirAll(modulesTmp, 0o777)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = os.MkdirAll(modulesDocTmp, 0o777)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	err = copyInitialMkdocsConfig(t, tmpCtx)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	err = copyInitialDependabotConfig(t, tmpCtx)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	originalDependabotConfigUpdates, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	module := context.TestcontainersModule{
 		Name:      "foodb",
@@ -335,21 +336,21 @@ func TestGenerateModule(t *testing.T) {
 	moduleNameLower := module.Lower()
 
 	err = internal.GenerateFiles(tmpCtx, module)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	moduleDirPath := filepath.Join(modulesTmp, moduleNameLower)
 
 	moduleDirFileInfo, err := os.Stat(moduleDirPath)
-	assert.Nil(t, err) // error nil implies the file exist
+	require.NoError(t, err) // error nil implies the file exist
 	assert.True(t, moduleDirFileInfo.IsDir())
 
 	moduleDocFile := filepath.Join(modulesDocTmp, moduleNameLower+".md")
 	_, err = os.Stat(moduleDocFile)
-	assert.Nil(t, err) // error nil implies the file exist
+	require.NoError(t, err) // error nil implies the file exist
 
 	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
 	_, err = os.Stat(mainWorkflowFile)
-	assert.Nil(t, err) // error nil implies the file exist
+	require.NoError(t, err) // error nil implies the file exist
 
 	assertModuleDocContent(t, module, moduleDocFile)
 	assertModuleGithubWorkflowContent(t, module, mainWorkflowFile)
@@ -367,9 +368,9 @@ func TestGenerateModule(t *testing.T) {
 // assert content in the Dependabot descriptor file
 func assertDependabotUpdates(t *testing.T, module context.TestcontainersModule, originalConfigUpdates dependabot.Updates, tmpCtx context.Context) {
 	modules, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, len(originalConfigUpdates)+1, len(modules))
+	assert.Len(t, modules, len(originalConfigUpdates)+1)
 
 	// the module should be in the dependabot updates
 	found := false
@@ -398,22 +399,22 @@ func assertDependabotUpdates(t *testing.T, module context.TestcontainersModule, 
 // assert content module file in the docs
 func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, moduleDocFile string) {
 	content, err := os.ReadFile(moduleDocFile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	lower := module.Lower()
 	title := module.Title()
 
 	data := sanitiseContent(content)
 	assert.Equal(t, data[0], "# "+title)
-	assert.Equal(t, data[2], `Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>`)
-	assert.Equal(t, data[4], "## Introduction")
+	assert.Equal(t, `Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>`, data[2])
+	assert.Equal(t, "## Introduction", data[4])
 	assert.Equal(t, data[6], "The Testcontainers module for "+title+".")
-	assert.Equal(t, data[8], "## Adding this module to your project dependencies")
+	assert.Equal(t, "## Adding this module to your project dependencies", data[8])
 	assert.Equal(t, data[10], "Please run the following command to add the "+title+" module to your Go dependencies:")
 	assert.Equal(t, data[13], "go get github.com/testcontainers/testcontainers-go/"+module.ParentDir()+"/"+lower)
-	assert.Equal(t, data[18], "<!--codeinclude-->")
+	assert.Equal(t, "<!--codeinclude-->", data[18])
 	assert.Equal(t, data[19], "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/examples_test.go) inside_block:run"+title+"Container")
-	assert.Equal(t, data[20], "<!--/codeinclude-->")
+	assert.Equal(t, "<!--/codeinclude-->", data[20])
 	assert.Equal(t, data[24], "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives two parameters:")
 	assert.True(t, strings.HasSuffix(data[27], "(*"+title+"Container, error)"))
 	assert.Equal(t, "for "+title+". E.g. `testcontainers.WithImage(\""+module.Image+"\")`.", data[40])
@@ -422,7 +423,7 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 // assert content module test
 func assertExamplesTestContent(t *testing.T, module context.TestcontainersModule, examplesTestFile string) {
 	content, err := os.ReadFile(examplesTestFile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	lower := module.Lower()
 	entrypoint := module.Entrypoint()
@@ -430,20 +431,20 @@ func assertExamplesTestContent(t *testing.T, module context.TestcontainersModule
 
 	data := sanitiseContent(content)
 	assert.Equal(t, data[0], "package "+lower+"_test")
-	assert.Equal(t, data[6], "\t\"github.com/testcontainers/testcontainers-go\"")
+	assert.Equal(t, "\t\"github.com/testcontainers/testcontainers-go\"", data[6])
 	assert.Equal(t, data[7], "\t\"github.com/testcontainers/testcontainers-go/modules/"+lower+"\"")
 	assert.Equal(t, data[10], "func Example"+entrypoint+"() {")
 	assert.Equal(t, data[11], "\t// run"+title+"Container {")
 	assert.Equal(t, data[14], "\t"+lower+"Container, err := "+lower+"."+entrypoint+"(ctx, testcontainers.WithImage(\""+module.Image+"\"))")
-	assert.Equal(t, data[32], "\tfmt.Println(state.Running)")
-	assert.Equal(t, data[34], "\t// Output:")
-	assert.Equal(t, data[35], "\t// true")
+	assert.Equal(t, "\tfmt.Println(state.Running)", data[32])
+	assert.Equal(t, "\t// Output:", data[34])
+	assert.Equal(t, "\t// true", data[35])
 }
 
 // assert content module test
 func assertModuleTestContent(t *testing.T, module context.TestcontainersModule, exampleTestFile string) {
 	content, err := os.ReadFile(exampleTestFile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	data := sanitiseContent(content)
 	assert.Equal(t, data[0], "package "+module.Lower())
@@ -454,7 +455,7 @@ func assertModuleTestContent(t *testing.T, module context.TestcontainersModule, 
 // assert content module
 func assertModuleContent(t *testing.T, module context.TestcontainersModule, exampleFile string) {
 	content, err := os.ReadFile(exampleFile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	lower := module.Lower()
 	containerName := module.ContainerName()
@@ -474,24 +475,24 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 // assert content GitHub workflow for the module
 func assertModuleGithubWorkflowContent(t *testing.T, module context.TestcontainersModule, moduleWorkflowFile string) {
 	content, err := os.ReadFile(moduleWorkflowFile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	data := sanitiseContent(content)
 	ctx := getTestRootContext(t)
 
 	modulesList, err := ctx.GetModules()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "        module: ["+strings.Join(modulesList, ", ")+"]", data[108])
 
 	examplesList, err := ctx.GetExamples()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "        module: ["+strings.Join(examplesList, ", ")+"]", data[128])
 }
 
 // assert content go.mod
 func assertGoModContent(t *testing.T, module context.TestcontainersModule, tcVersion string, goModFile string) {
 	content, err := os.ReadFile(goModFile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	data := sanitiseContent(content)
 	assert.Equal(t, "module github.com/testcontainers/testcontainers-go/"+module.ParentDir()+"/"+module.Lower(), data[0])
@@ -502,7 +503,7 @@ func assertGoModContent(t *testing.T, module context.TestcontainersModule, tcVer
 // assert content Makefile
 func assertMakefileContent(t *testing.T, module context.TestcontainersModule, makefile string) {
 	content, err := os.ReadFile(makefile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	data := sanitiseContent(content)
 	assert.Equal(t, data[4], "\t$(MAKE) test-"+module.Lower())
@@ -511,7 +512,7 @@ func assertMakefileContent(t *testing.T, module context.TestcontainersModule, ma
 // assert content in the nav items from mkdocs.yml
 func assertMkdocsNavItems(t *testing.T, module context.TestcontainersModule, originalConfig *mkdocs.Config, tmpCtx context.Context) {
 	config, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	parentDir := module.ParentDir()
 
@@ -522,7 +523,7 @@ func assertMkdocsNavItems(t *testing.T, module context.TestcontainersModule, ori
 		expectedEntries = originalConfig.Nav[3].Modules
 	}
 
-	assert.Equal(t, len(expectedEntries)+1, len(navItems))
+	assert.Len(t, navItems, len(expectedEntries)+1)
 
 	// the module should be in the nav
 	found := false

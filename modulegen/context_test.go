@@ -53,7 +53,7 @@ func TestExamplesHasDependabotEntry(t *testing.T) {
 		for _, exampleUpdate := range exampleUpdates {
 			dependabotDir := "/examples/" + example
 
-			assert.Equal(t, exampleUpdate.Schedule.Interval, "monthly")
+			assert.Equal(t, "monthly", exampleUpdate.Schedule.Interval)
 
 			if dependabotDir == exampleUpdate.Directory {
 				found = true
@@ -86,7 +86,7 @@ func TestModulesHasDependabotEntry(t *testing.T) {
 		for _, moduleUpdate := range moduleUpdates {
 			dependabotDir := "/modules/" + module
 
-			assert.Equal(t, moduleUpdate.Schedule.Interval, "monthly")
+			assert.Equal(t, "monthly", moduleUpdate.Schedule.Interval)
 
 			if dependabotDir == moduleUpdate.Directory {
 				found = true
