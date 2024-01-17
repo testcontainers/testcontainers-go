@@ -299,7 +299,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		}
 
 		state, err := nginx.State(ctx)
-		assert.Error(t, err, "expected error from container inspect.")
+		require.Error(t, err, "expected error from container inspect.")
 
 		assert.Nil(t, state, "expected nil container inspect.")
 	})
@@ -312,7 +312,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		}
 
 		state, err := nginx.State(ctx)
-		assert.NoError(t, err, "unexpected error from container inspect before container termination.")
+		require.NoError(t, err, "unexpected error from container inspect before container termination.")
 
 		assert.NotNil(t, state, "unexpected nil container inspect before container termination.")
 
@@ -323,7 +323,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		}
 
 		state, err = nginx.State(ctx)
-		assert.Error(t, err, "expected error from container inspect after container termination.")
+		require.Error(t, err, "expected error from container inspect after container termination.")
 
 		assert.NotNil(t, state, "unexpected nil container inspect after container termination.")
 	})
@@ -1261,7 +1261,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 
 		terminateContainerOnEnd(t, ctx, c)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("specific platform should be propagated", func(t *testing.T) {
@@ -1285,10 +1285,10 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		defer dockerCli.Close()
 
 		ctr, err := dockerCli.ContainerInspect(ctx, c.GetContainerID())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		img, _, err := dockerCli.ImageInspectWithRaw(ctx, ctr.Image)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "linux", img.Os)
 		assert.Equal(t, "amd64", img.Architecture)
 	})
@@ -1478,7 +1478,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 	hostDirName := "testdata"
 
 	abs, err := filepath.Abs(filepath.Join(".", hostDirName))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name     string
@@ -1998,7 +1998,7 @@ func TestDockerProviderFindContainerByName(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, c2)
 
 	c, err := provider.findContainerByName(ctx, "test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, c)
 	assert.Contains(t, c.Names, c1Name)
 }
@@ -2049,9 +2049,9 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			require.NoError(t, err, "terminate container should not fail")
 			_, _, err = cli.ImageInspectWithRaw(ctx, containerImage)
 			if tt.keepBuiltImage {
-				assert.Nil(t, err, "image should still exist")
+				require.NoError(t, err, "image should still exist")
 			} else {
-				assert.NotNil(t, err, "image should not exist anymore")
+				require.Error(t, err, "image should not exist anymore")
 			}
 		})
 	}

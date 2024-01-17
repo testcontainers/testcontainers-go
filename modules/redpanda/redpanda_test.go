@@ -141,7 +141,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 		kafkaAdmCl := kadm.NewClient(kafkaCl)
 		_, err = kafkaAdmCl.CreateTopic(ctx, 1, 1, nil, "test-2")
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "TOPIC_AUTHORIZATION_FAILED")
+		require.ErrorContains(t, err, "TOPIC_AUTHORIZATION_FAILED")
 		kafkaCl.Close()
 	}
 
@@ -159,7 +159,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 		kafkaAdmCl := kadm.NewClient(kafkaCl)
 		_, err = kafkaAdmCl.Metadata(ctx)
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "SASL_AUTHENTICATION_FAILED")
+		require.ErrorContains(t, err, "SASL_AUTHENTICATION_FAILED")
 	}
 
 	// Test Schema Registry API
