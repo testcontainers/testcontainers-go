@@ -180,9 +180,11 @@ func (d *dockerCompose) Down(ctx context.Context, opts ...StackDownOption) error
 	return d.composeService.Down(ctx, d.name, options.DownOptions)
 }
 
-func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err error) {
+func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
+
+	var err error
 
 	d.project, err = d.compileProject()
 	if err != nil {
