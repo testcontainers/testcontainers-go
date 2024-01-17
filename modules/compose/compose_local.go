@@ -211,8 +211,8 @@ func (dc *LocalDockerCompose) determineVersion() error {
 	}
 
 	components := bytes.Split(execErr.StdoutOutput, []byte("."))
-	if componentsLen := len(components); componentsLen != 3 {
-		return fmt.Errorf("expected 3 version components in %s", execErr.StdoutOutput)
+	if componentsLen := len(components); componentsLen < 3 {
+		return fmt.Errorf("expected +3 version components in %s", execErr.StdoutOutput)
 	}
 
 	majorVersion, err := strconv.ParseInt(string(components[0]), 10, 8)
