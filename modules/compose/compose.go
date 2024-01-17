@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/cli/cli/command"
@@ -25,7 +24,6 @@ const (
 )
 
 var (
-	composeLogOnce       sync.Once
 	ErrNoStackConfigured = errors.New("no stack files configured")
 )
 
