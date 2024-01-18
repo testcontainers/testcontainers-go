@@ -71,7 +71,7 @@ jobs:
 
       - name: golangci-lint
         # TODO: Remove each example/module once it passes the golangci-lint
-        if: ${{ inputs.platform == 'ubuntu-latest' && inputs.go-version == '1.20.x' && !contains(fromJSON('["examples/cockroachdb", "examples/toxiproxy", "modules/compose", "modules/redis"]'), inputs.project-directory) }}
+        if: ${{ inputs.platform == 'ubuntu-latest' && inputs.go-version == '1.20.x' && !contains(fromJSON('["examples/cockroachdb", "examples/toxiproxy", "modules/compose"]'), inputs.project-directory) }}
         uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc # v3
         with:
           # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
