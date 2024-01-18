@@ -34,11 +34,11 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 		},
 		// }
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "test-repo:test-tag", tag)
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		_, err := cli.ImageRemove(ctx, tag, types.ImageRemoveOptions{
@@ -69,11 +69,11 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 			Repo:       "test-repo",
 		},
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(tag, "test-repo:"))
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		_, err := cli.ImageRemove(ctx, tag, types.ImageRemoveOptions{
@@ -104,11 +104,11 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 			Tag:        "test-tag",
 		},
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.True(t, strings.HasSuffix(tag, ":test-tag"))
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		_, err := cli.ImageRemove(ctx, tag, types.ImageRemoveOptions{
