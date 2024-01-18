@@ -50,9 +50,7 @@ jobs:
 
       - name: go test
         timeout-minutes: 30
-        run: |
-          go install gotest.tools/gotestsum@latest
-          gotestsum --format short-verbose --rerun-fails=5 --packages="./..."  --junitfile TEST-unit.xml -- -timeout=30m
+        run: make test-unit
 
       - name: Create success status
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
