@@ -11,6 +11,14 @@ $(GOBIN)/golangci-lint:
 $(GOBIN)/gotestsum:
 	$(call go_install,gotest.tools/gotestsum@latest)
 
+.PHONY: install
+install: $(GOBIN)/golangci-lint $(GOBIN)/gotestsum
+
+.PHONY: clean
+clean:
+	rm $(GOBIN)/golangci-lint
+	rm $(GOBIN)/gotestsum
+
 .PHONY: dependencies-scan
 dependencies-scan:
 	@echo ">> Scanning dependencies in $(CURDIR)..."
