@@ -138,22 +138,25 @@ jobs:
       ryuk-disabled: false
 
   sonarcloud:
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for sonarsource/sonarcloud-github-action to determine which PR to decorate
     if: {{ "${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}" }}
     needs: test-examples
     runs-on: ubuntu-latest 
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           # Disabling shallow clone is recommended for improving relevancy of reporting
           fetch-depth: 0
       
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: sonarcloud
             
       - name: Analyze with SonarCloud
-        uses: sonarsource/sonarcloud-github-action@master
+        uses: sonarsource/sonarcloud-github-action@49e6cd3b187936a73b8280d59ffd9da69df63ec9 # v2.1.1
         env:
           GITHUB_TOKEN: {{ "${{ secrets.GITHUB_TOKEN }}" }}
           SONAR_TOKEN: {{ "${{ secrets.SONAR_TOKEN }}" }}
