@@ -334,7 +334,7 @@ func TestDockerComposeWithFailedStrategy(t *testing.T) {
 		Invoke()
 	// Verify that an error is thrown and not nil
 	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
-	require.NoError(t, err.Error, "Expected error to be thrown because of a wrong suplied wait strategy")
+	require.Error(t, err.Error, "Expected error to be thrown because of a wrong suplied wait strategy")
 
 	assert.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "nginx")
