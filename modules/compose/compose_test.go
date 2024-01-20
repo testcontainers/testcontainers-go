@@ -308,7 +308,7 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 1)
+	assert.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "nginx")
 	assert.Contains(t, compose.Services, "mysql")
 }
