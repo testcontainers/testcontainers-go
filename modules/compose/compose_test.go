@@ -137,7 +137,7 @@ func TestDockerComposeStrategyForInvalidService(t *testing.T) {
 		// Appending with _1 as given in the Java Test-Containers Example
 		WithExposedService(compose.Format("mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Invoke()
-	require.NoError(t, err.Error, "Expected error to be thrown because service with wait strategy is not running")
+	require.Error(t, err.Error, "Expected error to be thrown because service with wait strategy is not running")
 
 	assert.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "nginx")
