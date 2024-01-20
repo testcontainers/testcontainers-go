@@ -7,10 +7,10 @@ toolchain go1.21.3
 replace github.com/testcontainers/testcontainers-go => ../..
 
 require (
-	github.com/compose-spec/compose-go/v2 v2.0.0-beta.2
-	github.com/docker/cli v25.0.0-rc.1+incompatible
-	github.com/docker/compose/v2 v2.24.0
-	github.com/docker/docker v25.0.0-rc.1+incompatible
+	github.com/compose-spec/compose-go/v2 v2.0.0-rc.1
+	github.com/docker/cli v25.0.0-rc.3+incompatible
+	github.com/docker/compose/v2 v2.24.1
+	github.com/docker/docker v25.0.0-rc.3+incompatible
 	github.com/google/uuid v1.5.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.27.0
@@ -43,7 +43,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
-	github.com/containerd/containerd v1.7.11 // indirect
+	github.com/containerd/containerd v1.7.12 // indirect
 	github.com/containerd/continuity v0.4.2 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/typeurl/v2 v2.1.1 // indirect
@@ -100,7 +100,9 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/miekg/pkcs11 v1.1.1 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/buildkit v0.13.0-beta1.0.20231219135447-957cb50df991 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
