@@ -31,7 +31,7 @@ func ExampleRunContainer() {
 	}
 	fmt.Println(state.Running)
 
-	addr, err := cockroachdbContainer.Address(ctx)
+	addr, err := cockroachdbContainer.ConnectionString(ctx)
 	if err != nil {
 		panic(err)
 	}
