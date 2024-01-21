@@ -26,17 +26,17 @@ type CockroachDBContainer struct {
 	opts Options
 }
 
-// MustAddress panics if the address cannot be determined.
-func (c *CockroachDBContainer) MustAddress(ctx context.Context) string {
-	addr, err := c.Address(ctx)
+// MustConnectionString panics if the address cannot be determined.
+func (c *CockroachDBContainer) MustConnectionString(ctx context.Context) string {
+	addr, err := c.ConnectionString(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return addr
 }
 
-// Address returns the dial address to open a new connection to CockroachDB.
-func (c *CockroachDBContainer) Address(ctx context.Context) (string, error) {
+// ConnectionString returns the dial address to open a new connection to CockroachDB.
+func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, error) {
 	mappedport, err := c.MappedPort(ctx, defaultSQLPort+"/tcp")
 	if err != nil {
 		return "", err

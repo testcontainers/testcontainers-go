@@ -23,7 +23,7 @@ func TestCockroach(t *testing.T) {
 		}
 	})
 
-	conn, err := pgx.Connect(ctx, container.MustAddress(ctx))
+	conn, err := pgx.Connect(ctx, container.MustConnectionString(ctx))
 	if err != nil {
 		t.Fatal(err)
 	}
