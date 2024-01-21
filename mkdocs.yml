@@ -89,7 +89,6 @@ nav:
         - modules/vault.md
     - Examples:
         - examples/index.md
-        - examples/cockroachdb.md
         - examples/consul.md
         - examples/nginx.md
         - examples/toxiproxy.md
