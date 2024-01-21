@@ -42,6 +42,27 @@ for CockroachDB. E.g. `testcontainers.WithImage("cockroachdb/cockroach:latest-v2
 
 {% include "../features/common_functional_options.md" %}
 
+#### Image tag
+
+If all you need to change with the default image is the tag, for example to set a specific version of CockroachDB,
+you can ues `cockroachdb.WithImageTag("latest-v23.2")` which will change the image used to `cockroachdb/cockroach:latest-v23.2`.
+
+#### Database
+
+Set the database that is created & dialled with `cockroachdb.WithDatabase`
+
+#### Store size
+
+Control the maximum amount of memory used for storage, by default this is 100% but can be changed by provided a valid option to `WithStoreSize`. Checkout https://www.cockroachlabs.com/docs/stable/cockroach-start#store for the full range of options available.
+
 ### Container Methods
 
 The CockroachDB container exposes the following methods:
+
+#### ConnectionString
+
+Dial address to open a new connection.
+
+#### MustConnectionString
+
+Same as `ConnectionString` but any error to generate the address will raise a panic
