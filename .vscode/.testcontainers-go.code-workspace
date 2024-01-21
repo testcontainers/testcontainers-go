@@ -6,10 +6,6 @@
             "path": "../"
         },
         {
-            "name": "example / cockroachdb",
-            "path": "../examples/cockroachdb"
-        },
-        {
             "name": "example / consul",
             "path": "../examples/consul"
         },
