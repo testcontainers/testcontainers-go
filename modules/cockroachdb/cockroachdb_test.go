@@ -52,4 +52,30 @@ func TestCockroach(t *testing.T) {
 		err = conn.Ping(ctx)
 		require.NoError(t, err)
 	})
+
+	t.Run("ping with tls", func(t *testing.T) {
+		tlsCfg, err := cockroachdb.NewTLSConfig()
+		require.NoError(t, err)
+
+		container, err := cockroachdb.RunContainer(ctx, cockroachdb.WithTLS(tlsCfg))
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			err := container.Terminate(ctx)
+			require.NoError(t, err)
+		})
+
+		cfg, err := pgx.ParseConfig(container.MustConnectionString(ctx))
+		require.NoError(t, err)
+
+		clientTLS, err := container.TLSConfig()
+		require.NoError(t, err)
+		cfg.TLSConfig = clientTLS
+
+		conn, err := pgx.ConnectConfig(ctx, cfg)
+		require.NoError(t, err)
+
+		err = conn.Ping(ctx)
+		require.NoError(t, err)
+	})
 }

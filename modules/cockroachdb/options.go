@@ -1,16 +1,19 @@
 package cockroachdb
 
-import "github.com/testcontainers/testcontainers-go"
+import (
+	"github.com/testcontainers/testcontainers-go"
+)
 
-// Options is a struct for specifying options for the CockroachDB container.
-type Options struct {
+type options struct {
 	Database  string
 	ImageTag  string
 	StoreSize string
+
+	TLS *TLSConfig
 }
 
-func defaultOptions() Options {
-	return Options{
+func defaultOptions() options {
+	return options{
 		Database:  defaultDatabase,
 		ImageTag:  defaultImageTag,
 		StoreSize: defaultStoreSize,
@@ -21,7 +24,7 @@ func defaultOptions() Options {
 var _ testcontainers.ContainerCustomizer = (*Option)(nil)
 
 // Option is an option for the CockroachDB container.
-type Option func(*Options)
+type Option func(*options)
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
 func (o Option) Customize(*testcontainers.GenericContainerRequest) {
@@ -30,7 +33,7 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) {
 
 // WithDatabase sets the name of the database to use.
 func WithDatabase(database string) Option {
-	return func(o *Options) {
+	return func(o *options) {
 		o.Database = database
 	}
 }
@@ -38,7 +41,15 @@ func WithDatabase(database string) Option {
 // WithStoreSize sets the amount of available in-memory storage.
 // See https://www.cockroachlabs.com/docs/stable/cockroach-start#store
 func WithStoreSize(size string) Option {
-	return func(o *Options) {
+	return func(o *options) {
 		o.StoreSize = size
+	}
+}
+
+// WithTLS enables TLS on the CockroachDB container.
+// Cert and key must be a valid PEM-encoded certificate and key.
+func WithTLS(cfg *TLSConfig) Option {
+	return func(o *options) {
+		o.TLS = cfg
 	}
 }

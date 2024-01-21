@@ -2,15 +2,21 @@ package cockroachdb
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"net"
 	"net/url"
+	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
+	certsDir = "/tmp"
+
 	defaultSQLPort   = "26257"
 	defaultAdminPort = "8080"
 
@@ -23,7 +29,7 @@ const (
 // CockroachDBContainer represents the CockroachDB container type used in the module
 type CockroachDBContainer struct {
 	testcontainers.Container
-	opts Options
+	opts options
 }
 
 // MustConnectionString panics if the address cannot be determined.
@@ -47,8 +53,12 @@ func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, er
 		return "", err
 	}
 
+	sslMode := "disable"
+	if c.opts.TLS != nil {
+		sslMode = "verify-full"
+	}
 	params := url.Values{
-		"sslmode": []string{"disable"},
+		"sslmode": []string{sslMode},
 	}
 
 	u := url.URL{
@@ -62,6 +72,27 @@ func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, er
 	return u.String(), nil
 }
 
+// TLSConfig returns config neccessary to connect to CockroachDB over TLS.
+func (c *CockroachDBContainer) TLSConfig() (*tls.Config, error) {
+	if c.opts.TLS == nil {
+		return nil, fmt.Errorf("tls not enabled")
+	}
+
+	keyPair, err := tls.X509KeyPair(c.opts.TLS.ClientCert, c.opts.TLS.ClientKey)
+	if err != nil {
+		return nil, err
+	}
+
+	certPool := x509.NewCertPool()
+	certPool.AddCert(c.opts.TLS.CACert)
+
+	return &tls.Config{
+		RootCAs:      certPool,
+		Certificates: []tls.Certificate{keyPair},
+		ServerName:   "localhost",
+	}, nil
+}
+
 // RunContainer creates an instance of the CockroachDB container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error) {
 	req := testcontainers.GenericContainerRequest{
@@ -72,7 +103,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			},
 			WaitingFor: wait.ForHTTP("/health").WithPort(defaultAdminPort),
 		},
-		Started: true,
 	}
 
 	// apply options
@@ -87,25 +117,60 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	req.Image = image(req, o)
 	req.Cmd = cmd(o)
 
-	// start
 	container, err := testcontainers.GenericContainer(ctx, req)
 	if err != nil {
+		return nil, err
+	}
+
+	if o.TLS != nil {
+		addTLS(ctx, container, o)
+	}
+
+	// start
+	if err := container.Start(ctx); err != nil {
 		return nil, err
 	}
 	return &CockroachDBContainer{Container: container, opts: o}, nil
 }
 
-func image(req testcontainers.GenericContainerRequest, opts Options) string {
+func image(req testcontainers.GenericContainerRequest, opts options) string {
 	if req.Image != "" {
 		return req.Image
 	}
 	return fmt.Sprintf("%s:%s", defaultImage, opts.ImageTag)
 }
 
-func cmd(opts Options) []string {
-	return []string{
+func cmd(opts options) []string {
+	cmd := []string{
 		"start-single-node",
-		"--insecure",
 		"--store=type=mem,size=" + opts.StoreSize,
 	}
+
+	if opts.TLS != nil {
+		cmd = append(cmd, "--certs-dir="+certsDir)
+	} else {
+		cmd = append(cmd, "--insecure")
+	}
+
+	return cmd
+}
+
+func addTLS(ctx context.Context, container testcontainers.Container, opts options) error {
+	caBytes := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: opts.TLS.CACert.Raw,
+	})
+	files := map[string][]byte{
+		"ca.crt":          caBytes,
+		"node.crt":        opts.TLS.NodeCert,
+		"node.key":        opts.TLS.NodeKey,
+		"client.root.crt": opts.TLS.ClientCert,
+		"client.root.key": opts.TLS.ClientKey,
+	}
+	for filename, contents := range files {
+		if err := container.CopyToContainer(ctx, contents, filepath.Join(certsDir, filename), 0o600); err != nil {
+			return err
+		}
+	}
+	return nil
 }
