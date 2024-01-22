@@ -4,11 +4,15 @@ import "github.com/testcontainers/testcontainers-go"
 
 type options struct {
 	Database  string
+	User      string
+	Password  string
 	StoreSize string
 }
 
 func defaultOptions() options {
 	return options{
+		User:      defaultUser,
+		Password:  defaultPassword,
 		Database:  defaultDatabase,
 		StoreSize: defaultStoreSize,
 	}
@@ -29,6 +33,20 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) {
 func WithDatabase(database string) Option {
 	return func(o *options) {
 		o.Database = database
+	}
+}
+
+// WithUser creates & sets the user to connect as.
+func WithUser(user string) Option {
+	return func(o *options) {
+		o.User = user
+	}
+}
+
+// WithPassword sets the password when using password authentication.
+func WithPassword(password string) Option {
+	return func(o *options) {
+		o.Password = password
 	}
 }
 

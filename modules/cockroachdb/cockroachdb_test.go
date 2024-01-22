@@ -3,53 +3,79 @@ package cockroachdb_test
 import (
 	"context"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cockroachdb"
 )
 
-func TestCockroach(t *testing.T) {
+func TestCockroach_Ping(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("ping default database", func(t *testing.T) {
-		container, err := cockroachdb.RunContainer(ctx)
-		require.NoError(t, err)
+	inputs := []struct {
+		name string
+		opts []testcontainers.ContainerCustomizer
+		conn string
+	}{
+		{
+			name: "defaults",
+			conn: "postgres://root@localhost:xxxxx/defaultdb?sslmode=disable",
+		},
+		{
+			name: "database",
+			opts: []testcontainers.ContainerCustomizer{
+				cockroachdb.WithDatabase("test"),
+			},
+			conn: "postgres://root@localhost:xxxxx/test?sslmode=disable",
+		},
+		{
+			name: "user",
+			opts: []testcontainers.ContainerCustomizer{
+				cockroachdb.WithUser("foo"),
+			},
+			conn: "postgres://foo@localhost:xxxxx/defaultdb?sslmode=disable",
+		},
+		{
+			name: "user & password",
+			opts: []testcontainers.ContainerCustomizer{
+				cockroachdb.WithUser("foo"),
+				cockroachdb.WithPassword("bar"),
+			},
+			conn: "postgres://foo:bar@localhost:xxxxx/defaultdb?sslmode=disable",
+		},
+	}
 
-		t.Cleanup(func() {
-			err := container.Terminate(ctx)
+	for _, input := range inputs {
+		t.Run(input.name, func(t *testing.T) {
+			container, err := cockroachdb.RunContainer(ctx, input.opts...)
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				err := container.Terminate(ctx)
+				require.NoError(t, err)
+			})
+
+			connStr := container.MustConnectionString(ctx)
+			require.Equal(t, input.conn, removePort(t, connStr))
+
+			conn, err := pgx.Connect(ctx, connStr)
+			require.NoError(t, err)
+
+			err = conn.Ping(ctx)
 			require.NoError(t, err)
 		})
+	}
+}
 
-		conn, err := pgx.Connect(ctx, container.MustConnectionString(ctx))
-		require.NoError(t, err)
+func removePort(t *testing.T, dsn string) string {
+	t.Helper()
 
-		err = conn.Ping(ctx)
-		require.NoError(t, err)
-	})
+	u, err := url.Parse(dsn)
+	require.NoError(t, err)
 
-	t.Run("ping custom database", func(t *testing.T) {
-		container, err := cockroachdb.RunContainer(ctx, cockroachdb.WithDatabase("test"))
-		require.NoError(t, err)
-
-		t.Cleanup(func() {
-			err := container.Terminate(ctx)
-			require.NoError(t, err)
-		})
-
-		dsn, err := container.ConnectionString(ctx)
-		require.NoError(t, err)
-
-		u, err := url.Parse(dsn)
-		require.NoError(t, err)
-		require.Equal(t, "/test", u.Path)
-
-		conn, err := pgx.Connect(ctx, dsn)
-		require.NoError(t, err)
-
-		err = conn.Ping(ctx)
-		require.NoError(t, err)
-	})
+	return strings.Replace(dsn, ":"+u.Port(), ":xxxxx", 1)
 }
