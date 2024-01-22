@@ -3,7 +3,6 @@ package minio
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -65,7 +64,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImage,
 		ExposedPorts: []string{"9000/tcp"},
-		WaitingFor:   wait.ForListeningPort("9000").WithStartupTimeout(time.Minute * 2),
+		WaitingFor:   wait.ForHTTP("/minio/health/live").WithPort("9000"),
 		Env: map[string]string{
 			"MINIO_ROOT_USER":     defaultUser,
 			"MINIO_ROOT_PASSWORD": defaultPassword,
