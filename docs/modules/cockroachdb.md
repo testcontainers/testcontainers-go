@@ -44,7 +44,11 @@ for CockroachDB. E.g. `testcontainers.WithImage("cockroachdb/cockroach:latest-v2
 
 #### Database
 
-Set the database that is created & dialled with `cockroachdb.WithDatabase`
+Set the database that is created & dialled with `cockroachdb.WithDatabase`.
+
+#### Password authentication
+
+Disable insecure mode and connect with password authentication by setting `cockroachdb.WithUser` and `cockroachdb.WithPassword`.
 
 #### Store size
 
