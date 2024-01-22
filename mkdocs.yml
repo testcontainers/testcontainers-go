@@ -74,6 +74,7 @@ nav:
         - modules/kafka.md
         - modules/localstack.md
         - modules/mariadb.md
+        - modules/minio.md
         - modules/mockserver.md
         - modules/mongodb.md
         - modules/mssql.md

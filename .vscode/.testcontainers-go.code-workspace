@@ -14,6 +14,10 @@
             "path": "../examples/consul"
         },
         {
+            "name": "example / minio",
+            "path": "../examples/minio"
+        },
+        {
             "name": "example / nginx",
             "path": "../examples/nginx"
         },
@@ -68,6 +72,10 @@
         {
             "name": "module / mariadb",
             "path": "../modules/mariadb"
+        },
+        {
+            "name": "module / minio",
+            "path": "../modules/minio"
         },
         {
             "name": "module / mockserver",
