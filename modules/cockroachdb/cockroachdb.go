@@ -21,7 +21,7 @@ const (
 // CockroachDBContainer represents the CockroachDB container type used in the module
 type CockroachDBContainer struct {
 	testcontainers.Container
-	opts Options
+	opts options
 }
 
 // MustConnectionString panics if the address cannot be determined.
@@ -94,7 +94,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &CockroachDBContainer{Container: container, opts: o}, nil
 }
 
-func addCmd(req *testcontainers.GenericContainerRequest, opts Options) {
+func addCmd(req *testcontainers.GenericContainerRequest, opts options) {
 	req.Cmd = []string{
 		"start-single-node",
 		"--insecure",
@@ -102,7 +102,7 @@ func addCmd(req *testcontainers.GenericContainerRequest, opts Options) {
 	}
 }
 
-func addEnvs(req *testcontainers.GenericContainerRequest, opts Options) {
+func addEnvs(req *testcontainers.GenericContainerRequest, opts options) {
 	if req.Env == nil {
 		req.Env = make(map[string]string)
 	}
