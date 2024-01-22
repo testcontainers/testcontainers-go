@@ -77,20 +77,20 @@ func ExampleRunContainer_connect() {
 	if err = db.Ping(); err != nil {
 		panic(err)
 	}
-	stmt, err := db.Prepare("SELECT @@GLOBAL.innodb_file_format")
+	stmt, err := db.Prepare("SELECT @@GLOBAL.tmpdir")
 	if err != nil {
 		panic(err)
 	}
 	defer stmt.Close()
 	row := stmt.QueryRow()
-	innodbFileFormat := ""
-	err = row.Scan(&innodbFileFormat)
+	tmpDir := ""
+	err = row.Scan(&tmpDir)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(innodbFileFormat)
+	fmt.Println(tmpDir)
 
 	// Output:
-	// Barracuda
+	// /tmp
 }
