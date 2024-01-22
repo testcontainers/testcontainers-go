@@ -42,11 +42,6 @@ for CockroachDB. E.g. `testcontainers.WithImage("cockroachdb/cockroach:latest-v2
 
 {% include "../features/common_functional_options.md" %}
 
-#### Image tag
-
-If all you need to change with the default image is the tag, for example to set a specific version of CockroachDB,
-you can ues `cockroachdb.WithImageTag("latest-v23.2")` which will change the image used to `cockroachdb/cockroach:latest-v23.2`.
-
 #### Database
 
 Set the database that is created & dialled with `cockroachdb.WithDatabase`

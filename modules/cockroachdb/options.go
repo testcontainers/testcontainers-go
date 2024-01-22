@@ -35,13 +35,6 @@ func WithDatabase(database string) Option {
 	}
 }
 
-// WithImageTag sets the tag of the CockroachDB image.
-func WithImageTag(tag string) Option {
-	return func(o *Options) {
-		o.ImageTag = tag
-	}
-}
-
 // WithStoreSize sets the amount of available in-memory storage.
 // See https://www.cockroachlabs.com/docs/stable/cockroach-start#store
 func WithStoreSize(size string) Option {
