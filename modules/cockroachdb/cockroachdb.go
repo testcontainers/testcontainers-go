@@ -83,7 +83,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		opt.Customize(&req)
 	}
 
-	req.Cmd = cmd(o)
+	addCmd(&req, o)
+	addEnvs(&req, o)
 
 	// start
 	container, err := testcontainers.GenericContainer(ctx, req)
@@ -93,10 +94,18 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &CockroachDBContainer{Container: container, opts: o}, nil
 }
 
-func cmd(opts Options) []string {
-	return []string{
+func addCmd(req *testcontainers.GenericContainerRequest, opts Options) {
+	req.Cmd = []string{
 		"start-single-node",
 		"--insecure",
 		"--store=type=mem,size=" + opts.StoreSize,
 	}
+}
+
+func addEnvs(req *testcontainers.GenericContainerRequest, opts Options) {
+	if req.Env == nil {
+		req.Env = make(map[string]string)
+	}
+
+	req.Env["COCKROACH_DATABASE"] = opts.Database
 }
