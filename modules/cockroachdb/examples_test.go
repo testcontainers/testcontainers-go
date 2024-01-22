@@ -12,7 +12,7 @@ func ExampleRunContainer() {
 	// runCockroachDBContainer {
 	ctx := context.Background()
 
-	cockroachdbContainer, err := cockroachdb.RunContainer(ctx, cockroachdb.WithImageTag("latest-v23.1"))
+	cockroachdbContainer, err := cockroachdb.RunContainer(ctx)
 	if err != nil {
 		panic(err)
 	}

@@ -5,14 +5,12 @@ import "github.com/testcontainers/testcontainers-go"
 // Options is a struct for specifying options for the CockroachDB container.
 type Options struct {
 	Database  string
-	ImageTag  string
 	StoreSize string
 }
 
 func defaultOptions() Options {
 	return Options{
 		Database:  defaultDatabase,
-		ImageTag:  defaultImageTag,
 		StoreSize: defaultStoreSize,
 	}
 }
@@ -32,13 +30,6 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) {
 func WithDatabase(database string) Option {
 	return func(o *Options) {
 		o.Database = database
-	}
-}
-
-// WithImageTag sets the tag of the CockroachDB image.
-func WithImageTag(tag string) Option {
-	return func(o *Options) {
-		o.ImageTag = tag
 	}
 }
 

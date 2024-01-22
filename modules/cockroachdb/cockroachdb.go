@@ -2,7 +2,6 @@ package cockroachdb
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/url"
 
@@ -14,8 +13,7 @@ const (
 	defaultSQLPort   = "26257"
 	defaultAdminPort = "8080"
 
-	defaultImage     = "cockroachdb/cockroach"
-	defaultImageTag  = "latest-v23.1"
+	defaultImage     = "cockroachdb/cockroach:latest-v23.1"
 	defaultDatabase  = "defaultdb"
 	defaultStoreSize = "100%"
 )
@@ -66,6 +64,7 @@ func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, er
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
+			Image: defaultImage,
 			ExposedPorts: []string{
 				defaultSQLPort + "/tcp",
 				defaultAdminPort + "/tcp",
@@ -84,7 +83,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		opt.Customize(&req)
 	}
 
-	req.Image = image(req, o)
 	req.Cmd = cmd(o)
 
 	// start
@@ -93,13 +91,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 	return &CockroachDBContainer{Container: container, opts: o}, nil
-}
-
-func image(req testcontainers.GenericContainerRequest, opts Options) string {
-	if req.Image != "" {
-		return req.Image
-	}
-	return fmt.Sprintf("%s:%s", defaultImage, opts.ImageTag)
 }
 
 func cmd(opts Options) []string {
