@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	mysqlImage        = "docker.io/mysql:8.0.30"
+	mysqlImage        = "docker.io/mysql:8.0.36"
 	nginxDelayedImage = "docker.io/menedev/delayed-nginx:1.15.2"
 	nginxImage        = "docker.io/nginx"
 	nginxAlpineImage  = "docker.io/nginx:alpine"
@@ -1271,7 +1271,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		c, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
-				Image:         "docker.io/mysql:5.7",
+				Image:         "docker.io/mysql:8.0.36",
 				ImagePlatform: "linux/amd64",
 			},
 			Started: false,
