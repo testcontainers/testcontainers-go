@@ -10,7 +10,7 @@ The Log wait strategy will check if a string occurs in the container logs for a 
 
 ```golang
 req := ContainerRequest{
-    Image:        "docker.io/mysql:8.0.30",
+    Image:        "docker.io/mysql:8.0.36",
     ExposedPorts: []string{"3306/tcp", "33060/tcp"},
     Env: map[string]string{
         "MYSQL_ROOT_PASSWORD": "password",
@@ -24,7 +24,7 @@ Using a regular expression:
 
 ```golang
 req := ContainerRequest{
-    Image:        "docker.io/mysql:8.0.30",
+    Image:        "docker.io/mysql:8.0.36",
     ExposedPorts: []string{"3306/tcp", "33060/tcp"},
     Env: map[string]string{
         "MYSQL_ROOT_PASSWORD": "password",
