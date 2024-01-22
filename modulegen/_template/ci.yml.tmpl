@@ -41,12 +41,11 @@ jobs:
       ryuk-disabled: false
 
   # The job below is a copy of the job above, but with ryuk disabled.
-  # It's executed in a secondary stage to avoid concurrency issues.
+  # It's executed in the first stage to avoid concurrency issues.
   test-reaper-off:
     # do not run this job if it's a PR from dependabot that is not approved yet
     if: {{ "${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}" }}
     name: "Test with reaper off"
-    needs: test
     strategy:
       matrix:
         go-version: [1.20.x, 1.x]
@@ -61,12 +60,11 @@ jobs:
       ryuk-disabled: true
 
   # The job below is a copy of the job above, but with Docker rootless.
-  # It's executed in a secondary stage to avoid concurrency issues.
+  # It's executed in the first stage to avoid concurrency issues.
   test-rootless-docker:
     # do not run this job if it's a PR from dependabot that is not approved yet
     if: {{ "${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}" }}
     name: "Test with Rootless Docker"
-    needs: test
     strategy:
       matrix:
         go-version: [1.20.x, 1.x]
