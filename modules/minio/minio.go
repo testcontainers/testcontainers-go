@@ -12,7 +12,7 @@ import (
 const (
 	defaultUser     = "minioadmin"
 	defaultPassword = "minioadmin"
-	defaultImage    = "minio/minio:RELEASE.2024-01-16T16-07-38Z"
+	defaultImage    = "docker.io/minio/minio:RELEASE.2024-01-16T16-07-38Z"
 )
 
 // MinioContainer represents the Minio container type used in the module
@@ -20,6 +20,44 @@ type MinioContainer struct {
 	testcontainers.Container
 	Username string
 	Password string
+}
+
+// WithUsername sets the initial username to be created when the container starts
+// It is used in conjunction with WithPassword to set a user and its password.
+// It will create the specified user. It must not be empty or undefined.
+func WithUsername(username string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		if username == "" {
+			username = defaultUser
+		}
+		req.Env["MINIO_ROOT_USER"] = username
+	}
+}
+
+// WithPassword sets the initial password of the user to be created when the container starts
+// It is required for you to use the Minio image. It must not be empty or undefined.
+// This environment variable sets the root user password for Minio.
+func WithPassword(password string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		if password == "" {
+			password = defaultPassword
+		}
+		req.Env["MINIO_ROOT_PASSWORD"] = password
+	}
+}
+
+// ConnectionString returns the connection string for the minio container, using the default 9000 port, and
+// obtaining the host and exposed port from the container.
+func (c *MinioContainer) ConnectionString(ctx context.Context) (string, error) {
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", err
+	}
+	port, err := c.MappedPort(ctx, "9000/tcp")
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s:%s", host, port.Port()), nil
 }
 
 // RunContainer creates an instance of the Minio container type
@@ -56,37 +94,4 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	return &MinioContainer{Container: container, Username: username, Password: password}, nil
-}
-
-// WithUsername
-func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		if username == "" {
-			username = defaultUser
-		}
-		req.Env["MINIO_ROOT_USER"] = username
-	}
-}
-
-// WithPassword
-func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		if password == "" {
-			password = defaultPassword
-		}
-		req.Env["MINIO_ROOT_PASSWORD"] = password
-	}
-}
-
-// ConnectionString
-func (c *MinioContainer) ConnectionString(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-	port, err := c.MappedPort(ctx, "9000/tcp")
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s:%s", host, port.Port()), nil
 }
