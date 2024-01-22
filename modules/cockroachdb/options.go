@@ -7,6 +7,7 @@ type options struct {
 	User      string
 	Password  string
 	StoreSize string
+	TLS       *TLSConfig
 }
 
 func defaultOptions() options {
@@ -55,5 +56,13 @@ func WithPassword(password string) Option {
 func WithStoreSize(size string) Option {
 	return func(o *options) {
 		o.StoreSize = size
+	}
+}
+
+// WithTLS enables TLS on the CockroachDB container.
+// Cert and key must be PEM-encoded.
+func WithTLS(cfg *TLSConfig) Option {
+	return func(o *options) {
+		o.TLS = cfg
 	}
 }

@@ -2,11 +2,13 @@ package cockroachdb_test
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -14,13 +16,13 @@ import (
 )
 
 func TestCockroach_Insecure(t *testing.T) {
-	suite.Run(t, &CockroachDBSuite{
+	suite.Run(t, &AuthNSuite{
 		url: "postgres://root@localhost:xxxxx/defaultdb?sslmode=disable",
 	})
 }
 
-func TestCockroach_NonRootAuthn(t *testing.T) {
-	suite.Run(t, &CockroachDBSuite{
+func TestCockroach_NotRoot(t *testing.T) {
+	suite.Run(t, &AuthNSuite{
 		url: "postgres://test@localhost:xxxxx/defaultdb?sslmode=disable",
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithUser("test"),
@@ -28,8 +30,8 @@ func TestCockroach_NonRootAuthn(t *testing.T) {
 	})
 }
 
-func TestCockroach_PasswordAuthn(t *testing.T) {
-	suite.Run(t, &CockroachDBSuite{
+func TestCockroach_Password(t *testing.T) {
+	suite.Run(t, &AuthNSuite{
 		url: "postgres://foo:bar@localhost:xxxxx/defaultdb?sslmode=disable",
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithUser("foo"),
@@ -38,30 +40,42 @@ func TestCockroach_PasswordAuthn(t *testing.T) {
 	})
 }
 
-type CockroachDBSuite struct {
+func TestCockroach_TLS(t *testing.T) {
+	tlsCfg, err := cockroachdb.NewTLSConfig()
+	require.NoError(t, err)
+
+	suite.Run(t, &AuthNSuite{
+		url: "postgres://root@localhost:xxxxx/defaultdb?sslmode=verify-full",
+		opts: []testcontainers.ContainerCustomizer{
+			cockroachdb.WithTLS(tlsCfg),
+		},
+	})
+}
+
+type AuthNSuite struct {
 	suite.Suite
 	url  string
 	opts []testcontainers.ContainerCustomizer
 }
 
-func (suite *CockroachDBSuite) TestConnectionString() {
+func (suite *AuthNSuite) TestConnectionString() {
 	ctx := context.Background()
 
 	container, err := cockroachdb.RunContainer(ctx, suite.opts...)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	suite.T().Cleanup(func() {
 		err := container.Terminate(ctx)
-		suite.NoError(err)
+		suite.Require().NoError(err)
 	})
 
 	connStr, err := removePort(container.MustConnectionString(ctx))
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	suite.Equal(suite.url, connStr)
 }
 
-func (suite *CockroachDBSuite) TestPing() {
+func (suite *AuthNSuite) TestPing() {
 	ctx := context.Background()
 
 	inputs := []struct {
@@ -82,48 +96,72 @@ func (suite *CockroachDBSuite) TestPing() {
 
 	for _, input := range inputs {
 		suite.Run(input.name, func() {
-			opts := append(suite.opts, input.opts...)
+			opts := suite.opts
+			opts = append(opts, input.opts...)
+
 			container, err := cockroachdb.RunContainer(ctx, opts...)
-			suite.NoError(err)
+			suite.Require().NoError(err)
 
 			suite.T().Cleanup(func() {
 				err := container.Terminate(ctx)
-				suite.NoError(err)
+				suite.Require().NoError(err)
 			})
 
-			conn, err := pgx.Connect(ctx, container.MustConnectionString(ctx))
-			suite.NoError(err)
+			conn, err := conn(ctx, container)
+			suite.Require().NoError(err)
+			defer conn.Close(ctx)
 
 			err = conn.Ping(ctx)
-			suite.NoError(err)
+			suite.Require().NoError(err)
 		})
 	}
 }
 
-func (suite *CockroachDBSuite) TestQuery() {
+func (suite *AuthNSuite) TestQuery() {
 	ctx := context.Background()
 
 	container, err := cockroachdb.RunContainer(ctx, suite.opts...)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	suite.T().Cleanup(func() {
 		err := container.Terminate(ctx)
-		suite.NoError(err)
+		suite.Require().NoError(err)
 	})
 
-	conn, err := pgx.Connect(ctx, container.MustConnectionString(ctx))
-	suite.NoError(err)
+	conn, err := conn(ctx, container)
+	suite.Require().NoError(err)
+	defer conn.Close(ctx)
 
 	_, err = conn.Exec(ctx, "CREATE TABLE test (id INT PRIMARY KEY)")
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	_, err = conn.Exec(ctx, "INSERT INTO test (id) VALUES (523123)")
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	var id int
 	err = conn.QueryRow(ctx, "SELECT id FROM test").Scan(&id)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal(523123, id)
+}
+
+func conn(ctx context.Context, container *cockroachdb.CockroachDBContainer) (*pgx.Conn, error) {
+	cfg, err := pgx.ParseConfig(container.MustConnectionString(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	tlsCfg, err := container.ConnectionTLS()
+	switch {
+	case err != nil:
+		if !errors.Is(err, cockroachdb.ErrTLSNotEnabled) {
+			return nil, err
+		}
+	default:
+		// apply TLS config
+		cfg.TLSConfig = tlsCfg
+	}
+
+	return pgx.ConnectConfig(ctx, cfg)
 }
 
 func removePort(s string) (string, error) {

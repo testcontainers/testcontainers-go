@@ -54,6 +54,13 @@ Disable insecure mode and connect with password authentication by setting `cockr
 
 Control the maximum amount of memory used for storage, by default this is 100% but can be changed by provided a valid option to `WithStoreSize`. Checkout https://www.cockroachlabs.com/docs/stable/cockroach-start#store for the full range of options available.
 
+#### TLS authentication
+
+`cockroachdb.WithTLS` lets you provde the CA certificate along with the certicate and key for the node & clients to connect with.
+Internally CockroachDB requires a client certificate for the user to connect with.
+
+A helper `cockroachdb.NewTLSConfig` exists to generate all of this for you.
+
 ### Container Methods
 
 The CockroachDB container exposes the following methods:
@@ -65,3 +72,7 @@ Dial address to open a new connection.
 #### MustConnectionString
 
 Same as `ConnectionString` but any error to generate the address will raise a panic
+
+#### ConnectionTLS
+
+Returns `*tls.Config` setup to allow you to dial your client over TLS, if enabled, else this will error with `cockroachdb.ErrTLSNotEnabled`.

@@ -2,8 +2,13 @@ package cockroachdb
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
+	"fmt"
 	"net"
 	"net/url"
+	"path/filepath"
 
 	"github.com/docker/go-connections/nat"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -12,7 +17,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+var ErrTLSNotEnabled = fmt.Errorf("tls not enabled")
+
 const (
+	certsDir = "/tmp"
+
 	defaultSQLPort   = "26257/tcp"
 	defaultAdminPort = "8080/tcp"
 
@@ -53,6 +62,27 @@ func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, er
 	return connString(c.opts, host, port), nil
 }
 
+// TLSConfig returns config necessary to connect to CockroachDB over TLS.
+func (c *CockroachDBContainer) ConnectionTLS() (*tls.Config, error) {
+	if c.opts.TLS == nil {
+		return nil, ErrTLSNotEnabled
+	}
+
+	keyPair, err := tls.X509KeyPair(c.opts.TLS.ClientCert, c.opts.TLS.ClientKey)
+	if err != nil {
+		return nil, err
+	}
+
+	certPool := x509.NewCertPool()
+	certPool.AddCert(c.opts.TLS.CACert)
+
+	return &tls.Config{
+		RootCAs:      certPool,
+		Certificates: []tls.Certificate{keyPair},
+		ServerName:   "localhost",
+	}, nil
+}
+
 // RunContainer creates an instance of the CockroachDB container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error) {
 	o := defaultOptions()
@@ -65,12 +95,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			},
 			WaitingFor: wait.ForAll(
 				wait.ForHTTP("/health").WithPort(defaultAdminPort),
-				wait.ForSQL(nat.Port(defaultSQLPort), "pgx/v5", func(host string, port nat.Port) string {
-					return connString(o, host, port)
-				}),
+				wait.ForLog("node has connected to cluster").AsRegexp(),
 			),
 		},
-		Started: true,
 	}
 
 	// apply options
@@ -81,29 +108,49 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		opt.Customize(&req)
 	}
 
-	addCmd(&req, o)
 	addEnvs(&req, o)
+	if err := addCmd(&req, o); err != nil {
+		return nil, err
+	}
 
-	// start
 	container, err := testcontainers.GenericContainer(ctx, req)
 	if err != nil {
+		return nil, err
+	}
+
+	// copy TLS files
+	if err := addTLS(ctx, container, o); err != nil {
+		return nil, err
+	}
+
+	// start
+	if err := container.Start(ctx); err != nil {
 		return nil, err
 	}
 	return &CockroachDBContainer{Container: container, opts: o}, nil
 }
 
-func addCmd(req *testcontainers.GenericContainerRequest, opts options) {
+func addCmd(req *testcontainers.GenericContainerRequest, opts options) error {
 	req.Cmd = []string{
 		"start-single-node",
 		"--store=type=mem,size=" + opts.StoreSize,
 	}
 
-	if opts.Password == "" {
-		req.Cmd = append(req.Cmd, "--insecure")
-	} else {
-		// password authentication
-		req.Cmd = append(req.Cmd, "--accept-sql-without-tls")
+	// authN
+	if opts.TLS != nil && opts.Password != "" {
+		return fmt.Errorf("cannot use password authentication with TLS")
 	}
+
+	switch {
+	case opts.TLS != nil:
+		req.Cmd = append(req.Cmd, "--certs-dir="+certsDir)
+	case opts.Password != "":
+		req.Cmd = append(req.Cmd, "--accept-sql-without-tls")
+	default:
+		req.Cmd = append(req.Cmd, "--insecure")
+	}
+
+	return nil
 }
 
 func addEnvs(req *testcontainers.GenericContainerRequest, opts options) {
@@ -116,14 +163,42 @@ func addEnvs(req *testcontainers.GenericContainerRequest, opts options) {
 	req.Env["COCKROACH_PASSWORD"] = opts.Password
 }
 
-func connString(opts options, host string, port nat.Port) string {
-	params := url.Values{
-		"sslmode": []string{"disable"},
+func addTLS(ctx context.Context, container testcontainers.Container, opts options) error {
+	if opts.TLS == nil {
+		return nil
 	}
 
+	caBytes := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: opts.TLS.CACert.Raw,
+	})
+	files := map[string][]byte{
+		"ca.crt":          caBytes,
+		"node.crt":        opts.TLS.NodeCert,
+		"node.key":        opts.TLS.NodeKey,
+		"client.root.crt": opts.TLS.ClientCert,
+		"client.root.key": opts.TLS.ClientKey,
+	}
+	for filename, contents := range files {
+		if err := container.CopyToContainer(ctx, contents, filepath.Join(certsDir, filename), 0o600); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func connString(opts options, host string, port nat.Port) string {
 	user := url.User(opts.User)
 	if opts.Password != "" {
 		user = url.UserPassword(opts.User, opts.Password)
+	}
+
+	sslMode := "disable"
+	if opts.TLS != nil {
+		sslMode = "verify-full"
+	}
+	params := url.Values{
+		"sslmode": []string{sslMode},
 	}
 
 	u := url.URL{
