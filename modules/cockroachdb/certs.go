@@ -123,7 +123,7 @@ func generateClient(caCert *x509.Certificate, caKey *rsa.PrivateKey) ([]byte, []
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(2019),
 		Subject: pkix.Name{
-			CommonName: "root",
+			CommonName: defaultUser,
 		},
 		NotBefore: time.Now().Add(-time.Hour),
 		NotAfter:  time.Now().Add(time.Hour),

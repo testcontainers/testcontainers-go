@@ -137,8 +137,13 @@ func addCmd(req *testcontainers.GenericContainerRequest, opts options) error {
 	}
 
 	// authN
-	if opts.TLS != nil && opts.Password != "" {
-		return fmt.Errorf("cannot use password authentication with TLS")
+	if opts.TLS != nil {
+		if opts.User != defaultUser {
+			return fmt.Errorf("unsupported user %s with TLS, use %s", opts.User, defaultUser)
+		}
+		if opts.Password != "" {
+			return fmt.Errorf("cannot use password authentication with TLS")
+		}
 	}
 
 	switch {
