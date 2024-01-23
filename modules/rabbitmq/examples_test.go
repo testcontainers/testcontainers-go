@@ -18,7 +18,7 @@ func ExampleRunContainer() {
 	ctx := context.Background()
 
 	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
-		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
+		testcontainers.WithImage("rabbitmq:3.12.11-management-alpine"),
 		rabbitmq.WithAdminUsername("admin"),
 		rabbitmq.WithAdminPassword("password"),
 	)

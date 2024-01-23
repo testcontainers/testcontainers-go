@@ -146,7 +146,7 @@ func TestExtractDockerHost(t *testing.T) {
 			setupTestcontainersProperties(t, content)
 
 			socket, err := testcontainersHostFromProperties(context.Background())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, testRemoteHost, socket)
 		})
 
@@ -165,10 +165,10 @@ func TestExtractDockerHost(t *testing.T) {
 			tmpSocket := filepath.Join(tmpDir, "docker.sock")
 			t.Setenv("DOCKER_HOST", tmpSocket)
 			err := createTmpDockerSocket(tmpDir)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			socket, err := dockerHostFromEnv(context.Background())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tmpSocket, socket)
 		})
 
@@ -187,10 +187,10 @@ func TestExtractDockerHost(t *testing.T) {
 			tmpSocket := filepath.Join(tmpDir, "docker.sock")
 			t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", tmpSocket)
 			err := createTmpDockerSocket(tmpDir)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			socket, err := dockerSocketOverridePath(context.Background())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tmpSocket, socket)
 		})
 
@@ -208,7 +208,7 @@ func TestExtractDockerHost(t *testing.T) {
 			ctx := context.Background()
 
 			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, DockerSocketSchema+"/this/is/a/sample.sock"))
-			require.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, "/this/is/a/sample.sock", socket)
 		})
 
@@ -232,7 +232,7 @@ func TestExtractDockerHost(t *testing.T) {
 			tmpSocket := setupDockerSocket(t)
 
 			socket, err := dockerSocketPath(context.Background())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tmpSocket, socket)
 		})
 
@@ -243,7 +243,7 @@ func TestExtractDockerHost(t *testing.T) {
 			setupTestcontainersProperties(t, content)
 
 			socket, err := dockerHostFromProperties(context.Background())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tmpSocket, socket)
 		})
 
@@ -426,7 +426,7 @@ func TestInAContainer(t *testing.T) {
 		f := filepath.Join(tmpDir, ".dockerenv-b")
 
 		testFile, err := os.Create(f)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		defer testFile.Close()
 
 		assert.True(t, inAContainer(f))
@@ -472,7 +472,7 @@ func setupDockerSocket(t *testing.T) string {
 	tmpDir := t.TempDir()
 	tmpSocket := filepath.Join(tmpDir, "docker.sock")
 	err := createTmpDockerSocket(filepath.Dir(tmpSocket))
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	DockerSocketPath = tmpSocket
 	DockerSocketPathWithSchema = tmpSchema + tmpSocket
@@ -503,7 +503,7 @@ func setupTestcontainersProperties(t *testing.T, content string) {
 	tmpDir := t.TempDir()
 	homeDir := filepath.Join(tmpDir, "home")
 	err := createTmpDir(homeDir)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	t.Setenv("HOME", homeDir)
 	t.Setenv("USERPROFILE", homeDir) // Windows support
 

@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
@@ -141,13 +142,14 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 		// Can't use Container.IsRunning because the bool is not updated when Reaper is terminated
 		state, err := reaperInstance.container.State(ctx)
 		if err != nil {
-			return nil, err
-		}
-
-		if state.Running {
+			if !errdefs.IsNotFound(err) {
+				return nil, err
+			}
+		} else if state.Running {
 			return reaperInstance, nil
 		}
 		// else: the reaper instance has been terminated, so we need to create a new one
+		reaperOnce = sync.Once{}
 	}
 
 	// 2. because the reaper instance has not been created yet, look for it in the Docker daemon, which

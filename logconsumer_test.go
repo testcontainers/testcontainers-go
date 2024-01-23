@@ -215,7 +215,7 @@ func Test_MultipleLogConsumers(t *testing.T) {
 
 	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, first.Msgs)
 	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, second.Msgs)
-	assert.Nil(t, c.Terminate(ctx))
+	require.NoError(t, c.Terminate(ctx))
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {
