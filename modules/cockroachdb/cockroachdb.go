@@ -11,7 +11,8 @@ import (
 	"path/filepath"
 
 	"github.com/docker/go-connections/nat"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -64,23 +65,7 @@ func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, er
 
 // TLSConfig returns config necessary to connect to CockroachDB over TLS.
 func (c *CockroachDBContainer) ConnectionTLS() (*tls.Config, error) {
-	if c.opts.TLS == nil {
-		return nil, ErrTLSNotEnabled
-	}
-
-	keyPair, err := tls.X509KeyPair(c.opts.TLS.ClientCert, c.opts.TLS.ClientKey)
-	if err != nil {
-		return nil, err
-	}
-
-	certPool := x509.NewCertPool()
-	certPool.AddCert(c.opts.TLS.CACert)
-
-	return &tls.Config{
-		RootCAs:      certPool,
-		Certificates: []tls.Certificate{keyPair},
-		ServerName:   "localhost",
-	}, nil
+	return connTLS(c.opts)
 }
 
 // RunContainer creates an instance of the CockroachDB container type
@@ -93,10 +78,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				defaultSQLPort,
 				defaultAdminPort,
 			},
-			WaitingFor: wait.ForAll(
-				wait.ForHTTP("/health").WithPort(defaultAdminPort),
-				wait.ForLog("node has connected to cluster").AsRegexp(),
-			),
 		},
 	}
 
@@ -110,6 +91,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 	addEnvs(&req, o)
 	if err := addCmd(&req, o); err != nil {
+		return nil, err
+	}
+	if err := addWaitingFor(&req, o); err != nil {
 		return nil, err
 	}
 
@@ -168,6 +152,38 @@ func addEnvs(req *testcontainers.GenericContainerRequest, opts options) {
 	req.Env["COCKROACH_PASSWORD"] = opts.Password
 }
 
+func addWaitingFor(req *testcontainers.GenericContainerRequest, opts options) error {
+	var tlsConfig *tls.Config
+	if opts.TLS != nil {
+		cfg, err := connTLS(opts)
+		if err != nil {
+			return err
+		}
+		tlsConfig = cfg
+	}
+
+	req.WaitingFor = wait.ForAll(
+		wait.ForHTTP("/health").WithPort(defaultAdminPort),
+		wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
+			connStr := connString(opts, host, port)
+			if tlsConfig == nil {
+				return connStr
+			}
+
+			// register TLS config with pgx driver
+			connCfg, err := pgx.ParseConfig(connStr)
+			if err != nil {
+				panic(err)
+			}
+			connCfg.TLSConfig = tlsConfig
+
+			return stdlib.RegisterConnConfig(connCfg)
+		}),
+	)
+
+	return nil
+}
+
 func addTLS(ctx context.Context, container testcontainers.Container, opts options) error {
 	if opts.TLS == nil {
 		return nil
@@ -215,4 +231,24 @@ func connString(opts options, host string, port nat.Port) string {
 	}
 
 	return u.String()
+}
+
+func connTLS(opts options) (*tls.Config, error) {
+	if opts.TLS == nil {
+		return nil, ErrTLSNotEnabled
+	}
+
+	keyPair, err := tls.X509KeyPair(opts.TLS.ClientCert, opts.TLS.ClientKey)
+	if err != nil {
+		return nil, err
+	}
+
+	certPool := x509.NewCertPool()
+	certPool.AddCert(opts.TLS.CACert)
+
+	return &tls.Config{
+		RootCAs:      certPool,
+		Certificates: []tls.Certificate{keyPair},
+		ServerName:   "localhost",
+	}, nil
 }
