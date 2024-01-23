@@ -4,13 +4,18 @@ on:
   issue_comment:
     types: [created]
 
+permissions:
+  contents: read
+
 jobs:
   windows-test-command-trigger:
+    permissions:
+      pull-requests: write  # for peter-evans/slash-command-dispatch to create PR reaction
     runs-on: ubuntu-22.04
 
     steps:
       - name: Trigger windows-test command
-        uses: peter-evans/slash-command-dispatch@v3
+        uses: peter-evans/slash-command-dispatch@f996d7b7aae9059759ac55e978cff76d91853301 # v3.0.2
         with:
           token: ${{ secrets.WINDOWS_WORKERS_TOKEN }}
           # The command to trigger the pipeline: e.g. /windows-test

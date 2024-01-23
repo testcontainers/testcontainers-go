@@ -99,7 +99,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("never received final log message")
 	}
-	assert.Nil(t, c.StopLogProducer())
+	require.NoError(t, c.StopLogProducer())
 	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs)
 
 	terminateContainerOnEnd(t, ctx, c)
@@ -162,7 +162,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	require.NoError(t, err)
 
 	<-g.Ack
-	assert.Nil(t, c.StopLogProducer())
+	require.NoError(t, c.StopLogProducer())
 
 	assert.Equal(t, map[string]string{
 		StdoutLog: "echo this-is-stdout\n",
@@ -217,11 +217,11 @@ func Test_MultipleLogConsumers(t *testing.T) {
 
 	<-first.Done
 	<-second.Done
-	assert.Nil(t, c.StopLogProducer())
+	require.NoError(t, c.StopLogProducer())
 
 	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, first.Msgs)
 	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, second.Msgs)
-	assert.Nil(t, c.Terminate(ctx))
+	require.NoError(t, c.Terminate(ctx))
 }
 
 func Test_StartStop(t *testing.T) {
@@ -256,23 +256,23 @@ func Test_StartStop(t *testing.T) {
 	require.NoError(t, c.StopLogProducer(), "nothing should happen even if the producer is not started")
 
 	require.NoError(t, c.StartLogProducer(ctx))
-	require.Equal(t, <-g.Accepted, "ready\n")
+	require.Equal(t, "ready\n", <-g.Accepted)
 
 	require.Error(t, c.StartLogProducer(ctx), "log producer is already started")
 
 	_, err = http.Get(ep + "/stdout?echo=mlem")
 	require.NoError(t, err)
-	require.Equal(t, <-g.Accepted, "echo mlem\n")
+	require.Equal(t, "echo mlem\n", <-g.Accepted)
 
 	require.NoError(t, c.StopLogProducer())
 
 	require.NoError(t, c.StartLogProducer(ctx))
-	require.Equal(t, <-g.Accepted, "ready\n")
-	require.Equal(t, <-g.Accepted, "echo mlem\n")
+	require.Equal(t, "ready\n", <-g.Accepted)
+	require.Equal(t, "echo mlem\n", <-g.Accepted)
 
 	_, err = http.Get(ep + "/stdout?echo=mlem2")
 	require.NoError(t, err)
-	require.Equal(t, <-g.Accepted, "echo mlem2\n")
+	require.Equal(t, "echo mlem2\n", <-g.Accepted)
 
 	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
 	require.NoError(t, err)
@@ -287,7 +287,7 @@ func Test_StartStop(t *testing.T) {
 		"echo mlem\n",
 		"echo mlem2\n",
 	}, g.Msgs)
-	assert.Nil(t, c.Terminate(ctx))
+	require.NoError(t, c.Terminate(ctx))
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {
@@ -457,4 +457,68 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, "0", strings.TrimSpace(string(b)))
+}
+
+func Test_StartLogProducerStillStartsWithTooLowTimeout(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:    "./testdata/",
+			Dockerfile: "echoserver.Dockerfile",
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		WaitingFor:   wait.ForLog("ready"),
+	}
+
+	gReq := GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	c, err := GenericContainer(ctx, gReq)
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, c)
+
+	g := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
+
+	c.FollowOutput(&g)
+
+	err = c.StartLogProducer(ctx, WithLogProducerTimeout(4*time.Second))
+	require.NoError(t, err, "should still start with too low timeout")
+}
+
+func Test_StartLogProducerStillStartsWithTooHighTimeout(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:    "./testdata/",
+			Dockerfile: "echoserver.Dockerfile",
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		WaitingFor:   wait.ForLog("ready"),
+	}
+
+	gReq := GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	c, err := GenericContainer(ctx, gReq)
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, c)
+
+	g := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
+
+	c.FollowOutput(&g)
+
+	err = c.StartLogProducer(ctx, WithLogProducerTimeout(61*time.Second))
+	require.NoError(t, err, "should still start with too high timeout")
 }

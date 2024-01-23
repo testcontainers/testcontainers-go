@@ -10,7 +10,6 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -70,7 +69,7 @@ func WithNetwork(networkName string, alias string) testcontainers.CustomizeReque
 // RunContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error) {
-	dockerHost := testcontainersdocker.ExtractDockerSocket(ctx)
+	dockerHost := testcontainers.ExtractDockerSocket()
 
 	req := testcontainers.ContainerRequest{
 		Image:        fmt.Sprintf("localstack/localstack:%s", defaultVersion),

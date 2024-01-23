@@ -19,6 +19,13 @@ redpanda:
       port: 9093
       authentication_method: {{ if .KafkaAPI.EnableAuthorization }}sasl{{ else }}none{{ end }}
 
+  {{ range .KafkaAPI.Listeners }}
+    - address: 0.0.0.0
+      name: {{ .Address }}
+      port: {{ .Port }}
+      authentication_method: {{ .AuthenticationMethod }}
+  {{ end }}
+
   advertised_kafka_api:
     - address: {{ .KafkaAPI.AdvertisedHost }}
       name: external
@@ -26,6 +33,12 @@ redpanda:
     - address: 127.0.0.1
       name: internal
       port: 9093
+ {{ range .KafkaAPI.Listeners }} 
+    - address: {{ .Address }}
+      name: {{ .Address }}
+      port: {{ .Port }}
+  {{ end }} 
+  
 
 {{ if .EnableTLS }}
   admin_api_tls:

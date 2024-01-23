@@ -42,7 +42,7 @@ When starting the MySQL container, you can pass options in a variadic way to con
 #### Image
 
 If you need to set a different MySQL Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for MySQL. E.g. `testcontainers.WithImage("mysql:5.6")`.
+for MySQL. E.g. `testcontainers.WithImage("mysql:8.0.36")`.
 
 By default, the container will use the following Docker image:
 

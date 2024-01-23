@@ -10,6 +10,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -35,11 +36,11 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		assert.NoError(t, container.Terminate(ctx))
+		require.NoError(t, container.Terminate(ctx))
 	})
 
 	connectionHost, err := container.ConnectionHost(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	conn, err := ch.Open(&ch.Options{
 		Addr: []string{connectionHost},
@@ -49,12 +50,12 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 			Password: container.password,
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, conn)
 	defer conn.Close()
 
 	err = conn.Ping(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestClickHouseConnectionHost(t *testing.T) {
@@ -71,13 +72,13 @@ func TestClickHouseConnectionHost(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		assert.NoError(t, container.Terminate(ctx))
+		require.NoError(t, container.Terminate(ctx))
 	})
 
 	// connectionHost {
 	connectionHost, err := container.ConnectionHost(ctx)
 	// }
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	conn, err := ch.Open(&ch.Options{
 		Addr: []string{connectionHost},
@@ -87,13 +88,13 @@ func TestClickHouseConnectionHost(t *testing.T) {
 			Password: password,
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, conn)
 	defer conn.Close()
 
 	// perform assertions
 	data, err := performCRUD(conn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, data, 1)
 }
 
@@ -107,25 +108,25 @@ func TestClickHouseDSN(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		assert.NoError(t, container.Terminate(ctx))
+		require.NoError(t, container.Terminate(ctx))
 	})
 
 	// connectionString {
 	connectionString, err := container.ConnectionString(ctx, "debug=true")
 	// }
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	opts, err := ch.ParseDSN(connectionString)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	conn, err := ch.Open(opts)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, conn)
 	defer conn.Close()
 
 	// perform assertions
 	data, err := performCRUD(conn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, data, 1)
 }
 
@@ -146,11 +147,11 @@ func TestClickHouseWithInitScripts(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		assert.NoError(t, container.Terminate(ctx))
+		require.NoError(t, container.Terminate(ctx))
 	})
 
 	connectionHost, err := container.ConnectionHost(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	conn, err := ch.Open(&ch.Options{
 		Addr: []string{connectionHost},
@@ -160,13 +161,13 @@ func TestClickHouseWithInitScripts(t *testing.T) {
 			Password: password,
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, conn)
 	defer conn.Close()
 
 	// perform assertions
 	data, err := getAllRows(conn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, data, 1)
 }
 
@@ -194,11 +195,11 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 
 			// Clean up the container after the test is complete
 			t.Cleanup(func() {
-				assert.NoError(t, container.Terminate(ctx))
+				require.NoError(t, container.Terminate(ctx))
 			})
 
 			connectionHost, err := container.ConnectionHost(ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			conn, err := ch.Open(&ch.Options{
 				Addr: []string{connectionHost},
@@ -208,13 +209,13 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 					// Password: password, // --> password is not required
 				},
 			})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, conn)
 			defer conn.Close()
 
 			// perform assertions
 			data, err := performCRUD(conn)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Len(t, data, 1)
 		})
 	}

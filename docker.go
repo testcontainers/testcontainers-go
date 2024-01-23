@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -32,8 +33,7 @@ import (
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/config"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -67,6 +67,9 @@ type DockerContainer struct {
 	raw               *types.ContainerJSON
 	stopProducer      chan bool
 	producerDone      chan bool
+	producerError     chan error
+	producerMutex     sync.Mutex
+	producerTimeout   *time.Duration
 	logger            Logging
 	lifecycleHooks    []ContainerLifecycleHooks
 }
@@ -603,7 +606,7 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 		return err
 	}
 
-	err = c.provider.client.CopyToContainer(ctx, c.ID, filepath.Dir(containerFilePath), buffer, types.CopyToContainerOptions{})
+	err = c.provider.client.CopyToContainer(ctx, c.ID, "/", buffer, types.CopyToContainerOptions{})
 	if err != nil {
 		return err
 	}
@@ -612,19 +615,68 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 	return nil
 }
 
+type LogProducerOption func(*DockerContainer)
+
+// WithLogProducerTimeout is a functional option that sets the timeout for the log producer.
+// If the timeout is lower than 5s or greater than 60s it will be set to 5s or 60s respectively.
+func WithLogProducerTimeout(timeout time.Duration) LogProducerOption {
+	return func(c *DockerContainer) {
+		c.producerTimeout = &timeout
+	}
+}
+
 // StartLogProducer will start a concurrent process that will continuously read logs
-// from the container and will send them to each added LogConsumer
-func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
-	if c.stopProducer != nil {
-		return errors.New("log producer already started")
+// from the container and will send them to each added LogConsumer.
+// Default log producer timeout is 5s. It is used to set the context timeout
+// which means that each log-reading loop will last at least the specified timeout
+// and that it cannot be cancelled earlier.
+// Use functional option WithLogProducerTimeout() to override default timeout. If it's
+// lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
+func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProducerOption) error {
+	{
+		c.producerMutex.Lock()
+		defer c.producerMutex.Unlock()
+
+		if c.stopProducer != nil {
+			return errors.New("log producer already started")
+		}
+	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	minProducerTimeout := time.Duration(5 * time.Second)
+	maxProducerTimeout := time.Duration(60 * time.Second)
+
+	if c.producerTimeout == nil {
+		c.producerTimeout = &minProducerTimeout
+	}
+
+	if *c.producerTimeout < minProducerTimeout {
+		c.producerTimeout = &minProducerTimeout
+	}
+
+	if *c.producerTimeout > maxProducerTimeout {
+		c.producerTimeout = &maxProducerTimeout
 	}
 
 	c.stopProducer = make(chan bool)
 	c.producerDone = make(chan bool)
+	c.producerError = make(chan error, 1)
 
-	go func(stop <-chan bool, done chan<- bool) {
+	go func(stop <-chan bool, done chan<- bool, errorCh chan error) {
 		// signal the producer is done once go routine exits, this prevents race conditions around start/stop
-		defer close(done)
+		// set c.stopProducer to nil so that it can be started again
+		defer func() {
+			defer c.producerMutex.Unlock()
+			close(done)
+			close(errorCh)
+			{
+				c.producerMutex.Lock()
+				c.stopProducer = nil
+			}
+		}()
 
 		since := ""
 		// if the socket is closed we will make additional logs request with updated Since timestamp
@@ -636,25 +688,20 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 			Since:      since,
 		}
 
-		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		ctx, cancel := context.WithTimeout(ctx, *c.producerTimeout)
 		defer cancel()
 
 		r, err := c.provider.client.ContainerLogs(ctx, c.GetContainerID(), options)
 		if err != nil {
-			// if we can't get the logs, panic, we can't return an error to anything
-			// from within this goroutine
-			panic(err)
+			errorCh <- err
+			return
 		}
 		defer c.provider.Close()
 
 		for {
 			select {
 			case <-stop:
-				err := r.Close()
-				if err != nil {
-					// we can't close the read closer, this should never happen
-					panic(err)
-				}
+				errorCh <- r.Close()
 				return
 			default:
 				h := make([]byte, 8)
@@ -710,7 +757,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 			}
 		}
-	}(c.stopProducer, c.producerDone)
+	}(c.stopProducer, c.producerDone, c.producerError)
 
 	return nil
 }
@@ -718,14 +765,23 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 // StopLogProducer will stop the concurrent process that is reading logs
 // and sending them to each added LogConsumer
 func (c *DockerContainer) StopLogProducer() error {
+	c.producerMutex.Lock()
+	defer c.producerMutex.Unlock()
 	if c.stopProducer != nil {
 		c.stopProducer <- true
 		// block until the producer is actually done in order to avoid strange races
 		<-c.producerDone
 		c.stopProducer = nil
 		c.producerDone = nil
+		return <-c.producerError
 	}
 	return nil
+}
+
+// GetLogProducerErrorChannel exposes the only way for the consumer
+// to be able to listen to errors and react to them.
+func (c *DockerContainer) GetLogProducerErrorChannel() <-chan error {
+	return c.producerError
 }
 
 // DockerNetwork represents a network started using Docker
@@ -877,7 +933,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.HasSuffix(imageName, config.ReaperDefaultImage)
 	if !tcConfig.RyukDisabled && !isReaperContainer {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.SessionID(), p)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), core.SessionID(), p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -973,7 +1029,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	if !isReaperContainer {
 		// add the labels that the reaper will use to terminate the container to the request
-		for k, v := range testcontainersdocker.DefaultLabels(testcontainerssession.SessionID()) {
+		for k, v := range core.DefaultLabels(core.SessionID()) {
 			req.Labels[k] = v
 		}
 	}
@@ -1080,7 +1136,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		Image:             imageName,
 		imageWasBuilt:     req.ShouldBuildImage(),
 		keepBuiltImage:    req.ShouldKeepBuiltImage(),
-		sessionID:         testcontainerssession.SessionID(),
+		sessionID:         core.SessionID(),
 		provider:          p,
 		terminationSignal: termSignal,
 		stopProducer:      nil,
@@ -1127,13 +1183,13 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		return p.CreateContainer(ctx, req)
 	}
 
-	sessionID := testcontainerssession.SessionID()
+	sessionID := core.SessionID()
 
 	tcConfig := p.Config().Config
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID, p)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1247,10 +1303,10 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 	case "http", "https", "tcp":
 		p.hostCache = url.Hostname()
 	case "unix", "npipe":
-		if testcontainersdocker.InAContainer() {
+		if core.InAContainer() {
 			ip, err := p.GetGatewayIP(ctx)
 			if err != nil {
-				ip, err = testcontainersdocker.DefaultGatewayIP()
+				ip, err = core.DefaultGatewayIP()
 				if err != nil {
 					ip = "localhost"
 				}
@@ -1298,11 +1354,11 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		IPAM:           req.IPAM,
 	}
 
-	sessionID := testcontainerssession.SessionID()
+	sessionID := core.SessionID()
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID, p)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}
@@ -1313,7 +1369,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	}
 
 	// add the labels that the reaper will use to terminate the network to the request
-	for k, v := range testcontainersdocker.DefaultLabels(sessionID) {
+	for k, v := range core.DefaultLabels(sessionID) {
 		req.Labels[k] = v
 	}
 
@@ -1409,7 +1465,7 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
 			Driver:     Bridge,
 			Attachable: true,
-			Labels:     testcontainersdocker.DefaultLabels(testcontainerssession.SessionID()),
+			Labels:     core.DefaultLabels(core.SessionID()),
 		})
 
 		if err != nil {
@@ -1440,7 +1496,7 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	}
 	container.provider = provider
 
-	container.sessionID = testcontainerssession.SessionID()
+	container.sessionID = core.SessionID()
 	container.consumers = []LogConsumer{}
 	container.stopProducer = nil
 	container.isRunning = response.State == "running"
