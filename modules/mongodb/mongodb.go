@@ -23,12 +23,50 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	req := testcontainers.ContainerRequest{
 		Image:        defaultImage,
 		ExposedPorts: []string{"27017/tcp"},
+		Cmd:          []string{"--replSet", "rs0"},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("Waiting for connections"),
 			wait.ForListeningPort("27017/tcp"),
 		),
 		Env: map[string]string{},
 	}
+
+	// TODO: should I used fixed array?
+	req.LifecycleHooks = make([]testcontainers.ContainerLifecycleHooks, 1)
+	req.LifecycleHooks[0].PostStarts = append(req.LifecycleHooks[0].PostStarts,
+		func(ctx context.Context, container testcontainers.Container) error {
+			exitCode, _, err := container.Exec(ctx, []string{"mongosh", "--eval", "rs.initiate();"})
+			if err != nil {
+				return err
+			}
+
+			if exitCode != 0 {
+				return fmt.Errorf("init replicaset error")
+			}
+
+			// TODO: should move to const or func?
+			waitCmd := fmt.Sprintf("var attempt = 0; "+
+				"while"+
+				"(%s) "+
+				"{ "+
+				"if (attempt > %d) {quit(1);} "+
+				"print('%s ' + attempt); sleep(100);  attempt++; "+
+				" }",
+				"db.runCommand( { isMaster: 1 } ).ismaster==false",
+				60,
+				"An attempt to await for a single node replica set initialization:")
+
+			exitCode, _, err = container.Exec(ctx, []string{"mongosh", "--eval", waitCmd})
+			if err != nil {
+				return err
+			}
+
+			if exitCode != 0 {
+				return fmt.Errorf("await replica error")
+			}
+
+			return nil
+		})
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -87,5 +125,13 @@ func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error)
 	if c.username != "" && c.password != "" {
 		return fmt.Sprintf("mongodb://%s:%s@%s:%s", c.username, c.password, host, port.Port()), nil
 	}
-	return c.Endpoint(ctx, "mongodb")
+
+	endpoint, err := c.Endpoint(ctx, "mongodb")
+	if err != nil {
+		return "", err
+	}
+
+	// TODO: add with username and password
+	connStr := fmt.Sprintf("%s/test?replicaSet=rs0&directConnection=true", endpoint)
+	return connStr, nil
 }
