@@ -509,9 +509,7 @@ func TestContainerCreation(t *testing.T) {
 		t.Errorf("Expected number of connected networks %d. Got %d.", 0, len(networkAliases))
 	}
 
-	if os.Getenv("XDG_RUNTIME_DIR") != "" {
-		t.Log("[Docker Rootless] do not assert that the container should have zero aliases in the bridge network")
-	} else if len(networkAliases["bridge"]) != 0 {
+	if len(networkAliases["bridge"]) != 0 {
 		t.Errorf("Expected number of aliases for 'bridge' network %d. Got %d.", 0, len(networkAliases["bridge"]))
 	}
 }
