@@ -79,7 +79,7 @@ func (lc *msgsLogConsumer) Accept(l testcontainers.Log) {
 func TestWithLogConsumers(t *testing.T) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:      "mysql:8",
+			Image:      "mysql:8.0.36",
 			WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
 		},
 		Started: true,
