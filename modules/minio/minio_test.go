@@ -3,9 +3,9 @@ package minio
 import (
 	"context"
 	"io"
+	"strings"
 	"testing"
 
-	"github.com/adoublef/sdk/bytest"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/testcontainers/testcontainers-go"
@@ -14,7 +14,9 @@ import (
 func TestMinio(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("minio/minio:RELEASE.2024-01-16T16-07-38Z"))
+	container, err := RunContainer(ctx,
+		testcontainers.WithImage("minio/minio:RELEASE.2024-01-16T16-07-38Z"),
+		WithUsername("thisismyuser"), WithPassword("thisismypassword"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,8 +53,10 @@ func TestMinio(t *testing.T) {
 
 	objectName := "testdata"
 	contentType := "applcation/octet-stream"
+	content := strings.Repeat("this is some text\n", 1048576) // (16 chars) * 1MB
+	contentLength := int64(len(content))
 
-	uploadInfo, err := minioClient.PutObject(ctx, bucketName, objectName, bytest.NewReader(bytest.MB*16), (bytest.MB * 16), minio.PutObjectOptions{ContentType: contentType})
+	uploadInfo, err := minioClient.PutObject(ctx, bucketName, objectName, strings.NewReader(content), contentLength, minio.PutObjectOptions{ContentType: contentType})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +73,7 @@ func TestMinio(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if n != bytest.MB*16 {
-		t.Fatalf("expected %d; got %d", bytest.MB*16, n)
+	if n != contentLength {
+		t.Fatalf("expected %d; got %d", contentLength, n)
 	}
 }
