@@ -3,9 +3,12 @@ package redpanda
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	_ "embed"
 	"fmt"
 	"math"
+	"net/http"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -193,6 +196,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
 	}
 
+	scheme := "http"
+	if settings.EnableTLS {
+		scheme += "s"
+	}
+
 	// 9. Create Redpanda Service Accounts if configured to do so.
 	if len(settings.ServiceAccounts) > 0 {
 		adminAPIPort, err := container.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
@@ -200,19 +208,33 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			return nil, fmt.Errorf("failed to get mapped Admin API port: %w", err)
 		}
 
-		adminAPIUrl := fmt.Sprintf("http://%v:%d", hostIP, adminAPIPort.Int())
+		adminAPIUrl := fmt.Sprintf("%s://%v:%d", scheme, hostIP, adminAPIPort.Int())
 		adminCl := NewAdminAPIClient(adminAPIUrl)
+		if settings.EnableTLS {
+			cert, err := tls.X509KeyPair(settings.cert, settings.key)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create admin client with cert: %w", err)
+			}
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(settings.cert)
+			adminCl = adminCl.WithHTTPClient(&http.Client{
+				Timeout: 5 * time.Second,
+				Transport: &http.Transport{
+					ForceAttemptHTTP2:   true,
+					TLSHandshakeTimeout: 10 * time.Second,
+					TLSClientConfig: &tls.Config{
+						Certificates: []tls.Certificate{cert},
+						RootCAs:      caCertPool,
+					},
+				},
+			})
+		}
 
 		for username, password := range settings.ServiceAccounts {
 			if err := adminCl.CreateUser(ctx, username, password); err != nil {
 				return nil, fmt.Errorf("failed to create service account with username %q: %w", username, err)
 			}
 		}
-	}
-
-	scheme := "http"
-	if settings.EnableTLS {
-		scheme += "s"
 	}
 
 	return &Container{Container: container, urlScheme: scheme}, nil
