@@ -53,7 +53,7 @@ func TestOverrideContainerRequest(t *testing.T) {
 
 	// toBeMergedRequest should not be changed
 	assert.Equal(t, "", toBeMergedRequest.Env["BAR"])
-	assert.Equal(t, 1, len(toBeMergedRequest.ExposedPorts))
+	assert.Len(t, toBeMergedRequest.ExposedPorts, 1)
 	assert.Equal(t, "67890/tcp", toBeMergedRequest.ExposedPorts[0])
 
 	// req should be merged with toBeMergedRequest
@@ -80,8 +80,8 @@ func TestWithStartupCommand(t *testing.T) {
 
 	testcontainers.WithStartupCommand(testExec)(&req)
 
-	assert.Equal(t, 1, len(req.LifecycleHooks))
-	assert.Equal(t, 1, len(req.LifecycleHooks[0].PostStarts))
+	assert.Len(t, req.LifecycleHooks, 1)
+	assert.Len(t, req.LifecycleHooks[0].PostStarts, 1)
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
 	require.NoError(t, err)

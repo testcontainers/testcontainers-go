@@ -42,7 +42,7 @@ func TestConfigureDockerHost(t *testing.T) {
 			req.Env[tt.envVar] = "foo"
 
 			reason, err := configureDockerHost(req, tt.envVar)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, "explicitly as environment variable", reason)
 		})
 
@@ -57,19 +57,19 @@ func TestConfigureDockerHost(t *testing.T) {
 			}
 
 			reason, err := configureDockerHost(req, tt.envVar)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, "to match last network alias on container with non-default network", reason)
 			assert.Equal(t, "foo3", req.Env[tt.envVar])
 		})
 
 		t.Run("HOSTNAME_EXTERNAL matches the daemon host because there are no aliases", func(t *testing.T) {
 			dockerProvider, err := testcontainers.NewDockerProvider()
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			defer dockerProvider.Close()
 
 			// because the daemon host could be a remote one, we need to get it from the provider
 			expectedDaemonHost, err := dockerProvider.DaemonHost(context.Background())
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			req := generateContainerRequest()
 
@@ -77,7 +77,7 @@ func TestConfigureDockerHost(t *testing.T) {
 			req.NetworkAliases = map[string][]string{}
 
 			reason, err := configureDockerHost(req, tt.envVar)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, "to match host-routable address for container", reason)
 			assert.Equal(t, expectedDaemonHost, req.Env[tt.envVar])
 		})
@@ -124,11 +124,11 @@ func TestRunContainer(t *testing.T) {
 		)
 
 		t.Run("Localstack:"+tt.version+" - multiple services exposed on same port", func(t *testing.T) {
-			require.Nil(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, container)
 
 			rawPorts, err := container.Ports(ctx)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			ports := 0
 			// only one port is exposed among all the ports in the container
@@ -147,7 +147,7 @@ func TestStartWithoutOverride(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := RunContainer(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, container)
 }
 
@@ -156,7 +156,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 
 	// withCustomContainerRequest {
 	nw, err := network.New(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	localstack, err := RunContainer(
 		ctx,
@@ -169,7 +169,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 		}),
 	)
 	// }
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, localstack)
 
 	networkName := nw.Name
@@ -201,6 +201,6 @@ func TestStartV2WithNetwork(t *testing.T) {
 		},
 		Started: true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cli)
 }

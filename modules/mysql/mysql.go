@@ -18,7 +18,7 @@ const (
 )
 
 // defaultImage {
-const defaultImage = "mysql:8"
+const defaultImage = "mysql:8.0.36"
 
 // }
 

@@ -96,10 +96,10 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("XDG_RUNTIME_DIR", tmpDir)
 		err := createTmpDockerSocket(tmpDir)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.NotEmpty(t, socketPath)
 	})
 
@@ -114,11 +114,11 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 
 		runDir := filepath.Join(tmpDir, ".docker", "run")
 		err := createTmpDockerSocket(runDir)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		t.Setenv("HOME", tmpDir)
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, DockerSocketSchema+runDir+"/docker.sock", socketPath)
 	})
 
@@ -133,11 +133,11 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 
 		desktopDir := filepath.Join(tmpDir, ".docker", "desktop")
 		err := createTmpDockerSocket(desktopDir)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		t.Setenv("HOME", tmpDir)
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, DockerSocketSchema+desktopDir+"/docker.sock", socketPath)
 	})
 
@@ -151,7 +151,7 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 
 		homeDir := filepath.Join(tmpDir, "home")
 		err := createTmpDir(homeDir)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		t.Setenv("HOME", homeDir)
 
 		baseRunDir = tmpDir
@@ -163,10 +163,10 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 		uid := os.Getuid()
 		runDir := filepath.Join(tmpDir, "user", fmt.Sprintf("%d", uid))
 		err = createTmpDockerSocket(runDir)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, DockerSocketSchema+runDir+"/docker.sock", socketPath)
 	})
 
@@ -178,14 +178,14 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 		setupRootlessNotFound(t)
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
-		assert.ErrorIs(t, err, ErrRootlessDockerNotFound)
+		require.ErrorIs(t, err, ErrRootlessDockerNotFound)
 		assert.Empty(t, socketPath)
 
 		// the wrapped error includes all the locations that were checked
-		assert.ErrorContains(t, err, ErrRootlessDockerNotFoundXDGRuntimeDir.Error())
-		assert.ErrorContains(t, err, ErrRootlessDockerNotFoundHomeRunDir.Error())
-		assert.ErrorContains(t, err, ErrRootlessDockerNotFoundHomeDesktopDir.Error())
-		assert.ErrorContains(t, err, ErrRootlessDockerNotFoundRunDir.Error())
+		require.ErrorContains(t, err, ErrRootlessDockerNotFoundXDGRuntimeDir.Error())
+		require.ErrorContains(t, err, ErrRootlessDockerNotFoundHomeRunDir.Error())
+		require.ErrorContains(t, err, ErrRootlessDockerNotFoundHomeDesktopDir.Error())
+		require.ErrorContains(t, err, ErrRootlessDockerNotFoundRunDir.Error())
 	})
 }
 
@@ -199,21 +199,21 @@ func setupRootlessNotFound(t *testing.T) {
 
 	xdgRuntimeDir := filepath.Join(tmpDir, "xdg-runtime-dir")
 	err := createTmpDir(xdgRuntimeDir)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	t.Setenv("XDG_RUNTIME_DIR", xdgRuntimeDir)
 
 	homeDir := filepath.Join(tmpDir, "home")
 	err = createTmpDir(homeDir)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	t.Setenv("HOME", homeDir)
 
 	homeRunDir := filepath.Join(homeDir, ".docker", "run")
 	err = createTmpDir(homeRunDir)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	baseRunDir = tmpDir
 	uid := os.Getuid()
 	runDir := filepath.Join(tmpDir, "run", "user", fmt.Sprintf("%d", uid))
 	err = createTmpDir(runDir)
-	require.Nil(t, err)
+	require.NoError(t, err)
 }

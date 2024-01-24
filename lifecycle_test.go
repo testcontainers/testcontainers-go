@@ -23,7 +23,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 	ctx := context.Background()
 
 	provider, err := NewDockerProvider()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer provider.Close()
 
 	t.Run("No exposed ports", func(t *testing.T) {
@@ -71,7 +71,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// assertions
 
@@ -151,7 +151,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// assertions
 
@@ -192,7 +192,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// assertions
 
@@ -209,7 +209,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		net, err := provider.CreateNetwork(ctx, NetworkRequest{
 			Name: networkName,
 		})
-		require.Nil(t, err)
+		require.NoError(t, err)
 		defer func() {
 			err := net.Remove(ctx)
 			if err != nil {
@@ -220,7 +220,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		dockerNetwork, err := provider.GetNetwork(ctx, NetworkRequest{
 			Name: networkName,
 		})
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		req := ContainerRequest{
 			Image:    nginxAlpineImage, // alpine image does expose port 80
@@ -238,7 +238,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// assertions
 
@@ -261,7 +261,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		net, err := provider.CreateNetwork(ctx, NetworkRequest{
 			Name: networkName,
 		})
-		require.Nil(t, err)
+		require.NoError(t, err)
 		defer func() {
 			err := net.Remove(ctx)
 			if err != nil {
@@ -272,7 +272,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		dockerNetwork, err := provider.GetNetwork(ctx, NetworkRequest{
 			Name: networkName,
 		})
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		req := ContainerRequest{
 			Image:    nginxAlpineImage, // alpine image does expose port 80
@@ -287,7 +287,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// assertions
 
@@ -328,11 +328,11 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// assertions
-		assert.Equal(t, inputHostConfig.PortBindings["80/tcp"][0].HostIP, "localhost")
-		assert.Equal(t, inputHostConfig.PortBindings["80/tcp"][0].HostPort, "8080")
+		assert.Equal(t, "localhost", inputHostConfig.PortBindings["80/tcp"][0].HostIP)
+		assert.Equal(t, "8080", inputHostConfig.PortBindings["80/tcp"][0].HostPort)
 	})
 }
 
@@ -553,18 +553,18 @@ func TestLifecycleHooks(t *testing.T) {
 				Reuse:            tt.reuse,
 				Started:          true,
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, c)
 
 			duration := 1 * time.Second
 			err = c.Stop(ctx, &duration)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			err = c.Start(ctx)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			err = c.Terminate(ctx)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			lifecycleHooksIsHonouredFn(t, ctx, prints)
 		})
@@ -600,18 +600,18 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, c)
 
 	duration := 1 * time.Second
 	err = c.Stop(ctx, &duration)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = c.Start(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = c.Terminate(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	require.Equal(t, 12, len(dl.data))
 }
@@ -766,18 +766,18 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, c)
 
 	duration := 1 * time.Second
 	err = c.Stop(ctx, &duration)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = c.Start(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = c.Terminate(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	require.Equal(t, 24, len(dl.data))
 }

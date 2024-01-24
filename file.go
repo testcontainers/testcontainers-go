@@ -117,7 +117,7 @@ func tarFile(fileContent []byte, basePath string, fileMode int64) (*bytes.Buffer
 	tw := tar.NewWriter(zr)
 
 	hdr := &tar.Header{
-		Name: filepath.Base(basePath),
+		Name: basePath,
 		Mode: fileMode,
 		Size: int64(len(fileContent)),
 	}

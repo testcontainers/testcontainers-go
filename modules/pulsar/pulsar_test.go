@@ -101,10 +101,10 @@ func TestPulsar(t *testing.T) {
 				ctx,
 				tt.opts...,
 			)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			defer func() {
 				err := c.Terminate(ctx)
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}()
 
 			// withLogConsumers {
@@ -120,12 +120,12 @@ func TestPulsar(t *testing.T) {
 			// getBrokerURL {
 			brokerURL, err := c.BrokerURL(ctx)
 			// }
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			// getAdminURL {
 			serviceURL, err := c.HTTPServiceURL(ctx)
 			// }
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			assert.True(t, strings.HasPrefix(brokerURL, "pulsar://"))
 			assert.True(t, strings.HasPrefix(serviceURL, "http://"))
@@ -135,7 +135,7 @@ func TestPulsar(t *testing.T) {
 				OperationTimeout:  30 * time.Second,
 				ConnectionTimeout: 30 * time.Second,
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 			t.Cleanup(func() { pc.Close() })
 
 			subscriptionName := "pulsar-test"
@@ -145,7 +145,7 @@ func TestPulsar(t *testing.T) {
 				SubscriptionName: subscriptionName,
 				Type:             pulsar.Exclusive,
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 			t.Cleanup(func() { consumer.Close() })
 
 			msgChan := make(chan []byte)
@@ -166,12 +166,12 @@ func TestPulsar(t *testing.T) {
 			producer, err := pc.CreateProducer(pulsar.ProducerOptions{
 				Topic: "test-topic",
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			_, err = producer.Send(ctx, &pulsar.ProducerMessage{
 				Payload: []byte("hello world"),
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			ticker := time.NewTicker(1 * time.Minute)
 			select {
@@ -189,15 +189,15 @@ func TestPulsar(t *testing.T) {
 			}
 
 			resp, err := httpClient.Get(serviceURL + "/admin/v2/persistent/public/default/test-topic/stats")
-			require.Nil(t, err)
+			require.NoError(t, err)
 			defer resp.Body.Close()
 
 			body, err := io.ReadAll(resp.Body)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			var stats map[string]interface{}
 			err = json.Unmarshal(body, &stats)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			subscriptions := stats["subscriptions"]
 			require.NotNil(t, subscriptions)

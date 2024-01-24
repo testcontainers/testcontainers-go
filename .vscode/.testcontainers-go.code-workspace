@@ -70,6 +70,10 @@
             "path": "../modules/mariadb"
         },
         {
+            "name": "module / mockserver",
+            "path": "../modules/mockserver"
+        },
+        {
             "name": "module / mongodb",
             "path": "../modules/mongodb"
         },

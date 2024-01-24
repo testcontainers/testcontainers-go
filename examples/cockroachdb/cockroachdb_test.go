@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Task represents a unit of work to complete. We're going to be using this in
@@ -16,12 +17,12 @@ import (
 type task struct {
 	ID          string     `json:"id"`
 	Description string     `json:"description"`
-	DateDue     *time.Time `json:"date_due,string"`
-	DateCreated time.Time  `json:"date_created,string"`
+	DateDue     *time.Time `json:"date_due"`
+	DateCreated time.Time  `json:"date_created"`
 	DateUpdated time.Time  `json:"date_updated"`
 }
 
-func initCockroachDB(ctx context.Context, db sql.DB) error {
+func initCockroachDB(ctx context.Context, db *sql.DB) error {
 	// Actual SQL for initializing the database should probably live elsewhere
 	const query = `CREATE DATABASE projectmanagement;
 		CREATE TABLE projectmanagement.task(
@@ -31,11 +32,10 @@ func initCockroachDB(ctx context.Context, db sql.DB) error {
 			date_created timestamp with time zone not null,
 			date_updated timestamp with time zone not null);`
 	_, err := db.ExecContext(ctx, query)
-
 	return err
 }
 
-func truncateCockroachDB(ctx context.Context, db sql.DB) error {
+func truncateCockroachDB(ctx context.Context, db *sql.DB) error {
 	const query = `TRUNCATE projectmanagement.task`
 	_, err := db.ExecContext(ctx, query)
 	return err
@@ -49,9 +49,7 @@ func TestIntegrationDBInsertSelect(t *testing.T) {
 	ctx := context.Background()
 
 	cdbContainer, err := startContainer(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := cdbContainer.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
@@ -59,16 +57,13 @@ func TestIntegrationDBInsertSelect(t *testing.T) {
 	})
 
 	db, err := sql.Open("pgx", cdbContainer.URI+"/projectmanagement")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
-	err = initCockroachDB(ctx, *db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer truncateCockroachDB(ctx, *db)
+	require.NoError(t, initCockroachDB(ctx, db))
+	defer func(t *testing.T, ctx context.Context, db *sql.DB) {
+		require.NoError(t, truncateCockroachDB(ctx, db))
+	}(t, ctx, db)
 
 	now := time.Now()
 
@@ -84,9 +79,7 @@ func TestIntegrationDBInsertSelect(t *testing.T) {
 		tsk.DateDue,
 		tsk.DateCreated,
 		tsk.DateUpdated)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// Select data
 	savedTsk := task{ID: tsk.ID}
@@ -95,10 +88,7 @@ func TestIntegrationDBInsertSelect(t *testing.T) {
 		where id = $1`
 	row := db.QueryRowContext(ctx, findQuery, tsk.ID)
 	err = row.Scan(&savedTsk.Description, &savedTsk.DateDue, &savedTsk.DateCreated, &savedTsk.DateUpdated)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	require.NoError(t, err)
 	assert.Equal(t, tsk.ID, savedTsk.ID)
 	assert.Equal(t, tsk.Description, savedTsk.Description)
 	assert.Equal(t, tsk.DateDue, savedTsk.DateDue)
