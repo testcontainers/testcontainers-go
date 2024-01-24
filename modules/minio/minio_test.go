@@ -30,7 +30,9 @@ func TestMinio(t *testing.T) {
 	})
 
 	// perform assertions
+	// connectionString {
 	url, err := container.ConnectionString(ctx)
+	// }
 	if err != nil {
 		t.Fatal(err)
 	}
