@@ -26,9 +26,6 @@ type MinioContainer struct {
 // It will create the specified user. It must not be empty or undefined.
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
-		if username == "" {
-			username = defaultUser
-		}
 		req.Env["MINIO_ROOT_USER"] = username
 	}
 }
@@ -38,9 +35,6 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 // This environment variable sets the root user password for Minio.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
-		if password == "" {
-			password = defaultPassword
-		}
 		req.Env["MINIO_ROOT_PASSWORD"] = password
 	}
 }
