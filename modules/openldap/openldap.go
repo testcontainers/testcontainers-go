@@ -2,7 +2,9 @@ package openldap
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -19,8 +21,12 @@ const (
 // OpenLDAPContainer represents the OpenLDAP container type used in the module
 type OpenLDAPContainer struct {
 	testcontainers.Container
+	adminUsername string
+	adminPassword string
+	rootDn        string
 }
 
+// ConnectionString returns the connection string for the OpenLDAP container
 func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "1389/tcp")
 	if err != nil {
@@ -34,6 +40,23 @@ func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, args ...string
 
 	connStr := fmt.Sprintf("ldap://%s", net.JoinHostPort(host, containerPort.Port()))
 	return connStr, nil
+}
+
+// LoadLdif loads an ldif file into the OpenLDAP container
+func (c *OpenLDAPContainer) LoadLdif(ctx context.Context, ldif []byte) error {
+	err := c.CopyToContainer(ctx, ldif, "/tmp/ldif.ldif", 0o755)
+	if err != nil {
+		return err
+	}
+	code, output, err := c.Exec(ctx, []string{"ldapadd", "-H", "ldap://localhost:1389", "-x", "-D", fmt.Sprintf("cn=%s,%s", c.adminUsername, c.rootDn), "-w", c.adminPassword, "-f", "/tmp/ldif.ldif"})
+	if err != nil {
+		return err
+	}
+	if code != 0 {
+		data, _ := io.ReadAll(output)
+		return errors.New(string(data))
+	}
+	return nil
 }
 
 // WithAdminUsername sets the initial admin username to be created when the container starts
@@ -91,5 +114,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	return &OpenLDAPContainer{Container: container}, nil
+	return &OpenLDAPContainer{
+		Container:     container,
+		adminUsername: req.Env["LDAP_ADMIN_USERNAME"],
+		adminPassword: req.Env["LDAP_ADMIN_PASSWORD"],
+		rootDn:        req.Env["LDAP_ROOT"],
+	}, nil
 }

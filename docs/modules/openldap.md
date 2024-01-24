@@ -45,3 +45,20 @@ for OpenLDAP. E.g. `testcontainers.WithImage("bitnami/openldap:2.6.6")`.
 ### Container Methods
 
 The OpenLDAP container exposes the following methods:
+
+#### ConnectionString
+
+This method returns the connection string to connect to the OpenLDAP container, using the `1389` port.
+
+<!--codeinclude-->
+[Get connection string](../../modules/openldap/openldap_test.go) inside_block:connectionString
+<!--/codeinclude-->
+
+#### LoadLdif
+
+This method loads an ldif file in the OpenLDAP server.
+It returns and error if there is any problem with the ldif file loading process.
+
+<!--codeinclude-->
+[Load ldif](../../modules/openldap/openldap_test.go) inside_block:loadLdif
+<!--/codeinclude-->
