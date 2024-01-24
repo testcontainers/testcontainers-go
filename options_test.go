@@ -98,7 +98,7 @@ func TestWithLogConsumers(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	assert.Empty(t, lc.msgs)
+	assert.Greater(t, len(lc.msgs), 0)
 }
 
 func TestWithStartupCommand(t *testing.T) {
