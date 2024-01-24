@@ -42,6 +42,10 @@ for Minio. E.g. `testcontainers.WithImage("minio/minio:RELEASE.2024-01-16T16-07-
 
 {% include "../features/common_functional_options.md" %}
 
+#### Initial Minio
+
+If you need to set different credentials, you can use the `WithUsername(user string)` and `WithPassword(pwd string)` options.
+
 ### Container Methods
 
 The Minio container exposes the following methods:
