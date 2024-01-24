@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -136,9 +137,9 @@ func TestDockerComposeStrategyForInvalidService(t *testing.T) {
 		// Appending with _1 as given in the Java Test-Containers Example
 		WithExposedService(compose.Format("mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Invoke()
-	assert.NotEqual(t, err.Error, nil, "Expected error to be thrown because service with wait strategy is not running")
+	require.Error(t, err.Error, "Expected error to be thrown because service with wait strategy is not running")
 
-	assert.Equal(t, 1, len(compose.Services))
+	assert.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "nginx")
 }
 
@@ -161,7 +162,7 @@ func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Equal(t, 2, len(compose.Services))
+	assert.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "nginx")
 	assert.Contains(t, compose.Services, "mysql")
 }
@@ -187,7 +188,7 @@ func TestDockerComposeWithWaitForService(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Equal(t, 1, len(compose.Services))
+	assert.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "nginx")
 }
 
@@ -211,7 +212,7 @@ func TestDockerComposeWithWaitForShortLifespanService(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Equal(t, 2, len(compose.Services))
+	assert.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "falafel")
 	assert.Contains(t, compose.Services, "tzatziki")
 }
@@ -237,7 +238,7 @@ func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Equal(t, 1, len(compose.Services))
+	assert.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "nginx")
 }
 
@@ -262,7 +263,7 @@ func TestDockerComposeWithContainerName(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Equal(t, 1, len(compose.Services))
+	assert.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "nginx")
 }
 
@@ -284,7 +285,7 @@ func TestDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Equal(t, 1, len(compose.Services))
+	assert.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "nginx")
 }
 
@@ -307,7 +308,7 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Equal(t, 2, len(compose.Services))
+	assert.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "nginx")
 	assert.Contains(t, compose.Services, "mysql")
 }
@@ -333,9 +334,9 @@ func TestDockerComposeWithFailedStrategy(t *testing.T) {
 		Invoke()
 	// Verify that an error is thrown and not nil
 	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
-	assert.NotEqual(t, err.Error, nil, "Expected error to be thrown because of a wrong suplied wait strategy")
+	require.Error(t, err.Error, "Expected error to be thrown because of a wrong suplied wait strategy")
 
-	assert.Equal(t, 1, len(compose.Services))
+	assert.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "nginx")
 }
 
@@ -356,7 +357,7 @@ func TestLocalDockerComposeComplex(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Equal(t, 2, len(compose.Services))
+	assert.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "nginx")
 	assert.Contains(t, compose.Services, "mysql")
 }
@@ -381,7 +382,7 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Equal(t, 1, len(compose.Services))
+	assert.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "nginx")
 
 	present := map[string]string{
@@ -416,7 +417,7 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Equal(t, 3, len(compose.Services))
+	assert.Len(t, compose.Services, 3)
 	assert.Contains(t, compose.Services, "nginx")
 	assert.Contains(t, compose.Services, "mysql")
 	assert.Contains(t, compose.Services, "postgres")
@@ -479,7 +480,7 @@ func assertContainerEnvironmentVariables(
 		tb.Fatalf("Failed to get provider: %v", err)
 	}
 
-	containers, err := containerClient.ContainerList(context.Background(), types.ContainerListOptions{})
+	containers, err := containerClient.ContainerList(context.Background(), container.ListOptions{})
 	if err != nil {
 		tb.Fatalf("Failed to list containers: %v", err)
 	} else if len(containers) == 0 {
