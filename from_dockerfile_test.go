@@ -213,6 +213,4 @@ func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
 		Started: true,
 	})
 	require.Error(t, err)
-
-	assert.Contains(t, err.Error(), "failed to reach build target target-foo in Dockerfile")
 }

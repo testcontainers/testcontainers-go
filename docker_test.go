@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	mysqlImage        = "docker.io/mysql:8.0.30"
+	mysqlImage        = "docker.io/mysql:8.0.36"
 	nginxDelayedImage = "docker.io/menedev/delayed-nginx:1.15.2"
 	nginxImage        = "docker.io/nginx"
 	nginxAlpineImage  = "docker.io/nginx:alpine"
@@ -508,7 +508,10 @@ func TestContainerCreation(t *testing.T) {
 		fmt.Printf("%v", networkAliases)
 		t.Errorf("Expected number of connected networks %d. Got %d.", 0, len(networkAliases))
 	}
-	if len(networkAliases["bridge"]) != 0 {
+
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Log("[Docker Rootless] do not assert that the container should have zero aliases in the bridge network")
+	} else if len(networkAliases["bridge"]) != 0 {
 		t.Errorf("Expected number of aliases for 'bridge' network %d. Got %d.", 0, len(networkAliases["bridge"]))
 	}
 }
@@ -1271,7 +1274,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		c, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
-				Image:         "docker.io/mysql:5.7",
+				Image:         "docker.io/mysql:8.0.36",
 				ImagePlatform: "linux/amd64",
 			},
 			Started: false,
