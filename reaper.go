@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/errdefs"
@@ -96,7 +95,7 @@ func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContai
 			filters.Arg("name", reaperContainerNameFromSessionID(sessionID)),
 		}
 
-		resp, err := dockerClient.ContainerList(ctx, types.ContainerListOptions{
+		resp, err := dockerClient.ContainerList(ctx, container.ListOptions{
 			All:     true,
 			Filters: filters.NewArgs(args...),
 		})
