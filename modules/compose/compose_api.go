@@ -7,11 +7,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/compose-spec/compose-go/cli"
-	"github.com/compose-spec/compose-go/types"
+	"github.com/compose-spec/compose-go/v2/cli"
+	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/compose/v2/pkg/api"
-	types2 "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"golang.org/x/sync/errgroup"
@@ -180,9 +180,11 @@ func (d *dockerCompose) Down(ctx context.Context, opts ...StackDownOption) error
 	return d.composeService.Down(ctx, d.name, options.DownOptions)
 }
 
-func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err error) {
+func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
+
+	var err error
 
 	d.project, err = d.compileProject()
 	if err != nil {
@@ -203,11 +205,11 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 	if len(upOptions.Services) != len(d.project.Services) {
 		sort.Strings(upOptions.Services)
 
-		filteredServices := make(types.Services, 0, len(d.project.Services))
+		filteredServices := types.Services{}
 
-		for i := range d.project.Services {
-			if idx := sort.SearchStrings(upOptions.Services, d.project.Services[i].Name); idx < len(upOptions.Services) && upOptions.Services[idx] == d.project.Services[i].Name {
-				filteredServices = append(filteredServices, d.project.Services[i])
+		for _, srv := range upOptions.Services {
+			if srvConfig, ok := d.project.Services[srv]; ok {
+				filteredServices[srv] = srvConfig
 			}
 		}
 
@@ -288,7 +290,7 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 		return container, nil
 	}
 
-	listOptions := types2.ContainerListOptions{
+	listOptions := container.ListOptions{
 		All: true,
 		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),

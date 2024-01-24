@@ -193,7 +193,7 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 		return err
 	}
 
-	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
+	if err := c.provider.client.ContainerStart(ctx, c.ID, container.StartOptions{}); err != nil {
 		return err
 	}
 	defer c.provider.Close()
@@ -263,7 +263,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		return err
 	}
 
-	err = c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
+	err = c.provider.client.ContainerRemove(ctx, c.GetContainerID(), container.RemoveOptions{
 		RemoveVolumes: true,
 		Force:         true,
 	})
@@ -318,7 +318,7 @@ func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.Containe
 func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	const streamHeaderSize = 8
 
-	options := types.ContainerLogsOptions{
+	options := container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	}
@@ -681,7 +681,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProdu
 		since := ""
 		// if the socket is closed we will make additional logs request with updated Since timestamp
 	BEGIN:
-		options := types.ContainerLogsOptions{
+		options := container.LogsOptions{
 			ShowStdout: true,
 			ShowStderr: true,
 			Follow:     true,
@@ -1162,7 +1162,7 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 
 	// Note that, 'name' filter will use regex to find the containers
 	filter := filters.NewArgs(filters.Arg("name", fmt.Sprintf("^%s$", name)))
-	containers, err := p.client.ContainerList(ctx, types.ContainerListOptions{Filters: filter})
+	containers, err := p.client.ContainerList(ctx, container.ListOptions{Filters: filter})
 	if err != nil {
 		return nil, err
 	}
