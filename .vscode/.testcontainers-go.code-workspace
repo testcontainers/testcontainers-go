@@ -14,10 +14,6 @@
             "path": "../examples/consul"
         },
         {
-            "name": "example / minio",
-            "path": "../examples/minio"
-        },
-        {
             "name": "example / nginx",
             "path": "../examples/nginx"
         },
