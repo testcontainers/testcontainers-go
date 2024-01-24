@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/minio
 
-go 1.21.3
+go 1.21
 
 toolchain go1.21.6
 
