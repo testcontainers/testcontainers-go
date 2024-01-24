@@ -111,8 +111,8 @@ func TestWithAfterReadyCommand(t *testing.T) {
 
 	testcontainers.WithAfterReadyCommand(testExec)(&req)
 
-	assert.Equal(t, 1, len(req.LifecycleHooks))
-	assert.Equal(t, 1, len(req.LifecycleHooks[0].PostReadies))
+	assert.Len(t, req.LifecycleHooks, 1)
+	assert.Len(t, req.LifecycleHooks[0].PostReadies, 1)
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
 	require.NoError(t, err)

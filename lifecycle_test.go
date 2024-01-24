@@ -613,7 +613,7 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 	err = c.Terminate(ctx)
 	require.NoError(t, err)
 
-	require.Equal(t, 12, len(dl.data))
+	require.Len(t, dl.data, 12)
 }
 
 func TestCombineLifecycleHooks(t *testing.T) {
@@ -661,26 +661,26 @@ func TestCombineLifecycleHooks(t *testing.T) {
 
 	req := ContainerRequest{}
 	err := hooks.Creating(context.Background())(req)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	c := &DockerContainer{}
 
 	err = hooks.Created(context.Background())(c)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = hooks.Starting(context.Background())(c)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = hooks.Started(context.Background())(c)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = hooks.Readied(context.Background())(c)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = hooks.Stopping(context.Background())(c)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = hooks.Stopped(context.Background())(c)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = hooks.Terminating(context.Background())(c)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = hooks.Terminated(context.Background())(c)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// assertions
 
@@ -690,7 +690,7 @@ func TestCombineLifecycleHooks(t *testing.T) {
 
 	// There are 5 lifecycles (create, start, ready, stop, terminate),
 	// but ready has only half of the hooks (it only has post), so we have 90 hooks in total.
-	assert.Equal(t, 90, len(prints))
+	assert.Len(t, prints, 90)
 
 	// The order of the hooks is:
 	// - pre-X hooks: first default (2*2), then user-defined (3*2)
@@ -779,7 +779,7 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 	err = c.Terminate(ctx)
 	require.NoError(t, err)
 
-	require.Equal(t, 24, len(dl.data))
+	require.Len(t, dl.data, 24)
 }
 
 type linesTestLogger struct {
@@ -847,7 +847,7 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 }
 
 func lifecycleHooksIsHonouredFn(t *testing.T, ctx context.Context, prints []string) {
-	require.Equal(t, 24, len(prints))
+	require.Len(t, prints, 24)
 
 	assert.True(t, strings.HasPrefix(prints[0], "pre-create hook 1: "))
 	assert.True(t, strings.HasPrefix(prints[1], "pre-create hook 2: "))
