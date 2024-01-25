@@ -24,7 +24,7 @@ func TestInbucket(t *testing.T) {
 		}
 	})
 
-	// smtp {
+	// smtpConnection {
 	smtpUrl, err := container.Smtp(ctx)
 	// }
 	if err != nil {

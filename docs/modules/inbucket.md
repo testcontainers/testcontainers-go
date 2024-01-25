@@ -51,7 +51,7 @@ The Inbucket container exposes the following methods:
 This method returns the connection string to connect to the Inbucket container SMTP service, using the `2500` port.
 
 <!--codeinclude-->
-[Get smtp connection string](../../modules/inbucket/inbucket_test.go) inside_block:smtp
+[Get smtp connection string](../../modules/inbucket/inbucket_test.go) inside_block:smtpConnection
 <!--/codeinclude-->
 
 #### WebInterface
