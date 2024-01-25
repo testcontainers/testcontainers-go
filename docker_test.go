@@ -1537,7 +1537,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			})
 			terminateContainerOnEnd(t, ctx, nginxC)
 
-			require.True(t, (err != nil) == tc.hasError)
+			require.Equal(t, (err != nil), tc.hasError)
 			if err == nil {
 				dir := tc.dir
 
