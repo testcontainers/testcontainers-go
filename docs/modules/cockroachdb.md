@@ -56,7 +56,7 @@ Control the maximum amount of memory used for storage, by default this is 100% b
 
 #### TLS authentication
 
-`cockroachdb.WithTLS` lets you provde the CA certificate along with the certicate and key for the node & clients to connect with.
+`cockroachdb.WithTLS` lets you provide the CA certificate along with the certicate and key for the node & clients to connect with.
 Internally CockroachDB requires a client certificate for the user to connect with.
 
 A helper `cockroachdb.NewTLSConfig` exists to generate all of this for you.
