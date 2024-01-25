@@ -78,7 +78,17 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				defaultSQLPort,
 				defaultAdminPort,
 			},
+			LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+				{
+					PreStarts: []testcontainers.ContainerHook{
+						func(ctx context.Context, container testcontainers.Container) error {
+							return addTLS(ctx, container, o)
+						},
+					},
+				},
+			},
 		},
+		Started: true,
 	}
 
 	// apply options
@@ -89,30 +99,25 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		opt.Customize(&req)
 	}
 
-	addEnvs(&req, o)
-	if err := addCmd(&req, o); err != nil {
-		return nil, err
-	}
-	if err := addWaitingFor(&req, o); err != nil {
-		return nil, err
+	// modify request
+	for _, fn := range []modiferFunc{
+		addEnvs,
+		addCmd,
+		addWaitingFor,
+	} {
+		if err := fn(&req, o); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-
-	// copy TLS files
-	if err := addTLS(ctx, container, o); err != nil {
-		return nil, err
-	}
-
-	// start
-	if err := container.Start(ctx); err != nil {
-		return nil, err
-	}
 	return &CockroachDBContainer{Container: container, opts: o}, nil
 }
+
+type modiferFunc func(*testcontainers.GenericContainerRequest, options) error
 
 func addCmd(req *testcontainers.GenericContainerRequest, opts options) error {
 	req.Cmd = []string{
@@ -138,11 +143,10 @@ func addCmd(req *testcontainers.GenericContainerRequest, opts options) error {
 	default:
 		req.Cmd = append(req.Cmd, "--insecure")
 	}
-
 	return nil
 }
 
-func addEnvs(req *testcontainers.GenericContainerRequest, opts options) {
+func addEnvs(req *testcontainers.GenericContainerRequest, opts options) error {
 	if req.Env == nil {
 		req.Env = make(map[string]string)
 	}
@@ -150,6 +154,7 @@ func addEnvs(req *testcontainers.GenericContainerRequest, opts options) {
 	req.Env["COCKROACH_DATABASE"] = opts.Database
 	req.Env["COCKROACH_USER"] = opts.User
 	req.Env["COCKROACH_PASSWORD"] = opts.Password
+	return nil
 }
 
 func addWaitingFor(req *testcontainers.GenericContainerRequest, opts options) error {
