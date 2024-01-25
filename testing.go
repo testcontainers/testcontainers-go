@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"fmt"
 	"testing"
 )
 
@@ -38,3 +39,14 @@ func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
 		t.Skip("Skipping test that requires host network access when running in Docker Desktop")
 	}
 }
+
+// exampleLogConsumer {
+// StdoutLogConsumer is a LogConsumer that prints the log to stdout
+type StdoutLogConsumer struct{}
+
+// Accept prints the log to stdout
+func (lc *StdoutLogConsumer) Accept(l Log) {
+	fmt.Print(string(l.Content))
+}
+
+// }

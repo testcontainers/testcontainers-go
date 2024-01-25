@@ -32,7 +32,7 @@ var defaultWaitStrategies = wait.ForAll(
 
 type Container struct {
 	testcontainers.Container
-	LogConsumers []testcontainers.LogConsumer // Needs to be exported to control the stop from the caller
+	LogConsumers []testcontainers.LogConsumer // Deprecated. Use the ContainerRequest instead. Needs to be exported to control the stop from the caller
 }
 
 func (c *Container) BrokerURL(ctx context.Context) (string, error) {
@@ -84,6 +84,7 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use the testcontainers.WithLogConsumers functional option instead
 // WithLogConsumers allows to add log consumers to the container.
 // They will be automatically started and they will follow the container logs,
 // but it's a responsibility of the caller to stop them calling StopLogProducer
