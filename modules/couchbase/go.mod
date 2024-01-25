@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/couchbase/gocb/v2 v2.7.0
+	github.com/couchbase/gocb/v2 v2.7.1
 	github.com/docker/go-connections v0.5.0
 	github.com/testcontainers/testcontainers-go v0.27.0
 	github.com/tidwall/gjson v1.17.0
@@ -17,9 +17,9 @@ require (
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
 	github.com/containerd/containerd v1.7.11 // indirect
 	github.com/containerd/log v0.1.0 // indirect
-	github.com/couchbase/gocbcore/v10 v10.3.0 // indirect
-	github.com/couchbase/gocbcoreps v0.1.0 // indirect
-	github.com/couchbase/goprotostellar v1.0.0 // indirect
+	github.com/couchbase/gocbcore/v10 v10.3.1 // indirect
+	github.com/couchbase/gocbcoreps v0.1.1 // indirect
+	github.com/couchbase/goprotostellar v1.0.1 // indirect
 	github.com/couchbaselabs/gocbconnstr/v2 v2.0.0-20230515165046-68b522a21131 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
@@ -62,13 +62,13 @@ require (
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
 	golang.org/x/mod v0.11.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.10.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
-	google.golang.org/grpc v1.59.0 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240108191215-35c7eff3a6b1 // indirect
+	google.golang.org/grpc v1.60.1 // indirect
+	google.golang.org/protobuf v1.32.0 // indirect
 )
 
 replace github.com/testcontainers/testcontainers-go => ../..
