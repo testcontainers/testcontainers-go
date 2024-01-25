@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/system"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -276,8 +276,8 @@ type mockCli struct {
 
 // Info returns a mock implementation of types.Info, which is handy for detecting the operating system,
 // which is used to determine the default docker socket path.
-func (m mockCli) Info(ctx context.Context) (types.Info, error) {
-	return types.Info{
+func (m mockCli) Info(ctx context.Context) (system.Info, error) {
+	return system.Info{
 		OperatingSystem: m.OS,
 	}, nil
 }
