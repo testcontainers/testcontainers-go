@@ -70,6 +70,10 @@
             "path": "../modules/mariadb"
         },
         {
+            "name": "module / minio",
+            "path": "../modules/minio"
+        },
+        {
             "name": "module / mockserver",
             "path": "../modules/mockserver"
         },
