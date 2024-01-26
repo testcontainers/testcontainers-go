@@ -50,6 +50,10 @@
             "path": "../modules/gcloud"
         },
         {
+            "name": "module / inbucket",
+            "path": "../modules/inbucket"
+        },
+        {
             "name": "module / k3s",
             "path": "../modules/k3s"
         },
