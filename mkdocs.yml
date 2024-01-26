@@ -82,6 +82,7 @@ nav:
         - modules/mysql.md
         - modules/nats.md
         - modules/neo4j.md
+        - modules/openldap.md
         - modules/postgres.md
         - modules/pulsar.md
         - modules/rabbitmq.md
