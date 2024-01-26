@@ -50,6 +50,10 @@
             "path": "../modules/gcloud"
         },
         {
+            "name": "module / inbucket",
+            "path": "../modules/inbucket"
+        },
+        {
             "name": "module / k3s",
             "path": "../modules/k3s"
         },
@@ -96,6 +100,10 @@
         {
             "name": "module / neo4j",
             "path": "../modules/neo4j"
+        },
+        {
+            "name": "module / openldap",
+            "path": "../modules/openldap"
         },
         {
             "name": "module / postgres",
