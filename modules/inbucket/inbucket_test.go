@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/inbucket/inbucket/pkg/rest/client"
+
 	"github.com/testcontainers/testcontainers-go"
 )
 
