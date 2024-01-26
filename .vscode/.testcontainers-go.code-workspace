@@ -102,6 +102,10 @@
             "path": "../modules/neo4j"
         },
         {
+            "name": "module / openldap",
+            "path": "../modules/openldap"
+        },
+        {
             "name": "module / postgres",
             "path": "../modules/postgres"
         },
