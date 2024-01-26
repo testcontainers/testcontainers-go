@@ -44,7 +44,7 @@ func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, args ...string
 
 // LoadLdif loads an ldif file into the OpenLDAP container
 func (c *OpenLDAPContainer) LoadLdif(ctx context.Context, ldif []byte) error {
-	err := c.CopyToContainer(ctx, ldif, "/tmp/ldif.ldif", 0o755)
+	err := c.CopyToContainer(ctx, ldif, "/tmp/ldif.ldif", 0o644)
 	if err != nil {
 		return err
 	}
@@ -81,6 +81,36 @@ func WithAdminPassword(password string) testcontainers.CustomizeRequestOption {
 func WithRoot(root string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		req.Env["LDAP_ROOT"] = root
+	}
+}
+
+// WithInitialLdif sets the initial ldif file to be loaded into the OpenLDAP container
+func WithInitialLdif(ldif string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      ldif,
+			ContainerFilePath: "/initial_ldif.ldif",
+			FileMode:          0o644,
+		})
+
+		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
+			PostStarts: []testcontainers.ContainerHook{
+				func(ctx context.Context, container testcontainers.Container) error {
+					username := req.Env["LDAP_ADMIN_USERNAME"]
+					rootDn := req.Env["LDAP_ROOT"]
+					password := req.Env["LDAP_ADMIN_PASSWORD"]
+					code, output, err := container.Exec(ctx, []string{"ldapadd", "-H", "ldap://localhost:1389", "-x", "-D", fmt.Sprintf("cn=%s,%s", username, rootDn), "-w", password, "-f", "/initial_ldif.ldif"})
+					if err != nil {
+						return err
+					}
+					if code != 0 {
+						data, _ := io.ReadAll(output)
+						return errors.New(string(data))
+					}
+					return nil
+				},
+			},
+		})
 	}
 }
 

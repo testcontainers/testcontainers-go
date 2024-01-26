@@ -62,3 +62,8 @@ It returns and error if there is any problem with the ldif file loading process.
 <!--codeinclude-->
 [Load ldif](../../modules/openldap/openldap_test.go) inside_block:loadLdif
 <!--/codeinclude-->
+
+#### Initial Ldif
+
+If you would like to load an ldif at the initialization of the openldap container, you can use `WithInititialLdif` function.
+The file will be copied after the container is started and loaded in openldap.
