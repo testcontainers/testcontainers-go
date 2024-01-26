@@ -76,6 +76,7 @@ func WithAttachable() CustomizeNetworkOption {
 // WithCheckDuplicate allows to check if a network with the same name already exists.
 func WithCheckDuplicate() CustomizeNetworkOption {
 	return func(original *types.NetworkCreate) {
+		//nolint:staticcheck
 		original.CheckDuplicate = true
 	}
 }
