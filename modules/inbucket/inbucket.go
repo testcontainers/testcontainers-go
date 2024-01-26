@@ -14,9 +14,9 @@ type InbucketContainer struct {
 	testcontainers.Container
 }
 
-// Smtp returns the connection string for the smtp server, using the default
+// SmtpConnection returns the connection string for the smtp server, using the default
 // 2500 port, and obtaining the host and exposed port from the container.
-func (c *InbucketContainer) Smtp(ctx context.Context) (string, error) {
+func (c *InbucketContainer) SmtpConnection(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "2500/tcp")
 	if err != nil {
 		return "", err

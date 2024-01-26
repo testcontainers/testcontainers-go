@@ -25,7 +25,7 @@ func TestInbucket(t *testing.T) {
 	})
 
 	// smtpConnection {
-	smtpUrl, err := container.Smtp(ctx)
+	smtpUrl, err := container.SmtpConnection(ctx)
 	// }
 	if err != nil {
 		t.Fatal(err)
@@ -52,9 +52,9 @@ func TestInbucket(t *testing.T) {
 	}
 
 	msg := []byte("To: to@example.org\r\n" +
-		"Subject: testcontainers test!\r\n" +
+		"Subject: Testcontainers test!\r\n" +
 		"\r\n" +
-		"This is a testcontainer test.\r\n")
+		"This is a Testcontainers test.\r\n")
 	if err = smtp.SendMail(smtpUrl, nil, "from@example.org", []string{"to@example.org"}, msg); err != nil {
 		t.Fatal(err)
 	}

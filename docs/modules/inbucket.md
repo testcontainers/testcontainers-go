@@ -46,7 +46,7 @@ for Inbucket. E.g. `testcontainers.WithImage("inbucket/inbucket:sha-2d409bb")`.
 
 The Inbucket container exposes the following methods:
 
-#### Smtp
+#### SmtpConnection
 
 This method returns the connection string to connect to the Inbucket container SMTP service, using the `2500` port.
 
