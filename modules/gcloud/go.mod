@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/bigtable v1.21.0
 	cloud.google.com/go/datastore v1.15.0
 	cloud.google.com/go/firestore v1.14.0
-	cloud.google.com/go/pubsub v1.33.0
+	cloud.google.com/go/pubsub v1.35.0
 	cloud.google.com/go/spanner v1.55.0
 	github.com/docker/go-connections v0.5.0
 	github.com/testcontainers/testcontainers-go v0.27.0
@@ -16,7 +16,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.111.0 // indirect
+	cloud.google.com/go v0.112.0 // indirect
 	cloud.google.com/go/compute v1.23.3 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.5 // indirect
@@ -100,8 +100,8 @@ require (
 	golang.org/x/tools v0.10.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto v0.0.0-20240102182953-50ed04b92917 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240102182953-50ed04b92917 // indirect
+	google.golang.org/genproto v0.0.0-20240116215550-a9fa1716bcac // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240122161410-6c6643bf1457 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240116215550-a9fa1716bcac // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 )
