@@ -81,6 +81,8 @@ Clusterized ClickHouse requires to start Zookeeper and pass link to it via `conf
 [Include zookeeper](../../modules/clickhouse/clickhouse_test.go) inside_block:withZookeeper
 <!--/codeinclude-->
 
+!!!warning
+    The `WithZookeeper` option will `panic` if it's not possible to create the Zookeeper config file.
 
 #### Custom configuration
 
