@@ -31,7 +31,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 - `context.Context`, the Go context.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-
+When TLS is enabled there's a very small, unlikely chance that the underlying driver can panic when registering the driver as part of waiting for CockroachDB to be ready to accept connections. If this is repeatadly happening please open an issue.
 
 ### Container Options
 
