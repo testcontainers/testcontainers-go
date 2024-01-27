@@ -64,7 +64,7 @@ func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, er
 }
 
 // TLSConfig returns config necessary to connect to CockroachDB over TLS.
-func (c *CockroachDBContainer) ConnectionTLS() (*tls.Config, error) {
+func (c *CockroachDBContainer) TLSConfig() (*tls.Config, error) {
 	return connTLS(c.opts)
 }
 

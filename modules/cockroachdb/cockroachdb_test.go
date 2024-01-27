@@ -150,7 +150,7 @@ func conn(ctx context.Context, container *cockroachdb.CockroachDBContainer) (*pg
 		return nil, err
 	}
 
-	tlsCfg, err := container.ConnectionTLS()
+	tlsCfg, err := container.TLSConfig()
 	switch {
 	case err != nil:
 		if !errors.Is(err, cockroachdb.ErrTLSNotEnabled) {

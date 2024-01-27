@@ -31,6 +31,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 - `context.Context`, the Go context.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
+
+
 ### Container Options
 
 When starting the CockroachDB container, you can pass options in a variadic way to configure it.
@@ -73,6 +75,6 @@ Dial address to open a new connection.
 
 Same as `ConnectionString` but any error to generate the address will raise a panic
 
-#### ConnectionTLS
+#### TLSConfig
 
 Returns `*tls.Config` setup to allow you to dial your client over TLS, if enabled, else this will error with `cockroachdb.ErrTLSNotEnabled`.
