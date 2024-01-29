@@ -34,13 +34,8 @@ type DoltContainer struct {
 func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		username := req.Env["DOLT_USER"]
-		password := req.Env["DOLT_PASSWORD"]
 		if strings.EqualFold(rootUser, username) {
 			delete(req.Env, "DOLT_USER")
-		}
-		if len(password) != 0 && password != "" {
-			req.Env["DOLT_ROOT_PASSWORD"] = password
-		} else if strings.EqualFold(rootUser, username) {
 			delete(req.Env, "DOLT_PASSWORD")
 		}
 	}
@@ -222,8 +217,11 @@ func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 		var initScripts []testcontainers.ContainerFile
 		for _, script := range scripts {
 			cf := testcontainers.ContainerFile{
-				HostFilePath:      script,
-				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
+				HostFilePath: script,
+				// dolthub/dolt-sql-server will run init scripts located in /docker-entrypoint-initdb.d/
+				// before any database or user is created. to avoid this, we mount init scripts in a different
+				// location
+				ContainerFilePath: "/etc/dolt/scripts/initdb.d/" + filepath.Base(script),
 				FileMode:          0o755,
 			}
 			initScripts = append(initScripts, cf)

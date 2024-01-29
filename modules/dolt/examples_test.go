@@ -4,23 +4,23 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/testcontainers/testcontainers-go/modules/dolt"
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/mysql"
 )
 
 func ExampleRunContainer() {
-	// runMySQLContainer {
+	// runDoltContainer {
 	ctx := context.Background()
 
-	mysqlContainer, err := mysql.RunContainer(ctx,
-		testcontainers.WithImage("mysql:8.0.36"),
-		mysql.WithConfigFile(filepath.Join("testdata", "my_8.cnf")),
-		mysql.WithDatabase("foo"),
-		mysql.WithUsername("root"),
-		mysql.WithPassword("password"),
-		mysql.WithScripts(filepath.Join("testdata", "schema.sql")),
+	doltContainer, err := dolt.RunContainer(ctx,
+		testcontainers.WithImage("dolthub/dolt-sql-server:1.32.4"),
+		dolt.WithConfigFile(filepath.Join("testdata", "dolt.cnf")),
+		dolt.WithDatabase("foo"),
+		dolt.WithUsername("root"),
+		dolt.WithPassword("password"),
+		dolt.WithScripts(filepath.Join("testdata", "schema.sql")),
 	)
 	if err != nil {
 		panic(err)
@@ -28,13 +28,13 @@ func ExampleRunContainer() {
 
 	// Clean up the container
 	defer func() {
-		if err := mysqlContainer.Terminate(ctx); err != nil {
+		if err := doltContainer.Terminate(ctx); err != nil {
 			panic(err)
 		}
 	}()
 	// }
 
-	state, err := mysqlContainer.State(ctx)
+	state, err := doltContainer.State(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -48,25 +48,25 @@ func ExampleRunContainer() {
 func ExampleRunContainer_connect() {
 	ctx := context.Background()
 
-	mysqlContainer, err := mysql.RunContainer(ctx,
-		testcontainers.WithImage("mysql:8.0.36"),
-		mysql.WithConfigFile(filepath.Join("testdata", "my_8.cnf")),
-		mysql.WithDatabase("foo"),
-		mysql.WithUsername("root"),
-		mysql.WithPassword("password"),
-		mysql.WithScripts(filepath.Join("testdata", "schema.sql")),
+	doltContainer, err := dolt.RunContainer(ctx,
+		testcontainers.WithImage("dolthub/dolt-sql-server:1.32.4"),
+		dolt.WithConfigFile(filepath.Join("testdata", "dolt.cnf")),
+		dolt.WithDatabase("foo"),
+		dolt.WithUsername("bar"),
+		dolt.WithPassword("password"),
+		dolt.WithScripts(filepath.Join("testdata", "schema.sql")),
 	)
 	if err != nil {
 		panic(err)
 	}
 
 	defer func() {
-		if err := mysqlContainer.Terminate(ctx); err != nil {
+		if err := doltContainer.Terminate(ctx); err != nil {
 			panic(err)
 		}
 	}()
 
-	connectionString, _ := mysqlContainer.ConnectionString(ctx)
+	connectionString, _ := doltContainer.ConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -77,20 +77,20 @@ func ExampleRunContainer_connect() {
 	if err = db.Ping(); err != nil {
 		panic(err)
 	}
-	stmt, err := db.Prepare("SELECT @@GLOBAL.tmpdir")
+	stmt, err := db.Prepare("SELECT dolt_version();")
 	if err != nil {
 		panic(err)
 	}
 	defer stmt.Close()
 	row := stmt.QueryRow()
-	tmpDir := ""
-	err = row.Scan(&tmpDir)
+	version := ""
+	err = row.Scan(&version)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(tmpDir)
+	fmt.Println(version)
 
 	// Output:
-	// /tmp
+	// 1.32.4
 }
