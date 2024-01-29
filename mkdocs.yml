@@ -66,6 +66,7 @@ nav:
         - modules/artemis.md
         - modules/cassandra.md
         - modules/clickhouse.md
+        - modules/cockroachdb.md
         - modules/couchbase.md
         - modules/elasticsearch.md
         - modules/gcloud.md
@@ -91,7 +92,6 @@ nav:
         - modules/vault.md
     - Examples:
         - examples/index.md
-        - examples/cockroachdb.md
         - examples/consul.md
         - examples/nginx.md
         - examples/toxiproxy.md
