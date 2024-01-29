@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"path/filepath"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -111,14 +111,14 @@ func (c *DoltContainer) initialize(ctx context.Context, createUser bool) (err er
 	}()
 
 	if err = db.Ping(); err != nil {
-		err = fmt.Errorf("error pinging db: %+v\n", err)
+		err = fmt.Errorf("error pinging db: %w\n", err)
 		return
 	}
 
 	// create database
 	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s;", c.database))
 	if err != nil {
-		err = fmt.Errorf("error creating database %s: %+v\n", c.database, err)
+		err = fmt.Errorf("error creating database %s: %w\n", c.database, err)
 		return
 	}
 
@@ -126,7 +126,7 @@ func (c *DoltContainer) initialize(ctx context.Context, createUser bool) (err er
 		// create user
 		_, err = db.Exec(fmt.Sprintf("CREATE USER IF NOT EXISTS '%s' IDENTIFIED BY '%s';", c.username, c.password))
 		if err != nil {
-			err = fmt.Errorf("error creating user %s: %+v\n", c.username, err)
+			err = fmt.Errorf("error creating user %s: %w\n", c.username, err)
 			return
 		}
 
@@ -134,7 +134,7 @@ func (c *DoltContainer) initialize(ctx context.Context, createUser bool) (err er
 		// grant user privileges
 		_, err = db.Exec(q)
 		if err != nil {
-			err = fmt.Errorf("error creating user %s: %+v\n", c.username, err)
+			err = fmt.Errorf("error creating user %s: %w\n", c.username, err)
 			return
 		}
 	}

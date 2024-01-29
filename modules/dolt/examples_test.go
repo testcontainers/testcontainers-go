@@ -4,10 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dolt"
 	"path/filepath"
-
-	"github.com/testcontainers/testcontainers-go"
 )
 
 func ExampleRunContainer() {
