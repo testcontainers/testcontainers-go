@@ -3,7 +3,6 @@ package dolt_test
 import (
 	"context"
 	"database/sql"
-	"github.com/testcontainers/testcontainers-go/modules/mysql"
 	"path/filepath"
 	"testing"
 
@@ -58,10 +57,10 @@ func TestDolt(t *testing.T) {
 func TestDoltWithNonRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := mysql.RunContainer(ctx,
-		mysql.WithDatabase("foo"),
-		mysql.WithUsername("test"),
-		mysql.WithPassword(""))
+	_, err := dolt.RunContainer(ctx,
+		dolt.WithDatabase("foo"),
+		dolt.WithUsername("test"),
+		dolt.WithPassword(""))
 	if err.Error() != "empty password can be used only with the root user" {
 		t.Fatal(err)
 	}
@@ -70,10 +69,10 @@ func TestDoltWithNonRootUserAndEmptyPassword(t *testing.T) {
 func TestDoltWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mysql.RunContainer(ctx,
-		mysql.WithDatabase("foo"),
-		mysql.WithUsername("root"),
-		mysql.WithPassword(""))
+	container, err := dolt.RunContainer(ctx,
+		dolt.WithDatabase("foo"),
+		dolt.WithUsername("root"),
+		dolt.WithPassword(""))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,8 +109,8 @@ func TestDoltWithRootUserAndEmptyPassword(t *testing.T) {
 func TestDoltWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mysql.RunContainer(ctx,
-		mysql.WithScripts(filepath.Join("testdata", "schema.sql")))
+	container, err := dolt.RunContainer(ctx,
+		dolt.WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -94,6 +94,13 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /modules/dolt
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /modules/elasticsearch
       schedule:
         interval: monthly

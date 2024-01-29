@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"path/filepath"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -18,10 +18,7 @@ const (
 	defaultDatabaseName = "test"
 )
 
-// defaultImage {
-const defaultImage = "dolthub/dolt-sql-server:latest"
-
-// }
+const defaultImage = "dolthub/dolt-sql-server:1.32.4"
 
 // DoltContainer represents the Dolt container type used in the module
 type DoltContainer struct {
@@ -119,7 +116,7 @@ func (c *DoltContainer) initialize(ctx context.Context, createUser bool) (err er
 	}
 
 	// create database
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s;", c.database))
+	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s;", c.database))
 	if err != nil {
 		err = fmt.Errorf("error creating database %s: %+v\n", c.database, err)
 		return
@@ -127,7 +124,7 @@ func (c *DoltContainer) initialize(ctx context.Context, createUser bool) (err er
 
 	if createUser {
 		// create user
-		_, err = db.Exec(fmt.Sprintf("CREATE USER '%s' IDENTIFIED BY '%s';", c.username, c.password))
+		_, err = db.Exec(fmt.Sprintf("CREATE USER IF NOT EXISTS '%s' IDENTIFIED BY '%s';", c.username, c.password))
 		if err != nil {
 			err = fmt.Errorf("error creating user %s: %+v\n", c.username, err)
 			return
@@ -205,7 +202,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
-			ContainerFilePath: "/etc/dolt/servercfg.d/my.cnf",
+			ContainerFilePath: "/etc/dolt/servercfg.d/server.cnf",
 			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
@@ -217,11 +214,8 @@ func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 		var initScripts []testcontainers.ContainerFile
 		for _, script := range scripts {
 			cf := testcontainers.ContainerFile{
-				HostFilePath: script,
-				// dolthub/dolt-sql-server will run init scripts located in /docker-entrypoint-initdb.d/
-				// before any database or user is created. to avoid this, we mount init scripts in a different
-				// location
-				ContainerFilePath: "/etc/dolt/scripts/initdb.d/" + filepath.Base(script),
+				HostFilePath:      script,
+				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
 				FileMode:          0o755,
 			}
 			initScripts = append(initScripts, cf)

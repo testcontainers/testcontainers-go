@@ -2,12 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/dolt
 
 go 1.20
 
-require (
-	github.com/go-sql-driver/mysql v1.7.1
-	github.com/testcontainers/testcontainers-go v0.27.0
-	github.com/testcontainers/testcontainers-go/modules/mysql v0.27.0
-
-)
+require github.com/testcontainers/testcontainers-go v0.27.0
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -26,6 +21,7 @@ require (
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect

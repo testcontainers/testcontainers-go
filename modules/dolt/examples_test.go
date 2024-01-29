@@ -16,7 +16,7 @@ func ExampleRunContainer() {
 
 	doltContainer, err := dolt.RunContainer(ctx,
 		testcontainers.WithImage("dolthub/dolt-sql-server:1.32.4"),
-		dolt.WithConfigFile(filepath.Join("testdata", "dolt.cnf")),
+		dolt.WithConfigFile(filepath.Join("testdata", "dolt_1_32_4.cnf")),
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("root"),
 		dolt.WithPassword("password"),
@@ -50,7 +50,7 @@ func ExampleRunContainer_connect() {
 
 	doltContainer, err := dolt.RunContainer(ctx,
 		testcontainers.WithImage("dolthub/dolt-sql-server:1.32.4"),
-		dolt.WithConfigFile(filepath.Join("testdata", "dolt.cnf")),
+		dolt.WithConfigFile(filepath.Join("testdata", "dolt_1_32_4.cnf")),
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("bar"),
 		dolt.WithPassword("password"),
