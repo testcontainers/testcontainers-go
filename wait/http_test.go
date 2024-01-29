@@ -115,6 +115,15 @@ func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
 		}
 	}()
 
+	state, err := c.State(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 func ExampleHTTPStrategy_WithBasicAuth() {
