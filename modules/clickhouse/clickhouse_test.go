@@ -257,12 +257,12 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		assert.NoError(t, container.Terminate(ctx))
-		assert.NoError(t, zkcontainer.Terminate(ctx))
+		require.NoError(t, container.Terminate(ctx))
+		require.NoError(t, zkcontainer.Terminate(ctx))
 	})
 
 	connectionHost, err := container.ConnectionHost(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	conn, err := ch.Open(&ch.Options{
 		Addr: []string{connectionHost},
@@ -272,13 +272,13 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 			Password: password, // --> password is not required
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, conn)
 	defer conn.Close()
 
 	// perform assertions
 	data, err := performReplicatedCRUD(conn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, data, 1)
 }
 
