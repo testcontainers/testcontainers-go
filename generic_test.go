@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -95,4 +96,24 @@ func TestGenericReusableContainer(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
+	// In this test, we are going to cancel the context to exit the `wait.Strategy`.
+	// We want to make sure that the GenericContainer call will still return a reference to the
+	// created container, so that we can Destroy it.
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image:      nginxAlpineImage,
+			WaitingFor: wait.ForLog("this string should not be present in the logs"),
+		},
+		Started: true,
+	})
+	require.Error(t, err)
+	require.NotNil(t, c)
+	terminateContainerOnEnd(t, context.Background(), c)
 }

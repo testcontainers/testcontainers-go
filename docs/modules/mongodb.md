@@ -42,7 +42,7 @@ for MongoDB. E.g. `testcontainers.WithImage("mongo:6")`.
 
 #### WithUsername
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
 This functional option sets the initial username to be created when the container starts.
 It is used in conjunction with `WithPassword` to set a username and its password, creating the specified user with superuser power.
@@ -51,7 +51,7 @@ E.g. `testcontainers.WithUsername("mymongouser")`.
 
 #### WithPassword
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
 This functional option sets the initial password to be created when the container starts.
 It is used in conjunction with `WithUsername` to set a username and its password, setting the password for the superuser power.

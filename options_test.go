@@ -5,8 +5,6 @@ import (
 	"io"
 	"testing"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/filters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -55,7 +53,7 @@ func TestOverrideContainerRequest(t *testing.T) {
 
 	// toBeMergedRequest should not be changed
 	assert.Equal(t, "", toBeMergedRequest.Env["BAR"])
-	assert.Equal(t, 1, len(toBeMergedRequest.ExposedPorts))
+	assert.Len(t, toBeMergedRequest.ExposedPorts, 1)
 	assert.Equal(t, "67890/tcp", toBeMergedRequest.ExposedPorts[0])
 
 	// req should be merged with toBeMergedRequest
@@ -69,55 +67,38 @@ func TestOverrideContainerRequest(t *testing.T) {
 	assert.Equal(t, wait.ForLog("foo"), req.WaitingFor)
 }
 
-func TestWithNetwork(t *testing.T) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{},
-	}
-
-	testcontainers.WithNetwork("new-network", "alias")(&req)
-
-	assert.Equal(t, []string{"new-network"}, req.Networks)
-	assert.Equal(t, map[string][]string{"new-network": {"alias"}}, req.NetworkAliases)
-
-	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
-	require.NoError(t, err)
-
-	args := filters.NewArgs()
-	args.Add("name", "new-network")
-
-	resources, err := client.NetworkList(context.Background(), types.NetworkListOptions{
-		Filters: args,
-	})
-	require.NoError(t, err)
-	assert.Len(t, resources, 1)
-
-	assert.Equal(t, "new-network", resources[0].Name)
+type msgsLogConsumer struct {
+	msgs []string
 }
 
-func TestWithNetworkMultipleCallsWithSameNameReuseTheNetwork(t *testing.T) {
-	for int := 0; int < 100; int++ {
-		req := testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{},
-		}
+// Accept prints the log to stdout
+func (lc *msgsLogConsumer) Accept(l testcontainers.Log) {
+	lc.msgs = append(lc.msgs, string(l.Content))
+}
 
-		testcontainers.WithNetwork("new-network", "alias")(&req)
-		assert.Equal(t, []string{"new-network"}, req.Networks)
-		assert.Equal(t, map[string][]string{"new-network": {"alias"}}, req.NetworkAliases)
+func TestWithLogConsumers(t *testing.T) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:      "mysql:8.0.36",
+			WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
+		},
+		Started: true,
 	}
 
-	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
-	require.NoError(t, err)
+	lc := &msgsLogConsumer{}
 
-	args := filters.NewArgs()
-	args.Add("name", "new-network")
+	testcontainers.WithLogConsumers(lc)(&req)
 
-	resources, err := client.NetworkList(context.Background(), types.NetworkListOptions{
-		Filters: args,
-	})
-	require.NoError(t, err)
-	assert.Len(t, resources, 1)
+	c, err := testcontainers.GenericContainer(context.Background(), req)
+	// we expect an error because the MySQL environment variables are not set
+	// but this is expected because we just want to test the log consumer
+	require.Error(t, err)
+	defer func() {
+		err = c.Terminate(context.Background())
+		require.NoError(t, err)
+	}()
 
-	assert.Equal(t, "new-network", resources[0].Name)
+	assert.NotEmpty(t, lc.msgs)
 }
 
 func TestWithStartupCommand(t *testing.T) {
@@ -133,8 +114,8 @@ func TestWithStartupCommand(t *testing.T) {
 
 	testcontainers.WithStartupCommand(testExec)(&req)
 
-	assert.Equal(t, 1, len(req.LifecycleHooks))
-	assert.Equal(t, 1, len(req.LifecycleHooks[0].PostStarts))
+	assert.Len(t, req.LifecycleHooks, 1)
+	assert.Len(t, req.LifecycleHooks[0].PostStarts, 1)
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
 	require.NoError(t, err)

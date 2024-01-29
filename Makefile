@@ -1,7 +1,7 @@
 include ./commons-test.mk
 
 .PHONY: test-all
-test-all: tools test-unit
+test-all: tools test-tools test-unit
 
 .PHONY: test-examples
 test-examples:

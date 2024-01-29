@@ -6,6 +6,7 @@ linters:
     - gofumpt
     - misspell
     - nonamedreturns
+    - testifylint
 
 linters-settings:
   errorlint:
@@ -23,5 +24,20 @@ linters-settings:
       - standard
       - default
       - prefix(github.com/testcontainers)
+  testifylint:
+    disable:
+      - float-compare
+      - go-require
+    enable:
+      - bool-compare
+      - compares
+      - empty
+      - error-is-as
+      - error-nil
+      - expected-actual
+      - len
+      - require-error
+      - suite-dont-use-pkg
+      - suite-extra-assert-call
 run:
   timeout: 5m

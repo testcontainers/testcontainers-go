@@ -20,7 +20,7 @@ import (
 	"github.com/moby/patternmatcher/ignorefile"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -43,17 +43,17 @@ type Container interface {
 	Ports(context.Context) (nat.PortMap, error)                     // get all exposed ports
 	SessionID() string                                              // get session id
 	IsRunning() bool
-	Start(context.Context) error                 // start the container
-	Stop(context.Context, *time.Duration) error  // stop the container
-	Terminate(context.Context) error             // terminate the container
-	Logs(context.Context) (io.ReadCloser, error) // Get logs of the container
-	FollowOutput(LogConsumer)
-	StartLogProducer(context.Context) error
-	StopLogProducer() error
-	Name(context.Context) (string, error)                        // get container name
-	State(context.Context) (*types.ContainerState, error)        // returns container's running state
-	Networks(context.Context) ([]string, error)                  // get container networks
-	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
+	Start(context.Context) error                                    // start the container
+	Stop(context.Context, *time.Duration) error                     // stop the container
+	Terminate(context.Context) error                                // terminate the container
+	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
+	FollowOutput(LogConsumer)                                       // Deprecated: it will be removed in the next major release
+	StartLogProducer(context.Context, ...LogProductionOption) error // Deprecated: Use the ContainerRequest instead
+	StopLogProducer() error                                         // Deprecated: it will be removed in the next major release
+	Name(context.Context) (string, error)                           // get container name
+	State(context.Context) (*types.ContainerState, error)           // returns container's running state
+	Networks(context.Context) ([]string, error)                     // get container networks
+	NetworkAliases(context.Context) (map[string][]string, error)    // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error)
 	ContainerIP(context.Context) (string, error)    // get container ip
 	ContainerIPs(context.Context) ([]string, error) // get all container IPs
@@ -61,6 +61,7 @@ type Container interface {
 	CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
 	CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error)
+	GetLogProductionErrorChannel() <-chan error
 }
 
 // ImageBuildInfo defines what is needed to build an image
@@ -142,6 +143,7 @@ type ContainerRequest struct {
 	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 	LifecycleHooks          []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
+	LogConsumerCfg          *LogConsumerConfig                         // define the configuration for the log producer and its log consumers to follow the logs
 }
 
 // containerOptions functional options for a container
@@ -272,7 +274,7 @@ func (c *ContainerRequest) GetAuthConfigs() map[string]registry.AuthConfig {
 
 // getAuthConfigsFromDockerfile returns the auth configs to be able to pull from an authenticated docker registry
 func getAuthConfigsFromDockerfile(c *ContainerRequest) map[string]registry.AuthConfig {
-	images, err := testcontainersdocker.ExtractImagesFromDockerfile(filepath.Join(c.Context, c.GetDockerfile()), c.GetBuildArgs())
+	images, err := core.ExtractImagesFromDockerfile(filepath.Join(c.Context, c.GetDockerfile()), c.GetBuildArgs())
 	if err != nil {
 		return map[string]registry.AuthConfig{}
 	}

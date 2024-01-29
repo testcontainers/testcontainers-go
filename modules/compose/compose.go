@@ -6,9 +6,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 
-	"github.com/compose-spec/compose-go/types"
+	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
 	"github.com/docker/compose/v2/pkg/api"
@@ -24,10 +23,7 @@ const (
 	envComposeFile = "COMPOSE_FILE"
 )
 
-var (
-	composeLogOnce       sync.Once
-	ErrNoStackConfigured = errors.New("no stack files configured")
-)
+var ErrNoStackConfigured = errors.New("no stack files configured")
 
 type composeStackOptions struct {
 	Identifier string
@@ -77,9 +73,9 @@ type ComposeStack interface {
 	ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error)
 }
 
-// DockerCompose defines the contract for running Docker Compose
 // Deprecated: DockerCompose is the old shell escape based API
 // use ComposeStack instead
+// DockerCompose defines the contract for running Docker Compose
 type DockerCompose interface {
 	Down() ExecError
 	Invoke() ExecError
@@ -138,6 +134,9 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 	return composeAPI, nil
 }
 
+// Deprecated: NewLocalDockerCompose returns a DockerCompose compatible instance which is superseded
+// by ComposeStack use NewDockerCompose instead to get a ComposeStack compatible instance
+//
 // NewLocalDockerCompose returns an instance of the local Docker Compose, using an
 // array of Docker Compose file paths and an identifier for the Compose execution.
 //
@@ -145,9 +144,6 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 // Docker Compose execution. The identifier represents the name of the execution,
 // which will define the name of the underlying Docker network and the name of the
 // running Compose services.
-//
-// Deprecated: NewLocalDockerCompose returns a DockerCompose compatible instance which is superseded
-// by ComposeStack use NewDockerCompose instead to get a ComposeStack compatible instance
 func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
 	dc := &LocalDockerCompose{
 		LocalDockerComposeOptions: &LocalDockerComposeOptions{

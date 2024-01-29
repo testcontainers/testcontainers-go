@@ -15,6 +15,24 @@ _Testcontainers for Go_ exposes an interface to perform this operations: `ImageS
 
 Using the `WithImageSubstitutors` options, you could define your own substitutions to the container images. E.g. adding a prefix to the images so that they can be pulled from a Docker registry other than Docker Hub. This is the usual mechanism for using Docker image proxies, caches, etc.
 
+#### WithLogConsumers
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to consume the logs of the container, you can use `testcontainers.WithLogConsumers` with a valid log consumer. An example of a log consumer is the following:
+
+```golang
+type TestLogConsumer struct {
+	Msgs []string
+}
+
+func (g *TestLogConsumer) Accept(l Log) {
+	g.Msgs = append(g.Msgs, string(l.Content))
+}
+```
+
+Please read the [Following Container Logs](/features/follow_logs) documentation for more information about creating log consumers.
+
 #### Wait Strategies
 
 If you need to set a different wait strategy for the container, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy.
@@ -42,11 +60,22 @@ You could use this feature to run a custom script, or to run a command that is n
 
 #### WithNetwork
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
-By default, the container is started in the default Docker network. If you want to use a different Docker network, you can use the `WithNetwork(networkName string, alias string)` option, which receives the new network name and an alias as parameters, creating the new network, attaching the container to it, and setting the network alias for that network.
+By default, the container is started in the default Docker network. If you want to use an already existing Docker network you created in your code, you can use the `network.WithNetwork(aliases []string, nw *testcontainers.DockerNetwork)` option, which receives an alias as parameter and your network, attaching the container to it, and setting the network alias for that network.
 
-If the network already exists, _Testcontainers for Go_ won't create a new one, but it will attach the container to it and set the network alias.
+In the case you need to retrieve the network name, you can simply read it from the struct's `Name` field. E.g. `nw.Name`.
+
+!!!warning
+    This option is not checking whether the network exists or not. If you use a network that doesn't exist, the container will start in the default Docker network, as in the default behavior.
+
+#### WithNewNetwork
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
+
+If you want to attach your containers to a throw-away network, you can use the `network.WithNewNetwork(ctx context.Context, aliases []string, opts ...network.NetworkCustomizer)` option, which receives an alias as parameter, creating the new network with a random name, attaching the container to it, and setting the network alias for that network.
+
+In the case you need to retrieve the network name, you can use the `Networks(ctx)` method of the `Container` interface, right after it's running, which returns a slice of strings with the names of the networks where the container is attached.
 
 #### Docker type modifiers
 

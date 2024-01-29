@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
 func TestImageList(t *testing.T) {
-	t.Setenv("DOCKER_HOST", testcontainersdocker.ExtractDockerHost(context.Background()))
+	t.Setenv("DOCKER_HOST", core.ExtractDockerHost(context.Background()))
 
 	provider, err := ProviderDocker.GetProvider()
 	if err != nil {
@@ -54,7 +54,7 @@ func TestImageList(t *testing.T) {
 }
 
 func TestSaveImages(t *testing.T) {
-	t.Setenv("DOCKER_HOST", testcontainersdocker.ExtractDockerHost(context.Background()))
+	t.Setenv("DOCKER_HOST", core.ExtractDockerHost(context.Background()))
 
 	provider, err := ProviderDocker.GetProvider()
 	if err != nil {

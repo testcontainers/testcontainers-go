@@ -19,7 +19,7 @@ func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.Container
 		Started: true,
 	}
 
-	settings := applyOptions(req, opts)
+	settings := applyOptions(&req, opts)
 
 	req.Cmd = []string{
 		"/bin/sh",

@@ -7,15 +7,46 @@ import (
 	"strings"
 	"testing"
 
+	amqp "github.com/rabbitmq/amqp091-go"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/rabbitmq"
 )
+
+func TestRunContainer_connectUsingAmqp(t *testing.T) {
+	ctx := context.Background()
+
+	rabbitmqContainer, err := rabbitmq.RunContainer(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		if err := rabbitmqContainer.Terminate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	amqpURL, err := rabbitmqContainer.AmqpURL(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	amqpConnection, err := amqp.Dial(amqpURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = amqpConnection.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestRunContainer_withAllSettings(t *testing.T) {
 	ctx := context.Background()
 
 	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
-		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
+		testcontainers.WithImage("rabbitmq:3.12.11-management-alpine"),
 		// addVirtualHosts {
 		testcontainers.WithStartupCommand(VirtualHost{Name: "vhost1"}),
 		testcontainers.WithStartupCommand(VirtualHostLimit{VHost: "vhost1", Name: "max-connections", Value: 1}),

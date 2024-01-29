@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
 var (
@@ -24,12 +23,14 @@ type GenericContainerRequest struct {
 	Reuse            bool         // reuse an existing container if it exists or create a new one. a container name mustn't be empty
 }
 
+// Deprecated: will be removed in the future.
 // GenericNetworkRequest represents parameters to a generic network
 type GenericNetworkRequest struct {
 	NetworkRequest              // embedded request for provider
 	ProviderType   ProviderType // which provider to use, Docker if empty
 }
 
+// Deprecated: use network.New instead
 // GenericNetwork creates a generic network with parameters
 func GenericNetwork(ctx context.Context, req GenericNetworkRequest) (Network, error) {
 	provider, err := req.ProviderType.GetProvider()
@@ -72,7 +73,8 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 		c, err = provider.CreateContainer(ctx, req.ContainerRequest)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("%w: failed to create container", err)
+		// At this point `c` might not be nil. Give the caller an opportunity to call Destroy on the container.
+		return c, fmt.Errorf("%w: failed to create container", err)
 	}
 
 	if req.Started && !c.IsRunning() {
@@ -92,5 +94,5 @@ type GenericProvider interface {
 
 // GenericLabels returns a map of labels that can be used to identify containers created by this library
 func GenericLabels() map[string]string {
-	return testcontainersdocker.DefaultLabels(testcontainerssession.SessionID())
+	return core.DefaultLabels(core.SessionID())
 }

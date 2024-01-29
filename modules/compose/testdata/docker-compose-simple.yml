@@ -4,5 +4,6 @@ services:
     image: docker.io/nginx:stable-alpine
     environment:
       bar: ${bar}
+      foo: ${foo}
     ports:
      - "9080:80"
