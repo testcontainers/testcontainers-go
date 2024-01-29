@@ -24,13 +24,6 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
-      directory: /examples/cockroachdb
-      schedule:
-        interval: monthly
-        day: sunday
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
       directory: /examples/consul
       schedule:
         interval: monthly
@@ -80,6 +73,13 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /modules/cockroachdb
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /modules/compose
       schedule:
         interval: monthly
@@ -102,6 +102,13 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/gcloud
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/inbucket
       schedule:
         interval: monthly
         day: sunday
@@ -186,6 +193,13 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/neo4j
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/openldap
       schedule:
         interval: monthly
         day: sunday

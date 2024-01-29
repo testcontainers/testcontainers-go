@@ -66,9 +66,11 @@ nav:
         - modules/artemis.md
         - modules/cassandra.md
         - modules/clickhouse.md
+        - modules/cockroachdb.md
         - modules/couchbase.md
         - modules/elasticsearch.md
         - modules/gcloud.md
+        - modules/inbucket.md
         - modules/k3s.md
         - modules/k6.md
         - modules/kafka.md
@@ -81,6 +83,7 @@ nav:
         - modules/mysql.md
         - modules/nats.md
         - modules/neo4j.md
+        - modules/openldap.md
         - modules/postgres.md
         - modules/pulsar.md
         - modules/rabbitmq.md
@@ -89,7 +92,6 @@ nav:
         - modules/vault.md
     - Examples:
         - examples/index.md
-        - examples/cockroachdb.md
         - examples/consul.md
         - examples/nginx.md
         - examples/toxiproxy.md

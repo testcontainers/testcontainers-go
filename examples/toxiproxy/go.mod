@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/Shopify/toxiproxy/v2 v2.7.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/testcontainers/testcontainers-go v0.27.0
 )
 
@@ -16,7 +16,7 @@ require (
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/containerd/containerd v1.7.11 // indirect
+	github.com/containerd/containerd v1.7.12 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
