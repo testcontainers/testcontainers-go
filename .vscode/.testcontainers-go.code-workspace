@@ -6,10 +6,6 @@
             "path": "../"
         },
         {
-            "name": "example / cockroachdb",
-            "path": "../examples/cockroachdb"
-        },
-        {
             "name": "example / consul",
             "path": "../examples/consul"
         },
@@ -32,6 +28,10 @@
         {
             "name": "module / clickhouse",
             "path": "../modules/clickhouse"
+        },
+        {
+            "name": "module / cockroachdb",
+            "path": "../modules/cockroachdb"
         },
         {
             "name": "module / compose",
