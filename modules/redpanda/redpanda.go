@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"golang.org/x/mod/semver"
 	"math"
 	"os"
 	"path/filepath"
@@ -12,10 +13,7 @@ import (
 	"text/template"
 	"time"
 
-	semver "github.com/Masterminds/semver/v3"
-
 	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -92,16 +90,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		opt.Customize(&req)
 	}
 
-	ver, err := semver.NewVersion(strings.Split(req.ContainerRequest.Image, ":")[1])
-	if err != nil {
-		return nil, err
-	}
-
-	minVerForTransform, err := semver.NewVersion("v23.3")
-	if err != nil {
-		return nil, err
-	}
-	if ver.LessThan(minVerForTransform) {
+	// 2.1. If the image is not at least v23.3, disable wasm transform
+	if !isAtLeastVersion(req.ContainerRequest.Image, "23.3") {
 		settings.EnableWasmTransform = false
 	}
 
@@ -361,4 +351,24 @@ type listener struct {
 	Address              string
 	Port                 int
 	AuthenticationMethod string
+}
+
+// isAtLeastVersion returns true if the base image (without tag) is in a version or above
+func isAtLeastVersion(image, major string) bool {
+	parts := strings.Split(image, ":")
+	version := parts[len(parts)-1]
+
+	if version == "latest" {
+		return true
+	}
+
+	if !strings.HasPrefix(version, "v") {
+		version = fmt.Sprintf("v%s", version)
+	}
+
+	if semver.IsValid(version) {
+		return semver.Compare(version, fmt.Sprintf("v%s", major)) >= 0 // version >= v8.x
+	}
+
+	return false
 }
