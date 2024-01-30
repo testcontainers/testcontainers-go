@@ -66,6 +66,35 @@ func TestDoltWithNonRootUserAndEmptyPassword(t *testing.T) {
 	}
 }
 
+func TestDoltWithPublicRemoteCloneUrl(t *testing.T) {
+	ctx := context.Background()
+
+	_, err := dolt.RunContainer(ctx,
+		dolt.WithDatabase("foo"),
+		dolt.WithUsername("test"),
+		dolt.WithPassword("test"),
+		dolt.WithScripts(filepath.Join("testdata", "check_clone_public.sh")),
+		dolt.WithDoltCloneRemoteUrl("fake-remote-url"))
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDoltWithPrivateRemoteCloneUrl(t *testing.T) {
+	ctx := context.Background()
+
+	_, err := dolt.RunContainer(ctx,
+		dolt.WithDatabase("foo"),
+		dolt.WithUsername("test"),
+		dolt.WithPassword("test"),
+		dolt.WithScripts(filepath.Join("testdata", "check_clone_private.sh")),
+		dolt.WithDoltCloneRemoteUrl("fake-remote-url"),
+		dolt.WithDoltCredsPublicKey("fake-public-key"))
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDoltWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 

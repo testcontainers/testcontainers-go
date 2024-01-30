@@ -55,6 +55,12 @@ The default values for the username is `root`, for password is `test` and for th
 If you would like to perform DDL or DML operations in the Dolt container, add one or more `*.sql`, `*.sql.gz`, or `*.sh`
 scripts to the container request, using the `WithScripts(scriptPaths ...string)`. Those files will be copied under `/docker-entrypoint-initdb.d`.
 
+#### Clone from remotes
+
+If you would like to clone data from a remote into the Dolt container, add an `*.sh`
+scripts to the container request, using the `WithScripts(scriptPaths ...string)`. Additionally, use `WithDoltCloneRemoteUrl(url string)` to specify
+the remote to clone, and use `WithDoltCredsPublicKey(key string)` to authorize the Dolt container to clone from the remote.
+
 <!--codeinclude-->
 [Example of Init script](../../modules/dolt/testdata/schema.sql)
 <!--/codeinclude-->
