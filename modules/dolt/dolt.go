@@ -223,6 +223,17 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+func WithCredsFile(credsFile string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		cf := testcontainers.ContainerFile{
+			HostFilePath:      credsFile,
+			ContainerFilePath: "/root/.dolt/creds/" + filepath.Base(credsFile),
+			FileMode:          0o755,
+		}
+		req.Files = append(req.Files, cf)
+	}
+}
+
 func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		var initScripts []testcontainers.ContainerFile

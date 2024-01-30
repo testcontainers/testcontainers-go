@@ -59,7 +59,7 @@ scripts to the container request, using the `WithScripts(scriptPaths ...string)`
 
 If you would like to clone data from a remote into the Dolt container, add an `*.sh`
 scripts to the container request, using the `WithScripts(scriptPaths ...string)`. Additionally, use `WithDoltCloneRemoteUrl(url string)` to specify
-the remote to clone, and use `WithDoltCredsPublicKey(key string)` to authorize the Dolt container to clone from the remote.
+the remote to clone, and use `WithDoltCredsPublicKey(key string)` along with `WithCredsFile(credsFile string)` to authorize the Dolt container to clone from the remote.
 
 <!--codeinclude-->
 [Example of Init script](../../modules/dolt/testdata/schema.sql)

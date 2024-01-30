@@ -3,6 +3,7 @@ package dolt_test
 import (
 	"context"
 	"database/sql"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -80,16 +81,32 @@ func TestDoltWithPublicRemoteCloneUrl(t *testing.T) {
 	}
 }
 
+func createTestCredsFile(t *testing.T) string {
+	file, err := os.CreateTemp(os.TempDir(), "prefix")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	_, err = file.WriteString("some-fake-creds")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return file.Name()
+}
+
 func TestDoltWithPrivateRemoteCloneUrl(t *testing.T) {
 	ctx := context.Background()
 
+	filename := createTestCredsFile(t)
+	defer os.RemoveAll(filename)
 	_, err := dolt.RunContainer(ctx,
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("test"),
 		dolt.WithPassword("test"),
 		dolt.WithScripts(filepath.Join("testdata", "check_clone_private.sh")),
 		dolt.WithDoltCloneRemoteUrl("fake-remote-url"),
-		dolt.WithDoltCredsPublicKey("fake-public-key"))
+		dolt.WithDoltCredsPublicKey("fake-public-key"),
+		dolt.WithCredsFile(filename))
 	if err != nil {
 		t.Fatal(err)
 	}
