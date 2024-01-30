@@ -22,6 +22,9 @@ type options struct {
 	// or "http_basic" for HTTP basic authentication.
 	SchemaRegistryAuthenticationMethod string
 
+	// EnableWasmTransform is a flag to enable wasm transform.
+	EnableWasmTransform bool
+
 	// ServiceAccounts is a map of username (key) to password (value) of users
 	// that shall be created, so that you can use these to authenticate against
 	// Redpanda (either for the Kafka API or Schema Registry HTTP access).
@@ -94,6 +97,14 @@ func WithEnableSASL() Option {
 func WithEnableKafkaAuthorization() Option {
 	return func(o *options) {
 		o.KafkaEnableAuthorization = true
+	}
+}
+
+// WithEnableWasmTransform enables wasm transform.
+// Should not be used with RP versions before 23.3
+func WithEnableWasmTransform() Option {
+	return func(o *options) {
+		o.EnableWasmTransform = true
 	}
 }
 

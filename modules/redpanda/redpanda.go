@@ -8,8 +8,11 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
+
+	semver "github.com/Masterminds/semver/v3"
 
 	"github.com/docker/go-connections/nat"
 
@@ -59,7 +62,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	// Some (e.g. Image) may be overridden by providing an option argument to this function.
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.redpanda.com/redpandadata/redpanda:v23.1.7",
+			Image: "docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 			User:  "root:root",
 			// Files: Will be added later after we've rendered our YAML templates.
 			ExposedPorts: []string{
@@ -87,6 +90,19 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			apply(&settings)
 		}
 		opt.Customize(&req)
+	}
+
+	ver, err := semver.NewVersion(strings.Split(req.ContainerRequest.Image, ":")[1])
+	if err != nil {
+		return nil, err
+	}
+
+	minVerForTransform, err := semver.NewVersion("v23.3")
+	if err != nil {
+		return nil, err
+	}
+	if ver.LessThan(minVerForTransform) {
+		settings.EnableWasmTransform = false
 	}
 
 	// 3. Create temporary entrypoint file. We need a custom entrypoint that waits
@@ -245,6 +261,7 @@ func renderBootstrapConfig(settings options) ([]byte, error) {
 		Superusers:                  settings.Superusers,
 		KafkaAPIEnableAuthorization: settings.KafkaEnableAuthorization,
 		AutoCreateTopics:            settings.AutoCreateTopics,
+		EnableWasmTransform:         settings.EnableWasmTransform,
 	}
 
 	tpl, err := template.New("bootstrap.yaml").Parse(bootstrapConfigTpl)
@@ -318,6 +335,7 @@ type redpandaBootstrapConfigTplParams struct {
 	Superusers                  []string
 	KafkaAPIEnableAuthorization bool
 	AutoCreateTopics            bool
+	EnableWasmTransform         bool
 }
 
 type redpandaConfigTplParams struct {
