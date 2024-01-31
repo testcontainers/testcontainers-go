@@ -15,6 +15,24 @@ _Testcontainers for Go_ exposes an interface to perform this operations: `ImageS
 
 Using the `WithImageSubstitutors` options, you could define your own substitutions to the container images. E.g. adding a prefix to the images so that they can be pulled from a Docker registry other than Docker Hub. This is the usual mechanism for using Docker image proxies, caches, etc.
 
+#### WithLogConsumers
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to consume the logs of the container, you can use `testcontainers.WithLogConsumers` with a valid log consumer. An example of a log consumer is the following:
+
+```golang
+type TestLogConsumer struct {
+	Msgs []string
+}
+
+func (g *TestLogConsumer) Accept(l Log) {
+	g.Msgs = append(g.Msgs, string(l.Content))
+}
+```
+
+Please read the [Following Container Logs](/features/follow_logs) documentation for more information about creating log consumers.
+
 #### Wait Strategies
 
 If you need to set a different wait strategy for the container, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy.
