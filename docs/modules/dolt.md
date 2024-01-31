@@ -62,7 +62,7 @@ scripts to the container request, using the `WithScripts(scriptPaths ...string)`
 the remote to clone, and use `WithDoltCredsPublicKey(key string)` along with `WithCredsFile(credsFile string)` to authorize the Dolt container to clone from the remote.
 
 <!--codeinclude-->
-[Example of Init script](../../modules/dolt/testdata/schema.sql)
+[Example of Clone script](../../modules/dolt/testdata/clone-db.sh)
 <!--/codeinclude-->
 
 #### Custom configuration

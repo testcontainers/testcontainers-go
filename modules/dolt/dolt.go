@@ -74,8 +74,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("empty password can be used only with the root user")
 	}
 
-	req.Env["SOME_BS"] = "wtfmaaaaaan"
-
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
