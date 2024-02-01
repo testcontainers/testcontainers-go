@@ -3,6 +3,7 @@ package testcontainers
 import "github.com/docker/docker/api/types/mount"
 
 var mountTypeMapping = map[MountType]mount.Type{
+	MountTypeBind:   mount.TypeBind, // Deprecated, it will be removed in a future release
 	MountTypeVolume: mount.TypeVolume,
 	MountTypeTmpfs:  mount.TypeTmpfs,
 	MountTypePipe:   mount.TypeNamedPipe,
