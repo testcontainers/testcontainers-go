@@ -177,7 +177,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 		kafkaAdmCl := kadm.NewClient(kafkaCl)
 		_, err = kafkaAdmCl.Metadata(ctx)
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "UNSUPPORTED_SASL_MECHANISM")
+		require.ErrorContains(t, err, "UNSUPPORTED_SASL_MECHANISM")
 	}
 
 	// Test Schema Registry API
