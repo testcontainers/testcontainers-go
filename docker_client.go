@@ -8,10 +8,10 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/registry"
+	"github.com/docker/docker/api/types/system"
 	"github.com/docker/docker/client"
 
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
 // DockerClient is a wrapper around the docker client that is used by testcontainers-go.
@@ -22,7 +22,7 @@ type DockerClient struct {
 
 var (
 	// dockerInfo stores the docker info to be reused in the Info method
-	dockerInfo     types.Info
+	dockerInfo     system.Info
 	dockerInfoSet  bool
 	dockerInfoLock sync.Mutex
 )
@@ -38,7 +38,7 @@ func (c *DockerClient) Events(ctx context.Context, options types.EventsOptions) 
 // Info returns information about the docker server. The result of Info is cached
 // and reused every time Info is called.
 // It will also print out the docker server info, and the resolved Docker paths, to the default logger.
-func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
+func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
 	dockerInfoLock.Lock()
 	defer dockerInfoLock.Unlock()
 	if dockerInfoSet {
@@ -66,10 +66,10 @@ func (c *DockerClient) Info(ctx context.Context) (types.Info, error) {
 	Logger.Printf(infoMessage, packagePath,
 		dockerInfo.ServerVersion, c.Client.ClientVersion(),
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
-		testcontainersdocker.ExtractDockerHost(ctx),
-		testcontainersdocker.ExtractDockerSocket(ctx),
-		testcontainerssession.SessionID(),
-		testcontainerssession.ProcessID(),
+		core.ExtractDockerHost(ctx),
+		core.ExtractDockerSocket(ctx),
+		core.SessionID(),
+		core.ProcessID(),
 	)
 
 	return dockerInfo, nil
@@ -101,7 +101,7 @@ func NewDockerClient() (*client.Client, error) {
 }
 
 func NewDockerClientWithOpts(ctx context.Context, opt ...client.Opt) (*DockerClient, error) {
-	dockerClient, err := testcontainersdocker.NewClient(ctx, opt...)
+	dockerClient, err := core.NewClient(ctx, opt...)
 	if err != nil {
 		return nil, err
 	}

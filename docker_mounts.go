@@ -107,8 +107,10 @@ func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
 			containerMount.VolumeOptions = typedMounter.GetVolumeOptions()
 		case TmpfsMounter:
 			containerMount.TmpfsOptions = typedMounter.GetTmpfsOptions()
-		default:
+		case BindMounter:
 			Logger.Printf("Mount type %s is not supported by Testcontainers for Go", m.Source.Type())
+		default:
+			// The provided source type has no custom options
 		}
 
 		mounts = append(mounts, containerMount)

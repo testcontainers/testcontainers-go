@@ -69,13 +69,13 @@ func WithProjectID(projectID string) Option {
 }
 
 // applyOptions applies the options to the container request and returns the settings.
-func applyOptions(req testcontainers.GenericContainerRequest, opts []testcontainers.ContainerCustomizer) options {
+func applyOptions(req *testcontainers.GenericContainerRequest, opts []testcontainers.ContainerCustomizer) options {
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
 			apply(&settings)
 		}
-		opt.Customize(&req)
+		opt.Customize(req)
 	}
 
 	return settings

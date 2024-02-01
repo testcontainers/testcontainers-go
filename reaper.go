@@ -12,22 +12,22 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
-	// Deprecated: it has been replaced by the internal testcontainersdocker.LabelLang
+	// Deprecated: it has been replaced by the internal core.LabelLang
 	TestcontainerLabel = "org.testcontainers.golang"
-	// Deprecated: it has been replaced by the internal testcontainersdocker.LabelSessionID
+	// Deprecated: it has been replaced by the internal core.LabelSessionID
 	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
-	// Deprecated: it has been replaced by the internal testcontainersdocker.LabelReaper
+	// Deprecated: it has been replaced by the internal core.LabelReaper
 	TestcontainerLabelIsReaper = TestcontainerLabel + ".reaper"
 )
 
@@ -89,13 +89,13 @@ func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContai
 	var reaperContainer *DockerContainer
 	err = backoff.Retry(func() error {
 		args := []filters.KeyValuePair{
-			filters.Arg("label", fmt.Sprintf("%s=%s", testcontainersdocker.LabelSessionID, sessionID)),
-			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelReaper, true)),
-			filters.Arg("label", fmt.Sprintf("%s=%t", testcontainersdocker.LabelRyuk, true)),
+			filters.Arg("label", fmt.Sprintf("%s=%s", core.LabelSessionID, sessionID)),
+			filters.Arg("label", fmt.Sprintf("%s=%t", core.LabelReaper, true)),
+			filters.Arg("label", fmt.Sprintf("%s=%t", core.LabelRyuk, true)),
 			filters.Arg("name", reaperContainerNameFromSessionID(sessionID)),
 		}
 
-		resp, err := dockerClient.ContainerList(ctx, types.ContainerListOptions{
+		resp, err := dockerClient.ContainerList(ctx, container.ListOptions{
 			All:     true,
 			Filters: filters.NewArgs(args...),
 		})
@@ -141,13 +141,14 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 		// Can't use Container.IsRunning because the bool is not updated when Reaper is terminated
 		state, err := reaperInstance.container.State(ctx)
 		if err != nil {
-			return nil, err
-		}
-
-		if state.Running {
+			if !errdefs.IsNotFound(err) {
+				return nil, err
+			}
+		} else if state.Running {
 			return reaperInstance, nil
 		}
 		// else: the reaper instance has been terminated, so we need to create a new one
+		reaperOnce = sync.Once{}
 	}
 
 	// 2. because the reaper instance has not been created yet, look for it in the Docker daemon, which
@@ -205,7 +206,7 @@ func reuseReaperContainer(ctx context.Context, sessionID string, provider Reaper
 // newReaper creates a Reaper with a sessionID to identify containers and a
 // provider to use. Do not call this directly, use reuseOrCreateReaper instead.
 func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
-	dockerHostMount := testcontainersdocker.ExtractDockerSocket(ctx)
+	dockerHostMount := core.ExtractDockerSocket(ctx)
 
 	reaper := &Reaper{
 		Provider:  provider,
@@ -219,7 +220,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 	req := ContainerRequest{
 		Image:        config.ReaperDefaultImage,
 		ExposedPorts: []string{string(listeningPort)},
-		Labels:       testcontainersdocker.DefaultLabels(sessionID),
+		Labels:       core.DefaultLabels(sessionID),
 		Privileged:   tcConfig.RyukPrivileged,
 		WaitingFor:   wait.ForListeningPort(listeningPort),
 		Name:         reaperContainerNameFromSessionID(sessionID),
@@ -241,8 +242,8 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 	}
 
 	// include reaper-specific labels to the reaper container
-	req.Labels[testcontainersdocker.LabelReaper] = "true"
-	req.Labels[testcontainersdocker.LabelRyuk] = "true"
+	req.Labels[core.LabelReaper] = "true"
+	req.Labels[core.LabelRyuk] = "true"
 
 	// Attach reaper container to a requested network if it is specified
 	if p, ok := provider.(*DockerProvider); ok {
@@ -327,7 +328,7 @@ func (r *Reaper) Connect() (chan bool, error) {
 		defer conn.Close()
 
 		labelFilters := []string{}
-		for l, v := range testcontainersdocker.DefaultLabels(r.SessionID) {
+		for l, v := range core.DefaultLabels(r.SessionID) {
 			labelFilters = append(labelFilters, fmt.Sprintf("label=%s=%s", l, v))
 		}
 
@@ -363,10 +364,10 @@ func (r *Reaper) Connect() (chan bool, error) {
 }
 
 // Labels returns the container labels to use so that this Reaper cleans them up
-// Deprecated: internally replaced by testcontainersdocker.DefaultLabels(sessionID)
+// Deprecated: internally replaced by core.DefaultLabels(sessionID)
 func (r *Reaper) Labels() map[string]string {
 	return map[string]string{
-		testcontainersdocker.LabelLang:      "go",
-		testcontainersdocker.LabelSessionID: r.SessionID,
+		core.LabelLang:      "go",
+		core.LabelSessionID: r.SessionID,
 	}
 }

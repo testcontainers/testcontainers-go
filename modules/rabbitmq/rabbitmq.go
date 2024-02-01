@@ -69,7 +69,7 @@ func (c *RabbitMQContainer) HttpsURL(ctx context.Context) (string, error) {
 // RunContainer creates an instance of the RabbitMQ container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*RabbitMQContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "rabbitmq:3.7.25-management-alpine",
+		Image: "rabbitmq:3.12.11-management-alpine",
 		Env: map[string]string{
 			"RABBITMQ_DEFAULT_USER": defaultUser,
 			"RABBITMQ_DEFAULT_PASS": defaultPassword,

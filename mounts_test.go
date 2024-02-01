@@ -6,6 +6,7 @@ import (
 
 	"github.com/docker/docker/api/types/mount"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestVolumeMount(t *testing.T) {
@@ -180,15 +181,15 @@ func TestCreateContainerWithVolume(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created
 	client, err := NewDockerClientWithOpts(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer client.Close()
 
 	volume, err := client.VolumeInspect(ctx, "test-volume")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "test-volume", volume.Name)
 }
