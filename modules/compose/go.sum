@@ -86,8 +86,8 @@ github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4 h1:/inchEIKaYC1Akx+H+g
 github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4/go.mod h1:eXthEFrGJvWHgFFCl3hGmgk+/aYT6PnTQLykKQRLhEs=
 github.com/codahale/rfc6979 v0.0.0-20141003034818-6a90f24967eb h1:EDmT6Q9Zs+SbUoc7Ik9EfrFqcylYqgPZ9ANSbTAntnE=
 github.com/codahale/rfc6979 v0.0.0-20141003034818-6a90f24967eb/go.mod h1:ZjrT6AXHbDs86ZSdt/osfBi5qfexBrKUdONk989Wnk4=
-github.com/compose-spec/compose-go/v2 v2.0.0-rc.2 h1:eJ01FpliL/02KvsaPyH1bSLbM1S70yWQUojHVRbyvy4=
-github.com/compose-spec/compose-go/v2 v2.0.0-rc.2/go.mod h1:IVsvFyGVhw4FASzUtlWNVaAOhYmakXAFY9IlZ7LAuD8=
+github.com/compose-spec/compose-go/v2 v2.0.0-rc.3 h1:t0qajSNkH3zR4HEN2CM+GVU7GBx5AwqiYJk5w800M7w=
+github.com/compose-spec/compose-go/v2 v2.0.0-rc.3/go.mod h1:r7CJHU0GaLtRVLm2ch8RCNkJh3GHyaqqc2rSti7VP44=
 github.com/containerd/cgroups v1.1.0 h1:v8rEWFl6EoqHB+swVNjVoCJE8o3jX7e8nqBGPLaDFBM=
 github.com/containerd/cgroups v1.1.0/go.mod h1:6ppBcbh/NOOUU+dMKrykgaBnK9lCIBxHqJDGwsa1mIw=
 github.com/containerd/console v1.0.3 h1:lIr7SlA5PxZyMV30bDW0MGbiOPXwc63yRuCP0ARubLw=
@@ -126,8 +126,8 @@ github.com/docker/buildx v0.12.0-rc2.0.20231219140829-617f538cb315 h1:UZxx9xBADd
 github.com/docker/buildx v0.12.0-rc2.0.20231219140829-617f538cb315/go.mod h1:X8ZHhuW6ncwtoJ36TlU+gyaROTcBkTE01VHYmTStQCE=
 github.com/docker/cli v25.0.1+incompatible h1:mFpqnrS6Hsm3v1k7Wa/BO23oz0k121MTbTO1lpcGSkU=
 github.com/docker/cli v25.0.1+incompatible/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
-github.com/docker/compose/v2 v2.24.3 h1:BVc1oDV7aQgksH64pDKTvcI95G36uJ+Mz9DGGBBoZeQ=
-github.com/docker/compose/v2 v2.24.3/go.mod h1:D8Nv9+juzD7xiMyyHJ7G2J/MOYiGBmb9SvdIW5+2zKo=
+github.com/docker/compose/v2 v2.24.5 h1:7K173fhy+ghA88C8ib5YNa+kAZCx0CBeGW7lHcdoPZw=
+github.com/docker/compose/v2 v2.24.5/go.mod h1:gg+RsqCXYD/TOIJgya4N9mtj/UmFJGEls7y3h/kadVE=
 github.com/docker/distribution v2.7.1+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
 github.com/docker/distribution v2.8.3+incompatible h1:AtKxIZ36LoNK51+Z6RpzLpddBirtxJnzDrHLEKxTAYk=
 github.com/docker/distribution v2.8.3+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
