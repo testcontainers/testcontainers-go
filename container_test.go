@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"testing"
 	"time"
@@ -525,13 +526,13 @@ func ExampleGenericContainer_withSubstitutors() {
 	})
 	// }
 	if err != nil {
-		panic(err)
+		log.Fatalf("could not start container: %v", err)
 	}
 
 	defer func() {
 		err := container.Terminate(ctx)
 		if err != nil {
-			panic(err)
+			log.Fatalf("could not terminate container: %v", err)
 		}
 	}()
 
