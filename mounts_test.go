@@ -202,3 +202,34 @@ func TestCreateContainerWithVolume(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "test-volume", volume.Name)
 }
+
+func TestMountsReceiveRyukLabels(t *testing.T) {
+	req := ContainerRequest{
+		Image: "alpine",
+		Mounts: ContainerMounts{
+			{
+				Source: GenericVolumeMountSource{
+					Name: "app-data",
+				},
+				Target: "/data",
+			},
+		},
+	}
+
+	ctx := context.Background()
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, c)
+
+	// Check if volume is created with the expected labels
+	client, err := NewDockerClientWithOpts(ctx)
+	require.NoError(t, err)
+	defer client.Close()
+
+	volume, err := client.VolumeInspect(ctx, "app-data")
+	require.NoError(t, err)
+	assert.Equal(t, GenericLabels(), volume.Labels)
+}
