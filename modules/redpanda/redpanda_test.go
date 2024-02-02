@@ -16,6 +16,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -275,6 +276,23 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 		require.ErrorContains(t, err, "SASL_AUTHENTICATION_FAILED")
 	}
 
+	// Test wrong mechanism
+	{
+		kafkaCl, err := kgo.NewClient(
+			kgo.SeedBrokers(seedBroker),
+			kgo.SASL(plain.Auth{
+				User: "no-superuser",
+				Pass: "test",
+			}.AsMechanism()),
+		)
+		require.NoError(t, err)
+
+		kafkaAdmCl := kadm.NewClient(kafkaCl)
+		_, err = kafkaAdmCl.Metadata(ctx)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "UNSUPPORTED_SASL_MECHANISM")
+	}
+
 	// Test Schema Registry API
 	httpCl := &http.Client{Timeout: 5 * time.Second}
 	// schemaRegistryAddress {
@@ -393,6 +411,50 @@ func TestRedpandaWithTLS(t *testing.T) {
 	// Test produce to unknown topic
 	results := kafkaCl.ProduceSync(ctx, &kgo.Record{Topic: "test", Value: []byte("test message")})
 	require.Error(t, results.FirstErr(), kerr.UnknownTopicOrPartition)
+}
+
+func TestRedpandaWithTLSAndSASL(t *testing.T) {
+	cert, err := tls.X509KeyPair(localhostCert, localhostKey)
+	require.NoError(t, err, "failed to load key pair")
+
+	ctx := context.Background()
+
+	container, err := RunContainer(ctx,
+		WithTLS(localhostCert, localhostKey),
+		WithEnableSASL(),
+		WithEnableKafkaAuthorization(),
+		WithNewServiceAccount("superuser-1", "test"),
+		WithSuperusers("superuser-1"),
+	)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(localhostCert)
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caCertPool,
+	}
+
+	broker, err := container.KafkaSeedBroker(ctx)
+	require.NoError(t, err)
+
+	kafkaCl, err := kgo.NewClient(
+		kgo.SeedBrokers(broker),
+		kgo.DialTLSConfig(tlsConfig),
+		kgo.SASL(scram.Auth{
+			User: "superuser-1",
+			Pass: "test",
+		}.AsSha256Mechanism()),
+	)
+	require.NoError(t, err)
+	defer kafkaCl.Close()
 }
 
 func TestRedpandaListener_Simple(t *testing.T) {

@@ -14,20 +14,20 @@ func Example{{ $entrypoint }}() {
 
 	{{ $lower }}Container, err := {{ $lower }}.{{ $entrypoint }}(ctx, testcontainers.WithImage("{{ $image }}"))
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := {{ $lower }}Container.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := {{ $lower }}Container.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err)
 	}
 
 	fmt.Println(state.Running)

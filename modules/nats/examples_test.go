@@ -3,6 +3,7 @@ package nats_test
 import (
 	"context"
 	"fmt"
+	"log"
 
 	natsgo "github.com/nats-io/nats.go"
 
@@ -18,20 +19,20 @@ func ExampleRunContainer() {
 		testcontainers.WithImage("nats:2.9"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := natsContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := natsContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -46,24 +47,24 @@ func ExampleRunContainer_connectWithCredentials() {
 
 	container, err := nats.RunContainer(ctx, nats.WithUsername("foo"), nats.WithPassword("bar"))
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := container.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
 	uri, err := container.ConnectionString(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
 	}
 
 	nc, err := natsgo.Connect(uri, natsgo.UserInfo(container.User, container.Password))
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to connect to NATS: %s", err)
 	}
 	defer nc.Close()
 	// }

@@ -32,22 +32,22 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
 func TestSomething(t *testing.T) {
 	compose, err := tc.NewDockerCompose("testdata/docker-compose.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	require.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
+		require.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	assert.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
+	require.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
 
 	// do some testing here
 }
@@ -62,23 +62,23 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
 func TestSomethingElse(t *testing.T) {
 	identifier := tc.StackIdentifier("some_ident")
 	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("./testdata/docker-compose-simple.yml"), identifier)
-	assert.NoError(t, err, "NewDockerComposeAPIWith()")
+	require.NoError(t, err, "NewDockerComposeAPIWith()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
+		require.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	assert.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
+	require.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
 
 	// do some testing here
 }
@@ -110,7 +110,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -118,10 +118,10 @@ import (
 func TestSomethingWithWaiting(t *testing.T) {
 	identifier := tc.StackIdentifier("some_ident")
 	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("./testdata/docker-compose-simple.yml"), identifier)
-	assert.NoError(t, err, "NewDockerComposeAPIWith()")
+	require.NoError(t, err, "NewDockerComposeAPIWith()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
+		require.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -131,7 +131,7 @@ func TestSomethingWithWaiting(t *testing.T) {
 		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Up(ctx, tc.Wait(true))
 	
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	// do some testing here
 }

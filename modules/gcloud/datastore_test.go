@@ -3,6 +3,7 @@ package gcloud_test
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"cloud.google.com/go/datastore"
 	"google.golang.org/api/option"
@@ -23,13 +24,13 @@ func ExampleRunDatastoreContainer() {
 		gcloud.WithProjectID("datastore-project"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to run container: %v", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := datastoreContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %v", err)
 		}
 	}()
 	// }
@@ -45,7 +46,7 @@ func ExampleRunDatastoreContainer() {
 
 	dsClient, err := datastore.NewClient(ctx, projectID, options...)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create client: %v", err) // nolint:gocritic
 	}
 	defer dsClient.Close()
 	// }
@@ -60,13 +61,13 @@ func ExampleRunDatastoreContainer() {
 	}
 	_, err = dsClient.Put(ctx, k, &data)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to put data: %v", err)
 	}
 
 	saved := Task{}
 	err = dsClient.Get(ctx, k, &saved)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get data: %v", err)
 	}
 
 	fmt.Println(saved.Description)

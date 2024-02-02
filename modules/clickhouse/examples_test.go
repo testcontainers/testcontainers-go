@@ -3,6 +3,7 @@ package clickhouse_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"path/filepath"
 	"strings"
 
@@ -29,30 +30,30 @@ func ExampleRunContainer() {
 		clickhouse.WithConfigFile(filepath.Join("testdata", "config.xml")),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	defer func() {
 		if err := clickHouseContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := clickHouseContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
 
 	connectionString, err := clickHouseContainer.ConnectionString(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get connection string: %s", err)
 	}
 
 	opts, err := ch.ParseDSN(connectionString)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to parse DSN: %s", err)
 	}
 
 	fmt.Println(strings.HasPrefix(opts.ClientInfo.String(), "clickhouse-go/"))
