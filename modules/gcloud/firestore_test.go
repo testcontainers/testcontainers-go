@@ -50,7 +50,7 @@ func ExampleRunFirestoreContainer() {
 
 	conn, err := grpc.Dial(firestoreContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(emulatorCreds{}))
 	if err != nil {
-		log.Fatalf("failed to dial: %v", err)
+		log.Fatalf("failed to dial: %v", err) // nolint:gocritic
 	}
 
 	options := []option.ClientOption{option.WithGRPCConn(conn)}

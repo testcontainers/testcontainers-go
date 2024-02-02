@@ -30,7 +30,7 @@ func ExampleRunContainer() {
 
 	state, err := pulsarContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)

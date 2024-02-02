@@ -29,7 +29,7 @@ func ExampleRunContainer() {
 
 	state, err := elasticsearchContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -94,7 +94,7 @@ func ExampleRunContainer_connectUsingElasticsearchClient() {
 
 	esClient, err := es.NewClient(cfg)
 	if err != nil {
-		log.Fatalf("error creating the client: %s", err)
+		log.Fatalf("error creating the client: %s", err) // nolint:gocritic
 	}
 
 	resp, err := esClient.Info()

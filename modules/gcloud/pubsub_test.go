@@ -40,7 +40,7 @@ func ExampleRunPubsubContainer() {
 
 	conn, err := grpc.Dial(pubsubContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("failed to dial: %v", err)
+		log.Fatalf("failed to dial: %v", err) // nolint:gocritic
 	}
 
 	options := []option.ClientOption{option.WithGRPCConn(conn)}

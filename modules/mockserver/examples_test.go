@@ -33,7 +33,7 @@ func ExampleRunContainer() {
 
 	state, err := mockserverContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -60,7 +60,7 @@ func ExampleRunContainer_connect() {
 
 	url, err := mockserverContainer.URL(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container URL: %s", err)
+		log.Fatalf("failed to get container URL: %s", err) // nolint:gocritic
 	}
 	ms := client.NewClientURL(url)
 	// }

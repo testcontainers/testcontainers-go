@@ -46,7 +46,7 @@ func ExampleRunDatastoreContainer() {
 
 	dsClient, err := datastore.NewClient(ctx, projectID, options...)
 	if err != nil {
-		log.Fatalf("failed to create client: %v", err)
+		log.Fatalf("failed to create client: %v", err) // nolint:gocritic
 	}
 	defer dsClient.Close()
 	// }

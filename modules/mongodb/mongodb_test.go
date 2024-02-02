@@ -33,7 +33,7 @@ func ExampleRunContainer() {
 
 	state, err := mongodbContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -60,7 +60,7 @@ func ExampleRunContainer_connect() {
 
 	endpoint, err := mongodbContainer.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err)
+		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
 	}
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint))
@@ -102,7 +102,7 @@ func ExampleRunContainer_withCredentials() {
 
 	connStr, err := container.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err)
+		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
 	}
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(connStr))

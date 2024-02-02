@@ -37,7 +37,7 @@ func ExampleRunContainer() {
 
 	state, err := rabbitmqContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -65,7 +65,7 @@ func ExampleRunContainer_connectUsingAmqp() {
 
 	amqpURL, err := rabbitmqContainer.AmqpURL(ctx)
 	if err != nil {
-		log.Fatalf("failed to get AMQP URL: %s", err)
+		log.Fatalf("failed to get AMQP URL: %s", err) // nolint:gocritic
 	}
 
 	amqpConnection, err := amqp.Dial(amqpURL)
@@ -115,7 +115,7 @@ func ExampleRunContainer_withSSL() {
 
 	state, err := rabbitmqContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -170,7 +170,7 @@ func ExampleRunContainer_withCustomConfigFile() {
 
 	logs, err := rabbitmqContainer.Logs(ctx)
 	if err != nil {
-		log.Fatalf("failed to get logs: %s", err)
+		log.Fatalf("failed to get logs: %s", err) // nolint:gocritic
 	}
 
 	bytes, err := io.ReadAll(logs)

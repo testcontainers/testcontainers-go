@@ -32,7 +32,7 @@ func ExampleRunContainer() {
 
 	state, err := natsContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -59,7 +59,7 @@ func ExampleRunContainer_connectWithCredentials() {
 
 	uri, err := container.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err)
+		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
 	}
 
 	nc, err := natsgo.Connect(uri, natsgo.UserInfo(container.User, container.Password))

@@ -50,7 +50,7 @@ func ExampleRunBigTableContainer() {
 	}
 	adminClient, err := bigtable.NewAdminClient(ctx, projectId, instanceId, options...)
 	if err != nil {
-		log.Fatalf("failed to create admin client: %v", err)
+		log.Fatalf("failed to create admin client: %v", err) // nolint:gocritic
 	}
 	defer adminClient.Close()
 	// }

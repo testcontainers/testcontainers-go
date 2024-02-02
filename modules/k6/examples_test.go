@@ -43,7 +43,7 @@ func ExampleRunContainer() {
 	// getHTTPBinIP {
 	httpbinIP, err := httpbin.ContainerIP(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container IP: %s", err)
+		log.Fatalf("failed to get container IP: %s", err) // nolint:gocritic
 	}
 	// }
 

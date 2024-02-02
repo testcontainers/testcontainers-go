@@ -50,7 +50,7 @@ func ExampleRunBigQueryContainer() {
 
 	client, err := bigquery.NewClient(ctx, projectID, opts...)
 	if err != nil {
-		log.Fatalf("failed to create bigquery client: %v", err)
+		log.Fatalf("failed to create bigquery client: %v", err) // nolint:gocritic
 	}
 	defer client.Close()
 	// }

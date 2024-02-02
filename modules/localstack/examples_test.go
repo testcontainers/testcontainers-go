@@ -40,7 +40,7 @@ func ExampleRunContainer() {
 
 	state, err := localstackContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -85,7 +85,7 @@ func ExampleRunContainer_withNetwork() {
 
 	networks, err := localstackContainer.Networks(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container networks: %s", err)
+		log.Fatalf("failed to get container networks: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(len(networks))
@@ -180,7 +180,7 @@ func ExampleRunContainer_usingLambdas() {
 	for _, cmd := range lambdaCommands {
 		_, _, err := container.Exec(ctx, cmd)
 		if err != nil {
-			log.Fatalf("failed to execute command %v: %s", cmd, err)
+			log.Fatalf("failed to execute command %v: %s", cmd, err) // nolint:gocritic
 		}
 	}
 

@@ -57,7 +57,7 @@ func ExampleRunSpannerContainer() {
 
 	instanceAdmin, err := instance.NewInstanceAdminClient(ctx, options...)
 	if err != nil {
-		log.Fatalf("failed to create instance admin client: %v", err)
+		log.Fatalf("failed to create instance admin client: %v", err) // nolint:gocritic
 	}
 	defer instanceAdmin.Close()
 	// }
