@@ -16,6 +16,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -160,6 +161,23 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 		_, err = kafkaAdmCl.Metadata(ctx)
 		require.Error(t, err)
 		require.ErrorContains(t, err, "SASL_AUTHENTICATION_FAILED")
+	}
+
+	// Test wrong mechanism
+	{
+		kafkaCl, err := kgo.NewClient(
+			kgo.SeedBrokers(seedBroker),
+			kgo.SASL(plain.Auth{
+				User: "no-superuser",
+				Pass: "test",
+			}.AsMechanism()),
+		)
+		require.NoError(t, err)
+
+		kafkaAdmCl := kadm.NewClient(kafkaCl)
+		_, err = kafkaAdmCl.Metadata(ctx)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "UNSUPPORTED_SASL_MECHANISM")
 	}
 
 	// Test Schema Registry API
