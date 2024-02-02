@@ -101,6 +101,9 @@ func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
 			Source:   m.Source.Source(),
 			ReadOnly: m.ReadOnly,
 			Target:   m.Target.Target(),
+			VolumeOptions: &mount.VolumeOptions{
+				Labels: GenericLabels(),
+			},
 		}
 
 		switch typedMounter := m.Source.(type) {

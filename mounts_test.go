@@ -41,6 +41,10 @@ func TestVolumeMount(t *testing.T) {
 }
 
 func TestContainerMounts_PrepareMounts(t *testing.T) {
+	volumeOptions := &mount.VolumeOptions{
+		Labels: GenericLabels(),
+	}
+
 	t.Parallel()
 	tests := []struct {
 		name   string
@@ -57,9 +61,10 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			mounts: ContainerMounts{{Source: GenericVolumeMountSource{Name: "app-data"}, Target: "/data"}},
 			want: []mount.Mount{
 				{
-					Type:   mount.TypeVolume,
-					Source: "app-data",
-					Target: "/data",
+					Type:          mount.TypeVolume,
+					Source:        "app-data",
+					Target:        "/data",
+					VolumeOptions: volumeOptions,
 				},
 			},
 		},
@@ -68,10 +73,11 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			mounts: ContainerMounts{{Source: GenericVolumeMountSource{Name: "app-data"}, Target: "/data", ReadOnly: true}},
 			want: []mount.Mount{
 				{
-					Type:     mount.TypeVolume,
-					Source:   "app-data",
-					Target:   "/data",
-					ReadOnly: true,
+					Type:          mount.TypeVolume,
+					Source:        "app-data",
+					Target:        "/data",
+					ReadOnly:      true,
+					VolumeOptions: volumeOptions,
 				},
 			},
 		},
@@ -111,8 +117,9 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			mounts: ContainerMounts{{Source: GenericTmpfsMountSource{}, Target: "/data"}},
 			want: []mount.Mount{
 				{
-					Type:   mount.TypeTmpfs,
-					Target: "/data",
+					Type:          mount.TypeTmpfs,
+					Target:        "/data",
+					VolumeOptions: volumeOptions,
 				},
 			},
 		},
@@ -121,9 +128,10 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			mounts: ContainerMounts{{Source: GenericTmpfsMountSource{}, Target: "/data", ReadOnly: true}},
 			want: []mount.Mount{
 				{
-					Type:     mount.TypeTmpfs,
-					Target:   "/data",
-					ReadOnly: true,
+					Type:          mount.TypeTmpfs,
+					Target:        "/data",
+					ReadOnly:      true,
+					VolumeOptions: volumeOptions,
 				},
 			},
 		},
@@ -148,6 +156,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 						SizeBytes: 50 * 1024 * 1024,
 						Mode:      0o644,
 					},
+					VolumeOptions: volumeOptions,
 				},
 			},
 		},
@@ -192,4 +201,35 @@ func TestCreateContainerWithVolume(t *testing.T) {
 	volume, err := client.VolumeInspect(ctx, "test-volume")
 	require.NoError(t, err)
 	assert.Equal(t, "test-volume", volume.Name)
+}
+
+func TestMountsReceiveRyukLabels(t *testing.T) {
+	req := ContainerRequest{
+		Image: "alpine",
+		Mounts: ContainerMounts{
+			{
+				Source: GenericVolumeMountSource{
+					Name: "app-data",
+				},
+				Target: "/data",
+			},
+		},
+	}
+
+	ctx := context.Background()
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, c)
+
+	// Check if volume is created with the expected labels
+	client, err := NewDockerClientWithOpts(ctx)
+	require.NoError(t, err)
+	defer client.Close()
+
+	volume, err := client.VolumeInspect(ctx, "app-data")
+	require.NoError(t, err)
+	assert.Equal(t, GenericLabels(), volume.Labels)
 }
