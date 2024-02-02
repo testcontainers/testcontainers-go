@@ -300,6 +300,50 @@ func TestRedpandaWithTLS(t *testing.T) {
 	require.Error(t, results.FirstErr(), kerr.UnknownTopicOrPartition)
 }
 
+func TestRedpandaWithTLSAndSASL(t *testing.T) {
+	cert, err := tls.X509KeyPair(localhostCert, localhostKey)
+	require.NoError(t, err, "failed to load key pair")
+
+	ctx := context.Background()
+
+	container, err := RunContainer(ctx,
+		WithTLS(localhostCert, localhostKey),
+		WithEnableSASL(),
+		WithEnableKafkaAuthorization(),
+		WithNewServiceAccount("superuser-1", "test"),
+		WithSuperusers("superuser-1"),
+	)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(localhostCert)
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caCertPool,
+	}
+
+	broker, err := container.KafkaSeedBroker(ctx)
+	require.NoError(t, err)
+
+	kafkaCl, err := kgo.NewClient(
+		kgo.SeedBrokers(broker),
+		kgo.DialTLSConfig(tlsConfig),
+		kgo.SASL(scram.Auth{
+			User: "superuser-1",
+			Pass: "test",
+		}.AsSha256Mechanism()),
+	)
+	require.NoError(t, err)
+	defer kafkaCl.Close()
+}
+
 func TestRedpandaListener_Simple(t *testing.T) {
 	ctx := context.Background()
 
