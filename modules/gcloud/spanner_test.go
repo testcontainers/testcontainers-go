@@ -3,6 +3,7 @@ package gcloud_test
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"cloud.google.com/go/spanner"
 	database "cloud.google.com/go/spanner/admin/database/apiv1"
@@ -28,13 +29,13 @@ func ExampleRunSpannerContainer() {
 		gcloud.WithProjectID("spanner-project"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to run container: %v", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := spannerContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %v", err)
 		}
 	}()
 	// }
@@ -56,7 +57,7 @@ func ExampleRunSpannerContainer() {
 
 	instanceAdmin, err := instance.NewInstanceAdminClient(ctx, options...)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create instance admin client: %v", err) // nolint:gocritic
 	}
 	defer instanceAdmin.Close()
 	// }
@@ -69,18 +70,18 @@ func ExampleRunSpannerContainer() {
 		},
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create instance: %v", err)
 	}
 
 	_, err = instanceOp.Wait(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to wait for instance creation: %v", err)
 	}
 
 	// spannerDBAdminClient {
 	c, err := database.NewDatabaseAdminClient(ctx, options...)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create admin client: %v", err)
 	}
 	defer c.Close()
 	// }
@@ -93,17 +94,17 @@ func ExampleRunSpannerContainer() {
 		},
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create database: %v", err)
 	}
 	_, err = databaseOp.Wait(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to wait for database creation: %v", err)
 	}
 
 	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectId, instanceId, databaseName)
 	client, err := spanner.NewClient(ctx, db, options...)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create client: %v", err)
 	}
 	defer client.Close()
 
@@ -113,18 +114,18 @@ func ExampleRunSpannerContainer() {
 			[]interface{}{"Go", "Gopher"}),
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to apply mutation: %v", err)
 	}
 	row, err := client.Single().ReadRow(ctx, "Languages",
 		spanner.Key{"Go"}, []string{"mascot"})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to read row: %v", err)
 	}
 
 	var mascot string
 	err = row.ColumnByName("Mascot", &mascot)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to read column: %v", err)
 	}
 
 	fmt.Println(mascot)

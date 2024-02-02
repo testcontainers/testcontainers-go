@@ -41,7 +41,7 @@ func ExampleNew() {
 	}
 	defer func() {
 		if err := net.Remove(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to remove network: %s", err)
 		}
 	}()
 

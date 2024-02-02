@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"cloud.google.com/go/bigquery"
 	"google.golang.org/api/iterator"
@@ -26,13 +27,13 @@ func ExampleRunBigQueryContainer() {
 		gcloud.WithProjectID("bigquery-project"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to run container: %v", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := bigQueryContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %v", err)
 		}
 	}()
 	// }
@@ -49,7 +50,7 @@ func ExampleRunBigQueryContainer() {
 
 	client, err := bigquery.NewClient(ctx, projectID, opts...)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create bigquery client: %v", err) // nolint:gocritic
 	}
 	defer client.Close()
 	// }
@@ -57,13 +58,13 @@ func ExampleRunBigQueryContainer() {
 	createFnQuery := client.Query("CREATE FUNCTION testr(arr ARRAY<STRUCT<name STRING, val INT64>>) AS ((SELECT SUM(IF(elem.name = \"foo\",elem.val,null)) FROM UNNEST(arr) AS elem))")
 	_, err = createFnQuery.Read(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create function: %v", err)
 	}
 
 	selectQuery := client.Query("SELECT testr([STRUCT<name STRING, val INT64>(\"foo\", 10), STRUCT<name STRING, val INT64>(\"bar\", 40), STRUCT<name STRING, val INT64>(\"foo\", 20)])")
 	it, err := selectQuery.Read(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to read query: %v", err)
 	}
 
 	var val []bigquery.Value
@@ -73,7 +74,7 @@ func ExampleRunBigQueryContainer() {
 			break
 		}
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to iterate: %v", err)
 		}
 	}
 

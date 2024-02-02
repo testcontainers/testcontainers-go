@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 
 	es "github.com/elastic/go-elasticsearch/v8"
@@ -17,18 +18,18 @@ func ExampleRunContainer() {
 	ctx := context.Background()
 	elasticsearchContainer, err := elasticsearch.RunContainer(ctx, testcontainers.WithImage("docker.elastic.co/elasticsearch/elasticsearch:8.9.0"))
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	defer func() {
 		if err := elasticsearchContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := elasticsearchContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -46,12 +47,12 @@ func ExampleRunContainer_withUsingPassword() {
 		elasticsearch.WithPassword("foo"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	defer func() {
 		err := elasticsearchContainer.Terminate(ctx)
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
@@ -73,12 +74,12 @@ func ExampleRunContainer_connectUsingElasticsearchClient() {
 		elasticsearch.WithPassword("foo"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	defer func() {
 		err := elasticsearchContainer.Terminate(ctx)
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
@@ -93,19 +94,19 @@ func ExampleRunContainer_connectUsingElasticsearchClient() {
 
 	esClient, err := es.NewClient(cfg)
 	if err != nil {
-		panic(err)
+		log.Fatalf("error creating the client: %s", err) // nolint:gocritic
 	}
 
 	resp, err := esClient.Info()
 	if err != nil {
-		panic(err)
+		log.Fatalf("error getting response: %s", err)
 	}
 	defer resp.Body.Close()
 	// }
 
 	var esResp ElasticsearchResponse
 	if err := json.NewDecoder(resp.Body).Decode(&esResp); err != nil {
-		panic(err)
+		log.Fatalf("error decoding response: %s", err)
 	}
 
 	fmt.Println(esResp.Tagline)

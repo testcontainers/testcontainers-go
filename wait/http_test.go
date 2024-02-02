@@ -37,7 +37,7 @@ func ExampleHTTPStrategy() {
 		Started:          true,
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	// }
 
@@ -49,7 +49,7 @@ func ExampleHTTPStrategy() {
 
 	state, err := c.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -72,7 +72,7 @@ func ExampleHTTPStrategy_WithPort() {
 		Started:          true,
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	// }
 
@@ -84,7 +84,7 @@ func ExampleHTTPStrategy_WithPort() {
 
 	state, err := c.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -106,7 +106,7 @@ func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
 		Started:          true,
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	defer func() {
@@ -117,7 +117,7 @@ func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
 
 	state, err := c.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -140,7 +140,7 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 		Started:          true,
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	// }
 
@@ -152,7 +152,7 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 
 	state, err := gogs.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)

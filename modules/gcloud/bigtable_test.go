@@ -3,6 +3,7 @@ package gcloud_test
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"cloud.google.com/go/bigtable"
 	"google.golang.org/api/option"
@@ -23,13 +24,13 @@ func ExampleRunBigTableContainer() {
 		gcloud.WithProjectID("bigtable-project"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to run container: %v", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := bigTableContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %v", err)
 		}
 	}()
 	// }
@@ -49,24 +50,24 @@ func ExampleRunBigTableContainer() {
 	}
 	adminClient, err := bigtable.NewAdminClient(ctx, projectId, instanceId, options...)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create admin client: %v", err) // nolint:gocritic
 	}
 	defer adminClient.Close()
 	// }
 
 	err = adminClient.CreateTable(ctx, tableName)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create table: %v", err)
 	}
 	err = adminClient.CreateColumnFamily(ctx, tableName, "name")
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create column family: %v", err)
 	}
 
 	// bigTableClient {
 	client, err := bigtable.NewClient(ctx, projectId, instanceId, options...)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create client: %v", err)
 	}
 	defer client.Close()
 	// }
@@ -77,12 +78,12 @@ func ExampleRunBigTableContainer() {
 	mut.Set("name", "firstName", bigtable.Now(), []byte("Gopher"))
 	err = tbl.Apply(ctx, "1", mut)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to apply mutation: %v", err)
 	}
 
 	row, err := tbl.ReadRow(ctx, "1", bigtable.RowFilter(bigtable.FamilyFilter("name")))
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to read row: %v", err)
 	}
 
 	fmt.Println(string(row["name"][0].Value))

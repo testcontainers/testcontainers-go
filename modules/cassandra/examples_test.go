@@ -3,6 +3,7 @@ package cassandra_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"path/filepath"
 
 	"github.com/gocql/gocql"
@@ -21,40 +22,40 @@ func ExampleRunContainer() {
 		cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := cassandraContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := cassandraContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
 
 	connectionHost, err := cassandraContainer.ConnectionHost(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get connection host: %s", err)
 	}
 
 	cluster := gocql.NewCluster(connectionHost)
 	session, err := cluster.CreateSession()
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create session: %s", err)
 	}
 	defer session.Close()
 
 	var version string
 	err = session.Query("SELECT release_version FROM system.local").Scan(&version)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to query: %s", err)
 	}
 
 	fmt.Println(version)

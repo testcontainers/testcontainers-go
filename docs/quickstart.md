@@ -37,11 +37,11 @@ func TestWithRedis(t *testing.T) {
 		Started:          true,
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("Could not start redis: %s", err)
 	}
 	defer func() {
 		if err := redisC.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("Could not stop redis: %s", err)
 		}
 	}()
 }
