@@ -1,0 +1,53 @@
+# Consul
+
+Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+## Introduction
+
+The Testcontainers module for Consul.
+
+## Adding this module to your project dependencies
+
+Please run the following command to add the Consul module to your Go dependencies:
+
+```
+go get github.com/testcontainers/testcontainers-go/modules/consul
+```
+
+## Usage example
+
+<!--codeinclude-->
+[Creating a Consul container](../../modules/consul/examples_test.go) inside_block:runConsulContainer
+<!--/codeinclude-->
+
+## Module reference
+
+The Consul module exposes one entrypoint function to create the Consul container, and this function receives two parameters:
+
+```golang
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error)
+```
+
+- `context.Context`, the Go context.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+### Container Options
+
+When starting the Consul container, you can pass options in a variadic way to configure it.
+
+#### Image
+
+If you need to set a different Consul Docker image, you can use `testcontainers.WithImage` with a valid Docker image
+for Consul. E.g. `testcontainers.WithImage("docker.io/hashicorp/consul:latest")`.
+
+{% include "../features/common_functional_options.md" %}
+
+#### Configuration File
+If you would like to customize the behavior for the deployed node you can use the `WithLocalConfig(config string)` function. It takes in a JSON string of keys and values.
+
+### Container Methods
+
+The Consul container exposes the following method:
+
+#### ApiEndpoint
+This method returns the connection string to connect to the Consul container API, using the default `8500` port.

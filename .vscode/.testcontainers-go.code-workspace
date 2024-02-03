@@ -38,6 +38,10 @@
             "path": "../modules/compose"
         },
         {
+            "name": "module / consul",
+            "path": "../modules/consul"
+        },
+        {
             "name": "module / couchbase",
             "path": "../modules/couchbase"
         },
