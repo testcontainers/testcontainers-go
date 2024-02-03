@@ -1,16 +1,23 @@
 package clickhouse
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+//go:embed mounts/zk_config.xml.tpl
+var zookeeperConfigTpl string
 
 const (
 	defaultUser         = "default"
@@ -70,6 +77,53 @@ func (c *ClickHouseContainer) ConnectionString(ctx context.Context, args ...stri
 
 	connectionString := fmt.Sprintf("clickhouse://%s:%s@%s/%s%s", c.user, c.password, host, c.dbName, extraArgs)
 	return connectionString, nil
+}
+
+// ZookeeperOptions arguments for zookeeper in clickhouse
+type ZookeeperOptions struct {
+	Host, Port string
+}
+
+// renderZookeeperConfig generate default zookeeper configuration for clickhouse
+func renderZookeeperConfig(settings ZookeeperOptions) ([]byte, error) {
+	tpl, err := template.New("bootstrap.yaml").Parse(zookeeperConfigTpl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse zookeeper config file template: %w", err)
+	}
+
+	var bootstrapConfig bytes.Buffer
+	if err := tpl.Execute(&bootstrapConfig, settings); err != nil {
+		return nil, fmt.Errorf("failed to render zookeeper bootstrap config template: %w", err)
+	}
+
+	return bootstrapConfig.Bytes(), nil
+}
+
+// WithZookeeper pass a config to connect clickhouse with zookeeper and make clickhouse as cluster
+func WithZookeeper(host, port string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		f, err := os.CreateTemp("", "clickhouse-tc-config-")
+		if err != nil {
+			panic(err)
+		}
+
+		defer f.Close()
+
+		// write data to the temporary file
+		data, err := renderZookeeperConfig(ZookeeperOptions{Host: host, Port: port})
+		if err != nil {
+			panic(err)
+		}
+		if _, err := f.Write(data); err != nil {
+			panic(err)
+		}
+		cf := testcontainers.ContainerFile{
+			HostFilePath:      f.Name(),
+			ContainerFilePath: "/etc/clickhouse-server/config.d/zookeeper_config.xml",
+			FileMode:          0o755,
+		}
+		req.Files = append(req.Files, cf)
+	}
 }
 
 // WithInitScripts sets the init scripts to be run when the container starts

@@ -3,6 +3,7 @@ package redpanda_test
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 )
@@ -21,20 +22,20 @@ func ExampleRunContainer() {
 		redpanda.WithEnableSchemaRegistryHTTPBasicAuth(),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := redpandaContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := redpandaContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)

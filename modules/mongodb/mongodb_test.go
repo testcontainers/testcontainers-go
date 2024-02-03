@@ -3,6 +3,7 @@ package mongodb_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -19,20 +20,20 @@ func ExampleRunContainer() {
 
 	mongodbContainer, err := mongodb.RunContainer(ctx, testcontainers.WithImage("mongo:6"))
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := mongodbContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := mongodbContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -47,30 +48,30 @@ func ExampleRunContainer_connect() {
 
 	mongodbContainer, err := mongodb.RunContainer(ctx, testcontainers.WithImage("mongo:6"))
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := mongodbContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
 	endpoint, err := mongodbContainer.ConnectionString(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
 	}
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint))
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to connect to MongoDB: %s", err)
 	}
 	// }
 
 	err = mongoClient.Ping(ctx, nil)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to ping MongoDB: %s", err)
 	}
 
 	fmt.Println(mongoClient.Database("test").Name())
@@ -89,29 +90,29 @@ func ExampleRunContainer_withCredentials() {
 		testcontainers.WithWaitStrategy(wait.ForLog("Waiting for connections")),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := container.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
 	connStr, err := container.ConnectionString(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
 	}
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(connStr))
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to connect to MongoDB: %s", err)
 	}
 
 	err = mongoClient.Ping(ctx, nil)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to ping MongoDB: %s", err)
 	}
 	fmt.Println(strings.Split(connStr, "@")[0])
 
