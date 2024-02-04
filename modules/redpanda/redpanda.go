@@ -11,10 +11,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -62,7 +64,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	// Some (e.g. Image) may be overridden by providing an option argument to this function.
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.redpanda.com/redpandadata/redpanda:v23.1.7",
+			Image: "docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 			User:  "root:root",
 			// Files: Will be added later after we've rendered our YAML templates.
 			ExposedPorts: []string{
@@ -90,6 +92,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			apply(&settings)
 		}
 		opt.Customize(&req)
+	}
+
+	// 2.1. If the image is not at least v23.3, disable wasm transform
+	if !isAtLeastVersion(req.ContainerRequest.Image, "23.3") {
+		settings.EnableWasmTransform = false
 	}
 
 	// 3. Create temporary entrypoint file. We need a custom entrypoint that waits
@@ -267,6 +274,7 @@ func renderBootstrapConfig(settings options) ([]byte, error) {
 		Superusers:                  settings.Superusers,
 		KafkaAPIEnableAuthorization: settings.KafkaEnableAuthorization,
 		AutoCreateTopics:            settings.AutoCreateTopics,
+		EnableWasmTransform:         settings.EnableWasmTransform,
 	}
 
 	tpl, err := template.New("bootstrap.yaml").Parse(bootstrapConfigTpl)
@@ -340,6 +348,7 @@ type redpandaBootstrapConfigTplParams struct {
 	Superusers                  []string
 	KafkaAPIEnableAuthorization bool
 	AutoCreateTopics            bool
+	EnableWasmTransform         bool
 }
 
 type redpandaConfigTplParams struct {
@@ -365,4 +374,24 @@ type listener struct {
 	Address              string
 	Port                 int
 	AuthenticationMethod string
+}
+
+// isAtLeastVersion returns true if the base image (without tag) is in a version or above
+func isAtLeastVersion(image, major string) bool {
+	parts := strings.Split(image, ":")
+	version := parts[len(parts)-1]
+
+	if version == "latest" {
+		return true
+	}
+
+	if !strings.HasPrefix(version, "v") {
+		version = fmt.Sprintf("v%s", version)
+	}
+
+	if semver.IsValid(version) {
+		return semver.Compare(version, fmt.Sprintf("v%s", major)) >= 0 // version >= v8.x
+	}
+
+	return false
 }
