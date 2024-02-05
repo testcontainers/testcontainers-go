@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/gcloud
 go 1.20
 
 require (
-	cloud.google.com/go/bigquery v1.57.1
+	cloud.google.com/go/bigquery v1.58.0
 	cloud.google.com/go/bigtable v1.21.0
 	cloud.google.com/go/datastore v1.15.0
 	cloud.google.com/go/firestore v1.14.0
@@ -26,7 +26,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
-	github.com/apache/arrow/go/v12 v12.0.0 // indirect
+	github.com/apache/arrow/go/v12 v12.0.1 // indirect
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
