@@ -3,6 +3,7 @@ package consul_test
 import (
 	"context"
 	"net/http"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,9 +26,15 @@ func TestConsul(t *testing.T) {
 			opts: []testcontainers.ContainerCustomizer{},
 		},
 		{
-			name: "WithCustomConfigs",
+			name: "WithConfigString",
 			opts: []testcontainers.ContainerCustomizer{
-				consul.WithLocalConfig(`{ "server":true }`),
+				consul.WithConfigString(`{ "server":true }`),
+			},
+		},
+		{
+			name: "WithConfigFile",
+			opts: []testcontainers.ContainerCustomizer{
+				consul.WithConfigFile(filepath.Join("testdata", "config.json")),
 			},
 		},
 	}

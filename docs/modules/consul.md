@@ -43,7 +43,8 @@ for Consul. E.g. `testcontainers.WithImage("docker.io/hashicorp/consul:latest")`
 {% include "../features/common_functional_options.md" %}
 
 #### Configuration File
-If you would like to customize the behavior for the deployed node you can use the `WithLocalConfig(config string)` function. It takes in a JSON string of keys and values.
+If you need to customize the behavior for the deployed node you can use either `WithConfigString(config string)` or `WithConfigFile(configPath string)`.
+The configuration has to be in JSON format and will be loaded at the node startup.
 
 ### Container Methods
 
@@ -51,3 +52,7 @@ The Consul container exposes the following method:
 
 #### ApiEndpoint
 This method returns the connection string to connect to the Consul container API, using the default `8500` port.
+
+<!--codeinclude-->
+[Using ApiEndpoint with the Consul client](../../modules/consul/examples_test.go) inside_block:connectConsul
+<!--/codeinclude-->
