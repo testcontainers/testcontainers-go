@@ -6,10 +6,6 @@
             "path": "../"
         },
         {
-            "name": "example / consul",
-            "path": "../examples/consul"
-        },
-        {
             "name": "example / nginx",
             "path": "../examples/nginx"
         },
