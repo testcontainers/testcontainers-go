@@ -16,6 +16,10 @@ It is possible to map a Docker volume into the container using the `Mounts` attr
 !!!warning
     Bind mounts are not supported, as it could not work with remote Docker hosts.
 
+!!!tip
+    It is recommended to copy data from your local host machine to a test container using the file copy API 
+    described below, as it is much more portable
+
 ## Copying files to a container
 
 If you would like to copy a file to a container, you can do it in two different manners:
@@ -67,7 +71,27 @@ It's important to notice that, when copying the directory to the container, the 
 
 You can leverage the very same mechanism used for copying files to a container, but for directories.:
 
-1. The first way is using the `Files` field in the `ContainerRequest` struct, as shown in the previous section, but using the path of a directory as `HostFilePath`.
+1. The first way is using the `Files` field in the `ContainerRequest` struct, as shown in the previous section, but using the path of a directory as `HostFilePath`. Like so:
+
+```go
+ctx := context.Background()
+
+nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:        "nginx:1.17.6",
+			ExposedPorts: []string{"80/tcp"},
+			WaitingFor:   wait.ForListeningPort("80/tcp"),
+			Files: []ContainerFile{
+				{
+					HostFilePath:      "./testdata",
+					ContainerFilePath: "/scripts/",
+					FileMode:          0o700,
+				},
+			},
+		},
+		Started: false,
+	})
+```
 
 2. The second way uses the existing `CopyFileToContainer` method, which will internally check if the host path is a directory, calling the `CopyDirToContainer` method if needed:
 

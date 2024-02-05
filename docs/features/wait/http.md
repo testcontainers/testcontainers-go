@@ -21,6 +21,9 @@ Variations on the HTTP wait strategy are supported, including:
 [Waiting for an HTTP endpoint using image's default port](../../../wait/http_test.go) inside_block:waitForHTTPWithDefaultPort
 <!--/codeinclude-->
 
+!!!tip
+    The HTTP endpoint wait strategy will default to the first port exported/published by the image.
+
 ## Match an HTTP method with Port
 
 <!--codeinclude-->
