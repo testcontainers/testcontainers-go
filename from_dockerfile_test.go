@@ -1,4 +1,4 @@
-package testcontainers
+package testcontainers_test
 
 import (
 	"context"
@@ -12,10 +12,12 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestBuildImageFromDockerfile(t *testing.T) {
-	provider, err := NewDockerProvider()
+	provider, err := testcontainers.NewDockerProvider()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,9 +27,9 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 
 	ctx := context.Background()
 
-	tag, err := provider.BuildImage(ctx, &ContainerRequest{
+	tag, err := provider.BuildImage(ctx, &testcontainers.ContainerRequest{
 		// fromDockerfileIncludingRepo {
-		FromDockerfile: FromDockerfile{
+		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    "testdata",
 			Dockerfile: "echo.Dockerfile",
 			Repo:       "test-repo",
@@ -53,7 +55,7 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 }
 
 func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
-	provider, err := NewDockerProvider()
+	provider, err := testcontainers.NewDockerProvider()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,8 +65,8 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 
 	ctx := context.Background()
 
-	tag, err := provider.BuildImage(ctx, &ContainerRequest{
-		FromDockerfile: FromDockerfile{
+	tag, err := provider.BuildImage(ctx, &testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    "testdata",
 			Dockerfile: "echo.Dockerfile",
 			Repo:       "test-repo",
@@ -88,7 +90,7 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 }
 
 func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
-	provider, err := NewDockerProvider()
+	provider, err := testcontainers.NewDockerProvider()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,8 +100,8 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 
 	ctx := context.Background()
 
-	tag, err := provider.BuildImage(ctx, &ContainerRequest{
-		FromDockerfile: FromDockerfile{
+	tag, err := provider.BuildImage(ctx, &testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    "testdata",
 			Dockerfile: "echo.Dockerfile",
 			Tag:        "test-tag",
@@ -126,9 +128,9 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 	// there are thre targets: target0, target1 and target2.
 	for i := 0; i < 3; i++ {
 		ctx := context.Background()
-		c, err := GenericContainer(ctx, GenericContainerRequest{
-			ContainerRequest: ContainerRequest{
-				FromDockerfile: FromDockerfile{
+		c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				FromDockerfile: testcontainers.FromDockerfile{
 					Context:       "testdata",
 					Dockerfile:    "target.Dockerfile",
 					PrintBuildLog: true,
@@ -160,9 +162,9 @@ func ExampleGenericContainer_buildFromDockerfile() {
 	ctx := context.Background()
 
 	// buildFromDockerfileWithModifier {
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			FromDockerfile: FromDockerfile{
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			FromDockerfile: testcontainers.FromDockerfile{
 				Context:       "testdata",
 				Dockerfile:    "target.Dockerfile",
 				PrintBuildLog: true,
@@ -199,9 +201,9 @@ func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			FromDockerfile: FromDockerfile{
+	_, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			FromDockerfile: testcontainers.FromDockerfile{
 				Context:       "testdata",
 				Dockerfile:    "target.Dockerfile",
 				PrintBuildLog: true,

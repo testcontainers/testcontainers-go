@@ -1,4 +1,4 @@
-package testcontainers
+package testcontainers_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -18,9 +19,9 @@ const (
 func TestGenericReusableContainer(t *testing.T) {
 	ctx := context.Background()
 
-	n1, err := GenericContainer(ctx, GenericContainerRequest{
+	n1, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        nginxAlpineImage,
 			ExposedPorts: []string{nginxDefaultPort},
 			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
@@ -45,7 +46,7 @@ func TestGenericReusableContainer(t *testing.T) {
 		{
 			name: "reuse option with empty name",
 			errorMatcher: func(err error) error {
-				if errors.Is(err, ErrReuseEmptyName) {
+				if errors.Is(err, testcontainers.ErrReuseEmptyName) {
 					return nil
 				}
 				return err
@@ -75,9 +76,9 @@ func TestGenericReusableContainer(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			n2, err := GenericContainer(ctx, GenericContainerRequest{
+			n2, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 				ProviderType: providerType,
-				ContainerRequest: ContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
 					Image:        nginxAlpineImage,
 					ExposedPorts: []string{nginxDefaultPort},
 					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
@@ -105,9 +106,9 @@ func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	c, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
 			Image:      nginxAlpineImage,
 			WaitingFor: wait.ForLog("this string should not be present in the logs"),
 		},

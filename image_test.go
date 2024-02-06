@@ -1,4 +1,4 @@
-package testcontainers
+package testcontainers_test
 
 import (
 	"context"
@@ -6,13 +6,14 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
 func TestImageList(t *testing.T) {
 	t.Setenv("DOCKER_HOST", core.ExtractDockerHost(context.Background()))
 
-	provider, err := ProviderDocker.GetProvider()
+	provider, err := testcontainers.ProviderDocker.GetProvider()
 	if err != nil {
 		t.Fatalf("failed to get provider %v", err)
 	}
@@ -21,7 +22,7 @@ func TestImageList(t *testing.T) {
 		_ = provider.Close()
 	}()
 
-	req := ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image: "redis:latest",
 	}
 
@@ -56,7 +57,7 @@ func TestImageList(t *testing.T) {
 func TestSaveImages(t *testing.T) {
 	t.Setenv("DOCKER_HOST", core.ExtractDockerHost(context.Background()))
 
-	provider, err := ProviderDocker.GetProvider()
+	provider, err := testcontainers.ProviderDocker.GetProvider()
 	if err != nil {
 		t.Fatalf("failed to get provider %v", err)
 	}
@@ -65,7 +66,7 @@ func TestSaveImages(t *testing.T) {
 		_ = provider.Close()
 	}()
 
-	req := ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image: "redis:latest",
 	}
 
