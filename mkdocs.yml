@@ -95,6 +95,7 @@ nav:
         - examples/consul.md
         - examples/nginx.md
         - examples/toxiproxy.md
+        - examples/postgres.md
     - System Requirements:
         - system_requirements/index.md
         - system_requirements/docker.md
