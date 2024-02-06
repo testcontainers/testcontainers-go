@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -23,20 +24,20 @@ func ExampleRunContainer() {
 		dolt.WithScripts(filepath.Join("testdata", "schema.sql")),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to run dolt container: %s", err) // nolint:gocritic
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := doltContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate dolt container: %s", err) // nolint:gocritic
 		}
 	}()
 	// }
 
 	state, err := doltContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -57,12 +58,12 @@ func ExampleRunContainer_connect() {
 		dolt.WithScripts(filepath.Join("testdata", "schema.sql")),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to run dolt container: %s", err) // nolint:gocritic
 	}
 
 	defer func() {
 		if err := doltContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate dolt container: %s", err) // nolint:gocritic
 		}
 	}()
 
@@ -70,23 +71,23 @@ func ExampleRunContainer_connect() {
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to open database connection: %s", err) // nolint:gocritic
 	}
 	defer db.Close()
 
 	if err = db.Ping(); err != nil {
-		panic(err)
+		log.Fatalf("failed to ping database: %s", err) // nolint:gocritic
 	}
 	stmt, err := db.Prepare("SELECT dolt_version();")
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to prepate sql statement: %s", err) // nolint:gocritic
 	}
 	defer stmt.Close()
 	row := stmt.QueryRow()
 	version := ""
 	err = row.Scan(&version)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to scan row: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(version)
