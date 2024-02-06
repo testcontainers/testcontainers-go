@@ -101,9 +101,6 @@ func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
 			Source:   m.Source.Source(),
 			ReadOnly: m.ReadOnly,
 			Target:   m.Target.Target(),
-			VolumeOptions: &mount.VolumeOptions{
-				Labels: GenericLabels(),
-			},
 		}
 
 		switch typedMounter := m.Source.(type) {
@@ -115,6 +112,17 @@ func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
 			Logger.Printf("Mount type %s is not supported by Testcontainers for Go", m.Source.Type())
 		default:
 			// The provided source type has no custom options
+		}
+
+		if mountType == mount.TypeVolume {
+			if containerMount.VolumeOptions == nil {
+				containerMount.VolumeOptions = &mount.VolumeOptions{
+					Labels: make(map[string]string),
+				}
+			}
+			for k, v := range GenericLabels() {
+				containerMount.VolumeOptions.Labels[k] = v
+			}
 		}
 
 		mounts = append(mounts, containerMount)

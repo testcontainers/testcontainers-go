@@ -45,6 +45,9 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		Labels: GenericLabels(),
 	}
 
+	expectedLabels := GenericLabels()
+	expectedLabels["hello"] = "world"
+
 	t.Parallel()
 	tests := []struct {
 		name   string
@@ -104,9 +107,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 					Target: "/data",
 					VolumeOptions: &mount.VolumeOptions{
 						NoCopy: true,
-						Labels: map[string]string{
-							"hello": "world",
-						},
+						Labels: expectedLabels,
 					},
 				},
 			},
@@ -117,26 +118,24 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			mounts: ContainerMounts{{Source: GenericTmpfsMountSource{}, Target: "/data"}},
 			want: []mount.Mount{
 				{
-					Type:          mount.TypeTmpfs,
-					Target:        "/data",
-					VolumeOptions: volumeOptions,
+					Type:   mount.TypeTmpfs,
+					Target: "/data",
 				},
 			},
 		},
 		{
-			name:   "Single volume mount - read-only",
+			name:   "Single tmpfs mount - read-only",
 			mounts: ContainerMounts{{Source: GenericTmpfsMountSource{}, Target: "/data", ReadOnly: true}},
 			want: []mount.Mount{
 				{
-					Type:          mount.TypeTmpfs,
-					Target:        "/data",
-					ReadOnly:      true,
-					VolumeOptions: volumeOptions,
+					Type:     mount.TypeTmpfs,
+					Target:   "/data",
+					ReadOnly: true,
 				},
 			},
 		},
 		{
-			name: "Single volume mount - with options",
+			name: "Single tmpfs mount - with options",
 			mounts: ContainerMounts{
 				{
 					Source: DockerTmpfsMountSource{
@@ -156,7 +155,6 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 						SizeBytes: 50 * 1024 * 1024,
 						Mode:      0o644,
 					},
-					VolumeOptions: volumeOptions,
 				},
 			},
 		},
