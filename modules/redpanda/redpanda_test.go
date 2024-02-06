@@ -455,6 +455,9 @@ func TestRedpandaWithTLSAndSASL(t *testing.T) {
 	)
 	require.NoError(t, err)
 	defer kafkaCl.Close()
+
+	_, err = kadm.NewClient(kafkaCl).ListTopics(ctx)
+	require.NoError(t, err)
 }
 
 func TestRedpandaListener_Simple(t *testing.T) {
