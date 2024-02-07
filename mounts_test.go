@@ -47,7 +47,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		Labels: testcontainers.GenericLabels(),
 	}
 
-	expectedLabels := GenericLabels()
+	expectedLabels := testcontainers.GenericLabels()
 	expectedLabels["hello"] = "world"
 
 	t.Parallel()
@@ -127,7 +127,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		},
 		{
 			name:   "Single volume mount - read-only",
-			mounts: ContainerMounts{{Source: GenericTmpfsMountSource{}, Target: "/data", ReadOnly: true}},
+			mounts: testcontainers.ContainerMounts{{Source: testcontainers.GenericTmpfsMountSource{}, Target: "/data", ReadOnly: true}},
 			want: []mount.Mount{
 				{
 					Type:     mount.TypeTmpfs,
@@ -138,7 +138,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		},
 		{
 			name: "Single tmpfs mount - with options",
-			mounts: ContainerMounts{
+			mounts: testcontainers.ContainerMounts{
 				{
 					Source: testcontainers.DockerTmpfsMountSource{
 						TmpfsOptions: &mount.TmpfsOptions{
