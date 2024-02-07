@@ -227,11 +227,6 @@ func TestSnapshot(t *testing.T) {
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).
 				WithStartupTimeout(5*time.Second)),
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Cmd: []string{"-c", "log_statement=all"},
-			},
-		}),
 	)
 	if err != nil {
 		t.Fatal(err)
