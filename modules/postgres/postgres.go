@@ -161,7 +161,7 @@ func WithSnapshotName(name string) SnapshotOption {
 }
 
 // Snapshot takes a snapshot of the current state of the database as a template, which can then be restored using
-// the Reset method. By default, the snapshot will be created under a database called migrated_template, you can
+// the Restore method. By default, the snapshot will be created under a database called migrated_template, you can
 // customize the snapshot name with the options.
 // If a snapshot already exists under the given/default name, it will be overwritten with the new snapshot.
 func (c *PostgresContainer) Snapshot(ctx context.Context, opts ...SnapshotOption) error {
@@ -198,9 +198,9 @@ func (c *PostgresContainer) Snapshot(ctx context.Context, opts ...SnapshotOption
 	return nil
 }
 
-// Reset will reset the database to a specific snapshot. By default, it will restore the last snapshot taken on the
+// Restore will restore the database to a specific snapshot. By default, it will restore the last snapshot taken on the
 // database by the Snapshot method. If a snapshot name is provided, it will instead try to restore the snapshot by name.
-func (c *PostgresContainer) Reset(ctx context.Context, opts ...SnapshotOption) error {
+func (c *PostgresContainer) Restore(ctx context.Context, opts ...SnapshotOption) error {
 	config := &snapshotConfig{}
 	for _, opt := range opts {
 		config = opt(config)

@@ -259,7 +259,7 @@ func TestSnapshot(t *testing.T) {
 	t.Run("Test inserting a user", func(t *testing.T) {
 		t.Cleanup(func() {
 			// 3. In each test, reset the DB to its snapshot state.
-			err = container.Reset(ctx)
+			err = container.Restore(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -294,7 +294,7 @@ func TestSnapshot(t *testing.T) {
 	// 4. Run as many tests as you need, they will each get a clean database
 	t.Run("Test querying empty DB", func(t *testing.T) {
 		t.Cleanup(func() {
-			err = container.Reset(ctx)
+			err = container.Restore(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
