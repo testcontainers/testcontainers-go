@@ -154,9 +154,9 @@ type SnapshotOption func(container *snapshotConfig) *snapshotConfig
 // WithSnapshotName adds a specific name to the snapshot database created from the main database defined on the
 // container. The snapshot must not have the same name as your main database, otherwise it will be overwritten
 func WithSnapshotName(name string) SnapshotOption {
-	return func(container *snapshotConfig) *snapshotConfig {
-		container.snapshotName = name
-		return container
+	return func(cfg *snapshotConfig) *snapshotConfig {
+		cfg.snapshotName = name
+		return cfg
 	}
 }
 
