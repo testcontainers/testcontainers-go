@@ -6,10 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	capi "github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	capi "github.com/hashicorp/consul/api"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/consul"
