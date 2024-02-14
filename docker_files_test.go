@@ -2,9 +2,7 @@ package testcontainers
 
 import (
 	"context"
-	"io"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -83,16 +81,8 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 	require.NoError(t, err)
 
 	// Give some time to the wait script to catch the hello script being created
-	time.Sleep(200 * time.Millisecond)
-
-	logs, err := container.Logs(ctx)
+	err = wait.ForLog("done").WithStartupTimeout(200*time.Millisecond).WaitUntilReady(ctx, container)
 	require.NoError(t, err)
-
-	logsString := new(strings.Builder)
-	_, err = io.Copy(logsString, logs)
-	require.NoError(t, err)
-
-	require.Contains(t, logsString.String(), "done")
 
 	require.NoError(t, container.Terminate(ctx))
 }
