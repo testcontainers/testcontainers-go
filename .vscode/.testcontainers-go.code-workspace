@@ -42,6 +42,10 @@
             "path": "../modules/couchbase"
         },
         {
+            "name": "module / dolt",
+            "path": "../modules/dolt"
+        },
+        {
             "name": "module / elasticsearch",
             "path": "../modules/elasticsearch"
         },

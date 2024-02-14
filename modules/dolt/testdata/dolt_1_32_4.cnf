@@ -1,0 +1,46 @@
+log_level: info
+
+behavior:
+  read_only: false
+  autocommit: true
+  persistence_behavior: load
+  disable_client_multi_statements: false
+  dolt_transaction_commit: false
+  event_scheduler: "ON"
+
+user:
+  name: "root"
+  password: ""
+
+listener:
+  host: localhost
+  port: 3306
+  max_connections: 100
+  read_timeout_millis: 28800000
+  write_timeout_millis: 28800000
+  tls_key: null
+  tls_cert: null
+  require_secure_transport: null
+  allow_cleartext_passwords: null
+
+performance:
+  query_parallelism: null
+
+data_dir: /var/lib/dolt
+
+cfg_dir: /etc/dolt/doltcfg.d
+
+metrics:
+  labels: {}
+  host: null
+  port: -1
+
+remotesapi: {}
+
+privilege_file: .doltcfg/privileges.db
+
+branch_control_file: .doltcfg/branch_control.db
+
+user_session_vars: []
+
+jwks: []
