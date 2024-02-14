@@ -151,9 +151,12 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 		},
 		Started: true,
 	})
+	require.NoError(t, err)
 
 	// as the container is started, we can create the directory first
 	_, _, err = container.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
+	require.NoError(t, err)
+
 	// because the container path is a directory, it will use the copy dir method as fallback
 	err = container.CopyFileToContainer(ctx, dataDirectory, "/scripts", 0o700)
 	if err != nil {
@@ -194,9 +197,12 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 		},
 		Started: true,
 	})
+	require.NoError(t, err)
 
 	// as the container is started, we can create the directory first
 	_, _, err = container.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
+	require.NoError(t, err)
+
 	err = container.CopyDirToContainer(ctx, dataDirectory, "/scripts", 0o700)
 	if err != nil {
 		t.Fatal(err)
