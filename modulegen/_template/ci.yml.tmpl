@@ -52,7 +52,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
-      fail-fast: true
+      fail-fast: false
       platform: "ubuntu-latest"
       project-directory: "."
       rootless-docker: false
@@ -72,7 +72,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
-      fail-fast: true
+      fail-fast: false
       platform: "ubuntu-latest"
       project-directory: "."
       rootless-docker: true
