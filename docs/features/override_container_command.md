@@ -15,6 +15,13 @@ req := ContainerRequest{
 }
 ```
 
+!!!info
+    If you are using a module, you can use the `testcontainers.CustomizeRequest` option to add arguments to the command. Check the individual module's pages for more information on their commands.
+
+This option will merge the customized request into the module's request, appending any additional `Cmd` arguments to the
+module's command. This can't be used to replace the command, only to append options.
+Check the individual module's pages for more information on their commands.
+
 ## Executing a command
 
 You can execute a command inside a running container, similar to a `docker exec` call:
