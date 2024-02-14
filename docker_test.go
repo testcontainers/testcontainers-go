@@ -2002,6 +2002,8 @@ func TestDockerProviderReuseOrCreateContainer(t *testing.T) {
 	c, err := provider.ReuseOrCreateContainer(ctx, testcontainers.ContainerRequest{
 		Name: "test",
 	})
+	require.NoError(t, err)
+
 	foundName, err := c.Name(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, c)
