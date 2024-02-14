@@ -128,11 +128,11 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 
 	// Not using the assertations here to avoid leaking the library into the example
 	// copyDirectoryToRunningContainerAsFile {
-	waitForPath, err := filepath.Abs(filepath.Join(".", "testdata", "waitForHello.sh"))
+	dataDirectory, err := filepath.Abs(filepath.Join(".", "testdata"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	dataDirectory, err := filepath.Abs(filepath.Join(".", "testdata"))
+	waitForPath, err := filepath.Abs(filepath.Join(dataDirectory, "waitForHello.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
