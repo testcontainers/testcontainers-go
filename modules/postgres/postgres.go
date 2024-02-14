@@ -175,22 +175,21 @@ func (c *PostgresContainer) Snapshot(ctx context.Context, opts ...SnapshotOption
 		snapshotName = config.snapshotName
 	}
 
-	// Drop the snapshot database if it already exists
-	_, _, err := c.Exec(ctx, []string{"psql", "-U", c.user, "-c", fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, snapshotName)})
-	if err != nil {
-		return err
+	// execute the commands to create the snapshot, in order
+	cmds := []string{
+		// Drop the snapshot database if it already exists
+		fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, snapshotName),
+		// Create a copy of the database to another database to use as a template now that it was fully migrated
+		fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, snapshotName, c.dbName, c.user),
+		// Snapshot the template database so we can restore it onto our original database going forward
+		fmt.Sprintf(`ALTER DATABASE "%s" WITH is_template = TRUE`, snapshotName),
 	}
 
-	// Create a copy of the database to another database to use as a template now that it was fully migrated
-	_, _, err = c.Exec(ctx, []string{"psql", "-U", c.user, "-c", fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, snapshotName, c.dbName, c.user)})
-	if err != nil {
-		return err
-	}
-
-	// Snapshot the template database so we can restore it onto our original database going forward
-	_, _, err = c.Exec(ctx, []string{"psql", "-U", c.user, "-c", fmt.Sprintf(`ALTER DATABASE "%s" WITH is_template = TRUE`, snapshotName)})
-	if err != nil {
-		return err
+	for _, cmd := range cmds {
+		_, _, err := c.Exec(ctx, []string{"psql", "-U", c.user, "-c", cmd})
+		if err != nil {
+			return err
+		}
 	}
 
 	c.snapshotName = snapshotName
@@ -211,16 +210,19 @@ func (c *PostgresContainer) Restore(ctx context.Context, opts ...SnapshotOption)
 		snapshotName = config.snapshotName
 	}
 
-	// Drop the entire database by connecting to the postgres global database
-	_, _, err := c.Exec(ctx, []string{"psql", "-U", c.user, "-d", "postgres", "-c", fmt.Sprintf(`DROP DATABASE "%s" with (FORCE)`, c.dbName)})
-	if err != nil {
-		return err
+	// execute the commands to restore the snapshot, in order
+	cmds := []string{
+		// Drop the entire database by connecting to the postgres global database
+		fmt.Sprintf(`DROP DATABASE "%s" with (FORCE)`, c.dbName),
+		// Then restore the previous snapshot
+		fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, c.dbName, snapshotName, c.user),
 	}
 
-	// Then restore the previous snapshot
-	_, _, err = c.Exec(ctx, []string{"psql", "-U", c.user, "-d", "postgres", "-c", fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, c.dbName, snapshotName, c.user)})
-	if err != nil {
-		return err
+	for _, cmd := range cmds {
+		_, _, err := c.Exec(ctx, []string{"psql", "-U", c.user, "-d", "postgres", "-c", cmd})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
