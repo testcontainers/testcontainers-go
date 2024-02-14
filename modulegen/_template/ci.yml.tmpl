@@ -33,7 +33,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
-      fail-fast: false
+      fail-fast: true
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: "."
       rootless-docker: false
