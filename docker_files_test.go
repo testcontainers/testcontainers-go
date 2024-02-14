@@ -1,4 +1,4 @@
-package testcontainers
+package testcontainers_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -21,10 +22,10 @@ func TestCopyFileToContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "docker.io/bash",
-			Files: []ContainerFile{
+			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath:      absPath,
 					ContainerFilePath: "/hello.sh",
@@ -57,10 +58,10 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "docker.io/bash:5.2.26",
-			Files: []ContainerFile{
+			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath:      waitForPath,
 					ContainerFilePath: "/waitForHello.sh",
@@ -98,10 +99,10 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "docker.io/bash",
-			Files: []ContainerFile{
+			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath: dataDirectory,
 					// ContainerFile cannot create the parent directory, so we copy the scripts
@@ -136,10 +137,10 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "docker.io/bash",
-			Files: []ContainerFile{
+			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath:      waitForPath,
 					ContainerFilePath: "/waitForHello.sh",
@@ -150,11 +151,15 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 		},
 		Started: true,
 	})
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// as the container is started, we can create the directory first
 	_, _, err = container.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// because the container path is a directory, it will use the copy dir method as fallback
 	err = container.CopyFileToContainer(ctx, dataDirectory, "/scripts", 0o700)
@@ -182,10 +187,10 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "docker.io/bash",
-			Files: []ContainerFile{
+			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath:      waitForPath,
 					ContainerFilePath: "/waitForHello.sh",
@@ -196,11 +201,15 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 		},
 		Started: true,
 	})
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// as the container is started, we can create the directory first
 	_, _, err = container.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	err = container.CopyDirToContainer(ctx, dataDirectory, "/scripts", 0o700)
 	if err != nil {
