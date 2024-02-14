@@ -34,8 +34,6 @@ If you would like to copy a file to a container, you can do it in two different 
 
 <!--codeinclude-->
 [Copying files to a running container](../../docker_files_test.go) inside_block:copyFileAfterCreate
-<!--/codeinclude-->
-<!--codeinclude-->
 [Wait for hello](../../testdata/waitForHello.sh)
 <!--/codeinclude-->
 
