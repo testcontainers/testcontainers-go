@@ -61,7 +61,7 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 
 	container, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "docker.io/bash",
+			Image: "docker.io/bash:5.2.26",
 			Files: []ContainerFile{
 				{
 					HostFilePath:      waitForPath,
