@@ -126,7 +126,6 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cnl()
 
-	// Not using the assertations here to avoid leaking the library into the example
 	// copyDirectoryToRunningContainerAsFile {
 	dataDirectory, err := filepath.Abs(filepath.Join(".", "testdata"))
 	if err != nil {
