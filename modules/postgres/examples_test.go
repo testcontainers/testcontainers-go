@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/docker/go-connections/nat"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -19,6 +21,10 @@ func ExampleRunContainer() {
 	dbName := "users"
 	dbUser := "user"
 	dbPassword := "password"
+	dbURL := func(host string, port nat.Port) string {
+		return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+			dbUser, dbPassword, host, port.Port(), dbName)
+	}
 
 	postgresContainer, err := postgres.RunContainer(ctx,
 		testcontainers.WithImage("docker.io/postgres:15.2-alpine"),
@@ -28,8 +34,9 @@ func ExampleRunContainer() {
 		postgres.WithUsername(dbUser),
 		postgres.WithPassword(dbPassword),
 		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
+			wait.ForSQL(nat.Port("5432/tcp"), "postgres", dbURL).
+				// examine the pg_database system catalog for the set of existing databases
+				WithQuery("SELECT datname FROM pg_database").
 				WithStartupTimeout(5*time.Second)),
 	)
 	if err != nil {
