@@ -61,7 +61,7 @@ func ExampleRunContainer_connect() {
 
 	endpoint, err := consulContainer.ApiEndpoint(ctx)
 	if err != nil {
-		log.Fatalf("failed to get endpoint: %s", err)
+		log.Fatalf("failed to get endpoint: %s", err) // nolint:gocritic
 	}
 
 	config := capi.DefaultConfig()
@@ -73,6 +73,9 @@ func ExampleRunContainer_connect() {
 	// }
 
 	node_name, err := client.Agent().NodeName()
+	if err != nil {
+		log.Fatalf("failed to get node name: %s", err) // nolint:gocritic
+	}
 	fmt.Println(len(node_name) > 0)
 
 	// Output:
