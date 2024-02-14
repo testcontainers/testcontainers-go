@@ -8,7 +8,7 @@
 
 **Documentation**
 
-[![GoDoc Reference](https://camo.githubusercontent.com/8609cfcb531fa0f5598a3d4353596fae9336cce3/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f79616e6777656e6d61692f686f772d746f2d6164642d62616467652d696e2d6769746875622d726561646d653f7374617475732e737667)](https://pkg.go.dev/github.com/testcontainers/testcontainers-go)
+[![GoDoc Reference](https://pkg.go.dev/badge/github.com/testcontainers/testcontainers-go.svg)](https://pkg.go.dev/github.com/testcontainers/testcontainers-go)
 
 **Social**
 

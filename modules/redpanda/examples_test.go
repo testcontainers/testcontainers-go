@@ -15,6 +15,7 @@ func ExampleRunContainer() {
 	redpandaContainer, err := redpanda.RunContainer(ctx,
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
+		redpanda.WithEnableWasmTransform(),
 		redpanda.WithNewServiceAccount("superuser-1", "test"),
 		redpanda.WithNewServiceAccount("superuser-2", "test"),
 		redpanda.WithNewServiceAccount("no-superuser", "test"),
