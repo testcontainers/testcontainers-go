@@ -15,21 +15,8 @@ req := ContainerRequest{
 }
 ```
 
-### Adding to a module's command
-
-Modules generate their own `ContainerRequest`, which may include an overridden image command. You can add arguments
-to this command by using the `testcontainers.CustomizeRequest` option when using a module.
-
-```go
-container, err := postgres.RunContainer(ctx,
-    /* Other module options */
-    testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-        ContainerRequest: testcontainers.ContainerRequest{
-            Cmd: []string{"-c", "log_statement=all"},
-        },
-    }),
-)
-```
+!!!info
+    If you are using a module, you can use the `testcontainers.CustomizeRequest` option to add arguments to the command. Check the individual module's pages for more information on their commands.
 
 This option will merge the customized request into the module's request, appending any additional `Cmd` arguments to the
 module's command. This can't be used to replace the command, only to append options.
