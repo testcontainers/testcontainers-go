@@ -13,6 +13,9 @@ The HTTP wait strategy will check the result of an HTTP(S) request against the c
 - the poll interval to be used in milliseconds, default is 100 milliseconds.
 - the basic auth credentials to be used.
 
+!!!info
+    It's important to notice that the HTTP wait strategy will default to the first port exported/published by the image.
+
 Variations on the HTTP wait strategy are supported, including:
 
 ## Match an HTTP method
@@ -20,9 +23,6 @@ Variations on the HTTP wait strategy are supported, including:
 <!--codeinclude-->
 [Waiting for an HTTP endpoint using image's default port](../../../wait/http_test.go) inside_block:waitForHTTPWithDefaultPort
 <!--/codeinclude-->
-
-!!!tip
-    The HTTP endpoint wait strategy will default to the first port exported/published by the image.
 
 ## Match an HTTP method with Port
 
