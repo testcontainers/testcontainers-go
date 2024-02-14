@@ -30,7 +30,7 @@ func ExampleExecStrategy() {
 		Started:          true,
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	defer func() {
@@ -41,7 +41,7 @@ func ExampleExecStrategy() {
 
 	state, err := localstack.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)

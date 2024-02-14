@@ -3,6 +3,7 @@ package redis_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -20,20 +21,20 @@ func ExampleRunContainer() {
 		redis.WithConfigFile(filepath.Join("testdata", "redis7.conf")),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := redisContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)

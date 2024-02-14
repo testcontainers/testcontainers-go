@@ -3,6 +3,7 @@ package k6_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -29,12 +30,12 @@ func ExampleRunContainer() {
 	}
 	httpbin, err := testcontainers.GenericContainer(ctx, gcr)
 	if err != nil {
-		panic(fmt.Errorf("failed to create httpbin container %w", err))
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	defer func() {
 		if err := httpbin.Terminate(ctx); err != nil {
-			panic(fmt.Errorf("failed to terminate container: %w", err))
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
@@ -42,13 +43,13 @@ func ExampleRunContainer() {
 	// getHTTPBinIP {
 	httpbinIP, err := httpbin.ContainerIP(ctx)
 	if err != nil {
-		panic(fmt.Errorf("failed to get httpbin IP: %w", err))
+		log.Fatalf("failed to get container IP: %s", err) // nolint:gocritic
 	}
 	// }
 
 	absPath, err := filepath.Abs(filepath.Join("scripts", "httpbin.js"))
 	if err != nil {
-		panic(fmt.Errorf("failed to get path to test script: %w", err))
+		log.Fatalf("failed to get absolute path to test script: %s", err)
 	}
 
 	// runK6Container {
@@ -60,12 +61,12 @@ func ExampleRunContainer() {
 		k6.SetEnvVar("HTTPBIN", httpbinIP),
 	)
 	if err != nil {
-		panic(fmt.Errorf("failed to start k6 container: %w", err))
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	defer func() {
 		if err := k6.Terminate(ctx); err != nil {
-			panic(fmt.Errorf("failed to terminate container: %w", err))
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	//}
@@ -73,7 +74,7 @@ func ExampleRunContainer() {
 	// assert the result of the test
 	state, err := k6.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err)
 	}
 
 	fmt.Println(state.ExitCode)

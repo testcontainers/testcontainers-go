@@ -67,6 +67,40 @@ func TestOverrideContainerRequest(t *testing.T) {
 	assert.Equal(t, wait.ForLog("foo"), req.WaitingFor)
 }
 
+type msgsLogConsumer struct {
+	msgs []string
+}
+
+// Accept prints the log to stdout
+func (lc *msgsLogConsumer) Accept(l testcontainers.Log) {
+	lc.msgs = append(lc.msgs, string(l.Content))
+}
+
+func TestWithLogConsumers(t *testing.T) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:      "mysql:8.0.36",
+			WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
+		},
+		Started: true,
+	}
+
+	lc := &msgsLogConsumer{}
+
+	testcontainers.WithLogConsumers(lc)(&req)
+
+	c, err := testcontainers.GenericContainer(context.Background(), req)
+	// we expect an error because the MySQL environment variables are not set
+	// but this is expected because we just want to test the log consumer
+	require.Error(t, err)
+	defer func() {
+		err = c.Terminate(context.Background())
+		require.NoError(t, err)
+	}()
+
+	assert.NotEmpty(t, lc.msgs)
+}
+
 func TestWithStartupCommand(t *testing.T) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{

@@ -143,6 +143,70 @@ var defaultCopyFileToContainerHook = func(files []ContainerFile) ContainerLifecy
 	}
 }
 
+// defaultLogConsumersHook is a hook that will start log consumers after the container is started
+var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHooks {
+	return ContainerLifecycleHooks{
+		PostStarts: []ContainerHook{
+			// first post-start hook is to produce logs and start log consumers
+			func(ctx context.Context, c Container) error {
+				dockerContainer := c.(*DockerContainer)
+
+				if cfg == nil {
+					return nil
+				}
+
+				for _, consumer := range cfg.Consumers {
+					dockerContainer.followOutput(consumer)
+				}
+
+				if len(cfg.Consumers) > 0 {
+					return dockerContainer.startLogProduction(ctx, cfg.Opts...)
+				}
+				return nil
+			},
+		},
+		PreTerminates: []ContainerHook{
+			// first pre-terminate hook is to stop the log production
+			func(ctx context.Context, c Container) error {
+				if cfg == nil || len(cfg.Consumers) == 0 {
+					return nil
+				}
+
+				dockerContainer := c.(*DockerContainer)
+
+				return dockerContainer.stopLogProduction()
+			},
+		},
+	}
+}
+
+// defaultReadinessHook is a hook that will wait for the container to be ready
+var defaultReadinessHook = func() ContainerLifecycleHooks {
+	return ContainerLifecycleHooks{
+		PostStarts: []ContainerHook{
+			// wait for the container to be ready
+			func(ctx context.Context, c Container) error {
+				dockerContainer := c.(*DockerContainer)
+
+				// if a Wait Strategy has been specified, wait before returning
+				if dockerContainer.WaitingFor != nil {
+					dockerContainer.logger.Printf(
+						"🚧 Waiting for container id %s image: %s. Waiting for: %+v",
+						dockerContainer.ID[:12], dockerContainer.Image, dockerContainer.WaitingFor,
+					)
+					if err := dockerContainer.WaitingFor.WaitUntilReady(ctx, c); err != nil {
+						return err
+					}
+				}
+
+				dockerContainer.isRunning = true
+
+				return nil
+			},
+		},
+	}
+}
+
 // creatingHook is a hook that will be called before a container is created.
 func (req ContainerRequest) creatingHook(ctx context.Context) error {
 	for _, lifecycleHooks := range req.LifecycleHooks {

@@ -81,24 +81,6 @@ If you need to test Pulsar Transactions you can enable the transactions feature:
 [Create a Pulsar container with transactions](../../modules/pulsar/pulsar_test.go) inside_block:withTransactions
 <!--/codeinclude-->
 
-#### Log consumers
-If you need to collect the logs from the Pulsar container, you can add your own LogConsumer with the `WithLogConsumers` function, which accepts a variadic argument of LogConsumers.
-
-<!--codeinclude-->
-[Adding LogConsumers](../../modules/pulsar/pulsar_test.go) inside_block:withLogConsumers
-<!--/codeinclude-->
-
-An example of a LogConsumer could be the following:
-
-<!--codeinclude-->
-[Example LogConsumer](../../modules/pulsar/pulsar_test.go) inside_block:logConsumerForTesting
-<!--/codeinclude-->
-
-!!!warning
-    You will need to explicitly stop the producer in your tests.
-
-If you want to know more about LogConsumers, please check the [Following Container Logs](../features/follow_logs.md) documentation.
-
 ### Container methods
 
 Once you have a Pulsar container, then you can retrieve the broker and the admin url:

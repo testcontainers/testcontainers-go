@@ -509,9 +509,7 @@ func TestContainerCreation(t *testing.T) {
 		t.Errorf("Expected number of connected networks %d. Got %d.", 0, len(networkAliases))
 	}
 
-	if os.Getenv("XDG_RUNTIME_DIR") != "" {
-		t.Log("[Docker Rootless] do not assert that the container should have zero aliases in the bridge network")
-	} else if len(networkAliases["bridge"]) != 0 {
+	if len(networkAliases["bridge"]) != 0 {
 		t.Errorf("Expected number of aliases for 'bridge' network %d. Got %d.", 0, len(networkAliases["bridge"]))
 	}
 }
@@ -989,7 +987,7 @@ func ExampleDockerProvider_CreateContainer() {
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -1021,7 +1019,7 @@ func ExampleContainer_Host() {
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -1049,7 +1047,7 @@ func ExampleContainer_Start() {
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -1077,7 +1075,7 @@ func ExampleContainer_Stop() {
 	timeout := 10 * time.Second
 	err := nginxC.Stop(ctx, &timeout)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to stop container: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println("Container has been stopped")
@@ -1111,7 +1109,7 @@ func ExampleContainer_MappedPort() {
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -1539,7 +1537,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			})
 			terminateContainerOnEnd(t, ctx, nginxC)
 
-			require.True(t, (err != nil) == tc.hasError)
+			require.Equal(t, (err != nil), tc.hasError)
 			if err == nil {
 				dir := tc.dir
 

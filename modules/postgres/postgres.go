@@ -14,14 +14,16 @@ const (
 	defaultUser          = "postgres"
 	defaultPassword      = "postgres"
 	defaultPostgresImage = "docker.io/postgres:11-alpine"
+	defaultSnapshotName  = "migrated_template"
 )
 
 // PostgresContainer represents the postgres container type used in the module
 type PostgresContainer struct {
 	testcontainers.Container
-	dbName   string
-	user     string
-	password string
+	dbName       string
+	user         string
+	password     string
+	snapshotName string
 }
 
 // ConnectionString returns the connection string for the postgres container, using the default 5432 port, and
@@ -140,4 +142,88 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	dbName := req.Env["POSTGRES_DB"]
 
 	return &PostgresContainer{Container: container, dbName: dbName, password: password, user: user}, nil
+}
+
+type snapshotConfig struct {
+	snapshotName string
+}
+
+// SnapshotOption is the type for passing options to the snapshot function of the database
+type SnapshotOption func(container *snapshotConfig) *snapshotConfig
+
+// WithSnapshotName adds a specific name to the snapshot database created from the main database defined on the
+// container. The snapshot must not have the same name as your main database, otherwise it will be overwritten
+func WithSnapshotName(name string) SnapshotOption {
+	return func(cfg *snapshotConfig) *snapshotConfig {
+		cfg.snapshotName = name
+		return cfg
+	}
+}
+
+// Snapshot takes a snapshot of the current state of the database as a template, which can then be restored using
+// the Restore method. By default, the snapshot will be created under a database called migrated_template, you can
+// customize the snapshot name with the options.
+// If a snapshot already exists under the given/default name, it will be overwritten with the new snapshot.
+func (c *PostgresContainer) Snapshot(ctx context.Context, opts ...SnapshotOption) error {
+	config := &snapshotConfig{}
+	for _, opt := range opts {
+		config = opt(config)
+	}
+
+	snapshotName := defaultSnapshotName
+	if config.snapshotName != "" {
+		snapshotName = config.snapshotName
+	}
+
+	// execute the commands to create the snapshot, in order
+	cmds := []string{
+		// Drop the snapshot database if it already exists
+		fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, snapshotName),
+		// Create a copy of the database to another database to use as a template now that it was fully migrated
+		fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, snapshotName, c.dbName, c.user),
+		// Snapshot the template database so we can restore it onto our original database going forward
+		fmt.Sprintf(`ALTER DATABASE "%s" WITH is_template = TRUE`, snapshotName),
+	}
+
+	for _, cmd := range cmds {
+		_, _, err := c.Exec(ctx, []string{"psql", "-U", c.user, "-c", cmd})
+		if err != nil {
+			return err
+		}
+	}
+
+	c.snapshotName = snapshotName
+
+	return nil
+}
+
+// Restore will restore the database to a specific snapshot. By default, it will restore the last snapshot taken on the
+// database by the Snapshot method. If a snapshot name is provided, it will instead try to restore the snapshot by name.
+func (c *PostgresContainer) Restore(ctx context.Context, opts ...SnapshotOption) error {
+	config := &snapshotConfig{}
+	for _, opt := range opts {
+		config = opt(config)
+	}
+
+	snapshotName := c.snapshotName
+	if config.snapshotName != "" {
+		snapshotName = config.snapshotName
+	}
+
+	// execute the commands to restore the snapshot, in order
+	cmds := []string{
+		// Drop the entire database by connecting to the postgres global database
+		fmt.Sprintf(`DROP DATABASE "%s" with (FORCE)`, c.dbName),
+		// Then restore the previous snapshot
+		fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, c.dbName, snapshotName, c.user),
+	}
+
+	for _, cmd := range cmds {
+		_, _, err := c.Exec(ctx, []string{"psql", "-U", c.user, "-d", "postgres", "-c", cmd})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

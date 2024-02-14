@@ -3,6 +3,7 @@ package couchbase_test
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/couchbase/gocb/v2"
 
@@ -28,25 +29,25 @@ func ExampleRunContainer() {
 		couchbase.WithBuckets(bucket),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	defer func() {
 		if err := couchbaseContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := couchbaseContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
 
 	connectionString, err := couchbaseContainer.ConnectionString(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get connection string: %s", err)
 	}
 
 	cluster, err := gocb.Connect(connectionString, gocb.ClusterOptions{
@@ -54,12 +55,12 @@ func ExampleRunContainer() {
 		Password: couchbaseContainer.Password(),
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to connect to cluster: %s", err)
 	}
 
 	buckets, err := cluster.Buckets().GetAllBuckets(nil)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get buckets: %s", err)
 	}
 
 	fmt.Println(len(buckets))

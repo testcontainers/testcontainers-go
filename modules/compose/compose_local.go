@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"gopkg.in/yaml.v3"
 
@@ -135,7 +135,7 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 			filters.Arg("name", containerName),
 			filters.Arg("name", composeV2ContainerName),
 			filters.Arg("name", k.service))
-		containerListOptions := types.ContainerListOptions{Filters: f, All: true}
+		containerListOptions := container.ListOptions{Filters: f, All: true}
 		containers, err := cli.ContainerList(context.Background(), containerListOptions)
 		if err != nil {
 			return fmt.Errorf("error %w occurred while filtering the service %s: %d by name and published port", err, k.service, k.publishedPort)
@@ -211,8 +211,8 @@ func (dc *LocalDockerCompose) determineVersion() error {
 	}
 
 	components := bytes.Split(execErr.StdoutOutput, []byte("."))
-	if componentsLen := len(components); componentsLen != 3 {
-		return fmt.Errorf("expected 3 version components in %s", execErr.StdoutOutput)
+	if componentsLen := len(components); componentsLen < 3 {
+		return fmt.Errorf("expected +3 version components in %s", execErr.StdoutOutput)
 	}
 
 	majorVersion, err := strconv.ParseInt(string(components[0]), 10, 8)

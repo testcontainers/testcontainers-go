@@ -32,24 +32,24 @@ func ExampleHTTPStrategy() {
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
 
-	gogs, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	// }
 
 	defer func() {
-		if err := gogs.Terminate(ctx); err != nil {
+		if err := c.Terminate(ctx); err != nil {
 			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
-	state, err := gogs.State(ctx)
+	state, err := c.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -67,24 +67,57 @@ func ExampleHTTPStrategy_WithPort() {
 		WaitingFor:   wait.ForHTTP("/").WithPort("80/tcp"),
 	}
 
-	gogs, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	// }
 
 	defer func() {
-		if err := gogs.Terminate(ctx); err != nil {
+		if err := c.Terminate(ctx); err != nil {
 			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
-	state, err := gogs.State(ctx)
+	state, err := c.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
+}
+
+func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "nginx:latest",
+		ExposedPorts: []string{"8080/tcp", "80/tcp"},
+		WaitingFor:   wait.ForHTTP("/").WithForcedIPv4LocalHost(),
+	}
+
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		log.Fatalf("failed to start container: %s", err)
+	}
+
+	defer func() {
+		if err := c.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
+
+	state, err := c.State(ctx)
+	if err != nil {
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -107,7 +140,7 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 		Started:          true,
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	// }
 
@@ -119,7 +152,7 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 
 	state, err := gogs.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
