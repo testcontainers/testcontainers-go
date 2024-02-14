@@ -51,7 +51,7 @@ func TestConsul(t *testing.T) {
 
 			res, err := http.Get("http://" + host)
 			require.NoError(t, err)
-			assert.Equal(t, res.StatusCode, http.StatusOK)
+			assert.Equal(t, http.StatusOK, res.StatusCode)
 
 			cfg := capi.DefaultConfig()
 			cfg.Address = host
