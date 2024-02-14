@@ -41,6 +41,13 @@ func TestVolumeMount(t *testing.T) {
 }
 
 func TestContainerMounts_PrepareMounts(t *testing.T) {
+	volumeOptions := &mount.VolumeOptions{
+		Labels: GenericLabels(),
+	}
+
+	expectedLabels := GenericLabels()
+	expectedLabels["hello"] = "world"
+
 	t.Parallel()
 	tests := []struct {
 		name   string
@@ -57,9 +64,10 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			mounts: ContainerMounts{{Source: GenericVolumeMountSource{Name: "app-data"}, Target: "/data"}},
 			want: []mount.Mount{
 				{
-					Type:   mount.TypeVolume,
-					Source: "app-data",
-					Target: "/data",
+					Type:          mount.TypeVolume,
+					Source:        "app-data",
+					Target:        "/data",
+					VolumeOptions: volumeOptions,
 				},
 			},
 		},
@@ -68,10 +76,11 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			mounts: ContainerMounts{{Source: GenericVolumeMountSource{Name: "app-data"}, Target: "/data", ReadOnly: true}},
 			want: []mount.Mount{
 				{
-					Type:     mount.TypeVolume,
-					Source:   "app-data",
-					Target:   "/data",
-					ReadOnly: true,
+					Type:          mount.TypeVolume,
+					Source:        "app-data",
+					Target:        "/data",
+					ReadOnly:      true,
+					VolumeOptions: volumeOptions,
 				},
 			},
 		},
@@ -98,9 +107,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 					Target: "/data",
 					VolumeOptions: &mount.VolumeOptions{
 						NoCopy: true,
-						Labels: map[string]string{
-							"hello": "world",
-						},
+						Labels: expectedLabels,
 					},
 				},
 			},
@@ -117,7 +124,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			},
 		},
 		{
-			name:   "Single volume mount - read-only",
+			name:   "Single tmpfs mount - read-only",
 			mounts: ContainerMounts{{Source: GenericTmpfsMountSource{}, Target: "/data", ReadOnly: true}},
 			want: []mount.Mount{
 				{
@@ -128,7 +135,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			},
 		},
 		{
-			name: "Single volume mount - with options",
+			name: "Single tmpfs mount - with options",
 			mounts: ContainerMounts{
 				{
 					Source: DockerTmpfsMountSource{
@@ -192,4 +199,35 @@ func TestCreateContainerWithVolume(t *testing.T) {
 	volume, err := client.VolumeInspect(ctx, "test-volume")
 	require.NoError(t, err)
 	assert.Equal(t, "test-volume", volume.Name)
+}
+
+func TestMountsReceiveRyukLabels(t *testing.T) {
+	req := ContainerRequest{
+		Image: "alpine",
+		Mounts: ContainerMounts{
+			{
+				Source: GenericVolumeMountSource{
+					Name: "app-data",
+				},
+				Target: "/data",
+			},
+		},
+	}
+
+	ctx := context.Background()
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, c)
+
+	// Check if volume is created with the expected labels
+	client, err := NewDockerClientWithOpts(ctx)
+	require.NoError(t, err)
+	defer client.Close()
+
+	volume, err := client.VolumeInspect(ctx, "app-data")
+	require.NoError(t, err)
+	assert.Equal(t, GenericLabels(), volume.Labels)
 }

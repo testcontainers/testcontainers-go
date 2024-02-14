@@ -86,3 +86,23 @@ If you need an advanced configuration for the container, you can leverage the fo
 - `testcontainers.WithEndpointSettingsModifier`
 
 Please read the [Create containers: Advanced Settings](/features/creating_container.md#advanced-settings) documentation for more information.
+
+#### Customising the ContainerRequest
+
+This option will merge the customized request into the module's own `ContainerRequest`.
+
+```go
+container, err := RunContainer(ctx,
+    /* Other module options */
+    testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
+        ContainerRequest: testcontainers.ContainerRequest{
+            Cmd: []string{"-c", "log_statement=all"},
+        },
+    }),
+)
+```
+
+The above example is updating the predefined command of the image, **appending** them to the module's command.
+
+!!!info
+    This can't be used to replace the command, only to append options.
