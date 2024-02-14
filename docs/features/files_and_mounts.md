@@ -18,7 +18,7 @@ It is possible to map a Docker volume into the container using the `Mounts` attr
 
 !!!tip
     It is recommended to copy data from your local host machine to a test container using the file copy API 
-    described below, as it is much more portable
+    described below, as it is much more portable.
 
 ## Copying files to a container
 
