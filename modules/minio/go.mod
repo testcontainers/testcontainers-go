@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/minio
 go 1.20
 
 require (
-	github.com/minio/minio-go/v7 v7.0.66
+	github.com/minio/minio-go/v7 v7.0.67
 	github.com/testcontainers/testcontainers-go v0.27.0
 )
 
