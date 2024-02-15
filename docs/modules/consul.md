@@ -38,7 +38,7 @@ When starting the Consul container, you can pass options in a variadic way to co
 #### Image
 
 If you need to set a different Consul Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Consul. E.g. `testcontainers.WithImage("docker.io/hashicorp/consul:latest")`.
+for Consul. E.g. `testcontainers.WithImage("docker.io/hashicorp/consul:1.15")`.
 
 {% include "../features/common_functional_options.md" %}
 
