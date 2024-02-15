@@ -5,7 +5,7 @@ go 1.20
 require (
 	dario.cat/mergo v1.0.0
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/containerd/containerd v1.7.12
+	github.com/containerd/containerd v1.7.13
 	github.com/cpuguy83/dockercfg v0.3.1
 	github.com/docker/docker v25.0.2+incompatible
 	github.com/docker/go-connections v0.5.0
