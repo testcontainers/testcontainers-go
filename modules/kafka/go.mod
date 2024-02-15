@@ -6,7 +6,7 @@ require (
 	github.com/IBM/sarama v1.42.1
 	github.com/docker/go-connections v0.5.0
 	github.com/testcontainers/testcontainers-go v0.27.0
-	golang.org/x/mod v0.14.0
+	golang.org/x/mod v0.15.0
 )
 
 require (
