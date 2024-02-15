@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/hashicorp/consul/api v1.27.0
 	github.com/stretchr/testify v1.8.4
-	github.com/testcontainers/testcontainers-go v0.27.0
+	github.com/testcontainers/testcontainers-go v0.28.0
 )
 
 require (
