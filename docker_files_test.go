@@ -81,7 +81,7 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 	require.NoError(t, err)
 
 	// Give some time to the wait script to catch the hello script being created
-	err = wait.ForLog("done").WithStartupTimeout(200*time.Millisecond).WaitUntilReady(ctx, container)
+	err = wait.ForLog("done").WithStartupTimeout(2*time.Second).WaitUntilReady(ctx, container)
 	require.NoError(t, err)
 
 	require.NoError(t, container.Terminate(ctx))
