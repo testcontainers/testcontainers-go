@@ -1,4 +1,4 @@
-package openldap
+package openldap_test
 
 import (
 	"context"
@@ -8,12 +8,13 @@ import (
 	"github.com/go-ldap/ldap/v3"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/openldap"
 )
 
 func TestOpenLDAP(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
+	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +30,11 @@ func TestOpenLDAP(t *testing.T) {
 func TestOpenLDAPWithAdminUsernameAndPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"), WithAdminUsername("openldap"), WithAdminPassword("openldap"))
+	container, err := openldap.RunContainer(ctx,
+		testcontainers.WithImage("bitnami/openldap:2.6.6"),
+		openldap.WithAdminUsername("openldap"),
+		openldap.WithAdminPassword("openldap"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +67,7 @@ func TestOpenLDAPWithAdminUsernameAndPassword(t *testing.T) {
 func TestOpenLDAPWithDifferentRoot(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"), WithRoot("dc=mydomain,dc=com"))
+	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"), openldap.WithRoot("dc=mydomain,dc=com"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +102,7 @@ func TestOpenLDAPWithDifferentRoot(t *testing.T) {
 func TestOpenLDAPLoadLdif(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
+	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +193,7 @@ userPassword: Password1
 		t.Fatal(err)
 	}
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"), WithInitialLdif(f.Name()))
+	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"), openldap.WithInitialLdif(f.Name()))
 	if err != nil {
 		t.Fatal(err)
 	}

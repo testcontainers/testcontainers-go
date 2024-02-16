@@ -1,4 +1,4 @@
-package mariadb
+package mariadb_test
 
 import (
 	"context"
@@ -10,12 +10,13 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/mariadb"
 )
 
 func TestMariaDB(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx)
+	container, err := mariadb.RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,10 +58,10 @@ func TestMariaDB(t *testing.T) {
 func TestMariaDBWithNonRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := RunContainer(ctx,
-		WithDatabase("foo"),
-		WithUsername("test"),
-		WithPassword(""))
+	_, err := mariadb.RunContainer(ctx,
+		mariadb.WithDatabase("foo"),
+		mariadb.WithUsername("test"),
+		mariadb.WithPassword(""))
 	if err.Error() != "empty password can be used only with the root user" {
 		t.Fatal(err)
 	}
@@ -69,10 +70,10 @@ func TestMariaDBWithNonRootUserAndEmptyPassword(t *testing.T) {
 func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx,
-		WithDatabase("foo"),
-		WithUsername("root"),
-		WithPassword(""))
+	container, err := mariadb.RunContainer(ctx,
+		mariadb.WithDatabase("foo"),
+		mariadb.WithUsername("root"),
+		mariadb.WithPassword(""))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,8 +112,8 @@ func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 func TestMariaDBWithMySQLEnvVars(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("mariadb:10.3.29"),
-		WithScripts(filepath.Join("testdata", "schema.sql")))
+	container, err := mariadb.RunContainer(ctx, testcontainers.WithImage("mariadb:10.3.29"),
+		mariadb.WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,8 +130,8 @@ func TestMariaDBWithMySQLEnvVars(t *testing.T) {
 func TestMariaDBWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("mariadb:11.0.3"),
-		WithConfigFile(filepath.Join("testdata", "my.cnf")))
+	container, err := mariadb.RunContainer(ctx, testcontainers.WithImage("mariadb:11.0.3"),
+		mariadb.WithConfigFile(filepath.Join("testdata", "my.cnf")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,8 +181,8 @@ func TestMariaDBWithConfigFile(t *testing.T) {
 func TestMariaDBWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx,
-		WithScripts(filepath.Join("testdata", "schema.sql")))
+	container, err := mariadb.RunContainer(ctx,
+		mariadb.WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +197,7 @@ func TestMariaDBWithScripts(t *testing.T) {
 	assertDataCanBeFetched(t, ctx, container)
 }
 
-func assertDataCanBeFetched(t *testing.T, ctx context.Context, container *MariaDBContainer) {
+func assertDataCanBeFetched(t *testing.T, ctx context.Context, container *mariadb.MariaDBContainer) {
 	connectionString, err := container.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)

@@ -1,4 +1,4 @@
-package redpanda
+package redpanda_test
 
 import (
 	"context"
@@ -20,13 +20,14 @@ import (
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/testcontainers/testcontainers-go/network"
 )
 
 func TestRedpanda(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx)
+	container, err := redpanda.RunContainer(ctx)
 	require.NoError(t, err)
 
 	// Clean up the container after the test is complete
@@ -82,15 +83,15 @@ func TestRedpanda(t *testing.T) {
 func TestRedpandaWithAuthentication(t *testing.T) {
 	ctx := context.Background()
 	// redpandaCreateContainer {
-	container, err := RunContainer(ctx,
-		WithEnableSASL(),
-		WithEnableKafkaAuthorization(),
-		WithEnableWasmTransform(),
-		WithNewServiceAccount("superuser-1", "test"),
-		WithNewServiceAccount("superuser-2", "test"),
-		WithNewServiceAccount("no-superuser", "test"),
-		WithSuperusers("superuser-1", "superuser-2"),
-		WithEnableSchemaRegistryHTTPBasicAuth(),
+	container, err := redpanda.RunContainer(ctx,
+		redpanda.WithEnableSASL(),
+		redpanda.WithEnableKafkaAuthorization(),
+		redpanda.WithEnableWasmTransform(),
+		redpanda.WithNewServiceAccount("superuser-1", "test"),
+		redpanda.WithNewServiceAccount("superuser-2", "test"),
+		redpanda.WithNewServiceAccount("no-superuser", "test"),
+		redpanda.WithSuperusers("superuser-1", "superuser-2"),
+		redpanda.WithEnableSchemaRegistryHTTPBasicAuth(),
 	)
 	require.NoError(t, err)
 	// }
@@ -193,16 +194,16 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 	ctx := context.Background()
 	// redpandaCreateContainer {
 	// this would fail to start if we weren't ignoring wasm transforms for older versions
-	container, err := RunContainer(ctx,
+	container, err := redpanda.RunContainer(ctx,
 		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
-		WithEnableSASL(),
-		WithEnableKafkaAuthorization(),
-		WithEnableWasmTransform(),
-		WithNewServiceAccount("superuser-1", "test"),
-		WithNewServiceAccount("superuser-2", "test"),
-		WithNewServiceAccount("no-superuser", "test"),
-		WithSuperusers("superuser-1", "superuser-2"),
-		WithEnableSchemaRegistryHTTPBasicAuth(),
+		redpanda.WithEnableSASL(),
+		redpanda.WithEnableKafkaAuthorization(),
+		redpanda.WithEnableWasmTransform(),
+		redpanda.WithNewServiceAccount("superuser-1", "test"),
+		redpanda.WithNewServiceAccount("superuser-2", "test"),
+		redpanda.WithNewServiceAccount("no-superuser", "test"),
+		redpanda.WithSuperusers("superuser-1", "superuser-2"),
+		redpanda.WithEnableSchemaRegistryHTTPBasicAuth(),
 	)
 	require.NoError(t, err)
 	// }
@@ -321,7 +322,7 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 func TestRedpandaProduceWithAutoCreateTopics(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, WithAutoCreateTopics())
+	container, err := redpanda.RunContainer(ctx, redpanda.WithAutoCreateTopics())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -350,7 +351,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, WithTLS(localhostCert, localhostKey))
+	container, err := redpanda.RunContainer(ctx, redpanda.WithTLS(localhostCert, localhostKey))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -419,12 +420,12 @@ func TestRedpandaWithTLSAndSASL(t *testing.T) {
 
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx,
-		WithTLS(localhostCert, localhostKey),
-		WithEnableSASL(),
-		WithEnableKafkaAuthorization(),
-		WithNewServiceAccount("superuser-1", "test"),
-		WithSuperusers("superuser-1"),
+	container, err := redpanda.RunContainer(ctx,
+		redpanda.WithTLS(localhostCert, localhostKey),
+		redpanda.WithEnableSASL(),
+		redpanda.WithEnableKafkaAuthorization(),
+		redpanda.WithNewServiceAccount("superuser-1", "test"),
+		redpanda.WithSuperusers("superuser-1"),
 	)
 	require.NoError(t, err)
 
@@ -469,10 +470,10 @@ func TestRedpandaListener_Simple(t *testing.T) {
 
 	// 2. Start Redpanda container
 	// withListenerRP {
-	container, err := RunContainer(ctx,
+	container, err := redpanda.RunContainer(ctx,
 		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
 		network.WithNetwork([]string{"redpanda-host"}, rpNetwork),
-		WithListener("redpanda:29092"), WithAutoCreateTopics(),
+		redpanda.WithListener("redpanda:29092"), redpanda.WithAutoCreateTopics(),
 	)
 	// }
 	require.NoError(t, err)
@@ -542,9 +543,9 @@ func TestRedpandaListener_InvalidPort(t *testing.T) {
 	require.NoError(t, err)
 
 	// 2. Attempt Start Redpanda container
-	_, err = RunContainer(ctx,
+	_, err = redpanda.RunContainer(ctx,
 		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
-		WithListener("redpanda:99092"),
+		redpanda.WithListener("redpanda:99092"),
 		network.WithNetwork([]string{"redpanda-host"}, RPNetwork),
 	)
 
@@ -563,9 +564,9 @@ func TestRedpandaListener_NoNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Attempt Start Redpanda container
-	_, err := RunContainer(ctx,
+	_, err := redpanda.RunContainer(ctx,
 		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
-		WithListener("redpanda:99092"),
+		redpanda.WithListener("redpanda:99092"),
 	)
 
 	require.Error(t, err)
@@ -628,52 +629,3 @@ D4ZNvyXf/6E27Ibu6v2p/vs=
 -----END TESTING KEY-----`))
 
 func testingKey(s string) string { return strings.ReplaceAll(s, "TESTING KEY", "PRIVATE KEY") }
-
-func Test_isAtLeastVersion(t *testing.T) {
-	type args struct {
-		image string
-		major string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "v21.5.6",
-			args: args{
-				image: "redpandadata/redpanda:v21.5.6",
-				major: "23.3",
-			},
-			want: false,
-		},
-		{
-			name: "v23.3.3",
-			args: args{
-				image: "redpandadata/redpanda:v23.3.3",
-				major: "23.3",
-			},
-			want: true,
-		},
-		{
-			name: "v23.3.3-rc1",
-			args: args{
-				image: "redpandadata/redpanda:v23.3.3-rc1",
-				major: "23.3",
-			},
-			want: true,
-		},
-		{
-			name: "v21.3.3-rc1",
-			args: args{
-				image: "redpandadata/redpanda:v21.3.3-rc1",
-				major: "23.3",
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, isAtLeastVersion(tt.args.image, tt.args.major), "isAtLeastVersion(%v, %v)", tt.args.image, tt.args.major)
-		})
-	}
-}

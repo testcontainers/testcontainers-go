@@ -1,4 +1,4 @@
-package redis
+package redis_test
 
 import (
 	"context"
@@ -12,12 +12,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 )
 
 func TestIntegrationSetGet(t *testing.T) {
 	ctx := context.Background()
 
-	redisContainer, err := RunContainer(ctx)
+	redisContainer, err := tcredis.RunContainer(ctx)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
@@ -31,7 +32,7 @@ func TestIntegrationSetGet(t *testing.T) {
 func TestRedisWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	redisContainer, err := RunContainer(ctx, WithConfigFile(filepath.Join("testdata", "redis7.conf")))
+	redisContainer, err := tcredis.RunContainer(ctx, tcredis.WithConfigFile(filepath.Join("testdata", "redis7.conf")))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
@@ -73,7 +74,7 @@ func TestRedisWithImage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			redisContainer, err := RunContainer(ctx, testcontainers.WithImage(tt.image), WithConfigFile(filepath.Join("testdata", "redis6.conf")))
+			redisContainer, err := tcredis.RunContainer(ctx, testcontainers.WithImage(tt.image), tcredis.WithConfigFile(filepath.Join("testdata", "redis6.conf")))
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				if err := redisContainer.Terminate(ctx); err != nil {
@@ -89,7 +90,7 @@ func TestRedisWithImage(t *testing.T) {
 func TestRedisWithLogLevel(t *testing.T) {
 	ctx := context.Background()
 
-	redisContainer, err := RunContainer(ctx, WithLogLevel(LogLevelVerbose))
+	redisContainer, err := tcredis.RunContainer(ctx, tcredis.WithLogLevel(tcredis.LogLevelVerbose))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
@@ -103,7 +104,7 @@ func TestRedisWithLogLevel(t *testing.T) {
 func TestRedisWithSnapshotting(t *testing.T) {
 	ctx := context.Background()
 
-	redisContainer, err := RunContainer(ctx, WithSnapshotting(10, 1))
+	redisContainer, err := tcredis.RunContainer(ctx, tcredis.WithSnapshotting(10, 1))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
@@ -114,7 +115,7 @@ func TestRedisWithSnapshotting(t *testing.T) {
 	assertSetsGets(t, ctx, redisContainer, 10)
 }
 
-func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *RedisContainer, keyCount int) {
+func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.RedisContainer, keyCount int) {
 	// connectionString {
 	uri, err := redisContainer.ConnectionString(ctx)
 	// }
@@ -162,133 +163,4 @@ func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *RedisCont
 
 func flushRedis(ctx context.Context, client redis.Client) error {
 	return client.FlushAll(ctx).Err()
-}
-
-func TestWithConfigFile(t *testing.T) {
-	tests := []struct {
-		name         string
-		cmds         []string
-		expectedCmds []string
-	}{
-		{
-			name:         "no existing command",
-			cmds:         []string{},
-			expectedCmds: []string{redisServerProcess, "/usr/local/redis.conf"},
-		},
-		{
-			name:         "existing redis-server command as first argument",
-			cmds:         []string{redisServerProcess, "a", "b", "c"},
-			expectedCmds: []string{redisServerProcess, "/usr/local/redis.conf", "a", "b", "c"},
-		},
-		{
-			name:         "non existing redis-server command",
-			cmds:         []string{"a", "b", "c"},
-			expectedCmds: []string{redisServerProcess, "/usr/local/redis.conf", "a", "b", "c"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Cmd: tt.cmds,
-				},
-			}
-
-			WithConfigFile("redis.conf")(req)
-
-			require.Equal(t, tt.expectedCmds, req.Cmd)
-		})
-	}
-}
-
-func TestWithLogLevel(t *testing.T) {
-	tests := []struct {
-		name         string
-		cmds         []string
-		expectedCmds []string
-	}{
-		{
-			name:         "no existing command",
-			cmds:         []string{},
-			expectedCmds: []string{redisServerProcess, "--loglevel", "debug"},
-		},
-		{
-			name:         "existing redis-server command as first argument",
-			cmds:         []string{redisServerProcess, "a", "b", "c"},
-			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--loglevel", "debug"},
-		},
-		{
-			name:         "non existing redis-server command",
-			cmds:         []string{"a", "b", "c"},
-			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--loglevel", "debug"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Cmd: tt.cmds,
-				},
-			}
-
-			WithLogLevel(LogLevelDebug)(req)
-
-			require.Equal(t, tt.expectedCmds, req.Cmd)
-		})
-	}
-}
-
-func TestWithSnapshotting(t *testing.T) {
-	tests := []struct {
-		name         string
-		cmds         []string
-		expectedCmds []string
-		seconds      int
-		changedKeys  int
-	}{
-		{
-			name:         "no existing command",
-			cmds:         []string{},
-			seconds:      60,
-			changedKeys:  100,
-			expectedCmds: []string{redisServerProcess, "--save", "60", "100"},
-		},
-		{
-			name:         "existing redis-server command as first argument",
-			cmds:         []string{redisServerProcess, "a", "b", "c"},
-			seconds:      60,
-			changedKeys:  100,
-			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--save", "60", "100"},
-		},
-		{
-			name:         "non existing redis-server command",
-			cmds:         []string{"a", "b", "c"},
-			seconds:      60,
-			changedKeys:  100,
-			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--save", "60", "100"},
-		},
-		{
-			name:         "existing redis-server command as first argument",
-			cmds:         []string{redisServerProcess, "a", "b", "c"},
-			seconds:      0,
-			changedKeys:  0,
-			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--save", "1", "1"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Cmd: tt.cmds,
-				},
-			}
-
-			WithSnapshotting(tt.seconds, tt.changedKeys)(req)
-
-			require.Equal(t, tt.expectedCmds, req.Cmd)
-		})
-	}
 }
