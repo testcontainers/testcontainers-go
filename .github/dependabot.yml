@@ -24,13 +24,6 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
-      directory: /examples/consul
-      schedule:
-        interval: monthly
-        day: sunday
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
       directory: /examples/nginx
       schedule:
         interval: monthly
@@ -81,6 +74,13 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/compose
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/consul
       schedule:
         interval: monthly
         day: sunday

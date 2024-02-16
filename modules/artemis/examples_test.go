@@ -3,6 +3,7 @@ package artemis_test
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/go-stomp/stomp/v3"
 
@@ -19,18 +20,18 @@ func ExampleRunContainer() {
 		artemis.WithCredentials("test", "test"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	defer func() {
 		if err := artemisContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := artemisContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -39,7 +40,7 @@ func ExampleRunContainer() {
 	// Get broker endpoint.
 	host, err := artemisContainer.BrokerEndpoint(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get broker endpoint: %s", err)
 	}
 
 	// containerUser {
@@ -52,11 +53,11 @@ func ExampleRunContainer() {
 	// Connect to Artemis via STOMP.
 	conn, err := stomp.Dial("tcp", host, stomp.ConnOpt.Login(user, pass))
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to connect to Artemis: %s", err)
 	}
 	defer func() {
 		if err := conn.Disconnect(); err != nil {
-			panic(err)
+			log.Fatalf("failed to disconnect from Artemis: %s", err)
 		}
 	}()
 	// }

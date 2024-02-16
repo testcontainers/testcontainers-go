@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"testing"
 	"time"
@@ -175,17 +176,17 @@ func ExampleGenericContainer_buildFromDockerfile() {
 	})
 	// }
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %v", err)
 	}
 
 	r, err := c.Logs(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get logs: %v", err)
 	}
 
 	logs, err := io.ReadAll(r)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to read logs: %v", err)
 	}
 
 	fmt.Println(string(logs))

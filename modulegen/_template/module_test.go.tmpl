@@ -1,16 +1,17 @@
-{{ $entrypoint := Entrypoint }}{{ $image := Image }}{{ $lower := ToLower }}{{ $title := Title }}package {{ $lower }}
+{{ $entrypoint := Entrypoint }}{{ $image := Image }}{{ $lower := ToLower }}{{ $title := Title }}package {{ $lower }}_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/{{ ParentDir }}/{{ $lower }}"
 )
 
 func Test{{ $title }}(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := {{ $entrypoint }}(ctx, testcontainers.WithImage("{{ $image }}"))
+	container, err := {{ $lower }}.{{ $entrypoint }}(ctx, testcontainers.WithImage("{{ $image }}"))
 	if err != nil {
 		t.Fatal(err)
 	}

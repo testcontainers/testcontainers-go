@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -23,20 +24,20 @@ func ExampleRunContainer() {
 		mysql.WithScripts(filepath.Join("testdata", "schema.sql")),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := mysqlContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := mysqlContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -57,12 +58,12 @@ func ExampleRunContainer_connect() {
 		mysql.WithScripts(filepath.Join("testdata", "schema.sql")),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	defer func() {
 		if err := mysqlContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
@@ -70,23 +71,23 @@ func ExampleRunContainer_connect() {
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to connect to MySQL: %s", err) // nolint:gocritic
 	}
 	defer db.Close()
 
 	if err = db.Ping(); err != nil {
-		panic(err)
+		log.Fatalf("failed to ping MySQL: %s", err)
 	}
 	stmt, err := db.Prepare("SELECT @@GLOBAL.tmpdir")
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to prepare statement: %s", err)
 	}
 	defer stmt.Close()
 	row := stmt.QueryRow()
 	tmpDir := ""
 	err = row.Scan(&tmpDir)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to scan row: %s", err)
 	}
 
 	fmt.Println(tmpDir)
