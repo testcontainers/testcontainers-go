@@ -1,9 +1,11 @@
-package k6
+package k6_test
 
 import (
 	"context"
 	"path/filepath"
 	"testing"
+
+	"github.com/testcontainers/testcontainers-go/modules/k6"
 )
 
 func TestK6(t *testing.T) {
@@ -34,7 +36,7 @@ func TestK6(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			container, err := RunContainer(ctx, WithCache(), WithTestScript(absPath))
+			container, err := k6.RunContainer(ctx, k6.WithCache(), k6.WithTestScript(absPath))
 			if err != nil {
 				t.Fatal(err)
 			}
