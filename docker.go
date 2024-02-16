@@ -203,6 +203,13 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 		return err
 	}
 
+	c.isRunning = true
+
+	err = c.readiedHook(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -893,86 +900,6 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	return buildOptions.Tags[0], nil
 }
 
-// DefaultDockerLifecycleHook returns the default hooks for a Docker container
-func (p *DockerProvider) DefaultDockerLifecycleHook(req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) ContainerLifecycleHooks {
-	return ContainerLifecycleHooks{
-		PreCreates: []ContainerRequestHook{
-			func(ctx context.Context, req ContainerRequest) error {
-				return p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
-			},
-		},
-		PostCreates: []ContainerHook{
-			// copy files to container after it's created
-			func(ctx context.Context, c Container) error {
-				for _, f := range req.Files {
-					err := c.CopyFileToContainer(ctx, f.HostFilePath, f.ContainerFilePath, f.FileMode)
-					if err != nil {
-						return fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
-					}
-				}
-
-				return nil
-			},
-		},
-		PostStarts: []ContainerHook{
-			// first post-start hook is to produce logs and start log consumers
-			func(ctx context.Context, c Container) error {
-				dockerContainer := c.(*DockerContainer)
-
-				logConsumerConfig := req.LogConsumerCfg
-				if logConsumerConfig == nil {
-					return nil
-				}
-
-				for _, consumer := range logConsumerConfig.Consumers {
-					dockerContainer.followOutput(consumer)
-				}
-
-				if len(logConsumerConfig.Consumers) > 0 {
-					return dockerContainer.startLogProduction(ctx, logConsumerConfig.Opts...)
-				}
-				return nil
-			},
-			// second post-start hook is to wait for the container to be ready
-			func(ctx context.Context, c Container) error {
-				dockerContainer := c.(*DockerContainer)
-
-				// if a Wait Strategy has been specified, wait before returning
-				if dockerContainer.WaitingFor != nil {
-					dockerContainer.logger.Printf(
-						"🚧 Waiting for container id %s image: %s. Waiting for: %+v",
-						dockerContainer.ID[:12], dockerContainer.Image, dockerContainer.WaitingFor,
-					)
-					if err := dockerContainer.WaitingFor.WaitUntilReady(ctx, c); err != nil {
-						return err
-					}
-				}
-
-				dockerContainer.isRunning = true
-
-				return nil
-			},
-		},
-		PreTerminates: []ContainerHook{
-			// first pre-terminate hook is to stop the log production
-			func(ctx context.Context, c Container) error {
-				logConsumerConfig := req.LogConsumerCfg
-
-				if logConsumerConfig == nil {
-					return nil
-				}
-				if len(logConsumerConfig.Consumers) == 0 {
-					return nil
-				}
-
-				dockerContainer := c.(*DockerContainer)
-
-				return dockerContainer.stopLogProduction()
-			},
-		},
-	}
-}
-
 // CreateContainer fulfills a request for a container without starting it
 func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	var err error
@@ -1146,11 +1073,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// default hooks include logger hook and pre-create hook
 	defaultHooks := []ContainerLifecycleHooks{
 		DefaultLoggingHook(p.Logger),
-		p.DefaultDockerLifecycleHook(req, dockerInput, hostConfig, networkingConfig),
+		DefaultPreCreateHook(p, dockerInput, hostConfig, networkingConfig),
+		DefaultCopyFileToContainerHook(req.Files),
+		DefaultLogConsumersHook(req.LogConsumerCfg),
+		DefaultReadinessHook(),
 	}
 
-	// always prepend default lifecycle hooks to user-defined hooks
-	req.LifecycleHooks = append(defaultHooks, req.LifecycleHooks...)
+	req.LifecycleHooks = []ContainerLifecycleHooks{CombineContainerHooks(defaultHooks, req.LifecycleHooks)}
 
 	err = req.creatingHook(ctx)
 	if err != nil {

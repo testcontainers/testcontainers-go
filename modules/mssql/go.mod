@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/microsoft/go-mssqldb v1.6.0
-	github.com/testcontainers/testcontainers-go v0.27.0
+	github.com/testcontainers/testcontainers-go v0.28.0
 )
 
 require (

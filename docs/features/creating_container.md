@@ -91,18 +91,31 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 
 _Testcontainers for Go_ allows you to define your own lifecycle hooks for better control over your containers. You just need to define functions that return an error and receive the Go context as first argument, and a `ContainerRequest` for the `Creating` hook, and a `Container` for the rest of them as second argument.
 
-You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an array of `testcontainers.ContainerLifecycleHooks`, which will be processed one by one in the order they are passed.
-
-The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecycle hooks, each of them backed by an array of functions representing the hooks:
+You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an array of `testcontainers.ContainerLifecycleHooks`. The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecycle hooks, each of them backed by an array of functions representing the hooks:
 
 * `PreCreates` - hooks that are executed before the container is created
 * `PostCreates` - hooks that are executed after the container is created
 * `PreStarts` - hooks that are executed before the container is started
 * `PostStarts` - hooks that are executed after the container is started
+* `PostReadies` - hooks that are executed after the container is ready
 * `PreStops` - hooks that are executed before the container is stopped
 * `PostStops` - hooks that are executed after the container is stopped
 * `PreTerminates` - hooks that are executed before the container is terminated
 * `PostTerminates` - hooks that are executed after the container is terminated
+
+_Testcontainers for Go_ defines some default lifecycle hooks that are always executed in a specific order with respect to the user-defined hooks. The order of execution is the following:
+
+1. default `pre` hooks.
+2. user-defined `pre` hooks.
+3. user-defined `post` hooks.
+4. default `post` hooks.
+
+Inside each group, the hooks will be executed in the order they were defined.
+
+!!!info
+	The default hooks are for logging (applied to all hooks), customising the Docker config (applied to the pre-create hook), copying files in to the container (applied to the post-create hook), adding log consumers (applied to the post-start and pre-terminate hooks), and running the wait strategies as a readiness check (applied to the post-start hook).
+
+It's important to notice that the `Readiness` of a container is defined by the wait strategies defined for the container. **This hook will be executed right after the `PostStarts` hook**. If you want to add your own readiness checks, you can do it by adding a `PostReadies` hook to the container request, which will execute your own readiness check after the default ones. That said, the `PostStarts` hooks don't warrant that the container is ready, so you should not rely on that.
 
 In the following example, we are going to create a container using all the lifecycle hooks, all of them printing a message when any of the lifecycle hooks is called:
 
@@ -112,10 +125,11 @@ In the following example, we are going to create a container using all the lifec
 
 #### Default Logging Hook
 
-_Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event. You can enable it by passing the `testcontainers.DefaultLoggingHook` option to the `ContainerRequest`, passing a reference to the container logger like this:
+_Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event, using the default logger. You can add your own logger by passing the `testcontainers.DefaultLoggingHook` option to the `ContainerRequest`, passing a reference to your preferred logger:
 
 <!--codeinclude-->
-[Extending container with life cycle hooks](../../lifecycle_test.go) inside_block:reqWithDefaultLogginHook
+[Use a custom logger for container hooks](../../lifecycle_test.go) inside_block:reqWithDefaultLogginHook
+[Custom Logger implementation](../../lifecycle_test.go) inside_block:customLoggerImplementation
 <!--/codeinclude-->
 
 ### Advanced Settings

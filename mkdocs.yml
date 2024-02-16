@@ -67,6 +67,7 @@ nav:
         - modules/cassandra.md
         - modules/clickhouse.md
         - modules/cockroachdb.md
+        - modules/consul.md
         - modules/couchbase.md
         - modules/elasticsearch.md
         - modules/gcloud.md
@@ -92,7 +93,6 @@ nav:
         - modules/vault.md
     - Examples:
         - examples/index.md
-        - examples/consul.md
         - examples/nginx.md
         - examples/toxiproxy.md
     - System Requirements:
@@ -117,4 +117,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.27.0
+    latest_version: v0.28.0

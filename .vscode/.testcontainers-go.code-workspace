@@ -6,10 +6,6 @@
             "path": "../"
         },
         {
-            "name": "example / consul",
-            "path": "../examples/consul"
-        },
-        {
             "name": "example / nginx",
             "path": "../examples/nginx"
         },
@@ -36,6 +32,10 @@
         {
             "name": "module / compose",
             "path": "../modules/compose"
+        },
+        {
+            "name": "module / consul",
+            "path": "../modules/consul"
         },
         {
             "name": "module / couchbase",

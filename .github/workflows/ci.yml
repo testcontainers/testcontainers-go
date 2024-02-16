@@ -52,7 +52,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
-      fail-fast: true
+      fail-fast: false
       platform: "ubuntu-latest"
       project-directory: "."
       rootless-docker: false
@@ -72,7 +72,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
-      fail-fast: true
+      fail-fast: false
       platform: "ubuntu-latest"
       project-directory: "."
       rootless-docker: true
@@ -104,7 +104,7 @@ jobs:
       matrix:
         go-version: [1.20.x, 1.x]
         platform: [ubuntu-latest]
-        module: [artemis, cassandra, clickhouse, cockroachdb, compose, couchbase, elasticsearch, gcloud, inbucket, k3s, k6, kafka, localstack, mariadb, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, openldap, postgres, pulsar, rabbitmq, redis, redpanda, vault]
+        module: [artemis, cassandra, clickhouse, cockroachdb, compose, consul, couchbase, elasticsearch, gcloud, inbucket, k3s, k6, kafka, localstack, mariadb, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, openldap, postgres, pulsar, rabbitmq, redis, redpanda, vault]
         exclude:
           - go-version: 1.20.x
             module: compose
@@ -124,7 +124,7 @@ jobs:
     needs: test-modules
     strategy:
       matrix:
-        module: [consul, nginx, toxiproxy]
+        module: [nginx, toxiproxy]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: "1.20.x"

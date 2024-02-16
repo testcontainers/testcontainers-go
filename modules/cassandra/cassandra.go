@@ -55,6 +55,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		var initScripts []testcontainers.ContainerFile
+		var execs []testcontainers.Executable
 		for _, script := range scripts {
 			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,
@@ -63,9 +64,11 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 			}
 			initScripts = append(initScripts, cf)
 
-			testcontainers.WithStartupCommand(initScript{File: cf.ContainerFilePath})(req)
+			execs = append(execs, initScript{File: cf.ContainerFilePath})
 		}
+
 		req.Files = append(req.Files, initScripts...)
+		testcontainers.WithAfterReadyCommand(execs...)(req)
 	}
 }
 
