@@ -114,6 +114,10 @@
             "path": "../modules/pulsar"
         },
         {
+            "name": "module / qdrant",
+            "path": "../modules/qdrant"
+        },
+        {
             "name": "module / rabbitmq",
             "path": "../modules/rabbitmq"
         },
