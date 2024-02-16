@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	ch "github.com/ClickHouse/clickhouse-go/v2"
@@ -56,6 +57,46 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 
 	err = conn.Ping(context.Background())
 	require.NoError(t, err)
+}
+
+func TestClickHouseWithContainerName(t *testing.T) {
+	ctx := context.Background()
+	customContainerName := "my-custom-value"
+
+	container, err := RunContainer(
+		ctx,
+		WithContainerName(customContainerName),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Clean up the container after the test is complete
+	t.Cleanup(func() {
+		require.NoError(t, container.Terminate(ctx))
+	})
+
+	connectionHost, err := container.ConnectionHost(ctx)
+	require.NoError(t, err)
+
+	conn, err := ch.Open(&ch.Options{
+		Addr: []string{connectionHost},
+		Auth: ch.Auth{
+			Database: container.dbName,
+			Username: container.user,
+			Password: container.password,
+		},
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, conn)
+	defer conn.Close()
+
+	err = conn.Ping(context.Background())
+	require.NoError(t, err)
+
+	actualContainerName, err := container.Name(ctx)
+	require.NoError(t, err)
+	require.Equal(t, customContainerName, strings.TrimPrefix(actualContainerName, "/"))
 }
 
 func TestClickHouseConnectionHost(t *testing.T) {

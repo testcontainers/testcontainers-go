@@ -170,6 +170,15 @@ func WithYamlConfigFile(configFile string) testcontainers.CustomizeRequestOption
 	}
 }
 
+// WithContainerName sets the custom container name
+// It can be used to define a concrete container name.
+// If it is not specified, then the default docker value will be used.
+func WithContainerName(containerName string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Name = containerName
+	}
+}
+
 // WithDatabase sets the initial database to be created when the container starts
 // It can be used to define a different name for the default database that is created when the image is first started.
 // If it is not specified, then the default value("clickhouse") will be used.
