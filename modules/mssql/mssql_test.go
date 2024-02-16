@@ -58,14 +58,19 @@ func TestMSSQLServer(t *testing.T) {
 func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx)
-	testcontainers.WithWaitStrategy(
-		wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted"))
-
-	if container == nil && err != nil {
-		t.Log("Success: Confirmed proper handling of missing EULA, so container is nil.")
-	} else {
+	container, err := mssql.RunContainer(ctx, testcontainers.WithWaitStrategy(
+		wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")))
+	if err != nil {
 		t.Fatalf("Expected a log to confirm missing EULA but got error: %s", err)
+	}
+
+	state, err := container.State(ctx)
+	if err != nil {
+		t.Fatalf("failed to get container state: %s", err)
+	}
+
+	if !state.Running {
+		t.Log("Success: Confirmed proper handling of missing EULA, so container is not running.")
 	}
 }
 
