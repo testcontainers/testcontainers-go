@@ -90,6 +90,7 @@ nav:
         - modules/rabbitmq.md
         - modules/redis.md
         - modules/redpanda.md
+        - modules/smocker.md
         - modules/vault.md
     - Examples:
         - examples/index.md
