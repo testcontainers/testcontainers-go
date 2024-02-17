@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // SmockerContainer represents the Smocker container type used in the module
@@ -50,6 +51,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	req := testcontainers.ContainerRequest{
 		Image:        "thiht/smocker:0.18.5",
 		ExposedPorts: []string{"8080/tcp", "8081/tcp"},
+		WaitingFor:   wait.ForLog("Starting mock server"),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
