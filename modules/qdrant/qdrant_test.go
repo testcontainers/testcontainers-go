@@ -7,6 +7,8 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/qdrant"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func TestQdrant(t *testing.T) {
@@ -24,7 +26,7 @@ func TestQdrant(t *testing.T) {
 		}
 	})
 
-	t.Run("RESTEndpoint", func(tt *testing.T) {
+	t.Run("REST Endpoint", func(tt *testing.T) {
 		// restEndpoint {
 		restEndpoint, err := container.RESTEndpoint(ctx)
 		// }
@@ -44,7 +46,22 @@ func TestQdrant(t *testing.T) {
 		}
 	})
 
-	t.Run("WebUI", func(tt *testing.T) {
+	t.Run("gRPC Endpoint", func(tt *testing.T) {
+		// gRPCEndpoint {
+		grpcEndpoint, err := container.GRPCEndpoint(ctx)
+		// }
+		if err != nil {
+			t.Fatalf("failed to get REST endpoint: %s", err)
+		}
+
+		conn, err := grpc.Dial(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			t.Fatalf("did not connect: %v", err)
+		}
+		defer conn.Close()
+	})
+
+	t.Run("Web UI", func(tt *testing.T) {
 		// webUIEndpoint {
 		webUI, err := container.WebUI(ctx)
 		// }

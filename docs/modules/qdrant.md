@@ -69,3 +69,11 @@ This method returns the gRPC endpoint of the Qdrant container, using the default
 <!--codeinclude-->
 [Get gRPC endpoint](../../modules/qdrant/qdrant_test.go) inside_block:gRPCEndpoint
 <!--/codeinclude-->
+
+### Full Example
+
+Here you can find a full example on how to use the qdrant-go module to perform operations with Qdrant, as seen in the [examples provided by the module](https://github.com/qdrant/go-client/blob/76db566382ed656a920fa273db1a58eec2417dcd/examples/main.go#L1) itself:
+
+<!--codeinclude-->
+[Full Example](../../modules/qdrant/examples_test.go) inside_block:fullExample
+<!--/codeinclude-->

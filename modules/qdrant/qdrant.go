@@ -63,7 +63,7 @@ func (c *QdrantContainer) GRPCEndpoint(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to get container host")
 	}
 
-	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
+	return fmt.Sprintf("%s:%s", host, containerPort.Port()), nil
 }
 
 // WebUI returns the web UI endpoint of the Qdrant container
