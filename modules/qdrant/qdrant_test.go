@@ -2,6 +2,7 @@ package qdrant_test
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -23,5 +24,43 @@ func TestQdrant(t *testing.T) {
 		}
 	})
 
-	// perform assertions
+	t.Run("RESTEndpoint", func(tt *testing.T) {
+		// restEndpoint {
+		restEndpoint, err := container.RESTEndpoint(ctx)
+		// }
+		if err != nil {
+			t.Fatalf("failed to get REST endpoint: %s", err)
+		}
+
+		cli := &http.Client{}
+		resp, err := cli.Get(restEndpoint)
+		if err != nil {
+			tt.Fatalf("failed to perform GET request: %s", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			tt.Fatalf("unexpected status code: %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("WebUI", func(tt *testing.T) {
+		// webUIEndpoint {
+		webUI, err := container.WebUI(ctx)
+		// }
+		if err != nil {
+			t.Fatalf("failed to get REST endpoint: %s", err)
+		}
+
+		cli := &http.Client{}
+		resp, err := cli.Get(webUI)
+		if err != nil {
+			tt.Fatalf("failed to perform GET request: %s", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			tt.Fatalf("unexpected status code: %d", resp.StatusCode)
+		}
+	})
 }

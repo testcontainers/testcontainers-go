@@ -2,6 +2,7 @@ package qdrant
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -14,7 +15,8 @@ type QdrantContainer struct {
 // RunContainer creates an instance of the Qdrant container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "qdrant/qdrant:v1.7.4",
+		Image:        "qdrant/qdrant:v1.7.4",
+		ExposedPorts: []string{"6333/tcp", "6334/tcp"},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -32,4 +34,44 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	return &QdrantContainer{Container: container}, nil
+}
+
+// RESTEndpoint returns the REST endpoint of the Qdrant container
+func (c *QdrantContainer) RESTEndpoint(ctx context.Context) (string, error) {
+	containerPort, err := c.MappedPort(ctx, "6333/tcp")
+	if err != nil {
+		return "", fmt.Errorf("failed to get container port: %w", err)
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get container host")
+	}
+
+	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
+}
+
+// GRPCEndpoint returns the gRPC endpoint of the Qdrant container
+func (c *QdrantContainer) GRPCEndpoint(ctx context.Context) (string, error) {
+	containerPort, err := c.MappedPort(ctx, "6334/tcp")
+	if err != nil {
+		return "", fmt.Errorf("failed to get container port: %w", err)
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get container host")
+	}
+
+	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
+}
+
+// WebUI returns the web UI endpoint of the Qdrant container
+func (c *QdrantContainer) WebUI(ctx context.Context) (string, error) {
+	s, err := c.RESTEndpoint(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return s + "/dashboard", nil
 }

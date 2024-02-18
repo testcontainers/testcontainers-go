@@ -45,3 +45,27 @@ for Qdrant. E.g. `testcontainers.WithImage("qdrant/qdrant:v1.7.4")`.
 ### Container Methods
 
 The Qdrant container exposes the following methods:
+
+#### REST Endpoint
+
+This method returns the REST endpoint of the Qdrant container, using the default `6333` port.
+
+<!--codeinclude-->
+[Get REST endpoint](../../modules/qdrant/qdrant_test.go) inside_block:restEndpoint
+<!--/codeinclude-->
+
+#### Web UI Endpoint
+
+This method returns the Web UI endpoint of the Qdrant container (`/dashboard`), using the default `6333` port.
+
+<!--codeinclude-->
+[Get Web UI endpoint](../../modules/qdrant/qdrant_test.go) inside_block:webUIEndpoint
+<!--/codeinclude-->
+
+#### gRPC Endpoint
+
+This method returns the gRPC endpoint of the Qdrant container, using the default `6334` port.
+
+<!--codeinclude-->
+[Get gRPC endpoint](../../modules/qdrant/qdrant_test.go) inside_block:gRPCEndpoint
+<!--/codeinclude-->
