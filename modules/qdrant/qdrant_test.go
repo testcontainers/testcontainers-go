@@ -32,7 +32,7 @@ func TestQdrant(t *testing.T) {
 		restEndpoint, err := container.RESTEndpoint(ctx)
 		// }
 		if err != nil {
-			t.Fatalf("failed to get REST endpoint: %s", err)
+			tt.Fatalf("failed to get REST endpoint: %s", err)
 		}
 
 		cli := &http.Client{}
@@ -52,7 +52,7 @@ func TestQdrant(t *testing.T) {
 		grpcEndpoint, err := container.GRPCEndpoint(ctx)
 		// }
 		if err != nil {
-			t.Fatalf("failed to get REST endpoint: %s", err)
+			tt.Fatalf("failed to get REST endpoint: %s", err)
 		}
 
 		conn, err := grpc.Dial(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -67,7 +67,7 @@ func TestQdrant(t *testing.T) {
 		webUI, err := container.WebUI(ctx)
 		// }
 		if err != nil {
-			t.Fatalf("failed to get REST endpoint: %s", err)
+			tt.Fatalf("failed to get REST endpoint: %s", err)
 		}
 
 		cli := &http.Client{}
