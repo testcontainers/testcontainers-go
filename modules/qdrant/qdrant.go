@@ -3,8 +3,10 @@ package qdrant
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // QdrantContainer represents the Qdrant container type used in the module
@@ -17,6 +19,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	req := testcontainers.ContainerRequest{
 		Image:        "qdrant/qdrant:v1.7.4",
 		ExposedPorts: []string{"6333/tcp", "6334/tcp"},
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort("6333/tcp").WithStartupTimeout(5*time.Second),
+			wait.ForListeningPort("6334/tcp").WithStartupTimeout(5*time.Second),
+		),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
