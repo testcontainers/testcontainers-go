@@ -2,6 +2,7 @@ package weaviate_test
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -23,5 +24,21 @@ func TestWeaviate(t *testing.T) {
 		}
 	})
 
-	// perform assertions
+	t.Run("RESTEndpoint", func(tt *testing.T) {
+		restEndpoint, err := container.RESTEndpoint(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cli := &http.Client{}
+		resp, err := cli.Get(restEndpoint)
+		if err != nil {
+			tt.Fatalf("failed to perform GET request: %s", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			tt.Fatalf("unexpected status code: %d", resp.StatusCode)
+		}
+	})
 }

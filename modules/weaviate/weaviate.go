@@ -2,8 +2,11 @@ package weaviate
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // WeaviateContainer represents the Weaviate container type used in the module
@@ -25,6 +28,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"ENABLE_MODULES":                          "text2vec-cohere,text2vec-huggingface,text2vec-palm,text2vec-openai,generative-openai,generative-cohere,generative-palm,ref2vec-centroid,reranker-cohere,qna-openai",
 			"CLUSTER_HOSTNAME":                        "node1",
 		},
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort("8080").WithStartupTimeout(5*time.Second),
+			wait.ForListeningPort("50051").WithStartupTimeout(5*time.Second),
+		),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -42,4 +49,19 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	return &WeaviateContainer{Container: container}, nil
+}
+
+// RESTEndpoint returns the REST endpoint of the Qdrant container
+func (c *WeaviateContainer) RESTEndpoint(ctx context.Context) (string, error) {
+	containerPort, err := c.MappedPort(ctx, "8080/tcp")
+	if err != nil {
+		return "", fmt.Errorf("failed to get container port: %w", err)
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get container host")
+	}
+
+	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
 }
