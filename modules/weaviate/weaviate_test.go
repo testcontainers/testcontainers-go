@@ -2,6 +2,7 @@ package weaviate_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -24,14 +25,14 @@ func TestWeaviate(t *testing.T) {
 		}
 	})
 
-	t.Run("RESTEndpoint", func(tt *testing.T) {
-		restEndpoint, err := container.RESTEndpoint(ctx)
+	t.Run("SchemaHost", func(tt *testing.T) {
+		schema, host, err := container.SchemaHost(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		cli := &http.Client{}
-		resp, err := cli.Get(restEndpoint)
+		resp, err := cli.Get(fmt.Sprintf("%s://%s", schema, host))
 		if err != nil {
 			tt.Fatalf("failed to perform GET request: %s", err)
 		}

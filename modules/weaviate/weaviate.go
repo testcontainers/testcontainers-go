@@ -51,17 +51,18 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &WeaviateContainer{Container: container}, nil
 }
 
-// RESTEndpoint returns the REST endpoint of the Qdrant container
-func (c *WeaviateContainer) RESTEndpoint(ctx context.Context) (string, error) {
+// SchemaHost returns the schema and host of the Weaviate container.
+// At the moment, it only supports the http scheme.
+func (c *WeaviateContainer) SchemaHost(ctx context.Context) (string, string, error) {
 	containerPort, err := c.MappedPort(ctx, "8080/tcp")
 	if err != nil {
-		return "", fmt.Errorf("failed to get container port: %w", err)
+		return "", "", fmt.Errorf("failed to get container port: %w", err)
 	}
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get container host")
+		return "", "", fmt.Errorf("failed to get container host")
 	}
 
-	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
+	return "http", fmt.Sprintf("%s:%s", host, containerPort.Port()), nil
 }
