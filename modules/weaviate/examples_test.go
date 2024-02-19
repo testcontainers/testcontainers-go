@@ -41,8 +41,8 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_createClient() {
-	// createtestClass {
+func ExampleRunContainer_connectWithClient() {
+	// createClient {
 	ctx := context.Background()
 
 	weaviateContainer, err := tcweaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.23.9"))
@@ -76,6 +76,7 @@ func ExampleRunContainer_createClient() {
 	})
 
 	err = cli.WaitForWeavaite(5 * time.Second)
+	// }
 	fmt.Println(err)
 
 	// Output:

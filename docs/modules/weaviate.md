@@ -56,3 +56,23 @@ This method returns the Schema and Host for the Weaviate container, using the de
 <!--codeinclude-->
 [Schema and Host](../../modules/weaviate/weaviate_test.go) inside_block:schemaHost
 <!--/codeinclude-->
+
+## Examples
+
+### Getting a Weaviate client
+
+The following example demonstrates how to create a Weaviate client using the Weaviate module.
+
+First of all, you need to import the CWeaviate client:
+
+```golang
+import (
+    "github.com/weaviate/weaviate-go-client/v4/weaviate"
+)
+```
+
+Then, you can create a Chroma client using the Chroma module:
+
+<!--codeinclude-->
+[Get the client](../../modules/weaviate/examples_test.go) inside_block:createClient
+<!--/codeinclude-->

@@ -56,7 +56,7 @@ This method returns the REST endpoint of the Chroma container, using the default
 
 ## Examples
 
-### Creating a Chroma client
+### Getting a Chroma client
 
 The following example demonstrates how to create a Chroma client using the Chroma module.
 
