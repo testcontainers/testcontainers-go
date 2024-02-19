@@ -26,7 +26,9 @@ func TestWeaviate(t *testing.T) {
 	})
 
 	t.Run("SchemaHost", func(tt *testing.T) {
+		// schemaHost {
 		schema, host, err := container.SchemaHost(ctx)
+		// }
 		if err != nil {
 			t.Fatal(err)
 		}
