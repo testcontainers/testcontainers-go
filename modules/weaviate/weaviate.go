@@ -14,7 +14,17 @@ type WeaviateContainer struct {
 // RunContainer creates an instance of the Weaviate container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "semitechnologies/weaviate:1.23.9",
+		Image:        "semitechnologies/weaviate:1.23.9",
+		Cmd:          []string{"--host", "0.0.0.0", "--scheme", "http", "--port", "8080"},
+		ExposedPorts: []string{"8080/tcp", "50051/tcp"},
+		Env: map[string]string{
+			"QUERY_DEFAULTS_LIMIT":                    "25",
+			"AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED": "true",
+			"PERSISTENCE_DATA_PATH":                   "/var/lib/weaviate",
+			"DEFAULT_VECTORIZER_MODULE":               "none",
+			"ENABLE_MODULES":                          "text2vec-cohere,text2vec-huggingface,text2vec-palm,text2vec-openai,generative-openai,generative-cohere,generative-palm,ref2vec-centroid,reranker-cohere,qna-openai",
+			"CLUSTER_HOSTNAME":                        "node1",
+		},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
