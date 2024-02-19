@@ -3,7 +3,6 @@ package chroma
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -22,7 +21,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("8000/tcp"),
 			wait.ForLog("Application startup complete"),
-		).WithDeadline(10 * time.Second), // 5 seconds it's not enough for the container to start
+			wait.ForHTTP("/api/v1/heartbeat").WithStatusCodeMatcher(func(status int) bool {
+				return status == 200
+			}),
+		), // 5 seconds it's not enough for the container to start
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
