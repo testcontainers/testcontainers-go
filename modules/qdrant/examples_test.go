@@ -90,6 +90,7 @@ func ExampleRunContainer_createPoints() {
 		},
 	})
 	if err != nil {
+		log.Println(printContainerLogs(qdrantContainer))
 		log.Fatalf("Could not create collection: %v", err)
 	}
 
