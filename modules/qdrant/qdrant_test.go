@@ -2,7 +2,6 @@ package qdrant_test
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"testing"
 
@@ -12,18 +11,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/qdrant"
 )
-
-func printContainerLogs(c testcontainers.Container) string {
-	reader, err := c.Logs(context.Background())
-	if err == nil {
-		b, err := io.ReadAll(reader)
-		if err == nil {
-			return string(b)
-		}
-	}
-
-	return ""
-}
 
 func TestQdrant(t *testing.T) {
 	ctx := context.Background()
@@ -45,7 +32,6 @@ func TestQdrant(t *testing.T) {
 		restEndpoint, err := container.RESTEndpoint(ctx)
 		// }
 		if err != nil {
-			t.Log(printContainerLogs(container.Container))
 			tt.Fatalf("failed to get REST endpoint: %s", err)
 		}
 
@@ -71,7 +57,6 @@ func TestQdrant(t *testing.T) {
 
 		conn, err := grpc.Dial(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			t.Log(printContainerLogs(container.Container))
 			t.Fatalf("did not connect: %v", err)
 		}
 		defer conn.Close()
