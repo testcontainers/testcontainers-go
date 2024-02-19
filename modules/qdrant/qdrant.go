@@ -43,7 +43,18 @@ func (c *QdrantContainer) RESTEndpoint(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to get container port: %w", err)
 	}
 
-	return fmt.Sprintf("http://127.0.0.1:%s", containerPort.Port()), nil
+	provider, err := testcontainers.NewDockerProvider()
+	if err != nil {
+		return "", err
+	}
+	defer provider.Close()
+
+	host, err := provider.DaemonHost(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get container host")
+	}
+
+	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
 }
 
 // GRPCEndpoint returns the gRPC endpoint of the Qdrant container
@@ -53,7 +64,18 @@ func (c *QdrantContainer) GRPCEndpoint(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to get container port: %w", err)
 	}
 
-	return fmt.Sprintf("127.0.0.1:%s", containerPort.Port()), nil
+	provider, err := testcontainers.NewDockerProvider()
+	if err != nil {
+		return "", err
+	}
+	defer provider.Close()
+
+	host, err := provider.DaemonHost(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get container host")
+	}
+
+	return fmt.Sprintf("%s:%s", host, containerPort.Port()), nil
 }
 
 // WebUI returns the web UI endpoint of the Qdrant container
