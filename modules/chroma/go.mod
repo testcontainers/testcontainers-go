@@ -2,7 +2,10 @@ module github.com/testcontainers/testcontainers-go/modules/chroma
 
 go 1.20
 
-require github.com/testcontainers/testcontainers-go v0.28.0
+require (
+	github.com/amikos-tech/chroma-go v0.0.0-20240109142503-c8fb49c3e28c
+	github.com/testcontainers/testcontainers-go v0.28.0
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect

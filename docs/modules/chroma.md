@@ -53,3 +53,24 @@ This method returns the REST endpoint of the Chroma container, using the default
 <!--codeinclude-->
 [Get REST endpoint](../../modules/chroma/chroma_test.go) inside_block:restEndpoint
 <!--/codeinclude-->
+
+## Examples
+
+### Creating a Chroma client
+
+The following example demonstrates how to create a Chroma client using the Chroma module.
+
+First of all, you need to import the Chroma module and the Swagger client:
+
+```golang
+import (
+    chromago "github.com/amikos-tech/chroma-go"
+	chromaopenapi "github.com/amikos-tech/chroma-go/swagger"
+)
+```
+
+Then, you can create a Chroma client using the Chroma module:
+
+<!--codeinclude-->
+[Get the client](../../modules/chroma/examples_test.go) inside_block:createClient
+<!--/codeinclude-->
