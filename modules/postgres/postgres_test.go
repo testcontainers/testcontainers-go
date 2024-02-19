@@ -53,6 +53,13 @@ func TestPostgres(t *testing.T) {
 			wait:  wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(30 * time.Second),
 			// }
 		},
+		{
+			name: "Pgvector",
+			// pgvector {
+			image: "docker.io/pgvector/pgvector:pg16",
+			wait:  wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(30 * time.Second),
+			// }
+		},
 	}
 
 	for _, tt := range tests {
@@ -84,7 +91,7 @@ func TestPostgres(t *testing.T) {
 			// Ensure connection string is using generic format
 			id, err := container.MappedPort(ctx, "5432/tcp")
 			require.NoError(t, err)
-			assert.Equal(t, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&application_name=test", user, password, "localhost", id.Port(), dbname), connStr)
+			assert.Equal(t, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&application_name=test", user, password, "127.0.0.1", id.Port(), dbname), connStr)
 
 			// perform assertions
 			db, err := sql.Open("postgres", connStr)
