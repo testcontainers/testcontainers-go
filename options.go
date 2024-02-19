@@ -60,6 +60,15 @@ func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) Cus
 	}
 }
 
+// WithEnv appends the environment variables to the container
+func WithEnv(env map[string]string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) {
+		for k, v := range env {
+			req.Env[k] = v
+		}
+	}
+}
+
 // WithImage sets the image for a container
 func WithImage(image string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) {

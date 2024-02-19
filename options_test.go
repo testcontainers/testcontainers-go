@@ -67,6 +67,24 @@ func TestOverrideContainerRequest(t *testing.T) {
 	assert.Equal(t, wait.ForLog("foo"), req.WaitingFor)
 }
 
+func TestWithEnv(t *testing.T) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Env: map[string]string{
+				"FOO": "BAR",
+			},
+		},
+	}
+
+	testcontainers.WithEnv(map[string]string{
+		"BAR": "BAZ",
+		"FOO": "BAR2", // this should override the FOO env
+	})(&req)
+
+	assert.Equal(t, "BAR2", req.Env["FOO"])
+	assert.Equal(t, "BAZ", req.Env["BAR"])
+}
+
 type msgsLogConsumer struct {
 	msgs []string
 }
