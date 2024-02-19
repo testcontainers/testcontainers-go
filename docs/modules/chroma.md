@@ -1,0 +1,47 @@
+# Chroma
+
+Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+## Introduction
+
+The Testcontainers module for Chroma.
+
+## Adding this module to your project dependencies
+
+Please run the following command to add the Chroma module to your Go dependencies:
+
+```
+go get github.com/testcontainers/testcontainers-go/modules/chroma
+```
+
+## Usage example
+
+<!--codeinclude-->
+[Creating a Chroma container](../../modules/chroma/examples_test.go) inside_block:runChromaContainer
+<!--/codeinclude-->
+
+## Module reference
+
+The Chroma module exposes one entrypoint function to create the Chroma container, and this function receives two parameters:
+
+```golang
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error)
+```
+
+- `context.Context`, the Go context.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+### Container Options
+
+When starting the Chroma container, you can pass options in a variadic way to configure it.
+
+#### Image
+
+If you need to set a different Chroma Docker image, you can use `testcontainers.WithImage` with a valid Docker image
+for Chroma. E.g. `testcontainers.WithImage("chromadb/chroma:0.4.22.dev44")`.
+
+{% include "../features/common_functional_options.md" %}
+
+### Container Methods
+
+The Chroma container exposes the following methods:

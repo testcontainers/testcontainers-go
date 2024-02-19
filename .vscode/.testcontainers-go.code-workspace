@@ -22,6 +22,10 @@
             "path": "../modules/cassandra"
         },
         {
+            "name": "module / chroma",
+            "path": "../modules/chroma"
+        },
+        {
             "name": "module / clickhouse",
             "path": "../modules/clickhouse"
         },
