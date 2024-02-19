@@ -43,7 +43,13 @@ func (c *QdrantContainer) RESTEndpoint(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to get container port: %w", err)
 	}
 
-	host, err := c.Host(ctx)
+	provider, err := testcontainers.NewDockerProvider()
+	if err != nil {
+		return "", err
+	}
+	defer provider.Close()
+
+	host, err := provider.DaemonHost(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get container host")
 	}
@@ -58,7 +64,13 @@ func (c *QdrantContainer) GRPCEndpoint(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to get container port: %w", err)
 	}
 
-	host, err := c.Host(ctx)
+	provider, err := testcontainers.NewDockerProvider()
+	if err != nil {
+		return "", err
+	}
+	defer provider.Close()
+
+	host, err := provider.DaemonHost(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get container host")
 	}
