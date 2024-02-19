@@ -92,6 +92,7 @@ nav:
         - modules/redis.md
         - modules/redpanda.md
         - modules/vault.md
+        - modules/weaviate.md
     - Examples:
         - examples/index.md
         - examples/nginx.md

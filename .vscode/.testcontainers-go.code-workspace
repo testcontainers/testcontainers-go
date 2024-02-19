@@ -134,6 +134,10 @@
             "path": "../modules/vault"
         },
         {
+            "name": "module / weaviate",
+            "path": "../modules/weaviate"
+        },
+        {
             "name": "modulegen",
             "path": "../modulegen"
         }

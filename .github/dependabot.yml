@@ -254,3 +254,10 @@ updates:
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/weaviate
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
