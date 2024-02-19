@@ -74,3 +74,11 @@ Then, you can create a Chroma client using the Chroma module:
 <!--codeinclude-->
 [Get the client](../../modules/chroma/examples_test.go) inside_block:createClient
 <!--/codeinclude-->
+
+### Working with Collections
+
+<!--codeinclude-->
+[Create Collection](../../modules/chroma/examples_test.go) inside_block:createCollection
+[List Collections](../../modules/chroma/examples_test.go) inside_block:listCollections
+[Delete Collection](../../modules/chroma/examples_test.go) inside_block:deleteCollection
+<!--/codeinclude-->
