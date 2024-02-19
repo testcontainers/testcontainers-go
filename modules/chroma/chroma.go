@@ -2,8 +2,11 @@ package chroma
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // ChromaContainer represents the Chroma container type used in the module
@@ -14,7 +17,12 @@ type ChromaContainer struct {
 // RunContainer creates an instance of the Chroma container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "chromadb/chroma:0.4.22.dev44",
+		Image:        "chromadb/chroma:0.4.22.dev44",
+		ExposedPorts: []string{"8000/tcp"},
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort("8000/tcp"),
+			wait.ForLog("Application startup complete"),
+		).WithDeadline(10 * time.Second), // 5 seconds it's not enough for the container to start
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -32,4 +40,19 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	return &ChromaContainer{Container: container}, nil
+}
+
+// RESTEndpoint returns the REST endpoint of the Chroma container
+func (c *ChromaContainer) RESTEndpoint(ctx context.Context) (string, error) {
+	containerPort, err := c.MappedPort(ctx, "8000/tcp")
+	if err != nil {
+		return "", fmt.Errorf("failed to get container port: %w", err)
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get container host")
+	}
+
+	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
 }

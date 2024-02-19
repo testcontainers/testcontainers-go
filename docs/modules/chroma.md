@@ -45,3 +45,11 @@ for Chroma. E.g. `testcontainers.WithImage("chromadb/chroma:0.4.22.dev44")`.
 ### Container Methods
 
 The Chroma container exposes the following methods:
+
+#### REST Endpoint
+
+This method returns the REST endpoint of the Chroma container, using the default `8000` port.
+
+<!--codeinclude-->
+[Get REST endpoint](../../modules/chroma/chroma_test.go) inside_block:restEndpoint
+<!--/codeinclude-->
