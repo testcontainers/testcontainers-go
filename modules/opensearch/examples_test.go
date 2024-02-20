@@ -13,7 +13,12 @@ func ExampleRunContainer() {
 	// runOpenSearchContainer {
 	ctx := context.Background()
 
-	opensearchContainer, err := opensearch.RunContainer(ctx, testcontainers.WithImage("opensearchproject/opensearch:2.11.1"))
+	opensearchContainer, err := opensearch.RunContainer(
+		ctx,
+		testcontainers.WithImage("opensearchproject/opensearch:2.11.1"),
+		opensearch.WithUsername("new-username"),
+		opensearch.WithPassword("new-password"),
+	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -32,7 +37,9 @@ func ExampleRunContainer() {
 	}
 
 	fmt.Println(state.Running)
+	fmt.Printf("%s : %s\n", opensearchContainer.User, opensearchContainer.Password)
 
 	// Output:
 	// true
+	// new-username : new-password
 }

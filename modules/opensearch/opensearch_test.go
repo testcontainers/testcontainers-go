@@ -2,6 +2,7 @@ package opensearch_test
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -23,5 +24,23 @@ func TestOpenSearch(t *testing.T) {
 		}
 	})
 
-	// perform assertions
+	t.Run("Connect to Address", func(t *testing.T) {
+		address, err := container.Address(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		client := &http.Client{}
+
+		req, err := http.NewRequest("GET", address, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			t.Fatalf("failed to perform GET request: %s", err)
+		}
+		defer resp.Body.Close()
+	})
 }

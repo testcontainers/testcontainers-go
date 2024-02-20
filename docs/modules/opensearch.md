@@ -42,6 +42,26 @@ for OpenSearch. E.g. `testcontainers.WithImage("opensearchproject/opensearch:2.1
 
 {% include "../features/common_functional_options.md" %}
 
+#### User and password
+
+If you need to set a different password to request authorization when performing HTTP requests to the container, you can use the `WithUsername` and `WithPassword` options. By default, the username is set to `admin`, and the password is set to `admin`.
+
+<!--codeinclude-->
+[Custom Credentials](../../modules/opensearch/examples_test.go) inside_block:runOpenSearchContainer
+<!--/codeinclude-->
+
 ### Container Methods
 
 The OpenSearch container exposes the following methods:
+
+#### Address
+
+The `Address` method returns the location where the OpenSearch container is listening.
+It returns a string with the format `http://<host>:<port>`.
+
+!!!warning
+    TLS is not supported at the moment.
+
+<!--codeinclude-->
+[Connecting using HTTP](../../modules/opensearch/opensearch_test.go) inside_block:httpConnection
+<!--/codeinclude-->
