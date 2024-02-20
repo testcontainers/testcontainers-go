@@ -12,7 +12,7 @@ require (
 	github.com/docker/go-connections v0.5.0
 	github.com/testcontainers/testcontainers-go v0.28.0
 	google.golang.org/api v0.165.0
-	google.golang.org/grpc v1.61.0
+	google.golang.org/grpc v1.61.1
 )
 
 require (
