@@ -25,9 +25,9 @@ func TestWeaviate(t *testing.T) {
 		}
 	})
 
-	t.Run("SchemaHost", func(tt *testing.T) {
-		// schemaHost {
-		schema, host, err := container.SchemaHost(ctx)
+	t.Run("HttpHostAddress", func(tt *testing.T) {
+		// httpHostAddress {
+		schema, host, err := container.HttpHostAddress(ctx)
 		// }
 		if err != nil {
 			t.Fatal(err)

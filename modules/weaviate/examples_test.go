@@ -56,7 +56,7 @@ func ExampleRunContainer_connectWithClient() {
 		}
 	}()
 
-	scheme, host, err := weaviateContainer.SchemaHost(ctx)
+	scheme, host, err := weaviateContainer.HttpHostAddress(ctx)
 	if err != nil {
 		log.Fatalf("failed to get schema and host: %s", err) // nolint:gocritic
 	}

@@ -46,7 +46,7 @@ for Weaviate. E.g. `testcontainers.WithImage("semitechnologies/weaviate:1.23.9")
 
 The Weaviate container exposes the following methods:
 
-#### Schema Host
+#### HTTP Host Address
 
 This method returns the Schema and Host for the Weaviate container, using the default `8080` port.
 
@@ -54,7 +54,7 @@ This method returns the Schema and Host for the Weaviate container, using the de
     At the moment, the Weaviate module only supports the HTTP schema.
 
 <!--codeinclude-->
-[Schema and Host](../../modules/weaviate/weaviate_test.go) inside_block:schemaHost
+[HTTP Host Address](../../modules/weaviate/weaviate_test.go) inside_block:httpHostAddress
 <!--/codeinclude-->
 
 ## Examples

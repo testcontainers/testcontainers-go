@@ -51,9 +51,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &WeaviateContainer{Container: container}, nil
 }
 
-// SchemaHost returns the schema and host of the Weaviate container.
+// HttpHostAddress returns the schema and host of the Weaviate container.
 // At the moment, it only supports the http scheme.
-func (c *WeaviateContainer) SchemaHost(ctx context.Context) (string, string, error) {
+func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string, error) {
 	containerPort, err := c.MappedPort(ctx, "8080/tcp")
 	if err != nil {
 		return "", "", fmt.Errorf("failed to get container port: %w", err)
