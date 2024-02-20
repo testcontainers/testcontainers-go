@@ -13,16 +13,28 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var (
-	//go:embed mounts/embedEtcd.yaml.tpl
-	embedEtcdConfigTpl string
-)
+//go:embed mounts/embedEtcd.yaml.tpl
+var embedEtcdConfigTpl string
 
 const embedEtcdContainerPath string = "/milvus/configs/embedEtcd.yaml"
 
 // MilvusContainer represents the Milvus container type used in the module
 type MilvusContainer struct {
 	testcontainers.Container
+}
+
+// ConnectionString returns the connection string for the milvus container, using the default 19530 port, and
+// obtaining the host and exposed port from the container.
+func (c *MilvusContainer) ConnectionString(ctx context.Context) (string, error) {
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", err
+	}
+	port, err := c.MappedPort(ctx, "19530/tcp")
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s:%s", host, port.Port()), nil
 }
 
 // RunContainer creates an instance of the Milvus container type
@@ -101,7 +113,7 @@ func createDefaultEmbedEtcdConfig(ctx context.Context, c testcontainers.Containe
 	tmpDir := os.TempDir()
 	defaultEmbedEtcdConfigPath := fmt.Sprintf("%s/embedEtcd.yaml", tmpDir)
 
-	if err := os.WriteFile(defaultEmbedEtcdConfigPath, defaultEmbedEtcdConfig, 0644); err != nil {
+	if err := os.WriteFile(defaultEmbedEtcdConfigPath, defaultEmbedEtcdConfig, 0o644); err != nil {
 		return fmt.Errorf("failed to write default embed etcd config to a temporary dir: %w", err)
 	}
 

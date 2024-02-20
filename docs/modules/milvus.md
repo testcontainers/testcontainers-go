@@ -45,3 +45,21 @@ for Milvus. E.g. `testcontainers.WithImage("milvusdb/milvus:v2.3.9")`.
 ### Container Methods
 
 The Milvus container exposes the following methods:
+
+#### ConnectionString
+
+This method returns the connection string to connect to the Milvus container, using the default `19530` port.
+
+<!--codeinclude-->
+[Get connection string](../../modules/milvus/milvus_test.go) inside_block:connectionString
+<!--/codeinclude-->
+
+## Examples
+
+### Creating collections
+
+This example shows the usage of the Milvus module to create and retrieve collections.
+
+<!--codeinclude-->
+[Create collections](../../modules/milvus/examples_test.go) inside_block:createCollections
+<!--/codeinclude-->

@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/milvus-io/milvus-sdk-go/v2/client"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/milvus"
 )
@@ -23,5 +25,25 @@ func TestMilvus(t *testing.T) {
 		}
 	})
 
-	// perform assertions
+	t.Run("Connect to Milvus with gRPC", func(tt *testing.T) {
+		// connectionString {
+		connectionStr, err := container.ConnectionString(ctx)
+		// }
+		if err != nil {
+			tt.Fatal(err)
+		}
+
+		milvusClient, err := client.NewGrpcClient(context.Background(), connectionStr)
+		if err != nil {
+			tt.Fatal("failed to connect to Milvus:", err.Error())
+		}
+		defer milvusClient.Close()
+
+		v, err := milvusClient.GetVersion(ctx)
+		if err != nil {
+			tt.Fatal("failed to get version:", err.Error())
+		}
+
+		tt.Logf("Milvus version: %s", v)
+	})
 }
