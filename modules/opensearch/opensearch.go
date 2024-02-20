@@ -3,6 +3,8 @@ package opensearch
 import (
 	"context"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/go-units"
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -14,7 +16,25 @@ type OpenSearchContainer struct {
 // RunContainer creates an instance of the OpenSearch container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OpenSearchContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "opensearchproject/opensearch:2.11.1",
+		Image:        "opensearchproject/opensearch:2.11.1",
+		ExposedPorts: []string{"9200/tcp", "9600/tcp"},
+		Env: map[string]string{
+			"discovery.type": "single-node",
+		},
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.Ulimits = []*units.Ulimit{
+				{
+					Name: "memlock",
+					Soft: -1, // Set memlock to unlimited (no soft or hard limit)
+					Hard: -1,
+				},
+				{
+					Name: "nofile",
+					Soft: 65536, // Maximum number of open files for the opensearch user - set to at least 65536
+					Hard: 65536,
+				},
+			}
+		},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
