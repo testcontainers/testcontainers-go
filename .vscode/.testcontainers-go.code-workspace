@@ -78,6 +78,10 @@
             "path": "../modules/mariadb"
         },
         {
+            "name": "module / milvus",
+            "path": "../modules/milvus"
+        },
+        {
             "name": "module / minio",
             "path": "../modules/minio"
         },
