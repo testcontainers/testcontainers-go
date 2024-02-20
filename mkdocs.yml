@@ -65,6 +65,7 @@ nav:
         - modules/index.md
         - modules/artemis.md
         - modules/cassandra.md
+        - modules/chroma.md
         - modules/clickhouse.md
         - modules/cockroachdb.md
         - modules/consul.md
@@ -77,6 +78,7 @@ nav:
         - modules/kafka.md
         - modules/localstack.md
         - modules/mariadb.md
+        - modules/milvus.md
         - modules/minio.md
         - modules/mockserver.md
         - modules/mongodb.md
@@ -85,12 +87,15 @@ nav:
         - modules/nats.md
         - modules/neo4j.md
         - modules/openldap.md
+        - modules/opensearch.md
         - modules/postgres.md
         - modules/pulsar.md
+        - modules/qdrant.md
         - modules/rabbitmq.md
         - modules/redis.md
         - modules/redpanda.md
         - modules/vault.md
+        - modules/weaviate.md
     - Examples:
         - examples/index.md
         - examples/nginx.md
