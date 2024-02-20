@@ -110,6 +110,10 @@
             "path": "../modules/openldap"
         },
         {
+            "name": "module / opensearch",
+            "path": "../modules/opensearch"
+        },
+        {
             "name": "module / postgres",
             "path": "../modules/postgres"
         },
