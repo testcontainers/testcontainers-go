@@ -53,6 +53,20 @@ func WithEndpointSettingsModifier(modifier func(settings map[string]*network.End
 	}
 }
 
+// WithEnv sets the environment variables for a container.
+// If the environment variable already exists, it will be overridden.
+func WithEnv(envs map[string]string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) {
+		if req.Env == nil {
+			req.Env = map[string]string{}
+		}
+
+		for key, val := range envs {
+			req.Env[key] = val
+		}
+	}
+}
+
 // WithHostConfigModifier allows to override the default host config
 func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) {
