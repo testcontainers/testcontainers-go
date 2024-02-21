@@ -1212,8 +1212,8 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	defaultHooks := []ContainerLifecycleHooks{
 		DefaultLoggingHook(p.Logger),
 		defaultReadinessHook(),
+		defaultLogConsumersHook(req.LogConsumerCfg),
 	}
-	allHooks := combineContainerHooks(defaultHooks, req.LifecycleHooks)
 
 	dc := &DockerContainer{
 		ID:                  c.ID,
@@ -1224,12 +1224,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		terminationSignal:   termSignal,
 		stopLogProductionCh: nil,
 		logger:              p.Logger,
-		lifecycleHooks: []ContainerLifecycleHooks{
-			{
-				PostStarts:  allHooks.PostStarts,
-				PostReadies: allHooks.PostReadies,
-			},
-		},
+		lifecycleHooks:      []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)},
 	}
 
 	err = dc.startedHook(ctx)
