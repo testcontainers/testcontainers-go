@@ -33,7 +33,7 @@ func (opt CustomizeRequestOption) Customize(req *GenericContainerRequest) {
 func CustomizeRequest(src GenericContainerRequest) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) {
 		if err := mergo.Merge(req, &src, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
-			fmt.Printf("error merging container request, keeping the original one. Error: %v", err)
+			Logger.Printf("error merging container request, keeping the original one. Error: %v", err)
 			return
 		}
 	}
