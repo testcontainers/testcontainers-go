@@ -1,4 +1,4 @@
-package testcontainers
+package testcontainers_test
 
 import (
 	"context"
@@ -8,16 +8,17 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 
 func TestExecWithMultiplexedResponse(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image: nginxAlpineImage,
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
@@ -74,11 +75,11 @@ func TestExecWithOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			req := ContainerRequest{
+			req := testcontainers.ContainerRequest{
 				Image: nginxAlpineImage,
 			}
 
-			container, err := GenericContainer(ctx, GenericContainerRequest{
+			container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 				ProviderType:     providerType,
 				ContainerRequest: req,
 				Started:          true,
@@ -108,11 +109,11 @@ func TestExecWithOptions(t *testing.T) {
 
 func TestExecWithMultiplexedStderrResponse(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image: nginxAlpineImage,
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
@@ -136,11 +137,11 @@ func TestExecWithMultiplexedStderrResponse(t *testing.T) {
 
 func TestExecWithNonMultiplexedResponse(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image: nginxAlpineImage,
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
