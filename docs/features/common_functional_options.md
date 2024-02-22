@@ -15,6 +15,16 @@ _Testcontainers for Go_ exposes an interface to perform this operations: `ImageS
 
 Using the `WithImageSubstitutors` options, you could define your own substitutions to the container images. E.g. adding a prefix to the images so that they can be pulled from a Docker registry other than Docker Hub. This is the usual mechanism for using Docker image proxies, caches, etc.
 
+#### WithEnv
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to either pass additional environment variables to a container or override them, you can use `testcontainers.WithEnv` for example:
+
+```golang
+postgres, err = postgresModule.RunContainer(ctx, testcontainers.WithEnv(map[string]string{"POSTGRES_INITDB_ARGS", "--no-sync"}))
+```
+
 #### WithLogConsumers
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
