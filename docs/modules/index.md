@@ -1,8 +1,45 @@
 # Testcontainers for Go modules
 
-In this section you'll discover how to create Go modules for _Testcontainers for Go_.
+In this section you'll discover how to create Go modules for _Testcontainers for Go_, including the steps to follow, the best practices, and the guidelines to consider before creating a new module.
 
-## Interested in adding a new module?
+## Before creating a new module
+
+First, you have to consider the following things before creating a new module to the project:
+
+1. Please check if the module you are interested in is already present in the [Modules Catalog](https://testcontainers.com/modules/?language=go).
+If it's already there, you can use it as a dependency in your project, and you can also contribute to the module if you want to improve it!
+2. If it is not present there, please consider where you are going to host the module: under your own GitHub account as a **Community module**, or under the `testcontainers-go` repository.
+3. If you're a vendor interested in creating an **Official module** for your project/product, please contact us, see below.
+
+In any case, we will be happy to assist you in the process of creating the module. Please feel free to ask for assistance in our [Slack](https://slack.testcontainers.org/) or in the [GitHub Discussions](https://github.com/testcontainers/testcontainers-go/discussions).
+
+### Community modules
+
+If you are going to host the module under your own GitHub account, please consider the following:
+
+- you'll have to follow the same guidelines as the ones for the modules hosted under the `testcontainers-go` repository,
+including the naming conventions, the documentation, the tests and the testable examples, and defining a proper CI workflow.
+You'll find more information in the sections below.
+- you'll be more autonomous in the development and release of the module, not having to wait for the maintainers to review and merge your PRs.
+As a direct consequence, you'll be responsible for the maintenance, documentation and support of the module,
+including updating the module to the latest version of _Testcontainers for Go_ if/when needed.
+- once created, you'll need to add the module to the [Modules Catalog](https://testcontainers.com/modules/?language=go) in order to be listed there.
+You can do this by submitting a PR to the [community repository](https://github.com/testcontainers/community-module-registry).
+An example can be found [here](https://github.com/testcontainers/community-module-registry/pull/21/files).
+- you'll need to add the module to the [Go documentation](https://pkg.go.dev) in order to be listed there. Please check our [Releasing docs](https://github.com/testcontainers/testcontainers-go/blob/main/RELEASING.md) for more information about triggering the Golang Proxy.
+
+### Modules hosted under the `testcontainers-go` repository
+
+If you still want to host the module under the `testcontainers-go` repository, please consider the following:
+
+- we are not experts in all the technologies out there, so we are open to contributions from the community.
+We are happy to review and merge your PRs, and we are also happy to help you with the development of the module.
+But this is a shared responsibility, so we expect you to be involved in the maintenance, documentation and support of the module.
+- the module will be part of the CI/CD pipeline of the `testcontainers-go` repository, so it will be tested and released with the rest of the modules.
+Think of Github workflows, Dependabot, release notes, etc. Although it sounds great, which it is, it also means that it will increase the build time in our CI/CD pipeline on Github, including flaky tests, number of dependabot updates, etc. So in the end it's more work for us.
+- once created, we'll add the module to the [Modules Catalog](https://testcontainers.com/modules/?language=go) and to the [Go documentation](https://pkg.go.dev/github.com/testcontainers/testcontainers-go).
+
+## Creating a new module
 
 We have provided a command line tool to generate the scaffolding for the code of the example you are interested in. This tool will generate:
 
@@ -27,6 +64,9 @@ We have provided a command line tool to generate the scaffolding for the code of
 - a GitHub workflow file in the .github/workflows directory to run the tests for the example.
 - an entry in Dependabot's configuration file, in order to receive dependency updates.
 - an entry in the VSCode workspace file, in order to include the new module in the project's workspace.
+
+!!!info
+    If you are hosting the module under your own Github account, please move the generated files to the new repository. Discard the following files and directories: `mkdocs.yml`, `dependabot.yml`, VSCode workspace, Sonarqube properties, and the `.github/workflows` directory, as they are specific to the `testcontainers-go` repository. You can use them as reference to create your own CI/CD pipeline.
 
 ### Command line flags
 

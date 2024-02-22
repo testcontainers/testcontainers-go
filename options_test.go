@@ -131,3 +131,82 @@ func TestWithStartupCommand(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "/tmp/.testcontainers\n", string(content))
 }
+
+func TestWithAfterReadyCommand(t *testing.T) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:      "alpine",
+			Entrypoint: []string{"tail", "-f", "/dev/null"},
+		},
+		Started: true,
+	}
+
+	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
+
+	testcontainers.WithAfterReadyCommand(testExec)(&req)
+
+	assert.Len(t, req.LifecycleHooks, 1)
+	assert.Len(t, req.LifecycleHooks[0].PostReadies, 1)
+
+	c, err := testcontainers.GenericContainer(context.Background(), req)
+	require.NoError(t, err)
+	defer func() {
+		err = c.Terminate(context.Background())
+		require.NoError(t, err)
+	}()
+
+	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
+	require.NoError(t, err)
+
+	content, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	assert.Equal(t, "/tmp/.testcontainers\n", string(content))
+}
+
+func TestWithEnv(t *testing.T) {
+	tests := map[string]struct {
+		req    *testcontainers.GenericContainerRequest
+		env    map[string]string
+		expect map[string]string
+	}{
+		"add": {
+			req: &testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Env: map[string]string{"KEY1": "VAL1"},
+				},
+			},
+			env: map[string]string{"KEY2": "VAL2"},
+			expect: map[string]string{
+				"KEY1": "VAL1",
+				"KEY2": "VAL2",
+			},
+		},
+		"add-nil": {
+			req:    &testcontainers.GenericContainerRequest{},
+			env:    map[string]string{"KEY2": "VAL2"},
+			expect: map[string]string{"KEY2": "VAL2"},
+		},
+		"override": {
+			req: &testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Env: map[string]string{
+						"KEY1": "VAL1",
+						"KEY2": "VAL2",
+					},
+				},
+			},
+			env: map[string]string{"KEY2": "VAL3"},
+			expect: map[string]string{
+				"KEY1": "VAL1",
+				"KEY2": "VAL3",
+			},
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			opt := testcontainers.WithEnv(tc.env)
+			opt.Customize(tc.req)
+			require.Equal(t, tc.expect, tc.req.Env)
+		})
+	}
+}

@@ -131,7 +131,7 @@ func ExampleRunContainer_withPlugins() {
 		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
 		// Multiple test implementations of the Executable interface, specific to RabbitMQ, exist in the types_test.go file.
 		// Please refer to them for more examples.
-		testcontainers.WithStartupCommand(
+		testcontainers.WithAfterReadyCommand(
 			testcontainers.NewRawCommand([]string{"rabbitmq_shovel"}),
 			testcontainers.NewRawCommand([]string{"rabbitmq_random_exchange"}),
 		),
