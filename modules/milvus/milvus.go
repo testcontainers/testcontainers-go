@@ -57,7 +57,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 					// Otherwise the milvus container will panic on startup.
 					createDefaultEmbedEtcdConfig,
 				},
-				PostStarts: []testcontainers.ContainerHook{regenerateEmbedEtcdConfig},
 			},
 		},
 	}
@@ -125,26 +124,6 @@ func createDefaultEmbedEtcdConfig(ctx context.Context, c testcontainers.Containe
 	err = c.CopyFileToContainer(ctx, defaultEmbedEtcdConfigPath, embedEtcdContainerPath, 0o644)
 	if err != nil {
 		return fmt.Errorf("can't copy %s to container: %w", defaultEmbedEtcdConfigPath, err)
-	}
-
-	return nil
-}
-
-// regenerateEmbedEtcdConfig updates the embed etcd config file with the mapped port
-func regenerateEmbedEtcdConfig(ctx context.Context, c testcontainers.Container) error {
-	containerPort, err := c.MappedPort(ctx, "2379/tcp")
-	if err != nil {
-		return fmt.Errorf("failed to get mapped port: %w", err)
-	}
-
-	embedEtcdConfig, err := renderEmbedEtcdConfig(containerPort.Int())
-	if err != nil {
-		return fmt.Errorf("failed to embed etcd config: %w", err)
-	}
-
-	err = c.CopyToContainer(ctx, embedEtcdConfig, embedEtcdContainerPath, 600)
-	if err != nil {
-		return fmt.Errorf("failed to copy embedEtcd.yaml into container: %w", err)
 	}
 
 	return nil
