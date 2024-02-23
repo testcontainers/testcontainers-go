@@ -37,6 +37,9 @@ func (g *TestLogConsumer) Accept(l Log) {
 
 If you need to either pass logger to a container, you can use `testcontainers.WithLogger`.
 
+!!!info
+	Consider calling this before other "With" functions as these may generate logs.
+
 In this example we also use `TestLogger` which writes to the passed in `testing.TB` using `Logf`.
 The result is that we capture all logging from the container into the test context meaning its
 hidden behind `go test -v` and is associated with the relevant test, providing the user with
