@@ -126,6 +126,9 @@ func ExampleRunContainer_withModel_llama2_langchain() {
 		llms.WithSeed(42),         // the lower the seed, the more deterministic the completion
 		llms.WithTemperature(0.0), // the lower the temperature, the more creative the completion
 	)
+	if err != nil {
+		log.Fatalf("failed to create langchain ollama: %s", err) // nolint:gocritic
+	}
 
 	words := []string{
 		"easy", "isolation", "consistency",
