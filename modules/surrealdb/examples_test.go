@@ -28,7 +28,7 @@ func ExampleRunContainer() {
 
 	state, err := surrealdbContainer.State(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)

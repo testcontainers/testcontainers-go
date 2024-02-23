@@ -2,10 +2,10 @@ package surrealdb
 
 import (
 	"context"
-	"log"
 	"testing"
 
 	"github.com/surrealdb/surrealdb.go"
+
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -28,21 +28,21 @@ func TestSurrealDBSelect(t *testing.T) {
 	url, err := container.URL(ctx)
 	// }
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	db, err := surrealdb.New(url)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	defer db.Close()
 
 	if _, err := db.Signin(map[string]string{"user": "root", "pass": "root"}); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	if _, err := db.Use("test", "test"); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	if _, err := db.Create("person.tobie", map[string]any{
@@ -53,26 +53,26 @@ func TestSurrealDBSelect(t *testing.T) {
 		},
 		"marketing": true,
 	}); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	result, err := db.Select("person.tobie")
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	resultData := result.([]any)[0].(map[string]interface{})
 	if resultData["title"] != "Founder & CEO" {
-		log.Fatal("title is not Founder & CEO")
+		t.Fatal("title is not Founder & CEO")
 	}
 	if resultData["name"].(map[string]interface{})["first"] != "Tobie" {
-		log.Fatal("name.first is not Tobie")
+		t.Fatal("name.first is not Tobie")
 	}
 	if resultData["name"].(map[string]interface{})["last"] != "Morgan Hitchcock" {
-		log.Fatal("name.last is not Morgan Hitchcock")
+		t.Fatal("name.last is not Morgan Hitchcock")
 	}
 	if resultData["marketing"] != true {
-		log.Fatal("marketing is not true")
+		t.Fatal("marketing is not true")
 	}
 }
 
@@ -93,17 +93,17 @@ func TestSurrealDBNoAuth(t *testing.T) {
 
 	url, err := container.URL(ctx)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	db, err := surrealdb.New(url)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	defer db.Close()
 
 	if _, err := db.Use("test", "test"); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	if _, err := db.Create("person.tobie", map[string]any{
@@ -114,25 +114,25 @@ func TestSurrealDBNoAuth(t *testing.T) {
 		},
 		"marketing": true,
 	}); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	result, err := db.Select("person.tobie")
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	resultData := result.([]any)[0].(map[string]interface{})
 	if resultData["title"] != "Founder & CEO" {
-		log.Fatal("title is not Founder & CEO")
+		t.Fatal("title is not Founder & CEO")
 	}
 	if resultData["name"].(map[string]interface{})["first"] != "Tobie" {
-		log.Fatal("name.first is not Tobie")
+		t.Fatal("name.first is not Tobie")
 	}
 	if resultData["name"].(map[string]interface{})["last"] != "Morgan Hitchcock" {
-		log.Fatal("name.last is not Morgan Hitchcock")
+		t.Fatal("name.last is not Morgan Hitchcock")
 	}
 	if resultData["marketing"] != true {
-		log.Fatal("marketing is not true")
+		t.Fatal("marketing is not true")
 	}
 }
