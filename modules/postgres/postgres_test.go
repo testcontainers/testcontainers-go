@@ -53,6 +53,13 @@ func TestPostgres(t *testing.T) {
 			wait:  wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(30 * time.Second),
 			// }
 		},
+		{
+			name: "Pgvector",
+			// pgvector {
+			image: "docker.io/pgvector/pgvector:pg16",
+			wait:  wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(30 * time.Second),
+			// }
+		},
 	}
 
 	for _, tt := range tests {

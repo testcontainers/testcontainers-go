@@ -3,6 +3,11 @@ package testcontainers
 import (
 	"context"
 	"errors"
+	"net/http"
+	"os"
+	"os/exec"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -116,4 +121,71 @@ func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
 	require.Error(t, err)
 	require.NotNil(t, c)
 	terminateContainerOnEnd(t, context.Background(), c)
+}
+
+func TestGenericReusableContainerInSubprocess(t *testing.T) {
+	wg := sync.WaitGroup{}
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
+		go func() {
+			defer wg.Done()
+
+			// create containers in subprocesses, as "go test ./..." does.
+			output := createReuseContainerInSubprocess(t)
+
+			// check is reuse container with WaitingFor work correctly.
+			require.True(t, strings.Contains(output, "🚧 Waiting for container id"))
+			require.True(t, strings.Contains(output, "🔔 Container is ready"))
+		}()
+	}
+
+	wg.Wait()
+}
+
+func createReuseContainerInSubprocess(t *testing.T) string {
+	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess")
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(output))
+
+	return string(output)
+}
+
+// TestHelperContainerStarterProcess is a helper function
+// to start a container in a subprocess. It's not a real test.
+func TestHelperContainerStarterProcess(t *testing.T) {
+	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+		t.Skip("Skipping helper test function. It's not a real test")
+	}
+
+	ctx := context.Background()
+
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image:        nginxDelayedImage,
+			ExposedPorts: []string{nginxDefaultPort},
+			WaitingFor:   wait.ForListeningPort(nginxDefaultPort), // default startupTimeout is 60s
+			Name:         reusableContainerName,
+		},
+		Started: true,
+		Reuse:   true,
+	})
+	require.NoError(t, err)
+	require.True(t, nginxC.IsRunning())
+
+	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
+	require.NoError(t, err)
+
+	// check is reuse container with WaitingFor work correctly.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, origin, nil)
+	require.NoError(t, err)
+	req.Close = true
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
