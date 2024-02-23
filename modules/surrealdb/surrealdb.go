@@ -48,36 +48,24 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithAuthentication enables or disables authentication for the SurrealDB instance
-func WithAuthentication(enabled bool) testcontainers.CustomizeRequestOption {
+// WithAuthentication enables authentication for the SurrealDB instance
+func WithAuthentication() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
-		if enabled {
-			req.Env["SURREAL_AUTH"] = "true"
-		} else {
-			req.Env["SURREAL_AUTH"] = "false"
-		}
+		req.Env["SURREAL_AUTH"] = "true"
 	}
 }
 
 // WithStrict enables or disables strict mode for the SurrealDB instance
-func WithStrict(enabled bool) testcontainers.CustomizeRequestOption {
+func WithStrictMode() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
-		if enabled {
-			req.Env["SURREAL_STRICT"] = "true"
-		} else {
-			req.Env["SURREAL_STRICT"] = "false"
-		}
+		req.Env["SURREAL_STRICT"] = "true"
 	}
 }
 
 // WithAllowAllCaps enables or disables all caps for the SurrealDB instance
-func WithAllowAllCaps(enabled bool) testcontainers.CustomizeRequestOption {
+func WithAllowAllCaps() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
-		if enabled {
-			req.Env["SURREAL_CAPS_ALLOW_ALL"] = "true"
-		} else {
-			req.Env["SURREAL_CAPS_ALLOW_ALL"] = "false"
-		}
+		req.Env["SURREAL_CAPS_ALLOW_ALL"] = "false"
 	}
 }
 
@@ -88,8 +76,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		Env: map[string]string{
 			"SURREAL_USER":           "root",
 			"SURREAL_PASS":           "root",
-			"SURREAL_AUTH":           "true",
-			"SURREAL_CAPS_ALLOW_ALL": "true",
+			"SURREAL_AUTH":           "false",
+			"SURREAL_STRICT":         "false",
+			"SURREAL_CAPS_ALLOW_ALL": "false",
 			"SURREAL_PATH":           "memory",
 		},
 		ExposedPorts: []string{"8000/tcp"},

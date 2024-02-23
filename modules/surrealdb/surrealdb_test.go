@@ -24,9 +24,7 @@ func TestSurrealDBSelect(t *testing.T) {
 		}
 	})
 
-	// websocketURL {
 	url, err := container.URL(ctx)
-	// }
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,10 +34,6 @@ func TestSurrealDBSelect(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-
-	if _, err := db.Signin(map[string]string{"user": "root", "pass": "root"}); err != nil {
-		t.Fatal(err)
-	}
 
 	if _, err := db.Use("test", "test"); err != nil {
 		t.Fatal(err)
@@ -76,10 +70,10 @@ func TestSurrealDBSelect(t *testing.T) {
 	}
 }
 
-func TestSurrealDBNoAuth(t *testing.T) {
+func TestSurrealDBWithAuth(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("surrealdb/surrealdb:v1.1.1"), WithAuthentication(false))
+	container, err := RunContainer(ctx, testcontainers.WithImage("surrealdb/surrealdb:v1.1.1"), WithAuthentication())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +85,9 @@ func TestSurrealDBNoAuth(t *testing.T) {
 		}
 	})
 
+	// websocketURL {
 	url, err := container.URL(ctx)
+	// }
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,6 +97,10 @@ func TestSurrealDBNoAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
+
+	if _, err := db.Signin(map[string]string{"user": "root", "pass": "root"}); err != nil {
+		t.Fatal(err)
+	}
 
 	if _, err := db.Use("test", "test"); err != nil {
 		t.Fatal(err)
