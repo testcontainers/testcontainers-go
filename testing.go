@@ -41,6 +41,7 @@ func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
 }
 
 // exampleLogConsumer {
+
 // StdoutLogConsumer is a LogConsumer that prints the log to stdout
 type StdoutLogConsumer struct{}
 

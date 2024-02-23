@@ -82,6 +82,7 @@ func WithImage(image string) CustomizeRequestOption {
 }
 
 // imageSubstitutor {
+
 // ImageSubstitutor represents a way to substitute container image names
 type ImageSubstitutor interface {
 	// Description returns the name of the type and a short description of how it modifies the image.
