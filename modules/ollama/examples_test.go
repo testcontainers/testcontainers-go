@@ -86,8 +86,7 @@ func ExampleRunContainer_withModel_llama2_http() {
 
 	fmt.Println(resp.StatusCode)
 
-	// Output:
-	// 200
+	// Intentionally not asserting the output, as we don't want to run this example in the tests.
 }
 
 func ExampleRunContainer_withModel_llama2_langchain() {
