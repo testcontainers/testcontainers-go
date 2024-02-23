@@ -45,6 +45,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		Started:          true,
 	}
 
+	// always request a GPU if the host supports it
+	opts = append(opts, withGpu())
+
 	for _, opt := range opts {
 		opt.Customize(&genericContainerReq)
 	}

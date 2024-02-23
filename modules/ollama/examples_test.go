@@ -50,7 +50,6 @@ func ExampleRunContainer_withModel_llama2_http() {
 		ctx,
 		testcontainers.WithImage("ollama/ollama:0.1.25"),
 		tcollama.WithModel("llama2"),
-		tcollama.WithGpu(),
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
@@ -99,7 +98,6 @@ func ExampleRunContainer_withModel_llama2_langchain() {
 		ctx,
 		testcontainers.WithImage("ollama/ollama:0.1.25"),
 		tcollama.WithModel("llama2"),
-		tcollama.WithGpu(),
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
