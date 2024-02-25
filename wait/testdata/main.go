@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -58,7 +59,7 @@ func main() {
 	server := http.Server{Addr: ":6443", Handler: mux}
 	go func() {
 		log.Println("serving...")
-		if err := server.ListenAndServeTLS("tls.pem", "tls-key.pem"); err != nil && err != http.ErrServerClosed {
+		if err := server.ListenAndServeTLS("tls.pem", "tls-key.pem"); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}
 	}()

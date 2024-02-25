@@ -100,11 +100,15 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		if apply, ok := opt.(Option); ok {
 			apply(&settings)
 		}
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	if settings.SSLSettings != nil {
-		applySSLSettings(settings.SSLSettings)(&genericContainerReq)
+		if err := applySSLSettings(settings.SSLSettings)(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	nodeConfig, err := renderRabbitMQConfig(settings)
@@ -118,7 +122,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	withConfig(tmpConfigFile)(&genericContainerReq)
+	if err := withConfig(tmpConfigFile)(&genericContainerReq); err != nil {
+		return nil, err
+	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
@@ -135,7 +141,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 func withConfig(hostPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["RABBITMQ_CONFIG_FILE"] = defaultCustomConfPath
 
 		req.Files = append(req.Files, testcontainers.ContainerFile{
@@ -143,6 +149,8 @@ func withConfig(hostPath string) testcontainers.CustomizeRequestOption {
 			ContainerFilePath: defaultCustomConfPath,
 			FileMode:          0o644,
 		})
+
+		return nil
 	}
 }
 
@@ -154,7 +162,7 @@ func applySSLSettings(sslSettings *SSLSettings) testcontainers.CustomizeRequestO
 
 	const defaultPermission = 0o644
 
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      sslSettings.CACertFile,
 			ContainerFilePath: rabbitCaCertPath,
@@ -174,6 +182,8 @@ func applySSLSettings(sslSettings *SSLSettings) testcontainers.CustomizeRequestO
 		// To verify that TLS has been enabled on the node, container logs should contain an entry about a TLS listener being enabled
 		// See https://www.rabbitmq.com/ssl.html#enabling-tls-verify-configuration
 		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForLog("started TLS (SSL) listener on [::]:5671"))
+
+		return nil
 	}
 }
 

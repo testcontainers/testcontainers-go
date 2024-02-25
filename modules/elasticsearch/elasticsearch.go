@@ -65,7 +65,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		if apply, ok := opt.(Option); ok {
 			apply(settings)
 		}
-		opt.Customize(&req)
+		if err := opt.Customize(&req); err != nil {
+			return nil, err
+		}
 	}
 
 	// Transfer the certificate settings to the container request

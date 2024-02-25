@@ -50,7 +50,7 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string
 // It will also set the "config_file" parameter to the path of the config file
 // as a command line argument to the container
 func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		cfgFile := testcontainers.ContainerFile{
 			HostFilePath:      cfg,
 			ContainerFilePath: "/etc/postgresql.conf",
@@ -59,6 +59,8 @@ func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
 
 		req.Files = append(req.Files, cfgFile)
 		req.Cmd = append(req.Cmd, "-c", "config_file=/etc/postgresql.conf")
+
+		return nil
 	}
 }
 
@@ -66,14 +68,16 @@ func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
 // It can be used to define a different name for the default database that is created when the image is first started.
 // If it is not specified, then the value of WithUser will be used.
 func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["POSTGRES_DB"] = dbName
+
+		return nil
 	}
 }
 
 // WithInitScripts sets the init scripts to be run when the container starts
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		initScripts := []testcontainers.ContainerFile{}
 		for _, script := range scripts {
 			cf := testcontainers.ContainerFile{
@@ -84,6 +88,8 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 			initScripts = append(initScripts, cf)
 		}
 		req.Files = append(req.Files, initScripts...)
+
+		return nil
 	}
 }
 
@@ -91,8 +97,10 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 // It is required for you to use the PostgreSQL image. It must not be empty or undefined.
 // This environment variable sets the superuser password for PostgreSQL.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["POSTGRES_PASSWORD"] = password
+
+		return nil
 	}
 }
 
@@ -101,12 +109,14 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 // It will create the specified user with superuser power and a database with the same name.
 // If it is not specified, then the default user of postgres will be used.
 func WithUsername(user string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		if user == "" {
 			user = defaultUser
 		}
 
 		req.Env["POSTGRES_USER"] = user
+
+		return nil
 	}
 }
 
@@ -129,7 +139,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

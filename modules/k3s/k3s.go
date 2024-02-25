@@ -84,7 +84,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
@@ -99,7 +101,9 @@ func getContainerHost(ctx context.Context, opts ...testcontainers.ContainerCusto
 	// Use a dummy request to get the provider from options.
 	var req testcontainers.GenericContainerRequest
 	for _, opt := range opts {
-		opt.Customize(&req)
+		if err := opt.Customize(&req); err != nil {
+			return "", err
+		}
 	}
 
 	logging := req.Logger

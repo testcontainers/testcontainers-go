@@ -83,7 +83,9 @@ func RunContainer(ctx context.Context, options ...testcontainers.ContainerCustom
 	}
 
 	for _, option := range options {
-		option.Customize(&genericContainerReq)
+		if err := option.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	err := validate(&genericContainerReq)

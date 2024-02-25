@@ -231,7 +231,6 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 			Wait:    upOptions.Wait,
 		},
 	})
-
 	if err != nil {
 		return err
 	}
