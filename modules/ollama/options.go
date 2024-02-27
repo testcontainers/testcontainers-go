@@ -42,28 +42,11 @@ func withGpu() testcontainers.CustomizeRequestOption {
 	})
 }
 
-// WithModelAndPrompt will run the given model, with a prompt to be passed to the model.
-// If Ollama is not able to run the given model, it will fail to initialise.
-func WithModelAndPrompt(model string, prompt string) testcontainers.CustomizeRequestOption {
-	return withModel(model, prompt)
-}
-
 // WithModel will run the given model, without any prompt.
 // If Ollama is not able to run the given model, it will fail to initialise.
 func WithModel(model string) testcontainers.CustomizeRequestOption {
-	return withModel(model, "")
-}
-
-func withModel(model string, prompt string) testcontainers.CustomizeRequestOption {
 	pullCmds := []string{"ollama", "pull", model}
-	if prompt != "" {
-		pullCmds = append(pullCmds, prompt)
-	}
-
 	runCmds := []string{"ollama", "run", model}
-	if prompt != "" {
-		runCmds = append(runCmds, prompt)
-	}
 
 	return func(req *testcontainers.GenericContainerRequest) {
 		modelLifecycleHook := testcontainers.ContainerLifecycleHooks{
