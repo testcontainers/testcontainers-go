@@ -55,8 +55,12 @@ func WithModel(model string) testcontainers.CustomizeRequestOption {
 }
 
 func withModel(model string, prompt string) testcontainers.CustomizeRequestOption {
-	runCmds := []string{"ollama", "run", model}
+	pullCmds := []string{"ollama", "pull", model}
+	if prompt != "" {
+		pullCmds = append(pullCmds, prompt)
+	}
 
+	runCmds := []string{"ollama", "run", model}
 	if prompt != "" {
 		runCmds = append(runCmds, prompt)
 	}
@@ -65,6 +69,11 @@ func withModel(model string, prompt string) testcontainers.CustomizeRequestOptio
 		modelLifecycleHook := testcontainers.ContainerLifecycleHooks{
 			PostReadies: []testcontainers.ContainerHook{
 				func(ctx context.Context, c testcontainers.Container) error {
+					_, _, err := c.Exec(ctx, pullCmds, exec.Multiplexed())
+					if err != nil {
+						return fmt.Errorf("failed to pull model %s: %w", model, err)
+					}
+
 					_, r, err := c.Exec(ctx, runCmds, exec.Multiplexed())
 					if err != nil {
 						return fmt.Errorf("failed to run model %s: %w", model, err)
