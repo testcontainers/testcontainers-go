@@ -162,3 +162,51 @@ func TestWithAfterReadyCommand(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "/tmp/.testcontainers\n", string(content))
 }
+
+func TestWithEnv(t *testing.T) {
+	tests := map[string]struct {
+		req    *testcontainers.GenericContainerRequest
+		env    map[string]string
+		expect map[string]string
+	}{
+		"add": {
+			req: &testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Env: map[string]string{"KEY1": "VAL1"},
+				},
+			},
+			env: map[string]string{"KEY2": "VAL2"},
+			expect: map[string]string{
+				"KEY1": "VAL1",
+				"KEY2": "VAL2",
+			},
+		},
+		"add-nil": {
+			req:    &testcontainers.GenericContainerRequest{},
+			env:    map[string]string{"KEY2": "VAL2"},
+			expect: map[string]string{"KEY2": "VAL2"},
+		},
+		"override": {
+			req: &testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Env: map[string]string{
+						"KEY1": "VAL1",
+						"KEY2": "VAL2",
+					},
+				},
+			},
+			env: map[string]string{"KEY2": "VAL3"},
+			expect: map[string]string{
+				"KEY1": "VAL1",
+				"KEY2": "VAL3",
+			},
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			opt := testcontainers.WithEnv(tc.env)
+			opt.Customize(tc.req)
+			require.Equal(t, tc.expect, tc.req.Env)
+		})
+	}
+}

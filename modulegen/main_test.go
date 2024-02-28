@@ -430,15 +430,15 @@ func assertExamplesTestContent(t *testing.T, module context.TestcontainersModule
 	title := module.Title()
 
 	data := sanitiseContent(content)
-	assert.Equal(t, data[0], "package "+lower+"_test")
-	assert.Equal(t, "\t\"github.com/testcontainers/testcontainers-go\"", data[6])
-	assert.Equal(t, data[7], "\t\"github.com/testcontainers/testcontainers-go/modules/"+lower+"\"")
-	assert.Equal(t, data[10], "func Example"+entrypoint+"() {")
-	assert.Equal(t, data[11], "\t// run"+title+"Container {")
-	assert.Equal(t, data[14], "\t"+lower+"Container, err := "+lower+"."+entrypoint+"(ctx, testcontainers.WithImage(\""+module.Image+"\"))")
-	assert.Equal(t, "\tfmt.Println(state.Running)", data[32])
-	assert.Equal(t, "\t// Output:", data[34])
-	assert.Equal(t, "\t// true", data[35])
+	assert.Equal(t, "package "+lower+"_test", data[0])
+	assert.Equal(t, "\t\"github.com/testcontainers/testcontainers-go\"", data[7])
+	assert.Equal(t, "\t\"github.com/testcontainers/testcontainers-go/modules/"+lower+"\"", data[8])
+	assert.Equal(t, "func Example"+entrypoint+"() {", data[11])
+	assert.Equal(t, "\t// run"+title+"Container {", data[12])
+	assert.Equal(t, "\t"+lower+"Container, err := "+lower+"."+entrypoint+"(ctx, testcontainers.WithImage(\""+module.Image+"\"))", data[15])
+	assert.Equal(t, "\tfmt.Println(state.Running)", data[33])
+	assert.Equal(t, "\t// Output:", data[35])
+	assert.Equal(t, "\t// true", data[36])
 }
 
 // assert content module test
@@ -447,9 +447,9 @@ func assertModuleTestContent(t *testing.T, module context.TestcontainersModule, 
 	require.NoError(t, err)
 
 	data := sanitiseContent(content)
-	assert.Equal(t, data[0], "package "+module.Lower())
-	assert.Equal(t, data[9], "func Test"+module.Title()+"(t *testing.T) {")
-	assert.Equal(t, data[12], "\tcontainer, err := "+module.Entrypoint()+"(ctx, testcontainers.WithImage(\""+module.Image+"\"))")
+	assert.Equal(t, "package "+module.Lower()+"_test", data[0])
+	assert.Equal(t, "func Test"+module.Title()+"(t *testing.T) {", data[10])
+	assert.Equal(t, "\tcontainer, err := "+module.Lower()+"."+module.Entrypoint()+"(ctx, testcontainers.WithImage(\""+module.Image+"\"))", data[13])
 }
 
 // assert content module

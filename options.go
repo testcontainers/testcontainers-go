@@ -33,7 +33,7 @@ func (opt CustomizeRequestOption) Customize(req *GenericContainerRequest) {
 func CustomizeRequest(src GenericContainerRequest) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) {
 		if err := mergo.Merge(req, &src, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
-			fmt.Printf("error merging container request, keeping the original one. Error: %v", err)
+			Logger.Printf("error merging container request, keeping the original one. Error: %v", err)
 			return
 		}
 	}
@@ -53,6 +53,20 @@ func WithEndpointSettingsModifier(modifier func(settings map[string]*network.End
 	}
 }
 
+// WithEnv sets the environment variables for a container.
+// If the environment variable already exists, it will be overridden.
+func WithEnv(envs map[string]string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) {
+		if req.Env == nil {
+			req.Env = map[string]string{}
+		}
+
+		for key, val := range envs {
+			req.Env[key] = val
+		}
+	}
+}
+
 // WithHostConfigModifier allows to override the default host config
 func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) {
@@ -68,6 +82,7 @@ func WithImage(image string) CustomizeRequestOption {
 }
 
 // imageSubstitutor {
+
 // ImageSubstitutor represents a way to substitute container image names
 type ImageSubstitutor interface {
 	// Description returns the name of the type and a short description of how it modifies the image.
