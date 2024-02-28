@@ -122,7 +122,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			}
 			port, err = target.MappedPort(ctx, internalPort)
 			if err != nil {
-				fmt.Printf("(%d) [%s] %s\n", i, port, err)
+				log.Printf("(%d) [%s] %s\n", i, port, err)
 			}
 		}
 	}

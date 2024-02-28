@@ -22,6 +22,10 @@
             "path": "../modules/cassandra"
         },
         {
+            "name": "module / chroma",
+            "path": "../modules/chroma"
+        },
+        {
             "name": "module / clickhouse",
             "path": "../modules/clickhouse"
         },
@@ -74,6 +78,10 @@
             "path": "../modules/mariadb"
         },
         {
+            "name": "module / milvus",
+            "path": "../modules/milvus"
+        },
+        {
             "name": "module / minio",
             "path": "../modules/minio"
         },
@@ -106,12 +114,20 @@
             "path": "../modules/openldap"
         },
         {
+            "name": "module / opensearch",
+            "path": "../modules/opensearch"
+        },
+        {
             "name": "module / postgres",
             "path": "../modules/postgres"
         },
         {
             "name": "module / pulsar",
             "path": "../modules/pulsar"
+        },
+        {
+            "name": "module / qdrant",
+            "path": "../modules/qdrant"
         },
         {
             "name": "module / rabbitmq",
@@ -128,6 +144,10 @@
         {
             "name": "module / vault",
             "path": "../modules/vault"
+        },
+        {
+            "name": "module / weaviate",
+            "path": "../modules/weaviate"
         },
         {
             "name": "modulegen",
