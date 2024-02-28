@@ -36,9 +36,9 @@ const (
 // ClickHouseContainer represents the ClickHouse container type used in the module
 type ClickHouseContainer struct {
 	testcontainers.Container
-	dbName   string
-	user     string
-	password string
+	DbName   string
+	User     string
+	Password string
 }
 
 // ConnectionHost returns the host and port of the clickhouse container, using the default, native 9000 port, and
@@ -75,7 +75,7 @@ func (c *ClickHouseContainer) ConnectionString(ctx context.Context, args ...stri
 		extraArgs = "?" + extraArgs
 	}
 
-	connectionString := fmt.Sprintf("clickhouse://%s:%s@%s/%s%s", c.user, c.password, host, c.dbName, extraArgs)
+	connectionString := fmt.Sprintf("clickhouse://%s:%s@%s/%s%s", c.User, c.Password, host, c.DbName, extraArgs)
 	return connectionString, nil
 }
 
@@ -237,5 +237,5 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	password := req.Env["CLICKHOUSE_PASSWORD"]
 	dbName := req.Env["CLICKHOUSE_DB"]
 
-	return &ClickHouseContainer{Container: container, dbName: dbName, password: password, user: user}, nil
+	return &ClickHouseContainer{Container: container, DbName: dbName, Password: password, User: user}, nil
 }

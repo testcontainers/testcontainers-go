@@ -6,6 +6,7 @@ package couchbase
 type indexStorageMode string
 
 // storageTypes {
+
 const (
 	// MemoryOptimized sets the cluster-wide index storage mode to use memory optimized global
 	// secondary indexes which can perform index maintenance and index scan faster at in-memory speeds.

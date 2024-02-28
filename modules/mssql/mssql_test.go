@@ -1,4 +1,4 @@
-package mssql
+package mssql_test
 
 import (
 	"context"
@@ -8,14 +8,15 @@ import (
 	_ "github.com/microsoft/go-mssqldb"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/mssql"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestMSSQLServer(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx,
-		WithAcceptEULA(),
+	container, err := mssql.RunContainer(ctx,
+		mssql.WithAcceptEULA(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -57,22 +58,27 @@ func TestMSSQLServer(t *testing.T) {
 func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx)
-	testcontainers.WithWaitStrategy(
-		wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted"))
-
-	if container == nil && err != nil {
-		t.Log("Success: Confirmed proper handling of missing EULA, so container is nil.")
-	} else {
+	container, err := mssql.RunContainer(ctx, testcontainers.WithWaitStrategy(
+		wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")))
+	if err != nil {
 		t.Fatalf("Expected a log to confirm missing EULA but got error: %s", err)
+	}
+
+	state, err := container.State(ctx)
+	if err != nil {
+		t.Fatalf("failed to get container state: %s", err)
+	}
+
+	if !state.Running {
+		t.Log("Success: Confirmed proper handling of missing EULA, so container is not running.")
 	}
 }
 
 func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx,
-		WithAcceptEULA(),
+	container, err := mssql.RunContainer(ctx,
+		mssql.WithAcceptEULA(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -114,9 +120,9 @@ func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx,
-		WithAcceptEULA(),
-		WithPassword("Strong@Passw0rd"),
+	container, err := mssql.RunContainer(ctx,
+		mssql.WithAcceptEULA(),
+		mssql.WithPassword("Strong@Passw0rd"),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -150,11 +156,11 @@ func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 func TestMSSQLServerWithInvalidPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx,
+	container, err := mssql.RunContainer(ctx,
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Password validation failed")),
-		WithAcceptEULA(),
-		WithPassword("weakPassword"),
+		mssql.WithAcceptEULA(),
+		mssql.WithPassword("weakPassword"),
 	)
 
 	if err == nil {
@@ -174,9 +180,9 @@ func TestMSSQLServerWithInvalidPassword(t *testing.T) {
 func TestMSSQLServerWithAlternativeImage(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx,
+	container, err := mssql.RunContainer(ctx,
 		testcontainers.WithImage("mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04"),
-		WithAcceptEULA(),
+		mssql.WithAcceptEULA(),
 	)
 	if err != nil {
 		t.Fatalf("Failed to create the container with alternative image: %s", err)
