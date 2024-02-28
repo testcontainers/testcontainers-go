@@ -1,4 +1,4 @@
-package clickhouse
+package clickhouse_test
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -29,7 +30,7 @@ type Test struct {
 func TestClickHouseDefaultConfig(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx)
+	container, err := clickhouse.RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,9 +46,9 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 	conn, err := ch.Open(&ch.Options{
 		Addr: []string{connectionHost},
 		Auth: ch.Auth{
-			Database: container.dbName,
-			Username: container.user,
-			Password: container.password,
+			Database: container.DbName,
+			Username: container.User,
+			Password: container.Password,
 		},
 	})
 	require.NoError(t, err)
@@ -61,10 +62,10 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 func TestClickHouseConnectionHost(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx,
-		WithUsername(user),
-		WithPassword(password),
-		WithDatabase(dbname),
+	container, err := clickhouse.RunContainer(ctx,
+		clickhouse.WithUsername(user),
+		clickhouse.WithPassword(password),
+		clickhouse.WithDatabase(dbname),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -101,7 +102,7 @@ func TestClickHouseConnectionHost(t *testing.T) {
 func TestClickHouseDSN(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, WithUsername(user), WithPassword(password), WithDatabase(dbname))
+	container, err := clickhouse.RunContainer(ctx, clickhouse.WithUsername(user), clickhouse.WithPassword(password), clickhouse.WithDatabase(dbname))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,11 +135,11 @@ func TestClickHouseWithInitScripts(t *testing.T) {
 	ctx := context.Background()
 
 	// withInitScripts {
-	container, err := RunContainer(ctx,
-		WithUsername(user),
-		WithPassword(password),
-		WithDatabase(dbname),
-		WithInitScripts(filepath.Join("testdata", "init-db.sh")),
+	container, err := clickhouse.RunContainer(ctx,
+		clickhouse.WithUsername(user),
+		clickhouse.WithPassword(password),
+		clickhouse.WithDatabase(dbname),
+		clickhouse.WithInitScripts(filepath.Join("testdata", "init-db.sh")),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -178,15 +179,15 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 		desc         string
 		configOption testcontainers.CustomizeRequestOption
 	}{
-		{"XML_Config", WithConfigFile(filepath.Join("testdata", "config.xml"))},       // <allow_no_password>1</allow_no_password>
-		{"YAML_Config", WithYamlConfigFile(filepath.Join("testdata", "config.yaml"))}, // allow_no_password: true
+		{"XML_Config", clickhouse.WithConfigFile(filepath.Join("testdata", "config.xml"))},       // <allow_no_password>1</allow_no_password>
+		{"YAML_Config", clickhouse.WithYamlConfigFile(filepath.Join("testdata", "config.yaml"))}, // allow_no_password: true
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			container, err := RunContainer(ctx,
-				WithUsername(user),
-				WithPassword(""),
-				WithDatabase(dbname),
+			container, err := clickhouse.RunContainer(ctx,
+				clickhouse.WithUsername(user),
+				clickhouse.WithPassword(""),
+				clickhouse.WithDatabase(dbname),
 				tC.configOption,
 			)
 			if err != nil {
@@ -244,11 +245,11 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	container, err := RunContainer(ctx,
-		WithUsername(user),
-		WithPassword(password),
-		WithDatabase(dbname),
-		WithZookeeper(ipaddr, zkPort.Port()),
+	container, err := clickhouse.RunContainer(ctx,
+		clickhouse.WithUsername(user),
+		clickhouse.WithPassword(password),
+		clickhouse.WithDatabase(dbname),
+		clickhouse.WithZookeeper(ipaddr, zkPort.Port()),
 	)
 	if err != nil {
 		t.Fatal(err)

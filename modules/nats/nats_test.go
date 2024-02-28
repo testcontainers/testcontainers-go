@@ -1,17 +1,19 @@
-package nats
+package nats_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/nats-io/nats.go"
+
+	tcnats "github.com/testcontainers/testcontainers-go/modules/nats"
 )
 
 func TestNATS(t *testing.T) {
 	ctx := context.Background()
 
 	//  createNATSContainer {
-	container, err := RunContainer(ctx)
+	container, err := tcnats.RunContainer(ctx)
 	//  }
 	if err != nil {
 		t.Fatal(err)
