@@ -1,4 +1,4 @@
-package testcontainers
+package testcontainers_test
 
 import (
 	"fmt"
@@ -6,19 +6,21 @@ import (
 	"os/exec"
 	"regexp"
 	"testing"
+
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestSessionID(t *testing.T) {
 	t.Run("SessionID() returns a non-empty string", func(t *testing.T) {
-		sessionID := SessionID()
+		sessionID := testcontainers.SessionID()
 		if sessionID == "" {
 			t.Error("SessionID() returned an empty string")
 		}
 	})
 
 	t.Run("Multiple calls to SessionID() return the same value", func(t *testing.T) {
-		sessionID1 := SessionID()
-		sessionID2 := SessionID()
+		sessionID1 := testcontainers.SessionID()
+		sessionID2 := testcontainers.SessionID()
 		if sessionID1 != sessionID2 {
 			t.Errorf("SessionID() returned different values: %s != %s", sessionID1, sessionID2)
 		}
@@ -30,12 +32,12 @@ func TestSessionID(t *testing.T) {
 
 		done := make(chan bool)
 		go func() {
-			sessionID1 = SessionID()
+			sessionID1 = testcontainers.SessionID()
 			done <- true
 		}()
 
 		go func() {
-			sessionID2 = SessionID()
+			sessionID2 = testcontainers.SessionID()
 			done <- true
 		}()
 
@@ -81,5 +83,5 @@ func TestSessionIDHelper(t *testing.T) {
 		t.Skip("Not a real test, used as a test helper")
 	}
 
-	fmt.Printf(">>>%s<<<\n", SessionID())
+	fmt.Printf(">>>%s<<<\n", testcontainers.SessionID())
 }

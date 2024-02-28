@@ -1,4 +1,4 @@
-package testcontainers
+package testcontainers_test
 
 import (
 	"bufio"
@@ -16,29 +16,30 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestPreCreateModifierHook(t *testing.T) {
 	ctx := context.Background()
 
-	provider, err := NewDockerProvider()
+	provider, err := testcontainers.NewDockerProvider()
 	require.NoError(t, err)
 	defer provider.Close()
 
 	t.Run("No exposed ports", func(t *testing.T) {
 		// reqWithModifiers {
-		req := ContainerRequest{
+		req := testcontainers.ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			ConfigModifier: func(config *container.Config) {
 				config.Env = []string{"a=b"}
 			},
-			Mounts: ContainerMounts{
+			Mounts: testcontainers.ContainerMounts{
 				{
-					Source: DockerVolumeMountSource{
+					Source: testcontainers.DockerVolumeMountSource{
 						Name: "appdata",
 						VolumeOptions: &mount.VolumeOptions{
-							Labels: GenericLabels(),
+							Labels: testcontainers.GenericLabels(),
 						},
 					},
 					Target: "/data",
@@ -70,7 +71,8 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		hooks := testcontainers.DefaultPreCreateHook(provider, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = hooks.Creating(ctx)(req)
 		require.NoError(t, err)
 
 		// assertions
@@ -94,7 +96,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 					Source: "appdata",
 					Target: "/data",
 					VolumeOptions: &mount.VolumeOptions{
-						Labels: GenericLabels(),
+						Labels: testcontainers.GenericLabels(),
 					},
 				},
 			},
@@ -128,7 +130,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 	})
 
 	t.Run("No exposed ports and network mode IsContainer", func(t *testing.T) {
-		req := ContainerRequest{
+		req := testcontainers.ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
 				hostConfig.PortBindings = nat.PortMap{
@@ -150,7 +152,8 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		hooks := testcontainers.DefaultPreCreateHook(provider, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = hooks.Creating(ctx)(req)
 		require.NoError(t, err)
 
 		// assertions
@@ -169,7 +172,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 	})
 
 	t.Run("Nil hostConfigModifier should apply default host config modifier", func(t *testing.T) {
-		req := ContainerRequest{
+		req := testcontainers.ContainerRequest{
 			Image:       nginxAlpineImage, // alpine image does expose port 80
 			AutoRemove:  true,
 			CapAdd:      []string{"addFoo", "addBar"},
@@ -191,7 +194,8 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		hooks := testcontainers.DefaultPreCreateHook(provider, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = hooks.Creating(ctx)(req)
 		require.NoError(t, err)
 
 		// assertions
@@ -206,7 +210,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 	t.Run("Request contains more than one network including aliases", func(t *testing.T) {
 		networkName := "foo"
-		net, err := provider.CreateNetwork(ctx, NetworkRequest{
+		net, err := provider.CreateNetwork(ctx, testcontainers.NetworkRequest{
 			Name: networkName,
 		})
 		require.NoError(t, err)
@@ -217,12 +221,12 @@ func TestPreCreateModifierHook(t *testing.T) {
 			}
 		}()
 
-		dockerNetwork, err := provider.GetNetwork(ctx, NetworkRequest{
+		dockerNetwork, err := provider.GetNetwork(ctx, testcontainers.NetworkRequest{
 			Name: networkName,
 		})
 		require.NoError(t, err)
 
-		req := ContainerRequest{
+		req := testcontainers.ContainerRequest{
 			Image:    nginxAlpineImage, // alpine image does expose port 80
 			Networks: []string{networkName, "bar"},
 			NetworkAliases: map[string][]string{
@@ -237,7 +241,8 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		hooks := testcontainers.DefaultPreCreateHook(provider, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = hooks.Creating(ctx)(req)
 		require.NoError(t, err)
 
 		// assertions
@@ -258,7 +263,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 	t.Run("Request contains more than one network without aliases", func(t *testing.T) {
 		networkName := "foo"
-		net, err := provider.CreateNetwork(ctx, NetworkRequest{
+		net, err := provider.CreateNetwork(ctx, testcontainers.NetworkRequest{
 			Name: networkName,
 		})
 		require.NoError(t, err)
@@ -269,12 +274,12 @@ func TestPreCreateModifierHook(t *testing.T) {
 			}
 		}()
 
-		dockerNetwork, err := provider.GetNetwork(ctx, NetworkRequest{
+		dockerNetwork, err := provider.GetNetwork(ctx, testcontainers.NetworkRequest{
 			Name: networkName,
 		})
 		require.NoError(t, err)
 
-		req := ContainerRequest{
+		req := testcontainers.ContainerRequest{
 			Image:    nginxAlpineImage, // alpine image does expose port 80
 			Networks: []string{networkName, "bar"},
 		}
@@ -286,7 +291,8 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		hooks := testcontainers.DefaultPreCreateHook(provider, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = hooks.Creating(ctx)(req)
 		require.NoError(t, err)
 
 		// assertions
@@ -305,7 +311,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 	})
 
 	t.Run("Request contains exposed port modifiers", func(t *testing.T) {
-		req := ContainerRequest{
+		req := testcontainers.ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
 				hostConfig.PortBindings = nat.PortMap{
@@ -327,102 +333,14 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		hooks := testcontainers.DefaultPreCreateHook(provider, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = hooks.Creating(ctx)(req)
 		require.NoError(t, err)
 
 		// assertions
 		assert.Equal(t, "localhost", inputHostConfig.PortBindings["80/tcp"][0].HostIP)
 		assert.Equal(t, "8080", inputHostConfig.PortBindings["80/tcp"][0].HostPort)
 	})
-}
-
-func TestMergePortBindings(t *testing.T) {
-	type arg struct {
-		configPortMap nat.PortMap
-		parsedPortMap nat.PortMap
-		exposedPorts  []string
-	}
-	cases := []struct {
-		name     string
-		arg      arg
-		expected nat.PortMap
-	}{
-		{
-			name: "empty ports",
-			arg: arg{
-				configPortMap: nil,
-				parsedPortMap: nil,
-				exposedPorts:  nil,
-			},
-			expected: map[nat.Port][]nat.PortBinding{},
-		},
-		{
-			name: "config port map but not exposed",
-			arg: arg{
-				configPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
-				},
-				parsedPortMap: nil,
-				exposedPorts:  nil,
-			},
-			expected: map[nat.Port][]nat.PortBinding{},
-		},
-		{
-			name: "parsed port map without config",
-			arg: arg{
-				configPortMap: nil,
-				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: ""}},
-				},
-				exposedPorts: nil,
-			},
-			expected: map[nat.Port][]nat.PortBinding{
-				"80/tcp": {{HostIP: "", HostPort: ""}},
-			},
-		},
-		{
-			name: "parsed and configured but not exposed",
-			arg: arg{
-				configPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
-				},
-				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: ""}},
-				},
-				exposedPorts: nil,
-			},
-			expected: map[nat.Port][]nat.PortBinding{
-				"80/tcp": {{HostIP: "", HostPort: ""}},
-			},
-		},
-		{
-			name: "merge both parsed and config",
-			arg: arg{
-				configPortMap: map[nat.Port][]nat.PortBinding{
-					"60/tcp": {{HostIP: "1", HostPort: "2"}},
-					"70/tcp": {{HostIP: "1", HostPort: "2"}},
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
-				},
-				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: ""}},
-					"90/tcp": {{HostIP: "", HostPort: ""}},
-				},
-				exposedPorts: []string{"70", "80"},
-			},
-			expected: map[nat.Port][]nat.PortBinding{
-				"70/tcp": {{HostIP: "1", HostPort: "2"}},
-				"80/tcp": {{HostIP: "1", HostPort: "2"}},
-				"90/tcp": {{HostIP: "", HostPort: ""}},
-			},
-		},
-	}
-
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			res := mergePortBindings(c.arg.configPortMap, c.arg.parsedPortMap, c.arg.exposedPorts)
-			assert.Equal(t, c.expected, res)
-		})
-	}
 }
 
 func TestLifecycleHooks(t *testing.T) {
@@ -445,96 +363,96 @@ func TestLifecycleHooks(t *testing.T) {
 			prints := []string{}
 			ctx := context.Background()
 			// reqWithLifecycleHooks {
-			req := ContainerRequest{
+			req := testcontainers.ContainerRequest{
 				Image: nginxAlpineImage,
-				LifecycleHooks: []ContainerLifecycleHooks{
+				LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
 					{
-						PreCreates: []ContainerRequestHook{
-							func(ctx context.Context, req ContainerRequest) error {
+						PreCreates: []testcontainers.ContainerRequestHook{
+							func(ctx context.Context, req testcontainers.ContainerRequest) error {
 								prints = append(prints, fmt.Sprintf("pre-create hook 1: %#v", req))
 								return nil
 							},
-							func(ctx context.Context, req ContainerRequest) error {
+							func(ctx context.Context, req testcontainers.ContainerRequest) error {
 								prints = append(prints, fmt.Sprintf("pre-create hook 2: %#v", req))
 								return nil
 							},
 						},
-						PostCreates: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+						PostCreates: []testcontainers.ContainerHook{
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("post-create hook 1: %#v", c))
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("post-create hook 2: %#v", c))
 								return nil
 							},
 						},
-						PreStarts: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+						PreStarts: []testcontainers.ContainerHook{
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("pre-start hook 1: %#v", c))
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("pre-start hook 2: %#v", c))
 								return nil
 							},
 						},
-						PostStarts: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+						PostStarts: []testcontainers.ContainerHook{
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("post-start hook 1: %#v", c))
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("post-start hook 2: %#v", c))
 								return nil
 							},
 						},
-						PostReadies: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+						PostReadies: []testcontainers.ContainerHook{
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("post-ready hook 1: %#v", c))
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("post-ready hook 2: %#v", c))
 								return nil
 							},
 						},
-						PreStops: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+						PreStops: []testcontainers.ContainerHook{
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("pre-stop hook 1: %#v", c))
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("pre-stop hook 2: %#v", c))
 								return nil
 							},
 						},
-						PostStops: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+						PostStops: []testcontainers.ContainerHook{
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("post-stop hook 1: %#v", c))
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("post-stop hook 2: %#v", c))
 								return nil
 							},
 						},
-						PreTerminates: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+						PreTerminates: []testcontainers.ContainerHook{
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("pre-terminate hook 1: %#v", c))
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("pre-terminate hook 2: %#v", c))
 								return nil
 							},
 						},
-						PostTerminates: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+						PostTerminates: []testcontainers.ContainerHook{
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("post-terminate hook 1: %#v", c))
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(ctx context.Context, c testcontainers.Container) error {
 								prints = append(prints, fmt.Sprintf("post-terminate hook 2: %#v", c))
 								return nil
 							},
@@ -548,7 +466,7 @@ func TestLifecycleHooks(t *testing.T) {
 				req.Name = "reuse-container"
 			}
 
-			c, err := GenericContainer(ctx, GenericContainerRequest{
+			c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 				ContainerRequest: req,
 				Reuse:            tt.reuse,
 				Started:          true,
@@ -588,15 +506,15 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 	// reqWithDefaultLogginHook {
 	dl := inMemoryLogger{}
 
-	req := ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image: nginxAlpineImage,
-		LifecycleHooks: []ContainerLifecycleHooks{
-			DefaultLoggingHook(&dl),
+		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+			testcontainers.DefaultLoggingHook(&dl),
 		},
 	}
 	// }
 
-	c, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -619,51 +537,51 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 func TestCombineLifecycleHooks(t *testing.T) {
 	prints := []string{}
 
-	preCreateFunc := func(prefix string, hook string, lifecycleID int, hookID int) func(ctx context.Context, req ContainerRequest) error {
-		return func(ctx context.Context, _ ContainerRequest) error {
+	preCreateFunc := func(prefix string, hook string, lifecycleID int, hookID int) func(ctx context.Context, req testcontainers.ContainerRequest) error {
+		return func(ctx context.Context, _ testcontainers.ContainerRequest) error {
 			prints = append(prints, fmt.Sprintf("[%s] pre-%s hook %d.%d", prefix, hook, lifecycleID, hookID))
 			return nil
 		}
 	}
-	hookFunc := func(prefix string, hookType string, hook string, lifecycleID int, hookID int) func(ctx context.Context, c Container) error {
-		return func(ctx context.Context, _ Container) error {
+	hookFunc := func(prefix string, hookType string, hook string, lifecycleID int, hookID int) func(ctx context.Context, c testcontainers.Container) error {
+		return func(ctx context.Context, _ testcontainers.Container) error {
 			prints = append(prints, fmt.Sprintf("[%s] %s-%s hook %d.%d", prefix, hookType, hook, lifecycleID, hookID))
 			return nil
 		}
 	}
-	preFunc := func(prefix string, hook string, lifecycleID int, hookID int) func(ctx context.Context, c Container) error {
+	preFunc := func(prefix string, hook string, lifecycleID int, hookID int) func(ctx context.Context, c testcontainers.Container) error {
 		return hookFunc(prefix, "pre", hook, lifecycleID, hookID)
 	}
-	postFunc := func(prefix string, hook string, lifecycleID int, hookID int) func(ctx context.Context, c Container) error {
+	postFunc := func(prefix string, hook string, lifecycleID int, hookID int) func(ctx context.Context, c testcontainers.Container) error {
 		return hookFunc(prefix, "post", hook, lifecycleID, hookID)
 	}
 
-	lifecycleHookFunc := func(prefix string, lifecycleID int) ContainerLifecycleHooks {
-		return ContainerLifecycleHooks{
-			PreCreates:     []ContainerRequestHook{preCreateFunc(prefix, "create", lifecycleID, 1), preCreateFunc(prefix, "create", lifecycleID, 2)},
-			PostCreates:    []ContainerHook{postFunc(prefix, "create", lifecycleID, 1), postFunc(prefix, "create", lifecycleID, 2)},
-			PreStarts:      []ContainerHook{preFunc(prefix, "start", lifecycleID, 1), preFunc(prefix, "start", lifecycleID, 2)},
-			PostStarts:     []ContainerHook{postFunc(prefix, "start", lifecycleID, 1), postFunc(prefix, "start", lifecycleID, 2)},
-			PostReadies:    []ContainerHook{postFunc(prefix, "ready", lifecycleID, 1), postFunc(prefix, "ready", lifecycleID, 2)},
-			PreStops:       []ContainerHook{preFunc(prefix, "stop", lifecycleID, 1), preFunc(prefix, "stop", lifecycleID, 2)},
-			PostStops:      []ContainerHook{postFunc(prefix, "stop", lifecycleID, 1), postFunc(prefix, "stop", lifecycleID, 2)},
-			PreTerminates:  []ContainerHook{preFunc(prefix, "terminate", lifecycleID, 1), preFunc(prefix, "terminate", lifecycleID, 2)},
-			PostTerminates: []ContainerHook{postFunc(prefix, "terminate", lifecycleID, 1), postFunc(prefix, "terminate", lifecycleID, 2)},
+	lifecycleHookFunc := func(prefix string, lifecycleID int) testcontainers.ContainerLifecycleHooks {
+		return testcontainers.ContainerLifecycleHooks{
+			PreCreates:     []testcontainers.ContainerRequestHook{preCreateFunc(prefix, "create", lifecycleID, 1), preCreateFunc(prefix, "create", lifecycleID, 2)},
+			PostCreates:    []testcontainers.ContainerHook{postFunc(prefix, "create", lifecycleID, 1), postFunc(prefix, "create", lifecycleID, 2)},
+			PreStarts:      []testcontainers.ContainerHook{preFunc(prefix, "start", lifecycleID, 1), preFunc(prefix, "start", lifecycleID, 2)},
+			PostStarts:     []testcontainers.ContainerHook{postFunc(prefix, "start", lifecycleID, 1), postFunc(prefix, "start", lifecycleID, 2)},
+			PostReadies:    []testcontainers.ContainerHook{postFunc(prefix, "ready", lifecycleID, 1), postFunc(prefix, "ready", lifecycleID, 2)},
+			PreStops:       []testcontainers.ContainerHook{preFunc(prefix, "stop", lifecycleID, 1), preFunc(prefix, "stop", lifecycleID, 2)},
+			PostStops:      []testcontainers.ContainerHook{postFunc(prefix, "stop", lifecycleID, 1), postFunc(prefix, "stop", lifecycleID, 2)},
+			PreTerminates:  []testcontainers.ContainerHook{preFunc(prefix, "terminate", lifecycleID, 1), preFunc(prefix, "terminate", lifecycleID, 2)},
+			PostTerminates: []testcontainers.ContainerHook{postFunc(prefix, "terminate", lifecycleID, 1), postFunc(prefix, "terminate", lifecycleID, 2)},
 		}
 	}
 
-	defaultHooks := []ContainerLifecycleHooks{lifecycleHookFunc("default", 1), lifecycleHookFunc("default", 2)}
-	userDefinedHooks := []ContainerLifecycleHooks{lifecycleHookFunc("user-defined", 1), lifecycleHookFunc("user-defined", 2), lifecycleHookFunc("user-defined", 3)}
+	defaultHooks := []testcontainers.ContainerLifecycleHooks{lifecycleHookFunc("default", 1), lifecycleHookFunc("default", 2)}
+	userDefinedHooks := []testcontainers.ContainerLifecycleHooks{lifecycleHookFunc("user-defined", 1), lifecycleHookFunc("user-defined", 2), lifecycleHookFunc("user-defined", 3)}
 
-	hooks := combineContainerHooks(defaultHooks, userDefinedHooks)
+	hooks := testcontainers.CombineContainerHooks(defaultHooks, userDefinedHooks)
 
 	// call all the hooks in the right order, honouring the lifecycle
 
-	req := ContainerRequest{}
+	req := testcontainers.ContainerRequest{}
 	err := hooks.Creating(context.Background())(req)
 	require.NoError(t, err)
 
-	c := &DockerContainer{}
+	c := &testcontainers.DockerContainer{}
 
 	err = hooks.Created(context.Background())(c)
 	require.NoError(t, err)
@@ -754,15 +672,15 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 
 	dl := inMemoryLogger{}
 
-	req := ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image: nginxAlpineImage,
-		LifecycleHooks: []ContainerLifecycleHooks{
-			DefaultLoggingHook(&dl),
-			DefaultLoggingHook(&dl),
+		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+			testcontainers.DefaultLoggingHook(&dl),
+			testcontainers.DefaultLoggingHook(&dl),
 		},
 	}
 
-	c, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -793,7 +711,7 @@ func (l *linesTestLogger) Printf(format string, args ...interface{}) {
 func TestPrintContainerLogsOnError(t *testing.T) {
 	ctx := context.Background()
 
-	req := ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image:      "docker.io/alpine",
 		Cmd:        []string{"echo", "-n", "I am expecting this"},
 		WaitingFor: wait.ForLog("I was expecting that").WithStartupTimeout(5 * time.Second),
@@ -803,7 +721,7 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 		data: []string{},
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Logger:           &arrayOfLinesLogger,

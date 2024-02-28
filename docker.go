@@ -922,7 +922,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// If default network is not bridge make sure it is attached to the request
 	// as container won't be attached to it automatically
 	// in case of Podman the bridge network is called 'podman' as 'bridge' would conflict
-	if p.DefaultNetwork != p.defaultBridgeNetworkName {
+	if p.DefaultNetwork != p.DefaultBridgeNetworkName {
 		isAttached := false
 		for _, net := range req.Networks {
 			if net == p.DefaultNetwork {
@@ -1076,13 +1076,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// default hooks include logger hook and pre-create hook
 	defaultHooks := []ContainerLifecycleHooks{
 		DefaultLoggingHook(p.Logger),
-		defaultPreCreateHook(ctx, p, req, dockerInput, hostConfig, networkingConfig),
-		defaultCopyFileToContainerHook(req.Files),
-		defaultLogConsumersHook(req.LogConsumerCfg),
-		defaultReadinessHook(),
+		DefaultPreCreateHook(p, dockerInput, hostConfig, networkingConfig),
+		DefaultCopyFileToContainerHook(req.Files),
+		DefaultLogConsumersHook(req.LogConsumerCfg),
+		DefaultReadinessHook(),
 	}
 
-	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
+	req.LifecycleHooks = []ContainerLifecycleHooks{CombineContainerHooks(defaultHooks, req.LifecycleHooks)}
 
 	err = req.creatingHook(ctx)
 	if err != nil {
@@ -1479,8 +1479,8 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 	reaperNetworkExists := false
 
 	for _, net := range networkResources {
-		if net.Name == p.defaultBridgeNetworkName {
-			return p.defaultBridgeNetworkName, nil
+		if net.Name == p.DefaultBridgeNetworkName {
+			return p.DefaultBridgeNetworkName, nil
 		}
 
 		if net.Name == reaperNetwork {

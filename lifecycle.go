@@ -112,8 +112,8 @@ var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
 	}
 }
 
-// defaultPreCreateHook is a hook that will apply the default configuration to the container
-var defaultPreCreateHook = func(ctx context.Context, p *DockerProvider, req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) ContainerLifecycleHooks {
+// DefaultPreCreateHook is a hook that will apply the default configuration to the container
+func DefaultPreCreateHook(p *DockerProvider, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PreCreates: []ContainerRequestHook{
 			func(ctx context.Context, req ContainerRequest) error {
@@ -123,9 +123,9 @@ var defaultPreCreateHook = func(ctx context.Context, p *DockerProvider, req Cont
 	}
 }
 
-// defaultCopyFileToContainerHook is a hook that will copy files to the container after it's created
+// DefaultCopyFileToContainerHook is a hook that will copy files to the container after it's created
 // but before it's started
-var defaultCopyFileToContainerHook = func(files []ContainerFile) ContainerLifecycleHooks {
+func DefaultCopyFileToContainerHook(files []ContainerFile) ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PostCreates: []ContainerHook{
 			// copy files to container after it's created
@@ -143,8 +143,8 @@ var defaultCopyFileToContainerHook = func(files []ContainerFile) ContainerLifecy
 	}
 }
 
-// defaultLogConsumersHook is a hook that will start log consumers after the container is started
-var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHooks {
+// DefaultLogConsumersHook is a hook that will start log consumers after the container is started
+func DefaultLogConsumersHook(cfg *LogConsumerConfig) ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PostStarts: []ContainerHook{
 			// first post-start hook is to produce logs and start log consumers
@@ -180,8 +180,8 @@ var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHoo
 	}
 }
 
-// defaultReadinessHook is a hook that will wait for the container to be ready
-var defaultReadinessHook = func() ContainerLifecycleHooks {
+// DefaultReadinessHook is a hook that will wait for the container to be ready
+func DefaultReadinessHook() ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PostStarts: []ContainerHook{
 			// wait for the container to be ready
@@ -475,13 +475,13 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	return nil
 }
 
-// combineContainerHooks it returns just one ContainerLifecycle hook, as the result of combining
+// CombineContainerHooks it returns just one ContainerLifecycle hook, as the result of combining
 // the default hooks with the user-defined hooks. The function will loop over all the default hooks,
 // storing each of the hooks in a slice, and then it will loop over all the user-defined hooks,
 // appending or prepending them to the slice of hooks. The order of hooks is the following:
 // - for Pre-hooks, always run the default hooks first, then append the user-defined hooks
 // - for Post-hooks, always run the user-defined hooks first, then the default hooks
-func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHooks) ContainerLifecycleHooks {
+func CombineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHooks) ContainerLifecycleHooks {
 	preCreates := []ContainerRequestHook{}
 	postCreates := []ContainerHook{}
 	preStarts := []ContainerHook{}

@@ -1,7 +1,11 @@
-package testcontainers
+package testcontainers_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/testcontainers/testcontainers-go"
+)
 
 func ExampleSkipIfProviderIsNotHealthy() {
-	SkipIfProviderIsNotHealthy(&testing.T{})
+	testcontainers.SkipIfProviderIsNotHealthy(&testing.T{})
 }
