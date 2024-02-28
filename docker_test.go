@@ -34,7 +34,6 @@ const (
 	nginxAlpineImage  = "docker.io/nginx:alpine"
 	nginxDefaultPort  = "80/tcp"
 	nginxHighPort     = "8080/tcp"
-	daemonMaxVersion  = "1.41"
 )
 
 var providerType = testcontainers.ProviderDocker

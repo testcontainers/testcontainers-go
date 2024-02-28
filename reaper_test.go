@@ -23,9 +23,10 @@ import (
 )
 
 const (
-	nginxAlpineImage = "docker.io/nginx:alpine"
-	nginxDefaultPort = "80/tcp"
-	daemonMaxVersion = "1.41"
+	nginxAlpineImage  = "docker.io/nginx:alpine"
+	nginxDelayedImage = "docker.io/menedev/delayed-nginx:1.15.2"
+	nginxDefaultPort  = "80/tcp"
+	daemonMaxVersion  = "1.41"
 )
 
 var providerType = ProviderDocker
