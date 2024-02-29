@@ -615,4 +615,3 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	// the multiple containers.
 	assert.False(t, strings.Contains(actual, logStoppedForOutOfSyncMessage))
 }
-
