@@ -728,7 +728,7 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 						since = fmt.Sprintf("%d.%09d", now.Unix(), int64(now.Nanosecond()))
 						goto BEGIN
 					}
-					if errors.Is(err, context.DeadlineExceeded) {
+					if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 						// Probably safe to continue here
 						continue
 					}
