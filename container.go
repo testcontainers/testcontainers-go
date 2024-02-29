@@ -194,6 +194,8 @@ func (c *ContainerRequest) Validate() error {
 
 // GetContext retrieve the build context for the request
 func (c *ContainerRequest) GetContext() (io.Reader, error) {
+	var includes []string = []string{"."}
+
 	if c.ContextArchive != nil {
 		return c.ContextArchive, nil
 	}
@@ -209,7 +211,14 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	buildContext, err := archive.TarWithOptions(c.Context, &archive.TarOptions{ExcludePatterns: excluded})
+
+	dockerIgnoreLocation := filepath.Join(abs, ".dockerignore")
+	includes = append(includes, dockerIgnoreLocation, c.GetDockerfile())
+
+	buildContext, err := archive.TarWithOptions(
+		c.Context,
+		&archive.TarOptions{ExcludePatterns: excluded, IncludeFiles: includes},
+	)
 	if err != nil {
 		return nil, err
 	}
