@@ -37,7 +37,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	req := testcontainers.ContainerRequest{
 		Image:        DefaultOllamaImage,
 		ExposedPorts: []string{"11434/tcp"},
-		WaitingFor:   wait.ForListeningPort("11434/tcp").WithStartupTimeout(5 * time.Second),
+		WaitingFor:   wait.ForListeningPort("11434/tcp").WithStartupTimeout(60 * time.Second),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
