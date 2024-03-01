@@ -42,6 +42,25 @@ for SurrealDB. E.g. `testcontainers.WithImage("surrealdb/surrealdb:v1.1.1")`.
 
 {% include "../features/common_functional_options.md" %}
 
+#### Set username and password
+
+If you need to set a different database, and its credentials, you can use `WithUsername` and `WithPassword` options.
+
+!!!info
+    The default values for the username is `root`, for password is `test` and for the default database name is `test`.
+
+#### WithAuthentication
+
+If you need to enable authentication, you can use `WithAuthentication` option. By default, it is disabled.
+
+#### WithStrictMode
+
+If you need to enable the strict mode for SurrealDB, you can use `WithStrictMode` option. By default, it is disabled.
+
+### WithAllowAllCaps
+
+If you need to enable the all caps mode for SurrealDB, you can use `WithAllowAllCaps` option. By default, it is disabled.
+
 ### Container Methods
 
 The SurrealDB container exposes the following methods:
