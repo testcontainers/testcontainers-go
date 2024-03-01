@@ -12,6 +12,14 @@ import (
 // Logger is the default log instance
 var Logger Logging = log.New(os.Stderr, "", log.LstdFlags)
 
+// Validate our types implement the required interfaces.
+var (
+	_ Logging               = (*log.Logger)(nil)
+	_ ContainerCustomizer   = LoggerOption{}
+	_ GenericProviderOption = LoggerOption{}
+	_ DockerProviderOption  = LoggerOption{}
+)
+
 // Logging defines the Logger interface
 type Logging interface {
 	Printf(format string, v ...interface{})
@@ -24,37 +32,51 @@ func LogDockerServerInfo(ctx context.Context, client client.APIClient, logger Lo
 }
 
 // TestLogger returns a Logging implementation for testing.TB
-// This way logs from testcontainers are part of the test output of a test suite or test case
+// This way logs from testcontainers are part of the test output of a test suite or test case.
 func TestLogger(tb testing.TB) Logging {
 	tb.Helper()
 	return testLogger{TB: tb}
 }
 
-// WithLogger is a generic option that implements GenericProviderOption, DockerProviderOption
-// It replaces the global Logging implementation with a user defined one e.g. to aggregate logs from testcontainers
-// with the logs of specific test case
+// WithLogger returns a generic option that sets the logger to be used.
+//
+// Consider calling this before other "With functions" as these may generate logs.
+//
+// This can be given a TestLogger to collect the logs from testcontainers into a
+// test case.
 func WithLogger(logger Logging) LoggerOption {
 	return LoggerOption{
 		logger: logger,
 	}
 }
 
+// LoggerOption is a generic option that sets the logger to be used.
+//
+// It can be used to set the logger for providers and containers.
 type LoggerOption struct {
 	logger Logging
 }
 
+// ApplyGenericTo implements GenericProviderOption.
 func (o LoggerOption) ApplyGenericTo(opts *GenericProviderOptions) {
 	opts.Logger = o.logger
 }
 
+// ApplyDockerTo implements DockerProviderOption.
 func (o LoggerOption) ApplyDockerTo(opts *DockerProviderOptions) {
 	opts.Logger = o.logger
+}
+
+// Customize implements ContainerCustomizer.
+func (o LoggerOption) Customize(req *GenericContainerRequest) {
+	req.Logger = o.logger
 }
 
 type testLogger struct {
 	testing.TB
 }
 
+// Printf implements Logging.
 func (t testLogger) Printf(format string, v ...interface{}) {
 	t.Helper()
 	t.Logf(format, v...)

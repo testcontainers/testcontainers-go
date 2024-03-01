@@ -12,12 +12,14 @@ type LabsPlugin string
 
 const (
 	// labsPlugins {
+
 	Apoc             LabsPlugin = "apoc"
 	ApocCore         LabsPlugin = "apoc-core"
 	Bloom            LabsPlugin = "bloom"
 	GraphDataScience LabsPlugin = "graph-data-science"
 	NeoSemantics     LabsPlugin = "n10s"
 	Streams          LabsPlugin = "streams"
+
 	// }
 )
 

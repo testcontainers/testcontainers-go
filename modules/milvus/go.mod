@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/milvus
 
-go 1.20
+go 1.21
 
 require (
 	github.com/milvus-io/milvus-sdk-go/v2 v2.3.6
@@ -44,7 +44,7 @@ require (
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
+	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
