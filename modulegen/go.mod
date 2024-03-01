@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modulegen
 
-go 1.20
+go 1.21
 
 require (
 	github.com/spf13/cobra v1.8.0
