@@ -95,9 +95,15 @@ function bumpGolangDockerImages() {
 
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo "sed \"s/golang:${oldGoVersion}/golang:${newGoVersion}/g\" ${file} > ${file}.tmp"
+    echo "sed \"s/golang: ${oldGoVersion}/golang: ${newGoVersion}/g\" ${file}.tmp > ${file}.tmp"
+    echo "sed \"s/- \\"${oldGoVersion}\\"/- \\"${newGoVersion}\\"/g\" ${file}.tmp > ${file}.tmp"
     echo "mv ${file}.tmp ${file}"
   else
     sed "s/golang:${oldGoVersion}/golang:${newGoVersion}/g" ${file} > ${file}.tmp
+    mv ${file}.tmp ${file}
+    sed "s/golang: ${oldGoVersion}/golang: ${newGoVersion}/g" ${file} > ${file}.tmp
+    mv ${file}.tmp ${file}
+    sed "s/- \"${oldGoVersion}\"/- \"${newGoVersion}\"/g" ${file} > ${file}.tmp
     mv ${file}.tmp ${file}
   fi
 }
