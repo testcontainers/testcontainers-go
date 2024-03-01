@@ -24,7 +24,7 @@ $ tree .
 └── platform
     └── integration_test.go
 
-$ docker run -it --rm -v $PWD:$PWD -w $PWD -v /var/run/docker.sock:/var/run/docker.sock golang:1.20 go test ./... -v
+$ docker run -it --rm -v $PWD:$PWD -w $PWD -v /var/run/docker.sock:/var/run/docker.sock golang:1.21 go test ./... -v
 ```
 
 Where:
@@ -45,7 +45,7 @@ The same can be achieved with Docker Compose:
 
 ```yaml
 tests:
-  image: golang:1.20
+  image: golang:1.21
   stop_signal: SIGKILL
   stdin_open: true
   tty: true
