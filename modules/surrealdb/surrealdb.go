@@ -41,7 +41,7 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 
 // WithPassword sets the initial password of the user to be created when the container starts
 // It is used in conjunction with WithUsername to set a username and its password.
-// It will set the superuser password for MongoDB.
+// It will set the superuser password for SurrealDB.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		req.Env["SURREAL_PASS"] = password
