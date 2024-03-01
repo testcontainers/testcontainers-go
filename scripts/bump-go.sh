@@ -15,7 +15,7 @@
 #
 # It's possible to run the script without dry-run mode actually executing the commands.
 #
-# Usage: DRY_RUN="false" ./scripts/go.sh "1.20"
+# Usage: DRY_RUN="false" ./scripts/bump-go.sh "1.20"
 
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly DRY_RUN="${DRY_RUN:-true}"
