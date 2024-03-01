@@ -124,7 +124,7 @@ jobs:
         module: [{{ .Examples }}]
     uses: ./.github/workflows/ci-test-go.yml
     with:
-      go-version: "1.20.x"
+      go-version: "1.21.x"
       fail-fast: true
       platform: 'ubuntu-latest'
       project-directory: {{ "examples/${{ matrix.module }}" }}
