@@ -55,14 +55,14 @@ func WithAuthentication() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithStrict enables or disables strict mode for the SurrealDB instance
+// WithStrict enables strict mode for the SurrealDB instance
 func WithStrictMode() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		req.Env["SURREAL_STRICT"] = "true"
 	}
 }
 
-// WithAllowAllCaps enables or disables all caps for the SurrealDB instance
+// WithAllowAllCaps enables all caps for the SurrealDB instance
 func WithAllowAllCaps() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
 		req.Env["SURREAL_CAPS_ALLOW_ALL"] = "false"
