@@ -15,7 +15,7 @@
 #
 # It's possible to run the script without dry-run mode actually executing the commands.
 #
-# Usage: DRY_RUN="false" ./scripts/go.sh "1.20"
+# Usage: DRY_RUN="false" ./scripts/bump-go.sh "1.20"
 
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly DRY_RUN="${DRY_RUN:-true}"
@@ -62,9 +62,12 @@ function bumpCIMatrix() {
 
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo "sed \"s/go-version: \[${oldGoVersion}/go-version: \[${newGoVersion}/g\" ${file} > ${file}.tmp"
+    echo "sed \"s/go-version: \\"${oldGoVersion}.x\"/go-version: \\"${newGoVersion}.x\"/g\" ${file}.tmp > ${file}.tmp"
     echo "mv ${file}.tmp ${file}"
   else
     sed "s/go-version: \[${oldGoVersion}/go-version: \[${newGoVersion}/g" ${file} > ${file}.tmp
+    mv ${file}.tmp ${file}
+    sed "s/go-version: \"${oldGoVersion}\.x\"/go-version: \"${newGoVersion}\.x\"/g" ${file} > ${file}.tmp
     mv ${file}.tmp ${file}
   fi
 }
@@ -92,9 +95,15 @@ function bumpGolangDockerImages() {
 
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo "sed \"s/golang:${oldGoVersion}/golang:${newGoVersion}/g\" ${file} > ${file}.tmp"
+    echo "sed \"s/golang: ${oldGoVersion}/golang: ${newGoVersion}/g\" ${file}.tmp > ${file}.tmp"
+    echo "sed \"s/- \\"${oldGoVersion}\\"/- \\"${newGoVersion}\\"/g\" ${file}.tmp > ${file}.tmp"
     echo "mv ${file}.tmp ${file}"
   else
     sed "s/golang:${oldGoVersion}/golang:${newGoVersion}/g" ${file} > ${file}.tmp
+    mv ${file}.tmp ${file}
+    sed "s/golang: ${oldGoVersion}/golang: ${newGoVersion}/g" ${file} > ${file}.tmp
+    mv ${file}.tmp ${file}
+    sed "s/- \"${oldGoVersion}\"/- \"${newGoVersion}\"/g" ${file} > ${file}.tmp
     mv ${file}.tmp ${file}
   fi
 }
