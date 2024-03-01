@@ -2,8 +2,6 @@ module github.com/testcontainers/testcontainers-go/modules/compose
 
 go 1.21
 
-toolchain go1.21.3
-
 replace github.com/testcontainers/testcontainers-go => ../..
 
 require (

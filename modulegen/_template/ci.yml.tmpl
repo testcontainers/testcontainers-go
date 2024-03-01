@@ -28,7 +28,7 @@ jobs:
     if: {{ "${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}" }}
     strategy:
       matrix:
-        go-version: [1.20.x, 1.x]
+        go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -48,7 +48,7 @@ jobs:
     name: "Test with reaper off"
     strategy:
       matrix:
-        go-version: [1.20.x, 1.x]
+        go-version: [1.21.x, 1.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
@@ -67,7 +67,7 @@ jobs:
     name: "Test with Rootless Docker"
     strategy:
       matrix:
-        go-version: [1.20.x, 1.x]
+        go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -84,7 +84,7 @@ jobs:
     if: {{ "${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}" }}
     strategy:
       matrix:
-        go-version: [1.20.x, 1.x]
+        go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest, macos-latest, windows-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -102,12 +102,9 @@ jobs:
     needs: test
     strategy:
       matrix:
-        go-version: [1.20.x, 1.x]
+        go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest]
         module: [{{ .Modules }}]
-        exclude:
-          - go-version: 1.20.x
-            module: compose
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
@@ -127,7 +124,7 @@ jobs:
         module: [{{ .Examples }}]
     uses: ./.github/workflows/ci-test-go.yml
     with:
-      go-version: "1.20.x"
+      go-version: "1.21.x"
       fail-fast: true
       platform: 'ubuntu-latest'
       project-directory: {{ "examples/${{ matrix.module }}" }}
