@@ -592,6 +592,17 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	_, err = http.Get(ep2 + "/stdout?echo=there2")
 	require.NoError(t, err)
 
+	
+	// Handling the termination of the containers
+	defer func() {
+		shutdownCtx, shutdownCancel := context.WithTimeout(
+			context.Background(), 30*time.Second,
+		)
+		defer shutdownCancel()
+		_ = c.Terminate(shutdownCtx)
+		_ = c2.Terminate(shutdownCtx)
+	}()
+
 	// Deliberately calling context cancel
 	cancel()
 
