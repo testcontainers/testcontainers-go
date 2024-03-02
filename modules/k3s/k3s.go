@@ -29,6 +29,37 @@ type K3sContainer struct {
 	testcontainers.Container
 }
 
+// path to the k3s manifests directory
+const k3sManifests = "/var/lib/rancher/k3s/server/manifests/"
+
+// WithManifest loads the manifest into the cluster. K3s applies it automatically during the startup process
+func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		manifest := filepath.Base(manifestPath)
+		target := k3sManifests + manifest
+
+		// Add a post start hook to copy the manifest.
+		// We cannot use the Files option in the GenericRequest because the target
+		// path is created when the container starts
+		manifestHook := testcontainers.ContainerLifecycleHooks{
+			PostStarts: []testcontainers.ContainerHook{
+				func(ctx context.Context, c testcontainers.Container) error {
+					// if this hook is executed too soon after the container starts,
+					// the manifests directory may not exists yet, so we try to create it here
+					_, _, err := c.Exec(ctx, []string{"mkdir","-p", k3sManifests})
+					if err != nil {
+						return err
+					}
+
+					// copy the manifest
+					return c.CopyFileToContainer(ctx, manifest, target, 0x644)
+				},
+			},
+		}
+		req.LifecycleHooks = append(req.LifecycleHooks, manifestHook)
+	}
+}
+
 // RunContainer creates an instance of the K3s container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error) {
 	host, err := getContainerHost(ctx, opts...)
