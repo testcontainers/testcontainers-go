@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/qdrant
 
-go 1.20
+go 1.21
 
 require (
 	github.com/qdrant/go-client v1.7.0

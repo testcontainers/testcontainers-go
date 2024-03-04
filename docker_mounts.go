@@ -81,6 +81,12 @@ func (s DockerTmpfsMountSource) GetTmpfsOptions() *mount.TmpfsOptions {
 	return s.TmpfsOptions
 }
 
+// PrepareMounts maps the given []ContainerMount to the corresponding
+// []mount.Mount for further processing
+func (m ContainerMounts) PrepareMounts() []mount.Mount {
+	return mapToDockerMounts(m)
+}
+
 // mapToDockerMounts maps the given []ContainerMount to the corresponding
 // []mount.Mount for further processing
 func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {

@@ -1,10 +1,10 @@
 module github.com/testcontainers/testcontainers-go/modules/cockroachdb
 
-go 1.20
+go 1.21
 
 require (
 	github.com/docker/go-connections v0.5.0
-	github.com/jackc/pgx/v5 v5.5.2
+	github.com/jackc/pgx/v5 v5.5.3
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.28.0
 )
