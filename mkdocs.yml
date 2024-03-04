@@ -94,6 +94,7 @@ nav:
         - modules/rabbitmq.md
         - modules/redis.md
         - modules/redpanda.md
+        - modules/surrealdb.md
         - modules/vault.md
         - modules/weaviate.md
     - Examples:
