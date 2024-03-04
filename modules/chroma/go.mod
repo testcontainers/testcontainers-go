@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/chroma
 go 1.21
 
 require (
-	github.com/amikos-tech/chroma-go v0.0.0-20240109142503-c8fb49c3e28c
+	github.com/amikos-tech/chroma-go v0.0.1
 	github.com/testcontainers/testcontainers-go v0.28.0
 )
 
