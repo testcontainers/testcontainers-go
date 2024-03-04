@@ -2,6 +2,7 @@ package ollama_test
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -70,5 +71,60 @@ func TestRunContainer_withModel_error(t *testing.T) {
 		if !strings.Contains(err.Error(), expected) {
 			t.Fatalf("expected error to contain %q, got %s", expected, err)
 		}
+	}
+}
+
+func TestDownloadModelAndCommitToImage(t *testing.T) {
+	ollamaContainer, err := ollama.RunContainer(
+		context.Background(),
+		testcontainers.WithImage("ollama/ollama:0.1.25"),
+		ollama.WithModel("all-minilm"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := ollamaContainer.Terminate(context.Background()); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	url, err := ollamaContainer.ConnectionString(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	httpCli := &http.Client{}
+
+	resp, err := httpCli.Get(url + "/api/tags")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status code 200, got %d", resp.StatusCode)
+	}
+
+	// read JSON response
+
+	bs, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(string(bs), "all-minilm") {
+		t.Fatalf("expected response to contain all-minilm, got %s", string(bs))
+	}
+
+	// commitOllamaContainer {
+	newImage, err := ollamaContainer.Commit(context.Background())
+	// }
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if newImage == "" {
+		t.Fatal("commit should not be empty")
 	}
 }

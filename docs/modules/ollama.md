@@ -67,3 +67,13 @@ This method returns the connection string to connect to the Ollama container, us
 <!--codeinclude-->
 [Get connection string](../../modules/ollama/ollama_test.go) inside_block:connectionString
 <!--/codeinclude-->
+
+#### Commit
+
+This method commits the container to a new image, returning the new image ID.
+It should be used after a model has been pulled and loaded into the container in order to create a new image with the model,
+and eventually use it as the base image for a new container. That will speed up the execution of the following containers.
+
+<!--codeinclude-->
+[Commit Ollama image](../../modules/ollama/ollama_test.go) inside_block:commitOllamaContainer
+<!--/codeinclude-->

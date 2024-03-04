@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/docker/docker v25.0.2+incompatible
+	github.com/google/uuid v1.6.0
 	github.com/testcontainers/testcontainers-go v0.28.0
 	github.com/tmc/langchaingo v0.1.4
 )
@@ -27,7 +28,6 @@ require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.16.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
