@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/spf13/cobra v1.8.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
 	golang.org/x/mod v0.15.0
 	golang.org/x/text v0.14.0
