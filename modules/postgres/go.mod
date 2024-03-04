@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/postgres
 
-go 1.20
+go 1.21
 
 require (
 	github.com/docker/go-connections v0.5.0
