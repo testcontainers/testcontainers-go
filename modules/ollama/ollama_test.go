@@ -135,4 +135,43 @@ func TestDownloadModelAndCommitToImage(t *testing.T) {
 	if newImage == "" {
 		t.Fatal("new image should not be empty")
 	}
+
+	newOllamaContainer, err := ollama.RunContainer(
+		context.Background(),
+		testcontainers.WithImage(newImage),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := newOllamaContainer.Terminate(context.Background()); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	newURL, err := newOllamaContainer.ConnectionString(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err = httpCli.Get(newURL + "/api/tags")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status code 200, got %d", resp.StatusCode)
+	}
+
+	// read JSON response
+
+	bs, err = io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(string(bs), "all-minilm") {
+		t.Fatalf("expected response to contain all-minilm, got %s", string(bs))
+	}
 }
