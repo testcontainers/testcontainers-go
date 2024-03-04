@@ -6,7 +6,7 @@ require (
 	github.com/apache/pulsar-client-go v0.10.0
 	github.com/docker/docker v25.0.2+incompatible
 	github.com/docker/go-connections v0.5.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.28.0
 )
 
