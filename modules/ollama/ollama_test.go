@@ -92,33 +92,37 @@ func TestDownloadModelAndCommitToImage(t *testing.T) {
 		}
 	})
 
-	url, err := ollamaContainer.ConnectionString(context.Background())
-	if err != nil {
-		t.Fatal(err)
+	assertLoadedModel := func(t *testing.T, c *ollama.OllamaContainer) {
+		url, err := c.ConnectionString(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		httpCli := &http.Client{}
+
+		resp, err := httpCli.Get(url + "/api/tags")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("expected status code 200, got %d", resp.StatusCode)
+		}
+
+		// read JSON response
+
+		bs, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !strings.Contains(string(bs), "all-minilm") {
+			t.Fatalf("expected response to contain all-minilm, got %s", string(bs))
+		}
 	}
 
-	httpCli := &http.Client{}
-
-	resp, err := httpCli.Get(url + "/api/tags")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected status code 200, got %d", resp.StatusCode)
-	}
-
-	// read JSON response
-
-	bs, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !strings.Contains(string(bs), "all-minilm") {
-		t.Fatalf("expected response to contain all-minilm, got %s", string(bs))
-	}
+	assertLoadedModel(t, ollamaContainer)
 
 	// commitOllamaContainer {
 
@@ -149,29 +153,5 @@ func TestDownloadModelAndCommitToImage(t *testing.T) {
 		}
 	})
 
-	newURL, err := newOllamaContainer.ConnectionString(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	resp, err = httpCli.Get(newURL + "/api/tags")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected status code 200, got %d", resp.StatusCode)
-	}
-
-	// read JSON response
-
-	bs, err = io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !strings.Contains(string(bs), "all-minilm") {
-		t.Fatalf("expected response to contain all-minilm, got %s", string(bs))
-	}
+	assertLoadedModel(t, newOllamaContainer)
 }
