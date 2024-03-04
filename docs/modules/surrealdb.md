@@ -44,7 +44,7 @@ for SurrealDB. E.g. `testcontainers.WithImage("surrealdb/surrealdb:v1.1.1")`.
 
 #### Set username and password
 
-If you need to set a different database, and its credentials, you can use `WithUsername` and `WithPassword` options.
+If you need to set different credentials, you can use `WithUsername` and `WithPassword` options.
 
 !!!info
     The default values for the username is `root`, for password is `test` and for the default database name is `test`.
