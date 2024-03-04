@@ -27,23 +27,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const (
-	mysqlImage        = "docker.io/mysql:8.0.36"
-	nginxDelayedImage = "docker.io/menedev/delayed-nginx:1.15.2"
-	nginxImage        = "docker.io/nginx"
-	nginxAlpineImage  = "docker.io/nginx:alpine"
-	nginxDefaultPort  = "80/tcp"
-	nginxHighPort     = "8080/tcp"
-)
-
-var providerType = testcontainers.ProviderDocker
-
-func init() {
-	if strings.Contains(os.Getenv("DOCKER_HOST"), "podman.sock") {
-		providerType = testcontainers.ProviderPodman
-	}
-}
-
 func TestContainerWithHostNetworkOptions(t *testing.T) {
 	if os.Getenv("XDG_RUNTIME_DIR") != "" {
 		t.Skip("Skipping test that requires host network access when running in a container")
@@ -1953,17 +1936,6 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container testconta
 		}
 		assert.Equal(t, srcBytes, untarBytes)
 	}
-}
-
-func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr testcontainers.Container) {
-	tb.Helper()
-	if ctr == nil {
-		return
-	}
-	tb.Cleanup(func() {
-		tb.Log("terminating container")
-		require.NoError(tb, ctr.Terminate(ctx))
-	})
 }
 
 func TestDockerProviderReuseOrCreateContainer(t *testing.T) {
