@@ -146,6 +146,10 @@
             "path": "../modules/redpanda"
         },
         {
+            "name": "module / surrealdb",
+            "path": "../modules/surrealdb"
+        },
+        {
             "name": "module / vault",
             "path": "../modules/vault"
         },
