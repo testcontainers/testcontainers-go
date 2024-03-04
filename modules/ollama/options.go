@@ -2,14 +2,10 @@ package ollama
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"strings"
 
 	"github.com/docker/docker/api/types/container"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/exec"
 )
 
 var noopCustomizeRequestOption = func(req *testcontainers.GenericContainerRequest) {}
@@ -40,43 +36,4 @@ func withGpu() testcontainers.CustomizeRequestOption {
 			},
 		}
 	})
-}
-
-// WithModel will run the given model, without any prompt.
-// If Ollama is not able to run the given model, it will fail to initialise.
-func WithModel(model string) testcontainers.CustomizeRequestOption {
-	pullCmds := []string{"ollama", "pull", model}
-	runCmds := []string{"ollama", "run", model}
-
-	return func(req *testcontainers.GenericContainerRequest) {
-		modelLifecycleHook := testcontainers.ContainerLifecycleHooks{
-			PostReadies: []testcontainers.ContainerHook{
-				func(ctx context.Context, c testcontainers.Container) error {
-					_, _, err := c.Exec(ctx, pullCmds, exec.Multiplexed())
-					if err != nil {
-						return fmt.Errorf("failed to pull model %s: %w", model, err)
-					}
-
-					_, r, err := c.Exec(ctx, runCmds, exec.Multiplexed())
-					if err != nil {
-						return fmt.Errorf("failed to run model %s: %w", model, err)
-					}
-
-					bs, err := io.ReadAll(r)
-					if err != nil {
-						return fmt.Errorf("failed to run %s model: %w", model, err)
-					}
-
-					stdOutput := string(bs)
-					if strings.Contains(stdOutput, "Error: pull model manifest: file does not exist") {
-						return fmt.Errorf("failed to run %s model [%v]: %s", model, runCmds, stdOutput)
-					}
-
-					return nil
-				},
-			},
-		}
-
-		req.LifecycleHooks = append(req.LifecycleHooks, modelLifecycleHook)
-	}
 }

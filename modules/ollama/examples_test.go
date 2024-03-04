@@ -49,7 +49,6 @@ func ExampleRunContainer_withModel_llama2_http() {
 	ollamaContainer, err := tcollama.RunContainer(
 		ctx,
 		testcontainers.WithImage("ollama/ollama:0.1.25"),
-		tcollama.WithModel("llama2"),
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
@@ -59,6 +58,18 @@ func ExampleRunContainer_withModel_llama2_http() {
 			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
 		}
 	}()
+
+	model := "llama2"
+
+	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "pull", model})
+	if err != nil {
+		log.Fatalf("failed to pull model %s: %s", model, err)
+	}
+
+	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "run", model})
+	if err != nil {
+		log.Fatalf("failed to run model %s: %s", model, err)
+	}
 
 	connectionStr, err := ollamaContainer.ConnectionString(ctx)
 	if err != nil {
@@ -96,7 +107,6 @@ func ExampleRunContainer_withModel_llama2_langchain() {
 	ollamaContainer, err := tcollama.RunContainer(
 		ctx,
 		testcontainers.WithImage("ollama/ollama:0.1.25"),
-		tcollama.WithModel("llama2"),
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
@@ -107,6 +117,18 @@ func ExampleRunContainer_withModel_llama2_langchain() {
 		}
 	}()
 
+	model := "llama2"
+
+	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "pull", model})
+	if err != nil {
+		log.Fatalf("failed to pull model %s: %s", model, err)
+	}
+
+	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "run", model})
+	if err != nil {
+		log.Fatalf("failed to run model %s: %s", model, err)
+	}
+
 	connectionStr, err := ollamaContainer.ConnectionString(ctx)
 	if err != nil {
 		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
@@ -114,7 +136,7 @@ func ExampleRunContainer_withModel_llama2_langchain() {
 
 	var llm *langchainollama.LLM
 	if llm, err = langchainollama.New(
-		langchainollama.WithModel("llama2"),
+		langchainollama.WithModel(model),
 		langchainollama.WithServerURL(connectionStr),
 	); err != nil {
 		log.Fatalf("failed to create langchain ollama: %s", err) // nolint:gocritic
