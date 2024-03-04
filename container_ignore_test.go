@@ -22,7 +22,7 @@ func TestParseDockerIgnore(t *testing.T) {
 		{
 			filePath:         "./testdata",
 			expectedErr:      nil,
-			expectedExcluded: []string(nil),
+			expectedExcluded: []string{"Dockerfile", "echo.Dockerfile"},
 		},
 	}
 

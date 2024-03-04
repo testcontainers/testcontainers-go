@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/localstack
 
-go 1.20
+go 1.21
 
 require (
 	github.com/aws/aws-sdk-go v1.49.19
@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.47.7
 	github.com/docker/docker v25.0.2+incompatible
 	github.com/docker/go-connections v0.5.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.28.0
 	golang.org/x/mod v0.12.0
 )
