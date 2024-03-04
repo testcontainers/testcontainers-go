@@ -41,6 +41,29 @@ func (g *TestLogConsumer) Accept(l Log) {
 }
 ```
 
+#### WithLogger
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to either pass logger to a container, you can use `testcontainers.WithLogger`.
+
+!!!info
+	Consider calling this before other "With" functions as these may generate logs.
+
+In this example we also use `TestLogger` which writes to the passed in `testing.TB` using `Logf`.
+The result is that we capture all logging from the container into the test context meaning its
+hidden behind `go test -v` and is associated with the relevant test, providing the user with
+useful context instead of appearing out of band.
+
+```golang
+func TestHandler(t *testing.T) {
+    logger := TestLogger(t)
+    _, err := postgresModule.RunContainer(ctx, testcontainers.WithLogger(logger))
+    require.NoError(t, err)
+    // Do something with container.
+}
+```
+
 Please read the [Following Container Logs](/features/follow_logs) documentation for more information about creating log consumers.
 
 #### Wait Strategies

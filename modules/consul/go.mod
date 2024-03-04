@@ -1,10 +1,10 @@
 module github.com/testcontainers/testcontainers-go/modules/consul
 
-go 1.20
+go 1.21
 
 require (
 	github.com/hashicorp/consul/api v1.27.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.28.0
 )
 
