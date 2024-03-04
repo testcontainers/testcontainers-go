@@ -125,6 +125,6 @@ func TestDownloadModelAndCommitToImage(t *testing.T) {
 	}
 
 	if newImage == "" {
-		t.Fatal("commit should not be empty")
+		t.Fatal("new image should not be empty")
 	}
 }
