@@ -8,7 +8,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.28.0
 	github.com/twmb/franz-go v1.15.4
 	github.com/twmb/franz-go/pkg/kadm v1.10.0
-	golang.org/x/mod v0.14.0
+	golang.org/x/mod v0.16.0
 )
 
 require (
