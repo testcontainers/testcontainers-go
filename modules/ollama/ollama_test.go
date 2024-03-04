@@ -2,10 +2,13 @@ package ollama_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/ollama"
@@ -118,7 +121,12 @@ func TestDownloadModelAndCommitToImage(t *testing.T) {
 	}
 
 	// commitOllamaContainer {
-	newImage, err := ollamaContainer.Commit(context.Background())
+
+	// Defining the target image name based on the default image and a random string.
+	// Users can change the way this is generated, but it should be unique.
+	targetImage := fmt.Sprintf("%s-%s", ollama.DefaultOllamaImage, strings.ToLower(uuid.New().String()[:4]))
+
+	newImage, err := ollamaContainer.Commit(context.Background(), targetImage)
 	// }
 	if err != nil {
 		t.Fatal(err)
