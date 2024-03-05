@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/examples/toxiproxy
 go 1.21
 
 require (
-	github.com/Shopify/toxiproxy/v2 v2.7.0
+	github.com/Shopify/toxiproxy/v2 v2.8.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.6.0
 	github.com/testcontainers/testcontainers-go v0.28.0
