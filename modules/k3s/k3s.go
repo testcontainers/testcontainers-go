@@ -42,6 +42,7 @@ func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
 			HostFilePath:      manifestPath,
 			ContainerFilePath: target,
 		})
+	}
 }
 
 // RunContainer creates an instance of the K3s container type
