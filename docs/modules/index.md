@@ -36,7 +36,7 @@ If you still want to host the module under the `testcontainers-go` repository, p
 We are happy to review and merge your PRs, and we are also happy to help you with the development of the module.
 But this is a shared responsibility, so we expect you to be involved in the maintenance, documentation and support of the module.
 - the module will be part of the CI/CD pipeline of the `testcontainers-go` repository, so it will be tested and released with the rest of the modules.
-Think of Github workflows, Dependabot, release notes, etc. Although it sounds great, which it is, it also means that it will increase the build time in our CI/CD pipeline on Github, including flaky tests, number of dependabot updates, etc. So in the end it's more work for us.
+Think of Github workflows, release notes, etc. Although it sounds great, which it is, it also means that it will increase the build time in our CI/CD pipeline on Github, including flaky tests, number of dependency updates, etc. So in the end it's more work for us.
 - once created, we'll add the module to the [Modules Catalog](https://testcontainers.com/modules/?language=go) and to the [Go documentation](https://pkg.go.dev/github.com/testcontainers/testcontainers-go).
 
 ## Creating a new module
@@ -62,11 +62,10 @@ We have provided a command line tool to generate the scaffolding for the code of
     - a section for the container methods.
 - a new Nav entry for the module in the docs site, adding it to the `mkdocs.yml` file located at the root directory of the project.
 - a GitHub workflow file in the .github/workflows directory to run the tests for the example.
-- an entry in Dependabot's configuration file, in order to receive dependency updates.
 - an entry in the VSCode workspace file, in order to include the new module in the project's workspace.
 
 !!!info
-    If you are hosting the module under your own Github account, please move the generated files to the new repository. Discard the following files and directories: `mkdocs.yml`, `dependabot.yml`, VSCode workspace, Sonarqube properties, and the `.github/workflows` directory, as they are specific to the `testcontainers-go` repository. You can use them as reference to create your own CI/CD pipeline.
+    If you are hosting the module under your own Github account, please move the generated files to the new repository. Discard the following files and directories: `mkdocs.yml`, VSCode workspace, Sonarqube properties, and the `.github/workflows` directory, as they are specific to the `testcontainers-go` repository. You can use them as reference to create your own CI/CD pipeline.
 
 ### Command line flags
 
@@ -198,7 +197,6 @@ The steps to convert an existing example, aka `${THE_EXAMPLE}`, into a module ar
 
 1. Rename the module path at the `go.mod` file for your example.
 1. Move the `examples/${THE_EXAMPLE}` directory to `modules/${THE_EXAMPLE}`.
-1. Move the `${THE_EXAMPLE}` dependabot config from the examples section to the modules one, which is located at the bottom.
 1. In the `mkdocs.yml` file, move the entry for `${THE_EXAMPLE}` from examples to modules.
 1. Move `docs/examples${THE_EXAMPLE}.md` file to `docs/modules/${THE_EXAMPLE}`, updating the references to the source code paths.
 1. Update the Github workflow for `${THE_EXAMPLE}`, modifying names and paths.

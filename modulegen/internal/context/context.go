@@ -10,10 +10,6 @@ type Context struct {
 	RootDir string
 }
 
-func (ctx Context) DependabotConfigFile() string {
-	return filepath.Join(ctx.GithubDir(), "dependabot.yml")
-}
-
 func (ctx Context) DocsDir() string {
 	return filepath.Join(ctx.RootDir, "docs")
 }
