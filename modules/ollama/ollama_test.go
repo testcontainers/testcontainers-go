@@ -74,19 +74,15 @@ func TestOllama(t *testing.T) {
 		// Users can change the way this is generated, but it should be unique.
 		targetImage := fmt.Sprintf("%s-%s", ollama.DefaultOllamaImage, strings.ToLower(uuid.New().String()[:4]))
 
-		newImage, err := container.Commit(context.Background(), targetImage)
+		err := container.Commit(context.Background(), targetImage)
 		// }
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if newImage == "" {
-			t.Fatal("new image should not be empty")
-		}
-
 		newOllamaContainer, err := ollama.RunContainer(
 			context.Background(),
-			testcontainers.WithImage(newImage),
+			testcontainers.WithImage(targetImage),
 		)
 		if err != nil {
 			t.Fatal(err)
