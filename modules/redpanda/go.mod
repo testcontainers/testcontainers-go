@@ -7,7 +7,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.28.0
 	github.com/twmb/franz-go v1.16.1
-	github.com/twmb/franz-go/pkg/kadm v1.10.0
+	github.com/twmb/franz-go/pkg/kadm v1.11.0
 	golang.org/x/mod v0.14.0
 )
 
