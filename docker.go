@@ -142,7 +142,10 @@ func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return host, nil
+
+	hostIps := core.GetDockerHostIPs(host)
+
+	return hostIps[0].Address, nil
 }
 
 // MappedPort gets externally mapped port for a container port
