@@ -49,6 +49,20 @@ for K3s. E.g. `testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1")`.
 
 {% include "../features/common_functional_options.md" %}
 
+## WithManifest
+
+The `WithManifest` option loads a manifest obtained from a local file into the cluster. K3s applies it automatically during the startup process
+
+```golang
+func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption
+```
+
+Example:
+
+```golang
+        WithManifest("nginx-manifest.yaml")
+```
+
 ### Container Methods
 
 The K3s container exposes the following methods:

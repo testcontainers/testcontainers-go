@@ -12,6 +12,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/k3s"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func Test_LoadImages(t *testing.T) {
@@ -160,4 +161,24 @@ func Test_APIServerReady(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create pod %v", err)
 	}
+}
+
+func Test_WithManifestOption(t *testing.T) {
+	ctx := context.Background()
+
+	k3sContainer, err := k3s.RunContainer(ctx,
+		testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1"),
+		k3s.WithManifest("nginx-manifest.yaml"),
+		testcontainers.WithWaitStrategy(wait.ForExec([]string{"kubectl", "wait", "pod", "nginx","--for=condition=Ready"})),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Clean up the container
+	defer func() {
+		if err := k3sContainer.Terminate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}()
 }
