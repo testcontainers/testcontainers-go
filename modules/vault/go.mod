@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/vault-client-go v0.4.3
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.28.0
-	github.com/tidwall/gjson v1.17.0
+	github.com/tidwall/gjson v1.17.1
 )
 
 require (
