@@ -150,7 +150,6 @@ git add modules/**/go.*
 git commit -m chore: use new version (v0.20.1) in modules and examples
 git tag v0.20.1
 git tag examples/bigtable/v0.20.1
-git tag examples/consul/v0.20.1
 git tag examples/datastore/v0.20.1
 git tag examples/firestore/v0.20.1
 git tag examples/mongodb/v0.20.1
@@ -178,7 +177,6 @@ git commit -m chore: prepare for next minor development cycle (0.21.0)
 git push origin main --tags
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/bigtable/@v/v0.20.1.info
-curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/consul/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/datastore/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/firestore/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/mongodb/@v/v0.20.1.info

@@ -1,4 +1,4 @@
-package cassandra
+package cassandra_test
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"github.com/gocql/gocql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go/modules/cassandra"
 )
 
 type Test struct {
@@ -18,7 +20,7 @@ type Test struct {
 func TestCassandra(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx)
+	container, err := cassandra.RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +60,7 @@ func TestCassandra(t *testing.T) {
 func TestCassandraWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, WithConfigFile(filepath.Join("testdata", "config.yaml")))
+	container, err := cassandra.RunContainer(ctx, cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +91,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		ctx := context.Background()
 
 		// withInitScripts {
-		container, err := RunContainer(ctx, WithInitScripts(filepath.Join("testdata", "init.cql")))
+		container, err := cassandra.RunContainer(ctx, cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
 		// }
 		if err != nil {
 			t.Fatal(err)
@@ -121,7 +123,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 	t.Run("with init bash script", func(t *testing.T) {
 		ctx := context.Background()
 
-		container, err := RunContainer(ctx, WithInitScripts(filepath.Join("testdata", "init.sh")))
+		container, err := cassandra.RunContainer(ctx, cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
 		if err != nil {
 			t.Fatal(err)
 		}

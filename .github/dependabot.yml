@@ -24,13 +24,6 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
-      directory: /examples/consul
-      schedule:
-        interval: monthly
-        day: sunday
-      open-pull-requests-limit: 3
-      rebase-strategy: disabled
-    - package-ecosystem: gomod
       directory: /examples/nginx
       schedule:
         interval: monthly
@@ -66,6 +59,13 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /modules/chroma
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /modules/clickhouse
       schedule:
         interval: monthly
@@ -81,6 +81,13 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/compose
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/consul
       schedule:
         interval: monthly
         day: sunday
@@ -150,6 +157,13 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /modules/milvus
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /modules/minio
       schedule:
         interval: monthly
@@ -199,7 +213,21 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /modules/ollama
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /modules/openldap
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/opensearch
       schedule:
         interval: monthly
         day: sunday
@@ -214,6 +242,13 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: gomod
       directory: /modules/pulsar
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/qdrant
       schedule:
         interval: monthly
         day: sunday
@@ -241,7 +276,21 @@ updates:
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: gomod
+      directory: /modules/surrealdb
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
       directory: /modules/vault
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /modules/weaviate
       schedule:
         interval: monthly
         day: sunday

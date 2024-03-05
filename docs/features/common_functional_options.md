@@ -15,9 +15,19 @@ _Testcontainers for Go_ exposes an interface to perform this operations: `ImageS
 
 Using the `WithImageSubstitutors` options, you could define your own substitutions to the container images. E.g. adding a prefix to the images so that they can be pulled from a Docker registry other than Docker Hub. This is the usual mechanism for using Docker image proxies, caches, etc.
 
-#### WithLogConsumers
+#### WithEnv
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to either pass additional environment variables to a container or override them, you can use `testcontainers.WithEnv` for example:
+
+```golang
+postgres, err = postgresModule.RunContainer(ctx, testcontainers.WithEnv(map[string]string{"POSTGRES_INITDB_ARGS", "--no-sync"}))
+```
+
+#### WithLogConsumers
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 If you need to consume the logs of the container, you can use `testcontainers.WithLogConsumers` with a valid log consumer. An example of a log consumer is the following:
 
@@ -28,6 +38,29 @@ type TestLogConsumer struct {
 
 func (g *TestLogConsumer) Accept(l Log) {
 	g.Msgs = append(g.Msgs, string(l.Content))
+}
+```
+
+#### WithLogger
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to either pass logger to a container, you can use `testcontainers.WithLogger`.
+
+!!!info
+	Consider calling this before other "With" functions as these may generate logs.
+
+In this example we also use `TestLogger` which writes to the passed in `testing.TB` using `Logf`.
+The result is that we capture all logging from the container into the test context meaning its
+hidden behind `go test -v` and is associated with the relevant test, providing the user with
+useful context instead of appearing out of band.
+
+```golang
+func TestHandler(t *testing.T) {
+    logger := TestLogger(t)
+    _, err := postgresModule.RunContainer(ctx, testcontainers.WithLogger(logger))
+    require.NoError(t, err)
+    // Do something with container.
 }
 ```
 
@@ -57,6 +90,19 @@ It also exports an `Executable` interface, defining the following methods:
 - `Options()`, which returns the slice of functional options with the Docker's ExecConfigs used to create the command in the container (the working directory, environment variables, user executing the command, etc) and the possible output format (Multiplexed).
 
 You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is started.
+
+#### Ready Commands
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
+Testcontainers exposes the `WithAfterReadyCommand(e ...Executable)` option to run arbitrary commands in the container right after it's ready, which happens when the defined wait strategies have finished with success.
+
+!!!info
+    To better understand how this feature works, please read the [Create containers: Lifecycle Hooks](/features/creating_container/#lifecycle-hooks) documentation.
+
+It leverages the `Executable` interface to represent the command and positional arguments to be executed in the container.
+
+You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is ready.
 
 #### WithNetwork
 

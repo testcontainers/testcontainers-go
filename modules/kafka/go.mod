@@ -1,12 +1,12 @@
 module github.com/testcontainers/testcontainers-go/modules/kafka
 
-go 1.20
+go 1.21
 
 require (
 	github.com/IBM/sarama v1.42.1
 	github.com/docker/go-connections v0.5.0
-	github.com/testcontainers/testcontainers-go v0.27.0
-	golang.org/x/mod v0.14.0
+	github.com/testcontainers/testcontainers-go v0.28.0
+	golang.org/x/mod v0.16.0
 )
 
 require (
@@ -20,7 +20,7 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
-	github.com/docker/docker v25.0.2+incompatible // indirect
+	github.com/docker/docker v25.0.3+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/eapache/go-resiliency v1.4.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
@@ -50,7 +50,7 @@ require (
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
+	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect

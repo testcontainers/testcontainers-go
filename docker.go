@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -48,6 +49,8 @@ const (
 
 	logStoppedForOutOfSyncMessage = "Stopping log consumer: Headers out of sync"
 )
+
+var createContainerFailDueToNameConflictRegex = regexp.MustCompile("Conflict. The container name .* is already in use by container .*")
 
 // DockerContainer represents a container started using Docker
 type DockerContainer struct {
@@ -199,6 +202,13 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 	defer c.provider.Close()
 
 	err = c.startedHook(ctx)
+	if err != nil {
+		return err
+	}
+
+	c.isRunning = true
+
+	err = c.readiedHook(ctx)
 	if err != nil {
 		return err
 	}
@@ -1066,86 +1076,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// default hooks include logger hook and pre-create hook
 	defaultHooks := []ContainerLifecycleHooks{
 		DefaultLoggingHook(p.Logger),
-		{
-			PreCreates: []ContainerRequestHook{
-				func(ctx context.Context, req ContainerRequest) error {
-					return p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
-				},
-			},
-			PostCreates: []ContainerHook{
-				// copy files to container after it's created
-				func(ctx context.Context, c Container) error {
-					for _, f := range req.Files {
-						err := c.CopyFileToContainer(ctx, f.HostFilePath, f.ContainerFilePath, f.FileMode)
-						if err != nil {
-							return fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
-						}
-					}
-
-					return nil
-				},
-			},
-			PostStarts: []ContainerHook{
-				// first post-start hook is to produce logs and start log consumers
-				func(ctx context.Context, c Container) error {
-					dockerContainer := c.(*DockerContainer)
-
-					logConsumerConfig := req.LogConsumerCfg
-					if logConsumerConfig == nil {
-						return nil
-					}
-
-					for _, consumer := range logConsumerConfig.Consumers {
-						dockerContainer.followOutput(consumer)
-					}
-
-					if len(logConsumerConfig.Consumers) > 0 {
-						return dockerContainer.startLogProduction(ctx, logConsumerConfig.Opts...)
-					}
-					return nil
-				},
-				// second post-start hook is to wait for the container to be ready
-				func(ctx context.Context, c Container) error {
-					dockerContainer := c.(*DockerContainer)
-
-					// if a Wait Strategy has been specified, wait before returning
-					if dockerContainer.WaitingFor != nil {
-						dockerContainer.logger.Printf(
-							"🚧 Waiting for container id %s image: %s. Waiting for: %+v",
-							dockerContainer.ID[:12], dockerContainer.Image, dockerContainer.WaitingFor,
-						)
-						if err := dockerContainer.WaitingFor.WaitUntilReady(ctx, c); err != nil {
-							return err
-						}
-					}
-
-					dockerContainer.isRunning = true
-
-					return nil
-				},
-			},
-			PreTerminates: []ContainerHook{
-				// first pre-terminate hook is to stop the log production
-				func(ctx context.Context, c Container) error {
-					logConsumerConfig := req.LogConsumerCfg
-
-					if logConsumerConfig == nil {
-						return nil
-					}
-					if len(logConsumerConfig.Consumers) == 0 {
-						return nil
-					}
-
-					dockerContainer := c.(*DockerContainer)
-
-					return dockerContainer.stopLogProduction()
-				},
-			},
-		},
+		defaultPreCreateHook(ctx, p, req, dockerInput, hostConfig, networkingConfig),
+		defaultCopyFileToContainerHook(req.Files),
+		defaultLogConsumersHook(req.LogConsumerCfg),
+		defaultReadinessHook(),
 	}
 
-	// always prepend default lifecycle hooks to user-defined hooks
-	req.LifecycleHooks = append(defaultHooks, req.LifecycleHooks...)
+	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
 
 	err = req.creatingHook(ctx)
 	if err != nil {
@@ -1219,13 +1156,40 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 	return nil, nil
 }
 
+func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string) (*types.Container, error) {
+	var container *types.Container
+	return container, backoff.Retry(func() error {
+		c, err := p.findContainerByName(ctx, name)
+		if err != nil {
+			return err
+		}
+
+		if c == nil {
+			return fmt.Errorf("container %s not found", name)
+		}
+
+		container = c
+		return nil
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+}
+
 func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	c, err := p.findContainerByName(ctx, req.Name)
 	if err != nil {
 		return nil, err
 	}
 	if c == nil {
-		return p.CreateContainer(ctx, req)
+		createdContainer, err := p.CreateContainer(ctx, req)
+		if err == nil {
+			return createdContainer, nil
+		}
+		if !createContainerFailDueToNameConflictRegex.MatchString(err.Error()) {
+			return nil, err
+		}
+		c, err = p.waitContainerCreation(ctx, req.Name)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	sessionID := core.SessionID()
@@ -1244,6 +1208,13 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		}
 	}
 
+	// default hooks include logger hook and pre-create hook
+	defaultHooks := []ContainerLifecycleHooks{
+		DefaultLoggingHook(p.Logger),
+		defaultReadinessHook(),
+		defaultLogConsumersHook(req.LogConsumerCfg),
+	}
+
 	dc := &DockerContainer{
 		ID:                  c.ID,
 		WaitingFor:          req.WaitingFor,
@@ -1253,7 +1224,19 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		terminationSignal:   termSignal,
 		stopLogProductionCh: nil,
 		logger:              p.Logger,
-		isRunning:           c.State == "running",
+		lifecycleHooks:      []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)},
+	}
+
+	err = dc.startedHook(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dc.isRunning = true
+
+	err = dc.readiedHook(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return dc, nil

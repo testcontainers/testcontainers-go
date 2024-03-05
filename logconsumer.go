@@ -7,6 +7,7 @@ const StdoutLog = "STDOUT"
 const StderrLog = "STDERR"
 
 // logStruct {
+
 // Log represents a message that was created by a process,
 // LogType is either "STDOUT" or "STDERR",
 // Content is the byte contents of the message itself
@@ -18,6 +19,7 @@ type Log struct {
 // }
 
 // logConsumerInterface {
+
 // LogConsumer represents any object that can
 // handle a Log, it is up to the LogConsumer instance
 // what to do with the log

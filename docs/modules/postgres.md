@@ -82,13 +82,11 @@ It's possible to pass extra parameters to the connection string, e.g. `sslmode=d
 
 ### Postgres variants
 
-It's possible to use the Postgres container with Timescale or Postgis, to name a few. You simply need to update the image name and the wait strategy.
+It's possible to use the Postgres container with PGVector, Timescale or Postgis, to name a few. You simply need to update the image name and the wait strategy.
 
 <!--codeinclude-->
+[Image for PGVector](../../modules/postgres/postgres_test.go) inside_block:pgvector
 [Image for Timescale](../../modules/postgres/postgres_test.go) inside_block:timescale
-<!--/codeinclude-->
-
-<!--codeinclude-->
 [Image for Postgis](../../modules/postgres/postgres_test.go) inside_block:postgis
 <!--/codeinclude-->
 
