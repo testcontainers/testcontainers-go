@@ -110,6 +110,10 @@
             "path": "../modules/neo4j"
         },
         {
+            "name": "module / ollama",
+            "path": "../modules/ollama"
+        },
+        {
             "name": "module / openldap",
             "path": "../modules/openldap"
         },
