@@ -595,7 +595,7 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	// Handling the termination of the containers
 	defer func() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(
-			context.Background(), 30*time.Second,
+			context.Background(), 60*time.Second,
 		)
 		defer shutdownCancel()
 		_ = c.Terminate(shutdownCtx)
