@@ -288,7 +288,7 @@ func TestGenerate(t *testing.T) {
 	require.NoError(t, err) // error nil implies the file exist
 
 	assertModuleDocContent(t, module, moduleDocFile)
-	assertModuleGithubWorkflowContent(t, module, mainWorkflowFile)
+	assertModuleGithubWorkflowContent(t, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, moduleNameLower)
 	// do not generate examples_test.go for examples
@@ -344,7 +344,7 @@ func TestGenerateModule(t *testing.T) {
 	require.NoError(t, err) // error nil implies the file exist
 
 	assertModuleDocContent(t, module, moduleDocFile)
-	assertModuleGithubWorkflowContent(t, module, mainWorkflowFile)
+	assertModuleGithubWorkflowContent(t, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(modulesTmp, moduleNameLower)
 	assertExamplesTestContent(t, module, filepath.Join(generatedTemplatesDir, "examples_test.go"))
@@ -432,7 +432,7 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 }
 
 // assert content GitHub workflow for the module
-func assertModuleGithubWorkflowContent(t *testing.T, module context.TestcontainersModule, moduleWorkflowFile string) {
+func assertModuleGithubWorkflowContent(t *testing.T, moduleWorkflowFile string) {
 	content, err := os.ReadFile(moduleWorkflowFile)
 	require.NoError(t, err)
 
