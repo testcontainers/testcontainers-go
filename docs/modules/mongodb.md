@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mongodb
 ## Usage example
 
 <!--codeinclude-->
-[Creating a MongoDB container](../../modules/mongodb/mongodb_test.go) inside_block:runMongoDBContainer
+[Creating a MongoDB container](../../modules/mongodb/examples_test.go) inside_block:runMongoDBContainer
 <!--/codeinclude-->
 
 ## Module reference
@@ -72,5 +72,5 @@ It returns a string with the format `mongodb://<host>:<port>`.
 It can be use to configure a MongoDB client (`go.mongodb.org/mongo-driver/mongo`), e.g.:
 
 <!--codeinclude-->
-[Using ConnectionString with the MongoDB client](../../modules/mongodb/mongodb_test.go) inside_block:connectToMongo
+[Using ConnectionString with the MongoDB client](../../modules/mongodb/examples_test.go) inside_block:connectToMongo
 <!--/codeinclude-->

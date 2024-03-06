@@ -79,7 +79,7 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 
 	if req.Started && !c.IsRunning() {
 		if err := c.Start(ctx); err != nil {
-			return c, fmt.Errorf("%w: failed to start container", err)
+			return c, fmt.Errorf("failed to start container: %w", err)
 		}
 	}
 	return c, nil
