@@ -17,7 +17,7 @@ Using the `WithImageSubstitutors` options, you could define your own substitutio
 
 #### WithEnv
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 If you need to either pass additional environment variables to a container or override them, you can use `testcontainers.WithEnv` for example:
 
@@ -43,7 +43,7 @@ func (g *TestLogConsumer) Accept(l Log) {
 
 #### WithLogger
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 If you need to either pass logger to a container, you can use `testcontainers.WithLogger`.
 
