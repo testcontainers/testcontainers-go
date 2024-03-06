@@ -86,6 +86,7 @@ nav:
         - modules/mysql.md
         - modules/nats.md
         - modules/neo4j.md
+        - modules/ollama.md
         - modules/openldap.md
         - modules/opensearch.md
         - modules/postgres.md
@@ -94,6 +95,7 @@ nav:
         - modules/rabbitmq.md
         - modules/redis.md
         - modules/redpanda.md
+        - modules/surrealdb.md
         - modules/vault.md
         - modules/weaviate.md
     - Examples:
@@ -122,4 +124,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.28.0
+    latest_version: v0.29.1
