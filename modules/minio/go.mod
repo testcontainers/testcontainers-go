@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/minio/minio-go/v7 v7.0.68
-	github.com/testcontainers/testcontainers-go v0.28.0
+	github.com/testcontainers/testcontainers-go v0.29.1
 )
 
 require (

@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/docker/docker v25.0.3+incompatible
-	github.com/testcontainers/testcontainers-go v0.28.0
+	github.com/testcontainers/testcontainers-go v0.29.1
 )
 
 require (

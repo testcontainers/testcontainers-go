@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/go-ldap/ldap/v3 v3.4.6
-	github.com/testcontainers/testcontainers-go v0.28.0
+	github.com/testcontainers/testcontainers-go v0.29.1
 )
 
 require (

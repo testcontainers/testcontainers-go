@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/weaviate
 go 1.21
 
 require (
-	github.com/testcontainers/testcontainers-go v0.28.0
+	github.com/testcontainers/testcontainers-go v0.29.1
 	github.com/weaviate/weaviate-go-client/v4 v4.12.1
 )
 
