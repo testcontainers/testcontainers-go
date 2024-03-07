@@ -1,12 +1,14 @@
 package redpanda_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -27,7 +29,10 @@ import (
 func TestRedpanda(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := redpanda.RunContainer(ctx)
+	container, err := redpanda.RunContainer(
+		ctx,
+		redpanda.WithEnableWasmTransform(),
+	)
 	require.NoError(t, err)
 
 	// Clean up the container after the test is complete
@@ -78,6 +83,28 @@ func TestRedpanda(t *testing.T) {
 	// Test produce to unknown topic
 	results := kafkaCl.ProduceSync(ctx, &kgo.Record{Topic: "test", Value: []byte("test message")})
 	require.ErrorIs(t, results.FirstErr(), kerr.UnknownTopicOrPartition)
+
+	// Test Admin API Client
+	adminClient := redpanda.NewAdminAPIClient(adminAPIURL)
+
+	_, err = kafkaAdmCl.CreateTopics(ctx, 1, 1, nil, "wasm-input", "wasm-output")
+	require.NoError(t, err, "unable to create wasm topics")
+
+	wasm, err := os.ReadFile("testdata/data-transform.wasm")
+	require.NoError(t, err, "unable to read wasm file")
+	deployReq := redpanda.TransformDeployMetadata{
+		Name:         "my-transform",
+		InputTopic:   "wasm-input",
+		OutputTopics: []string{"wasm-output"},
+		Environment:  nil,
+	}
+	err = adminClient.DeployTransform(ctx, deployReq, bytes.NewReader(wasm))
+	require.NoError(t, err, "unable to deploy transform")
+	meta, err := adminClient.ListTransforms(ctx)
+	require.Equal(t, len(meta), 1)
+	require.NoError(t, err, "unable to list transforms")
+	err = adminClient.DeleteTransform(ctx, "my-transform")
+	require.NoError(t, err, "unable to delete transforms")
 }
 
 func TestRedpandaWithAuthentication(t *testing.T) {
