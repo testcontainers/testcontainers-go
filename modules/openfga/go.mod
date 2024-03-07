@@ -2,7 +2,10 @@ module github.com/testcontainers/testcontainers-go/modules/openfga
 
 go 1.21
 
-require github.com/testcontainers/testcontainers-go v0.29.1
+require (
+	github.com/openfga/go-sdk v0.3.5
+	github.com/testcontainers/testcontainers-go v0.29.1
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -48,6 +51,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
 	golang.org/x/mod v0.16.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
