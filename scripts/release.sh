@@ -47,6 +47,11 @@ function main() {
 
   # Get the version to bump to from the semver-tool and the bump type
   local newVersion=$(docker run --rm --platform=linux/amd64 -i "${DOCKER_IMAGE_SEMVER}" bump "${BUMP_TYPE}" "${vVersion}")
+  if [[ "${newVersion}" == "" ]]; then
+    echo "Failed to bump the version. Please check the semver-tool image and the bump type."
+    exit 1
+  fi
+
   echo "Producing a ${BUMP_TYPE} bump of the version, from ${version} to ${newVersion}"
 
   # Bump the version in the version.go file
