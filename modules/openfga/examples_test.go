@@ -2,11 +2,16 @@ package openfga_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/openfga/go-sdk/client"
+	"github.com/openfga/go-sdk/credentials"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/openfga"
@@ -126,4 +131,78 @@ func ExampleRunContainer_connectWithSDKClient() {
 	// 0
 	// test
 	// 1
+}
+
+func ExampleRunContainer_withPresharedAuthn() {
+	// presharedAuthn {
+	secret := "openfga-secret"
+	openfgaContainer, err := openfga.RunContainer(
+		context.Background(),
+		testcontainers.WithImage("openfga/openfga:v1.5.0"),
+		openfga.WithLogLevel("warn"),
+		openfga.WithPresharedAuthn(secret),
+	)
+	if err != nil {
+		log.Fatalf("failed to start container: %s", err)
+	}
+
+	// Clean up the container
+	defer func() {
+		if err := openfgaContainer.Terminate(context.Background()); err != nil {
+			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		}
+	}()
+
+	httpEndpoint, err := openfgaContainer.HttpEndpoint(context.Background())
+	if err != nil {
+		log.Fatalf("failed to get HTTP endpoint: %s", err) // nolint:gocritic
+	}
+
+	fgaClient, err := client.NewSdkClient(&client.ClientConfiguration{
+		ApiUrl: httpEndpoint,
+		Credentials: &credentials.Credentials{
+			Method: credentials.CredentialsMethodApiToken,
+			Config: &credentials.Config{
+				ApiToken: secret,
+			},
+		},
+		// because we are going to write an authorization model,
+		// we need to specify an store id. Else, it will fail with
+		// "Configuration.StoreId is required and must be specified to call this method"
+		// In this example, it's an arbitrary store id, that will be created
+		// on the fly.
+		StoreId: "11111111111111111111111111",
+	})
+	if err != nil {
+		log.Fatalf("failed to create openfga client: %v", err)
+	}
+
+	f, err := os.Open(filepath.Join("testdata", "authorization_model.json"))
+	if err != nil {
+		log.Fatalf("failed to open file: %v", err)
+	}
+	defer f.Close()
+
+	bs, err := io.ReadAll(f)
+	if err != nil {
+		log.Fatalf("failed to read file: %v", err)
+	}
+
+	var body client.ClientWriteAuthorizationModelRequest
+	if err := json.Unmarshal(bs, &body); err != nil {
+		log.Fatalf("failed to unmarshal json: %v", err)
+	}
+
+	resp, err := fgaClient.WriteAuthorizationModel(context.Background()).Body(body).Execute()
+	if err != nil {
+		log.Fatalf("failed to write authorization model: %v", err)
+	}
+
+	value, ok := resp.GetAuthorizationModelIdOk()
+	fmt.Println(ok)
+	fmt.Println(*value != "")
+
+	// Output:
+	// true
+	// true
 }

@@ -16,6 +16,20 @@ type OpenFGAContainer struct {
 	testcontainers.Container
 }
 
+// WithLogLevel returns a CustomizeRequestOption that sets the log level
+func WithLogLevel(level string) testcontainers.CustomizeRequestOption {
+	return testcontainers.WithEnv(map[string]string{"OPENFGA_LOG_LEVEL": level})
+}
+
+// WithPresharedAuthn returns a CustomizeRequestOption that sets the preshared authentication method
+// with the given secret
+func WithPresharedAuthn(secret string) testcontainers.CustomizeRequestOption {
+	return testcontainers.WithEnv(map[string]string{
+		"OPENFGA_AUTHN_METHOD":         "preshared",
+		"OPENFGA_AUTHN_PRESHARED_KEYS": secret,
+	})
+}
+
 // GrpcEndpoint returns the gRPC endpoint for the OpenFGA container,
 // which uses the 8081/tcp port.
 func (c *OpenFGAContainer) GrpcEndpoint(ctx context.Context) (string, error) {
