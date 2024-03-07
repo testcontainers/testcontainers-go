@@ -139,8 +139,11 @@ func ExampleRunContainer_writeModel() {
 	openfgaContainer, err := openfga.RunContainer(
 		context.Background(),
 		testcontainers.WithImage("openfga/openfga:v1.5.0"),
-		openfga.WithLogLevel("warn"),
-		openfga.WithPresharedAuthn(secret),
+		testcontainers.WithEnv(map[string]string{
+			"OPENFGA_LOG_LEVEL":            "warn",
+			"OPENFGA_AUTHN_METHOD":         "preshared",
+			"OPENFGA_AUTHN_PRESHARED_KEYS": secret,
+		}),
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
