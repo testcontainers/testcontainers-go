@@ -133,8 +133,8 @@ func ExampleRunContainer_connectWithSDKClient() {
 	// 1
 }
 
-func ExampleRunContainer_withPresharedAuthn() {
-	// presharedAuthn {
+func ExampleRunContainer_writeModel() {
+	// openFGAwriteModel {
 	secret := "openfga-secret"
 	openfgaContainer, err := openfga.RunContainer(
 		context.Background(),
@@ -197,6 +197,8 @@ func ExampleRunContainer_withPresharedAuthn() {
 	if err != nil {
 		log.Fatalf("failed to write authorization model: %v", err)
 	}
+
+	// }
 
 	value, ok := resp.GetAuthorizationModelIdOk()
 	fmt.Println(ok)

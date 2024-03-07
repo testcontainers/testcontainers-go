@@ -65,3 +65,13 @@ In case you want to interact with the openfga playground, please use the `Playgr
 <!--codeinclude-->
 [Get Playground endpoint](../../modules/openfga/examples_test.go) inside_block:playgroundEndpoint
 <!--/codeinclude-->
+
+## Examples
+
+### Writing an OpenFGA model
+
+The following example shows how to write an OpenFGA model using the OpenFGA container.
+
+<!--codeinclude-->
+[Get Playground endpoint](../../modules/openfga/examples_test.go) inside_block:openFGAwriteModel
+<!--/codeinclude-->
