@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/openfga/go-sdk/client"
 
@@ -39,6 +40,39 @@ func ExampleRunContainer() {
 	// true
 }
 
+func ExampleRunContainer_connectToPlayground() {
+	openfgaContainer, err := openfga.RunContainer(context.Background(), testcontainers.WithImage("openfga/openfga:v1.5.0"))
+	if err != nil {
+		log.Fatalf("failed to start container: %s", err)
+	}
+
+	// Clean up the container
+	defer func() {
+		if err := openfgaContainer.Terminate(context.Background()); err != nil {
+			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		}
+	}()
+
+	// playgroundEndpoint {
+	playgroundEndpoint, err := openfgaContainer.PlaygroundEndpoint(context.Background())
+	if err != nil {
+		log.Fatalf("failed to get playground endpoint: %s", err) // nolint:gocritic
+	}
+	// }
+
+	httpClient := http.Client{}
+
+	resp, err := httpClient.Get(playgroundEndpoint)
+	if err != nil {
+		log.Fatalf("failed to get playground endpoint: %s", err) // nolint:gocritic
+	}
+
+	fmt.Println(resp.StatusCode)
+
+	// Output:
+	// 200
+}
+
 func ExampleRunContainer_connectWithSDKClient() {
 	openfgaContainer, err := openfga.RunContainer(context.Background(), testcontainers.WithImage("openfga/openfga:v1.5.0"))
 	if err != nil {
@@ -52,10 +86,12 @@ func ExampleRunContainer_connectWithSDKClient() {
 		}
 	}()
 
+	// httpEndpoint {
 	httpEndpoint, err := openfgaContainer.HttpEndpoint(context.Background())
 	if err != nil {
 		log.Fatalf("failed to get HTTP endpoint: %s", err) // nolint:gocritic
 	}
+	// }
 
 	// StoreId is not required for listing and creating stores
 	fgaClient, err := client.NewSdkClient(&client.ClientConfiguration{

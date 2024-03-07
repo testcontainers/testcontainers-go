@@ -45,3 +45,23 @@ for OpenFGA. E.g. `testcontainers.WithImage("openfga/openfga:v1.5.0")`.
 ### Container Methods
 
 The OpenFGA container exposes the following methods:
+
+#### HttpEndpoint
+
+This method returns the HTTP endpoint to connect to the OpenFGA container, using the `8080` port.
+
+<!--codeinclude-->
+[Get HTTP endpoint](../../modules/openfga/examples_test.go) inside_block:httpEndpoint
+<!--/codeinclude-->
+
+#### GrpcEndpoint
+
+This method returns the gRPC endpoint to connect to the OpenFGA container, using the `8081` port.
+
+#### Playground URL
+
+In case you want to interact with the openfga playground, please use the `PlaygroundEndpoint` method, using the `3000` port.
+
+<!--codeinclude-->
+[Get Playground endpoint](../../modules/openfga/examples_test.go) inside_block:playgroundEndpoint
+<!--/codeinclude-->
