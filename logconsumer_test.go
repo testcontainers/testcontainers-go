@@ -8,9 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -518,9 +516,8 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stderr = w
 
-	// Context with cancellation functionality for handling interrupt (SIGINT) and
-	// termination (SIGTERM) signals.
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	// Context with cancellation functionality for simulating user interruption
+	ctx, cancel := context.WithCancel(context.Background())
 
 	first := TestLogConsumer{
 		Msgs:     []string{},
