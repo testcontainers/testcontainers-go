@@ -114,6 +114,10 @@
             "path": "../modules/ollama"
         },
         {
+            "name": "module / openfga",
+            "path": "../modules/openfga"
+        },
+        {
             "name": "module / openldap",
             "path": "../modules/openldap"
         },
