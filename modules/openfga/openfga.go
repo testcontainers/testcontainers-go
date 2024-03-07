@@ -14,6 +14,14 @@ type OpenFGAContainer struct {
 	testcontainers.Container
 }
 
+func (c *OpenFGAContainer) GrpcEndpoint(ctx context.Context) (string, error) {
+	return c.PortEndpoint(ctx, "8081/tcp", "http")
+}
+
+func (c *OpenFGAContainer) HttpEndpoint(ctx context.Context) (string, error) {
+	return c.PortEndpoint(ctx, "8080/tcp", "http")
+}
+
 // RunContainer creates an instance of the OpenFGA container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OpenFGAContainer, error) {
 	req := testcontainers.ContainerRequest{
