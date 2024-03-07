@@ -77,7 +77,7 @@ func TestRedpanda(t *testing.T) {
 
 	// Test produce to unknown topic
 	results := kafkaCl.ProduceSync(ctx, &kgo.Record{Topic: "test", Value: []byte("test message")})
-	require.Error(t, results.FirstErr(), kerr.UnknownTopicOrPartition)
+	require.ErrorIs(t, results.FirstErr(), kerr.UnknownTopicOrPartition)
 }
 
 func TestRedpandaWithAuthentication(t *testing.T) {
