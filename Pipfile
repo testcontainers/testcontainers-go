@@ -9,7 +9,7 @@ verify_ssl = true
 mkdocs = "==1.5.3"
 mkdocs-codeinclude-plugin = "==0.2.1"
 mkdocs-include-markdown-plugin = "==6.0.4"
-mkdocs-material = "==9.3.2"
+mkdocs-material = "==9.5.13"
 mkdocs-markdownextradata-plugin = "==0.2.5"
 
 [requires]
