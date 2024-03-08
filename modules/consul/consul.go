@@ -14,7 +14,7 @@ const (
 )
 
 const (
-	DefaultBaseImage = "docker.io/hashicorp/consul:1.18"
+	DefaultBaseImage = "docker.io/hashicorp/consul:1.15"
 )
 
 // ConsulContainer represents the Consul container type used in the module.
