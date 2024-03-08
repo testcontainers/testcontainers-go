@@ -10,7 +10,7 @@ import (
 
 type Generator struct{}
 
-// AddModule update dependabot with the new module
+// AddModule update Makefile with the new module
 func (g Generator) AddModule(ctx context.Context, tcModule context.TestcontainersModule) error {
 	moduleDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
 	moduleName := tcModule.Lower()

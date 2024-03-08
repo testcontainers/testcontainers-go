@@ -87,6 +87,7 @@ nav:
         - modules/nats.md
         - modules/neo4j.md
         - modules/ollama.md
+        - modules/openfga.md
         - modules/openldap.md
         - modules/opensearch.md
         - modules/postgres.md
