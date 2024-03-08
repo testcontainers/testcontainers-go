@@ -14,7 +14,7 @@ const (
 )
 
 const (
-	DefaultBaseImage = "docker.io/hashicorp/consul:1.15"
+	DefaultBaseImage = "docker.io/hashicorp/consul:1.18"
 )
 
 // ConsulContainer represents the Consul container type used in the module.
@@ -70,6 +70,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			Env: map[string]string{},
 			WaitingFor: wait.ForAll(
 				wait.ForLog("Consul agent running!"),
+				wait.ForListeningPort(defaultHttpApiPort+"/tcp"),
 			),
 		},
 		Started: true,

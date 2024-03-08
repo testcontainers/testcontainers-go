@@ -16,7 +16,7 @@ func ExampleRunContainer() {
 	ctx := context.Background()
 
 	consulContainer, err := consul.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/hashicorp/consul:1.15"),
+		testcontainers.WithImage("docker.io/hashicorp/consul:1.18"),
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
@@ -46,7 +46,7 @@ func ExampleRunContainer_connect() {
 	ctx := context.Background()
 
 	consulContainer, err := consul.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/hashicorp/consul:1.15"),
+		testcontainers.WithImage("docker.io/hashicorp/consul:1.18"),
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
