@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/weaviate/weaviate-go-client/v4/weaviate"
+	"github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcweaviate "github.com/testcontainers/testcontainers-go/modules/weaviate"
@@ -17,7 +18,7 @@ func ExampleRunContainer() {
 	// runWeaviateContainer {
 	ctx := context.Background()
 
-	weaviateContainer, err := tcweaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.23.9"))
+	weaviateContainer, err := tcweaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.24.1"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -58,7 +59,12 @@ func ExampleRunContainer_connectWithClient() {
 
 	scheme, host, err := weaviateContainer.HttpHostAddress(ctx)
 	if err != nil {
-		log.Fatalf("failed to get schema and host: %s", err) // nolint:gocritic
+		log.Fatalf("failed to get http schema and host: %s", err) // nolint:gocritic
+	}
+
+	grpcHost, err := weaviateContainer.GrpcHostAddress(ctx)
+	if err != nil {
+		log.Fatalf("failed to get gRPC host: %s", err) // nolint:gocritic
 	}
 
 	connectionClient := &http.Client{}
@@ -68,8 +74,12 @@ func ExampleRunContainer_connectWithClient() {
 	}
 
 	cli := weaviate.New(weaviate.Config{
-		Scheme:           scheme,
-		Host:             host,
+		Scheme: scheme,
+		Host:   host,
+		GrpcConfig: &grpc.Config{
+			Secured: false, // set true if gRPC connection is secured
+			Host:    grpcHost,
+		},
 		Headers:          headers,
 		AuthConfig:       nil, // put here the weaviate auth.Config, if you need it
 		ConnectionClient: connectionClient,
