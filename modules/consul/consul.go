@@ -70,6 +70,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			Env: map[string]string{},
 			WaitingFor: wait.ForAll(
 				wait.ForLog("Consul agent running!"),
+				wait.ForListeningPort(defaultHttpApiPort+"/tcp"),
 			),
 		},
 		Started: true,
