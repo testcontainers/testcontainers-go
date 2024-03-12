@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker/docker/api/types"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/registry"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -198,7 +196,7 @@ func ExampleRunContainer_pushImage() {
 	}()
 
 	// pushingImage {
-	// repo is localhost:5000/customredis
+	// repo is localhost:32878/customredis
 	// tag is v1.2.3
 	err = registryContainer.PushImage(context.Background(), fmt.Sprintf("%s:%s", repo, tag))
 	if err != nil {
@@ -211,20 +209,13 @@ func ExampleRunContainer_pushImage() {
 	// now run a container from the new image
 	// But first remove the local image to avoid using the local one.
 
-	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	// deletingImage {
+	// newImage is customredis:v1.2.3
+	err = registryContainer.DeleteImage(context.Background(), newImage)
 	if err != nil {
-		log.Fatalf("failed to create Docker client: %s", err) // nolint:gocritic
+		log.Fatalf("failed to delete image: %s", err) // nolint:gocritic
 	}
-
-	resp, err := cli.ImageRemove(context.Background(), newImage, types.ImageRemoveOptions{
-		Force: true,
-	})
-	if err != nil {
-		log.Fatalf("failed to remove image: %s", err) // nolint:gocritic
-	}
-	if len(resp) == 0 {
-		log.Fatalf("failed to remove image: no response") // nolint:gocritic
-	}
+	// }
 
 	newRedisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{

@@ -93,3 +93,14 @@ The `PushImage` method allows to push an image to the Registry. It receives the 
 <!--/codeinclude-->
 
 If the push operation is successful, the method will internally wait for the image to be available in the Registry, querying the Registry API, returning an error in case of any failure (e.g. pushing or waiting for the image).
+
+#### DeleteImage
+
+The `DeleteImage` method allows to delete an image from the Registry. It receives the Go context and the image reference as parameters.
+
+!!! info
+    The image reference should be in the format `image:tag` in order to be deleted from the Registry.
+
+<!--codeinclude-->
+[Deleting images from the registry](../../modules/registry/examples_test.go) inside_block:deletingImage
+<!--/codeinclude-->
