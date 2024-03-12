@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -23,8 +24,9 @@ import (
 const lastMessage = "DONE"
 
 type TestLogConsumer struct {
-	Msgs []string
-	Done chan bool
+	mtx  sync.Mutex
+	msgs []string
+	Done chan struct{}
 
 	// Accepted provides a blocking way of ensuring the logs messages have been consumed.
 	// This allows for proper synchronization during Test_StartStop in particular.
@@ -35,11 +37,21 @@ type TestLogConsumer struct {
 func (g *TestLogConsumer) Accept(l Log) {
 	s := string(l.Content)
 	if s == fmt.Sprintf("echo %s\n", lastMessage) {
-		g.Done <- true
+		close(g.Done)
 		return
 	}
 	g.Accepted <- s
-	g.Msgs = append(g.Msgs, s)
+
+	g.mtx.Lock()
+	defer g.mtx.Unlock()
+	g.msgs = append(g.msgs, s)
+}
+
+func (g *TestLogConsumer) Msgs() []string {
+	g.mtx.Lock()
+	defer g.mtx.Unlock()
+
+	return g.msgs
 }
 
 // devNullAcceptorChan returns string channel that essentially sends all strings to dev null
@@ -57,8 +69,8 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	ctx := context.Background()
 
 	g := TestLogConsumer{
-		Msgs:     []string{},
-		Done:     make(chan bool),
+		msgs:     []string{},
+		Done:     make(chan struct{}),
 		Accepted: devNullAcceptorChan(),
 	}
 
@@ -100,7 +112,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 		t.Fatal("never received final log message")
 	}
 
-	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs)
+	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
 
 	terminateContainerOnEnd(t, ctx, c)
 }
@@ -172,13 +184,13 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	ctx := context.Background()
 
 	first := TestLogConsumer{
-		Msgs:     []string{},
-		Done:     make(chan bool),
+		msgs:     []string{},
+		Done:     make(chan struct{}),
 		Accepted: devNullAcceptorChan(),
 	}
 	second := TestLogConsumer{
-		Msgs:     []string{},
-		Done:     make(chan bool),
+		msgs:     []string{},
+		Done:     make(chan struct{}),
 		Accepted: devNullAcceptorChan(),
 	}
 
@@ -214,13 +226,13 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	<-first.Done
 	<-second.Done
 
-	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, first.Msgs)
-	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, second.Msgs)
+	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, first.Msgs())
+	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, second.Msgs())
 	require.NoError(t, c.Terminate(ctx))
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {
-	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+	if os.Getenv("GITHUB_RUN_ID") != "" {
 		t.Skip("Skipping as flaky on GitHub Actions, Please see https://github.com/testcontainers/testcontainers-go/issues/1924")
 	}
 
@@ -290,8 +302,8 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	}
 
 	consumer := TestLogConsumer{
-		Msgs:     []string{},
-		Done:     make(chan bool),
+		msgs:     []string{},
+		Done:     make(chan struct{}),
 		Accepted: devNullAcceptorChan(),
 	}
 
@@ -317,7 +329,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	// Gather the initial container logs
 	time.Sleep(time.Second * 1)
-	existingLogs := len(consumer.Msgs)
+	existingLogs := len(consumer.Msgs())
 
 	hitNginx := func() {
 		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + port.Port()})
@@ -328,10 +340,11 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	hitNginx()
 	time.Sleep(time.Second * 1)
-	if len(consumer.Msgs)-existingLogs != 1 {
-		t.Fatalf("logConsumer should have 1 new log message, instead has: %v", consumer.Msgs[existingLogs:])
+	msgs := consumer.Msgs()
+	if len(msgs)-existingLogs != 1 {
+		t.Fatalf("logConsumer should have 1 new log message, instead has: %v", msgs[existingLogs:])
 	}
-	existingLogs = len(consumer.Msgs)
+	existingLogs = len(consumer.Msgs())
 
 	iptableArgs := []string{
 		"INPUT", "-p", "tcp", "--dport", "2375",
@@ -351,10 +364,11 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	hitNginx()
 	hitNginx()
 	time.Sleep(time.Second * 1)
-	if len(consumer.Msgs)-existingLogs != 2 {
+	msgs = consumer.Msgs()
+	if len(msgs)-existingLogs != 2 {
 		t.Fatalf(
 			"LogConsumer should have 2 new log messages after detecting closed connection and"+
-				" re-requesting logs. Instead has:\n%s", consumer.Msgs[existingLogs:],
+				" re-requesting logs. Instead has:\n%s", msgs[existingLogs:],
 		)
 	}
 }
@@ -389,8 +403,8 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 func TestContainerLogsEnableAtStart(t *testing.T) {
 	ctx := context.Background()
 	g := TestLogConsumer{
-		Msgs:     []string{},
-		Done:     make(chan bool),
+		msgs:     []string{},
+		Done:     make(chan struct{}),
 		Accepted: devNullAcceptorChan(),
 	}
 
@@ -434,7 +448,7 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("never received final log message")
 	}
-	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs)
+	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
 
 	terminateContainerOnEnd(t, ctx, c)
 }
@@ -443,8 +457,8 @@ func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
 	ctx := context.Background()
 
 	g := TestLogConsumer{
-		Msgs:     []string{},
-		Done:     make(chan bool),
+		msgs:     []string{},
+		Done:     make(chan struct{}),
 		Accepted: devNullAcceptorChan(),
 	}
 
@@ -475,8 +489,8 @@ func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 	ctx := context.Background()
 
 	g := TestLogConsumer{
-		Msgs:     []string{},
-		Done:     make(chan bool),
+		msgs:     []string{},
+		Done:     make(chan struct{}),
 		Accepted: devNullAcceptorChan(),
 	}
 
@@ -518,10 +532,11 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 
 	// Context with cancellation functionality for simulating user interruption
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // Ensure it gets called.
 
 	first := TestLogConsumer{
-		Msgs:     []string{},
-		Done:     make(chan bool),
+		msgs:     []string{},
+		Done:     make(chan struct{}),
 		Accepted: devNullAcceptorChan(),
 	}
 
@@ -555,8 +570,8 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	require.NoError(t, err)
 
 	second := TestLogConsumer{
-		Msgs:     []string{},
-		Done:     make(chan bool),
+		msgs:     []string{},
+		Done:     make(chan struct{}),
 		Accepted: devNullAcceptorChan(),
 	}
 
@@ -592,7 +607,7 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	// Handling the termination of the containers
 	defer func() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(
-			context.Background(), 60*time.Second,
+			context.Background(), 10*time.Second,
 		)
 		defer shutdownCancel()
 		_ = c.Terminate(shutdownCtx)
@@ -604,8 +619,8 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 
 	// We check log size due to context cancellation causing
 	// varying message counts, leading to test failure.
-	assert.GreaterOrEqual(t, len(first.Msgs), 2)
-	assert.GreaterOrEqual(t, len(second.Msgs), 2)
+	assert.GreaterOrEqual(t, len(first.Msgs()), 2)
+	assert.GreaterOrEqual(t, len(second.Msgs()), 2)
 
 	// Restore stderr
 	w.Close()
