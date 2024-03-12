@@ -33,12 +33,13 @@ func TestMongoDB(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.image, func(t *testing.T) {
+		image := tc.image
+		t.Run(image, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
 
-			mongodbContainer, err := mongodb.RunContainer(ctx, testcontainers.WithImage(tc.image))
+			mongodbContainer, err := mongodb.RunContainer(ctx, testcontainers.WithImage(image))
 			if err != nil {
 				t.Fatalf("failed to start container: %s", err)
 			}
