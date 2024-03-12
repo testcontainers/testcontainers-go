@@ -46,7 +46,6 @@ func (ws *ExecStrategy) WithStartupTimeout(startupTimeout time.Duration) *ExecSt
 }
 
 func (ws *ExecStrategy) WithExitCode(exitCode int) *ExecStrategy {
-	
 	return ws.WithExitCodeMatcher(func(actualCode int) bool {
 		return actualCode == exitCode
 	})

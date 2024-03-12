@@ -162,15 +162,15 @@ func TestExecStrategyWaitUntilReadyWithSugaryExitCode(t *testing.T) {
 	}
 	wg := wait.NewExecStrategy([]string{"true"}).WithExitCode(10)
 	// Default is 60. Let's shorten that
-	wg.WithStartupTimeout(time.Second*2)
+	wg.WithStartupTimeout(time.Second * 2)
 	err := wg.WaitUntilReady(context.Background(), target)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	//Ensure we aren't spuriously returning on any code
+	// Ensure we aren't spuriously returning on any code
 	wg = wait.NewExecStrategy([]string{"true"}).WithExitCode(0)
-	wg.WithStartupTimeout(time.Second*2)
+	wg.WithStartupTimeout(time.Second * 2)
 	err = wg.WaitUntilReady(context.Background(), target)
 	if err == nil {
 		t.Fatalf("Expected strategy to timeout out")
