@@ -81,6 +81,13 @@ E.g. `http://localhost:32878/v2/_catalog`.
 [HTTP Address](../../modules/registry/registry_test.go) inside_block:httpAddress
 <!--/codeinclude-->
 
+#### ImageExists
+
+The `ImageExists` method allows to check if an image exists in the Registry. It receives the Go context and the image reference as parameters.
+
+!!! info
+    The image reference should be in the format `my-registry:port/image:tag` in order to be pushed to the Registry.
+
 #### PushImage
 
 The `PushImage` method allows to push an image to the Registry. It receives the Go context and the image reference as parameters.
