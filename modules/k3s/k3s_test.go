@@ -169,7 +169,7 @@ func Test_WithManifestOption(t *testing.T) {
 	k3sContainer, err := k3s.RunContainer(ctx,
 		testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1"),
 		k3s.WithManifest("nginx-manifest.yaml"),
-		testcontainers.WithWaitStrategy(wait.ForExec([]string{"kubectl", "wait", "pod", "nginx","--for=condition=Ready"})),
+		testcontainers.WithWaitStrategy(wait.ForExec([]string{"kubectl", "wait", "pod", "nginx", "--for=condition=Ready"})),
 	)
 	if err != nil {
 		t.Fatal(err)
