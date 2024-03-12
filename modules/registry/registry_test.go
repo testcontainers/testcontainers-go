@@ -108,7 +108,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 		}
 	})
 
-	t.Run("HTTP connection with basic auth succedes", func(tt *testing.T) {
+	t.Run("HTTP connection with basic auth succeeds", func(tt *testing.T) {
 		httpCli := http.Client{}
 		req, err := http.NewRequest("GET", httpAddress+"/v2/_catalog", nil)
 		if err != nil {
@@ -178,8 +178,8 @@ func TestRunContainer_authenticated(t *testing.T) {
 		"credsStore": "desktop"
 	}`)
 
-		// build a custom redis image from the private registry
-		// it will use localhost:$exposedPort as the registry.
+		// build a custom redis image from the private registry,
+		// using RegistryName of the container as the registry.
 		// The container should start because the authentication
 		// is correct.
 
@@ -290,8 +290,8 @@ func TestRunContainer_wrongData(t *testing.T) {
 		"credsStore": "desktop"
 	}`)
 
-	// build a custom redis image from the private registry
-	// it will use localhost:$exposedPort as the registry.
+	// build a custom redis image from the private registry,
+	// using RegistryName of the container as the registry.
 	// The container won't be able to start because the data
 	// directory is wrong.
 

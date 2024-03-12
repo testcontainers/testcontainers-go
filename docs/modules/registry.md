@@ -80,3 +80,16 @@ E.g. `http://localhost:32878/v2/_catalog`.
 <!--codeinclude-->
 [HTTP Address](../../modules/registry/registry_test.go) inside_block:httpAddress
 <!--/codeinclude-->
+
+#### PushImage
+
+The `PushImage` method allows to push an image to the Registry. It receives the Go context and the image reference as parameters.
+
+!!! info
+    The image reference should be in the format `my-registry:port/image:tag` in order to be pushed to the Registry.
+
+<!--codeinclude-->
+[Pushing images to the registry](../../modules/registry/examples_test.go) inside_block:pushingImage
+<!--/codeinclude-->
+
+If the push operation is successful, the method will internally wait for the image to be available in the Registry, querying the Registry API, returning an error in case of any failure (e.g. pushing or waiting for the image).
