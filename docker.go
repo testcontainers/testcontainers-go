@@ -63,16 +63,26 @@ type DockerContainer struct {
 	isRunning     bool
 	imageWasBuilt bool
 	// keepBuiltImage makes Terminate not remove the image if imageWasBuilt.
-	keepBuiltImage       bool
-	provider             *DockerProvider
-	sessionID            string
-	terminationSignal    chan bool
-	consumers            []LogConsumer
-	raw                  *types.ContainerJSON
-	stopLogProductionCh  chan bool
-	logProductionDone    chan bool
-	logProductionError   chan error
-	logProductionMutex   sync.Mutex
+	keepBuiltImage     bool
+	provider           *DockerProvider
+	sessionID          string
+	terminationSignal  chan bool
+	consumers          []LogConsumer
+	raw                *types.ContainerJSON
+	logProductionError chan error
+
+	// TODO: Remove locking and wait group once the deprecated StartLogProducer and
+	// StopLogProducer have been removed and hence logging can only be started and
+	// stopped once.
+
+	// logProductionWaitGroup is used to signal when the log production has stopped.
+	// This allows stopLogProduction to safely set logProductionStop to nil.
+	logProductionWaitGroup sync.WaitGroup
+
+	// logProductionMutex protects logProductionStop channel so it can be started again.
+	logProductionMutex sync.Mutex
+	logProductionStop  chan struct{}
+
 	logProductionTimeout *time.Duration
 	logger               Logging
 	lifecycleHooks       []ContainerLifecycleHooks
@@ -675,9 +685,12 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 		c.logProductionMutex.Lock()
 		defer c.logProductionMutex.Unlock()
 
-		if c.stopLogProductionCh != nil {
+		if c.logProductionStop != nil {
 			return errors.New("log production already started")
 		}
+
+		c.logProductionStop = make(chan struct{})
+		c.logProductionWaitGroup.Add(1)
 	}
 
 	for _, opt := range opts {
@@ -699,21 +712,12 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 		c.logProductionTimeout = &maxLogProductionTimeout
 	}
 
-	c.stopLogProductionCh = make(chan bool)
-	c.logProductionDone = make(chan bool)
 	c.logProductionError = make(chan error, 1)
 
-	go func(stop <-chan bool, done chan<- bool, errorCh chan error) {
-		// signal the log production is done once go routine exits, this prevents race conditions around start/stop
-		// set c.stopLogProductionCh to nil so that it can be started again
+	go func() {
 		defer func() {
-			defer c.logProductionMutex.Unlock()
-			close(done)
-			close(errorCh)
-			{
-				c.logProductionMutex.Lock()
-				c.stopLogProductionCh = nil
-			}
+			close(c.logProductionError)
+			c.logProductionWaitGroup.Done()
 		}()
 
 		since := ""
@@ -731,15 +735,15 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 
 		r, err := c.provider.client.ContainerLogs(ctx, c.GetContainerID(), options)
 		if err != nil {
-			errorCh <- err
+			c.logProductionError <- err
 			return
 		}
 		defer c.provider.Close()
 
 		for {
 			select {
-			case <-stop:
-				errorCh <- r.Close()
+			case <-c.logProductionStop:
+				c.logProductionError <- r.Close()
 				return
 			default:
 				h := make([]byte, 8)
@@ -795,7 +799,7 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 				}
 			}
 		}
-	}(c.stopLogProductionCh, c.logProductionDone, c.logProductionError)
+	}()
 
 	return nil
 }
@@ -805,17 +809,18 @@ func (c *DockerContainer) StopLogProducer() error {
 	return c.stopLogProduction()
 }
 
-// StopLogProducer will stop the concurrent process that is reading logs
+// stopLogProduction will stop the concurrent process that is reading logs
 // and sending them to each added LogConsumer
 func (c *DockerContainer) stopLogProduction() error {
+	// TODO: Remove locking and wait group once StartLogProducer and StopLogProducer
+	// have been removed and hence logging can only be started / stopped once.
 	c.logProductionMutex.Lock()
 	defer c.logProductionMutex.Unlock()
-	if c.stopLogProductionCh != nil {
-		c.stopLogProductionCh <- true
-		// block until the log production is actually done in order to avoid strange races
-		<-c.logProductionDone
-		c.stopLogProductionCh = nil
-		c.logProductionDone = nil
+	if c.logProductionStop != nil {
+		close(c.logProductionStop)
+		c.logProductionWaitGroup.Wait()
+		// Set c.logProductionStop to nil so that it can be started again.
+		c.logProductionStop = nil
 		return <-c.logProductionError
 	}
 	return nil
@@ -1122,17 +1127,16 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	c := &DockerContainer{
-		ID:                  resp.ID,
-		WaitingFor:          req.WaitingFor,
-		Image:               imageName,
-		imageWasBuilt:       req.ShouldBuildImage(),
-		keepBuiltImage:      req.ShouldKeepBuiltImage(),
-		sessionID:           core.SessionID(),
-		provider:            p,
-		terminationSignal:   termSignal,
-		stopLogProductionCh: nil,
-		logger:              p.Logger,
-		lifecycleHooks:      req.LifecycleHooks,
+		ID:                resp.ID,
+		WaitingFor:        req.WaitingFor,
+		Image:             imageName,
+		imageWasBuilt:     req.ShouldBuildImage(),
+		keepBuiltImage:    req.ShouldKeepBuiltImage(),
+		sessionID:         core.SessionID(),
+		provider:          p,
+		terminationSignal: termSignal,
+		logger:            p.Logger,
+		lifecycleHooks:    req.LifecycleHooks,
 	}
 
 	err = c.createdHook(ctx)
@@ -1225,15 +1229,14 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	}
 
 	dc := &DockerContainer{
-		ID:                  c.ID,
-		WaitingFor:          req.WaitingFor,
-		Image:               c.Image,
-		sessionID:           sessionID,
-		provider:            p,
-		terminationSignal:   termSignal,
-		stopLogProductionCh: nil,
-		logger:              p.Logger,
-		lifecycleHooks:      []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)},
+		ID:                c.ID,
+		WaitingFor:        req.WaitingFor,
+		Image:             c.Image,
+		sessionID:         sessionID,
+		provider:          p,
+		terminationSignal: termSignal,
+		logger:            p.Logger,
+		lifecycleHooks:    []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)},
 	}
 
 	err = dc.startedHook(ctx)
@@ -1545,7 +1548,6 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 
 	container.sessionID = core.SessionID()
 	container.consumers = []LogConsumer{}
-	container.stopLogProductionCh = nil
 	container.isRunning = response.State == "running"
 
 	// the termination signal should be obtained from the reaper
