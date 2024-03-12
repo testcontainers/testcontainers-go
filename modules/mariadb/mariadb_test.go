@@ -8,6 +8,7 @@ import (
 
 	// Import mysql into the scope of this package (required)
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mariadb"
@@ -35,6 +36,9 @@ func TestMariaDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	mustConnectionString := container.MustConnectionString(ctx,"tls=false")
+	require.Equal(t,connectionString,mustConnectionString)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {

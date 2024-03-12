@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nats-io/nats.go"
+	"github.com/stretchr/testify/require"
 
 	tcnats "github.com/testcontainers/testcontainers-go/modules/nats"
 )
@@ -32,6 +33,8 @@ func TestNATS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get connection string: %s", err)
 	}
+	mustUri := container.MustConnectionString(ctx)
+	require.Equal(t,uri,mustUri)
 
 	// perform assertions
 	nc, err := nats.Connect(uri)
