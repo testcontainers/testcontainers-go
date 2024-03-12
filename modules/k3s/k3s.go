@@ -34,7 +34,7 @@ const k3sManifests = "/var/lib/rancher/k3s/server/manifests/"
 
 // WithManifest loads the manifest into the cluster. K3s applies it automatically during the startup process
 func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		manifest := filepath.Base(manifestPath)
 		target := k3sManifests + manifest
 
@@ -42,6 +42,8 @@ func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
 			HostFilePath:      manifestPath,
 			ContainerFilePath: target,
 		})
+
+		return nil
 	}
 }
 
