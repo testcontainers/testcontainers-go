@@ -8,7 +8,6 @@ import (
 
 	// Import mysql into the scope of this package (required)
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
 )
@@ -36,7 +35,9 @@ func TestMySQL(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustConnectionString := container.MustConnectionString(ctx,"tls=skip-verify")
-	require.Equal(t,connectionString,mustConnectionString)
+	if mustConnectionString!=connectionString{
+		t.Errorf("ConnectionString was not equal to MustConnectionString")
+	}
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
