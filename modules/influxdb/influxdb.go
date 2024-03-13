@@ -38,10 +38,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		ContainerRequest: req,
 		Started:          true,
 	}
+
 	for _, opt := range opts {
 		opt.Customize(&genericContainerReq)
 	}
+
 	hasInitDb := false
+
 	for _, f := range genericContainerReq.Files {
 		if f.ContainerFilePath == "/" && strings.HasSuffix(f.HostFilePath, "docker-entrypoint-initdb.d") {
 			// Init service in container will start influxdb, run scripts in docker-entrypoint-initdb.d and then
@@ -58,6 +61,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			break
 		}
 	}
+
 	if !hasInitDb {
 		if lastIndex := strings.LastIndex(genericContainerReq.Image, ":"); lastIndex != -1 {
 			tag := genericContainerReq.Image[lastIndex+1:]
@@ -68,10 +72,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			genericContainerReq.WaitingFor = wait.ForLog("Listening for signals")
 		}
 	}
+
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
 	}
+
 	return &InfluxDbContainer{container}, nil
 }
 
@@ -88,17 +94,18 @@ func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context, tls bool) (string
 	if err != nil {
 		return "", err
 	}
+
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err
 	}
-	var connectionString string
+
+	scheme := "http"
 	if tls {
-		connectionString = fmt.Sprintf("https://%s:%s", host, containerPort.Port())
-	} else {
-		connectionString = fmt.Sprintf("http://%s:%s", host, containerPort.Port())
+		scheme = "https"
 	}
-	return connectionString, nil
+
+	return fmt.Sprintf("%s://%s:%s", scheme, host, containerPort.Port()), nil
 }
 
 func WithUsername(username string) testcontainers.CustomizeRequestOption {

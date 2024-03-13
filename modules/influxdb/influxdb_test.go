@@ -3,7 +3,6 @@ package influxdb_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	db1 "github.com/influxdata/influxdb1-client/v2"
@@ -29,9 +28,8 @@ func TestV1Container(t *testing.T) {
 
 	state, err := influxDbContainer.State(ctx)
 	require.NoError(t, err)
-	if state.Running {
-		fmt.Println("InfluxDB container is running")
-	} else {
+
+	if !state.Running {
 		t.Fatal("InfluxDB container is not running")
 	}
 }
@@ -49,9 +47,8 @@ func TestV2Container(t *testing.T) {
 
 	state, err := influxDbContainer.State(ctx)
 	require.NoError(t, err)
-	if state.Running {
-		fmt.Println("InfluxDB container is running")
-	} else {
+
+	if !state.Running {
 		t.Fatal("InfluxDB container is not running")
 	}
 }
@@ -64,11 +61,11 @@ func TestWithInitDb(t *testing.T) {
 	)
 	require.NoError(t, err)
 	defer containerCleanup(t, influxDbContainer)
+
 	if state, err := influxDbContainer.State(ctx); err != nil || !state.Running {
 		require.NoError(t, err)
-		t.Fatal("InfluxDB container is not running")
 	}
-	fmt.Println("InfluxDB container is running")
+
 	influxClient, err := db1.NewHTTPClient(db1.HTTPConfig{
 		Addr: influxDbContainer.MustHaveConnectionUrl(ctx, false),
 	})
