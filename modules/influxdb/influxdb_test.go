@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	db1 "github.com/influxdata/influxdb1-client/v2"
+	influxclient "github.com/influxdata/influxdb1-client/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -74,15 +74,15 @@ func TestWithInitDb(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	influxClient, err := db1.NewHTTPClient(db1.HTTPConfig{
+	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
 		Addr: influxDbContainer.MustHaveConnectionUrl(ctx, false),
 	})
 	require.NoError(t, err)
-	defer influxClient.Close()
+	defer cli.Close()
 
 	expected_0 := `[{"statement_id":0,"Series":[{"name":"h2o_feet","tags":{"location":"coyote_creek"},"columns":["time","location","max"],"values":[[1566977040,"coyote_creek",9.964]]},{"name":"h2o_feet","tags":{"location":"santa_monica"},"columns":["time","location","max"],"values":[[1566964440,"santa_monica",7.205]]}],"Messages":null}]`
-	q := db1.NewQuery(`select "location", MAX("water_level") from "h2o_feet" group by "location"`, "NOAA_water_database", "s")
-	response, err := influxClient.Query(q)
+	q := influxclient.NewQuery(`select "location", MAX("water_level") from "h2o_feet" group by "location"`, "NOAA_water_database", "s")
+	response, err := cli.Query(q)
 	require.NoError(t, err)
 
 	if response.Error() != nil {
@@ -110,13 +110,13 @@ func TestWithConfigFile(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	influxClient, err := db1.NewHTTPClient(db1.HTTPConfig{
+	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
 		Addr: influxDbContainer.MustHaveConnectionUrl(context.Background(), false),
 	})
 	require.NoError(t, err)
-	defer influxClient.Close()
+	defer cli.Close()
 
-	ping, version, err := influxClient.Ping(5 * time.Second)
+	ping, version, err := cli.Ping(5 * time.Second)
 	require.NoError(t, err)
 
 	assert.Equal(t, "1.8.10", version)
