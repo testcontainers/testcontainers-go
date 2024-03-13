@@ -3,7 +3,10 @@ package k6
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/docker/docker/api/types/mount"
@@ -36,6 +39,41 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 		// add script to the k6 run command
 		req.Cmd = append(req.Cmd, target)
 	}
+}
+
+func downloadFile(uri string, downloadPath string ) error {
+
+	// Get the data
+	resp, err := http.Get(uri)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	out, err := os.Create(downloadPath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+
+func WithRemoteTestScript(uri string,downloadDir string) testcontainers.CustomizeRequestOption {
+
+	baseName := path.Base(uri)
+	downloadPath := path.Join(downloadDir,baseName)
+
+	err := downloadFile(uri,downloadPath)
+	if err != nil {
+		panic("Not able to download required test script")
+	}
+
+	return WithTestScript(downloadPath)
 }
 
 // WithCmdOptions pass the given options to the k6 run command
