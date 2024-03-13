@@ -9,6 +9,11 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
+const (
+	nginxAlpineImage = "docker.io/nginx:alpine"
+	nginxDefaultPort = "80/tcp"
+)
+
 func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr testcontainers.Container) {
 	tb.Helper()
 	if ctr == nil {
