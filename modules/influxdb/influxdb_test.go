@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"testing"
+	"time"
 
 	db1 "github.com/influxdata/influxdb1-client/v2"
 	"github.com/stretchr/testify/assert"
@@ -91,4 +92,33 @@ func TestWithInitDb(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.JSONEq(t, expected_0, string(testJson))
+}
+
+func TestWithConfigFile(t *testing.T) {
+	influxVersion := "1.8.10"
+
+	influxDbContainer, err := influxdb.RunContainer(context.Background(),
+		testcontainers.WithImage("influxdb:"+influxVersion),
+		influxdb.WithConfigFile(filepath.Join("testdata", "influxdb.conf")),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		containerCleanup(t, influxDbContainer)
+	})
+
+	if state, err := influxDbContainer.State(context.Background()); err != nil || !state.Running {
+		require.NoError(t, err)
+	}
+
+	influxClient, err := db1.NewHTTPClient(db1.HTTPConfig{
+		Addr: influxDbContainer.MustHaveConnectionUrl(context.Background(), false),
+	})
+	require.NoError(t, err)
+	defer influxClient.Close()
+
+	ping, version, err := influxClient.Ping(5 * time.Second)
+	require.NoError(t, err)
+
+	assert.Equal(t, "1.8.10", version)
+	assert.True(t, ping > 0)
 }
