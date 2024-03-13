@@ -57,11 +57,15 @@ If you want to test with credentials, include the appropriate environment variab
 #### Init Scripts
 
 While the InfluxDB image will obey the `/docker-entrypoint-initdb.d` directory as is common, that directory does not
-exist in the default image.  Instead, you can use the `WithInitDb` option to pass a directory which will be copied to
-when the container starts.  Any *.sh or *.iql files in the directory will be processed by the image upon startup.
+exist in the default image. Instead, you can use the `WithInitDb` option to pass a directory which will be copied to
+when the container starts. Any `*.sh` or `*.iql` files in the directory will be processed by the image upon startup.
 When executing these scripts, the `init-influxdb.sh` script in the image will start the InfluxDB server, run the
-scripts, stop the server, and restart the server.  This makes it tricky to detect the ready-ness of the container.
-This module looks for that and adds some extra tests for ready-ness, but these could be fragile.
+scripts, stop the server, and restart the server.  This makes it tricky to detect the readiness of the container.
+This module looks for that and adds some extra tests for readiness, but these could be fragile.
+
+!!!important
+    The `WithInitDb` option receives a path to the parent directory of one named `docker-entrypoint-initdb.d`. This is
+    because the `docker-entrypoint-initdb.d` directory is not present in the image.
 
 #### Custom configuration
 
@@ -72,3 +76,10 @@ If you need to set a custom configuration, you can use `WithConfigFile` option t
 #### ConnectionUrl
 
 This function is a simple helper to return a URL to the container, using the default `8086` port.
+
+<!--codeinclude-->
+[ConnectionUrl](../../modules/influxdb/influxdb_test.go) inside_block:influxConnectionUrl
+<!--/codeinclude-->
+
+Please check the existence of two methods: `ConnectionUrl` and `MustConnectionUrl`. The latter is used to avoid the need to handle errors,
+while the former is used to return the URL and the error. `MustConnectionUrl` will panic if an error occurs.

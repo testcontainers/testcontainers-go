@@ -110,9 +110,11 @@ func TestWithConfigFile(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	/// influxConnectionUrl {
 	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
 		Addr: influxDbContainer.MustHaveConnectionUrl(context.Background(), false),
 	})
+	// }
 	require.NoError(t, err)
 	defer cli.Close()
 
