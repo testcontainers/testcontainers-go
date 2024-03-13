@@ -3,6 +3,7 @@ package influxdb_test
 import (
 	"context"
 	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	db1 "github.com/influxdata/influxdb1-client/v2"
@@ -61,7 +62,7 @@ func TestWithInitDb(t *testing.T) {
 	ctx := context.Background()
 	influxDbContainer, err := influxdb.RunContainer(ctx,
 		testcontainers.WithImage("influxdb:1.8.10"),
-		influxdb.WithInitDb("."),
+		influxdb.WithInitDb(filepath.Join("testdata")),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() {
