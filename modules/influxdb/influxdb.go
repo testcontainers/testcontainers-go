@@ -81,7 +81,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &InfluxDbContainer{container}, nil
 }
 
-func (c *InfluxDbContainer) MustHaveConnectionUrl(ctx context.Context, tls bool) string {
+func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context, tls bool) string {
 	connectionString, err := c.ConnectionUrl(ctx, tls)
 	if err != nil {
 		panic(err)
