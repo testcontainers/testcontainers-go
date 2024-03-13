@@ -3,14 +3,20 @@ package redpanda
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	_ "embed"
 	"fmt"
+	"math"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -31,6 +37,7 @@ const (
 	defaultKafkaAPIPort       = "9092/tcp"
 	defaultAdminAPIPort       = "9644/tcp"
 	defaultSchemaRegistryPort = "8081/tcp"
+	defaultDockerKafkaApiPort = "29092"
 
 	redpandaDir         = "/etc/redpanda"
 	entrypointFile      = "/entrypoint-tc.sh"
@@ -57,7 +64,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	// Some (e.g. Image) may be overridden by providing an option argument to this function.
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.redpanda.com/redpandadata/redpanda:v23.1.7",
+			Image: "docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 			User:  "root:root",
 			// Files: Will be added later after we've rendered our YAML templates.
 			ExposedPorts: []string{
@@ -87,6 +94,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		opt.Customize(&req)
 	}
 
+	// 2.1. If the image is not at least v23.3, disable wasm transform
+	if !isAtLeastVersion(req.ContainerRequest.Image, "23.3") {
+		settings.EnableWasmTransform = false
+	}
+
 	// 3. Create temporary entrypoint file. We need a custom entrypoint that waits
 	// until the actual Redpanda node config is mounted. Once the redpanda config is
 	// mounted we will call the original entrypoint with the same parameters.
@@ -96,6 +108,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	entrypointPath := filepath.Join(tmpDir, entrypointFile)
 	if err := os.WriteFile(entrypointPath, entrypoint, 0o700); err != nil {
 		return nil, fmt.Errorf("failed to create entrypoint file: %w", err)
+	}
+
+	// 4. Register extra kafka listeners if provided, network aliases will be
+	// set
+	if err := registerListeners(ctx, settings, req); err != nil {
+		return nil, fmt.Errorf("failed to register listeners: %w", err)
 	}
 
 	// Bootstrap config file contains cluster configurations which will only be considered
@@ -122,7 +140,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		},
 	)
 
-	// 4. Create certificate and key for TLS connections.
+	// 5. Create certificate and key for TLS connections.
 	if settings.EnableTLS {
 		certPath := filepath.Join(tmpDir, certFile)
 		if err := os.WriteFile(certPath, settings.cert, 0o600); err != nil {
@@ -152,7 +170,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	// 5. Get mapped port for the Kafka API, so that we can render and then mount
+	// 6. Get mapped port for the Kafka API, so that we can render and then mount
 	// the Redpanda config with the advertised Kafka address.
 	hostIP, err := container.Host(ctx)
 	if err != nil {
@@ -164,7 +182,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("failed to get mapped Kafka port: %w", err)
 	}
 
-	// 6. Render redpanda.yaml config and mount it.
+	// 7. Render redpanda.yaml config and mount it.
 	nodeConfig, err := renderNodeConfig(settings, hostIP, kafkaPort.Int())
 	if err != nil {
 		return nil, fmt.Errorf("failed to render node config: %w", err)
@@ -175,34 +193,55 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("failed to copy redpanda.yaml into container: %w", err)
 	}
 
-	// 6. Wait until Redpanda is ready to serve requests
-	err = wait.ForLog("Successfully started Redpanda!").
-		WithPollInterval(100*time.Millisecond).
+	// 8. Wait until Redpanda is ready to serve requests
+	err = wait.ForAll(
+		wait.ForListeningPort(defaultKafkaAPIPort),
+		wait.ForLog("Successfully started Redpanda!").WithPollInterval(100*time.Millisecond)).
 		WaitUntilReady(ctx, container)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
 	}
 
-	// 7. Create Redpanda Service Accounts if configured to do so.
+	scheme := "http"
+	if settings.EnableTLS {
+		scheme += "s"
+	}
+
+	// 9. Create Redpanda Service Accounts if configured to do so.
 	if len(settings.ServiceAccounts) > 0 {
 		adminAPIPort, err := container.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get mapped Admin API port: %w", err)
 		}
 
-		adminAPIUrl := fmt.Sprintf("http://%v:%d", hostIP, adminAPIPort.Int())
+		adminAPIUrl := fmt.Sprintf("%s://%v:%d", scheme, hostIP, adminAPIPort.Int())
 		adminCl := NewAdminAPIClient(adminAPIUrl)
+		if settings.EnableTLS {
+			cert, err := tls.X509KeyPair(settings.cert, settings.key)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create admin client with cert: %w", err)
+			}
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(settings.cert)
+			adminCl = adminCl.WithHTTPClient(&http.Client{
+				Timeout: 5 * time.Second,
+				Transport: &http.Transport{
+					ForceAttemptHTTP2:   true,
+					TLSHandshakeTimeout: 10 * time.Second,
+					TLSClientConfig: &tls.Config{
+						Certificates: []tls.Certificate{cert},
+						RootCAs:      caCertPool,
+					},
+				},
+			})
+		}
 
 		for username, password := range settings.ServiceAccounts {
 			if err := adminCl.CreateUser(ctx, username, password); err != nil {
 				return nil, fmt.Errorf("failed to create service account with username %q: %w", username, err)
 			}
 		}
-	}
-
-	scheme := "http"
-	if settings.EnableTLS {
-		scheme += "s"
 	}
 
 	return &Container{Container: container, urlScheme: scheme}, nil
@@ -235,6 +274,7 @@ func renderBootstrapConfig(settings options) ([]byte, error) {
 		Superusers:                  settings.Superusers,
 		KafkaAPIEnableAuthorization: settings.KafkaEnableAuthorization,
 		AutoCreateTopics:            settings.AutoCreateTopics,
+		EnableWasmTransform:         settings.EnableWasmTransform,
 	}
 
 	tpl, err := template.New("bootstrap.yaml").Parse(bootstrapConfigTpl)
@@ -250,6 +290,29 @@ func renderBootstrapConfig(settings options) ([]byte, error) {
 	return bootstrapConfig.Bytes(), nil
 }
 
+// registerListeners validates that the provided listeners are valid and set network aliases for the provided addresses.
+// The container must be attached to at least one network.
+func registerListeners(ctx context.Context, settings options, req testcontainers.GenericContainerRequest) error {
+	if len(settings.Listeners) == 0 {
+		return nil
+	}
+
+	if len(req.Networks) == 0 {
+		return fmt.Errorf("container must be attached to at least one network")
+	}
+
+	for _, listener := range settings.Listeners {
+		if listener.Port < 0 || listener.Port > math.MaxUint16 {
+			return fmt.Errorf("invalid port on listener %s:%d (must be between 0 and 65535)", listener.Address, listener.Port)
+		}
+
+		for _, network := range req.Networks {
+			req.NetworkAliases[network] = append(req.NetworkAliases[network], listener.Address)
+		}
+	}
+	return nil
+}
+
 // renderNodeConfig renders the redpanda.yaml node config and returns it as
 // byte array.
 func renderNodeConfig(settings options, hostIP string, advertisedKafkaPort int) ([]byte, error) {
@@ -260,6 +323,7 @@ func renderNodeConfig(settings options, hostIP string, advertisedKafkaPort int) 
 			AdvertisedPort:       advertisedKafkaPort,
 			AuthenticationMethod: settings.KafkaAuthenticationMethod,
 			EnableAuthorization:  settings.KafkaEnableAuthorization,
+			Listeners:            settings.Listeners,
 		},
 		SchemaRegistry: redpandaConfigTplParamsSchemaRegistry{
 			AuthenticationMethod: settings.SchemaRegistryAuthenticationMethod,
@@ -284,6 +348,7 @@ type redpandaBootstrapConfigTplParams struct {
 	Superusers                  []string
 	KafkaAPIEnableAuthorization bool
 	AutoCreateTopics            bool
+	EnableWasmTransform         bool
 }
 
 type redpandaConfigTplParams struct {
@@ -298,8 +363,35 @@ type redpandaConfigTplParamsKafkaAPI struct {
 	AdvertisedPort       int
 	AuthenticationMethod string
 	EnableAuthorization  bool
+	Listeners            []listener
 }
 
 type redpandaConfigTplParamsSchemaRegistry struct {
 	AuthenticationMethod string
+}
+
+type listener struct {
+	Address              string
+	Port                 int
+	AuthenticationMethod string
+}
+
+// isAtLeastVersion returns true if the base image (without tag) is in a version or above
+func isAtLeastVersion(image, major string) bool {
+	parts := strings.Split(image, ":")
+	version := parts[len(parts)-1]
+
+	if version == "latest" {
+		return true
+	}
+
+	if !strings.HasPrefix(version, "v") {
+		version = fmt.Sprintf("v%s", version)
+	}
+
+	if semver.IsValid(version) {
+		return semver.Compare(version, fmt.Sprintf("v%s", major)) >= 0 // version >= v8.x
+	}
+
+	return false
 }

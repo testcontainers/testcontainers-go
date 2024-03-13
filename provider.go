@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
 // possible provider types
@@ -146,7 +146,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 
 	tcConfig := ReadConfig()
 
-	dockerHost := testcontainersdocker.ExtractDockerHost(ctx)
+	dockerHost := core.ExtractDockerHost(ctx)
 
 	p := &DockerProvider{
 		DockerProviderOptions: o,

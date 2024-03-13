@@ -6,10 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -60,42 +61,24 @@ func isVersion2(image string) bool {
 
 // WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
 // on that network to the given alias.
+// Deprecated: use network.WithNetwork or network.WithNewNetwork instead
 func WithNetwork(networkName string, alias string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		_, err := testcontainers.GenericNetwork(context.Background(), testcontainers.GenericNetworkRequest{
-			NetworkRequest: testcontainers.NetworkRequest{
-				Name: networkName,
-			},
-		})
-		if err != nil {
-			logger := req.Logger
-			if logger == nil {
-				logger = testcontainers.Logger
-			}
-			logger.Printf("Failed to create network '%s'. Container won't be attached to this network: %v", networkName, err)
-			return
-		}
-
-		req.Networks = append(req.Networks, networkName)
-
-		if req.NetworkAliases == nil {
-			req.NetworkAliases = make(map[string][]string)
-		}
-		req.NetworkAliases[networkName] = []string{alias}
-	}
+	return network.WithNewNetwork(context.Background(), []string{alias}, network.WithCheckDuplicate())
 }
 
 // RunContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error) {
-	dockerHost := testcontainersdocker.ExtractDockerSocket(ctx)
+	dockerHost := testcontainers.ExtractDockerSocket()
 
 	req := testcontainers.ContainerRequest{
 		Image:        fmt.Sprintf("localstack/localstack:%s", defaultVersion),
-		Binds:        []string{fmt.Sprintf("%s:/var/run/docker.sock", dockerHost)},
 		WaitingFor:   wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120 * time.Second),
 		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
 		Env:          map[string]string{},
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			hostConfig.Binds = []string{fmt.Sprintf("%s:/var/run/docker.sock", dockerHost)}
+		},
 	}
 
 	localStackReq := LocalStackContainerRequest{
@@ -143,13 +126,11 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 	return RunContainer(ctx, overrideReq)
 }
 
-func configureDockerHost(req *LocalStackContainerRequest, envVar string) (reason string, err error) {
-	err = nil
-	reason = ""
+func configureDockerHost(req *LocalStackContainerRequest, envVar string) (string, error) {
+	reason := ""
 
 	if _, ok := req.Env[envVar]; ok {
-		reason = "explicitly as environment variable"
-		return
+		return "explicitly as environment variable", nil
 	}
 
 	// if the container is not connected to the default network, use the last network alias in the first network
@@ -158,25 +139,20 @@ func configureDockerHost(req *LocalStackContainerRequest, envVar string) (reason
 		alias := req.NetworkAliases[req.Networks[0]][len(req.NetworkAliases[req.Networks[0]])-1]
 
 		req.Env[envVar] = alias
-		reason = "to match last network alias on container with non-default network"
-		return
+		return "to match last network alias on container with non-default network", nil
 	}
 
-	var dockerProvider *testcontainers.DockerProvider
-	dockerProvider, err = testcontainers.NewDockerProvider()
+	dockerProvider, err := testcontainers.NewDockerProvider()
 	if err != nil {
-		return
+		return reason, err
 	}
 	defer dockerProvider.Close()
 
-	var daemonHost string
-	daemonHost, err = dockerProvider.DaemonHost(context.Background())
+	daemonHost, err := dockerProvider.DaemonHost(context.Background())
 	if err != nil {
-		return
+		return reason, err
 	}
 
 	req.Env[envVar] = daemonHost
-	reason = "to match host-routable address for container"
-
-	return
+	return "to match host-routable address for container", nil
 }

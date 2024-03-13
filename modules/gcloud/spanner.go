@@ -18,7 +18,7 @@ func RunSpannerContainer(ctx context.Context, opts ...testcontainers.ContainerCu
 		Started: true,
 	}
 
-	settings := applyOptions(req, opts)
+	settings := applyOptions(&req, opts)
 
 	container, err := testcontainers.GenericContainer(ctx, req)
 	if err != nil {

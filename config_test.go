@@ -1,10 +1,11 @@
-package testcontainers
+package testcontainers_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
@@ -26,9 +27,9 @@ func TestReadConfig(t *testing.T) {
 		t.Setenv("USERPROFILE", "") // Windows support
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 
-		cfg := ReadConfig()
+		cfg := testcontainers.ReadConfig()
 
-		expected := TestcontainersConfig{
+		expected := testcontainers.TestcontainersConfig{
 			RyukDisabled: true,
 			Config: config.Config{
 				RyukDisabled: true,
@@ -38,7 +39,7 @@ func TestReadConfig(t *testing.T) {
 		assert.Equal(t, expected, cfg)
 
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "false")
-		cfg = ReadConfig()
+		cfg = testcontainers.ReadConfig()
 		assert.Equal(t, expected, cfg)
 	})
 }

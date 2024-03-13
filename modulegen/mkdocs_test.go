@@ -51,9 +51,9 @@ func TestReadMkDocsConfig(t *testing.T) {
 	// nav bar
 	nav := config.Nav
 	assert.Equal(t, "index.md", nav[0].Home)
-	assert.Greater(t, len(nav[2].Features), 0)
-	assert.Greater(t, len(nav[3].Modules), 0)
-	assert.Greater(t, len(nav[4].Examples), 0)
+	assert.NotEmpty(t, nav[2].Features)
+	assert.NotEmpty(t, nav[3].Modules)
+	assert.NotEmpty(t, nav[4].Examples)
 }
 
 func TestNavItems(t *testing.T) {
@@ -64,7 +64,7 @@ func TestNavItems(t *testing.T) {
 	require.NoError(t, err)
 
 	// we have to remove the index.md file from the examples docs
-	assert.Equal(t, len(examplesDocs)-1, len(examples))
+	assert.Len(t, examples, len(examplesDocs)-1)
 
 	// all example modules exist in the documentation
 	for _, example := range examples {

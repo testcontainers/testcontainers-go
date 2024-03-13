@@ -1,3 +1,5 @@
+// This test is testing very internal logic that should not be exported away from this package. We'll
+// leave it in the main testcontainers package. Do not use for user facing examples.
 package testcontainers
 
 import (
@@ -44,9 +46,9 @@ func Test_IsDir(t *testing.T) {
 		t.Run(test.filepath, func(t *testing.T) {
 			result, err := isDir(test.filepath)
 			if test.err != nil {
-				assert.NotNil(t, err, "expected error")
+				require.Error(t, err, "expected error")
 			} else {
-				assert.Nil(t, err, "not expected error")
+				require.NoError(t, err, "not expected error")
 			}
 			assert.Equal(t, test.expected, result)
 		})
@@ -71,7 +73,7 @@ func Test_TarDir(t *testing.T) {
 			src := originalSrc
 			if test.abs {
 				absSrc, err := filepath.Abs(src)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				src = absSrc
 			}

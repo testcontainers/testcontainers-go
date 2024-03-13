@@ -6,14 +6,6 @@
             "path": "../"
         },
         {
-            "name": "example / cockroachdb",
-            "path": "../examples/cockroachdb"
-        },
-        {
-            "name": "example / consul",
-            "path": "../examples/consul"
-        },
-        {
             "name": "example / nginx",
             "path": "../examples/nginx"
         },
@@ -30,12 +22,24 @@
             "path": "../modules/cassandra"
         },
         {
+            "name": "module / chroma",
+            "path": "../modules/chroma"
+        },
+        {
             "name": "module / clickhouse",
             "path": "../modules/clickhouse"
         },
         {
+            "name": "module / cockroachdb",
+            "path": "../modules/cockroachdb"
+        },
+        {
             "name": "module / compose",
             "path": "../modules/compose"
+        },
+        {
+            "name": "module / consul",
+            "path": "../modules/consul"
         },
         {
             "name": "module / couchbase",
@@ -48,6 +52,14 @@
         {
             "name": "module / gcloud",
             "path": "../modules/gcloud"
+        },
+        {
+            "name": "module / inbucket",
+            "path": "../modules/inbucket"
+        },
+        {
+            "name": "module / influxdb",
+            "path": "../modules/influxdb"
         },
         {
             "name": "module / k3s",
@@ -70,8 +82,24 @@
             "path": "../modules/mariadb"
         },
         {
+            "name": "module / milvus",
+            "path": "../modules/milvus"
+        },
+        {
+            "name": "module / minio",
+            "path": "../modules/minio"
+        },
+        {
+            "name": "module / mockserver",
+            "path": "../modules/mockserver"
+        },
+        {
             "name": "module / mongodb",
             "path": "../modules/mongodb"
+        },
+        {
+            "name": "module / mssql",
+            "path": "../modules/mssql"
         },
         {
             "name": "module / mysql",
@@ -86,12 +114,32 @@
             "path": "../modules/neo4j"
         },
         {
+            "name": "module / ollama",
+            "path": "../modules/ollama"
+        },
+        {
+            "name": "module / openfga",
+            "path": "../modules/openfga"
+        },
+        {
+            "name": "module / openldap",
+            "path": "../modules/openldap"
+        },
+        {
+            "name": "module / opensearch",
+            "path": "../modules/opensearch"
+        },
+        {
             "name": "module / postgres",
             "path": "../modules/postgres"
         },
         {
             "name": "module / pulsar",
             "path": "../modules/pulsar"
+        },
+        {
+            "name": "module / qdrant",
+            "path": "../modules/qdrant"
         },
         {
             "name": "module / rabbitmq",
@@ -106,8 +154,16 @@
             "path": "../modules/redpanda"
         },
         {
+            "name": "module / surrealdb",
+            "path": "../modules/surrealdb"
+        },
+        {
             "name": "module / vault",
             "path": "../modules/vault"
+        },
+        {
+            "name": "module / weaviate",
+            "path": "../modules/weaviate"
         },
         {
             "name": "modulegen",

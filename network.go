@@ -13,21 +13,26 @@ type NetworkProvider interface {
 	GetNetwork(context.Context, NetworkRequest) (types.NetworkResource, error) // get a network
 }
 
+// Deprecated: will be removed in the future
 // Network allows getting info about a single network instance
 type Network interface {
 	Remove(context.Context) error // removes the network
 }
 
+// Deprecated: will be removed in the future.
 type DefaultNetwork string
 
+// Deprecated: will be removed in the future.
 func (n DefaultNetwork) ApplyGenericTo(opts *GenericProviderOptions) {
 	opts.DefaultNetwork = string(n)
 }
 
+// Deprecated: will be removed in the future.
 func (n DefaultNetwork) ApplyDockerTo(opts *DockerProviderOptions) {
 	opts.DefaultNetwork = string(n)
 }
 
+// Deprecated: will be removed in the future
 // NetworkRequest represents the parameters used to get a network
 type NetworkRequest struct {
 	Driver         string
@@ -41,5 +46,5 @@ type NetworkRequest struct {
 
 	SkipReaper    bool              // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
 	ReaperImage   string            // Deprecated: use WithImageName ContainerOption instead. Alternative reaper registry
-	ReaperOptions []ContainerOption // Reaper options to use for this network
+	ReaperOptions []ContainerOption // Deprecated: the reaper is configured at the properties level, for an entire test session
 }

@@ -3,13 +3,16 @@ package testcontainers
 import (
 	"context"
 	"errors"
-	"io"
+	"net/http"
+	"os"
+	"os/exec"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -100,40 +103,89 @@ func TestGenericReusableContainer(t *testing.T) {
 	}
 }
 
-type testExecutable struct {
-	cmds []string
-}
+func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
+	// In this test, we are going to cancel the context to exit the `wait.Strategy`.
+	// We want to make sure that the GenericContainer call will still return a reference to the
+	// created container, so that we can Destroy it.
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-func (t testExecutable) AsCommand() []string {
-	return t.cmds
-}
-
-func TestWithStartupCommand(t *testing.T) {
-	req := GenericContainerRequest{
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image:      "alpine",
-			Entrypoint: []string{"tail", "-f", "/dev/null"},
+			Image:      nginxAlpineImage,
+			WaitingFor: wait.ForLog("this string should not be present in the logs"),
 		},
 		Started: true,
+	})
+	require.Error(t, err)
+	require.NotNil(t, c)
+	terminateContainerOnEnd(t, context.Background(), c)
+}
+
+func TestGenericReusableContainerInSubprocess(t *testing.T) {
+	wg := sync.WaitGroup{}
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
+		go func() {
+			defer wg.Done()
+
+			// create containers in subprocesses, as "go test ./..." does.
+			output := createReuseContainerInSubprocess(t)
+
+			// check is reuse container with WaitingFor work correctly.
+			require.True(t, strings.Contains(output, "🚧 Waiting for container id"))
+			require.True(t, strings.Contains(output, "🔔 Container is ready"))
+		}()
 	}
 
-	testExec := testExecutable{
-		cmds: []string{"touch", "/tmp/.testcontainers"},
+	wg.Wait()
+}
+
+func createReuseContainerInSubprocess(t *testing.T) string {
+	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess")
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(output))
+
+	return string(output)
+}
+
+// TestHelperContainerStarterProcess is a helper function
+// to start a container in a subprocess. It's not a real test.
+func TestHelperContainerStarterProcess(t *testing.T) {
+	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+		t.Skip("Skipping helper test function. It's not a real test")
 	}
 
-	WithStartupCommand(testExec)(&req)
+	ctx := context.Background()
 
-	c, err := GenericContainer(context.Background(), req)
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image:        nginxDelayedImage,
+			ExposedPorts: []string{nginxDefaultPort},
+			WaitingFor:   wait.ForListeningPort(nginxDefaultPort), // default startupTimeout is 60s
+			Name:         reusableContainerName,
+		},
+		Started: true,
+		Reuse:   true,
+	})
 	require.NoError(t, err)
-	defer func() {
-		err = c.Terminate(context.Background())
-		require.NoError(t, err)
-	}()
+	require.True(t, nginxC.IsRunning())
 
-	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
+	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
 
-	content, err := io.ReadAll(reader)
+	// check is reuse container with WaitingFor work correctly.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, origin, nil)
 	require.NoError(t, err)
-	assert.Equal(t, "/tmp/.testcontainers\n", string(content))
+	req.Close = true
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }

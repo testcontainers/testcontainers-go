@@ -12,10 +12,19 @@ import (
 
 type AdminAPIClient struct {
 	BaseURL string
+	client  *http.Client
 }
 
 func NewAdminAPIClient(baseURL string) *AdminAPIClient {
-	return &AdminAPIClient{BaseURL: baseURL}
+	return &AdminAPIClient{
+		BaseURL: baseURL,
+		client:  http.DefaultClient,
+	}
+}
+
+func (cl *AdminAPIClient) WithHTTPClient(c *http.Client) *AdminAPIClient {
+	cl.client = c
+	return cl
 }
 
 type createUserRequest struct {
@@ -46,7 +55,7 @@ func (cl *AdminAPIClient) CreateUser(ctx context.Context, username, password str
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := cl.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}

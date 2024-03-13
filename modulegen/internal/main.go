@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
-	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/make"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/module"
@@ -34,17 +33,22 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	}
 
 	cmdDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
-	err = tools.GoModTidy(cmdDir)
-	if err != nil {
-		return fmt.Errorf(">> error synchronizing the dependencies: %w", err)
-	}
-	err = tools.GoVet(cmdDir)
-	if err != nil {
-		return fmt.Errorf(">> error checking generated code: %w", err)
+	lintCmds := []func(string) error{
+		tools.GoModTidy,
+		tools.GoVet,
+		tools.MakeLint,
 	}
 
-	fmt.Println("Please go to", cmdDir, "directory to check the results, where 'go mod tidy' and 'go vet' was executed to synchronize the dependencies")
-	fmt.Println("Commit the modified files and submit a pull request to include them into the project")
+	for _, lintCmd := range lintCmds {
+		err = lintCmd(cmdDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	fmt.Println("Please go to", cmdDir, "directory to check the results, where 'go mod tidy', 'go vet' and 'make lint' were executed.")
+	fmt.Println("🙏 Commit the modified files and submit a pull request to include them into the project.")
+	fmt.Println("Remember to run 'make lint' before submitting the pull request.")
 	fmt.Println("Thanks!")
 	return nil
 }
@@ -62,10 +66,9 @@ func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) e
 	}
 
 	fileGenerators := []FileGenerator{
-		make.Generator{},       // creates Makefile for module
-		module.Generator{},     // creates go.mod for module
-		mkdocs.Generator{},     // update examples in mkdocs
-		dependabot.Generator{}, // update examples in dependabot
+		make.Generator{},   // creates Makefile for module
+		module.Generator{}, // creates go.mod for module
+		mkdocs.Generator{}, // update examples in mkdocs
 	}
 
 	for _, generator := range fileGenerators {

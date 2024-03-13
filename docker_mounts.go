@@ -3,12 +3,13 @@ package testcontainers
 import "github.com/docker/docker/api/types/mount"
 
 var mountTypeMapping = map[MountType]mount.Type{
-	MountTypeBind:   mount.TypeBind,
+	MountTypeBind:   mount.TypeBind, // Deprecated, it will be removed in a future release
 	MountTypeVolume: mount.TypeVolume,
 	MountTypeTmpfs:  mount.TypeTmpfs,
 	MountTypePipe:   mount.TypeNamedPipe,
 }
 
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 // BindMounter can optionally be implemented by mount sources
 // to support advanced scenarios based on mount.BindOptions
 type BindMounter interface {
@@ -27,6 +28,7 @@ type TmpfsMounter interface {
 	GetTmpfsOptions() *mount.TmpfsOptions
 }
 
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 type DockerBindMountSource struct {
 	*mount.BindOptions
 
@@ -35,14 +37,17 @@ type DockerBindMountSource struct {
 	HostPath string
 }
 
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 func (s DockerBindMountSource) Source() string {
 	return s.HostPath
 }
 
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 func (DockerBindMountSource) Type() MountType {
 	return MountTypeBind
 }
 
+// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 func (s DockerBindMountSource) GetBindOptions() *mount.BindOptions {
 	return s.BindOptions
 }
@@ -76,6 +81,12 @@ func (s DockerTmpfsMountSource) GetTmpfsOptions() *mount.TmpfsOptions {
 	return s.TmpfsOptions
 }
 
+// PrepareMounts maps the given []ContainerMount to the corresponding
+// []mount.Mount for further processing
+func (m ContainerMounts) PrepareMounts() []mount.Mount {
+	return mapToDockerMounts(m)
+}
+
 // mapToDockerMounts maps the given []ContainerMount to the corresponding
 // []mount.Mount for further processing
 func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
@@ -99,12 +110,25 @@ func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
 		}
 
 		switch typedMounter := m.Source.(type) {
-		case BindMounter:
-			containerMount.BindOptions = typedMounter.GetBindOptions()
 		case VolumeMounter:
 			containerMount.VolumeOptions = typedMounter.GetVolumeOptions()
 		case TmpfsMounter:
 			containerMount.TmpfsOptions = typedMounter.GetTmpfsOptions()
+		case BindMounter:
+			Logger.Printf("Mount type %s is not supported by Testcontainers for Go", m.Source.Type())
+		default:
+			// The provided source type has no custom options
+		}
+
+		if mountType == mount.TypeVolume {
+			if containerMount.VolumeOptions == nil {
+				containerMount.VolumeOptions = &mount.VolumeOptions{
+					Labels: make(map[string]string),
+				}
+			}
+			for k, v := range GenericLabels() {
+				containerMount.VolumeOptions.Labels[k] = v
+			}
 		}
 
 		mounts = append(mounts, containerMount)

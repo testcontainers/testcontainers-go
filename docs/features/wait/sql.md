@@ -20,3 +20,5 @@ req := ContainerRequest{
         WithQuery("SELECT 10"),
 }
 ```
+
+Note: You'll also need to import the appropriate [database driver](https://github.com/golang/go/wiki/SQLDrivers) in your test code such that Testcontainers can pick it up when connecting to the database.

@@ -1,4 +1,4 @@
-package mysql
+package mysql_test
 
 import (
 	"context"
@@ -9,13 +9,13 @@ import (
 	// Import mysql into the scope of this package (required)
 	_ "github.com/go-sql-driver/mysql"
 
-	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/mysql"
 )
 
 func TestMySQL(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx)
+	container, err := mysql.RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,10 +57,10 @@ func TestMySQL(t *testing.T) {
 func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := RunContainer(ctx,
-		WithDatabase("foo"),
-		WithUsername("test"),
-		WithPassword(""))
+	_, err := mysql.RunContainer(ctx,
+		mysql.WithDatabase("foo"),
+		mysql.WithUsername("test"),
+		mysql.WithPassword(""))
 	if err.Error() != "empty password can be used only with the root user" {
 		t.Fatal(err)
 	}
@@ -69,10 +69,10 @@ func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx,
-		WithDatabase("foo"),
-		WithUsername("root"),
-		WithPassword(""))
+	container, err := mysql.RunContainer(ctx,
+		mysql.WithDatabase("foo"),
+		mysql.WithUsername("root"),
+		mysql.WithPassword(""))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,55 +106,11 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 	}
 }
 
-func TestMySQLWithConfigFile(t *testing.T) {
-	ctx := context.Background()
-
-	container, err := RunContainer(ctx, testcontainers.WithImage("mysql:5.6"),
-		WithConfigFile(filepath.Join("testdata", "my_5.6.cnf")))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
-	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
-
-	db, err := sql.Open("mysql", connectionString)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		t.Errorf("error pinging db: %+v\n", err)
-	}
-	stmt, err := db.Prepare("SELECT @@GLOBAL.innodb_file_format")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer stmt.Close()
-	row := stmt.QueryRow()
-	innodbFileFormat := ""
-	err = row.Scan(&innodbFileFormat)
-	if err != nil {
-		t.Errorf("error fetching innodb_file_format value")
-	}
-	if innodbFileFormat != "Barracuda" {
-		t.Fatal("The InnoDB file format has been set by the ini file content")
-	}
-}
-
 func TestMySQLWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx,
-		WithScripts(filepath.Join("testdata", "schema.sql")))
+	container, err := mysql.RunContainer(ctx,
+		mysql.WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
 	}

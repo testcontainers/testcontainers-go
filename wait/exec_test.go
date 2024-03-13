@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"testing"
@@ -29,7 +30,7 @@ func ExampleExecStrategy() {
 		Started:          true,
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	defer func() {
@@ -38,7 +39,15 @@ func ExampleExecStrategy() {
 		}
 	}()
 
-	// Here you have a running container
+	state, err := localstack.State(ctx)
+	if err != nil {
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
 }
 
 type mockExecTarget struct {

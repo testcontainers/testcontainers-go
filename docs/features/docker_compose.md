@@ -10,22 +10,11 @@ dependent upon.
 ## Using `docker-compose` directly
 
 !!!warning
-	The minimal version of Go required to use this module is **1.20**.
+	The minimal version of Go required to use this module is **1.21**.
 
 ```
 go get github.com/testcontainers/testcontainers-go/modules/compose
 ```
-
-!!!warning
-
-	Given the version includes the Compose dependency, and the Docker folks added a replace directive in their [go.mod](https://github.com/docker/compose/blob/v2/go.mod#L175-L188),
-	we were forced to add it as well. As a result, users of _Testcontainers for Go_ need to add the following replace directive to their `go.mod` files.
-
-	```
-	replace (
-		github.com/cucumber/godog => github.com/laurazard/godog v0.0.0-20220922095256-4c4b17abdae7
-	)
-	```
 
 Because `docker-compose` v2 is implemented in Go it's possible for _Testcontainers for Go_ to
 use [`github.com/docker/compose`](https://github.com/docker/compose) directly and skip any process execution/_docker-compose-in-a-container_ scenario.
@@ -43,22 +32,22 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
 func TestSomething(t *testing.T) {
 	compose, err := tc.NewDockerCompose("testdata/docker-compose.yml")
-	assert.NoError(t, err, "NewDockerComposeAPI()")
+	require.NoError(t, err, "NewDockerComposeAPI()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
+		require.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	assert.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
+	require.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
 
 	// do some testing here
 }
@@ -73,23 +62,23 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
 func TestSomethingElse(t *testing.T) {
 	identifier := tc.StackIdentifier("some_ident")
 	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("./testdata/docker-compose-simple.yml"), identifier)
-	assert.NoError(t, err, "NewDockerComposeAPIWith()")
+	require.NoError(t, err, "NewDockerComposeAPIWith()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
+		require.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	assert.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
+	require.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
 
 	// do some testing here
 }
@@ -121,7 +110,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -129,10 +118,10 @@ import (
 func TestSomethingWithWaiting(t *testing.T) {
 	identifier := tc.StackIdentifier("some_ident")
 	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("./testdata/docker-compose-simple.yml"), identifier)
-	assert.NoError(t, err, "NewDockerComposeAPIWith()")
+	require.NoError(t, err, "NewDockerComposeAPIWith()")
 
 	t.Cleanup(func() {
-		assert.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
+		require.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -142,7 +131,7 @@ func TestSomethingWithWaiting(t *testing.T) {
 		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Up(ctx, tc.Wait(true))
 	
-	assert.NoError(t, err, "compose.Up()")
+	require.NoError(t, err, "compose.Up()")
 
 	// do some testing here
 }

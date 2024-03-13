@@ -150,8 +150,6 @@ git add modules/**/go.*
 git commit -m chore: use new version (v0.20.1) in modules and examples
 git tag v0.20.1
 git tag examples/bigtable/v0.20.1
-git tag examples/cockroachdb/v0.20.1
-git tag examples/consul/v0.20.1
 git tag examples/datastore/v0.20.1
 git tag examples/firestore/v0.20.1
 git tag examples/mongodb/v0.20.1
@@ -159,6 +157,7 @@ git tag examples/nginx/v0.20.1
 git tag examples/pubsub/v0.20.1
 git tag examples/spanner/v0.20.1
 git tag examples/toxiproxy/v0.20.1
+git tag modules/cockroachdb/v0.20.1
 git tag modules/compose/v0.20.1
 git tag modules/couchbase/v0.20.1
 git tag modules/localstack/v0.20.1
@@ -178,8 +177,6 @@ git commit -m chore: prepare for next minor development cycle (0.21.0)
 git push origin main --tags
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/bigtable/@v/v0.20.1.info
-curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/cockroachdb/@v/v0.20.1.info
-curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/consul/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/datastore/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/firestore/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/mongodb/@v/v0.20.1.info
@@ -187,6 +184,7 @@ curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/exampl
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/pubsub/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/spanner/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/toxiproxy/@v/v0.20.1.info
+curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/cockroachdb/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/compose/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/couchbase/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/localstack/@v/v0.20.1.info
