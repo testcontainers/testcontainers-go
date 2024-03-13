@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -507,4 +508,118 @@ func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 	require.NoError(t, dc.stopLogProduction())
 
 	terminateContainerOnEnd(t, ctx, c)
+}
+
+func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
+	// Redirect stderr to a buffer
+	oldStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+
+	// Context with cancellation functionality for simulating user interruption
+	ctx, cancel := context.WithCancel(context.Background())
+
+	first := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
+
+	containerReq1 := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:    "./testdata/",
+			Dockerfile: "echoserver.Dockerfile",
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		WaitingFor:   wait.ForLog("ready"),
+		LogConsumerCfg: &LogConsumerConfig{
+			Consumers: []LogConsumer{&first},
+		},
+	}
+
+	genericReq1 := GenericContainerRequest{
+		ContainerRequest: containerReq1,
+		Started:          true,
+	}
+
+	c, err := GenericContainer(ctx, genericReq1)
+	require.NoError(t, err)
+
+	ep1, err := c.Endpoint(ctx, "http")
+	require.NoError(t, err)
+
+	_, err = http.Get(ep1 + "/stdout?echo=hello1")
+	require.NoError(t, err)
+
+	_, err = http.Get(ep1 + "/stdout?echo=there1")
+	require.NoError(t, err)
+
+	second := TestLogConsumer{
+		Msgs:     []string{},
+		Done:     make(chan bool),
+		Accepted: devNullAcceptorChan(),
+	}
+
+	containerReq2 := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:    "./testdata/",
+			Dockerfile: "echoserver.Dockerfile",
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		WaitingFor:   wait.ForLog("ready"),
+		LogConsumerCfg: &LogConsumerConfig{
+			Consumers: []LogConsumer{&second},
+		},
+	}
+
+	genericReq2 := GenericContainerRequest{
+		ContainerRequest: containerReq2,
+		Started:          true,
+	}
+
+	c2, err := GenericContainer(ctx, genericReq2)
+	require.NoError(t, err)
+
+	ep2, err := c2.Endpoint(ctx, "http")
+	require.NoError(t, err)
+
+	_, err = http.Get(ep2 + "/stdout?echo=hello2")
+	require.NoError(t, err)
+
+	_, err = http.Get(ep2 + "/stdout?echo=there2")
+	require.NoError(t, err)
+
+	// Handling the termination of the containers
+	defer func() {
+		shutdownCtx, shutdownCancel := context.WithTimeout(
+			context.Background(), 60*time.Second,
+		)
+		defer shutdownCancel()
+		_ = c.Terminate(shutdownCtx)
+		_ = c2.Terminate(shutdownCtx)
+	}()
+
+	// Deliberately calling context cancel
+	cancel()
+
+	// We check log size due to context cancellation causing
+	// varying message counts, leading to test failure.
+	assert.GreaterOrEqual(t, len(first.Msgs), 2)
+	assert.GreaterOrEqual(t, len(second.Msgs), 2)
+
+	// Restore stderr
+	w.Close()
+	os.Stderr = oldStderr
+
+	// Read the stderr output from the buffer
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+
+	// Check the stderr message
+	actual := buf.String()
+
+	// The context cancel shouldn't cause the system to throw a
+	// logStoppedForOutOfSyncMessage, as it hangs the system with
+	// the multiple containers.
+	assert.False(t, strings.Contains(actual, logStoppedForOutOfSyncMessage))
 }
