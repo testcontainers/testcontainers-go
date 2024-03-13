@@ -24,7 +24,9 @@ func TestV1Container(t *testing.T) {
 		testcontainers.WithImage("influxdb:1.8.10"),
 	)
 	require.NoError(t, err)
-	defer containerCleanup(t, influxDbContainer)
+	t.Cleanup(func() {
+		containerCleanup(t, influxDbContainer)
+	})
 
 	state, err := influxDbContainer.State(ctx)
 	require.NoError(t, err)
@@ -43,7 +45,9 @@ func TestV2Container(t *testing.T) {
 		influxdb.WithPassword("password"),
 	)
 	require.NoError(t, err)
-	defer containerCleanup(t, influxDbContainer)
+	t.Cleanup(func() {
+		containerCleanup(t, influxDbContainer)
+	})
 
 	state, err := influxDbContainer.State(ctx)
 	require.NoError(t, err)
@@ -60,7 +64,9 @@ func TestWithInitDb(t *testing.T) {
 		influxdb.WithInitDb("."),
 	)
 	require.NoError(t, err)
-	defer containerCleanup(t, influxDbContainer)
+	t.Cleanup(func() {
+		containerCleanup(t, influxDbContainer)
+	})
 
 	if state, err := influxDbContainer.State(ctx); err != nil || !state.Running {
 		require.NoError(t, err)
