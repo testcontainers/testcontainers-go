@@ -10,10 +10,15 @@ import (
 )
 
 func ExampleRunContainer() {
-	// runInbucketContainer {
+	// runInfluxContainer {
 	ctx := context.Background()
 
-	influxdbContainer, err := influxdb.RunContainer(ctx, testcontainers.WithImage("influxdb:1.8.10"))
+	influxdbContainer, err := influxdb.RunContainer(
+		ctx, testcontainers.WithImage("influxdb:1.8.10"),
+		influxdb.WithDatabase("influx"),
+		influxdb.WithUsername("root"),
+		influxdb.WithPassword("password"),
+	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
