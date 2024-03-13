@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/docker/docker/api/types/mount"
 
@@ -19,6 +20,59 @@ import (
 type K6Container struct {
 	testcontainers.Container
 }
+
+type RemoteTestFileDescription struct{
+
+	Uri string
+	DownloadDir string
+	User string
+	Password string
+}
+
+func ( d *RemoteTestFileDescription) getDownloadPath() string{
+	baseName := path.Base(d.Uri)
+	return path.Join(d.DownloadDir,baseName)
+
+}
+
+func downloadFileFromDescription(d RemoteTestFileDescription) error{
+
+	
+
+
+
+	client := http.Client{Timeout: time.Second*60}
+	// Set up HTTPS request with basic authorization.
+	req, err := http.NewRequest(http.MethodGet, d.Uri, nil)
+	if err != nil {
+		panic("Cannot build new request")
+	}
+
+	req.Header.Set("Content-Type", "text/javascript")
+	if d.User != "" && d.Password != ""{
+		req.SetBasicAuth(d.User, d.Password)
+	}	
+
+	resp, err := client.Do(req)
+	if err != nil {
+		panic("Unable to make request")
+	}
+	defer resp.Body.Close()
+
+	out, err := os.Create(d.getDownloadPath())
+	if err != nil {
+		panic("Cannot create temp download path")
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
+
+
+
+}
+
 
 // WithTestScript mounts the given script into the ./test directory in the container
 // and passes it to k6 as the test to run.
@@ -41,39 +95,16 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-func downloadFile(uri string, downloadPath string ) error {
+func WithRemoteTestScript(d RemoteTestFileDescription) testcontainers.CustomizeRequestOption {
 
-	// Get the data
-	resp, err := http.Get(uri)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Create the file
-	out, err := os.Create(downloadPath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	return err
-}
-
-
-func WithRemoteTestScript(uri string,downloadDir string) testcontainers.CustomizeRequestOption {
-
-	baseName := path.Base(uri)
-	downloadPath := path.Join(downloadDir,baseName)
-
-	err := downloadFile(uri,downloadPath)
+	
+	
+	err := downloadFileFromDescription(d)
 	if err != nil {
 		panic("Not able to download required test script")
 	}
 
-	return WithTestScript(downloadPath)
+	return WithTestScript(d.getDownloadPath())
 }
 
 // WithCmdOptions pass the given options to the k6 run command

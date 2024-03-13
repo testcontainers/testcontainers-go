@@ -10,6 +10,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/k6"
 )
 
+
 func TestK6(t *testing.T) {
 	testCases := []struct {
 		title  string
@@ -48,7 +49,8 @@ func TestK6(t *testing.T) {
 				options = k6.WithTestScript(absPath)
 			}else{
 
-				options = k6.WithRemoteTestScript(tc.script,t.TempDir())
+				desc := k6.RemoteTestFileDescription{Uri : tc.script,DownloadDir:t.TempDir() }
+				options = k6.WithRemoteTestScript(desc)
 			}
 
 
