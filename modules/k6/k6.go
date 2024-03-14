@@ -37,15 +37,11 @@ func ( d *RemoteTestFileDescription) getDownloadPath() string{
 
 func downloadFileFromDescription(d RemoteTestFileDescription) error{
 
-	
-
-
-
 	client := http.Client{Timeout: time.Second*60}
 	// Set up HTTPS request with basic authorization.
 	req, err := http.NewRequest(http.MethodGet, d.Uri, nil)
 	if err != nil {
-		panic("Cannot build new request")
+		return err
 	}
 
 	req.Header.Set("Content-Type", "text/javascript")
@@ -55,13 +51,13 @@ func downloadFileFromDescription(d RemoteTestFileDescription) error{
 
 	resp, err := client.Do(req)
 	if err != nil {
-		panic("Unable to make request")
+		return err
 	}
-	defer resp.Body.Close()
+	
 
 	out, err := os.Create(d.getDownloadPath())
 	if err != nil {
-		panic("Cannot create temp download path")
+		return err
 	}
 	defer out.Close()
 
