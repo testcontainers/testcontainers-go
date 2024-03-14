@@ -1,4 +1,4 @@
-package testcontainers
+package testcontainers_test
 
 import (
 	"archive/tar"
@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -23,15 +24,15 @@ func Test_ContainerValidation(t *testing.T) {
 	type ContainerValidationTestCase struct {
 		Name             string
 		ExpectedError    error
-		ContainerRequest ContainerRequest
+		ContainerRequest testcontainers.ContainerRequest
 	}
 
 	testTable := []ContainerValidationTestCase{
 		{
 			Name:          "cannot set both context and image",
 			ExpectedError: errors.New("you cannot specify both an Image and Context in a ContainerRequest"),
-			ContainerRequest: ContainerRequest{
-				FromDockerfile: FromDockerfile{
+			ContainerRequest: testcontainers.ContainerRequest{
+				FromDockerfile: testcontainers.FromDockerfile{
 					Context: ".",
 				},
 				Image: "redis:latest",
@@ -40,15 +41,15 @@ func Test_ContainerValidation(t *testing.T) {
 		{
 			Name:          "can set image without context",
 			ExpectedError: nil,
-			ContainerRequest: ContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "redis:latest",
 			},
 		},
 		{
 			Name:          "can set context without image",
 			ExpectedError: nil,
-			ContainerRequest: ContainerRequest{
-				FromDockerfile: FromDockerfile{
+			ContainerRequest: testcontainers.ContainerRequest{
+				FromDockerfile: testcontainers.FromDockerfile{
 					Context: ".",
 				},
 			},
@@ -56,7 +57,7 @@ func Test_ContainerValidation(t *testing.T) {
 		{
 			Name:          "Can mount same source to multiple targets",
 			ExpectedError: nil,
-			ContainerRequest: ContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "redis:latest",
 				HostConfigModifier: func(hc *container.HostConfig) {
 					hc.Binds = []string{"/data:/srv", "/data:/data"}
@@ -66,7 +67,7 @@ func Test_ContainerValidation(t *testing.T) {
 		{
 			Name:          "Cannot mount multiple sources to same target",
 			ExpectedError: errors.New("duplicate mount target detected: /data"),
-			ContainerRequest: ContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "redis:latest",
 				HostConfigModifier: func(hc *container.HostConfig) {
 					hc.Binds = []string{"/data:/data", "/data:/data"}
@@ -76,7 +77,7 @@ func Test_ContainerValidation(t *testing.T) {
 		{
 			Name:          "Invalid bind mount",
 			ExpectedError: errors.New("invalid bind mount: /data:/data:/data"),
-			ContainerRequest: ContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "redis:latest",
 				HostConfigModifier: func(hc *container.HostConfig) {
 					hc.Binds = []string{"/data:/data:/data"}
@@ -106,27 +107,27 @@ func Test_GetDockerfile(t *testing.T) {
 	type TestCase struct {
 		name                   string
 		ExpectedDockerfileName string
-		ContainerRequest       ContainerRequest
+		ContainerRequest       testcontainers.ContainerRequest
 	}
 
 	testTable := []TestCase{
 		{
 			name:                   "defaults to \"Dockerfile\" 1",
 			ExpectedDockerfileName: "Dockerfile",
-			ContainerRequest:       ContainerRequest{},
+			ContainerRequest:       testcontainers.ContainerRequest{},
 		},
 		{
 			name:                   "defaults to \"Dockerfile\" 2",
 			ExpectedDockerfileName: "Dockerfile",
-			ContainerRequest: ContainerRequest{
-				FromDockerfile: FromDockerfile{},
+			ContainerRequest: testcontainers.ContainerRequest{
+				FromDockerfile: testcontainers.FromDockerfile{},
 			},
 		},
 		{
 			name:                   "will override name",
 			ExpectedDockerfileName: "CustomDockerfile",
-			ContainerRequest: ContainerRequest{
-				FromDockerfile: FromDockerfile{
+			ContainerRequest: testcontainers.ContainerRequest{
+				FromDockerfile: testcontainers.FromDockerfile{
 					Dockerfile: "CustomDockerfile",
 				},
 			},
@@ -278,8 +279,8 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			req := ContainerRequest{
-				FromDockerfile: FromDockerfile{
+			req := testcontainers.ContainerRequest{
+				FromDockerfile: testcontainers.FromDockerfile{
 					ContextArchive: a,
 					Context:        testCase.ContextPath,
 					Dockerfile:     testCase.Dockerfile,
@@ -287,7 +288,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				WaitingFor: wait.ForLog(testCase.ExpectedEchoOutput).WithStartupTimeout(1 * time.Minute),
 			}
 
-			c, err := GenericContainer(ctx, GenericContainerRequest{
+			c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 				ContainerRequest: req,
 				Started:          true,
 			})
@@ -308,14 +309,14 @@ func Test_BuildImageWithContexts(t *testing.T) {
 func Test_GetLogsFromFailedContainer(t *testing.T) {
 	ctx := context.Background()
 	// directDockerHubReference {
-	req := ContainerRequest{
+	req := testcontainers.ContainerRequest{
 		Image:      "docker.io/alpine",
 		Cmd:        []string{"echo", "-n", "I was not expecting this"},
 		WaitingFor: wait.ForLog("I was expecting this").WithStartupTimeout(5 * time.Second),
 	}
 	// }
 
-	c, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -391,7 +392,7 @@ func TestImageSubstitutors(t *testing.T) {
 	tests := []struct {
 		name          string
 		image         string // must be a valid image, as the test will try to create a container from it
-		substitutors  []ImageSubstitutor
+		substitutors  []testcontainers.ImageSubstitutor
 		expectedImage string
 		expectedError error
 	}{
@@ -403,19 +404,19 @@ func TestImageSubstitutors(t *testing.T) {
 		{
 			name:          "Noop substitutor",
 			image:         "alpine",
-			substitutors:  []ImageSubstitutor{NoopImageSubstitutor{}},
+			substitutors:  []testcontainers.ImageSubstitutor{NoopImageSubstitutor{}},
 			expectedImage: "alpine",
 		},
 		{
 			name:          "Prepend namespace",
 			image:         "alpine",
-			substitutors:  []ImageSubstitutor{dockerImageSubstitutor{}},
+			substitutors:  []testcontainers.ImageSubstitutor{dockerImageSubstitutor{}},
 			expectedImage: "docker.io/alpine",
 		},
 		{
 			name:          "Substitution with error",
 			image:         "alpine",
-			substitutors:  []ImageSubstitutor{errorSubstitutor{}},
+			substitutors:  []testcontainers.ImageSubstitutor{errorSubstitutor{}},
 			expectedImage: "alpine",
 			expectedError: errSubstitution,
 		},
@@ -424,12 +425,12 @@ func TestImageSubstitutors(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
-			req := ContainerRequest{
+			req := testcontainers.ContainerRequest{
 				Image:             test.image,
 				ImageSubstitutors: test.substitutors,
 			}
 
-			container, err := GenericContainer(ctx, GenericContainerRequest{
+			container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 				ContainerRequest: req,
 				Started:          true,
 			})
@@ -447,7 +448,7 @@ func TestImageSubstitutors(t *testing.T) {
 
 			// enforce the concrete type, as GenericContainer returns an interface,
 			// which will be changed in future implementations of the library
-			dockerContainer := container.(*DockerContainer)
+			dockerContainer := container.(*testcontainers.DockerContainer)
 			assert.Equal(t, test.expectedImage, dockerContainer.Image)
 		})
 	}
@@ -462,12 +463,12 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 		t.Run(fmt.Sprintf("iteration_%d", i), func(t *testing.T) {
 			t.Parallel()
 
-			req := ContainerRequest{
+			req := testcontainers.ContainerRequest{
 				Image:        nginxAlpineImage,
 				ExposedPorts: []string{nginxDefaultPort},
 				WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 			}
-			container, err := GenericContainer(ctx, GenericContainerRequest{
+			container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 				ContainerRequest: req,
 				Started:          true,
 			})
@@ -488,39 +489,14 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 	}
 }
 
-func TestParseDockerIgnore(t *testing.T) {
-	testCases := []struct {
-		filePath         string
-		expectedErr      error
-		expectedExcluded []string
-	}{
-		{
-			filePath:         "./testdata/dockerignore",
-			expectedErr:      nil,
-			expectedExcluded: []string{"vendor", "foo", "bar"},
-		},
-		{
-			filePath:         "./testdata",
-			expectedErr:      nil,
-			expectedExcluded: []string{"Dockerfile", "echo.Dockerfile"},
-		},
-	}
-
-	for _, testCase := range testCases {
-		excluded, err := parseDockerIgnore(testCase.filePath)
-		assert.Equal(t, testCase.expectedErr, err)
-		assert.Equal(t, testCase.expectedExcluded, excluded)
-	}
-}
-
 func ExampleGenericContainer_withSubstitutors() {
 	ctx := context.Background()
 
 	// applyImageSubstitutors {
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
 			Image:             "alpine:latest",
-			ImageSubstitutors: []ImageSubstitutor{dockerImageSubstitutor{}},
+			ImageSubstitutors: []testcontainers.ImageSubstitutor{dockerImageSubstitutor{}},
 		},
 		Started: true,
 	})
@@ -538,7 +514,7 @@ func ExampleGenericContainer_withSubstitutors() {
 
 	// enforce the concrete type, as GenericContainer returns an interface,
 	// which will be changed in future implementations of the library
-	dockerContainer := container.(*DockerContainer)
+	dockerContainer := container.(*testcontainers.DockerContainer)
 
 	fmt.Println(dockerContainer.Image)
 
