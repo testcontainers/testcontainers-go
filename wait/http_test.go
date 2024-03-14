@@ -58,6 +58,63 @@ func ExampleHTTPStrategy() {
 	// true
 }
 
+func ExampleHTTPStrategy_WithHeaders() {
+	capath := filepath.Join("testdata", "root.pem")
+	cafile, err := os.ReadFile(capath)
+	if err != nil {
+		log.Fatalf("can't load ca file: %v", err)
+	}
+
+	certpool := x509.NewCertPool()
+	if !certpool.AppendCertsFromPEM(cafile) {
+		log.Fatalf("the ca file isn't valid")
+	}
+
+	ctx := context.Background()
+
+	// waitForHTTPHeaders {
+	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
+	req := testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context: "testdata",
+		},
+		ExposedPorts: []string{"6443/tcp"},
+		WaitingFor: wait.ForHTTP("/headers").
+			WithTLS(true, tlsconfig).
+			WithPort("6443/tcp").
+			WithHeaders(map[string]string{"X-request-header": "value"}).
+			WithResponseHeadersMatcher(func(headers http.Header) bool {
+				return headers.Get("X-response-header") == "value"
+			},
+			),
+	}
+	// }
+
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		log.Fatalf("failed to start container: %s", err)
+	}
+
+	defer func() {
+		if err := c.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
+
+	state, err := c.State(ctx)
+	if err != nil {
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
+
+}
 func ExampleHTTPStrategy_WithPort() {
 	// waitForHTTPWithPort {
 	ctx := context.Background()
