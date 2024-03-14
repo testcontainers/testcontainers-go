@@ -12,7 +12,7 @@ import (
 func TestChroma(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.22.dev44"))
+	container, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
 	if err != nil {
 		t.Fatal(err)
 	}

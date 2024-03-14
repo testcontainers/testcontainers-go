@@ -18,7 +18,7 @@ func ExampleRunContainer() {
 	// runChromaContainer {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.22"))
+	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -46,7 +46,7 @@ func ExampleChromaContainer_connectWithClient() {
 	// createClient {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.22"))
+	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
