@@ -12,7 +12,6 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
-	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 )
 
@@ -213,18 +212,19 @@ func TestGenerateWrongModuleTitle(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		title string
+		title       string
+		expectError bool
 	}{
-		{title: " fooDB"},
-		{title: "fooDB "},
-		{title: "foo barDB"},
-		{title: "foo-barDB"},
-		{title: "foo/barDB"},
-		{title: "foo\\barDB"},
-		{title: "1fooDB"},
-		{title: "foo1DB"},
-		{title: "-fooDB"},
-		{title: "foo-DB"},
+		{title: " fooDB", expectError: true},
+		{title: "fooDB ", expectError: true},
+		{title: "foo barDB", expectError: true},
+		{title: "foo-barDB", expectError: true},
+		{title: "foo/barDB", expectError: true},
+		{title: "foo\\barDB", expectError: true},
+		{title: "1fooDB", expectError: true},
+		{title: "foo1DB", expectError: false},
+		{title: "-fooDB", expectError: true},
+		{title: "foo-DB", expectError: true},
 	}
 
 	for _, test := range tests {
@@ -235,7 +235,11 @@ func TestGenerateWrongModuleTitle(t *testing.T) {
 		}
 
 		err = internal.GenerateFiles(tmpCtx, module)
-		require.Error(t, err)
+		if test.expectError {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
 	}
 }
 
@@ -256,12 +260,6 @@ func TestGenerate(t *testing.T) {
 	require.NoError(t, err)
 
 	originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
-	require.NoError(t, err)
-
-	err = copyInitialDependabotConfig(t, tmpCtx)
-	require.NoError(t, err)
-
-	originalDependabotConfigUpdates, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
 	require.NoError(t, err)
 
 	module := context.TestcontainersModule{
@@ -290,7 +288,7 @@ func TestGenerate(t *testing.T) {
 	require.NoError(t, err) // error nil implies the file exist
 
 	assertModuleDocContent(t, module, moduleDocFile)
-	assertModuleGithubWorkflowContent(t, module, mainWorkflowFile)
+	assertModuleGithubWorkflowContent(t, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, moduleNameLower)
 	// do not generate examples_test.go for examples
@@ -299,7 +297,6 @@ func TestGenerate(t *testing.T) {
 	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertMkdocsNavItems(t, module, originalConfig, tmpCtx)
-	assertDependabotUpdates(t, module, originalDependabotConfigUpdates, tmpCtx)
 }
 
 func TestGenerateModule(t *testing.T) {
@@ -319,12 +316,6 @@ func TestGenerateModule(t *testing.T) {
 	require.NoError(t, err)
 
 	originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
-	require.NoError(t, err)
-
-	err = copyInitialDependabotConfig(t, tmpCtx)
-	require.NoError(t, err)
-
-	originalDependabotConfigUpdates, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
 	require.NoError(t, err)
 
 	module := context.TestcontainersModule{
@@ -353,7 +344,7 @@ func TestGenerateModule(t *testing.T) {
 	require.NoError(t, err) // error nil implies the file exist
 
 	assertModuleDocContent(t, module, moduleDocFile)
-	assertModuleGithubWorkflowContent(t, module, mainWorkflowFile)
+	assertModuleGithubWorkflowContent(t, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(modulesTmp, moduleNameLower)
 	assertExamplesTestContent(t, module, filepath.Join(generatedTemplatesDir, "examples_test.go"))
@@ -362,38 +353,6 @@ func TestGenerateModule(t *testing.T) {
 	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertMkdocsNavItems(t, module, originalConfig, tmpCtx)
-	assertDependabotUpdates(t, module, originalDependabotConfigUpdates, tmpCtx)
-}
-
-// assert content in the Dependabot descriptor file
-func assertDependabotUpdates(t *testing.T, module context.TestcontainersModule, originalConfigUpdates dependabot.Updates, tmpCtx context.Context) {
-	modules, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
-	require.NoError(t, err)
-
-	assert.Len(t, modules, len(originalConfigUpdates)+1)
-
-	// the module should be in the dependabot updates
-	found := false
-	for _, ex := range modules {
-		directory := "/" + module.ParentDir() + "/" + module.Lower()
-		if directory == ex.Directory {
-			found = true
-		}
-	}
-
-	assert.True(t, found)
-
-	// first item is the github-actions module
-	assert.Equal(t, "/", modules[0].Directory, modules)
-	assert.Equal(t, "github-actions", modules[0].PackageEcosystem, "PackageEcosystem should be github-actions")
-
-	// second item is the core module
-	assert.Equal(t, "/", modules[1].Directory, modules)
-	assert.Equal(t, "gomod", modules[1].PackageEcosystem, "PackageEcosystem should be gomod")
-
-	// third item is the pip module
-	assert.Equal(t, "/", modules[2].Directory, modules)
-	assert.Equal(t, "pip", modules[2].PackageEcosystem, "PackageEcosystem should be pip")
 }
 
 // assert content module file in the docs
@@ -473,7 +432,7 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 }
 
 // assert content GitHub workflow for the module
-func assertModuleGithubWorkflowContent(t *testing.T, module context.TestcontainersModule, moduleWorkflowFile string) {
+func assertModuleGithubWorkflowContent(t *testing.T, moduleWorkflowFile string) {
 	content, err := os.ReadFile(moduleWorkflowFile)
 	require.NoError(t, err)
 
@@ -482,11 +441,11 @@ func assertModuleGithubWorkflowContent(t *testing.T, module context.Testcontaine
 
 	modulesList, err := ctx.GetModules()
 	require.NoError(t, err)
-	assert.Equal(t, "        module: ["+strings.Join(modulesList, ", ")+"]", data[106])
+	assert.Equal(t, "        module: ["+strings.Join(modulesList, ", ")+"]", data[96])
 
 	examplesList, err := ctx.GetExamples()
 	require.NoError(t, err)
-	assert.Equal(t, "        module: ["+strings.Join(examplesList, ", ")+"]", data[123])
+	assert.Equal(t, "        module: ["+strings.Join(examplesList, ", ")+"]", data[111])
 }
 
 // assert content go.mod
@@ -549,9 +508,4 @@ func sanitiseContent(bytes []byte) []string {
 	data := strings.Split(content, "\n")
 
 	return data
-}
-
-func copyInitialDependabotConfig(t *testing.T, tmpCtx context.Context) error {
-	ctx := getTestRootContext(t)
-	return dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpCtx.DependabotConfigFile())
 }
