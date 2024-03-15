@@ -77,7 +77,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 							return err
 						}
 
-						scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), host)
+						name, err := c.Name(ctx)
+						if err != nil {
+							return err
+						}
+						containerHost := strings.TrimPrefix(name, "/")
+
+						scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), containerHost)
 
 						return c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755)
 					},
