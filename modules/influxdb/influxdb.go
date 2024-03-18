@@ -33,6 +33,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"INFLUXDB_HTTP_HTTPS_ENABLED":    "false",
 			"INFLUXDB_HTTP_AUTH_ENABLED":     "false",
 		},
+		WaitingFor: wait.ForListeningPort("8086/tcp"),
 	}
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -52,11 +53,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			// in this case, we are assuming that data was added by init script, so we then look for an
 			// "Open shard" which is the last thing that happens before the server is ready to accept connections.
 			// This is probably different for InfluxDB 2.x, but that is left as an exercise for the reader.
-			genericContainerReq.WaitingFor = wait.ForAll(
+			strategies := []wait.Strategy{
+				genericContainerReq.WaitingFor,
 				wait.ForLog("influxdb init process in progress..."),
 				wait.ForLog("Server shutdown completed"),
 				wait.ForLog("Opened shard"),
-				wait.ForExposedPort())
+			}
+			genericContainerReq.WaitingFor = wait.ForAll(strategies...)
 			hasInitDb = true
 			break
 		}
