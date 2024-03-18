@@ -84,15 +84,15 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &InfluxDbContainer{container}, nil
 }
 
-func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context, tls bool) string {
-	connectionString, err := c.ConnectionUrl(ctx, tls)
+func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
+	connectionString, err := c.ConnectionUrl(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return connectionString
 }
 
-func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context, tls bool) (string, error) {
+func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "8086/tcp")
 	if err != nil {
 		return "", err
@@ -103,12 +103,7 @@ func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context, tls bool) (string
 		return "", err
 	}
 
-	scheme := "http"
-	if tls {
-		scheme = "https"
-	}
-
-	return fmt.Sprintf("%s://%s:%s", scheme, host, containerPort.Port()), nil
+	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
 }
 
 func WithUsername(username string) testcontainers.CustomizeRequestOption {

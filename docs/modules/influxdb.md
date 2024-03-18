@@ -83,3 +83,6 @@ This function is a simple helper to return a URL to the container, using the def
 
 Please check the existence of two methods: `ConnectionUrl` and `MustConnectionUrl`. The latter is used to avoid the need to handle errors,
 while the former is used to return the URL and the error. `MustConnectionUrl` will panic if an error occurs.
+
+!!!info
+    The `ConnectionUrl` and `MustConnectionUrl` methods only support HTTP connections at the moment.
