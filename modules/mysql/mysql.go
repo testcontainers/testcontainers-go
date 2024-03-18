@@ -90,6 +90,15 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &MySQLContainer{container, username, password, database}, nil
 }
 
+// MustConnectionString panics if the address cannot be determined.
+func (c *MySQLContainer) MustConnectionString(ctx context.Context, args ...string) string {
+	addr, err := c.ConnectionString(ctx,args...)
+	if err != nil {
+		panic(err)
+	}
+	return addr
+}
+
 func (c *MySQLContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "3306/tcp")
 	if err != nil {
