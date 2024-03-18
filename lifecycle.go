@@ -123,9 +123,9 @@ func DefaultPreCreateHook(p *DockerProvider, dockerInput *container.Config, host
 	}
 }
 
-// DefaultCopyFileToContainerHook is a hook that will copy files to the container after it's created
+// defaultCopyFileToContainerHook is a hook that will copy files to the container after it's created
 // but before it's started
-func DefaultCopyFileToContainerHook(files []ContainerFile) ContainerLifecycleHooks {
+func defaultCopyFileToContainerHook(files []ContainerFile) ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PostCreates: []ContainerHook{
 			// copy files to container after it's created
@@ -143,8 +143,8 @@ func DefaultCopyFileToContainerHook(files []ContainerFile) ContainerLifecycleHoo
 	}
 }
 
-// DefaultLogConsumersHook is a hook that will start log consumers after the container is started
-func DefaultLogConsumersHook(cfg *LogConsumerConfig) ContainerLifecycleHooks {
+// defaultLogConsumersHook is a hook that will start log consumers after the container is started
+func defaultLogConsumersHook(cfg *LogConsumerConfig) ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PostStarts: []ContainerHook{
 			// first post-start hook is to produce logs and start log consumers
@@ -180,8 +180,8 @@ func DefaultLogConsumersHook(cfg *LogConsumerConfig) ContainerLifecycleHooks {
 	}
 }
 
-// DefaultReadinessHook is a hook that will wait for the container to be ready
-func DefaultReadinessHook() ContainerLifecycleHooks {
+// defaultReadinessHook is a hook that will wait for the container to be ready
+func defaultReadinessHook() ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PostStarts: []ContainerHook{
 			// wait for the container to be ready

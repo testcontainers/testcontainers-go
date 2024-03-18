@@ -1077,9 +1077,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	defaultHooks := []ContainerLifecycleHooks{
 		DefaultLoggingHook(p.Logger),
 		DefaultPreCreateHook(p, dockerInput, hostConfig, networkingConfig),
-		DefaultCopyFileToContainerHook(req.Files),
-		DefaultLogConsumersHook(req.LogConsumerCfg),
-		DefaultReadinessHook(),
+		defaultCopyFileToContainerHook(req.Files),
+		defaultLogConsumersHook(req.LogConsumerCfg),
+		defaultReadinessHook(),
 	}
 
 	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
@@ -1211,8 +1211,8 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	// default hooks include logger hook and pre-create hook
 	defaultHooks := []ContainerLifecycleHooks{
 		DefaultLoggingHook(p.Logger),
-		DefaultReadinessHook(),
-		DefaultLogConsumersHook(req.LogConsumerCfg),
+		defaultReadinessHook(),
+		defaultLogConsumersHook(req.LogConsumerCfg),
 	}
 
 	dc := &DockerContainer{
