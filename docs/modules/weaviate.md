@@ -1,6 +1,6 @@
 # Weaviate
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 ## Introduction
 
@@ -63,7 +63,7 @@ This method returns the Schema and Host for the Weaviate container, using the de
 
 The following example demonstrates how to create a Weaviate client using the Weaviate module.
 
-First of all, you need to import the CWeaviate client:
+First of all, you need to import the Weaviate client:
 
 ```golang
 import (
@@ -71,7 +71,7 @@ import (
 )
 ```
 
-Then, you can create a Chroma client using the Chroma module:
+Then, you can create a Weaviate client using the Weaviate module:
 
 <!--codeinclude-->
 [Get the client](../../modules/weaviate/examples_test.go) inside_block:createClient

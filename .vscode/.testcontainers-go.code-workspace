@@ -110,6 +110,14 @@
             "path": "../modules/neo4j"
         },
         {
+            "name": "module / ollama",
+            "path": "../modules/ollama"
+        },
+        {
+            "name": "module / openfga",
+            "path": "../modules/openfga"
+        },
+        {
             "name": "module / openldap",
             "path": "../modules/openldap"
         },
@@ -140,6 +148,10 @@
         {
             "name": "module / redpanda",
             "path": "../modules/redpanda"
+        },
+        {
+            "name": "module / surrealdb",
+            "path": "../modules/surrealdb"
         },
         {
             "name": "module / vault",
