@@ -1082,7 +1082,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		DefaultReadinessHook(),
 	}
 
-	req.LifecycleHooks = []ContainerLifecycleHooks{CombineContainerHooks(defaultHooks, req.LifecycleHooks)}
+	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
 
 	err = req.creatingHook(ctx)
 	if err != nil {
@@ -1224,7 +1224,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		terminationSignal:   termSignal,
 		stopLogProductionCh: nil,
 		logger:              p.Logger,
-		lifecycleHooks:      []ContainerLifecycleHooks{CombineContainerHooks(defaultHooks, req.LifecycleHooks)},
+		lifecycleHooks:      []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)},
 	}
 
 	err = dc.startedHook(ctx)
