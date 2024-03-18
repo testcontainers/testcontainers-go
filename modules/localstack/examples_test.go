@@ -62,14 +62,9 @@ func ExampleRunContainer_withNetwork() {
 
 	localstackContainer, err := localstack.RunContainer(
 		ctx,
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Image:          "localstack/localstack:0.13.0",
-				Env:            map[string]string{"SERVICES": "s3,sqs"},
-				Networks:       []string{nwName},
-				NetworkAliases: map[string][]string{nwName: {"localstack"}},
-			},
-		}),
+		testcontainers.WithImage("localstack/localstack:0.13.0"),
+		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
+		network.WithNetwork([]string{nwName}, newNetwork),
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
@@ -99,13 +94,9 @@ func ExampleRunContainer_legacyMode() {
 
 	_, err := localstack.RunContainer(
 		ctx,
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Image:      "localstack/localstack:0.10.0",
-				Env:        map[string]string{"SERVICES": "s3,sqs"},
-				WaitingFor: wait.ForLog("Ready.").WithStartupTimeout(5 * time.Minute).WithOccurrence(1),
-			},
-		}),
+		testcontainers.WithImage("localstack/localstack:0.10.0"),
+		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
+		testcontainers.WithWaitStrategy(wait.ForLog("Ready.").WithStartupTimeout(5*time.Minute).WithOccurrence(1)),
 	)
 	if err == nil {
 		log.Fatalf("expected an error, got nil")
@@ -133,14 +124,15 @@ func ExampleRunContainer_usingLambdas() {
 
 	lambdaName := "localstack-lambda-url-example"
 
+	// withCustomContainerRequest {
 	container, err := localstack.RunContainer(ctx,
 		testcontainers.WithImage("localstack/localstack:2.3.0"),
+		testcontainers.WithEnv(map[string]string{
+			"SERVICES":            "lambda",
+			"LAMBDA_DOCKER_FLAGS": flagsFn(),
+		}),
 		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Env: map[string]string{
-					"SERVICES":            "lambda",
-					"LAMBDA_DOCKER_FLAGS": flagsFn(),
-				},
 				Files: []testcontainers.ContainerFile{
 					{
 						HostFilePath:      filepath.Join("testdata", "function.zip"),
@@ -149,6 +141,7 @@ func ExampleRunContainer_usingLambdas() {
 				},
 			},
 		}),
+		// }
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)

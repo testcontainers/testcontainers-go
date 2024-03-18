@@ -63,7 +63,7 @@ This method returns the Schema and Host for the Weaviate container, using the de
 
 The following example demonstrates how to create a Weaviate client using the Weaviate module.
 
-First of all, you need to import the CWeaviate client:
+First of all, you need to import the Weaviate client:
 
 ```golang
 import (
@@ -71,7 +71,7 @@ import (
 )
 ```
 
-Then, you can create a Chroma client using the Chroma module:
+Then, you can create a Weaviate client using the Weaviate module:
 
 <!--codeinclude-->
 [Get the client](../../modules/weaviate/examples_test.go) inside_block:createClient
