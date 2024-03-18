@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
 // New creates a new network with a random UUID name, calling the already existing GenericNetwork APIs.
@@ -21,6 +22,10 @@ func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.Docker
 	nc := types.NetworkCreate{
 		Driver: "bridge",
 		Labels: testcontainers.GenericLabels(),
+	}
+
+	if core.IsWindows() {
+		nc.Driver = "nat"
 	}
 
 	for _, opt := range opts {
