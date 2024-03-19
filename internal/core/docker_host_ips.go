@@ -21,14 +21,13 @@ func (h HostIP) String() string {
 	return fmt.Sprintf("%s (%s)", h.Address, h.Family)
 }
 
-var emptyHostIp = HostIP{}
-
 func newHostIP(host string) HostIP {
 	var hip HostIP
 
 	ip := net.ParseIP(host)
 	if ip == nil {
 		host = "127.0.0.1"
+		ip = net.ParseIP(host)
 	}
 
 	hip.Address = host
@@ -45,9 +44,6 @@ func newHostIP(host string) HostIP {
 // GetDockerHostIPs returns the IP addresses of the Docker host.
 func GetDockerHostIPs(host string) []HostIP {
 	hip := newHostIP(host)
-	if hip == emptyHostIp {
-		hip = newHostIP("127.0.0.1")
-	}
 
 	ips, err := net.LookupIP(hip.Address)
 	if err != nil {
