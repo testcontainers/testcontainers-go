@@ -117,7 +117,7 @@ func ExampleChromaContainer_collections() {
 	// verify it's possible to add data to the collection
 	col1, err := col.Add(
 		context.Background(),
-		nil,                                      // or set the embedding types.NewEmbeddingsFromFloat32([][]float32{{1, 2, 3}, {4, 5, 6}})
+		nil,                                      // embeddings
 		[]map[string]interface{}{},               // metadata
 		[]string{"test-doc-1", "test-doc-2"},     // documents
 		[]string{"test-label-1", "test-label-2"}, // ids
