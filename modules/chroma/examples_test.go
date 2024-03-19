@@ -3,22 +3,19 @@ package chroma_test
 import (
 	"context"
 	"fmt"
-	"log"
-	"os"
-
 	chromago "github.com/amikos-tech/chroma-go"
-	"github.com/amikos-tech/chroma-go/openai"
 	chromaopenapi "github.com/amikos-tech/chroma-go/swagger"
-
+	"github.com/amikos-tech/chroma-go/types"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/chroma"
+	"log"
 )
 
 func ExampleRunContainer() {
 	// runChromaContainer {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.22"))
+	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -46,7 +43,7 @@ func ExampleChromaContainer_connectWithClient() {
 	// createClient {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.22"))
+	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -91,7 +88,7 @@ func ExampleChromaContainer_connectWithClient() {
 func ExampleChromaContainer_collections() {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.22"))
+	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -108,24 +105,11 @@ func ExampleChromaContainer_collections() {
 	}
 
 	// create the client connection and confirm that we can access the server with it
-	configuration := chromaopenapi.NewConfiguration()
-	configuration.Servers = chromaopenapi.ServerConfigurations{
-		{
-			URL:         connectionStr,
-			Description: "Chromadb server url for this store",
-		},
-	}
-	chromaClient := &chromago.Client{
-		ApiClient: chromaopenapi.NewAPIClient(configuration),
-	}
+	chromaClient, err := chromago.NewClient(connectionStr, chromago.WithDebug(true))
 
 	// createCollection {
-	// for testing purposes, the OPENAI_API_KEY environment variable can be empty
-	// therefore this test is expected to succeed even though the API key is not set.
-	embeddingFunction := openai.NewOpenAIEmbeddingFunction(os.Getenv("OPENAI_API_KEY"))
-	distanceFunction := chromago.L2
-
-	col, err := chromaClient.CreateCollection(context.Background(), "test-collection", map[string]any{}, true, embeddingFunction, distanceFunction)
+	// for testing we use a dummy hashing function NewConsistentHashEmbeddingFunction
+	col, err := chromaClient.CreateCollection(context.Background(), "test-collection", map[string]any{}, true, types.NewConsistentHashEmbeddingFunction(), types.L2)
 	// }
 	if err != nil {
 		log.Fatalf("failed to create collection: %s", err) // nolint:gocritic
@@ -136,7 +120,7 @@ func ExampleChromaContainer_collections() {
 	// verify it's possible to add data to the collection
 	col1, err := col.Add(
 		context.Background(),
-		[][]float32{{1, 2, 3}, {4, 5, 6}},
+		types.NewEmbeddingsFromFloat32([][]float32{{1, 2, 3}, {4, 5, 6}}),
 		[]map[string]interface{}{},
 		[]string{"test-doc-1", "test-doc-2"},
 		[]string{"test-label-1", "test-label-2"},
