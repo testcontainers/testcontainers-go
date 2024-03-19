@@ -10,7 +10,7 @@ import (
 func TestResolveHostPortBinding(t *testing.T) {
 	type testCase struct {
 		name         string
-		expectedPort int
+		expectedPort nat.Port
 		hostIPs      []HostIP
 		bindings     []nat.PortBinding
 		expectedErr  error
@@ -27,7 +27,7 @@ func TestResolveHostPortBinding(t *testing.T) {
 				{HostIP: "0.0.0.0", HostPort: "50000"},
 				{HostIP: "::", HostPort: "50001"},
 			},
-			expectedPort: 50001,
+			expectedPort: nat.Port("50001"),
 		},
 		{
 			name: "should return IPv4-mapped host port when preferred",
@@ -39,7 +39,7 @@ func TestResolveHostPortBinding(t *testing.T) {
 				{HostIP: "0.0.0.0", HostPort: "50000"},
 				{HostIP: "::", HostPort: "50001"},
 			},
-			expectedPort: 50000,
+			expectedPort: nat.Port("50000"),
 		},
 		{
 			name: "should return mapped host port when dual stack IP",
@@ -50,7 +50,7 @@ func TestResolveHostPortBinding(t *testing.T) {
 			bindings: []nat.PortBinding{
 				{HostIP: "", HostPort: "50000"},
 			},
-			expectedPort: 50000,
+			expectedPort: nat.Port("50000"),
 		},
 		{
 			name: "should throw when no host port available for host IP family",
@@ -60,14 +60,14 @@ func TestResolveHostPortBinding(t *testing.T) {
 			bindings: []nat.PortBinding{
 				{HostIP: "0.0.0.0", HostPort: "50000"},
 			},
-			expectedPort: 0, // that's the zero value returned by ResolveHostPortBinding
+			expectedPort: nat.Port(""), // that's the zero value returned by ResolveHostPortBinding
 			expectedErr:  fmt.Errorf("no host port found for host IPs [%s (IPv6)]", "::1"),
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			resolvedPort, err := ResolveHostPortBinding(tc.hostIPs, tc.bindings)
+			resolvedPort, err := resolveHostPortBinding(tc.hostIPs, tc.bindings)
 
 			switch {
 			case err == nil && tc.expectedErr == nil:
@@ -84,7 +84,7 @@ func TestResolveHostPortBinding(t *testing.T) {
 			}
 
 			if resolvedPort != tc.expectedPort {
-				t.Errorf("resolved port mismatch: got %d, expected %d", resolvedPort, tc.expectedPort)
+				t.Errorf("resolved port mismatch: got %s, expected %s", resolvedPort, tc.expectedPort)
 			}
 		})
 	}
