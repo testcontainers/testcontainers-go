@@ -3,6 +3,7 @@ package chroma
 import (
 	"context"
 	"fmt"
+
 	chromago "github.com/amikos-tech/chroma-go"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -17,7 +18,7 @@ type ChromaContainer struct {
 // RunContainer creates an instance of the Chroma container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "chromadb/chroma:0.4.22",
+		Image:        "chromadb/chroma:0.4.24",
 		ExposedPorts: []string{"8000/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("8000/tcp"),
@@ -60,11 +61,10 @@ func (c *ChromaContainer) RESTEndpoint(ctx context.Context) (string, error) {
 	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
 }
 
-func (c *ChromaContainer) GetClient(opt chromago.ClientOption) (*chromago.Client, error) {
+func (c *ChromaContainer) GetClient(opt ...chromago.ClientOption) (*chromago.Client, error) {
 	endpoint, err := c.RESTEndpoint(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	return chromago.NewClient(endpoint, opt)
-
+	return chromago.NewClient(endpoint, opt...)
 }
