@@ -64,6 +64,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &natsContainer, nil
 }
 
+func (c *NATSContainer) MustConnectionString(ctx context.Context, args ...string) string {
+	addr, err := c.ConnectionString(ctx,args...)
+	if err != nil {
+		panic(err)
+	}
+	return addr
+}
+
 // ConnectionString returns a connection string for the NATS container
 func (c *NATSContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	mappedPort, err := c.MappedPort(ctx, defaultClientPort)
