@@ -155,7 +155,7 @@ func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx:latest",
 		ExposedPorts: []string{"8080/tcp", "80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithForcedIPv4LocalHost(),
+		WaitingFor:   wait.ForHTTP("/").WithPort("80/tcp"),
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
