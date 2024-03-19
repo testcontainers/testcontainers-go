@@ -695,7 +695,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
 			t.Fatal("no error")
 		}
 
-		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+		expected := "no exposed tcp ports or mapped ports - cannot wait for status"
 		if err.Error() != expected {
 			t.Fatalf("expected %q, got %q", expected, err.Error())
 		}
@@ -743,7 +743,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
 			t.Fatal("no error")
 		}
 
-		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+		expected := "no exposed tcp ports or mapped ports - cannot wait for status"
 		if err.Error() != expected {
 			t.Fatalf("expected %q, got %q", expected, err.Error())
 		}
@@ -786,7 +786,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.
 			t.Fatal("no error")
 		}
 
-		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+		expected := "no exposed tcp ports or mapped ports - cannot wait for status"
 		if err.Error() != expected {
 			t.Fatalf("expected %q, got %q", expected, err.Error())
 		}

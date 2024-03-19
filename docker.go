@@ -162,7 +162,12 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 		return "", err
 	}
 
-	for k, p := range ports {
+	boundPorts, err := core.BoundPortsFromBindings(ports)
+	if err != nil {
+		return "", err
+	}
+
+	for k, p := range boundPorts {
 		if k.Port() != port.Port() {
 			continue
 		}
@@ -172,7 +177,7 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 		if len(p) == 0 {
 			continue
 		}
-		return nat.NewPort(k.Proto(), p[0].HostPort)
+		return nat.NewPort(k.Proto(), p.Port())
 	}
 
 	return "", errors.New("port not found")

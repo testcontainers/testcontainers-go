@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
+
+	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
 // Implement interface
@@ -95,8 +97,13 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			return err
 		}
 		if len(ports) > 0 {
-			for p := range ports {
-				internalPort = p
+			boundPorts, err := core.BoundPortsFromBindings(ports)
+			if err != nil {
+				return err
+			}
+
+			for containerPort := range boundPorts {
+				internalPort = containerPort
 				break
 			}
 		}
