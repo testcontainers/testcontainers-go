@@ -3,6 +3,7 @@ package chroma
 import (
 	"context"
 	"fmt"
+	chromago "github.com/amikos-tech/chroma-go"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -57,4 +58,13 @@ func (c *ChromaContainer) RESTEndpoint(ctx context.Context) (string, error) {
 	}
 
 	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
+}
+
+func (c *ChromaContainer) GetClient(opt chromago.ClientOption) (*chromago.Client, error) {
+	endpoint, err := c.RESTEndpoint(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	return chromago.NewClient(endpoint, opt)
+
 }

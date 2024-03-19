@@ -99,13 +99,8 @@ func ExampleChromaContainer_collections() {
 		}
 	}()
 
-	connectionStr, err := chromaContainer.RESTEndpoint(ctx)
-	if err != nil {
-		log.Fatalf("failed to get REST endpoint: %s", err) // nolint:gocritic
-	}
-
 	// create the client connection and confirm that we can access the server with it
-	chromaClient, err := chromago.NewClient(connectionStr, chromago.WithDebug(true))
+	chromaClient, err := chromaContainer.GetClient(chromago.WithDebug(true))
 
 	// createCollection {
 	// for testing we use a dummy hashing function NewConsistentHashEmbeddingFunction
@@ -117,19 +112,37 @@ func ExampleChromaContainer_collections() {
 
 	fmt.Println("Collection created:", col.Name)
 
+	// addData {
 	// verify it's possible to add data to the collection
 	col1, err := col.Add(
 		context.Background(),
-		types.NewEmbeddingsFromFloat32([][]float32{{1, 2, 3}, {4, 5, 6}}),
-		[]map[string]interface{}{},
-		[]string{"test-doc-1", "test-doc-2"},
-		[]string{"test-label-1", "test-label-2"},
+		types.NewEmbeddingsFromFloat32([][]float32{{1, 2, 3}, {4, 5, 6}}), // or set this to nil to use the EmbeddingFunction
+		[]map[string]interface{}{},                                        // metadata
+		[]string{"test-doc-1", "test-doc-2"},                              // documents
+		[]string{"test-label-1", "test-label-2"},                          //ids
 	)
+	// }
 	if err != nil {
 		log.Fatalf("failed to add data to collection: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(col1.Count(context.Background()))
+
+	// queryCollection {
+	// verify it's possible to query the collection
+	queryResults, err := col1.QueryWithOptions(
+		context.Background(),
+		types.WithQueryTexts([]string{"test-doc-1"}),
+		types.WithInclude(types.IDocuments, types.IEmbeddings, types.IMetadatas),
+		types.WithNResults(1),
+	)
+	// }
+	if err != nil {
+		log.Fatalf("failed to query collection: %s", err) // nolint:gocritic
+	}
+	// }
+
+	fmt.Printf("Result of query: %v\n", queryResults)
 
 	// listCollections {
 	cols, err := chromaClient.ListCollections(context.Background())
