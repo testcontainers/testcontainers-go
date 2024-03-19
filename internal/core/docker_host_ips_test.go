@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
