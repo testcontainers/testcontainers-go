@@ -49,10 +49,14 @@ func TestChroma(t *testing.T) {
 
 	t.Run("GetClient", func(tt *testing.T) {
 		// restEndpoint {
-		chromaClient, err := container.GetClient(chromago.WithDebug(true))
+		endpoint, err := container.RESTEndpoint(context.Background())
+		if err != nil {
+			tt.Fatalf("failed to get REST endpoint: %s", err) // nolint:gocritic
+		}
+		chromaClient, err := chromago.NewClient(endpoint)
 		// }
 		if err != nil {
-			tt.Fatalf("failed to get REST endpoint: %s", err)
+			tt.Fatalf("failed to create client: %s", err)
 		}
 
 		hb, err := chromaClient.Heartbeat(context.TODO())

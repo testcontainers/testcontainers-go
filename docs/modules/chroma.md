@@ -59,14 +59,6 @@ This method returns the REST endpoint of the Chroma container, using the default
 [Get REST endpoint](../../modules/chroma/chroma_test.go) inside_block:restEndpoint
 <!--/codeinclude-->
 
-#### GetClient
-
-This method returns a `chroma-go` client that can be used to interact with the Chroma container.
-
-<!--codeinclude-->
-[GetClient](../../modules/chroma/chroma_test.go) inside_block:getClient
-<!--/codeinclude-->
-
 ## Examples
 
 ### Getting a Chroma client

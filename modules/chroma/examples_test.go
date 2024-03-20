@@ -56,7 +56,11 @@ func ExampleChromaContainer_connectWithClient() {
 		}
 	}()
 
-	chromaClient, err := chromaContainer.GetClient()
+	endpoint, err := chromaContainer.RESTEndpoint(context.Background())
+	if err != nil {
+		log.Fatalf("failed to get REST endpoint: %s", err) // nolint:gocritic
+	}
+	chromaClient, err := chromago.NewClient(endpoint)
 	if err != nil {
 		log.Fatalf("failed to get client: %s", err) // nolint:gocritic
 	}
@@ -90,7 +94,11 @@ func ExampleChromaContainer_collections() {
 
 	// getClient {
 	// create the client connection and confirm that we can access the server with it
-	chromaClient, err := chromaContainer.GetClient(chromago.WithDebug(true))
+	endpoint, err := chromaContainer.RESTEndpoint(context.Background())
+	if err != nil {
+		log.Fatalf("failed to get REST endpoint: %s", err) // nolint:gocritic
+	}
+	chromaClient, err := chromago.NewClient(endpoint)
 	// }
 	if err != nil {
 		log.Fatalf("failed to get client: %s", err) // nolint:gocritic
