@@ -113,8 +113,8 @@ func ExampleHTTPStrategy_WithHeaders() {
 
 	// Output:
 	// true
-
 }
+
 func ExampleHTTPStrategy_WithPort() {
 	// waitForHTTPWithPort {
 	ctx := context.Background()
