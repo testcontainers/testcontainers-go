@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"net"
+	"sync"
 )
 
 type IPFamily string
@@ -10,6 +11,11 @@ type IPFamily string
 const (
 	IPv4 IPFamily = "IPv4"
 	IPv6 IPFamily = "IPv6"
+)
+
+var (
+	hostIPs     []HostIP
+	hostIPsOnce sync.Once
 )
 
 type HostIP struct {
@@ -42,7 +48,19 @@ func newHostIP(host string) HostIP {
 }
 
 // GetDockerHostIPs returns the IP addresses of the Docker host.
+// The function is protected by a sync.Once to avoid unnecessary calculations.
 func GetDockerHostIPs(host string) []HostIP {
+	hostIPsOnce.Do(func() {
+		hostIPs = getDockerHostIPs(host)
+	})
+
+	return hostIPs
+}
+
+// getDockerHostIPs returns the IP addresses of the Docker host.
+// The function is helpful for testing purposes,
+// as it's not protected by the sync.Once.
+func getDockerHostIPs(host string) []HostIP {
 	hip := newHostIP(host)
 
 	ips, err := net.LookupIP(hip.Address)
@@ -50,10 +68,10 @@ func GetDockerHostIPs(host string) []HostIP {
 		return []HostIP{hip}
 	}
 
-	var hostIPs []HostIP
+	var hips = []HostIP{}
 	for _, ip := range ips {
-		hostIPs = append(hostIPs, newHostIP(ip.String()))
+		hips = append(hostIPs, newHostIP(ip.String()))
 	}
 
-	return hostIPs
+	return hips
 }
