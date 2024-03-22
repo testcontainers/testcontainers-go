@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 
 	chromago "github.com/amikos-tech/chroma-go"
-	"github.com/amikos-tech/chroma-go/openai"
-	chromaopenapi "github.com/amikos-tech/chroma-go/swagger"
+	"github.com/amikos-tech/chroma-go/types"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/chroma"
@@ -18,7 +16,7 @@ func ExampleRunContainer() {
 	// runChromaContainer {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.22"))
+	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -46,7 +44,7 @@ func ExampleChromaContainer_connectWithClient() {
 	// createClient {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.22"))
+	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -58,21 +56,13 @@ func ExampleChromaContainer_connectWithClient() {
 		}
 	}()
 
-	connectionStr, err := chromaContainer.RESTEndpoint(ctx)
+	endpoint, err := chromaContainer.RESTEndpoint(context.Background())
 	if err != nil {
 		log.Fatalf("failed to get REST endpoint: %s", err) // nolint:gocritic
 	}
-
-	// create the client connection and confirm that we can access the server with it
-	configuration := chromaopenapi.NewConfiguration()
-	configuration.Servers = chromaopenapi.ServerConfigurations{
-		{
-			URL:         connectionStr,
-			Description: "Chromadb server url for this store",
-		},
-	}
-	chromaClient := &chromago.Client{
-		ApiClient: chromaopenapi.NewAPIClient(configuration),
+	chromaClient, err := chromago.NewClient(endpoint)
+	if err != nil {
+		log.Fatalf("failed to get client: %s", err) // nolint:gocritic
 	}
 
 	hbs, errHb := chromaClient.Heartbeat(context.Background())
@@ -91,7 +81,7 @@ func ExampleChromaContainer_connectWithClient() {
 func ExampleChromaContainer_collections() {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.22"))
+	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"), testcontainers.WithEnv(map[string]string{"ALLOW_RESET": "true"}))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -102,30 +92,28 @@ func ExampleChromaContainer_collections() {
 		}
 	}()
 
-	connectionStr, err := chromaContainer.RESTEndpoint(ctx)
+	// getClient {
+	// create the client connection and confirm that we can access the server with it
+	endpoint, err := chromaContainer.RESTEndpoint(context.Background())
 	if err != nil {
 		log.Fatalf("failed to get REST endpoint: %s", err) // nolint:gocritic
 	}
-
-	// create the client connection and confirm that we can access the server with it
-	configuration := chromaopenapi.NewConfiguration()
-	configuration.Servers = chromaopenapi.ServerConfigurations{
-		{
-			URL:         connectionStr,
-			Description: "Chromadb server url for this store",
-		},
+	chromaClient, err := chromago.NewClient(endpoint)
+	// }
+	if err != nil {
+		log.Fatalf("failed to get client: %s", err) // nolint:gocritic
 	}
-	chromaClient := &chromago.Client{
-		ApiClient: chromaopenapi.NewAPIClient(configuration),
+	// reset {
+	reset, err := chromaClient.Reset(context.Background())
+	// }
+	if err != nil {
+		log.Fatalf("failed to reset: %s", err) // nolint:gocritic
 	}
+	fmt.Printf("Reset successful: %v\n", reset)
 
 	// createCollection {
-	// for testing purposes, the OPENAI_API_KEY environment variable can be empty
-	// therefore this test is expected to succeed even though the API key is not set.
-	embeddingFunction := openai.NewOpenAIEmbeddingFunction(os.Getenv("OPENAI_API_KEY"))
-	distanceFunction := chromago.L2
-
-	col, err := chromaClient.CreateCollection(context.Background(), "test-collection", map[string]any{}, true, embeddingFunction, distanceFunction)
+	// for testing we use a dummy hashing function NewConsistentHashEmbeddingFunction
+	col, err := chromaClient.CreateCollection(context.Background(), "test-collection", map[string]any{}, true, types.NewConsistentHashEmbeddingFunction(), types.L2)
 	// }
 	if err != nil {
 		log.Fatalf("failed to create collection: %s", err) // nolint:gocritic
@@ -133,19 +121,36 @@ func ExampleChromaContainer_collections() {
 
 	fmt.Println("Collection created:", col.Name)
 
+	// addData {
 	// verify it's possible to add data to the collection
 	col1, err := col.Add(
 		context.Background(),
-		[][]float32{{1, 2, 3}, {4, 5, 6}},
-		[]map[string]interface{}{},
-		[]string{"test-doc-1", "test-doc-2"},
-		[]string{"test-label-1", "test-label-2"},
+		nil,                                      // embeddings
+		[]map[string]interface{}{},               // metadata
+		[]string{"test-doc-1", "test-doc-2"},     // documents
+		[]string{"test-label-1", "test-label-2"}, // ids
 	)
+	// }
 	if err != nil {
 		log.Fatalf("failed to add data to collection: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(col1.Count(context.Background()))
+
+	// queryCollection {
+	// verify it's possible to query the collection
+	queryResults, err := col1.QueryWithOptions(
+		context.Background(),
+		types.WithQueryTexts([]string{"test-doc-1"}),
+		types.WithInclude(types.IDocuments, types.IEmbeddings, types.IMetadatas),
+		types.WithNResults(1),
+	)
+	// }
+	if err != nil {
+		log.Fatalf("failed to query collection: %s", err) // nolint:gocritic
+	}
+
+	fmt.Printf("Result of query: %v\n", queryResults)
 
 	// listCollections {
 	cols, err := chromaClient.ListCollections(context.Background())
@@ -166,8 +171,10 @@ func ExampleChromaContainer_collections() {
 	fmt.Println(err)
 
 	// Output:
+	// Reset successful: true
 	// Collection created: test-collection
 	// 2 <nil>
+	// Result of query: &{[[test-doc-1]] [[test-label-1]] [[map[]]] []}
 	// 1
 	// <nil>
 }
