@@ -72,9 +72,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				defaultAdminAPIPort,
 				defaultSchemaRegistryPort,
 			},
-			Entrypoint: []string{},
+			Entrypoint: []string{entrypointFile},
 			Cmd: []string{
-				entrypointFile,
 				"redpanda",
 				"start",
 				"--mode=dev-container",
