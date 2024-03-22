@@ -138,9 +138,7 @@ func (c *DockerContainer) PortEndpoint(ctx context.Context, port nat.Port, proto
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
 // You can use the "TC_HOST" env variable to set this yourself
 func (c *DockerContainer) Host(ctx context.Context) (string, error) {
-	hostIps := core.GetDockerHostIPs()
-
-	return hostIps[0].Address, nil
+	return GetDockerHostIP(), nil
 }
 
 // MappedPort gets externally mapped port for a container port
