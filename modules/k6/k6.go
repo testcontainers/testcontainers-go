@@ -74,13 +74,25 @@ func downloadFileFromDescription(d RemoteTestFileDescription) error{
 // and passes it to k6 as the test to run.
 // The path to the script must be an absolute path
 func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		script := filepath.Base(scriptPath)
-		target := "/home/k6x/" + script
+	
+		scriptBaseName := filepath.Base(scriptPath)
+		f, err := os.Open(scriptPath)
+		if err != nil {
+			panic("Cannot create reader for test file ")
+		}
+		return WithTestScriptReader(f,scriptBaseName)
+	
+}
+
+// Copies files into the Container using the Reader API
+func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainers.CustomizeRequestOption {
+	opt := func(req *testcontainers.GenericContainerRequest) {
+		target := "/home/k6x/" + scriptBaseName
 		req.Files = append(
 			req.Files,
 			testcontainers.ContainerFile{
-				HostFilePath:      scriptPath,
+				HostFilePath:      "",
+				Reader: reader,
 				ContainerFilePath: target,
 				FileMode:          0o644,
 			},
@@ -89,6 +101,7 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 		// add script to the k6 run command
 		req.Cmd = append(req.Cmd, target)
 	}
+	return opt
 }
 
 func WithRemoteTestScript(d RemoteTestFileDescription) testcontainers.CustomizeRequestOption {
