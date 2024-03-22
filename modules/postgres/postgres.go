@@ -26,6 +26,16 @@ type PostgresContainer struct {
 	snapshotName string
 }
 
+
+// MustConnectionString panics if the address cannot be determined.
+func (c *PostgresContainer) MustConnectionString(ctx context.Context, args ...string) string {
+	addr, err := c.ConnectionString(ctx,args...)
+	if err != nil {
+		panic(err)
+	}
+	return addr
+}
+
 // ConnectionString returns the connection string for the postgres container, using the default 5432 port, and
 // obtaining the host and exposed port from the container. It also accepts a variadic list of extra arguments
 // which will be appended to the connection string. The format of the extra arguments is the same as the

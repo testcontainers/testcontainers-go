@@ -30,6 +30,16 @@ If you would like to copy a file to a container, you can do it in two different 
 [Copying a list of files](../../docker_files_test.go) inside_block:copyFileOnCreate
 <!--/codeinclude-->
 
+The `ContainerFile` struct will accept the following fields:
+
+- `HostFilePath`: the path to the file in the host machine. Optional (see below).
+- `Reader`: a `io.Reader` that will be used to copy the file to the container. Optional.
+- `ContainerFilePath`: the path to the file in the container. Mandatory.
+- `Mode`: the file mode, which is optional.
+
+!!!info
+    If the `Reader` field is set, the `HostFilePath` field will be ignored.
+
 2. Using the `CopyFileToContainer` method on a `running` container:
 
 <!--codeinclude-->

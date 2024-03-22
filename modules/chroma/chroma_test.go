@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"testing"
 
+	chromago "github.com/amikos-tech/chroma-go"
+	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/chroma"
 )
@@ -12,7 +15,7 @@ import (
 func TestChroma(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.22.dev44"))
+	container, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,5 +45,22 @@ func TestChroma(t *testing.T) {
 		if resp.StatusCode != http.StatusOK {
 			tt.Fatalf("unexpected status code: %d", resp.StatusCode)
 		}
+	})
+
+	t.Run("GetClient", func(tt *testing.T) {
+		// restEndpoint {
+		endpoint, err := container.RESTEndpoint(context.Background())
+		if err != nil {
+			tt.Fatalf("failed to get REST endpoint: %s", err) // nolint:gocritic
+		}
+		chromaClient, err := chromago.NewClient(endpoint)
+		// }
+		if err != nil {
+			tt.Fatalf("failed to create client: %s", err)
+		}
+
+		hb, err := chromaClient.Heartbeat(context.TODO())
+		require.NoError(tt, err)
+		require.NotNil(tt, hb["nanosecond heartbeat"])
 	})
 }

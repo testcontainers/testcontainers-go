@@ -8,7 +8,7 @@ require (
 	github.com/compose-spec/compose-go/v2 v2.0.0-rc.8.0.20240228111658-a0507e98fe60
 	github.com/docker/cli v25.0.4-0.20240305161310-2bf4225ad269+incompatible
 	github.com/docker/compose/v2 v2.24.7
-	github.com/docker/docker v25.0.4-0.20240301160236-51e876cd964c+incompatible
+	github.com/docker/docker v25.0.5+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.29.1

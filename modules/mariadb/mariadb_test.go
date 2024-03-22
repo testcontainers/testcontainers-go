@@ -36,6 +36,11 @@ func TestMariaDB(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	mustConnectionString := container.MustConnectionString(ctx,"tls=false")
+	if mustConnectionString!=connectionString{
+		t.Errorf("ConnectionString was not equal to MustConnectionString")
+	}
+
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
 		t.Fatal(err)
