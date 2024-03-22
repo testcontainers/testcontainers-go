@@ -154,6 +154,10 @@
             "path": "../modules/redpanda"
         },
         {
+            "name": "module / registry",
+            "path": "../modules/registry"
+        },
+        {
             "name": "module / surrealdb",
             "path": "../modules/surrealdb"
         },
