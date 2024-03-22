@@ -17,13 +17,13 @@ import (
 
 func TestCockroach_Insecure(t *testing.T) {
 	suite.Run(t, &AuthNSuite{
-		url: "postgres://root@localhost:xxxxx/defaultdb?sslmode=disable",
+		url: "postgres://root@" + testcontainers.GetDockerHostIP() + ":xxxxx/defaultdb?sslmode=disable",
 	})
 }
 
 func TestCockroach_NotRoot(t *testing.T) {
 	suite.Run(t, &AuthNSuite{
-		url: "postgres://test@localhost:xxxxx/defaultdb?sslmode=disable",
+		url: "postgres://test@" + testcontainers.GetDockerHostIP() + ":xxxxx/defaultdb?sslmode=disable",
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithUser("test"),
 		},
@@ -32,7 +32,7 @@ func TestCockroach_NotRoot(t *testing.T) {
 
 func TestCockroach_Password(t *testing.T) {
 	suite.Run(t, &AuthNSuite{
-		url: "postgres://foo:bar@localhost:xxxxx/defaultdb?sslmode=disable",
+		url: "postgres://foo:bar@" + testcontainers.GetDockerHostIP() + ":xxxxx/defaultdb?sslmode=disable",
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithUser("foo"),
 			cockroachdb.WithPassword("bar"),
@@ -45,7 +45,7 @@ func TestCockroach_TLS(t *testing.T) {
 	require.NoError(t, err)
 
 	suite.Run(t, &AuthNSuite{
-		url: "postgres://root@localhost:xxxxx/defaultdb?sslmode=verify-full",
+		url: "postgres://root@" + testcontainers.GetDockerHostIP() + ":xxxxx/defaultdb?sslmode=verify-full",
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithTLS(tlsCfg),
 		},

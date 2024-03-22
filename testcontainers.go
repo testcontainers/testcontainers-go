@@ -23,6 +23,12 @@ func ExtractDockerSocket() string {
 	return core.ExtractDockerSocket(context.Background())
 }
 
+// GetDockerHostIPs returns the first IP address of the Docker host, resolving the issue
+// of the host port being bound to multiple IP addresses in the IPv4 and IPv6 case.
+func GetDockerHostIP() string {
+	return core.GetDockerHostIPs()[0].Address
+}
+
 // SessionID returns a unique session ID for the current test session. Because each Go package
 // will be run in a separate process, we need a way to identify the current test session.
 // By test session, we mean:

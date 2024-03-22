@@ -45,5 +45,5 @@ func ExampleRunContainer() {
 
 	// Output:
 	// true
-	// postgres://root@localhost:xxx/defaultdb?sslmode=disable
+	// postgres://root@127.0.0.1:xxx/defaultdb?sslmode=disable
 }
