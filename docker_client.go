@@ -69,7 +69,7 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
 		dockerInfo.ServerVersion, c.Client.ClientVersion(),
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
 		dockerHost,
-		core.GetDockerHostIPs(dockerHost),
+		core.GetDockerHostIPs(),
 		core.ExtractDockerSocket(ctx),
 		core.SessionID(),
 		core.ProcessID(),

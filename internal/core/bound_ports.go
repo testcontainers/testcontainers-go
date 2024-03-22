@@ -1,7 +1,6 @@
 package core
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/docker/go-connections/nat"
@@ -15,9 +14,7 @@ type BoundPorts map[nat.Port]nat.Port
 // This will resolve the issue of the host port being bound to multiple IP addresses
 // in the IPv4 and IPv6 case.
 func BoundPortsFromBindings(portMap nat.PortMap) (BoundPorts, error) {
-	dockerHost := ExtractDockerHost(context.Background())
-
-	hostIPs := GetDockerHostIPs(dockerHost)
+	hostIPs := GetDockerHostIPs()
 
 	boundPorts := make(BoundPorts)
 

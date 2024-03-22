@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"sync"
@@ -49,9 +50,10 @@ func newHostIP(host string) HostIP {
 
 // GetDockerHostIPs returns the IP addresses of the Docker host.
 // The function is protected by a sync.Once to avoid unnecessary calculations.
-func GetDockerHostIPs(host string) []HostIP {
+func GetDockerHostIPs() []HostIP {
 	hostIPsOnce.Do(func() {
-		hostIPs = getDockerHostIPs(host)
+		dockerHost := ExtractDockerHost(context.Background())
+		hostIPs = getDockerHostIPs(dockerHost)
 	})
 
 	return hostIPs
