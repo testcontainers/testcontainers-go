@@ -2,6 +2,7 @@ package k3s_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -102,6 +103,9 @@ func Test_LoadImages(t *testing.T) {
 			state, err := getTestPodState(ctx, k8s)
 			if err != nil {
 				return false, err
+			}
+			if state.Terminated != nil {
+				return false, fmt.Errorf("pod terminated: %v", state.Terminated)
 			}
 			return state.Running != nil, nil
 		})
