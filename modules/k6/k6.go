@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -21,78 +22,71 @@ type K6Container struct {
 	testcontainers.Container
 }
 
-type RemoteTestFileDescription struct{
-
-	Uri string
+type RemoteTestFileDescription struct {
+	Uri         url.URL
 	DownloadDir string
-	User string
-	Password string
+	User        string
+	Password    string
 }
 
-func ( d *RemoteTestFileDescription) getDownloadPath() string{
-	baseName := path.Base(d.Uri)
-	return path.Join(d.DownloadDir,baseName)
+func (d *RemoteTestFileDescription) getDownloadPath() string {
+	baseName := path.Base(d.Uri.Path)
+	return path.Join(d.DownloadDir, baseName)
 
 }
 
-func downloadFileFromDescription(d RemoteTestFileDescription) error{
+func downloadFileFromDescription(d RemoteTestFileDescription) error {
 
-	client := http.Client{Timeout: time.Second*60}
+	client := http.Client{Timeout: time.Second * 60}
 	// Set up HTTPS request with basic authorization.
-	req, err := http.NewRequest(http.MethodGet, d.Uri, nil)
+	req, err := http.NewRequest(http.MethodGet, d.Uri.String(), nil)
 	if err != nil {
 		return err
 	}
 
 	req.Header.Set("Content-Type", "text/javascript")
-	if d.User != "" && d.Password != ""{
+	if d.User != "" && d.Password != "" {
 		req.SetBasicAuth(d.User, d.Password)
-	}	
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
-	
 
-	out, err := os.Create(d.getDownloadPath())
+	downloadedFile, err := os.Create(d.getDownloadPath())
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer downloadedFile.Close()
 
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
+	_, err = io.Copy(downloadedFile, resp.Body)
 	return err
 
-
-
 }
-
 
 // WithTestScript mounts the given script into the ./test directory in the container
 // and passes it to k6 as the test to run.
 // The path to the script must be an absolute path
 func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
-	
-		scriptBaseName := filepath.Base(scriptPath)
-		f, err := os.Open(scriptPath)
-		if err != nil {
-			panic("Cannot create reader for test file ")
-		}
-		return WithTestScriptReader(f,scriptBaseName)
-	
+
+	scriptBaseName := filepath.Base(scriptPath)
+	f, err := os.Open(scriptPath)
+	if err != nil {
+		panic("Cannot create reader for test file ")
+	}
+	return WithTestScriptReader(f, scriptBaseName)
+
 }
 
-// Copies files into the Container using the Reader API
+// WithTestScriptReader copies files into the Container using the Reader API
 func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainers.CustomizeRequestOption {
 	opt := func(req *testcontainers.GenericContainerRequest) {
 		target := "/home/k6x/" + scriptBaseName
 		req.Files = append(
 			req.Files,
 			testcontainers.ContainerFile{
-				HostFilePath:      "",
-				Reader: reader,
+				Reader:            reader,
 				ContainerFilePath: target,
 				FileMode:          0o644,
 			},
@@ -106,8 +100,6 @@ func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainer
 
 func WithRemoteTestScript(d RemoteTestFileDescription) testcontainers.CustomizeRequestOption {
 
-	
-	
 	err := downloadFileFromDescription(d)
 	if err != nil {
 		panic("Not able to download required test script")

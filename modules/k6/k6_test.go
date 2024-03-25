@@ -2,6 +2,7 @@ package k6_test
 
 import (
 	"context"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -9,7 +10,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/k6"
 )
-
 
 func TestK6(t *testing.T) {
 	testCases := []struct {
@@ -32,7 +32,6 @@ func TestK6(t *testing.T) {
 			script: "https://raw.githubusercontent.com/testcontainers/testcontainers-go/main/modules/k6/scripts/pass.js",
 			expect: 0,
 		},
-		
 	}
 
 	for _, tc := range testCases {
@@ -41,21 +40,24 @@ func TestK6(t *testing.T) {
 			ctx := context.Background()
 
 			var options testcontainers.CustomizeRequestOption
-			if !strings.HasPrefix(tc.script, "http"){
+			if !strings.HasPrefix(tc.script, "http") {
 				absPath, err := filepath.Abs(filepath.Join("scripts", tc.script))
 				if err != nil {
 					t.Fatal(err)
 				}
 				options = k6.WithTestScript(absPath)
-			}else{
+			} else {
 
-				desc := k6.RemoteTestFileDescription{Uri : tc.script,DownloadDir:t.TempDir() }
+				uri, err := url.Parse(tc.script)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				desc := k6.RemoteTestFileDescription{Uri: *uri, DownloadDir: t.TempDir()}
 				options = k6.WithRemoteTestScript(desc)
 			}
 
-
-			
-			container, err := k6.RunContainer(ctx, k6.WithCache(),options )
+			container, err := k6.RunContainer(ctx, k6.WithCache(), options)
 			if err != nil {
 				t.Fatal(err)
 			}
