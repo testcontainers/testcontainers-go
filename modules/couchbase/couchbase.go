@@ -85,7 +85,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 
 		// transfer options to the config
 
@@ -663,10 +665,12 @@ type serviceCustomizer struct {
 	enabledService Service
 }
 
-func (c serviceCustomizer) Customize(req *testcontainers.GenericContainerRequest) {
+func (c serviceCustomizer) Customize(req *testcontainers.GenericContainerRequest) error {
 	for _, port := range c.enabledService.ports {
 		req.ExposedPorts = append(req.ExposedPorts, port+"/tcp")
 	}
+
+	return nil
 }
 
 // withService creates a serviceCustomizer for the given service.

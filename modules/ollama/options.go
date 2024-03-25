@@ -8,7 +8,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-var noopCustomizeRequestOption = func(req *testcontainers.GenericContainerRequest) {}
+var noopCustomizeRequestOption = func(req *testcontainers.GenericContainerRequest) error { return nil }
 
 // withGpu requests a GPU for the container, which could improve performance for some models.
 // This option will be automaticall added to the Ollama container to check if the host supports nvidia.

@@ -63,8 +63,10 @@ func (c *OpenLDAPContainer) LoadLdif(ctx context.Context, ldif []byte) error {
 // It is used in conjunction with WithAdminPassword to set a username and its password.
 // It will create the specified user with admin power.
 func WithAdminUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["LDAP_ADMIN_USERNAME"] = username
+
+		return nil
 	}
 }
 
@@ -72,21 +74,25 @@ func WithAdminUsername(username string) testcontainers.CustomizeRequestOption {
 // It is used in conjunction with WithAdminUsername to set a username and its password.
 // It will set the admin password for OpenLDAP.
 func WithAdminPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["LDAP_ADMIN_PASSWORD"] = password
+
+		return nil
 	}
 }
 
 // WithRoot sets the root of the OpenLDAP instance
 func WithRoot(root string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["LDAP_ROOT"] = root
+
+		return nil
 	}
 }
 
 // WithInitialLdif sets the initial ldif file to be loaded into the OpenLDAP container
 func WithInitialLdif(ldif string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      ldif,
 			ContainerFilePath: "/initial_ldif.ldif",
@@ -111,6 +117,8 @@ func WithInitialLdif(ldif string) testcontainers.CustomizeRequestOption {
 				},
 			},
 		})
+
+		return nil
 	}
 }
 
@@ -141,7 +149,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

@@ -21,7 +21,7 @@ type K6Container struct {
 // and passes it to k6 as the test to run.
 // The path to the script must be an absolute path
 func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		script := filepath.Base(scriptPath)
 		target := "/home/k6x/" + script
 		req.Files = append(
@@ -35,20 +35,26 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 
 		// add script to the k6 run command
 		req.Cmd = append(req.Cmd, target)
+
+		return nil
 	}
 }
 
 // WithCmdOptions pass the given options to the k6 run command
 func WithCmdOptions(options ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Cmd = append(req.Cmd, options...)
+
+		return nil
 	}
 }
 
 // SetEnvVar adds a '--env' command-line flag to the k6 command in the container for setting an environment variable for the test script.
 func SetEnvVar(variable string, value string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Cmd = append(req.Cmd, "--env", fmt.Sprintf("%s=%s", variable, value))
+
+		return nil
 	}
 }
 
@@ -68,7 +74,7 @@ func WithCache() testcontainers.CustomizeRequestOption {
 		}
 	}
 
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		mount := testcontainers.ContainerMount{
 			Source: testcontainers.DockerVolumeMountSource{
 				Name:          cacheVol,
@@ -77,6 +83,8 @@ func WithCache() testcontainers.CustomizeRequestOption {
 			Target: "/cache",
 		}
 		req.Mounts = append(req.Mounts, mount)
+
+		return nil
 	}
 }
 
@@ -94,7 +102,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

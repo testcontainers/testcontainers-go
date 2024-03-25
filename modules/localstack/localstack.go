@@ -90,7 +90,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&localStackReq.GenericContainerRequest)
+		if err := opt.Customize(&localStackReq.GenericContainerRequest); err != nil {
+			return nil, err
+		}
 	}
 
 	if isLegacyMode(localStackReq.Image) {

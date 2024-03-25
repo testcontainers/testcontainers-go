@@ -68,8 +68,9 @@ func (o LoggerOption) ApplyDockerTo(opts *DockerProviderOptions) {
 }
 
 // Customize implements ContainerCustomizer.
-func (o LoggerOption) Customize(req *GenericContainerRequest) {
+func (o LoggerOption) Customize(req *GenericContainerRequest) error {
 	req.Logger = o.logger
+	return nil
 }
 
 type testLogger struct {

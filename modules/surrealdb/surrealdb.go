@@ -34,8 +34,10 @@ func (c *SurrealDBContainer) URL(ctx context.Context) (string, error) {
 // It is used in conjunction with WithPassword to set a username and its password.
 // It will create the specified user with superuser power.
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["SURREAL_USER"] = username
+
+		return nil
 	}
 }
 
@@ -43,29 +45,37 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 // It is used in conjunction with WithUsername to set a username and its password.
 // It will set the superuser password for SurrealDB.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["SURREAL_PASS"] = password
+
+		return nil
 	}
 }
 
 // WithAuthentication enables authentication for the SurrealDB instance
 func WithAuthentication() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["SURREAL_AUTH"] = "true"
+
+		return nil
 	}
 }
 
 // WithStrict enables strict mode for the SurrealDB instance
 func WithStrictMode() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["SURREAL_STRICT"] = "true"
+
+		return nil
 	}
 }
 
 // WithAllowAllCaps enables all caps for the SurrealDB instance
 func WithAllowAllCaps() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["SURREAL_CAPS_ALLOW_ALL"] = "false"
+
+		return nil
 	}
 }
 
@@ -94,7 +104,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, fmt.Errorf("customize: %w", err)
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

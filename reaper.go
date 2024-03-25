@@ -120,7 +120,6 @@ func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContai
 
 		return nil
 	}, backoff.WithContext(exp, ctx))
-
 	if err != nil {
 		return nil, err
 	}

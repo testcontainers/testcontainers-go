@@ -152,3 +152,20 @@ The above example is updating the predefined command of the image, **appending**
 
 !!!info
     This can't be used to replace the command, only to append options.
+
+!!!warning
+    The interface definition for `ContainerCustomizer` was changed to allow
+    errors the be correctly processed, specifically `Customize` method was
+    changed from:
+
+```go
+Customize(req *GenericContainerRequest)
+```
+
+To:
+
+```go
+Customize(req *GenericContainerRequest) error
+```
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>

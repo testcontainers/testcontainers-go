@@ -26,8 +26,10 @@ var NoopOverrideContainerRequest = func(req testcontainers.ContainerRequest) tes
 	return req
 }
 
-func (opt OverrideContainerRequestOption) Customize(req *testcontainers.GenericContainerRequest) {
+func (opt OverrideContainerRequestOption) Customize(req *testcontainers.GenericContainerRequest) error {
 	req.ContainerRequest = opt(req.ContainerRequest)
+
+	return nil
 }
 
 // OverrideContainerRequest returns a function that can be used to merge the passed container request with one that is created by the LocalStack container
@@ -43,7 +45,9 @@ func OverrideContainerRequest(r testcontainers.ContainerRequest) func(req testco
 		}
 
 		opt := testcontainers.CustomizeRequest(destContainerReq)
-		opt.Customize(&srcContainerReq)
+		if err := opt.Customize(&srcContainerReq); err != nil {
+			panic(err)
+		}
 
 		return srcContainerReq.ContainerRequest
 	}

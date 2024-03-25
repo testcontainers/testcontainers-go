@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
@@ -24,7 +25,9 @@ func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.Docker
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&nc)
+		if err := opt.Customize(&nc); err != nil {
+			return nil, err
+		}
 	}
 
 	//nolint:staticcheck
@@ -54,76 +57,90 @@ func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.Docker
 
 // NetworkCustomizer is an interface that can be used to configure the network create request.
 type NetworkCustomizer interface {
-	Customize(req *types.NetworkCreate)
+	Customize(req *types.NetworkCreate) error
 }
 
 // CustomizeNetworkOption is a type that can be used to configure the network create request.
-type CustomizeNetworkOption func(req *types.NetworkCreate)
+type CustomizeNetworkOption func(req *types.NetworkCreate) error
 
 // Customize implements the NetworkCustomizer interface,
 // applying the option to the network create request.
-func (opt CustomizeNetworkOption) Customize(req *types.NetworkCreate) {
-	opt(req)
+func (opt CustomizeNetworkOption) Customize(req *types.NetworkCreate) error {
+	return opt(req)
 }
 
 // WithAttachable allows to set the network as attachable.
 func WithAttachable() CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) {
+	return func(original *types.NetworkCreate) error {
 		original.Attachable = true
+
+		return nil
 	}
 }
 
 // WithCheckDuplicate allows to check if a network with the same name already exists.
 func WithCheckDuplicate() CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) {
+	return func(original *types.NetworkCreate) error {
 		//nolint:staticcheck
 		original.CheckDuplicate = true
+
+		return nil
 	}
 }
 
 // WithDriver allows to override the default network driver, which is "bridge".
 func WithDriver(driver string) CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) {
+	return func(original *types.NetworkCreate) error {
 		original.Driver = driver
+
+		return nil
 	}
 }
 
 // WithEnableIPv6 allows to set the network as IPv6 enabled.
 // Please use this option if and only if IPv6 is enabled on the Docker daemon.
 func WithEnableIPv6() CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) {
+	return func(original *types.NetworkCreate) error {
 		original.EnableIPv6 = true
+
+		return nil
 	}
 }
 
 // WithInternal allows to set the network as internal.
 func WithInternal() CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) {
+	return func(original *types.NetworkCreate) error {
 		original.Internal = true
+
+		return nil
 	}
 }
 
 // WithLabels allows to set the network labels, adding the new ones
 // to the default Testcontainers for Go labels.
 func WithLabels(labels map[string]string) CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) {
+	return func(original *types.NetworkCreate) error {
 		for k, v := range labels {
 			original.Labels[k] = v
 		}
+
+		return nil
 	}
 }
 
 // WithIPAM allows to change the default IPAM configuration.
 func WithIPAM(ipam *network.IPAM) CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) {
+	return func(original *types.NetworkCreate) error {
 		original.IPAM = ipam
+
+		return nil
 	}
 }
 
 // WithNetwork reuses an already existing network, attaching the container to it.
 // Finally it sets the network alias on that network to the given alias.
 func WithNetwork(aliases []string, nw *testcontainers.DockerNetwork) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		networkName := nw.Name
 
 		// attaching to the network because it was created with success or it already existed.
@@ -133,21 +150,18 @@ func WithNetwork(aliases []string, nw *testcontainers.DockerNetwork) testcontain
 			req.NetworkAliases = make(map[string][]string)
 		}
 		req.NetworkAliases[networkName] = aliases
+
+		return nil
 	}
 }
 
 // WithNewNetwork creates a new network with random name and customizers, and attaches the container to it.
 // Finally it sets the network alias on that network to the given alias.
 func WithNewNetwork(ctx context.Context, aliases []string, opts ...NetworkCustomizer) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		newNetwork, err := New(ctx, opts...)
 		if err != nil {
-			logger := req.Logger
-			if logger == nil {
-				logger = testcontainers.Logger
-			}
-			logger.Printf("failed to create network. Container won't be attached to it: %v", err)
-			return
+			return fmt.Errorf("new network: %w", err)
 		}
 
 		networkName := newNetwork.Name
@@ -159,5 +173,7 @@ func WithNewNetwork(ctx context.Context, aliases []string, opts ...NetworkCustom
 			req.NetworkAliases = make(map[string][]string)
 		}
 		req.NetworkAliases[networkName] = aliases
+
+		return nil
 	}
 }

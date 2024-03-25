@@ -130,7 +130,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
     }
     ...
     for _, opt := range opts {
-        req = opt.Customize(&genericContainerReq)
+        if err := opt.Customize(&genericContainerReq); err != nil {
+            return nil, fmt.Errorf("customise: %w", err)
+        }
 
         // If you need to transfer some state from the options to the container, you can do it here
         if myCustomizer, ok := opt.(MyCustomizer); ok {
