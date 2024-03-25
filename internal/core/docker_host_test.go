@@ -18,8 +18,7 @@ import (
 var testRemoteHost = TCPSchema + "127.0.0.1:12345"
 
 var (
-	originalDockerSocketPath           string
-	originalDockerSocketPathWithSchema string
+	originalDockerSocketPath string
 )
 
 var (
@@ -29,7 +28,6 @@ var (
 
 func init() {
 	originalDockerSocketPath = DockerSocketPath
-	originalDockerSocketPathWithSchema = DockerSocketPathWithSchema
 
 	originalDockerSocketOverride = os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
 
@@ -86,7 +84,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
 
-		assert.Equal(t, DockerSocketPathWithSchema, host)
+		assert.Equal(t, DockerSocketSchema+DockerSocketPath, host)
 	})
 
 	t.Run("Malformed Schema Docker Host is passed in context", func(t *testing.T) {
@@ -96,7 +94,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "http://path to docker sock"))
 
-		assert.Equal(t, DockerSocketPathWithSchema, host)
+		assert.Equal(t, DockerSocketSchema+DockerSocketPath, host)
 	})
 
 	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
@@ -133,7 +131,7 @@ func TestExtractDockerHost(t *testing.T) {
 		setupRootlessNotFound(t)
 		host := extractDockerHost(context.Background())
 
-		assert.Equal(t, DockerSocketPathWithSchema, host)
+		assert.Equal(t, DockerSocketSchema+DockerSocketPath, host)
 	})
 
 	t.Run("Extract Docker socket", func(t *testing.T) {
@@ -466,7 +464,6 @@ func setupDockerHostNotFound(t *testing.T) {
 func setupDockerSocket(t *testing.T) string {
 	t.Cleanup(func() {
 		DockerSocketPath = originalDockerSocketPath
-		DockerSocketPathWithSchema = originalDockerSocketPathWithSchema
 	})
 
 	tmpDir := t.TempDir()
@@ -475,7 +472,6 @@ func setupDockerSocket(t *testing.T) string {
 	require.NoError(t, err)
 
 	DockerSocketPath = tmpSocket
-	DockerSocketPathWithSchema = tmpSchema + tmpSocket
 
 	return tmpSchema + tmpSocket
 }
@@ -483,7 +479,6 @@ func setupDockerSocket(t *testing.T) string {
 func setupDockerSocketNotFound(t *testing.T) {
 	t.Cleanup(func() {
 		DockerSocketPath = originalDockerSocketPath
-		DockerSocketPathWithSchema = originalDockerSocketPathWithSchema
 	})
 
 	tmpDir := t.TempDir()

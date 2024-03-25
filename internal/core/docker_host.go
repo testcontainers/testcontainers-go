@@ -120,7 +120,7 @@ func extractDockerHost(ctx context.Context) string {
 	}
 
 	// We are not supporting Windows containers at the moment
-	return DockerSocketPathWithSchema
+	return DockerSocketSchema + DockerSocketPath
 }
 
 // extractDockerHost Extracts the docker socket from the different alternatives, without caching the result.
@@ -232,7 +232,7 @@ func dockerSocketOverridePath(ctx context.Context) (string, error) {
 // and the socket exists
 func dockerSocketPath(ctx context.Context) (string, error) {
 	if fileExists(DockerSocketPath) {
-		return DockerSocketPathWithSchema, nil
+		return DockerSocketSchema + DockerSocketPath, nil
 	}
 
 	return "", ErrSocketNotFoundInPath
