@@ -32,6 +32,11 @@ func TestK6(t *testing.T) {
 			script: "https://raw.githubusercontent.com/testcontainers/testcontainers-go/main/modules/k6/scripts/pass.js",
 			expect: 0,
 		},
+		{
+			title:  "Failing remote test",
+			script: "https://raw.githubusercontent.com/testcontainers/testcontainers-go/main/modules/k6/scripts/fail.js",
+			expect: 108,
+		},
 	}
 
 	for _, tc := range testCases {

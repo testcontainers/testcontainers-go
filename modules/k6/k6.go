@@ -38,13 +38,13 @@ func (d *RemoteTestFileDescription) getDownloadPath() string {
 func downloadFileFromDescription(d RemoteTestFileDescription) error {
 
 	client := http.Client{Timeout: time.Second * 60}
-	// Set up HTTPS request with basic authorization.
 	req, err := http.NewRequest(http.MethodGet, d.Uri.String(), nil)
 	if err != nil {
 		return err
 	}
 
 	req.Header.Set("Content-Type", "text/javascript")
+	// Set up HTTPS request with basic authorization.
 	if d.User != "" && d.Password != "" {
 		req.SetBasicAuth(d.User, d.Password)
 	}
@@ -80,6 +80,8 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 }
 
 // WithTestScriptReader copies files into the Container using the Reader API
+// The script base name is not a path, neither absolute or relative and should
+// be just the file name of the script
 func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainers.CustomizeRequestOption {
 	opt := func(req *testcontainers.GenericContainerRequest) {
 		target := "/home/k6x/" + scriptBaseName
@@ -98,6 +100,7 @@ func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainer
 	return opt
 }
 
+// WithRemoteTestScript takes a RemoteTestFileDescription and copies to container
 func WithRemoteTestScript(d RemoteTestFileDescription) testcontainers.CustomizeRequestOption {
 
 	err := downloadFileFromDescription(d)
