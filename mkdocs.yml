@@ -73,6 +73,7 @@ nav:
         - modules/elasticsearch.md
         - modules/gcloud.md
         - modules/inbucket.md
+        - modules/influxdb.md
         - modules/k3s.md
         - modules/k6.md
         - modules/kafka.md
