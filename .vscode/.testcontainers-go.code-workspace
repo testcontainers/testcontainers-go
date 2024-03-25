@@ -58,6 +58,10 @@
             "path": "../modules/inbucket"
         },
         {
+            "name": "module / influxdb",
+            "path": "../modules/influxdb"
+        },
+        {
             "name": "module / k3s",
             "path": "../modules/k3s"
         },
