@@ -1027,20 +1027,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			pullOpt := types.ImagePullOptions{
 				Platform: req.ImagePlatform, // may be empty
 			}
-
-			registry, imageAuth, err := DockerImageAuth(ctx, imageName)
-			if err != nil {
-				p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, imageName, err)
-			} else {
-				// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
-				encodedJSON, err := json.Marshal(imageAuth)
-				if err != nil {
-					p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", imageName, err)
-				} else {
-					pullOpt.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
-				}
-			}
-
 			if err := p.attemptToPullImage(ctx, imageName, pullOpt); err != nil {
 				return nil, err
 			}
@@ -1245,10 +1231,20 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 // attemptToPullImage tries to pull the image while respecting the ctx cancellations.
 // Besides, if the image cannot be pulled due to ErrorNotFound then no need to retry but terminate immediately.
 func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt types.ImagePullOptions) error {
-	var (
-		err  error
-		pull io.ReadCloser
-	)
+	registry, imageAuth, err := DockerImageAuth(ctx, tag)
+	if err != nil {
+		p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, tag, err)
+	} else {
+		// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
+		encodedJSON, err := json.Marshal(imageAuth)
+		if err != nil {
+			p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", tag, err)
+		} else {
+			pullOpt.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
+		}
+	}
+
+	var pull io.ReadCloser
 	err = backoff.Retry(func() error {
 		pull, err = p.client.ImagePull(ctx, tag, pullOpt)
 		if err != nil {

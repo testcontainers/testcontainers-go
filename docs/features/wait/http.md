@@ -8,6 +8,8 @@ The HTTP wait strategy will check the result of an HTTP(S) request against the c
 - the HTTP request body to be sent.
 - the HTTP status code matcher as a function.
 - the HTTP response matcher as a function.
+- the HTTP headers to be used.
+- the HTTP response headers matcher as a function.
 - the TLS config to be used for HTTPS.
 - the startup timeout to be used in seconds, default is 60 seconds.
 - the poll interval to be used in milliseconds, default is 100 milliseconds.
@@ -40,4 +42,10 @@ Variations on the HTTP wait strategy are supported, including:
 
 <!--codeinclude-->
 [Waiting for an HTTP endpoint matching an HTTP status code](../../../wait/http_test.go) inside_block:waitForHTTPStatusCode
+<!--/codeinclude-->
+
+## Match for HTTP response headers
+
+<!--codeinclude-->
+[Waiting for an HTTP endpoint matching an HTTP response header](../../../wait/http_test.go) inside_block:waitForHTTPHeaders
 <!--/codeinclude-->

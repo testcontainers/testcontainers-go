@@ -32,6 +32,11 @@ func TestNATS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get connection string: %s", err)
 	}
+	mustUri := container.MustConnectionString(ctx)
+	if mustUri!=uri{
+		t.Errorf("URI was not equal to MustUri")
+	}
+
 
 	// perform assertions
 	nc, err := nats.Connect(uri)

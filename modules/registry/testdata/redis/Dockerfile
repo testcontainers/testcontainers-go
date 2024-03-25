@@ -1,0 +1,3 @@
+ARG REGISTRY_PORT=5000
+
+FROM localhost:${REGISTRY_PORT}/redis:5.0-alpine

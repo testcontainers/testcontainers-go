@@ -55,7 +55,7 @@ jobs:
         if: ${{ inputs.rootless-docker }}
         uses: ScribeMD/rootless-docker@6bd157a512c2fafa4e0243a8aa87d964eb890886  # v0.2.2
 
-      - name: Remove Docket root socket
+      - name: Remove Docker root socket
         if: ${{ inputs.rootless-docker }}
         run: sudo rm -rf /var/run/docker.sock
 

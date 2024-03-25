@@ -11,7 +11,7 @@ import (
 	"github.com/magiconair/properties"
 )
 
-const ReaperDefaultImage = "testcontainers/ryuk:0.6.0"
+const ReaperDefaultImage = "testcontainers/ryuk:0.7.0"
 
 var (
 	tcConfig     Config

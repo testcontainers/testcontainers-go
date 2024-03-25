@@ -2,6 +2,7 @@ package testcontainers_test
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -22,12 +23,18 @@ func TestCopyFileToContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	r, err := os.Open(absPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "docker.io/bash",
 			Files: []testcontainers.ContainerFile{
 				{
-					HostFilePath:      absPath,
+					Reader:            r,
+					HostFilePath:      absPath, // will be discarded internally
 					ContainerFilePath: "/hello.sh",
 					FileMode:          0o700,
 				},

@@ -6,6 +6,11 @@ Since testcontainers-go <a href="https://github.com/testcontainers/testcontainer
 
 The Testcontainers module for Chroma.
 
+## Resources
+
+- [Chroma Docs](https://docs.trychroma.com/getting-started) - Chroma official documentation.
+- [Chroma Cookbook](http://cookbook.chromadb.dev) - Community-driven Chroma cookbook.
+
 ## Adding this module to your project dependencies
 
 Please run the following command to add the Chroma module to your Go dependencies:
@@ -38,7 +43,7 @@ When starting the Chroma container, you can pass options in a variadic way to co
 #### Image
 
 If you need to set a different Chroma Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Chroma. E.g. `testcontainers.WithImage("chromadb/chroma:0.4.22.dev44")`.
+for Chroma. E.g. `testcontainers.WithImage("chromadb/chroma:0.4.24")`.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -65,14 +70,14 @@ First of all, you need to import the Chroma module and the Swagger client:
 ```golang
 import (
     chromago "github.com/amikos-tech/chroma-go"
-	chromaopenapi "github.com/amikos-tech/chroma-go/swagger"
+    "github.com/amikos-tech/chroma-go/types"
 )
 ```
 
 Then, you can create a Chroma client using the Chroma module:
 
 <!--codeinclude-->
-[Get the client](../../modules/chroma/examples_test.go) inside_block:createClient
+[Get the client](../../modules/chroma/examples_test.go) inside_block:getClient
 <!--/codeinclude-->
 
 ### Working with Collections
@@ -80,5 +85,7 @@ Then, you can create a Chroma client using the Chroma module:
 <!--codeinclude-->
 [Create Collection](../../modules/chroma/examples_test.go) inside_block:createCollection
 [List Collections](../../modules/chroma/examples_test.go) inside_block:listCollections
+[Add Data to Collection](../../modules/chroma/examples_test.go) inside_block:addData
+[Query Collection](../../modules/chroma/examples_test.go) inside_block:queryCollection
 [Delete Collection](../../modules/chroma/examples_test.go) inside_block:deleteCollection
 <!--/codeinclude-->
