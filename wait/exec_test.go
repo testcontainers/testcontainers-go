@@ -156,7 +156,7 @@ func TestExecStrategyWaitUntilReady_CustomExitCode(t *testing.T) {
 	}
 }
 
-func TestExecStrategyWaitUntilReadyWithSugaryExitCode_MatchesAndTimeout(t *testing.T) {
+func TestExecStrategyWaitUntilReady_withExitCode(t *testing.T) {
 	target := mockExecTarget{
 		exitCode: 10,
 	}
