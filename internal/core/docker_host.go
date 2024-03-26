@@ -140,55 +140,20 @@ func extractDockerSocket(ctx context.Context) string {
 // extractDockerSocketFromClient Extracts the docker socket from the different alternatives, without caching the result,
 // and receiving an instance of the Docker API client interface.
 // This internal method is handy for testing purposes, passing a mock type simulating the desired behaviour.
-// If the Docker info cannot be retrieved, the program will panic.
 func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) string {
-	info, err := cli.Info(ctx)
-	if err != nil {
-		panic(err) // Docker Info is required to get the client socket
-	}
-
-	// check that the socket is not a tcp or unix socket,
-	// including potential remote Docker hosts and rootless Docker.
-	checkDockerSocketFn := func(socket string) string {
-		// this default path will come from the default docker client, which for
-		// unix systems is "/var/run/docker.sock",
-		// and for Windows is "//./pipe/docker_engine"
-		defaultDockerSocketPath := DockerSocketPath
-		if IsWindows() {
-			defaultDockerSocketPath = windowsDockerSocketPath
-		}
-
-		if info.OperatingSystem == "Docker Desktop" {
-			// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker.
-			// For Windows it will be "//var/run/docker.sock" and for Unix it will be "/var/run/docker.sock"
-			return defaultDockerSocketPath
-		}
-
-		// this use case will cover the case when the docker host is a tcp socket
-		if strings.HasPrefix(socket, TCPSchema) {
-			return defaultDockerSocketPath
-		}
-
-		if strings.HasPrefix(socket, DockerSocketSchema) {
-			return strings.Replace(socket, DockerSocketSchema, "", 1)
-		}
-
-		return socket
-	}
-
 	tcHost, err := testcontainersHostFromProperties(ctx)
 	if err == nil {
-		return checkDockerSocketFn(tcHost)
+		return checkDefaultDockerSocket(ctx, cli, tcHost)
 	}
 
 	testcontainersDockerSocket, err := dockerSocketOverridePath(ctx)
 	if err == nil {
-		return checkDockerSocketFn(testcontainersDockerSocket)
+		return checkDefaultDockerSocket(ctx, cli, testcontainersDockerSocket)
 	}
 
 	dockerHost := extractDockerHost(ctx)
 
-	return checkDockerSocketFn(dockerHost)
+	return checkDefaultDockerSocket(ctx, cli, dockerHost)
 }
 
 // dockerHostFromEnv returns the docker host from the DOCKER_HOST environment variable, if it's not empty

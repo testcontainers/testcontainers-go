@@ -17,9 +17,7 @@ import (
 // testRemoteHost is a testcontainers host defined in the properties file for testing purposes
 var testRemoteHost = TCPSchema + "127.0.0.1:12345"
 
-var (
-	originalDockerSocketPath string
-)
+var originalDockerSocketPath string
 
 var (
 	originalDockerSocketOverride string
@@ -266,11 +264,12 @@ func TestExtractDockerHost(t *testing.T) {
 }
 
 // mockCli is a mock implementation of client.APIClient, which is handy for simulating
-// different operating systems.
+// different operating systems and local VS remote Docker hosts.
 type mockCli struct {
 	client.APIClient
-	OS     string
-	OSType string
+	OS      string // used to detect if the Docker Desktop is running
+	OSType  string // used to detect if the Docker client is running in a remote Docker host: linux should represent a remote Docker host
+	infoErr error  // used to simulate an error when calling Info
 }
 
 // Info returns a mock implementation of types.Info, which is handy for detecting the operating system,
@@ -279,7 +278,7 @@ func (m mockCli) Info(ctx context.Context) (system.Info, error) {
 	return system.Info{
 		OperatingSystem: m.OS,
 		OSType:          m.OSType,
-	}, nil
+	}, m.infoErr
 }
 
 func TestExtractDockerSocketFromClient(t *testing.T) {
