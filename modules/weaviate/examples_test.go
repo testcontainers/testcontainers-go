@@ -44,7 +44,7 @@ func ExampleRunContainer() {
 }
 
 func ExampleRunContainer_connectWithClient() {
-	// createClient {
+	// createClientNoModules {
 	ctx := context.Background()
 
 	weaviateContainer, err := tcweaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.23.9"))
@@ -95,7 +95,7 @@ func ExampleRunContainer_connectWithClient() {
 }
 
 func ExampleRunContainer_connectWithClientWithModules() {
-	// createClient {
+	// createClientAndModules {
 	ctx := context.Background()
 
 	enableModules := []string{
