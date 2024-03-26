@@ -58,7 +58,7 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.tr == ProviderPodman && core.IsWindows() {
+			if tt.tr == ProviderPodman && core.IsWindows() && tt.DockerHost == podmanSocket {
 				t.Skip("Podman provider is not implemented for Windows")
 			}
 
