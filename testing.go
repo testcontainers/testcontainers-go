@@ -30,8 +30,9 @@ func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
 		t.Fatalf("failed to create docker client: %s", err)
 	}
 	t.Cleanup(func() {
-		err := cli.Close()
-		t.Fatalf("failed to close docker client: %s", err)
+		if err := cli.Close(); err != nil {
+			t.Fatalf("failed to close docker client: %s", err)
+		}
 	})
 
 	info, err := cli.Info(ctx)
