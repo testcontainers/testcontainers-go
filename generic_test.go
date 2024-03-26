@@ -148,7 +148,7 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 
 func createReuseContainerInSubprocess(t *testing.T, cfg config.Config) string {
 	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess")
-	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=" + core.DockerSocketPath, "DOCKER_HOST=" + cfg.TestcontainersHost}
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=" + core.ExtractDockerSocket(context.Background()), "DOCKER_HOST=" + cfg.TestcontainersHost}
 
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, string(output))
