@@ -140,9 +140,31 @@ func extractDockerSocket(ctx context.Context) string {
 // extractDockerSocketFromClient Extracts the docker socket from the different alternatives, without caching the result,
 // and receiving an instance of the Docker API client interface.
 // This internal method is handy for testing purposes, passing a mock type simulating the desired behaviour.
+// If the Docker info cannot be retrieved, the program will panic.
 func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) string {
+	info, err := cli.Info(ctx)
+	if err != nil {
+		panic(err) // Docker Info is required to get the client socket
+	}
+
 	// check that the socket is not a tcp or unix socket
 	checkDockerSocketFn := func(socket string) string {
+		if strings.Contains(info.ServerVersion, "testcontainerscloud") {
+			// testcontainerscloud is a special case where the docker socket is a unix socket
+			if IsWindows() {
+				return windowsDockerSocketPath
+			}
+
+			return "/var/run/docker.sock"
+		} else if info.OperatingSystem == "Docker Desktop" {
+			// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker
+			if IsWindows() {
+				return windowsDockerSocketPath
+			}
+
+			return DockerSocketPath
+		}
+
 		// this use case will cover the case when the docker host is a tcp socket
 		if strings.HasPrefix(socket, TCPSchema) {
 			return DockerSocketPath
@@ -163,20 +185,6 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 	testcontainersDockerSocket, err := dockerSocketOverridePath(ctx)
 	if err == nil {
 		return checkDockerSocketFn(testcontainersDockerSocket)
-	}
-
-	info, err := cli.Info(ctx)
-	if err != nil {
-		panic(err) // Docker Info is required to get the Operating System
-	}
-
-	// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker
-	if info.OperatingSystem == "Docker Desktop" {
-		if IsWindows() {
-			return windowsDockerSocketPath
-		}
-
-		return DockerSocketPath
 	}
 
 	dockerHost := extractDockerHost(ctx)
