@@ -147,19 +147,20 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 		panic(err) // Docker Info is required to get the client socket
 	}
 
-	// check that the socket is not a tcp or unix socket
+	// check that the socket is not a tcp or unix socket,
+	// including potential remote Docker hosts and rootless Docker.
 	checkDockerSocketFn := func(socket string) string {
+		// this default path will come from the default docker client, which for
+		// unix systems is "/var/run/docker.sock",
+		// and for Windows is "//./pipe/docker_engine"
 		defaultDockerSocketPath := DockerSocketPath
 		if IsWindows() {
 			defaultDockerSocketPath = windowsDockerSocketPath
 		}
 
 		if info.OperatingSystem == "Docker Desktop" {
-			// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker
-			if info.OSType == "linux" {
-				return DockerSocketPath
-			}
-
+			// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker.
+			// For Windows it will be "//var/run/docker.sock" and for Unix it will be "/var/run/docker.sock"
 			return defaultDockerSocketPath
 		}
 
