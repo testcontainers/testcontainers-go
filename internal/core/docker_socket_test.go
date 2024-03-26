@@ -65,7 +65,7 @@ func TestCheckDefaultDockerSocket(t *testing.T) {
 		socket := "tcp://127.0.0.1:12345"
 		expected := "/var/run/docker.sock"
 
-		s := checkDefaultDockerSocket(context.Background(), mockCli{}, socket)
+		s := checkDefaultDockerSocket(context.Background(), mockCli{OSType: "linux"}, socket)
 		if s != expected {
 			tt.Errorf("expected %s, got %s", expected, s)
 		}
@@ -86,6 +86,18 @@ func TestCheckDefaultDockerSocket(t *testing.T) {
 	t.Run("Remote Windows Docker on Unix", func(tt *testing.T) {
 		socket := "tcp://127.0.0.1:12345"
 		expected := "/var/run/docker.sock"
+
+		s := checkDefaultDockerSocket(context.Background(), mockCli{OSType: "windows"}, socket)
+		if s != expected {
+			tt.Errorf("expected %s, got %s", expected, s)
+		}
+	})
+
+	t.Run("Remote Windows Docker on Windows", func(tt *testing.T) {
+		tt.Setenv("GOOS", "windows")
+
+		socket := "tcp://127.0.0.1:12345"
+		expected := "//./pipe/docker_engine"
 
 		s := checkDefaultDockerSocket(context.Background(), mockCli{OSType: "windows"}, socket)
 		if s != expected {
