@@ -18,6 +18,10 @@ func TestCheckDefaultDockerSocket(t *testing.T) {
 	})
 
 	t.Run("Local Docker on Unix", func(tt *testing.T) {
+		if IsWindows() {
+			tt.Skip("skipping test on Windows")
+		}
+
 		socket := "unix:///var/run/docker.sock"
 		expected := "/var/run/docker.sock"
 
@@ -28,6 +32,10 @@ func TestCheckDefaultDockerSocket(t *testing.T) {
 	})
 
 	t.Run("Local Docker on Windows", func(tt *testing.T) {
+		if !IsWindows() {
+			tt.Skip("skipping test on non-Windows")
+		}
+
 		tt.Setenv("GOOS", "windows")
 
 		socket := "npipe:////./pipe/docker_engine"
@@ -40,6 +48,10 @@ func TestCheckDefaultDockerSocket(t *testing.T) {
 	})
 
 	t.Run("Docker Desktop on Unix", func(tt *testing.T) {
+		if IsWindows() {
+			tt.Skip("skipping test on Windows")
+		}
+
 		socket := "unix:///var/run/docker.sock"
 		expected := "/var/run/docker.sock"
 
@@ -50,6 +62,10 @@ func TestCheckDefaultDockerSocket(t *testing.T) {
 	})
 
 	t.Run("Docker Desktop on Windows", func(tt *testing.T) {
+		if !IsWindows() {
+			tt.Skip("skipping test on non-Windows")
+		}
+
 		tt.Setenv("GOOS", "windows")
 
 		socket := "npipe:////./pipe/docker_engine"
@@ -62,6 +78,10 @@ func TestCheckDefaultDockerSocket(t *testing.T) {
 	})
 
 	t.Run("Remote Unix Docker on Unix", func(tt *testing.T) {
+		if IsWindows() {
+			tt.Skip("skipping test on Windows")
+		}
+
 		socket := "tcp://127.0.0.1:12345"
 		expected := "/var/run/docker.sock"
 
@@ -72,6 +92,10 @@ func TestCheckDefaultDockerSocket(t *testing.T) {
 	})
 
 	t.Run("Remote Unix Docker on Windows", func(tt *testing.T) {
+		if !IsWindows() {
+			tt.Skip("skipping test on non-Windows")
+		}
+
 		tt.Setenv("GOOS", "windows")
 
 		socket := "tcp://127.0.0.1:12345"
@@ -84,6 +108,10 @@ func TestCheckDefaultDockerSocket(t *testing.T) {
 	})
 
 	t.Run("Remote Windows Docker on Unix", func(tt *testing.T) {
+		if IsWindows() {
+			tt.Skip("skipping test on Windows")
+		}
+
 		socket := "tcp://127.0.0.1:12345"
 		expected := "/var/run/docker.sock"
 
@@ -94,6 +122,10 @@ func TestCheckDefaultDockerSocket(t *testing.T) {
 	})
 
 	t.Run("Remote Windows Docker on Windows", func(tt *testing.T) {
+		if !IsWindows() {
+			tt.Skip("skipping test on non-Windows")
+		}
+
 		tt.Setenv("GOOS", "windows")
 
 		socket := "tcp://127.0.0.1:12345"
