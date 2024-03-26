@@ -149,25 +149,23 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 
 	// check that the socket is not a tcp or unix socket
 	checkDockerSocketFn := func(socket string) string {
-		if strings.Contains(info.ServerVersion, "testcontainerscloud") {
-			// testcontainerscloud is a special case where the docker socket is a unix socket
-			if IsWindows() {
-				return windowsDockerSocketPath
-			}
+		defaultDockerSocketPath := DockerSocketPath
+		if IsWindows() {
+			defaultDockerSocketPath = windowsDockerSocketPath
+		}
 
-			return "/var/run/docker.sock"
-		} else if info.OperatingSystem == "Docker Desktop" {
+		if info.OperatingSystem == "Docker Desktop" {
 			// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker
-			if IsWindows() {
-				return windowsDockerSocketPath
+			if info.OSType == "linux" {
+				return DockerSocketPath
 			}
 
-			return DockerSocketPath
+			return defaultDockerSocketPath
 		}
 
 		// this use case will cover the case when the docker host is a tcp socket
 		if strings.HasPrefix(socket, TCPSchema) {
-			return DockerSocketPath
+			return defaultDockerSocketPath
 		}
 
 		if strings.HasPrefix(socket, DockerSocketSchema) {

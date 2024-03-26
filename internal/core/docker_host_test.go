@@ -269,8 +269,8 @@ func TestExtractDockerHost(t *testing.T) {
 // different operating systems.
 type mockCli struct {
 	client.APIClient
-	OS            string
-	serverVersion string
+	OS     string
+	OSType string
 }
 
 // Info returns a mock implementation of types.Info, which is handy for detecting the operating system,
@@ -278,7 +278,7 @@ type mockCli struct {
 func (m mockCli) Info(ctx context.Context) (system.Info, error) {
 	return system.Info{
 		OperatingSystem: m.OS,
-		ServerVersion:   m.serverVersion,
+		OSType:          m.OSType,
 	}, nil
 }
 
@@ -350,7 +350,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		assert.Equal(t, DockerSocketPath, socket)
 	})
 
-	t.Run("TCP Docker Socket is passed as Testcontainers properties (Testcontainers Cloud in non-Windows)", func(t *testing.T) {
+	t.Run("TCP Docker Socket is passed as Testcontainers properties (Remote Linux host in non-Windows)", func(t *testing.T) {
 		if IsWindows() {
 			t.Skip("Skip for Windows")
 		}
@@ -364,7 +364,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		ctx := context.Background()
 
-		socket := extractDockerSocketFromClient(ctx, mockCli{serverVersion: "testcontainerscloud"})
+		socket := extractDockerSocketFromClient(ctx, mockCli{OSType: "linux"})
 
 		assert.Equal(t, DockerSocketPath, socket)
 	})
@@ -384,7 +384,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		assert.Equal(t, windowsDockerSocketPath, socket)
 	})
 
-	t.Run("TCP Docker Socket is passed as Testcontainers properties (Testcontainers Cloud in Windows)", func(t *testing.T) {
+	t.Run("TCP Docker Socket is passed as Testcontainers properties (Remote Linux host in Windows)", func(t *testing.T) {
 		content := "tc.host=" + testRemoteHost
 		setupTestcontainersProperties(t, content)
 
@@ -394,7 +394,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		ctx := context.Background()
 
-		socket := extractDockerSocketFromClient(ctx, mockCli{serverVersion: "testcontainerscloud"})
+		socket := extractDockerSocketFromClient(ctx, mockCli{OSType: "linux"})
 
 		assert.Equal(t, windowsDockerSocketPath, socket)
 	})
