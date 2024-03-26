@@ -96,7 +96,7 @@ jobs:
         run: make tools-tidy
 
       - name: Setup Testcontainers Cloud Client
-        # Use Testcontainers Cloud for Windows and MacOS, but only on for merge commits on main
+        # Use Testcontainers Cloud for Windows and MacOS, but only for merge commits on main
         if: ${{ inputs.run-tests && (inputs.platform == 'windows-latest' || inputs.platform == 'macos-latest') }}
         uses: atomicjar/testcontainers-cloud-setup-action@v1
         with:
