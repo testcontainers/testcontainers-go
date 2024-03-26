@@ -37,6 +37,9 @@ on:
         type: boolean
         default: false
         description: "Disable the ryuk container for the test."
+    secrets:
+      TC_CLOUD_TOKEN:
+        required: true
 
 permissions:
   contents: read
