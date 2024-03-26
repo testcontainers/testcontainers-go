@@ -2,14 +2,12 @@ package network
 
 import (
 	"context"
-	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
 	"github.com/google/uuid"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
 // New creates a new network with a random UUID name, calling the already existing GenericNetwork APIs.
@@ -21,25 +19,8 @@ import (
 // And those options can be modified by the user, using the CreateModifier function field.
 func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.DockerNetwork, error) {
 	nc := types.NetworkCreate{
-		Driver: "bridge",
+		// we are intentionally not setting the driver to "bridge" here, letting Docker choose the default one.
 		Labels: testcontainers.GenericLabels(),
-	}
-
-	cli, err := core.NewClient(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	defer cli.Close()
-
-	info, err := cli.Info(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if core.IsWindows() {
-		if !strings.Contains(info.ServerVersion, "testcontainerscloud") {
-			nc.Driver = "nat"
-		}
 	}
 
 	for _, opt := range opts {
