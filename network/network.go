@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
@@ -24,8 +25,21 @@ func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.Docker
 		Labels: testcontainers.GenericLabels(),
 	}
 
+	cli, err := core.NewClient(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	defer cli.Close()
+
+	info, err := cli.Info(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	if core.IsWindows() {
-		nc.Driver = "nat"
+		if !strings.Contains(info.ServerVersion, "testcontainerscloud") {
+			nc.Driver = "nat"
+		}
 	}
 
 	for _, opt := range opts {
