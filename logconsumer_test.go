@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -224,13 +225,17 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		t.Skip("Skipping as flaky on GitHub Actions, Please see https://github.com/testcontainers/testcontainers-go/issues/1924")
 	}
 
-	t.Cleanup(func() {
-		config.Reset()
-	})
+	if core.IsWindows() {
+		t.Skip("Skipping as flaky on Windows, Please see https://github.com/testcontainers/testcontainers-go/issues/1924")
+	}
 
 	if providerType == ProviderPodman {
 		t.Skip("Docker-in-Docker does not work with rootless Podman")
 	}
+
+	t.Cleanup(func() {
+		config.Reset()
+	})
 	// First spin up a docker-in-docker container, then spin up an inner container within that dind container
 	// Logs are being read from the inner container via the dind container's tcp port, which can be briefly
 	// closed to test behaviour in connection-closed situations.

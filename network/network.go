@@ -14,12 +14,12 @@ import (
 // Those existing APIs are deprecated and will be removed in the future, so this function will
 // implement the new network APIs when they will be available.
 // By default, the network is created with the following options:
-// - Driver: bridge
+// - Driver: bridge (nat for Windows hosts)
 // - Labels: the Testcontainers for Go generic labels, to be managed by Ryuk. Please see the GenericLabels() function
 // And those options can be modified by the user, using the CreateModifier function field.
 func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.DockerNetwork, error) {
 	nc := types.NetworkCreate{
-		Driver: "bridge",
+		// we are intentionally not setting the driver to "bridge" here, letting Docker choose the default one.
 		Labels: testcontainers.GenericLabels(),
 	}
 

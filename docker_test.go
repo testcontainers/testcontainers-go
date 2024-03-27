@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -45,6 +46,10 @@ func init() {
 }
 
 func TestContainerWithHostNetworkOptions(t *testing.T) {
+	if core.IsWindows() {
+		t.Skip("Skipping test for host network access when running on Windows")
+	}
+
 	if os.Getenv("XDG_RUNTIME_DIR") != "" {
 		t.Skip("Skipping test that requires host network access when running in a container")
 	}
@@ -100,6 +105,10 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 }
 
 func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testing.T) {
+	if core.IsWindows() {
+		t.Skip("Skipping test for host network access when running on Windows")
+	}
+
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -164,6 +173,10 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 }
 
 func TestContainerWithHostNetwork(t *testing.T) {
+	if core.IsWindows() {
+		t.Skip("Skipping test for host network access when running on Windows")
+	}
+
 	if os.Getenv("XDG_RUNTIME_DIR") != "" {
 		t.Skip("Skipping test that requires host network access when running in a container")
 	}

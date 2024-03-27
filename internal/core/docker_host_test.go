@@ -17,10 +17,7 @@ import (
 // testRemoteHost is a testcontainers host defined in the properties file for testing purposes
 var testRemoteHost = TCPSchema + "127.0.0.1:12345"
 
-var (
-	originalDockerSocketPath           string
-	originalDockerSocketPathWithSchema string
-)
+var originalDockerSocketPath string
 
 var (
 	originalDockerSocketOverride string
@@ -29,7 +26,6 @@ var (
 
 func init() {
 	originalDockerSocketPath = DockerSocketPath
-	originalDockerSocketPathWithSchema = DockerSocketPathWithSchema
 
 	originalDockerSocketOverride = os.Getenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
 
@@ -48,15 +44,11 @@ func TestExtractDockerHost(t *testing.T) {
 	t.Setenv("USERPROFILE", tmpDir) // Windows support
 
 	t.Run("Docker Host as extracted just once", func(t *testing.T) {
-		expected := "/path/to/docker.sock"
-		t.Setenv("DOCKER_HOST", expected)
-		host := ExtractDockerHost(context.Background())
-
-		assert.Equal(t, expected, host)
+		expected := ExtractDockerHost(context.Background())
 
 		t.Setenv("DOCKER_HOST", "/path/to/another/docker.sock")
 
-		host = ExtractDockerHost(context.Background())
+		host := ExtractDockerHost(context.Background())
 		assert.Equal(t, expected, host)
 	})
 
@@ -86,7 +78,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
 
-		assert.Equal(t, DockerSocketPathWithSchema, host)
+		assert.Equal(t, DockerSocketSchema+DockerSocketPath, host)
 	})
 
 	t.Run("Malformed Schema Docker Host is passed in context", func(t *testing.T) {
@@ -96,7 +88,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "http://path to docker sock"))
 
-		assert.Equal(t, DockerSocketPathWithSchema, host)
+		assert.Equal(t, DockerSocketSchema+DockerSocketPath, host)
 	})
 
 	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
@@ -133,7 +125,7 @@ func TestExtractDockerHost(t *testing.T) {
 		setupRootlessNotFound(t)
 		host := extractDockerHost(context.Background())
 
-		assert.Equal(t, DockerSocketPathWithSchema, host)
+		assert.Equal(t, DockerSocketSchema+DockerSocketPath, host)
 	})
 
 	t.Run("Extract Docker socket", func(t *testing.T) {
@@ -268,10 +260,12 @@ func TestExtractDockerHost(t *testing.T) {
 }
 
 // mockCli is a mock implementation of client.APIClient, which is handy for simulating
-// different operating systems.
+// different operating systems and local VS remote Docker hosts.
 type mockCli struct {
 	client.APIClient
-	OS string
+	OS      string // used to detect if the Docker Desktop is running
+	OSType  string // used to detect if the Docker client is running in a remote Docker host: linux should represent a remote Docker host
+	infoErr error  // used to simulate an error when calling Info
 }
 
 // Info returns a mock implementation of types.Info, which is handy for detecting the operating system,
@@ -279,7 +273,8 @@ type mockCli struct {
 func (m mockCli) Info(ctx context.Context) (system.Info, error) {
 	return system.Info{
 		OperatingSystem: m.OS,
-	}, nil
+		OSType:          m.OSType,
+	}, m.infoErr
 }
 
 func TestExtractDockerSocketFromClient(t *testing.T) {
@@ -350,6 +345,25 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		assert.Equal(t, DockerSocketPath, socket)
 	})
 
+	t.Run("TCP Docker Socket is passed as Testcontainers properties (Remote Linux host in non-Windows)", func(t *testing.T) {
+		if IsWindows() {
+			t.Skip("Skip for Windows")
+		}
+
+		content := "tc.host=" + testRemoteHost
+		setupTestcontainersProperties(t, content)
+
+		t.Setenv("GOOS", "linux")
+
+		t.Cleanup(resetSocketOverrideFn)
+
+		ctx := context.Background()
+
+		socket := extractDockerSocketFromClient(ctx, mockCli{OSType: "linux"})
+
+		assert.Equal(t, DockerSocketPath, socket)
+	})
+
 	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Docker Desktop for Windows)", func(t *testing.T) {
 		t.Setenv("GOOS", "windows")
 		setupTestcontainersProperties(t, "")
@@ -362,7 +376,22 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Docker Desktop"})
 
-		assert.Equal(t, WindowsDockerSocketPath, socket)
+		assert.Equal(t, windowsDockerSocketPath, socket)
+	})
+
+	t.Run("TCP Docker Socket is passed as Testcontainers properties (Remote Linux host in Windows)", func(t *testing.T) {
+		content := "tc.host=" + testRemoteHost
+		setupTestcontainersProperties(t, content)
+
+		t.Setenv("GOOS", "windows")
+
+		t.Cleanup(resetSocketOverrideFn)
+
+		ctx := context.Background()
+
+		socket := extractDockerSocketFromClient(ctx, mockCli{OSType: "linux"})
+
+		assert.Equal(t, windowsDockerSocketPath, socket)
 	})
 
 	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Not Docker Desktop)", func(t *testing.T) {
@@ -410,6 +439,22 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
 
 		assert.Equal(t, "/this/is/a/sample.sock", socket)
+	})
+
+	t.Run("Unix Docker Socket for rootless", func(tt *testing.T) {
+		if IsWindows() {
+			tt.Skip("rootless Docker is not supported on Windows")
+		}
+
+		tmpDir := tt.TempDir()
+
+		tt.Setenv("XDG_RUNTIME_DIR", tmpDir)
+		err := createTmpDockerSocket(tmpDir)
+		require.NoError(tt, err)
+
+		socket := extractDockerSocketFromClient(context.Background(), mockCli{OS: "Docker Desktop"})
+
+		assert.Equal(tt, filepath.Join(tmpDir, "docker.sock"), socket)
 	})
 }
 
@@ -466,7 +511,6 @@ func setupDockerHostNotFound(t *testing.T) {
 func setupDockerSocket(t *testing.T) string {
 	t.Cleanup(func() {
 		DockerSocketPath = originalDockerSocketPath
-		DockerSocketPathWithSchema = originalDockerSocketPathWithSchema
 	})
 
 	tmpDir := t.TempDir()
@@ -475,7 +519,6 @@ func setupDockerSocket(t *testing.T) string {
 	require.NoError(t, err)
 
 	DockerSocketPath = tmpSocket
-	DockerSocketPathWithSchema = tmpSchema + tmpSocket
 
 	return tmpSchema + tmpSocket
 }
@@ -483,7 +526,6 @@ func setupDockerSocket(t *testing.T) string {
 func setupDockerSocketNotFound(t *testing.T) {
 	t.Cleanup(func() {
 		DockerSocketPath = originalDockerSocketPath
-		DockerSocketPathWithSchema = originalDockerSocketPathWithSchema
 	})
 
 	tmpDir := t.TempDir()

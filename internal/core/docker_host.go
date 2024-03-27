@@ -120,7 +120,7 @@ func extractDockerHost(ctx context.Context) string {
 	}
 
 	// We are not supporting Windows containers at the moment
-	return DockerSocketPathWithSchema
+	return DockerSocketSchema + DockerSocketPath
 }
 
 // extractDockerHost Extracts the docker socket from the different alternatives, without caching the result.
@@ -141,47 +141,23 @@ func extractDockerSocket(ctx context.Context) string {
 // and receiving an instance of the Docker API client interface.
 // This internal method is handy for testing purposes, passing a mock type simulating the desired behaviour.
 func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) string {
-	// check that the socket is not a tcp or unix socket
-	checkDockerSocketFn := func(socket string) string {
-		// this use case will cover the case when the docker host is a tcp socket
-		if strings.HasPrefix(socket, TCPSchema) {
-			return DockerSocketPath
-		}
-
-		if strings.HasPrefix(socket, DockerSocketSchema) {
-			return strings.Replace(socket, DockerSocketSchema, "", 1)
-		}
-
-		return socket
-	}
-
 	tcHost, err := testcontainersHostFromProperties(ctx)
 	if err == nil {
-		return checkDockerSocketFn(tcHost)
+		return checkDefaultDockerSocket(ctx, cli, tcHost)
 	}
 
 	testcontainersDockerSocket, err := dockerSocketOverridePath(ctx)
 	if err == nil {
-		return checkDockerSocketFn(testcontainersDockerSocket)
-	}
-
-	info, err := cli.Info(ctx)
-	if err != nil {
-		panic(err) // Docker Info is required to get the Operating System
-	}
-
-	// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker
-	if info.OperatingSystem == "Docker Desktop" {
-		if IsWindows() {
-			return WindowsDockerSocketPath
+		if strings.HasPrefix(testcontainersDockerSocket, TCPSchema) {
+			return checkDefaultDockerSocket(ctx, cli, testcontainersDockerSocket)
 		}
 
-		return DockerSocketPath
+		return strings.Replace(testcontainersDockerSocket, DockerSocketSchema, "", 1)
 	}
 
 	dockerHost := extractDockerHost(ctx)
 
-	return checkDockerSocketFn(dockerHost)
+	return checkDefaultDockerSocket(ctx, cli, dockerHost)
 }
 
 // dockerHostFromEnv returns the docker host from the DOCKER_HOST environment variable, if it's not empty
@@ -232,7 +208,7 @@ func dockerSocketOverridePath(ctx context.Context) (string, error) {
 // and the socket exists
 func dockerSocketPath(ctx context.Context) (string, error) {
 	if fileExists(DockerSocketPath) {
-		return DockerSocketPathWithSchema, nil
+		return DockerSocketSchema + DockerSocketPath, nil
 	}
 
 	return "", ErrSocketNotFoundInPath

@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -144,7 +145,9 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 
 func createReuseContainerInSubprocess(t *testing.T) string {
 	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess")
-	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=" + core.ExtractDockerSocket(context.Background()), "DOCKER_HOST=" + core.ExtractDockerHost(context.Background())}
+
+	t.Log("Calling subprocess with env:", cmd.Env)
 
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, string(output))

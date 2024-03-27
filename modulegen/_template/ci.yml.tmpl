@@ -27,15 +27,16 @@ jobs:
     strategy:
       matrix:
         go-version: [1.21.x, 1.x]
-        platform: [ubuntu-latest, macos-latest]
+        platform: [ubuntu-latest, macos-latest, windows-latest]
     uses: ./.github/workflows/ci-test-go.yml
+    secrets: inherit
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
       fail-fast: true
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: "."
       rootless-docker: false
-      run-tests: {{ "${{ matrix.platform == 'ubuntu-latest' }}" }}
+      run-tests: true
       ryuk-disabled: false
 
   # The job below is a copy of the job above, but with ryuk disabled.
@@ -46,6 +47,7 @@ jobs:
       matrix:
         go-version: [1.21.x, 1.x]
     uses: ./.github/workflows/ci-test-go.yml
+    secrets: inherit
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
       fail-fast: false
@@ -64,6 +66,7 @@ jobs:
         go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest]
     uses: ./.github/workflows/ci-test-go.yml
+    secrets: inherit
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
       fail-fast: false
@@ -79,6 +82,7 @@ jobs:
         go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest, macos-latest, windows-latest]
     uses: ./.github/workflows/ci-test-go.yml
+    secrets: inherit
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
       fail-fast: true
@@ -96,6 +100,7 @@ jobs:
         platform: [ubuntu-latest]
         module: [{{ .Modules }}]
     uses: ./.github/workflows/ci-test-go.yml
+    secrets: inherit
     with:
       go-version: {{ "${{ matrix.go-version }}" }}
       fail-fast: false
@@ -111,6 +116,7 @@ jobs:
       matrix:
         module: [{{ .Examples }}]
     uses: ./.github/workflows/ci-test-go.yml
+    secrets: inherit
     with:
       go-version: "1.21.x"
       fail-fast: true

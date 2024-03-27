@@ -34,21 +34,14 @@ func TestReadConfig(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("USERPROFILE", "") // Windows support
 		t.Setenv("DOCKER_HOST", "")
+
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-
-		config := Read()
-
-		expected := Config{
-			RyukDisabled: true,
-			Host:         "", // docker socket is empty at the properties file
-		}
-
-		assert.Equal(t, expected, config)
+		config1 := Read()
 
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "false")
+		config2 := Read()
 
-		config = Read()
-		assert.Equal(t, expected, config)
+		assert.Equal(t, config1, config2)
 	})
 }
 

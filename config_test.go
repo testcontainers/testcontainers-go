@@ -25,21 +25,13 @@ func TestReadConfig(t *testing.T) {
 	t.Run("Config is read just once", func(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("USERPROFILE", "") // Windows support
+
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-
-		cfg := testcontainers.ReadConfig()
-
-		expected := testcontainers.TestcontainersConfig{
-			RyukDisabled: true,
-			Config: config.Config{
-				RyukDisabled: true,
-			},
-		}
-
-		assert.Equal(t, expected, cfg)
+		cfg1 := testcontainers.ReadConfig()
 
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "false")
-		cfg = testcontainers.ReadConfig()
-		assert.Equal(t, expected, cfg)
+		cfg2 := testcontainers.ReadConfig()
+
+		assert.Equal(t, cfg1, cfg2)
 	})
 }

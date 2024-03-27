@@ -26,81 +26,96 @@ var indexDockerIO = core.IndexDockerIO
 func TestGetDockerConfig(t *testing.T) {
 	const expectedErrorMessage = "Expected to find %s in auth configs"
 
+	t.Setenv("DOCKER_CONFIG", t.TempDir())
+
 	// Verify that the default docker config file exists before any test in this suite runs.
-	// Then, we can safely run the tests that rely on it.
+	// Then, we can safely run the tests that rely on it. If it does not exist, we create it
+	// using the content of the testdata/.docker/config.json file into a temporary directory.
 	defaultCfg, err := dockercfg.LoadDefaultConfig()
-	require.NoError(t, err)
+	if err != nil {
+		// create docker config file
+		bs, err := os.ReadFile(filepath.Join(testDockerConfigDirPath, "config.json"))
+		require.NoError(t, err)
+
+		defaultCfgPath, err := dockercfg.ConfigPath()
+		require.NoError(t, err)
+
+		// write file to default location
+		err = os.WriteFile(defaultCfgPath, bs, 0644)
+		require.NoError(t, err)
+
+		defaultCfg, err = dockercfg.LoadDefaultConfig()
+		require.NoError(t, err)
+	}
 	require.NotEmpty(t, defaultCfg)
 
-	t.Run("without DOCKER_CONFIG env var retrieves default", func(t *testing.T) {
-		t.Setenv("DOCKER_CONFIG", "")
-
+	t.Run("without DOCKER_CONFIG env var retrieves default", func(tt *testing.T) {
 		cfg, err := getDockerConfig()
-		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
+		require.NoError(tt, err)
+		require.NotEmpty(tt, cfg)
 
-		assert.Equal(t, defaultCfg, cfg)
+		assert.Equal(tt, defaultCfg, cfg)
 	})
 
-	t.Run("with DOCKER_CONFIG env var pointing to a non-existing file raises error", func(t *testing.T) {
-		t.Setenv("DOCKER_CONFIG", filepath.Join(testDockerConfigDirPath, "non-existing"))
+	t.Run("with DOCKER_CONFIG env var pointing to a non-existing file raises error", func(tt *testing.T) {
+		tt.Setenv("DOCKER_CONFIG", filepath.Join(testDockerConfigDirPath, "non-existing"))
 
 		cfg, err := getDockerConfig()
-		require.Error(t, err)
-		require.Empty(t, cfg)
+		require.Error(tt, err)
+		require.Empty(tt, cfg)
 	})
 
-	t.Run("with DOCKER_CONFIG env var", func(t *testing.T) {
-		t.Setenv("DOCKER_CONFIG", testDockerConfigDirPath)
+	t.Run("with DOCKER_CONFIG env var", func(tt *testing.T) {
+		tt.Setenv("DOCKER_CONFIG", testDockerConfigDirPath)
 
 		cfg, err := getDockerConfig()
-		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
+		require.NoError(tt, err)
+		require.NotEmpty(tt, cfg)
 
-		assert.Len(t, cfg.AuthConfigs, 3)
+		assert.Len(tt, cfg.AuthConfigs, 3)
 
 		authCfgs := cfg.AuthConfigs
 
 		if _, ok := authCfgs[indexDockerIO]; !ok {
-			t.Errorf(expectedErrorMessage, indexDockerIO)
+			tt.Errorf(expectedErrorMessage, indexDockerIO)
 		}
 		if _, ok := authCfgs["https://example.com"]; !ok {
-			t.Errorf(expectedErrorMessage, "https://example.com")
+			tt.Errorf(expectedErrorMessage, "https://example.com")
 		}
 		if _, ok := authCfgs["https://my.private.registry"]; !ok {
-			t.Errorf(expectedErrorMessage, "https://my.private.registry")
+			tt.Errorf(expectedErrorMessage, "https://my.private.registry")
 		}
 	})
 
-	t.Run("DOCKER_AUTH_CONFIG env var takes precedence", func(t *testing.T) {
-		t.Setenv("DOCKER_AUTH_CONFIG", `{
+	t.Run("DOCKER_AUTH_CONFIG env var takes precedence", func(tt *testing.T) {
+		tt.Setenv("DOCKER_AUTH_CONFIG", `{
 			"auths": {
 					"`+exampleAuth+`": {}
 			},
 			"credsStore": "desktop"
 		}`)
-		t.Setenv("DOCKER_CONFIG", testDockerConfigDirPath)
+		tt.Setenv("DOCKER_CONFIG", testDockerConfigDirPath)
 
 		cfg, err := getDockerConfig()
-		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
+		require.NoError(tt, err)
+		require.NotEmpty(tt, cfg)
 
-		assert.Len(t, cfg.AuthConfigs, 1)
+		assert.Len(tt, cfg.AuthConfigs, 1)
 
 		authCfgs := cfg.AuthConfigs
 
 		if _, ok := authCfgs[indexDockerIO]; ok {
-			t.Errorf("Not expected to find %s in auth configs", indexDockerIO)
+			tt.Errorf("Not expected to find %s in auth configs", indexDockerIO)
 		}
 		if _, ok := authCfgs[exampleAuth]; !ok {
-			t.Errorf(expectedErrorMessage, exampleAuth)
+			tt.Errorf(expectedErrorMessage, exampleAuth)
 		}
 	})
 
-	t.Run("retrieve auth with DOCKER_AUTH_CONFIG env var", func(t *testing.T) {
+	t.Run("retrieve auth with DOCKER_AUTH_CONFIG env var", func(tt *testing.T) {
 		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
 
-		t.Setenv("DOCKER_AUTH_CONFIG", `{
+		tt.Setenv("DOCKER_AUTH_CONFIG", `{
 			"auths": {
 					"`+exampleAuth+`": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
 			},
@@ -108,21 +123,21 @@ func TestGetDockerConfig(t *testing.T) {
 		}`)
 
 		registry, cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
-		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
+		require.NoError(tt, err)
+		require.NotEmpty(tt, cfg)
 
-		assert.Equal(t, exampleAuth, registry)
-		assert.Equal(t, "gopher", cfg.Username)
-		assert.Equal(t, "secret", cfg.Password)
-		assert.Equal(t, base64, cfg.Auth)
+		assert.Equal(tt, exampleAuth, registry)
+		assert.Equal(tt, "gopher", cfg.Username)
+		assert.Equal(tt, "secret", cfg.Password)
+		assert.Equal(tt, base64, cfg.Auth)
 	})
 
-	t.Run("match registry authentication by host", func(t *testing.T) {
+	t.Run("match registry authentication by host", func(tt *testing.T) {
 		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
 		imageReg := "example-auth.com"
 		imagePath := "/my/image:latest"
 
-		t.Setenv("DOCKER_AUTH_CONFIG", `{
+		tt.Setenv("DOCKER_AUTH_CONFIG", `{
 			"auths": {
 					"`+exampleAuth+`": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
 			},
@@ -130,22 +145,22 @@ func TestGetDockerConfig(t *testing.T) {
 		}`)
 
 		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
-		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
+		require.NoError(tt, err)
+		require.NotEmpty(tt, cfg)
 
-		assert.Equal(t, imageReg, registry)
-		assert.Equal(t, "gopher", cfg.Username)
-		assert.Equal(t, "secret", cfg.Password)
-		assert.Equal(t, base64, cfg.Auth)
+		assert.Equal(tt, imageReg, registry)
+		assert.Equal(tt, "gopher", cfg.Username)
+		assert.Equal(tt, "secret", cfg.Password)
+		assert.Equal(tt, base64, cfg.Auth)
 	})
 
-	t.Run("fail to match registry authentication due to invalid host", func(t *testing.T) {
+	t.Run("fail to match registry authentication due to invalid host", func(tt *testing.T) {
 		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
 		imageReg := "example-auth.com"
 		imagePath := "/my/image:latest"
 		invalidRegistryURL := "://invalid-host"
 
-		t.Setenv("DOCKER_AUTH_CONFIG", `{
+		tt.Setenv("DOCKER_AUTH_CONFIG", `{
 			"auths": {
 					"`+invalidRegistryURL+`": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
 			},
@@ -153,10 +168,10 @@ func TestGetDockerConfig(t *testing.T) {
 		}`)
 
 		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
-		require.Equal(t, err, dockercfg.ErrCredentialsNotFound)
-		require.Empty(t, cfg)
+		require.Equal(tt, err, dockercfg.ErrCredentialsNotFound)
+		require.Empty(tt, cfg)
 
-		assert.Equal(t, imageReg, registry)
+		assert.Equal(tt, imageReg, registry)
 	})
 }
 
