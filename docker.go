@@ -1586,3 +1586,167 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 func (p *DockerProvider) PullImage(ctx context.Context, image string) error {
 	return p.attemptToPullImage(ctx, image, types.ImagePullOptions{})
 }
+
+// ContainerStats defines a summary of the container's starts
+type ContainerStats struct {
+	Timestamp         time.Time
+	CPUUsageTotal     uint64
+	CPUUsageInKernel  uint64
+	CPUUsageUser      uint64
+	CPUPercentage     float64
+	MemoryUsage       uint64
+	MemoryMaxUsage    uint64
+	MemoryLimit       uint64
+	MemoryPercentage  float64
+	NetworkRxBytes    uint64
+	NetworkTxBytes    uint64
+	BlockIOReadBytes  uint64 // In Linux is an aggregate over all block devices
+	BlockIOWriteBytes uint64 // In Linux is an aggregate over all block devices
+}
+
+// Calculate the memory usage discounting the cache size.
+// Depending on whether docker is running with cgroups V1 or V2, cache size is reported differently
+func calculateMemoryUsage(memory types.MemoryStats) uint64 {
+	// check groups v1 format
+	if cache, isCgroup1 := memory.Stats["total_inactive_file"]; isCgroup1 && cache < memory.Usage {
+		return memory.Usage - cache
+	}
+
+	if cache := memory.Stats["inactive_file"]; cache < memory.Usage {
+		return memory.Usage - cache
+	}
+
+	return memory.Usage
+}
+
+// collects stats for a Linux system using a current sample and a base sample
+func collectLinuxStats(base, sample types.StatsJSON) ContainerStats {
+	stats := ContainerStats{}
+
+	stats.Timestamp = sample.Read
+
+	// CPU stats
+	stats.CPUUsageTotal = sample.CPUStats.CPUUsage.TotalUsage
+	stats.CPUUsageInKernel = sample.CPUStats.CPUUsage.UsageInKernelmode
+	stats.CPUUsageUser = sample.CPUStats.CPUUsage.UsageInUsermode
+
+	// usage stats are counters, so percentage is calculated over the delta of two samples
+	deltaUsage := float64(sample.CPUStats.CPUUsage.TotalUsage - base.CPUStats.CPUUsage.TotalUsage)
+	deltaSystemUsage := float64(sample.CPUStats.SystemUsage - base.CPUStats.SystemUsage)
+	if deltaSystemUsage > 0 && deltaUsage > 0 {
+		stats.CPUPercentage = deltaUsage / deltaSystemUsage * float64(sample.CPUStats.OnlineCPUs) * 100.0
+	}
+
+	// memory stats
+	stats.MemoryUsage = calculateMemoryUsage(sample.MemoryStats)
+	stats.MemoryMaxUsage = sample.MemoryStats.MaxUsage
+	stats.MemoryLimit = sample.MemoryStats.Limit
+	if sample.MemoryStats.Limit != 0 {
+		stats.MemoryPercentage = float64(stats.MemoryUsage) / float64(sample.MemoryStats.Limit) * 100.0
+	}
+
+	// aggregate block I/O states
+	for _, dev := range sample.BlkioStats.IoServiceBytesRecursive {
+		switch dev.Op {
+		case "read":
+			stats.BlockIOReadBytes += dev.Value
+		case "write":
+			stats.BlockIOWriteBytes += dev.Value
+		}
+	}
+
+	// aggregate network stats
+	for _, n := range sample.Networks {
+		stats.NetworkRxBytes += n.RxBytes
+		stats.NetworkTxBytes += n.TxBytes
+	}
+
+	return stats
+}
+
+// collects stats for a Windows system using a current sample and a base sample
+func collectWindowStats(base, sample types.StatsJSON) ContainerStats {
+	stats := ContainerStats{}
+
+	stats.Timestamp = sample.Read
+
+	// CPU stats (normalize to nanoseconds)
+	stats.CPUUsageTotal = sample.CPUStats.CPUUsage.TotalUsage * 100
+	stats.CPUUsageInKernel = sample.CPUStats.CPUUsage.UsageInKernelmode * 100
+	stats.CPUUsageUser = sample.CPUStats.CPUUsage.UsageInUsermode * 100
+
+	// measure the number of 100 nanosecond intervals between samples
+	intervals := uint64(sample.Read.Sub(base.PreRead).Nanoseconds()) / 100
+	if intervals > 0 {
+		// usage stats are counters, so percentage is calculated over the delta of two samples
+		intervalsUsed := sample.CPUStats.CPUUsage.TotalUsage - base.CPUStats.CPUUsage.TotalUsage
+		stats.CPUPercentage = float64(intervalsUsed) / float64(intervals) * 100.0
+	}
+
+	// memory stats
+	stats.MemoryMaxUsage = sample.MemoryStats.MaxUsage
+	stats.MemoryLimit = sample.MemoryStats.Limit
+	if sample.MemoryStats.Limit != 0 {
+		stats.MemoryPercentage = float64(sample.MemoryStats.Usage) / float64(sample.MemoryStats.Limit) * 100.0
+	}
+
+	stats.BlockIOReadBytes = sample.StorageStats.ReadSizeBytes
+	stats.BlockIOWriteBytes = sample.StorageStats.WriteSizeBytes
+
+	// aggregate network stats
+	for _, n := range sample.Networks {
+		stats.NetworkRxBytes += n.RxBytes
+		stats.NetworkTxBytes += n.TxBytes
+	}
+
+	return stats
+}
+
+// sampleStats get a one shot sample of stats. Returns the sample data and the OS type
+func (p *DockerProvider) sampleStats(ctx context.Context, containerID string) (types.StatsJSON, string, error) {
+	resp, err := p.client.ContainerStatsOneShot(ctx, containerID)
+	if err != nil {
+		return types.StatsJSON{}, "", fmt.Errorf("requesting stats %w", err)
+	}
+	defer resp.Body.Close()
+
+	buffer := bytes.Buffer{}
+	_, err = buffer.ReadFrom(resp.Body)
+	if err != nil {
+		return types.StatsJSON{}, "", fmt.Errorf("reading stats %w", err)
+	}
+
+	statsData := types.StatsJSON{}
+	err = json.Unmarshal(buffer.Bytes(), &statsData)
+	if err != nil {
+		return types.StatsJSON{}, "", fmt.Errorf("unmarshalling stats %w", err)
+	}
+
+	return statsData, resp.OSType, nil
+}
+
+// Stats works as Docker Stats command and retrieves a summary of container resource usage.
+// As CPU measurement are accumulated, in order to calculate CPU percentage, two samples are
+// taken a second apart and the incremental usage is used for estimating the percentage usage.
+func (p *DockerProvider) Stats(ctx context.Context, containerID string) (ContainerStats, error) {
+	base, _, err := p.sampleStats(ctx, containerID)
+	if err != nil {
+		return ContainerStats{}, err
+	}
+
+	time.Sleep(time.Second)
+
+	sample, os, err := p.sampleStats(ctx, containerID)
+	if err != nil {
+		return ContainerStats{}, err
+	}
+
+	switch os {
+	case "linux":
+		return collectLinuxStats(base, sample), nil
+	case "windows":
+		return collectWindowStats(base, sample), nil
+	default:
+		return ContainerStats{}, fmt.Errorf("unsupported OS: %s", os)
+	}
+}

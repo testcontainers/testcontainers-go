@@ -2057,3 +2057,29 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 		})
 	}
 }
+
+func TestContainerStats(t *testing.T) {
+	ctx := context.Background()
+
+	// delayed-nginx will wait 2s before opening port
+	stress, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: "alexeiled/stress-ng",
+			Cmd:   []string{"--cpu", "1", "--cpu-load", "50"},
+		},
+		Started: true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, stress)
+
+	provider, err := NewDockerProvider()
+	require.NoError(t, err, "get docker provider should not fail")
+
+	id := stress.GetContainerID()
+
+	stats, err := provider.Stats(ctx, id)
+	require.NoError(t, err)
+	t.Logf("stats %v", stats)
+}
