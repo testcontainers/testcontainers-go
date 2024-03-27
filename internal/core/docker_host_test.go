@@ -444,6 +444,22 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		assert.Equal(t, "/this/is/a/sample.sock", socket)
 	})
+
+	t.Run("Unix Docker Socket for rootless", func(tt *testing.T) {
+		if IsWindows() {
+			tt.Skip("rootless Docker is not supported on Windows")
+		}
+
+		tmpDir := tt.TempDir()
+
+		tt.Setenv("XDG_RUNTIME_DIR", tmpDir)
+		err := createTmpDockerSocket(tmpDir)
+		require.NoError(tt, err)
+
+		socket := extractDockerSocketFromClient(context.Background(), mockCli{OS: "Docker Desktop"})
+
+		assert.Equal(tt, filepath.Join(tmpDir, "docker.sock"), socket)
+	})
 }
 
 func TestInAContainer(t *testing.T) {

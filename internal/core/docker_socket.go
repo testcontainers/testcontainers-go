@@ -79,6 +79,12 @@ func checkDefaultDockerSocket(ctx context.Context, cli client.APIClient, socket 
 		if err != nil {
 			defaultRootlessDockerSocketPath = defaultDockerSocketPath
 		}
+
+		// rootless is enabled, so we need to use the default docker paths for rootless docker.
+		if defaultDockerSocketPath != defaultRootlessDockerSocketPath {
+			defaultDockerSocketPath = defaultRootlessDockerSocketPath
+			defaultRemoteDockerSocketPath = defaultRootlessDockerSocketPath
+		}
 	}
 
 	if info.OperatingSystem == "Docker Desktop" {
@@ -94,6 +100,10 @@ func checkDefaultDockerSocket(ctx context.Context, cli client.APIClient, socket 
 	if info.OSType == "linux" {
 		// we are using a remote Docker host, so we need to use the default docker path for rootless docker.
 		// For Windows it will be "//var/run/docker.sock" and for Unix it will be "/var/run/docker.sock"
+		if strings.HasPrefix(defaultRemoteDockerSocketPath, defaultSocketSchema) {
+			return strings.Replace(defaultRemoteDockerSocketPath, defaultSocketSchema, "", 1)
+		}
+
 		return defaultRemoteDockerSocketPath
 	}
 
