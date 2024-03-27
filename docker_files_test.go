@@ -161,15 +161,23 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 				},
 			},
 			Cmd: []string{"bash", "/waitForHello.sh"},
+			LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+				{
+					PostReadies: []testcontainers.ContainerHook{
+						func(ctx context.Context, container testcontainers.Container) error {
+							// as the container is started, we can create the directory right after the container is ready
+							_, _, err = container.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
+							if err != nil {
+								return err
+							}
+							return nil
+						},
+					},
+				},
+			},
 		},
 		Started: true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// as the container is started, we can create the directory first
-	_, _, err = container.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,15 +218,23 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 				},
 			},
 			Cmd: []string{"bash", "/waitForHello.sh"},
+			LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+				{
+					PostReadies: []testcontainers.ContainerHook{
+						func(ctx context.Context, container testcontainers.Container) error {
+							// as the container is started, we can create the directory right after the container is ready
+							_, _, err = container.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
+							if err != nil {
+								return err
+							}
+							return nil
+						},
+					},
+				},
+			},
 		},
 		Started: true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// as the container is started, we can create the directory first
-	_, _, err = container.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
 	if err != nil {
 		t.Fatal(err)
 	}
