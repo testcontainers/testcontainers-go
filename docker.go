@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -602,19 +603,41 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 		return c.CopyDirToContainer(ctx, hostFilePath, containerFilePath, fileMode)
 	}
 
-	fileContent, err := os.ReadFile(hostFilePath)
+	f, err := os.Open(hostFilePath)
 	if err != nil {
 		return err
 	}
-	return c.CopyToContainer(ctx, fileContent, containerFilePath, fileMode)
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		return err
+	}
+
+	// In Go 1.22 os.File is always an io.WriterTo. However, testcontainers
+	// currently allows Go 1.21, so we need to trick the compiler a little.
+	var file fs.File = f
+	return c.copyToContainer(ctx, func(tw io.Writer) error {
+		// Attempt optimized writeTo, implemented in linux
+		if wt, ok := file.(io.WriterTo); ok {
+			_, err := wt.WriteTo(tw)
+			return err
+		}
+		_, err := io.Copy(tw, f)
+		return err
+	}, info.Size(), containerFilePath, fileMode)
 }
 
 // CopyToContainer copies fileContent data to a file in container
 func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error {
-	buffer, err := tarFile(fileContent, containerFilePath, fileMode)
-	if err != nil {
+	return c.copyToContainer(ctx, func(tw io.Writer) error {
+		_, err := tw.Write(fileContent)
 		return err
-	}
+	}, int64(len(fileContent)), containerFilePath, fileMode)
+}
+
+func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(tw io.Writer) error, fileContentSize int64, containerFilePath string, fileMode int64) error {
+	buffer, err := tarFile(containerFilePath, fileContent, fileContentSize, fileMode)
 
 	err = c.provider.client.CopyToContainer(ctx, c.ID, "/", buffer, types.CopyToContainerOptions{})
 	if err != nil {
@@ -1574,7 +1597,8 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 		_ = imageReader.Close()
 	}()
 
-	_, err = io.Copy(outputFile, imageReader)
+	// Attempt optimized readFrom, implemented in linux
+	_, err = outputFile.ReadFrom(imageReader)
 	if err != nil {
 		return fmt.Errorf("writing images to output %w", err)
 	}

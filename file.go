@@ -110,7 +110,7 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 }
 
 // tarFile compress a single file using tar + gzip algorithms
-func tarFile(fileContent []byte, basePath string, fileMode int64) (*bytes.Buffer, error) {
+func tarFile(basePath string, fileContent func(tw io.Writer) error, fileContentSize int64, fileMode int64) (*bytes.Buffer, error) {
 	buffer := &bytes.Buffer{}
 
 	zr := gzip.NewWriter(buffer)
@@ -119,12 +119,12 @@ func tarFile(fileContent []byte, basePath string, fileMode int64) (*bytes.Buffer
 	hdr := &tar.Header{
 		Name: basePath,
 		Mode: fileMode,
-		Size: int64(len(fileContent)),
+		Size: fileContentSize,
 	}
 	if err := tw.WriteHeader(hdr); err != nil {
 		return buffer, err
 	}
-	if _, err := tw.Write(fileContent); err != nil {
+	if err := fileContent(tw); err != nil {
 		return buffer, err
 	}
 
