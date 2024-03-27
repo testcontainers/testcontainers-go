@@ -43,14 +43,6 @@ func init() {
 			DockerSocketPath = "/" + DockerSocketPath
 		}
 	}
-
-	cli, err := NewClient(context.Background())
-	if err != nil {
-		panic(err) // a Docker client is required to get the Docker info
-	}
-	defer cli.Close()
-
-	DockerSocketPath = checkDefaultDockerSocket(context.Background(), cli, DockerSocketPath)
 }
 
 // checkDefaultDockerSocket checks the docker socket path and returns the correct path depending on the Docker client configuration,
