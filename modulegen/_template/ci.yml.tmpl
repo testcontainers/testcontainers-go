@@ -36,7 +36,7 @@ jobs:
       platform: {{ "${{ matrix.platform }}" }}
       project-directory: "."
       rootless-docker: false
-      run-tests: {{ "${{ matrix.platform == 'ubuntu-latest' }}" }}
+      run-tests: {{ "${{ github.event_name == 'pull_request' && matrix.platform == 'ubuntu-latest' || github.event_name == 'push' && github.ref == 'refs/heads/main' }}" }}
       ryuk-disabled: false
 
   # The job below is a copy of the job above, but with ryuk disabled.
