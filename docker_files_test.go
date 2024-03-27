@@ -51,8 +51,7 @@ func TestCopyFileToContainer(t *testing.T) {
 }
 
 func TestCopyFileToRunningContainer(t *testing.T) {
-	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cnl()
+	ctx := context.Background()
 
 	// Not using the assertations here to avoid leaking the library into the example
 	// copyFileAfterCreate {
@@ -131,8 +130,7 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 }
 
 func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
-	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cnl()
+	ctx := context.Background()
 
 	// copyDirectoryToRunningContainerAsFile {
 	dataDirectory, err := filepath.Abs(filepath.Join(".", "testdata"))
@@ -180,8 +178,7 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 }
 
 func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
-	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cnl()
+	ctx := context.Background()
 
 	// Not using the assertations here to avoid leaking the library into the example
 	// copyDirectoryToRunningContainerAsDir {
