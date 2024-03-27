@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -95,12 +94,6 @@ func checkDefaultDockerSocket(ctx context.Context, cli client.APIClient, socket 
 	if strings.HasPrefix(socket, TCPSchema) {
 		return defaultDockerSocketPath
 	}
-
-	fmt.Println(">> socket", socket)
-	fmt.Println(">> defaultSocketSchema", defaultSocketSchema)
-	fmt.Println(">> defaultDockerSocketPath", defaultDockerSocketPath)
-	fmt.Println(">> defaultRemoteDockerSocketPath", defaultRemoteDockerSocketPath)
-	fmt.Println(">> defaultRootlessDockerSocketPath", defaultRootlessDockerSocketPath)
 
 	// this use case will cover the case when the docker host is a unix or npipe socket
 	if strings.HasPrefix(socket, defaultSocketSchema) {
