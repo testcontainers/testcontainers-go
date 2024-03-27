@@ -1,4 +1,4 @@
-package testcontainers
+package testcontainers_test
 
 import (
 	"context"
@@ -6,12 +6,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestGetDockerInfo(t *testing.T) {
 	t.Run("works", func(t *testing.T) {
 		ctx := context.Background()
-		c, err := NewDockerClientWithOpts(ctx)
+		c, err := testcontainers.NewDockerClientWithOpts(ctx)
 		require.NoError(t, err)
 
 		info, err := c.Info(ctx)
@@ -21,7 +23,7 @@ func TestGetDockerInfo(t *testing.T) {
 
 	t.Run("is goroutine safe", func(t *testing.T) {
 		ctx := context.Background()
-		c, err := NewDockerClientWithOpts(ctx)
+		c, err := testcontainers.NewDockerClientWithOpts(ctx)
 		require.NoError(t, err)
 
 		count := 1024
