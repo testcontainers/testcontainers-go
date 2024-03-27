@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -602,20 +603,27 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 		return c.CopyDirToContainer(ctx, hostFilePath, containerFilePath, fileMode)
 	}
 
-	file, err := os.Open(hostFilePath)
+	f, err := os.Open(hostFilePath)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer f.Close()
 
-	info, err := file.Stat()
+	info, err := f.Stat()
 	if err != nil {
 		return err
 	}
 
+	// In Go 1.22 os.File is always an io.WriterTo. However, testcontainers
+	// currently allows Go 1.21, so we need to trick the compiler a little.
+	var file fs.File = f
 	return c.copyToContainer(ctx, func(tw io.Writer) error {
 		// Attempt optimized writeTo, implemented in linux
-		_, err := file.WriteTo(tw)
+		if wt, ok := file.(io.WriterTo); ok {
+			_, err := wt.WriteTo(tw)
+			return err
+		}
+		_, err := io.Copy(tw, f)
 		return err
 	}, info.Size(), containerFilePath, fileMode)
 }
