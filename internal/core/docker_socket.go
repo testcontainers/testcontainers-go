@@ -51,7 +51,7 @@ func init() {
 // - If the Docker client is running in a local Docker host, it will return "/var/run/docker.sock" on Unix, or "//./pipe/docker_engine" on Windows.
 // - If the Docker client is running in Docker Desktop, it will return "/var/run/docker.sock" on Unix, or "//./pipe/docker_engine" on Windows.
 // - If the Docker client is running in a remote Docker host, it will return "/var/run/docker.sock" on Unix, or "//var/run/docker.sock" on Windows.
-// - If the Docker client is running in a rootless Docker, it will return "/var/run/docker.sock" on Unix, or "//var/run/docker.sock" on Windows.
+// - If the Docker client is running in a rootless Docker, it will return the proper path depending on the rootless Docker configuration. Not available for windows.
 // If the Docker info cannot be retrieved, the program will panic.
 // This internal method is handy for testing purposes, passing a mock type simulating the desired behaviour.
 func checkDefaultDockerSocket(ctx context.Context, cli client.APIClient, socket string) string {
