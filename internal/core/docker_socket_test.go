@@ -3,7 +3,12 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCheckDefaultDockerSocket(t *testing.T) {
@@ -26,6 +31,101 @@ func TestCheckDefaultDockerSocket(t *testing.T) {
 		expected := "/var/run/docker.sock"
 
 		s := checkDefaultDockerSocket(context.Background(), mockCli{}, socket)
+		if s != expected {
+			tt.Errorf("expected %s, got %s", expected, s)
+		}
+	})
+
+	t.Run("Rootless Docker on Unix: home dir", func(tt *testing.T) {
+		if IsWindows() {
+			tt.Skip("skipping test on Windows")
+		}
+
+		tmpDir := tt.TempDir()
+
+		tt.Setenv("HOME", tmpDir)
+		runDir := filepath.Join(tmpDir, ".docker", "run")
+		err := createTmpDockerSocket(runDir)
+		require.NoError(t, err)
+
+		socket := "unix://" + tmpDir + "/.docker/run/docker.sock"
+		expected := tmpDir + "/.docker/run/docker.sock"
+
+		s := checkDefaultDockerSocket(context.Background(), mockCli{OS: "Docker Desktop"}, socket)
+		if s != expected {
+			tt.Errorf("expected %s, got %s", expected, s)
+		}
+	})
+
+	t.Run("Rootless Docker on Unix: XDG_RUNTIME_DIR", func(tt *testing.T) {
+		if IsWindows() {
+			tt.Skip("skipping test on Windows")
+		}
+
+		tmpDir := tt.TempDir()
+		tt.Setenv("XDG_RUNTIME_DIR", tmpDir)
+		err := createTmpDockerSocket(tmpDir)
+		require.NoError(tt, err)
+
+		socket := "unix://" + tmpDir + "/docker.sock"
+		expected := tmpDir + "/docker.sock"
+
+		s := checkDefaultDockerSocket(context.Background(), mockCli{OS: "Docker Desktop"}, socket)
+		if s != expected {
+			tt.Errorf("expected %s, got %s", expected, s)
+		}
+	})
+
+	t.Run("Rootless Docker on Unix: home desktop dir", func(tt *testing.T) {
+		if IsWindows() {
+			tt.Skip("skipping test on Windows")
+		}
+
+		tmpDir := tt.TempDir()
+
+		tt.Setenv("HOME", tmpDir)
+		desktopDir := filepath.Join(tmpDir, ".docker", "desktop")
+		err := createTmpDockerSocket(desktopDir)
+		require.NoError(tt, err)
+
+		socket := "unix://" + tmpDir + "/.docker/desktop/docker.sock"
+		expected := tmpDir + "/.docker/desktop/docker.sock"
+
+		s := checkDefaultDockerSocket(context.Background(), mockCli{OS: "Docker Desktop"}, socket)
+		if s != expected {
+			tt.Errorf("expected %s, got %s", expected, s)
+		}
+	})
+
+	t.Run("Rootless Docker on Unix: run dir", func(tt *testing.T) {
+		if IsWindows() {
+			tt.Skip("skipping test on Windows")
+		}
+
+		tmpDir := tt.TempDir()
+
+		homeDir := filepath.Join(tmpDir, "home")
+		err := createTmpDir(homeDir)
+		require.NoError(tt, err)
+		tt.Setenv("HOME", homeDir)
+
+		baseRunDir = tmpDir
+		tt.Cleanup(func() {
+			baseRunDir = originalBaseRunDir
+			os.Setenv("HOME", originalHomeDir)
+			os.Setenv("USERPROFILE", originalHomeDir)
+			os.Setenv("XDG_RUNTIME_DIR", originalXDGRuntimeDir)
+		})
+
+		uid := os.Getuid()
+		runDir := filepath.Join(tmpDir, "user", fmt.Sprintf("%d", uid))
+		err = createTmpDockerSocket(runDir)
+		require.NoError(tt, err)
+
+		socket := "unix://" + runDir + "/docker.sock"
+		expected := runDir + "/docker.sock"
+
+		s := checkDefaultDockerSocket(context.Background(), mockCli{OS: "Docker Desktop"}, socket)
 		if s != expected {
 			tt.Errorf("expected %s, got %s", expected, s)
 		}

@@ -73,11 +73,21 @@ func checkDefaultDockerSocket(ctx context.Context, cli client.APIClient, socket 
 		defaultSocketSchema = "npipe://"
 		defaultRemoteDockerSocketPath = "//var/run/docker.sock"
 		defaultRootlessDockerSocketPath = "//var/run/docker.sock"
+	} else {
+		// rootless docker socket path is not supported on Windows
+		defaultRootlessDockerSocketPath, err = rootlessDockerSocketPath(ctx)
+		if err != nil {
+			defaultRootlessDockerSocketPath = defaultDockerSocketPath
+		}
 	}
 
 	if info.OperatingSystem == "Docker Desktop" {
 		// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker.
 		// For Windows it will be "//var/run/docker.sock" and for Unix it will be "/var/run/docker.sock"
+		if strings.HasPrefix(defaultRootlessDockerSocketPath, defaultSocketSchema) {
+			return strings.Replace(defaultRootlessDockerSocketPath, defaultSocketSchema, "", 1)
+		}
+
 		return defaultRootlessDockerSocketPath
 	}
 
