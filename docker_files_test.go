@@ -2,6 +2,7 @@ package testcontainers_test
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -81,6 +82,13 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	r, err := container.Logs(ctx)
+	require.NoError(t, err)
+
+	bs, err := io.ReadAll(r)
+	require.NoError(t, err)
+	t.Log(">> container logs:", bs)
 
 	err = container.CopyFileToContainer(ctx, helloPath, "/scripts/hello.sh", 0o700)
 	// }
