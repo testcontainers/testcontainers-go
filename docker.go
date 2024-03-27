@@ -602,19 +602,34 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 		return c.CopyDirToContainer(ctx, hostFilePath, containerFilePath, fileMode)
 	}
 
-	fileContent, err := os.ReadFile(hostFilePath)
+	file, err := os.Open(hostFilePath)
 	if err != nil {
 		return err
 	}
-	return c.CopyToContainer(ctx, fileContent, containerFilePath, fileMode)
+	defer file.Close()
+
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	return c.copyToContainer(ctx, func(tw io.Writer) error {
+		// Attempt optimized writeTo, implemented in linux
+		_, err := file.WriteTo(tw)
+		return err
+	}, info.Size(), containerFilePath, fileMode)
 }
 
 // CopyToContainer copies fileContent data to a file in container
 func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error {
-	buffer, err := tarFile(fileContent, containerFilePath, fileMode)
-	if err != nil {
+	return c.copyToContainer(ctx, func(tw io.Writer) error {
+		_, err := tw.Write(fileContent)
 		return err
-	}
+	}, int64(len(fileContent)), containerFilePath, fileMode)
+}
+
+func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(tw io.Writer) error, fileContentSize int64, containerFilePath string, fileMode int64) error {
+	buffer, err := tarFile(containerFilePath, fileContent, fileContentSize, fileMode)
 
 	err = c.provider.client.CopyToContainer(ctx, c.ID, "/", buffer, types.CopyToContainerOptions{})
 	if err != nil {
@@ -1574,7 +1589,8 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 		_ = imageReader.Close()
 	}()
 
-	_, err = io.Copy(outputFile, imageReader)
+	// Attempt optimized readFrom, implemented in linux
+	_, err = outputFile.ReadFrom(imageReader)
 	if err != nil {
 		return fmt.Errorf("writing images to output %w", err)
 	}
