@@ -13,7 +13,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -126,8 +125,6 @@ func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
 }
 
 func TestGenericReusableContainerInSubprocess(t *testing.T) {
-	cfg := config.Read()
-
 	wg := sync.WaitGroup{}
 	wg.Add(10)
 	for i := 0; i < 10; i++ {
@@ -135,7 +132,7 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 			defer wg.Done()
 
 			// create containers in subprocesses, as "go test ./..." does.
-			output := createReuseContainerInSubprocess(t, cfg)
+			output := createReuseContainerInSubprocess(t)
 
 			// check is reuse container with WaitingFor work correctly.
 			require.True(t, strings.Contains(output, "🚧 Waiting for container id"))
@@ -146,9 +143,9 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 	wg.Wait()
 }
 
-func createReuseContainerInSubprocess(t *testing.T, cfg config.Config) string {
+func createReuseContainerInSubprocess(t *testing.T) string {
 	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess")
-	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=" + core.ExtractDockerSocket(context.Background()), "DOCKER_HOST=" + cfg.TestcontainersHost}
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=" + core.ExtractDockerSocket(context.Background()), "DOCKER_HOST=" + core.ExtractDockerHost(context.Background())}
 
 	t.Log("Calling subprocess with env:", cmd.Env)
 
