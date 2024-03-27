@@ -47,6 +47,7 @@ jobs:
       matrix:
         go-version: [1.21.x, 1.x]
     uses: ./.github/workflows/ci-test-go.yml
+    secrets: inherit
     with:
       go-version: ${{ matrix.go-version }}
       fail-fast: false
@@ -65,6 +66,7 @@ jobs:
         go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest]
     uses: ./.github/workflows/ci-test-go.yml
+    secrets: inherit
     with:
       go-version: ${{ matrix.go-version }}
       fail-fast: false
@@ -80,6 +82,7 @@ jobs:
         go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest, macos-latest, windows-latest]
     uses: ./.github/workflows/ci-test-go.yml
+    secrets: inherit
     with:
       go-version: ${{ matrix.go-version }}
       fail-fast: true
@@ -97,6 +100,7 @@ jobs:
         platform: [ubuntu-latest]
         module: [artemis, cassandra, chroma, clickhouse, cockroachdb, compose, consul, couchbase, elasticsearch, gcloud, inbucket, influxdb, k3s, k6, kafka, localstack, mariadb, milvus, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, ollama, openfga, openldap, opensearch, postgres, pulsar, qdrant, rabbitmq, redis, redpanda, registry, surrealdb, vault, weaviate]
     uses: ./.github/workflows/ci-test-go.yml
+    secrets: inherit
     with:
       go-version: ${{ matrix.go-version }}
       fail-fast: false
@@ -112,6 +116,7 @@ jobs:
       matrix:
         module: [nginx, toxiproxy]
     uses: ./.github/workflows/ci-test-go.yml
+    secrets: inherit
     with:
       go-version: "1.21.x"
       fail-fast: true
