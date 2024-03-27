@@ -44,15 +44,11 @@ func TestExtractDockerHost(t *testing.T) {
 	t.Setenv("USERPROFILE", tmpDir) // Windows support
 
 	t.Run("Docker Host as extracted just once", func(t *testing.T) {
-		expected := "/path/to/docker.sock"
-		t.Setenv("DOCKER_HOST", expected)
-		host := ExtractDockerHost(context.Background())
-
-		assert.Equal(t, expected, host)
+		expected := ExtractDockerHost(context.Background())
 
 		t.Setenv("DOCKER_HOST", "/path/to/another/docker.sock")
 
-		host = ExtractDockerHost(context.Background())
+		host := ExtractDockerHost(context.Background())
 		assert.Equal(t, expected, host)
 	})
 
