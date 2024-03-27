@@ -24,7 +24,7 @@ require (
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/docker v25.0.5+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/felixge/httpsnoop v1.0.3 // indirect
+	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
@@ -56,7 +56,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
