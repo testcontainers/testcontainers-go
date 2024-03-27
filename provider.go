@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/docker/docker/client"
+
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
@@ -38,7 +40,7 @@ type (
 
 	// DockerProviderOptions defines options applicable to DockerProvider
 	DockerProviderOptions struct {
-		defaultBridgeNetworkName string
+		DefaultBridgeNetworkName string
 		*GenericProviderOptions
 	}
 
@@ -74,7 +76,7 @@ func Generic2DockerOptions(opts ...GenericProviderOption) []DockerProviderOption
 
 func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
 	return DockerProviderOptionFunc(func(opts *DockerProviderOptions) {
-		opts.defaultBridgeNetworkName = bridgeNetworkName
+		opts.DefaultBridgeNetworkName = bridgeNetworkName
 	})
 }
 
@@ -128,6 +130,12 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 
 // NewDockerProvider creates a Docker provider with the EnvClient
 func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error) {
+	return NewDockerProviderWithClientOpts([]client.Opt{}, provOpts...)
+}
+
+// NewDockerProviderWithClientOpts creates a Docker provider with the EnvClient using the provided client opts
+// for the docker client.
+func NewDockerProviderWithClientOpts(clientOpts []client.Opt, provOpts ...DockerProviderOption) (*DockerProvider, error) {
 	o := &DockerProviderOptions{
 		GenericProviderOptions: &GenericProviderOptions{
 			Logger: Logger,
@@ -139,7 +147,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 	}
 
 	ctx := context.Background()
-	c, err := NewDockerClientWithOpts(ctx)
+	c, err := NewDockerClientWithOpts(ctx, clientOpts...)
 	if err != nil {
 		return nil, err
 	}
