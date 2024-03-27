@@ -88,7 +88,7 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 
 	bs, err := io.ReadAll(r)
 	require.NoError(t, err)
-	t.Log(">> container logs:", bs)
+	t.Log(">> container logs:", string(bs))
 
 	err = container.CopyFileToContainer(ctx, helloPath, "/scripts/hello.sh", 0o700)
 	// }
