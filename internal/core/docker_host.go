@@ -148,7 +148,11 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 
 	testcontainersDockerSocket, err := dockerSocketOverridePath(ctx)
 	if err == nil {
-		return checkDefaultDockerSocket(ctx, cli, testcontainersDockerSocket)
+		if strings.HasPrefix(testcontainersDockerSocket, TCPSchema) {
+			return checkDefaultDockerSocket(ctx, cli, testcontainersDockerSocket)
+		}
+
+		return strings.Replace(testcontainersDockerSocket, DockerSocketSchema, "", 1)
 	}
 
 	dockerHost := extractDockerHost(ctx)
