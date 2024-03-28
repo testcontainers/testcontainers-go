@@ -1,4 +1,4 @@
-package testcontainers
+package testcontainers_test
 
 import (
 	"context"
@@ -9,21 +9,22 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestParallelContainers(t *testing.T) {
 	tests := []struct {
 		name      string
-		reqs      ParallelContainerRequest
+		reqs      testcontainers.ParallelContainerRequest
 		resLen    int
 		expErrors int
 	}{
 		{
 			name: "running two containers (one error)",
-			reqs: ParallelContainerRequest{
+			reqs: testcontainers.ParallelContainerRequest{
 				{
-					ContainerRequest: ContainerRequest{
+					ContainerRequest: testcontainers.ContainerRequest{
 						Image: "nginx",
 						ExposedPorts: []string{
 							"10080/tcp",
@@ -32,7 +33,7 @@ func TestParallelContainers(t *testing.T) {
 					Started: true,
 				},
 				{
-					ContainerRequest: ContainerRequest{
+					ContainerRequest: testcontainers.ContainerRequest{
 						Image: "bad bad bad",
 						ExposedPorts: []string{
 							"10081/tcp",
@@ -46,9 +47,9 @@ func TestParallelContainers(t *testing.T) {
 		},
 		{
 			name: "running two containers (all errors)",
-			reqs: ParallelContainerRequest{
+			reqs: testcontainers.ParallelContainerRequest{
 				{
-					ContainerRequest: ContainerRequest{
+					ContainerRequest: testcontainers.ContainerRequest{
 						Image: "bad bad bad",
 						ExposedPorts: []string{
 							"10081/tcp",
@@ -57,7 +58,7 @@ func TestParallelContainers(t *testing.T) {
 					Started: true,
 				},
 				{
-					ContainerRequest: ContainerRequest{
+					ContainerRequest: testcontainers.ContainerRequest{
 						Image: "bad bad bad",
 						ExposedPorts: []string{
 							"10081/tcp",
@@ -71,9 +72,9 @@ func TestParallelContainers(t *testing.T) {
 		},
 		{
 			name: "running two containers (success)",
-			reqs: ParallelContainerRequest{
+			reqs: testcontainers.ParallelContainerRequest{
 				{
-					ContainerRequest: ContainerRequest{
+					ContainerRequest: testcontainers.ContainerRequest{
 						Image: "nginx",
 						ExposedPorts: []string{
 							"10080/tcp",
@@ -82,7 +83,7 @@ func TestParallelContainers(t *testing.T) {
 					Started: true,
 				},
 				{
-					ContainerRequest: ContainerRequest{
+					ContainerRequest: testcontainers.ContainerRequest{
 						Image: "nginx",
 						ExposedPorts: []string{
 							"10081/tcp",
@@ -98,10 +99,10 @@ func TestParallelContainers(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := ParallelContainers(context.Background(), tc.reqs, ParallelContainersOptions{})
+			res, err := testcontainers.ParallelContainers(context.Background(), tc.reqs, testcontainers.ParallelContainersOptions{})
 			if err != nil {
 				require.NotZero(t, tc.expErrors)
-				var e ParallelContainersError
+				var e testcontainers.ParallelContainersError
 				errors.As(err, &e)
 				if len(e.Errors) != tc.expErrors {
 					t.Fatalf("expected errors: %d, got: %d\n", tc.expErrors, len(e.Errors))
@@ -130,8 +131,8 @@ func TestParallelContainersWithReuse(t *testing.T) {
 
 	natPort := fmt.Sprintf("%d/tcp", postgresPort)
 
-	req := GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        "postgis/postgis",
 			Name:         "test-postgres",
 			ExposedPorts: []string{natPort},
@@ -148,7 +149,7 @@ func TestParallelContainersWithReuse(t *testing.T) {
 		Reuse:   true,
 	}
 
-	parallelRequest := ParallelContainerRequest{
+	parallelRequest := testcontainers.ParallelContainerRequest{
 		req,
 		req,
 		req,
@@ -156,9 +157,9 @@ func TestParallelContainersWithReuse(t *testing.T) {
 
 	ctx := context.Background()
 
-	res, err := ParallelContainers(ctx, parallelRequest, ParallelContainersOptions{})
+	res, err := testcontainers.ParallelContainers(ctx, parallelRequest, testcontainers.ParallelContainersOptions{})
 	if err != nil {
-		var e ParallelContainersError
+		var e testcontainers.ParallelContainersError
 		errors.As(err, &e)
 		t.Fatalf("expected errors: %d, got: %d\n", 0, len(e.Errors))
 	}
