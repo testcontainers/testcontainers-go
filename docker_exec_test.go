@@ -1,43 +1,15 @@
 package testcontainers
 
 import (
+	"bytes"
 	"context"
 	"io"
-	"strings"
 	"testing"
 
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/stretchr/testify/require"
-
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
-
-func TestExecWithMultiplexedResponse(t *testing.T) {
-	ctx := context.Background()
-	req := ContainerRequest{
-		Image: nginxAlpineImage,
-	}
-
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
-
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, container)
-
-	code, reader, err := container.Exec(ctx, []string{"ls", "/usr/share/nginx"}, tcexec.Multiplexed())
-	require.NoError(t, err)
-	require.Zero(t, code)
-	require.NotNil(t, reader)
-
-	b, err := io.ReadAll(reader)
-	require.NoError(t, err)
-	require.NotNil(t, b)
-
-	str := string(b)
-	require.Equal(t, "html\n", str)
-}
 
 func TestExecWithOptions(t *testing.T) {
 	tests := []struct {
@@ -106,7 +78,7 @@ func TestExecWithOptions(t *testing.T) {
 	}
 }
 
-func TestExecWithMultiplexedStderrResponse(t *testing.T) {
+func TestExecWithMultiplexedResponse(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image: nginxAlpineImage,
@@ -121,9 +93,9 @@ func TestExecWithMultiplexedStderrResponse(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, container)
 
-	code, reader, err := container.Exec(ctx, []string{"ls", "/non-existing-directory"}, tcexec.Multiplexed())
+	code, reader, err := container.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"}, tcexec.Multiplexed())
 	require.NoError(t, err)
-	require.NotZero(t, code)
+	require.Zero(t, code)
 	require.NotNil(t, reader)
 
 	b, err := io.ReadAll(reader)
@@ -131,7 +103,8 @@ func TestExecWithMultiplexedStderrResponse(t *testing.T) {
 	require.NotNil(t, b)
 
 	str := string(b)
-	require.Contains(t, str, "No such file or directory")
+	require.Contains(t, str, "stdout")
+	require.Contains(t, str, "stderr")
 }
 
 func TestExecWithNonMultiplexedResponse(t *testing.T) {
@@ -149,15 +122,20 @@ func TestExecWithNonMultiplexedResponse(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, container)
 
-	code, reader, err := container.Exec(ctx, []string{"ls", "/usr/share/nginx"})
+	code, reader, err := container.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"})
 	require.NoError(t, err)
 	require.Zero(t, code)
 	require.NotNil(t, reader)
 
-	b, err := io.ReadAll(reader)
-	require.NoError(t, err)
-	require.NotNil(t, b)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
 
-	str := string(b)
-	require.True(t, strings.HasSuffix(str, "html\n"))
+	written, err := stdcopy.StdCopy(&stdout, &stderr, reader)
+	require.NoError(t, err)
+	require.NotZero(t, written)
+	require.NotNil(t, stdout)
+	require.NotNil(t, stderr)
+
+	require.Equal(t, stdout.String(), "stdout\n")
+	require.Equal(t, stderr.String(), "stderr\n")
 }
