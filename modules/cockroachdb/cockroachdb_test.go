@@ -3,9 +3,11 @@ package cockroachdb_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cockroachdb"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestCockroach_Insecure(t *testing.T) {
@@ -142,6 +145,20 @@ func (suite *AuthNSuite) TestQuery() {
 	err = conn.QueryRow(ctx, "SELECT id FROM test").Scan(&id)
 	suite.Require().NoError(err)
 	suite.Equal(523123, id)
+}
+
+// TestWithWaitStrategyAndDeadline is expected to fail as it covers a previous regression.
+func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
+
+	contextDeadlineExceeded := fmt.Errorf("failed to start container: context deadline exceeded")
+
+	ctx := context.Background()
+
+	suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*250, wait.ForLog("Won't Exist In Logs")))
+	_, err := cockroachdb.RunContainer(ctx, suite.opts...)
+	suite.Require().Error(err)
+	suite.Require().Error(err, contextDeadlineExceeded)
+
 }
 
 func conn(ctx context.Context, container *cockroachdb.CockroachDBContainer) (*pgx.Conn, error) {
