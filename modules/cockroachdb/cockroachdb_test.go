@@ -151,39 +151,64 @@ func (suite *AuthNSuite) TestQuery() {
 func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 	contextDeadlineExceeded := fmt.Errorf("failed to start container: context deadline exceeded")
+	nodeStartUpCompleted := "node startup completed"
+	suite.Run("Expected Failure To Run", func() {
 
-	ctx := context.Background()
+		ctx := context.Background()
 
-	// This will never match a log statement
-	suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*250, wait.ForLog("Won't Exist In Logs")))
-	_, err := cockroachdb.RunContainer(ctx, suite.opts...)
-	suite.Require().Error(err, contextDeadlineExceeded)
+		// This will never match a log statement
+		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*250, wait.ForLog("Won't Exist In Logs")))
+		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		suite.Require().Error(err, contextDeadlineExceeded)
+		suite.T().Cleanup(func() {
+			if container != nil {
+				err := container.Terminate(ctx)
+				suite.Require().NoError(err)
+			}
+		})
 
-	ctx = context.Background()
-
-	// This will timeout as we didn't give enough time for intialization, but would have succeeded otherwise
-	suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*20, wait.ForLog("node startup completed")))
-	_, err = cockroachdb.RunContainer(ctx, suite.opts...)
-	suite.Require().Error(err, contextDeadlineExceeded)
-
-	ctx = context.Background()
-
-	// This will succeed
-	suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Second*60, wait.ForLog("node startup completed")))
-	container, err := cockroachdb.RunContainer(ctx, suite.opts...)
-	suite.Require().NoError(err)
-
-	suite.T().Cleanup(func() {
-		err := container.Terminate(ctx)
-		suite.Require().NoError(err)
 	})
 
-	conn, err := conn(ctx, container)
-	suite.Require().NoError(err)
-	defer conn.Close(ctx)
+	suite.Run("Expected Failure To Run But Would Succeed ", func() {
 
-	_, err = conn.Exec(ctx, "CREATE TABLE test (id INT PRIMARY KEY)")
-	suite.Require().NoError(err)
+		ctx := context.Background()
+
+		// This will timeout as we didn't give enough time for intialization, but would have succeeded otherwise
+		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*20, wait.ForLog(nodeStartUpCompleted)))
+		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		suite.Require().Error(err, contextDeadlineExceeded)
+		suite.T().Cleanup(func() {
+			if container != nil {
+				err := container.Terminate(ctx)
+				suite.Require().NoError(err)
+			}
+		})
+
+	})
+
+	suite.Run("Succeeds And Executes Commands", func() {
+
+		ctx := context.Background()
+
+		// This will succeed
+		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Second*60, wait.ForLog(nodeStartUpCompleted)))
+		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		suite.Require().NoError(err)
+
+		conn, err := conn(ctx, container)
+		suite.Require().NoError(err)
+		defer conn.Close(ctx)
+
+		_, err = conn.Exec(ctx, "CREATE TABLE test (id INT PRIMARY KEY)")
+		suite.Require().NoError(err)
+		suite.T().Cleanup(func() {
+			if container != nil {
+				err := container.Terminate(ctx)
+				suite.Require().NoError(err)
+			}
+		})
+
+	})
 
 }
 
