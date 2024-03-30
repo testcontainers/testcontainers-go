@@ -147,7 +147,7 @@ func (suite *AuthNSuite) TestQuery() {
 	suite.Equal(523123, id)
 }
 
-// TestWithWaitStrategyAndDeadline is expected to fail as it covers a previous regression.
+// TestWithWaitStrategyAndDeadline covers a previous regression, container creation needs to fail to cover that path.
 func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 	contextDeadlineExceeded := fmt.Errorf("failed to start container: context deadline exceeded")
@@ -156,7 +156,6 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 	suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*250, wait.ForLog("Won't Exist In Logs")))
 	_, err := cockroachdb.RunContainer(ctx, suite.opts...)
-	suite.Require().Error(err)
 	suite.Require().Error(err, contextDeadlineExceeded)
 
 }
