@@ -2,8 +2,10 @@ package rabbitmq_test
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -32,6 +34,39 @@ func TestRunContainer_connectUsingAmqp(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	amqpConnection, err := amqp.Dial(amqpURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = amqpConnection.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRunContainer_connectUsingAmqps(t *testing.T) {
+	ctx := context.Background()
+
+	sslSettings := rabbitmq.SSLSettings{
+		CACertFile:        filepath.Join("testdata", "certs", "server_ca.pem"),
+		CertFile:          filepath.Join("testdata", "certs", "server_cert.pem"),
+		KeyFile:           filepath.Join("testdata", "certs", "server_key.pem"),
+		VerificationMode:  rabbitmq.SSLVerificationModePeer,
+		FailIfNoCert:      true,
+		VerificationDepth: 0,
+	}
+
+	rabbitmqContainer, err := rabbitmq.RunContainer(ctx, rabbitmq.WithSSL(sslSettings))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		if err := rabbitmqContainer.Terminate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
 	amqpsURL, err := rabbitmqContainer.AmqpsURL(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -41,16 +76,7 @@ func TestRunContainer_connectUsingAmqp(t *testing.T) {
 		t.Fatal(fmt.Errorf("AMQPS Url should begin with `amqps`"))
 	}
 
-	amqpConnection, err := amqp.Dial(amqpURL)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err = amqpConnection.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	amqpsConnection, err := amqp.Dial(amqpsURL)
+	amqpsConnection, err := amqp.DialTLS(amqpsURL, &tls.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
