@@ -167,29 +167,30 @@ func addWaitingFor(req *testcontainers.GenericContainerRequest, opts options) er
 		tlsConfig = cfg
 	}
 
+	sqlWait := wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
+		connStr := connString(opts, host, port)
+		if tlsConfig == nil {
+			return connStr
+		}
+
+		// register TLS config with pgx driver
+		connCfg, err := pgx.ParseConfig(connStr)
+		if err != nil {
+			panic(err)
+		}
+		connCfg.TLSConfig = tlsConfig
+
+		return stdlib.RegisterConnConfig(connCfg)
+	})
 	defaultStrategy := wait.ForAll(
 		wait.ForHTTP("/health").WithPort(defaultAdminPort),
-		wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
-			connStr := connString(opts, host, port)
-			if tlsConfig == nil {
-				return connStr
-			}
-
-			// register TLS config with pgx driver
-			connCfg, err := pgx.ParseConfig(connStr)
-			if err != nil {
-				panic(err)
-			}
-			connCfg.TLSConfig = tlsConfig
-
-			return stdlib.RegisterConnConfig(connCfg)
-		}),
+		sqlWait,
 	)
 
 	if req.WaitingFor == nil {
 		req.WaitingFor = defaultStrategy
 	} else {
-		req.WaitingFor = wait.ForAll(req.WaitingFor, defaultStrategy)
+		req.WaitingFor = wait.ForAll(req.WaitingFor, sqlWait)
 	}
 
 	return nil

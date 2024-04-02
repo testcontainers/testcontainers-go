@@ -210,6 +210,30 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 	})
 
+	suite.Run("Succeeds And Executes Commands Waiting on HTTP Endpoint", func() {
+
+		ctx := context.Background()
+
+		// This will succeed
+		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Second*60, wait.ForHTTP("/health").WithPort("8080/tcp")))
+		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		suite.Require().NoError(err)
+
+		conn, err := conn(ctx, container)
+		suite.Require().NoError(err)
+		defer conn.Close(ctx)
+
+		_, err = conn.Exec(ctx, "CREATE TABLE test (id INT PRIMARY KEY)")
+		suite.Require().NoError(err)
+		suite.T().Cleanup(func() {
+			if container != nil {
+				err := container.Terminate(ctx)
+				suite.Require().NoError(err)
+			}
+		})
+
+	})
+
 }
 
 func conn(ctx context.Context, container *cockroachdb.CockroachDBContainer) (*pgx.Conn, error) {
