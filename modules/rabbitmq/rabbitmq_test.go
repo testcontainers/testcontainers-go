@@ -32,12 +32,30 @@ func TestRunContainer_connectUsingAmqp(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	amqpsURL, err := rabbitmqContainer.AmqpsURL(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.HasPrefix(amqpsURL, "amqps") {
+		t.Fatal(fmt.Errorf("AMQPS Url should begin with `amqps`"))
+	}
+
 	amqpConnection, err := amqp.Dial(amqpURL)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if err = amqpConnection.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	amqpsConnection, err := amqp.Dial(amqpsURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = amqpsConnection.Close(); err != nil {
 		t.Fatal(err)
 	}
 }
