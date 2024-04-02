@@ -34,6 +34,10 @@ func TestMySQL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	mustConnectionString := container.MustConnectionString(ctx,"tls=skip-verify")
+	if mustConnectionString!=connectionString{
+		t.Errorf("ConnectionString was not equal to MustConnectionString")
+	}
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {

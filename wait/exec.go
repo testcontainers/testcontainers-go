@@ -45,6 +45,12 @@ func (ws *ExecStrategy) WithStartupTimeout(startupTimeout time.Duration) *ExecSt
 	return ws
 }
 
+func (ws *ExecStrategy) WithExitCode(exitCode int) *ExecStrategy {
+	return ws.WithExitCodeMatcher(func(actualCode int) bool {
+		return actualCode == exitCode
+	})
+}
+
 func (ws *ExecStrategy) WithExitCodeMatcher(exitCodeMatcher func(exitCode int) bool) *ExecStrategy {
 	ws.ExitCodeMatcher = exitCodeMatcher
 	return ws

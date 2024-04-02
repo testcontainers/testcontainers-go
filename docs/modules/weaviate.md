@@ -74,5 +74,6 @@ import (
 Then, you can create a Weaviate client using the Weaviate module:
 
 <!--codeinclude-->
-[Get the client](../../modules/weaviate/examples_test.go) inside_block:createClient
+[Get the client](../../modules/weaviate/examples_test.go) inside_block:createClientNoModules
+[Get the client And Modules](../../modules/weaviate/examples_test.go) inside_block:createClientAndModules
 <!--/codeinclude-->
