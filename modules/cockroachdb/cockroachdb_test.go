@@ -149,11 +149,10 @@ func (suite *AuthNSuite) TestQuery() {
 
 // TestWithWaitStrategyAndDeadline covers a previous regression, container creation needs to fail to cover that path.
 func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
-
 	contextDeadlineExceeded := fmt.Errorf("failed to start container: context deadline exceeded")
 	nodeStartUpCompleted := "node startup completed"
-	suite.Run("Expected Failure To Run", func() {
 
+	suite.Run("Expected Failure To Run", func() {
 		ctx := context.Background()
 
 		// This will never match a log statement
@@ -170,7 +169,6 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 	})
 
 	suite.Run("Expected Failure To Run But Would Succeed ", func() {
-
 		ctx := context.Background()
 
 		// This will timeout as we didn't give enough time for intialization, but would have succeeded otherwise
@@ -187,7 +185,6 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 	})
 
 	suite.Run("Succeeds And Executes Commands", func() {
-
 		ctx := context.Background()
 
 		// This will succeed
@@ -207,11 +204,9 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 				suite.Require().NoError(err)
 			}
 		})
-
 	})
 
 	suite.Run("Succeeds And Executes Commands Waiting on HTTP Endpoint", func() {
-
 		ctx := context.Background()
 
 		// This will succeed
@@ -231,9 +226,7 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 				suite.Require().NoError(err)
 			}
 		})
-
 	})
-
 }
 
 func conn(ctx context.Context, container *cockroachdb.CockroachDBContainer) (*pgx.Conn, error) {
