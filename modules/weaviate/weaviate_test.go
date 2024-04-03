@@ -12,12 +12,14 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/weaviate"
+	wvt "github.com/weaviate/weaviate-go-client/v4/weaviate"
+	wvtgrpc "github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
 )
 
 func TestWeaviate(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := weaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.24.1"))
+	container, err := weaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.24.5"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,6 +73,30 @@ func TestWeaviate(t *testing.T) {
 		}
 		if grpc_health_v1.HealthCheckResponse_SERVING.Enum().Number() != check.Status.Number() {
 			tt.Fatalf("unexpected status code: %d", check.Status.Number())
+		}
+	})
+
+	t.Run("Weaviate client", func(tt *testing.T) {
+		httpScheme, httpHost, err := container.HttpHostAddress(ctx)
+		if err != nil {
+			tt.Fatal(err)
+		}
+		grpcHost, err := container.GrpcHostAddress(ctx)
+		if err != nil {
+			tt.Fatal(err)
+		}
+		config := wvt.Config{Scheme: httpScheme, Host: httpHost, GrpcConfig: &wvtgrpc.Config{Host: grpcHost}}
+		client, err := wvt.NewClient(config)
+		if err != nil {
+			tt.Fatal(err)
+		}
+		meta, err := client.Misc().MetaGetter().Do(ctx)
+		if err != nil {
+			tt.Fatal(err)
+		}
+
+		if meta == nil || meta.Version == "" {
+			tt.Fatal("failed to get /v1/meta response")
 		}
 	})
 }
