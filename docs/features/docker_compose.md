@@ -7,7 +7,7 @@ This is intended to be useful on projects where Docker Compose is already used
 in dev or other environments to define services that an application may be
 dependent upon.
 
-## Using `docker-compose` directly
+## Using `docker compose` directly
 
 !!!warning
 	The minimal version of Go required to use this module is **1.21**.
@@ -16,9 +16,9 @@ dependent upon.
 go get github.com/testcontainers/testcontainers-go/modules/compose
 ```
 
-Because `docker-compose` v2 is implemented in Go it's possible for _Testcontainers for Go_ to
+Because `compose` v2 is implemented in Go it's possible for _Testcontainers for Go_ to
 use [`github.com/docker/compose`](https://github.com/docker/compose) directly and skip any process execution/_docker-compose-in-a-container_ scenario.
-The `ComposeStack` API exposes this variant of using `docker-compose` in an easy way.
+The `ComposeStack` API exposes this variant of using `docker compose` in an easy way.
 
 ### Basic examples
 
@@ -88,14 +88,14 @@ func TestSomethingElse(t *testing.T) {
 
 To interact with service containers after a stack was started it is possible to get an `*tc.DockerContainer` instance via the `ServiceContainer(...)` function.
 The function takes a **service name** (and a `context.Context`) and returns either a `*tc.DockerContainer` or an `error`.
-This is different to the previous `LocalDockerCompose` API where service containers were accessed via their **container name** e.g. `mysql_1` or `mysql-1` (depending on the version of `docker-compose`).
+This is different to the previous `LocalDockerCompose` API where service containers were accessed via their **container name** e.g. `mysql_1` or `mysql-1` (depending on the version of `docker compose`).
 
 Furthermore, there's the convenience function `Serices()` to get a list of all services **defined** by the current project.
 Note that not all of them need necessarily be correctly started as the information is based on the given compose files.
 
 ### Wait strategies
 
-Just like with regular test containers you can also apply wait strategies to `docker-compose` services.
+Just like with regular test containers you can also apply wait strategies to `docker compose` services.
 The `ComposeStack.WaitForService(...)` function allows you to apply a wait strategy to **a service by name**.
 All wait strategies are executed in parallel to both improve startup performance by not blocking too long and to fail
 early if something's wrong.
@@ -139,7 +139,7 @@ func TestSomethingWithWaiting(t *testing.T) {
 
 ### Compose environment
 
-`docker-compose` supports expansion based on environment variables.
+`docker compose` supports expansion based on environment variables.
 The `ComposeStack` supports this as well in two different variants:
 
 - `ComposeStack.WithEnv(m map[string]string) ComposeStack` to parameterize stacks from your test code
@@ -150,14 +150,14 @@ The `ComposeStack` supports this as well in two different variants:
 Also have a look at [ComposeStack](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#ComposeStack) docs for
 further information.
 
-## Usage of `docker-compose` binary
+## Usage of the `docker compose` binary
 
-_Node:_ this API is deprecated and superseded by `ComposeStack` which takes advantage of `docker-compose` v2 being
+_Node:_ this API is deprecated and superseded by `ComposeStack` which takes advantage of `compose` v2 being
 implemented in Go as well by directly using the upstream project.
 
 You can override Testcontainers' default behaviour and make it use a
-docker-compose binary installed on the local machine. This will generally yield
-an experience that is closer to running docker-compose locally, with the caveat
+docker compose binary installed on the local machine. This will generally yield
+an experience that is closer to running docker compose locally, with the caveat
 that Docker Compose needs to be present on dev and CI machines.
 
 ### Examples
