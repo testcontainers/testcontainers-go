@@ -369,7 +369,7 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 	}
 
 	// initialise the command with the compose subcommand
-	var cmds = []string{dc.composeSubcommand}
+	cmds := []string{dc.composeSubcommand}
 	pwd := "."
 	if len(dc.absComposeFilePaths) > 0 {
 		pwd, _ = filepath.Split(dc.absComposeFilePaths[0])
