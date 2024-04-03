@@ -1854,7 +1854,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 }
 
 func TestGetGatewayIP(t *testing.T) {
-	// When using docker-compose with DinD mode, and using host port or http wait strategy
+	// When using docker compose with DinD mode, and using host port or http wait strategy
 	// It's need to invoke GetGatewayIP for get the host
 	provider, err := providerType.GetProvider(WithLogger(TestLogger(t)))
 	if err != nil {
