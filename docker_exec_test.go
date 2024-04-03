@@ -51,7 +51,6 @@ func TestExecWithOptions(t *testing.T) {
 			}
 
 			container, err := GenericContainer(ctx, GenericContainerRequest{
-				ProviderType:     providerType,
 				ContainerRequest: req,
 				Started:          true,
 			})
@@ -85,7 +84,6 @@ func TestExecWithMultiplexedResponse(t *testing.T) {
 	}
 
 	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -114,7 +112,6 @@ func TestExecWithNonMultiplexedResponse(t *testing.T) {
 	}
 
 	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
