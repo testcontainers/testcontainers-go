@@ -34,7 +34,7 @@ func (f stackDownOptionFunc) applyToStackDown(do *api.DownOptions) {
 	f(do)
 }
 
-// RunServices is comparable to 'docker-compose run' as it only creates a subset of containers
+// RunServices is comparable to 'docker compose run' as it only creates a subset of containers
 // instead of all services defined by the project
 func RunServices(serviceNames ...string) StackUpOption {
 	return stackUpOptionFunc(func(o *stackUpOptions) {

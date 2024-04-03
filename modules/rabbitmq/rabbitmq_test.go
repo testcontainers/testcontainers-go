@@ -2,8 +2,12 @@ package rabbitmq_test
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -38,6 +42,59 @@ func TestRunContainer_connectUsingAmqp(t *testing.T) {
 	}
 
 	if err = amqpConnection.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRunContainer_connectUsingAmqps(t *testing.T) {
+	ctx := context.Background()
+
+	sslSettings := rabbitmq.SSLSettings{
+		CACertFile:        filepath.Join("testdata", "certs", "server_ca.pem"),
+		CertFile:          filepath.Join("testdata", "certs", "server_cert.pem"),
+		KeyFile:           filepath.Join("testdata", "certs", "server_key.pem"),
+		VerificationMode:  rabbitmq.SSLVerificationModePeer,
+		FailIfNoCert:      false,
+		VerificationDepth: 1,
+	}
+
+	rabbitmqContainer, err := rabbitmq.RunContainer(ctx, rabbitmq.WithSSL(sslSettings))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		if err := rabbitmqContainer.Terminate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	amqpsURL, err := rabbitmqContainer.AmqpsURL(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.HasPrefix(amqpsURL, "amqps") {
+		t.Fatal(fmt.Errorf("AMQPS Url should begin with `amqps`"))
+	}
+
+	certs := x509.NewCertPool()
+
+	pemData, err := ioutil.ReadFile(sslSettings.CACertFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	certs.AppendCertsFromPEM(pemData)
+
+	amqpsConnection, err := amqp.DialTLS(amqpsURL, &tls.Config{InsecureSkipVerify: false, RootCAs: certs})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if amqpsConnection.IsClosed() {
+		t.Fatal(fmt.Errorf("AMQPS Connection unexpectdely closed"))
+	}
+	if err = amqpsConnection.Close(); err != nil {
 		t.Fatal(err)
 	}
 }

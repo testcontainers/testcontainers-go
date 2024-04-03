@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -602,19 +603,41 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 		return c.CopyDirToContainer(ctx, hostFilePath, containerFilePath, fileMode)
 	}
 
-	fileContent, err := os.ReadFile(hostFilePath)
+	f, err := os.Open(hostFilePath)
 	if err != nil {
 		return err
 	}
-	return c.CopyToContainer(ctx, fileContent, containerFilePath, fileMode)
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		return err
+	}
+
+	// In Go 1.22 os.File is always an io.WriterTo. However, testcontainers
+	// currently allows Go 1.21, so we need to trick the compiler a little.
+	var file fs.File = f
+	return c.copyToContainer(ctx, func(tw io.Writer) error {
+		// Attempt optimized writeTo, implemented in linux
+		if wt, ok := file.(io.WriterTo); ok {
+			_, err := wt.WriteTo(tw)
+			return err
+		}
+		_, err := io.Copy(tw, f)
+		return err
+	}, info.Size(), containerFilePath, fileMode)
 }
 
 // CopyToContainer copies fileContent data to a file in container
 func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error {
-	buffer, err := tarFile(fileContent, containerFilePath, fileMode)
-	if err != nil {
+	return c.copyToContainer(ctx, func(tw io.Writer) error {
+		_, err := tw.Write(fileContent)
 		return err
-	}
+	}, int64(len(fileContent)), containerFilePath, fileMode)
+}
+
+func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(tw io.Writer) error, fileContentSize int64, containerFilePath string, fileMode int64) error {
+	buffer, err := tarFile(containerFilePath, fileContent, fileContentSize, fileMode)
 
 	err = c.provider.client.CopyToContainer(ctx, c.ID, "/", buffer, types.CopyToContainerOptions{})
 	if err != nil {
@@ -1027,20 +1050,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			pullOpt := types.ImagePullOptions{
 				Platform: req.ImagePlatform, // may be empty
 			}
-
-			registry, imageAuth, err := DockerImageAuth(ctx, imageName)
-			if err != nil {
-				p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, imageName, err)
-			} else {
-				// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
-				encodedJSON, err := json.Marshal(imageAuth)
-				if err != nil {
-					p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", imageName, err)
-				} else {
-					pullOpt.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
-				}
-			}
-
 			if err := p.attemptToPullImage(ctx, imageName, pullOpt); err != nil {
 				return nil, err
 			}
@@ -1245,10 +1254,20 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 // attemptToPullImage tries to pull the image while respecting the ctx cancellations.
 // Besides, if the image cannot be pulled due to ErrorNotFound then no need to retry but terminate immediately.
 func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt types.ImagePullOptions) error {
-	var (
-		err  error
-		pull io.ReadCloser
-	)
+	registry, imageAuth, err := DockerImageAuth(ctx, tag)
+	if err != nil {
+		p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, tag, err)
+	} else {
+		// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
+		encodedJSON, err := json.Marshal(imageAuth)
+		if err != nil {
+			p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", tag, err)
+		} else {
+			pullOpt.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
+		}
+	}
+
+	var pull io.ReadCloser
 	err = backoff.Retry(func() error {
 		pull, err = p.client.ImagePull(ctx, tag, pullOpt)
 		if err != nil {
@@ -1577,7 +1596,8 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 		_ = imageReader.Close()
 	}()
 
-	_, err = io.Copy(outputFile, imageReader)
+	// Attempt optimized readFrom, implemented in linux
+	_, err = outputFile.ReadFrom(imageReader)
 	if err != nil {
 		return fmt.Errorf("writing images to output %w", err)
 	}

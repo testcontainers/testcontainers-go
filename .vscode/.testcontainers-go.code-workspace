@@ -58,6 +58,10 @@
             "path": "../modules/inbucket"
         },
         {
+            "name": "module / influxdb",
+            "path": "../modules/influxdb"
+        },
+        {
             "name": "module / k3s",
             "path": "../modules/k3s"
         },
@@ -148,6 +152,10 @@
         {
             "name": "module / redpanda",
             "path": "../modules/redpanda"
+        },
+        {
+            "name": "module / registry",
+            "path": "../modules/registry"
         },
         {
             "name": "module / surrealdb",
