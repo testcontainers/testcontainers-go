@@ -274,22 +274,13 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 	defer c.provider.client.Close()
 
-	err := c.terminatingHook(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = c.provider.client.ContainerRemove(ctx, c.GetContainerID(), container.RemoveOptions{
-		RemoveVolumes: true,
-		Force:         true,
-	})
-	if err != nil {
-		return err
-	}
-
-	err = c.terminatedHook(ctx)
-	if err != nil {
-		return err
+	errs := []error{
+		c.terminatingHook(ctx),
+		c.provider.client.ContainerRemove(ctx, c.GetContainerID(), container.RemoveOptions{
+			RemoveVolumes: true,
+			Force:         true,
+		}),
+		c.terminatedHook(ctx),
 	}
 
 	if c.imageWasBuilt && !c.keepBuiltImage {
@@ -297,14 +288,12 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 			Force:         true,
 			PruneChildren: true,
 		})
-		if err != nil {
-			return err
-		}
+		errs = append(errs, err)
 	}
 
 	c.sessionID = ""
 	c.isRunning = false
-	return nil
+	return errors.Join(errs...)
 }
 
 // update container raw info
