@@ -58,7 +58,7 @@ func TestK6(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				desc := k6.RemoteTestFileDescription{Uri: *uri, DownloadDir: t.TempDir()}
+				desc := k6.DownloadableFile{Uri: *uri, DownloadDir: t.TempDir()}
 				options = k6.WithRemoteTestScript(desc)
 			}
 

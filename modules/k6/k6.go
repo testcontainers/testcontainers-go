@@ -22,20 +22,20 @@ type K6Container struct {
 	testcontainers.Container
 }
 
-type RemoteTestFileDescription struct {
+type DownloadableFile struct {
 	Uri         url.URL
 	DownloadDir string
 	User        string
 	Password    string
 }
 
-func (d *RemoteTestFileDescription) getDownloadPath() string {
+func (d *DownloadableFile) getDownloadPath() string {
 	baseName := path.Base(d.Uri.Path)
 	return path.Join(d.DownloadDir, baseName)
 
 }
 
-func downloadFileFromDescription(d RemoteTestFileDescription) error {
+func downloadFileFromDescription(d DownloadableFile) error {
 
 	client := http.Client{Timeout: time.Second * 60}
 	req, err := http.NewRequest(http.MethodGet, d.Uri.String(), nil)
@@ -101,7 +101,7 @@ func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainer
 }
 
 // WithRemoteTestScript takes a RemoteTestFileDescription and copies to container
-func WithRemoteTestScript(d RemoteTestFileDescription) testcontainers.CustomizeRequestOption {
+func WithRemoteTestScript(d DownloadableFile) testcontainers.CustomizeRequestOption {
 
 	err := downloadFileFromDescription(d)
 	if err != nil {
