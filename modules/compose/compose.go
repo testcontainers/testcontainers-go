@@ -155,11 +155,12 @@ func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalD
 		opts[idx].ApplyToLocalCompose(dc.LocalDockerComposeOptions)
 	}
 
-	dc.Executable = "docker-compose"
+	dc.Executable = "docker"
 	if runtime.GOOS == "windows" {
-		dc.Executable = "docker-compose.exe"
+		dc.Executable = "docker.exe"
 	}
 
+	dc.composeSubcommand = "compose"
 	dc.ComposeFilePaths = filePaths
 
 	dc.absComposeFilePaths = make([]string, len(filePaths))

@@ -41,12 +41,14 @@ func (c composeVersion2) Format(parts ...string) string {
 	return strings.Join(parts, "-")
 }
 
+// Deprecated: use ComposeStack instead
 // LocalDockerCompose represents a Docker Compose execution using local binary
-// docker-compose or docker-compose.exe, depending on the underlying platform
+// docker compose or docker.exe compose, depending on the underlying platform
 type LocalDockerCompose struct {
 	ComposeVersion
 	*LocalDockerComposeOptions
 	Executable           string
+	composeSubcommand    string
 	ComposeFilePaths     []string
 	absComposeFilePaths  []string
 	Identifier           string
@@ -58,17 +60,20 @@ type LocalDockerCompose struct {
 }
 
 type (
+	// Deprecated: it will be removed in the next major release
 	// LocalDockerComposeOptions defines options applicable to LocalDockerCompose
 	LocalDockerComposeOptions struct {
 		Logger testcontainers.Logging
 	}
 
+	// Deprecated: it will be removed in the next major release
 	// LocalDockerComposeOption defines a common interface to modify LocalDockerComposeOptions
 	// These options can be passed to NewLocalDockerCompose in a variadic way to customize the returned LocalDockerCompose instance
 	LocalDockerComposeOption interface {
 		ApplyToLocalCompose(opts *LocalDockerComposeOptions)
 	}
 
+	// Deprecated: it will be removed in the next major release
 	// LocalDockerComposeOptionsFunc is a shorthand to implement the LocalDockerComposeOption interface
 	LocalDockerComposeOptionsFunc func(opts *LocalDockerComposeOptions)
 )
@@ -86,6 +91,7 @@ func WithLogger(logger testcontainers.Logging) ComposeLoggerOption {
 	}
 }
 
+// Deprecated: it will be removed in the next major release
 func (o ComposeLoggerOption) ApplyToLocalCompose(opts *LocalDockerComposeOptions) {
 	opts.Logger = o.logger
 }
@@ -94,15 +100,18 @@ func (o ComposeLoggerOption) applyToComposeStack(opts *composeStackOptions) {
 	opts.Logger = o.logger
 }
 
+// Deprecated: it will be removed in the next major release
 func (f LocalDockerComposeOptionsFunc) ApplyToLocalCompose(opts *LocalDockerComposeOptions) {
 	f(opts)
 }
 
-// Down executes docker-compose down
+// Deprecated: it will be removed in the next major release
+// Down executes docker compose down
 func (dc *LocalDockerCompose) Down() ExecError {
 	return executeCompose(dc, []string{"down", "--remove-orphans", "--volumes"})
 }
 
+// Deprecated: it will be removed in the next major release
 func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
 	environment := map[string]string{}
 
@@ -117,10 +126,12 @@ func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
 	return environment
 }
 
+// Deprecated: it will be removed in the next major release
 func (dc *LocalDockerCompose) containerNameFromServiceName(service, separator string) string {
 	return dc.Identifier + separator + service
 }
 
+// Deprecated: it will be removed in the next major release
 func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
@@ -163,17 +174,19 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 
 		err = strategy.WaitUntilReady(context.Background(), dockercontainer)
 		if err != nil {
-			return fmt.Errorf("Unable to apply wait strategy %v to service %s due to %w", strategy, k.service, err)
+			return fmt.Errorf("unable to apply wait strategy %v to service %s due to %w", strategy, k.service, err)
 		}
 	}
 	return nil
 }
 
+// Deprecated: it will be removed in the next major release
 // Invoke invokes the docker compose
 func (dc *LocalDockerCompose) Invoke() ExecError {
 	return executeCompose(dc, dc.Cmd)
 }
 
+// Deprecated: it will be removed in the next major release
 // WaitForService sets the strategy for the service that is to be waited on
 func (dc *LocalDockerCompose) WaitForService(service string, strategy wait.Strategy) DockerCompose {
 	dc.waitStrategySupplied = true
@@ -181,18 +194,21 @@ func (dc *LocalDockerCompose) WaitForService(service string, strategy wait.Strat
 	return dc
 }
 
+// Deprecated: it will be removed in the next major release
 // WithCommand assigns the command
 func (dc *LocalDockerCompose) WithCommand(cmd []string) DockerCompose {
 	dc.Cmd = cmd
 	return dc
 }
 
+// Deprecated: it will be removed in the next major release
 // WithEnv assigns the environment
 func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
 	dc.Env = env
 	return dc
 }
 
+// Deprecated: it will be removed in the next major release
 // WithExposedService sets the strategy for the service that is to be waited on. If multiple strategies
 // are given for a single service running on different ports, both strategies will be applied on the same container
 func (dc *LocalDockerCompose) WithExposedService(service string, port int, strategy wait.Strategy) DockerCompose {
@@ -201,7 +217,8 @@ func (dc *LocalDockerCompose) WithExposedService(service string, port int, strat
 	return dc
 }
 
-// determineVersion checks which version of docker-compose is installed
+// Deprecated: it will be removed in the next major release
+// determineVersion checks which version of docker compose is installed
 // depending on the version services names are composed in a different way
 func (dc *LocalDockerCompose) determineVersion() error {
 	execErr := executeCompose(dc, []string{"version", "--short"})
@@ -232,6 +249,7 @@ func (dc *LocalDockerCompose) determineVersion() error {
 	return nil
 }
 
+// Deprecated: it will be removed in the next major release
 // validate checks if the files to be run in the compose are valid YAML files, setting up
 // references to all services in them
 func (dc *LocalDockerCompose) validate() error {
@@ -336,11 +354,12 @@ func execute(
 	}
 }
 
+// Deprecated: it will be removed in the next major release
 func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 	if which(dc.Executable) != nil {
 		return ExecError{
 			Command: []string{dc.Executable},
-			Error:   fmt.Errorf("Local Docker Compose not found. Is %s on the PATH?", dc.Executable),
+			Error:   fmt.Errorf("Local Docker not found. Is %s on the PATH?", dc.Executable),
 		}
 	}
 
@@ -349,7 +368,8 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 		environment[k] = v
 	}
 
-	var cmds []string
+	// initialise the command with the compose subcommand
+	cmds := []string{dc.composeSubcommand}
 	pwd := "."
 	if len(dc.absComposeFilePaths) > 0 {
 		pwd, _ = filepath.Split(dc.absComposeFilePaths[0])
@@ -367,7 +387,7 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 	if err != nil {
 		args := strings.Join(dc.Cmd, " ")
 		return ExecError{
-			Command: []string{dc.Executable},
+			Command: []string{dc.Executable, args},
 			Error:   fmt.Errorf("Local Docker compose exited abnormally whilst running %s: [%v]. %s", dc.Executable, args, err.Error()),
 		}
 	}
