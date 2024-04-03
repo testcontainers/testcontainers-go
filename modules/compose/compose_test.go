@@ -33,7 +33,7 @@ func ExampleNewLocalDockerCompose() {
 
 func ExampleLocalDockerCompose() {
 	_ = LocalDockerCompose{
-		Executable: "docker-compose",
+		Executable: "docker compose",
 		ComposeFilePaths: []string{
 			"/path/to/docker-compose.yml",
 			"/path/to/docker-compose-1.yml",
