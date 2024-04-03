@@ -174,7 +174,7 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 
 		err = strategy.WaitUntilReady(context.Background(), dockercontainer)
 		if err != nil {
-			return fmt.Errorf("Unable to apply wait strategy %v to service %s due to %w", strategy, k.service, err)
+			return fmt.Errorf("unable to apply wait strategy %v to service %s due to %w", strategy, k.service, err)
 		}
 	}
 	return nil
