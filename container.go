@@ -62,6 +62,7 @@ type Container interface {
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
 	CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error)
 	GetLogProductionErrorChannel() <-chan error
+	Hostname(ctx context.Context) (string, error)
 }
 
 // ImageBuildInfo defines what is needed to build an image

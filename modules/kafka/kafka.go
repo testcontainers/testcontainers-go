@@ -72,7 +72,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 							return err
 						}
 
-						ip, err := c.ContainerIP(ctx)
+						hostname, err := c.Hostname(ctx)
 						if err != nil {
 							return err
 						}
@@ -82,7 +82,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 							return err
 						}
 
-						scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), ip)
+						scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname)
 
 						return c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755)
 					},

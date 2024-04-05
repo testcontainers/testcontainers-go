@@ -392,6 +392,15 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 	return inspect.Name, nil
 }
 
+// Hostname gets the name of the container.
+func (c *DockerContainer) Hostname(ctx context.Context) (string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return "", err
+	}
+	return inspect.Config.Hostname, nil
+}
+
 // State returns container's running state
 func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
 	inspect, err := c.inspectRawContainer(ctx)
