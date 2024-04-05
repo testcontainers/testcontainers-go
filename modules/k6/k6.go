@@ -3,8 +3,13 @@ package k6
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/docker/docker/api/types/mount"
 
@@ -17,17 +22,73 @@ type K6Container struct {
 	testcontainers.Container
 }
 
+type DownloadableFile struct {
+	Uri         url.URL
+	DownloadDir string
+	User        string
+	Password    string
+}
+
+func (d *DownloadableFile) getDownloadPath() string {
+	baseName := path.Base(d.Uri.Path)
+	return path.Join(d.DownloadDir, baseName)
+
+}
+
+func downloadFileFromDescription(d DownloadableFile) error {
+
+	client := http.Client{Timeout: time.Second * 60}
+	req, err := http.NewRequest(http.MethodGet, d.Uri.String(), nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "text/javascript")
+	// Set up HTTPS request with basic authorization.
+	if d.User != "" && d.Password != "" {
+		req.SetBasicAuth(d.User, d.Password)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	downloadedFile, err := os.Create(d.getDownloadPath())
+	if err != nil {
+		return err
+	}
+	defer downloadedFile.Close()
+
+	_, err = io.Copy(downloadedFile, resp.Body)
+	return err
+
+}
+
 // WithTestScript mounts the given script into the ./test directory in the container
 // and passes it to k6 as the test to run.
 // The path to the script must be an absolute path
 func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		script := filepath.Base(scriptPath)
-		target := "/home/k6x/" + script
+
+	scriptBaseName := filepath.Base(scriptPath)
+	f, err := os.Open(scriptPath)
+	if err != nil {
+		panic("Cannot create reader for test file ")
+	}
+	return WithTestScriptReader(f, scriptBaseName)
+
+}
+
+// WithTestScriptReader copies files into the Container using the Reader API
+// The script base name is not a path, neither absolute or relative and should
+// be just the file name of the script
+func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainers.CustomizeRequestOption {
+	opt := func(req *testcontainers.GenericContainerRequest) {
+		target := "/home/k6x/" + scriptBaseName
 		req.Files = append(
 			req.Files,
 			testcontainers.ContainerFile{
-				HostFilePath:      scriptPath,
+				Reader:            reader,
 				ContainerFilePath: target,
 				FileMode:          0o644,
 			},
@@ -36,6 +97,18 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 		// add script to the k6 run command
 		req.Cmd = append(req.Cmd, target)
 	}
+	return opt
+}
+
+// WithRemoteTestScript takes a RemoteTestFileDescription and copies to container
+func WithRemoteTestScript(d DownloadableFile) testcontainers.CustomizeRequestOption {
+
+	err := downloadFileFromDescription(d)
+	if err != nil {
+		panic("Not able to download required test script")
+	}
+
+	return WithTestScript(d.getDownloadPath())
 }
 
 // WithCmdOptions pass the given options to the k6 run command
