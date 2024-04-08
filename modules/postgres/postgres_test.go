@@ -87,12 +87,12 @@ func TestPostgres(t *testing.T) {
 			connStr, err := container.ConnectionString(ctx, "sslmode=disable", "application_name=test")
 			// }
 			require.NoError(t, err)
-			
-			mustConnStr := container.MustConnectionString(ctx,"sslmode=disable", "application_name=test")
-			if mustConnStr!=connStr{
+
+			mustConnStr := container.MustConnectionString(ctx, "sslmode=disable", "application_name=test")
+			if mustConnStr != connStr {
 				t.Errorf("ConnectionString was not equal to MustConnectionString")
 			}
-				
+
 			// Ensure connection string is using generic format
 			id, err := container.MappedPort(ctx, "5432/tcp")
 			require.NoError(t, err)
@@ -186,6 +186,50 @@ func TestWithConfigFile(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, db)
 	defer db.Close()
+}
+
+func TestWithSSLEnabledConfigFile(t *testing.T) {
+	ctx := context.Background()
+
+	sslSettings := postgres.SSLSettings{
+		CACertFile:        filepath.Join("testdata", "certs", "server_ca.pem"),
+		CertFile:          filepath.Join("testdata", "certs", "server_cert.pem"),
+		KeyFile:           filepath.Join("testdata", "certs", "server_key.pem"),
+		VerificationMode:  postgres.SSLVerificationModeRequire,
+		FailIfNoCert:      true,
+		VerificationDepth: 1,
+	}
+
+	container, err := postgres.RunContainer(ctx,
+		postgres.WithConfigFile(filepath.Join("testdata", "my-postgres-ssl.conf")),
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		postgres.WithSSLSettings(sslSettings),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	// explicitly set sslmode=disable because the container is not configured to use TLS
+	connStr, err := container.ConnectionString(ctx, "sslmode=require")
+	require.NoError(t, err)
+
+	db, err := sql.Open("postgres", connStr)
+	require.NoError(t, err)
+	assert.NotNil(t, db)
+	defer db.Close()
+
+	result, err := db.Exec("SELECT * FROM testdb;")
+	require.NoError(t, err)
+	assert.NotNil(t, result)
 }
 
 func TestWithInitScript(t *testing.T) {

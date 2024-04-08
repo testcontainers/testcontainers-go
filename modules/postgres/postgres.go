@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -26,10 +27,9 @@ type PostgresContainer struct {
 	snapshotName string
 }
 
-
 // MustConnectionString panics if the address cannot be determined.
 func (c *PostgresContainer) MustConnectionString(ctx context.Context, args ...string) string {
-	addr, err := c.ConnectionString(ctx,args...)
+	addr, err := c.ConnectionString(ctx, args...)
 	if err != nil {
 		panic(err)
 	}
@@ -167,6 +167,36 @@ func WithSnapshotName(name string) SnapshotOption {
 	return func(cfg *snapshotConfig) *snapshotConfig {
 		cfg.snapshotName = name
 		return cfg
+	}
+}
+
+func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOption {
+	const postgresCaCertPath = "/tmp/data/ca_cert.pem"
+	const postgresCertPath = "/tmp/data/server.crt"
+	const postgresKeyPath = "/tmp/data/server.key"
+
+	const defaultPermission = 0o640
+
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      sslSettings.CACertFile,
+			ContainerFilePath: postgresCaCertPath,
+			FileMode:          defaultPermission,
+		})
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      sslSettings.CertFile,
+			ContainerFilePath: postgresCertPath,
+			FileMode:          defaultPermission,
+		})
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      sslSettings.KeyFile,
+			ContainerFilePath: postgresKeyPath,
+			FileMode:          defaultPermission,
+		})
+
+		// TODO: Can we detect TLS by port. I don't think so...
+		// Probably use logs
+		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForLog("database system is ready to accept connections"))
 	}
 }
 
