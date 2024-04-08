@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/openfga/go-sdk v0.3.5
-	github.com/testcontainers/testcontainers-go v0.29.1
+	github.com/testcontainers/testcontainers-go v0.30.0
 )
 
 require (
