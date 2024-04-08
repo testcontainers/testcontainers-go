@@ -14,12 +14,6 @@ type SSLSettings struct {
 	CertFile string
 	// Path to the key file
 	KeyFile string
-	//
+	// Entrypoint used to override and set SSL ownership
 	Entrypoint string
-	// Verification mode
-	VerificationMode SSLVerificationMode
-	// Fail if no certificate is provided
-	FailIfNoCert bool
-	// Depth of certificate chain verification
-	VerificationDepth int
 }

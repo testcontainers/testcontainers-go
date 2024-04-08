@@ -192,13 +192,10 @@ func TestWithSSLEnabledConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	sslSettings := postgres.SSLSettings{
-		CACertFile:        filepath.Join("testdata", "certs", "server_ca.pem"),
-		CertFile:          filepath.Join("testdata", "certs", "server_cert.pem"),
-		KeyFile:           filepath.Join("testdata", "certs", "server_key.pem"),
-		Entrypoint:        filepath.Join("testdata", "docker-entrypoint-ssl.bash"),
-		VerificationMode:  postgres.SSLVerificationModeRequire,
-		FailIfNoCert:      true,
-		VerificationDepth: 1,
+		CACertFile: filepath.Join("testdata", "certs", "server_ca.pem"),
+		CertFile:   filepath.Join("testdata", "certs", "server_cert.pem"),
+		KeyFile:    filepath.Join("testdata", "certs", "server_key.pem"),
+		Entrypoint: filepath.Join("testdata", "docker-entrypoint-ssl.bash"),
 	}
 
 	container, err := postgres.RunContainer(ctx,
