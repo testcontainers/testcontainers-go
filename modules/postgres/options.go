@@ -2,11 +2,6 @@ package postgres
 
 type SSLVerificationMode string
 
-const (
-	SSLVerificationModeNone    SSLVerificationMode = "disable"
-	SSLVerificationModeRequire SSLVerificationMode = "require"
-)
-
 type SSLSettings struct {
 	// Path to the CA certificate file
 	CACertFile string
