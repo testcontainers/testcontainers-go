@@ -14,6 +14,8 @@ type SSLSettings struct {
 	CertFile string
 	// Path to the key file
 	KeyFile string
+	//
+	Entrypoint string
 	// Verification mode
 	VerificationMode SSLVerificationMode
 	// Fail if no certificate is provided

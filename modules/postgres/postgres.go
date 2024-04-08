@@ -172,10 +172,11 @@ func WithSnapshotName(name string) SnapshotOption {
 
 func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOption {
 	const postgresCaCertPath = "/tmp/data/ca_cert.pem"
-	const postgresCertPath = "/tmp/data/server.crt"
+	const postgresCertPath = "/tmp/data/server.cert"
 	const postgresKeyPath = "/tmp/data/server.key"
+	const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
 
-	const defaultPermission = 0o640
+	const defaultPermission = 0o600
 
 	return func(req *testcontainers.GenericContainerRequest) {
 		req.Files = append(req.Files, testcontainers.ContainerFile{
@@ -193,6 +194,13 @@ func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOpt
 			ContainerFilePath: postgresKeyPath,
 			FileMode:          defaultPermission,
 		})
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      sslSettings.Entrypoint,
+			ContainerFilePath: entrypointPath,
+			FileMode:          0o666,
+		})
+
+		req.Entrypoint = []string{"sh", "/usr/local/bin/docker-entrypoint-ssl.bash"}
 
 		// TODO: Can we detect TLS by port. I don't think so...
 		// Probably use logs
