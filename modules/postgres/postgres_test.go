@@ -203,6 +203,7 @@ func TestWithSSLEnabledConfigFile(t *testing.T) {
 
 	container, err := postgres.RunContainer(ctx,
 		postgres.WithConfigFile(filepath.Join("testdata", "my-postgres-ssl.conf")),
+		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
