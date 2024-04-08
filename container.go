@@ -121,6 +121,7 @@ func (c *ContainerFile) validate() error {
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
 	FromDockerfile
+	HostAccessPorts         []int
 	Image                   string
 	ImageSubstitutors       []ImageSubstitutor
 	Entrypoint              []string
