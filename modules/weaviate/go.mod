@@ -3,8 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/weaviate
 go 1.21
 
 require (
-	github.com/docker/go-connections v0.5.0
-	github.com/testcontainers/testcontainers-go v0.29.1
+	github.com/testcontainers/testcontainers-go v0.30.0
 	github.com/weaviate/weaviate-go-client/v4 v4.13.1
 	google.golang.org/grpc v1.62.1
 )
@@ -23,6 +22,7 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/docker v25.0.5+incompatible // indirect
+	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
