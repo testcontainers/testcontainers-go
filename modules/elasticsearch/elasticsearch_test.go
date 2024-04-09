@@ -164,45 +164,48 @@ func TestElasticsearch(t *testing.T) {
 }
 
 func TestElasticsearch8WithAndWithoutSSL(t *testing.T) {
-	t.Run("Elasticsearch 8 with SSL should provide CACert", func(t *testing.T) {
-		ctx := context.Background()
-		container, err := elasticsearch.RunContainer(ctx, testcontainers.WithImage(baseImage8))
-		if err != nil {
-			t.Fatal(err)
-		}
+	tests := []struct {
+		name      string
+		configKey string
+	}{
+		{
+			name:      "security disabled",
+			configKey: "xpack.security.enabled",
+		},
+		{
+			name:      "transport ssl disabled",
+			configKey: "xpack.security.transport.ssl.enabled",
+		},
+		{
+			name:      "http ssl disabled",
+			configKey: "xpack.security.http.ssl.enabled",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			container, err := elasticsearch.RunContainer(
+				ctx,
+				testcontainers.WithImage(baseImage8),
+				testcontainers.WithEnv(map[string]string{
+					test.configKey: "false",
+				}))
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		t.Cleanup(func() {
-			if err := container.Terminate(ctx); err != nil {
-				t.Fatalf("failed to terminate container: %s", err)
+			t.Cleanup(func() {
+				if err := container.Terminate(ctx); err != nil {
+					t.Fatalf("failed to terminate container: %s", err)
+				}
+			})
+
+			if len(container.Settings.CACert) > 0 {
+				t.Fatal("expected CA cert to be empty")
 			}
 		})
+	}
 
-		if len(container.Settings.CACert) == 0 {
-			t.Fatal("expected CA cert to not be empty")
-		}
-	})
-	t.Run("Elasticsearch 8 without SSL should not provide CACert", func(t *testing.T) {
-		ctx := context.Background()
-		container, err := elasticsearch.RunContainer(
-			ctx,
-			testcontainers.WithImage(baseImage8),
-			testcontainers.WithEnv(map[string]string{
-				"xpack.security.http.ssl.enabled": "false",
-			}))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		t.Cleanup(func() {
-			if err := container.Terminate(ctx); err != nil {
-				t.Fatalf("failed to terminate container: %s", err)
-			}
-		})
-
-		if len(container.Settings.CACert) > 0 {
-			t.Fatal("expected CA cert to be empty")
-		}
-	})
 }
 
 func TestElasticsearch8WithoutCredentials(t *testing.T) {
