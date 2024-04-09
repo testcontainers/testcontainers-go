@@ -127,6 +127,21 @@ func configureAddress(ctx context.Context, c *ElasticsearchContainer) (string, e
 // The certificate is only available since version 8, and will be located in a well-known location.
 func configureCertificate(settings *Options, req *testcontainers.GenericContainerRequest) error {
 	if isAtLeastVersion(req.Image, 8) {
+		// These configuration keys explicitly disable CA generation.
+		// If any are set we skip the file retrieval.
+		configKeys := []string{
+			"xpack.security.enabled",
+			"xpack.security.http.ssl.enabled",
+			"xpack.security.transport.ssl.enabled",
+		}
+		for _, configKey := range configKeys {
+			if value, ok := req.Env[configKey]; ok {
+				if value == "false" {
+					return nil
+				}
+			}
+		}
+
 		// The container needs a post ready hook to copy the certificate from the container to the host.
 		// This certificate is only available since version 8
 		req.LifecycleHooks[0].PostReadies = append(req.LifecycleHooks[0].PostReadies,
