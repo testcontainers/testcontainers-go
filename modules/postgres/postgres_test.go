@@ -195,7 +195,6 @@ func TestWithSSLEnabledConfigFile(t *testing.T) {
 		CACertFile: filepath.Join("testdata", "certs", "server_ca.pem"),
 		CertFile:   filepath.Join("testdata", "certs", "server_cert.pem"),
 		KeyFile:    filepath.Join("testdata", "certs", "server_key.pem"),
-		Entrypoint: filepath.Join("testdata", "docker-entrypoint-ssl.bash"),
 	}
 
 	container, err := postgres.RunContainer(ctx,
@@ -206,6 +205,7 @@ func TestWithSSLEnabledConfigFile(t *testing.T) {
 		postgres.WithPassword(password),
 		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
 		postgres.WithSSLSettings(sslSettings),
+		postgres.WithEntrypoint(filepath.Join("testdata", "docker-entrypoint-ssl.bash")),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -217,7 +217,6 @@ func TestWithSSLEnabledConfigFile(t *testing.T) {
 		}
 	})
 
-	// explicitly set sslmode=disable because the container is not configured to use TLS
 	connStr, err := container.ConnectionString(ctx, "sslmode=require")
 	require.NoError(t, err)
 

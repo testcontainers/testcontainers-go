@@ -174,7 +174,6 @@ func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOpt
 	const postgresCaCertPath = "/tmp/data/ca_cert.pem"
 	const postgresCertPath = "/tmp/data/server.cert"
 	const postgresKeyPath = "/tmp/data/server.key"
-	const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
 
 	const defaultPermission = 0o600
 
@@ -194,18 +193,28 @@ func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOpt
 			ContainerFilePath: postgresKeyPath,
 			FileMode:          defaultPermission,
 		})
-		req.Files = append(req.Files, testcontainers.ContainerFile{
-			HostFilePath:      sslSettings.Entrypoint,
-			ContainerFilePath: entrypointPath,
-			FileMode:          0o666,
-		})
-
-		req.Entrypoint = []string{"sh", "/usr/local/bin/docker-entrypoint-ssl.bash"}
 
 		// TODO: Can we detect TLS by port. I don't think so...
 		// Probably use logs
 		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForLog("database system is ready to accept connections"))
 	}
+}
+
+func WithEntrypoint(hostEntrypointPath string) testcontainers.CustomizeRequestOption {
+
+	const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
+
+	return func(req *testcontainers.GenericContainerRequest) {
+
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      hostEntrypointPath,
+			ContainerFilePath: entrypointPath,
+			FileMode:          0o666,
+		})
+
+		req.Entrypoint = []string{"sh", entrypointPath}
+	}
+
 }
 
 // Snapshot takes a snapshot of the current state of the database as a template, which can then be restored using
