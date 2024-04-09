@@ -136,7 +136,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 				for _, exposedHostPort := range req.HostAccessPorts {
 					ehp := exposedHostPort
 					errGroup.Go(func() error {
-						return sshdContainer.exposeHostPort(ehp)
+						return sshdContainer.exposeHostPort(ctx, ehp)
 					})
 				}
 
@@ -246,7 +246,7 @@ func (sshdC *sshdContainer) configureSSHSession(ctx context.Context) error {
 	return nil
 }
 
-func (sshdC *sshdContainer) exposeHostPort(port int) error {
+func (sshdC *sshdContainer) exposeHostPort(ctx context.Context, port int) error {
 	if _, ok := sshdC.tunnels[port]; ok {
 		// do not expose the same port twice
 		return nil
@@ -264,7 +264,7 @@ func (sshdC *sshdContainer) exposeHostPort(port int) error {
 
 	errorGr := errgroup.Group{}
 	errorGr.Go(func() error {
-		return tunnel.Start()
+		return tunnel.Start(ctx)
 	})
 
 	if err := errorGr.Wait(); err != nil {
@@ -341,8 +341,10 @@ func (tunnel *sshTunnel) Close() error {
 	return nil
 }
 
-func (tunnel *sshTunnel) Start() error {
-	listener, err := net.Listen("tcp", tunnel.Local.String())
+func (tunnel *sshTunnel) Start(ctx context.Context) error {
+	lcfg := net.ListenConfig{}
+
+	listener, err := lcfg.Listen(ctx, "tcp", tunnel.Local.String())
 	if err != nil {
 		return err
 	}
