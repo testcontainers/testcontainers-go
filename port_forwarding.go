@@ -192,7 +192,7 @@ func newSshdContainer(ctx context.Context, opts ...ContainerCustomizer) (*sshdCo
 
 	sshd := &sshdContainer{
 		DockerContainer: dc,
-		tunnels:         make(map[int]*ssHTunnel),
+		tunnels:         make(map[int]*sshTunnel),
 	}
 
 	err = sshd.configureSSHSession(ctx)
@@ -210,7 +210,7 @@ type sshdContainer struct {
 	*DockerContainer
 	port      string
 	sshConfig *ssh.ClientConfig
-	tunnels   map[int]*ssHTunnel
+	tunnels   map[int]*sshTunnel
 }
 
 // Terminate stops the container and closes the SSH session
@@ -301,7 +301,7 @@ func (endpoint *sshEndpoint) String() string {
 	return fmt.Sprintf("%s:%d", endpoint.Host, endpoint.Port)
 }
 
-type ssHTunnel struct {
+type sshTunnel struct {
 	Local  *sshEndpoint
 	Server *sshEndpoint
 	Remote *sshEndpoint
@@ -309,7 +309,7 @@ type ssHTunnel struct {
 	Log    Logging
 }
 
-func newSSHTunnel(tunnel string, sshConfig *ssh.ClientConfig, target string, targetPort int) *ssHTunnel {
+func newSSHTunnel(tunnel string, sshConfig *ssh.ClientConfig, target string, targetPort int) *sshTunnel {
 	destination := fmt.Sprintf("%s:%d", target, targetPort)
 
 	localEndpoint := newSshEndpoint(destination)
@@ -319,7 +319,7 @@ func newSSHTunnel(tunnel string, sshConfig *ssh.ClientConfig, target string, tar
 		server.Port = 22
 	}
 
-	return &ssHTunnel{
+	return &sshTunnel{
 		Config: sshConfig,
 		Local:  localEndpoint,
 		Server: server,
@@ -327,13 +327,13 @@ func newSSHTunnel(tunnel string, sshConfig *ssh.ClientConfig, target string, tar
 	}
 }
 
-func (tunnel *ssHTunnel) logf(fmt string, args ...interface{}) {
+func (tunnel *sshTunnel) logf(fmt string, args ...interface{}) {
 	if tunnel.Log != nil {
 		tunnel.Log.Printf(fmt, args...)
 	}
 }
 
-func (tunnel *ssHTunnel) Close() error {
+func (tunnel *sshTunnel) Close() error {
 	if tunnel.Log != nil {
 		tunnel.logf("closing tunnel")
 	}
@@ -341,7 +341,7 @@ func (tunnel *ssHTunnel) Close() error {
 	return nil
 }
 
-func (tunnel *ssHTunnel) Start() error {
+func (tunnel *sshTunnel) Start() error {
 	listener, err := net.Listen("tcp", tunnel.Local.String())
 	if err != nil {
 		return err
@@ -359,7 +359,7 @@ func (tunnel *ssHTunnel) Start() error {
 	}
 }
 
-func (tunnel *ssHTunnel) forward(localConn net.Conn) {
+func (tunnel *sshTunnel) forward(localConn net.Conn) {
 	serverConn, err := ssh.Dial("tcp", tunnel.Server.String(), tunnel.Config)
 	if err != nil {
 		tunnel.logf("server dial error: %s", err)
