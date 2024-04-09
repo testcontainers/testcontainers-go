@@ -226,8 +226,12 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 		return nil, err
 	}
 
-	dockerIgnoreLocation := filepath.Join(abs, ".dockerignore")
-	includes = append(includes, dockerIgnoreLocation, c.GetDockerfile())
+	if len(excluded) > 0 {
+		// only add .dockerignore if it exists including files to ignore
+		includes = append(includes, filepath.Join(abs, ".dockerignore"))
+	}
+
+	includes = append(includes, c.GetDockerfile())
 
 	buildContext, err := archive.TarWithOptions(
 		c.Context,
