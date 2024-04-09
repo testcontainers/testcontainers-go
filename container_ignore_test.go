@@ -11,23 +11,32 @@ import (
 func TestParseDockerIgnore(t *testing.T) {
 	testCases := []struct {
 		filePath         string
+		exists           bool
 		expectedErr      error
 		expectedExcluded []string
 	}{
 		{
 			filePath:         "./testdata/dockerignore",
 			expectedErr:      nil,
+			exists:           true,
 			expectedExcluded: []string{"vendor", "foo", "bar"},
 		},
 		{
 			filePath:         "./testdata",
 			expectedErr:      nil,
+			exists:           true,
 			expectedExcluded: []string{"Dockerfile", "echo.Dockerfile"},
+		},
+		{
+			filePath:         "./testdata/data",
+			expectedErr:      nil,
+			expectedExcluded: nil, // it's nil because the parseDockerIgnore function uses the zero value of a slice
 		},
 	}
 
 	for _, testCase := range testCases {
-		excluded, err := parseDockerIgnore(testCase.filePath)
+		exists, excluded, err := parseDockerIgnore(testCase.filePath)
+		assert.Equal(t, testCase.exists, exists)
 		assert.Equal(t, testCase.expectedErr, err)
 		assert.Equal(t, testCase.expectedExcluded, excluded)
 	}
