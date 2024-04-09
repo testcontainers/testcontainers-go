@@ -1091,7 +1091,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		// a container lifecycle hook will be added, which will expose the host ports to the container
 		// using a SSHD server running in a container. The SSHD server will be started and will
 		// forward the host ports to the container ports.
-		sshdForwardPortsHook, err := exposeHostPorts(context.Background(), &req, req.HostAccessPorts...)
+		sshdForwardPortsHook, err := exposeHostPorts(ctx, &req, req.HostAccessPorts...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to expose host ports: %w", err)
 		}
