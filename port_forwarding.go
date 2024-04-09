@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -131,17 +132,17 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 	sshdConnectHook = ContainerLifecycleHooks{
 		PostReadies: []ContainerHook{
 			func(ctx context.Context, c Container) error {
-				errGroup := errgroup.Group{}
+				var errs []error
 
 				for _, exposedHostPort := range req.HostAccessPorts {
-					ehp := exposedHostPort
-					errGroup.Go(func() error {
-						return sshdContainer.exposeHostPort(ctx, ehp)
-					})
+					err := sshdContainer.exposeHostPort(ctx, exposedHostPort)
+					if err != nil {
+						errs = append(errs, err)
+					}
 				}
 
-				if err := errGroup.Wait(); err != nil {
-					return err
+				if len(errs) > 0 {
+					return fmt.Errorf("failed to expose host ports: %w", errors.Join(errs...))
 				}
 
 				return nil
@@ -262,12 +263,8 @@ func (sshdC *sshdContainer) exposeHostPort(ctx context.Context, port int) error 
 	// use testcontainers logger
 	tunnel.Log = Logger
 
-	errorGr := errgroup.Group{}
-	errorGr.Go(func() error {
-		return tunnel.Start(ctx)
-	})
-
-	if err := errorGr.Wait(); err != nil {
+	err := tunnel.Start(ctx)
+	if err != nil {
 		return fmt.Errorf("failed to start the SSH tunnel: %w", err)
 	}
 
@@ -357,32 +354,40 @@ func (tunnel *sshTunnel) Start(ctx context.Context) error {
 			return err
 		}
 		tunnel.logf("accepted connection")
-		go tunnel.forward(conn)
+		tunnel.forward(conn)
 	}
 }
 
-func (tunnel *sshTunnel) forward(localConn net.Conn) {
+func (tunnel *sshTunnel) forward(localConn net.Conn) error {
 	serverConn, err := ssh.Dial("tcp", tunnel.Server.String(), tunnel.Config)
 	if err != nil {
-		tunnel.logf("server dial error: %s", err)
-		return
+		return fmt.Errorf("server dial error: %s", err)
 	}
 	tunnel.logf("connected to %s (1 of 2)\n", tunnel.Server.String())
 
 	remoteConn, err := serverConn.Dial("tcp", tunnel.Remote.String())
 	if err != nil {
-		tunnel.logf("remote dial error: %s", err)
-		return
+		return fmt.Errorf("remote dial error: %s", err)
 	}
 	tunnel.logf("connected to %s (2 of 2)\n", tunnel.Remote.String())
 
-	copyConn := func(writer, reader net.Conn) {
+	copyConn := func(writer, reader net.Conn) error {
 		_, err := io.Copy(writer, reader)
 		if err != nil {
-			tunnel.logf("io.Copy error: %s", err)
+			return fmt.Errorf("io.Copy error: %s", err)
 		}
+
+		return nil
 	}
 
-	go copyConn(localConn, remoteConn)
-	go copyConn(remoteConn, localConn)
+	errgr := errgroup.Group{}
+
+	errgr.Go(func() error {
+		return copyConn(localConn, remoteConn)
+	})
+	errgr.Go(func() error {
+		return copyConn(remoteConn, localConn)
+	})
+
+	return errgr.Wait()
 }
