@@ -221,13 +221,17 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	}
 	c.Context = abs
 
-	excluded, err := parseDockerIgnore(abs)
+	dockerIgnoreExists, excluded, err := parseDockerIgnore(abs)
 	if err != nil {
 		return nil, err
 	}
 
-	dockerIgnoreLocation := filepath.Join(abs, ".dockerignore")
-	includes = append(includes, dockerIgnoreLocation, c.GetDockerfile())
+	if dockerIgnoreExists {
+		// only add .dockerignore if it exists
+		includes = append(includes, filepath.Join(".dockerignore"))
+	}
+
+	includes = append(includes, c.GetDockerfile())
 
 	buildContext, err := archive.TarWithOptions(
 		c.Context,
@@ -240,18 +244,24 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	return buildContext, nil
 }
 
-func parseDockerIgnore(targetDir string) ([]string, error) {
+// parseDockerIgnore returns if the file exists, the excluded files and an error if any
+func parseDockerIgnore(targetDir string) (bool, []string, error) {
 	// based on https://github.com/docker/cli/blob/master/cli/command/image/build/dockerignore.go#L14
 	fileLocation := filepath.Join(targetDir, ".dockerignore")
 	var excluded []string
+	exists := false
 	if f, openErr := os.Open(fileLocation); openErr == nil {
+		defer f.Close()
+
+		exists = true
+
 		var err error
 		excluded, err = ignorefile.ReadAll(f)
 		if err != nil {
-			return excluded, fmt.Errorf("error reading .dockerignore: %w", err)
+			return true, excluded, fmt.Errorf("error reading .dockerignore: %w", err)
 		}
 	}
-	return excluded, nil
+	return exists, excluded, nil
 }
 
 // GetBuildArgs returns the env args to be used when creating from Dockerfile
