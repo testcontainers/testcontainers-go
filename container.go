@@ -228,7 +228,7 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 
 	if len(excluded) > 0 {
 		// only add .dockerignore if it exists including files to ignore
-		includes = append(includes, filepath.Join(abs, ".dockerignore"))
+		includes = append(includes, filepath.Join(".dockerignore"))
 	}
 
 	includes = append(includes, c.GetDockerfile())
