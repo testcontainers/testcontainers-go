@@ -48,7 +48,9 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 	var sshdFirstNetwork string
 	if len(req.Networks) > 0 {
 		sshdFirstNetwork = req.Networks[0]
-	} else if sshdFirstNetwork == "bridge" && len(req.Networks) > 1 {
+	}
+
+	if sshdFirstNetwork == "bridge" && len(req.Networks) > 1 {
 		sshdFirstNetwork = req.Networks[1]
 	}
 
