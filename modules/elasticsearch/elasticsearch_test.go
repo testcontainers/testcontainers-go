@@ -163,7 +163,7 @@ func TestElasticsearch(t *testing.T) {
 	}
 }
 
-func TestElasticsearch8WithAndWithoutSSL(t *testing.T) {
+func TestElasticsearch8WithoutSSL(t *testing.T) {
 	tests := []struct {
 		name      string
 		configKey string
