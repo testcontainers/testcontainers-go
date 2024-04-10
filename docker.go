@@ -158,6 +158,16 @@ func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 
 // MappedPort gets externally mapped port for a container port
 func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
+	var mappedPort nat.Port
+	err := backoff.Retry(func() (err error) {
+		mappedPort, err = c.mappedPort(ctx, port)
+		return
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+
+	return mappedPort, err
+}
+
+func (c *DockerContainer) mappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
 	inspect, err := c.inspectContainer(ctx)
 	if err != nil {
 		return "", err
