@@ -22,7 +22,6 @@ func NewTLSConfig() (*TLSConfig, error) {
 		tctls.WithHost("localhost"),
 		tctls.WithSubjectCommonName("Cockroach Test CA"),
 		tctls.AsCA(),
-		tctls.WithValidFrom(time.Now().Add(-time.Hour)),
 		tctls.WithValidFor(time.Hour),
 	)
 	if err != nil {
@@ -34,7 +33,6 @@ func NewTLSConfig() (*TLSConfig, error) {
 		tctls.WithSubjectCommonName("node"),
 		tctls.AsCA(),
 		tctls.WithIPAddresses(net.IPv4(127, 0, 0, 1), net.IPv6loopback),
-		tctls.WithValidFrom(time.Now().Add(-time.Hour)),
 		tctls.WithValidFor(time.Hour),
 		tctls.AsPem(),
 		tctls.WithParent(caCert.Cert, caCert.Key),
@@ -47,7 +45,6 @@ func NewTLSConfig() (*TLSConfig, error) {
 		tctls.WithHost("localhost"),
 		tctls.WithSubjectCommonName(defaultUser),
 		tctls.AsCA(),
-		tctls.WithValidFrom(time.Now().Add(-time.Hour)),
 		tctls.WithValidFor(time.Hour),
 		tctls.AsPem(),
 		tctls.WithParent(caCert.Cert, caCert.Key),

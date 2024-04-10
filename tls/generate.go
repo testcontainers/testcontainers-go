@@ -32,7 +32,6 @@ type Certificate struct {
 type certRequest struct {
 	SubjectCommonName string            // CommonName is the subject name of the certificate
 	Host              string            // Comma-separated hostnames and IPs to generate a certificate for
-	ValidFrom         time.Time         // Creation date formatted as Jan 1 15:04:05 2011
 	ValidFor          time.Duration     // Duration that certificate is valid for
 	IsCA              bool              // whether this cert should be its own Certificate Authority
 	IPAddreses        []net.IP          // IP addresses to include in the Subject Alternative Name
@@ -60,12 +59,6 @@ func WithSubjectCommonName(commonName string) CertOpt {
 func WithHost(host string) CertOpt {
 	return func(r *certRequest) {
 		r.Host = host
-	}
-}
-
-func WithValidFrom(validFrom time.Time) CertOpt {
-	return func(r *certRequest) {
-		r.ValidFrom = validFrom
 	}
 }
 
@@ -129,7 +122,6 @@ func WithSaveToFile(dir string) CertOpt {
 // to avoid nil pointers.
 func newCertRequest() certRequest {
 	return certRequest{
-		ValidFrom:  time.Now().Add(-time.Hour),
 		ValidFor:   365 * 24 * time.Hour,
 		IPAddreses: make([]net.IP, 0),
 	}
@@ -139,6 +131,11 @@ func newCertRequest() certRequest {
 // a struct containing the certificate and private key, as well as the raw bytes
 // of the certificate. In the case the  PEM option is set, the raw bytes will be
 // PEM-encoded, including the bytes of the private key in the KeyBytes field.
+// Considerations for the generated certificate are as follows:
+//   - will be valid for the duration set in the ValidFor option, starting from 1 minute ago. Else, it will be valid for 1 year.
+//   - will be signed by the parent certificate if the WithParent option is set. Else, it will be self-signed.
+//   - will be saved to the directory set in the WithSaveToFile option. Else, it will not be saved to disk.
+//   - will be its own Certificate Authority if the AsCA option is set. Else, it will not be a CA.
 func GenerateCert(opts ...CertOpt) (*Certificate, error) {
 	req := newCertRequest()
 
@@ -155,13 +152,16 @@ func GenerateCert(opts ...CertOpt) (*Certificate, error) {
 		keyUsage |= x509.KeyUsageCertSign
 	}
 
+	// certificate is not valid before 1 minute ago
+	notBefore := time.Now().Add(-time.Minute)
+
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(2019),
 		Subject: pkix.Name{
 			CommonName: req.SubjectCommonName,
 		},
-		NotBefore:             req.ValidFrom,
-		NotAfter:              req.ValidFrom.Add(req.ValidFor),
+		NotBefore:             notBefore,
+		NotAfter:              notBefore.Add(req.ValidFor),
 		KeyUsage:              keyUsage,
 		BasicConstraintsValid: true,
 		IsCA:                  req.IsCA,
