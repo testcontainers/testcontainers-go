@@ -420,7 +420,9 @@ func TestRedpandaWithTLS(t *testing.T) {
 }
 
 func TestRedpandaWithTLSAndSASL(t *testing.T) {
-	cert, err := tctls.GenerateCert(tctls.WithHost("localhost"))
+	tmp := t.TempDir()
+
+	cert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.WithSaveToFile(tmp))
 	require.NoError(t, err, "failed to generate cert")
 
 	ctx := context.Background()
