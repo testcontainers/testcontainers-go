@@ -20,6 +20,7 @@ import (
 // Certificate represents a certificate and private key pair. It's a wrapper
 // around the x509.Certificate and rsa.PrivateKey types, and includes the raw
 // bytes of the certificate and private key.
+// testcontainersTLSCertificate {
 type Certificate struct {
 	Cert     *x509.Certificate
 	Bytes    []byte
@@ -28,6 +29,8 @@ type Certificate struct {
 	CertPath string
 	KeyPath  string
 }
+
+// }
 
 type certRequest struct {
 	SubjectCommonName string            // CommonName is the subject name of the certificate
