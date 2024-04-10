@@ -134,6 +134,6 @@ func TestExecWithNonMultiplexedResponse(t *testing.T) {
 	require.NotNil(t, stdout)
 	require.NotNil(t, stderr)
 
-	require.Equal(t, stdout.String(), "stdout\n")
-	require.Equal(t, stderr.String(), "stderr\n")
+	require.Equal(t, "stdout\n", stdout.String())
+	require.Equal(t, "stderr\n", stderr.String())
 }
