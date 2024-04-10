@@ -637,6 +637,9 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 
 func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(tw io.Writer) error, fileContentSize int64, containerFilePath string, fileMode int64) error {
 	buffer, err := tarFile(containerFilePath, fileContent, fileContentSize, fileMode)
+	if err != nil {
+		return err
+	}
 
 	err = c.provider.client.CopyToContainer(ctx, c.ID, "/", buffer, types.CopyToContainerOptions{})
 	if err != nil {
