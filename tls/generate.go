@@ -9,8 +9,12 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Certificate represents a certificate and private key pair. It's a wrapper
@@ -21,6 +25,8 @@ type Certificate struct {
 	Bytes    []byte
 	Key      *rsa.PrivateKey
 	KeyBytes []byte
+	CertPath string
+	KeyPath  string
 }
 
 type certRequest struct {
@@ -33,6 +39,7 @@ type certRequest struct {
 	Parent            *x509.Certificate // Parent is the parent certificate, if any
 	Priv              any               // Priv is the private key of the parent certificate
 	Pem               bool              // Whether to return the certificate as PEM bytes
+	SaveTo            string            // Parent directory to save the certificate and private key
 }
 
 type CertOpt func(*certRequest)
@@ -102,6 +109,19 @@ func AsPem() CertOpt {
 func WithIPAddresses(ips ...net.IP) CertOpt {
 	return func(r *certRequest) {
 		r.IPAddreses = append(r.IPAddreses, ips...)
+	}
+}
+
+// WithSaveToFile sets the directory to save the certificate and private key.
+// For that reason, it will set the AsPem option, as the certificate
+// will be saved as PEM bytes, including the private key.
+func WithSaveToFile(dir string) CertOpt {
+	return func(r *certRequest) {
+		r.SaveTo = dir
+
+		if !r.Pem {
+			AsPem()(r)
+		}
 	}
 }
 
@@ -204,6 +224,24 @@ func GenerateCert(opts ...CertOpt) (*Certificate, error) {
 			Type:  "RSA PRIVATE KEY",
 			Bytes: x509.MarshalPKCS1PrivateKey(pk),
 		})
+	}
+
+	if req.SaveTo != "" {
+		id := uuid.NewString()
+		certPath := filepath.Join(req.SaveTo, "cert-"+id+".pem")
+
+		if err := os.WriteFile(certPath, certificate.Bytes, 0644); err != nil {
+			return nil, err
+		}
+		certificate.CertPath = certPath
+
+		if certificate.KeyBytes != nil {
+			keyPath := filepath.Join(req.SaveTo, "key-"+id+".pem")
+			if err := os.WriteFile(keyPath, certificate.KeyBytes, 0644); err != nil {
+				return nil, err
+			}
+			certificate.KeyPath = keyPath
+		}
 	}
 
 	return certificate, nil

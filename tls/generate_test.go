@@ -1,7 +1,9 @@
 package tls_test
 
 import (
+	stdlibtls "crypto/tls"
 	"net"
+	"os"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go/tls"
@@ -15,18 +17,23 @@ func TestGenerate(t *testing.T) {
 		}
 	})
 
-	t.Run("With host", func(t *testing.T) {
-		cert, err := tls.GenerateCert(tls.WithHost("localhost"))
+	t.Run("With host", func(tt *testing.T) {
+		cert, err := tls.GenerateCert(tls.WithHost("localhost"), tls.AsPem())
 		if err != nil {
-			t.Fatal(err)
+			tt.Fatal(err)
 		}
 
 		if cert == nil {
-			t.Fatal("expected cert, got nil")
+			tt.Fatal("expected cert, got nil")
 		}
 
 		if cert.Key == nil {
-			t.Fatal("expected key, got nil")
+			tt.Fatal("expected key, got nil")
+		}
+
+		_, err = stdlibtls.X509KeyPair(cert.Bytes, cert.KeyBytes)
+		if err != nil {
+			tt.Fatal(err)
 		}
 	})
 
@@ -201,6 +208,47 @@ func TestGenerate(t *testing.T) {
 
 		if c.IPAddresses[0].String() != ip {
 			t.Fatalf("expected IP address to be %s, got %s\n", ip, c.IPAddresses[0].String())
+		}
+	})
+
+	t.Run("Save to file", func(tt *testing.T) {
+		tmp := tt.TempDir()
+
+		// no need to pass the AsPem option, the SaveToFile option will do that
+		cert, err := tls.GenerateCert(tls.WithHost("localhost"), tls.WithSaveToFile(tmp))
+		if err != nil {
+			tt.Fatal(err)
+		}
+
+		if cert == nil {
+			tt.Fatal("expected cert, got nil")
+		}
+
+		inMemoryCert, err := stdlibtls.X509KeyPair(cert.Bytes, cert.KeyBytes)
+		if err != nil {
+			tt.Fatal(err)
+		}
+
+		// check if file existed
+		certBytes, err := os.ReadFile(cert.CertPath)
+		if err != nil {
+			tt.Fatal(err)
+		}
+
+		certKeyBytes, err := os.ReadFile(cert.KeyPath)
+		if err != nil {
+			tt.Fatal(err)
+		}
+
+		fileCert, err := stdlibtls.X509KeyPair(certBytes, certKeyBytes)
+		if err != nil {
+			tt.Fatal(err)
+		}
+
+		for i, cert := range inMemoryCert.Certificate {
+			if string(cert) != string(fileCert.Certificate[i]) {
+				tt.Fatalf("expected certificate to be %s, got %s\n", string(cert), string(fileCert.Certificate[i]))
+			}
 		}
 	})
 }
