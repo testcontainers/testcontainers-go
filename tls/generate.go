@@ -230,14 +230,14 @@ func GenerateCert(opts ...CertOpt) (*Certificate, error) {
 		id := uuid.NewString()
 		certPath := filepath.Join(req.SaveTo, "cert-"+id+".pem")
 
-		if err := os.WriteFile(certPath, certificate.Bytes, 0644); err != nil {
+		if err := os.WriteFile(certPath, certificate.Bytes, 0o644); err != nil {
 			return nil, err
 		}
 		certificate.CertPath = certPath
 
 		if certificate.KeyBytes != nil {
 			keyPath := filepath.Join(req.SaveTo, "key-"+id+".pem")
-			if err := os.WriteFile(keyPath, certificate.KeyBytes, 0644); err != nil {
+			if err := os.WriteFile(keyPath, certificate.KeyBytes, 0o644); err != nil {
 				return nil, err
 			}
 			certificate.KeyPath = keyPath
