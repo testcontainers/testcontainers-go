@@ -1,14 +1,12 @@
 package cockroachdb
 
 import (
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
-	"math/big"
 	"net"
 	"time"
+
+	tctls "github.com/testcontainers/testcontainers-go/tls"
 )
 
 type TLSConfig struct {
@@ -46,113 +44,42 @@ func NewTLSConfig() (*TLSConfig, error) {
 }
 
 func generateCA() (*x509.Certificate, *rsa.PrivateKey, error) {
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(2019),
-		Subject: pkix.Name{
-			CommonName: "Cockroach Test CA",
-		},
-		NotBefore:             time.Now().Add(-time.Hour),
-		NotAfter:              time.Now().Add(time.Hour),
-		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		BasicConstraintsValid: true,
-		IsCA:                  true,
-	}
+	caCert, err := tctls.GenerateCert(
+		tctls.WithHost("localhost"),
+		tctls.WithSubjectCommonName("Cockroach Test CA"),
+		tctls.AsCA(),
+		tctls.WithValidFrom(time.Now().Add(-time.Hour)),
+		tctls.WithValidFor(time.Hour),
+	)
 
-	caPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	caBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, caPrivKey.Public(), caPrivKey)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	caCert, err := x509.ParseCertificate(caBytes)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return caCert, caPrivKey, nil
+	return caCert.Cert, caCert.Key, err
 }
 
 func generateNode(caCert *x509.Certificate, caKey *rsa.PrivateKey) ([]byte, []byte, error) {
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(2019),
-		Subject: pkix.Name{
-			CommonName: "node",
-		},
-		DNSNames: []string{"localhost"},
-		IPAddresses: []net.IP{
-			net.IPv4(127, 0, 0, 1),
-			net.IPv6loopback,
-		},
-		NotBefore: time.Now().Add(-time.Hour),
-		NotAfter:  time.Now().Add(time.Hour),
-		KeyUsage:  x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{
-			x509.ExtKeyUsageServerAuth,
-			x509.ExtKeyUsageClientAuth,
-		},
-		BasicConstraintsValid: true,
-	}
+	cert, err := tctls.GenerateCert(
+		tctls.WithHost("localhost"), // the host will be passed as DNSNames
+		tctls.WithSubjectCommonName("node"),
+		tctls.AsCA(),
+		tctls.WithIPAddresses(net.IPv4(127, 0, 0, 1), net.IPv6loopback),
+		tctls.WithValidFrom(time.Now().Add(-time.Hour)),
+		tctls.WithValidFor(time.Hour),
+		tctls.AsPem(),
+		tctls.WithParent(caCert, caKey),
+	)
 
-	certPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	certBytes, err := x509.CreateCertificate(rand.Reader, &template, caCert, certPrivKey.Public(), caKey)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	cert := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: certBytes,
-	})
-	certKey := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(certPrivKey),
-	})
-
-	return cert, certKey, nil
+	return cert.Bytes, cert.KeyBytes, err
 }
 
 func generateClient(caCert *x509.Certificate, caKey *rsa.PrivateKey) ([]byte, []byte, error) {
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(2019),
-		Subject: pkix.Name{
-			CommonName: defaultUser,
-		},
-		NotBefore: time.Now().Add(-time.Hour),
-		NotAfter:  time.Now().Add(time.Hour),
-		KeyUsage:  x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{
-			x509.ExtKeyUsageServerAuth,
-			x509.ExtKeyUsageClientAuth,
-		},
-		BasicConstraintsValid: true,
-	}
+	cert, err := tctls.GenerateCert(
+		tctls.WithHost("localhost"),
+		tctls.WithSubjectCommonName(defaultUser),
+		tctls.AsCA(),
+		tctls.WithValidFrom(time.Now().Add(-time.Hour)),
+		tctls.WithValidFor(time.Hour),
+		tctls.AsPem(),
+		tctls.WithParent(caCert, caKey),
+	)
 
-	certPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	certBytes, err := x509.CreateCertificate(rand.Reader, &template, caCert, certPrivKey.Public(), caKey)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	cert := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: certBytes,
-	})
-	certKey := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(certPrivKey),
-	})
-
-	return cert, certKey, nil
+	return cert.Bytes, cert.KeyBytes, err
 }
