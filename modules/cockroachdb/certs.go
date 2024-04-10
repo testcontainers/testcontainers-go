@@ -1,7 +1,6 @@
 package cockroachdb
 
 import (
-	"crypto/rsa"
 	"crypto/x509"
 	"net"
 	"time"
@@ -19,31 +18,6 @@ type TLSConfig struct {
 
 // NewTLSConfig creates a new TLSConfig capable of running CockroachDB & connecting over TLS.
 func NewTLSConfig() (*TLSConfig, error) {
-	caCert, caKey, err := generateCA()
-	if err != nil {
-		return nil, err
-	}
-
-	nodeCert, nodeKey, err := generateNode(caCert, caKey)
-	if err != nil {
-		return nil, err
-	}
-
-	clientCert, clientKey, err := generateClient(caCert, caKey)
-	if err != nil {
-		return nil, err
-	}
-
-	return &TLSConfig{
-		CACert:     caCert,
-		NodeCert:   nodeCert,
-		NodeKey:    nodeKey,
-		ClientCert: clientCert,
-		ClientKey:  clientKey,
-	}, nil
-}
-
-func generateCA() (*x509.Certificate, *rsa.PrivateKey, error) {
 	caCert, err := tctls.GenerateCert(
 		tctls.WithHost("localhost"),
 		tctls.WithSubjectCommonName("Cockroach Test CA"),
@@ -51,12 +25,11 @@ func generateCA() (*x509.Certificate, *rsa.PrivateKey, error) {
 		tctls.WithValidFrom(time.Now().Add(-time.Hour)),
 		tctls.WithValidFor(time.Hour),
 	)
+	if err != nil {
+		return nil, err
+	}
 
-	return caCert.Cert, caCert.Key, err
-}
-
-func generateNode(caCert *x509.Certificate, caKey *rsa.PrivateKey) ([]byte, []byte, error) {
-	cert, err := tctls.GenerateCert(
+	nodeCert, err := tctls.GenerateCert(
 		tctls.WithHost("localhost"), // the host will be passed as DNSNames
 		tctls.WithSubjectCommonName("node"),
 		tctls.AsCA(),
@@ -64,22 +37,30 @@ func generateNode(caCert *x509.Certificate, caKey *rsa.PrivateKey) ([]byte, []by
 		tctls.WithValidFrom(time.Now().Add(-time.Hour)),
 		tctls.WithValidFor(time.Hour),
 		tctls.AsPem(),
-		tctls.WithParent(caCert, caKey),
+		tctls.WithParent(caCert.Cert, caCert.Key),
 	)
+	if err != nil {
+		return nil, err
+	}
 
-	return cert.Bytes, cert.KeyBytes, err
-}
-
-func generateClient(caCert *x509.Certificate, caKey *rsa.PrivateKey) ([]byte, []byte, error) {
-	cert, err := tctls.GenerateCert(
+	clientCert, err := tctls.GenerateCert(
 		tctls.WithHost("localhost"),
 		tctls.WithSubjectCommonName(defaultUser),
 		tctls.AsCA(),
 		tctls.WithValidFrom(time.Now().Add(-time.Hour)),
 		tctls.WithValidFor(time.Hour),
 		tctls.AsPem(),
-		tctls.WithParent(caCert, caKey),
+		tctls.WithParent(caCert.Cert, caCert.Key),
 	)
+	if err != nil {
+		return nil, err
+	}
 
-	return cert.Bytes, cert.KeyBytes, err
+	return &TLSConfig{
+		CACert:     caCert.Cert,
+		NodeCert:   nodeCert.Bytes,
+		NodeKey:    nodeCert.KeyBytes,
+		ClientCert: clientCert.Bytes,
+		ClientKey:  clientCert.KeyBytes,
+	}, nil
 }
