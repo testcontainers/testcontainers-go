@@ -8,6 +8,7 @@ import (
 
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/stretchr/testify/require"
+
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 

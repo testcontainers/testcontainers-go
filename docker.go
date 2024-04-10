@@ -1506,7 +1506,6 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 			Attachable: true,
 			Labels:     core.DefaultLabels(core.SessionID()),
 		})
-
 		if err != nil {
 			return "", err
 		}
