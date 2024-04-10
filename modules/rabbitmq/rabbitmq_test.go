@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -15,6 +14,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/rabbitmq"
+	tctls "github.com/testcontainers/testcontainers-go/tls"
 )
 
 func TestRunContainer_connectUsingAmqp(t *testing.T) {
@@ -49,10 +49,22 @@ func TestRunContainer_connectUsingAmqp(t *testing.T) {
 func TestRunContainer_connectUsingAmqps(t *testing.T) {
 	ctx := context.Background()
 
+	tmpDir := t.TempDir()
+
+	caCert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.AsCA(), tctls.WithSaveToFile(tmpDir))
+	if err != nil {
+		t.Fatalf("failed to generate CA certificate: %s", err)
+	}
+
+	cert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.WithParent(caCert.Cert, caCert.Key), tctls.WithSaveToFile(tmpDir))
+	if err != nil {
+		t.Fatalf("failed to generate certificate: %s", err)
+	}
+
 	sslSettings := rabbitmq.SSLSettings{
-		CACertFile:        filepath.Join("testdata", "certs", "server_ca.pem"),
-		CertFile:          filepath.Join("testdata", "certs", "server_cert.pem"),
-		KeyFile:           filepath.Join("testdata", "certs", "server_key.pem"),
+		CACertFile:        caCert.CertPath,
+		CertFile:          cert.CertPath,
+		KeyFile:           cert.KeyPath,
 		VerificationMode:  rabbitmq.SSLVerificationModePeer,
 		FailIfNoCert:      false,
 		VerificationDepth: 1,
