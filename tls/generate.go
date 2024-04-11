@@ -84,10 +84,10 @@ func AsCA() CertOpt {
 // It's used to sign the certificate with the parent certificate.
 // At the moment the parent is set, the issuer of the certificate will be
 // set to the common name of the parent certificate.
-func WithParent(parent *x509.Certificate, priv any) CertOpt {
+func WithParent(parent Certificate) CertOpt {
 	return func(r *certRequest) {
-		r.Parent = parent
-		r.Priv = priv
+		r.Parent = parent.Cert
+		r.Priv = parent.Key
 	}
 }
 
@@ -139,7 +139,9 @@ func newCertRequest() certRequest {
 //   - will be signed by the parent certificate if the WithParent option is set. Else, it will be self-signed.
 //   - will be saved to the directory set in the WithSaveToFile option. Else, it will not be saved to disk.
 //   - will be its own Certificate Authority if the AsCA option is set. Else, it will not be a CA.
-func GenerateCert(opts ...CertOpt) (*Certificate, error) {
+func GenerateCert(opts ...CertOpt) (Certificate, error) {
+	var certificate Certificate
+
 	req := newCertRequest()
 
 	for _, opt := range opts {
@@ -147,7 +149,7 @@ func GenerateCert(opts ...CertOpt) (*Certificate, error) {
 	}
 
 	if len(req.Host) == 0 {
-		return nil, fmt.Errorf("missing required host")
+		return certificate, fmt.Errorf("missing required host")
 	}
 
 	keyUsage := x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
@@ -194,7 +196,7 @@ func GenerateCert(opts ...CertOpt) (*Certificate, error) {
 
 	pk, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return nil, err
+		return certificate, err
 	}
 
 	if req.Priv == nil {
@@ -204,15 +206,15 @@ func GenerateCert(opts ...CertOpt) (*Certificate, error) {
 
 	certBytes, err := x509.CreateCertificate(rand.Reader, &template, req.Parent, pk.Public(), req.Priv)
 	if err != nil {
-		return nil, err
+		return certificate, err
 	}
 
 	cert, err := x509.ParseCertificate(certBytes)
 	if err != nil {
-		return nil, err
+		return certificate, err
 	}
 
-	certificate := &Certificate{
+	certificate = Certificate{
 		Cert:  cert,
 		Key:   pk,
 		Bytes: certBytes,
@@ -234,14 +236,14 @@ func GenerateCert(opts ...CertOpt) (*Certificate, error) {
 		certPath := filepath.Join(req.SaveTo, "cert-"+id+".pem")
 
 		if err := os.WriteFile(certPath, certificate.Bytes, 0o644); err != nil {
-			return nil, err
+			return certificate, err
 		}
 		certificate.CertPath = certPath
 
 		if certificate.KeyBytes != nil {
 			keyPath := filepath.Join(req.SaveTo, "key-"+id+".pem")
 			if err := os.WriteFile(keyPath, certificate.KeyBytes, 0o644); err != nil {
-				return nil, err
+				return certificate, err
 			}
 			certificate.KeyPath = keyPath
 		}

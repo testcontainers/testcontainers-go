@@ -104,7 +104,7 @@ func ExampleRunContainer_withSSL() {
 		log.Fatalf("failed to generate CA certificate: %s", err)
 	}
 
-	cert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.WithParent(caCert.Cert, caCert.Key), tctls.WithSaveToFile(certDirs))
+	cert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.WithParent(caCert), tctls.WithSaveToFile(certDirs))
 	if err != nil {
 		log.Fatalf("failed to generate certificate: %s", err)
 	}

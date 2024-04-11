@@ -28,7 +28,7 @@ func ExampleGenerateCert() {
 		log.Fatal(err)
 	}
 
-	cert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.WithSaveToFile(certsDir), tctls.WithParent(caCert.Cert, caCert.Key))
+	cert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.WithSaveToFile(certsDir), tctls.WithParent(caCert))
 	if err != nil {
 		log.Fatal(err)
 	}

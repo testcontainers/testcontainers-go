@@ -56,7 +56,7 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 		t.Fatalf("failed to generate CA certificate: %s", err)
 	}
 
-	cert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.WithParent(caCert.Cert, caCert.Key), tctls.WithSaveToFile(tmpDir))
+	cert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.WithParent(caCert), tctls.WithSaveToFile(tmpDir))
 	if err != nil {
 		t.Fatalf("failed to generate certificate: %s", err)
 	}

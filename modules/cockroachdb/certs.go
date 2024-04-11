@@ -35,7 +35,7 @@ func NewTLSConfig() (*TLSConfig, error) {
 		tctls.WithIPAddresses(net.IPv4(127, 0, 0, 1), net.IPv6loopback),
 		tctls.WithValidFor(time.Hour),
 		tctls.AsPem(),
-		tctls.WithParent(caCert.Cert, caCert.Key),
+		tctls.WithParent(caCert),
 	)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func NewTLSConfig() (*TLSConfig, error) {
 		tctls.AsCA(),
 		tctls.WithValidFor(time.Hour),
 		tctls.AsPem(),
-		tctls.WithParent(caCert.Cert, caCert.Key),
+		tctls.WithParent(caCert),
 	)
 	if err != nil {
 		return nil, err

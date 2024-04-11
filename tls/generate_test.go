@@ -4,6 +4,7 @@ import (
 	stdlibtls "crypto/tls"
 	"net"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go/tls"
@@ -11,9 +12,13 @@ import (
 
 func TestGenerate(t *testing.T) {
 	t.Run("No host returns error", func(t *testing.T) {
-		_, err := tls.GenerateCert()
+		cert, err := tls.GenerateCert()
 		if err == nil {
 			t.Fatal("expected error, got nil")
+		}
+
+		if !reflect.ValueOf(cert).IsZero() {
+			t.Fatal("expected cert to be the zero value, got", cert)
 		}
 	})
 
@@ -23,8 +28,8 @@ func TestGenerate(t *testing.T) {
 			tt.Fatal(err)
 		}
 
-		if cert == nil {
-			tt.Fatal("expected cert, got nil")
+		if reflect.ValueOf(cert).IsZero() {
+			t.Fatal("expected cert not to be the zero value, got", cert)
 		}
 
 		if cert.Key == nil {
@@ -42,10 +47,6 @@ func TestGenerate(t *testing.T) {
 		cert, err := tls.GenerateCert(tls.WithHost("localhost, " + ip))
 		if err != nil {
 			t.Fatal(err)
-		}
-
-		if cert == nil {
-			t.Fatal("expected cert, got nil")
 		}
 
 		if cert.Key == nil {
@@ -68,10 +69,6 @@ func TestGenerate(t *testing.T) {
 		cert, err := tls.GenerateCert(tls.WithHost("localhost, "+ip), tls.WithIPAddresses(ips...))
 		if err != nil {
 			t.Fatal(err)
-		}
-
-		if cert == nil {
-			t.Fatal("expected cert, got nil")
 		}
 
 		if cert.Key == nil {
@@ -100,10 +97,6 @@ func TestGenerate(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if cert == nil {
-			t.Fatal("expected cert, got nil")
-		}
-
 		if cert.Cert == nil {
 			t.Fatal("expected cert, got nil")
 		}
@@ -125,10 +118,6 @@ func TestGenerate(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if cert == nil {
-			t.Fatal("expected cert, got nil")
-		}
-
 		// PEM format adds the key bytes to the cert struct
 		if cert.Bytes == nil {
 			t.Fatal("expected bytes, got nil")
@@ -142,10 +131,6 @@ func TestGenerate(t *testing.T) {
 		cert, err := tls.GenerateCert(tls.WithHost("localhost"), tls.WithSubjectCommonName("Test"))
 		if err != nil {
 			t.Fatal(err)
-		}
-
-		if cert == nil {
-			t.Fatal("expected cert, got nil")
 		}
 
 		if cert.Cert == nil {
@@ -164,13 +149,9 @@ func TestGenerate(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cert, err := tls.GenerateCert(tls.WithHost("localhost"), tls.WithParent(parent.Cert, parent.Key))
+		cert, err := tls.GenerateCert(tls.WithHost("localhost"), tls.WithParent(parent))
 		if err != nil {
 			t.Fatal(err)
-		}
-
-		if cert == nil {
-			t.Fatal("expected cert, got nil")
 		}
 
 		if cert.Cert == nil {
@@ -191,10 +172,6 @@ func TestGenerate(t *testing.T) {
 		cert, err := tls.GenerateCert(tls.WithHost("localhost"), tls.WithIPAddresses(net.ParseIP(ip)))
 		if err != nil {
 			t.Fatal(err)
-		}
-
-		if cert == nil {
-			t.Fatal("expected cert, got nil")
 		}
 
 		if cert.Cert == nil {
@@ -218,10 +195,6 @@ func TestGenerate(t *testing.T) {
 		cert, err := tls.GenerateCert(tls.WithHost("localhost"), tls.WithSaveToFile(tmp))
 		if err != nil {
 			tt.Fatal(err)
-		}
-
-		if cert == nil {
-			tt.Fatal("expected cert, got nil")
 		}
 
 		inMemoryCert, err := stdlibtls.X509KeyPair(cert.Bytes, cert.KeyBytes)
