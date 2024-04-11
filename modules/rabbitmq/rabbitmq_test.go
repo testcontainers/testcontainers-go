@@ -6,7 +6,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -103,7 +103,7 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 
 	certs := x509.NewCertPool()
 
-	pemData, err := ioutil.ReadFile(sslSettings.CACertFile)
+	pemData, err := os.ReadFile(sslSettings.CACertFile)
 	if err != nil {
 		t.Fatal(err)
 	}
