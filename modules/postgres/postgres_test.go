@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -12,6 +13,8 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/jackc/pgx/v5"
 	_ "github.com/lib/pq"
+	"github.com/mdelapenya/tlscert"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -25,6 +28,59 @@ const (
 	user     = "postgres"
 	password = "password"
 )
+
+func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, error) {
+
+	tmpDir := t.TempDir()
+	certsDir := tmpDir + "/certs"
+
+	if err := os.MkdirAll(certsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() {
+		os.RemoveAll(tmpDir)
+	})
+
+	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Host:      "localhost",
+		Name:      "ca-cert",
+		ParentDir: certsDir,
+	})
+
+	if caCert == nil {
+
+		return caCert, nil, errors.New("Unable to create CA Authority")
+	}
+
+	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Host:      "localhost",
+		Name:      "client-cert",
+		Parent:    caCert,
+		ParentDir: certsDir,
+	})
+	if cert == nil {
+		return caCert, cert, errors.New("Unable to create Server Certificates")
+	}
+
+	return caCert, cert, nil
+
+}
+
+func createSSLSettings(t *testing.T) postgres.SSLSettings {
+
+	caCert, serverCerts, err := createSSLCerts(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return postgres.SSLSettings{
+		CACertFile: caCert.CertPath,
+		CertFile:   serverCerts.CertPath,
+		KeyFile:    serverCerts.KeyPath,
+	}
+
+}
 
 func TestPostgres(t *testing.T) {
 	ctx := context.Background()
@@ -191,11 +247,7 @@ func TestWithConfigFile(t *testing.T) {
 func TestWithSSLEnabledConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	sslSettings := postgres.SSLSettings{
-		CACertFile: filepath.Join("testdata", "certs", "server_ca.pem"),
-		CertFile:   filepath.Join("testdata", "certs", "server_cert.pem"),
-		KeyFile:    filepath.Join("testdata", "certs", "server_key.pem"),
-	}
+	sslSettings := createSSLSettings(t)
 
 	container, err := postgres.RunContainer(ctx,
 		postgres.WithConfigFile(filepath.Join("testdata", "my-postgres-ssl.conf")),
