@@ -2,10 +2,11 @@ package cockroachdb
 
 import (
 	"crypto/x509"
+	"fmt"
 	"net"
 	"time"
 
-	tctls "github.com/testcontainers/testcontainers-go/tls"
+	"github.com/mdelapenya/tlscert"
 )
 
 type TLSConfig struct {
@@ -18,39 +19,37 @@ type TLSConfig struct {
 
 // NewTLSConfig creates a new TLSConfig capable of running CockroachDB & connecting over TLS.
 func NewTLSConfig() (*TLSConfig, error) {
-	caCert, err := tctls.GenerateCert(
-		tctls.WithHost("localhost"),
-		tctls.WithSubjectCommonName("Cockroach Test CA"),
-		tctls.AsCA(),
-		tctls.WithValidFor(time.Hour),
-	)
-	if err != nil {
-		return nil, err
+	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:              "ca",
+		SubjectCommonName: "Cockroach Test CA",
+		Host:              "localhost,127.0.0.1",
+		IsCA:              true,
+		ValidFor:          time.Hour,
+	})
+	if caCert == nil {
+		return nil, fmt.Errorf("failed to generate CA certificate")
 	}
 
-	nodeCert, err := tctls.GenerateCert(
-		tctls.WithHost("localhost"), // the host will be passed as DNSNames
-		tctls.WithSubjectCommonName("node"),
-		tctls.AsCA(),
-		tctls.WithIPAddresses(net.IPv4(127, 0, 0, 1), net.IPv6loopback),
-		tctls.WithValidFor(time.Hour),
-		tctls.AsPem(),
-		tctls.WithParent(caCert),
-	)
-	if err != nil {
-		return nil, err
+	nodeCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:        "node",
+		Host:        "localhost,127.0.0.1",
+		IPAddresses: []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback},
+		ValidFor:    time.Hour,
+		Parent:      caCert,
+	})
+	if nodeCert == nil {
+		return nil, fmt.Errorf("failed to generate node certificate")
 	}
 
-	clientCert, err := tctls.GenerateCert(
-		tctls.WithHost("localhost"),
-		tctls.WithSubjectCommonName(defaultUser),
-		tctls.AsCA(),
-		tctls.WithValidFor(time.Hour),
-		tctls.AsPem(),
-		tctls.WithParent(caCert),
-	)
-	if err != nil {
-		return nil, err
+	clientCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:              "client",
+		SubjectCommonName: defaultUser,
+		Host:              "localhost,127.0.0.1",
+		ValidFor:          time.Hour,
+		Parent:            caCert,
+	})
+	if clientCert == nil {
+		return nil, fmt.Errorf("failed to generate client certificate")
 	}
 
 	return &TLSConfig{

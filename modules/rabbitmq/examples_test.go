@@ -8,11 +8,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mdelapenya/tlscert"
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/rabbitmq"
-	tctls "github.com/testcontainers/testcontainers-go/tls"
 )
 
 func ExampleRunContainer() {
@@ -98,15 +98,25 @@ func ExampleRunContainer_withSSL() {
 	defer os.RemoveAll(certDirs)
 
 	// generates the CA certificate and the certificate
-	// using TestContainers TLS helper functions.
-	caCert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.AsCA(), tctls.WithSaveToFile(certDirs))
-	if err != nil {
-		log.Fatalf("failed to generate CA certificate: %s", err)
+	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:      "ca",
+		Host:      "localhost,127.0.0.1",
+		IsCA:      true,
+		ParentDir: certDirs,
+	})
+	if caCert == nil {
+		log.Fatal("failed to generate CA certificate")
 	}
 
-	cert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.WithParent(caCert), tctls.WithSaveToFile(certDirs))
-	if err != nil {
-		log.Fatalf("failed to generate certificate: %s", err)
+	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:      "client",
+		Host:      "localhost,127.0.0.1",
+		IsCA:      true,
+		Parent:    caCert,
+		ParentDir: certDirs,
+	})
+	if cert == nil {
+		log.Fatal("failed to generate certificate")
 	}
 
 	sslSettings := rabbitmq.SSLSettings{

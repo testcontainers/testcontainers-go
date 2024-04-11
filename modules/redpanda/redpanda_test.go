@@ -2,8 +2,6 @@ package redpanda_test
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mdelapenya/tlscert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
@@ -22,7 +21,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/testcontainers/testcontainers-go/network"
-	tctls "github.com/testcontainers/testcontainers-go/tls"
 )
 
 func TestRedpanda(t *testing.T) {
@@ -348,8 +346,12 @@ func TestRedpandaProduceWithAutoCreateTopics(t *testing.T) {
 
 func TestRedpandaWithTLS(t *testing.T) {
 	tmp := t.TempDir()
-	cert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.WithSaveToFile(tmp))
-	require.NoError(t, err, "failed to generate cert")
+	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:      "client",
+		Host:      "localhost,127.0.0.1",
+		ParentDir: tmp,
+	})
+	require.NotNil(t, cert, "failed to generate cert")
 
 	ctx := context.Background()
 
@@ -362,16 +364,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 		}
 	})
 
-	caCertPool := x509.NewCertPool()
-	caCertPool.AddCert(cert.Cert)
-
-	tlsCert, err := tls.X509KeyPair(cert.Bytes, cert.KeyBytes)
-	require.NoError(t, err)
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{tlsCert},
-		RootCAs:      caCertPool,
-	}
+	tlsConfig := cert.TLSConfig()
 
 	httpCl := &http.Client{
 		Timeout: 5 * time.Second,
@@ -422,8 +415,12 @@ func TestRedpandaWithTLS(t *testing.T) {
 func TestRedpandaWithTLSAndSASL(t *testing.T) {
 	tmp := t.TempDir()
 
-	cert, err := tctls.GenerateCert(tctls.WithHost("localhost"), tctls.WithSaveToFile(tmp))
-	require.NoError(t, err, "failed to generate cert")
+	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:      "client",
+		Host:      "localhost,127.0.0.1",
+		ParentDir: tmp,
+	})
+	require.NotNil(t, cert, "failed to generate cert")
 
 	ctx := context.Background()
 
@@ -442,16 +439,7 @@ func TestRedpandaWithTLSAndSASL(t *testing.T) {
 		}
 	})
 
-	caCertPool := x509.NewCertPool()
-	caCertPool.AddCert(cert.Cert)
-
-	tlsCert, err := tls.X509KeyPair(cert.Bytes, cert.KeyBytes)
-	require.NoError(t, err)
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{tlsCert},
-		RootCAs:      caCertPool,
-	}
+	tlsConfig := cert.TLSConfig()
 
 	broker, err := container.KafkaSeedBroker(ctx)
 	require.NoError(t, err)
