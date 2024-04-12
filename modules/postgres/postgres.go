@@ -197,7 +197,52 @@ func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOpt
 		// TODO: Can we detect TLS by port. I don't think so...
 		// Probably use logs
 		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForLog("database system is ready to accept connections"))
+
+		internalEntrypoint(req)
 	}
+}
+
+func internalEntrypoint(req *testcontainers.GenericContainerRequest) {
+
+	const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
+
+	entrypoint := `
+	#!/usr/bin/env bash
+	set -Eeo pipefail
+
+
+	pUID=$(id -u postgres)
+	pGID=$(id -g postgres)
+
+	if [ -z "$pUID" ]
+	then
+      exit 1
+	fi
+
+	if [ -z "$pGID" ]
+	then
+      exit 1
+	fi
+
+	chown "$pUID":"$pGID" /tmp/data/ca_cert.pem
+	chown "$pUID":"$pGID" /tmp/data/server.cert
+	chown "$pUID":"$pGID" /tmp/data/server.key
+
+	ls -lah /tmp/data
+	/usr/local/bin/docker-entrypoint.sh "$@"
+	
+	`
+
+	reader := strings.NewReader(entrypoint)
+
+	req.Files = append(req.Files, testcontainers.ContainerFile{
+		Reader:            reader,
+		ContainerFilePath: entrypointPath,
+		FileMode:          0o666,
+	})
+
+	req.Entrypoint = []string{"sh", entrypointPath}
+
 }
 
 func WithEntrypoint(hostEntrypointPath string) testcontainers.CustomizeRequestOption {

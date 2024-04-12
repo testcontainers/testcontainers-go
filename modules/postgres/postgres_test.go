@@ -257,7 +257,6 @@ func TestWithSSLEnabledConfigFile(t *testing.T) {
 		postgres.WithPassword(password),
 		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
 		postgres.WithSSLSettings(sslSettings),
-		postgres.WithEntrypoint(filepath.Join("testdata", "docker-entrypoint-ssl.bash")),
 	)
 	if err != nil {
 		t.Fatal(err)
