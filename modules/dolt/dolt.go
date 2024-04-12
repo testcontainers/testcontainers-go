@@ -157,6 +157,14 @@ func (c *DoltContainer) initialConnectionString(ctx context.Context) (string, er
 	return connectionString, nil
 }
 
+func (c *DoltContainer) MustConnectionString(ctx context.Context, args ...string) string {
+	addr, err := c.ConnectionString(ctx, args...)
+	if err != nil {
+		panic(err)
+	}
+	return addr
+}
+
 func (c *DoltContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "3306/tcp")
 	if err != nil {

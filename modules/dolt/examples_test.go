@@ -67,7 +67,7 @@ func ExampleRunContainer_connect() {
 		}
 	}()
 
-	connectionString, _ := doltContainer.ConnectionString(ctx)
+	connectionString := doltContainer.MustConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {

@@ -131,7 +131,7 @@ func TestDoltWithRootUserAndEmptyPassword(t *testing.T) {
 	})
 
 	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
+	connectionString := container.MustConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -169,7 +169,7 @@ func TestDoltWithScripts(t *testing.T) {
 	})
 
 	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
+	connectionString := container.MustConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
