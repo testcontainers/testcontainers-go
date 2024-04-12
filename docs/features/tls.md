@@ -12,5 +12,6 @@ The example will also create a client that will connect to the server using the 
 demonstrating how to use the generated certificate to communicate with a service.
 
 <!--codeinclude-->
-[Use a certificate](../../tls/examples_test.go) inside_block:ExampleGenerateCert
+[Create a self-signed certificate](../../modules/cockroachdb/certs.go) inside_block:exampleSelfSignedCert
+[Sign a self-signed certificate](../../modules/cockroachdb/certs.go) inside_block:exampleSignSelfSignedCert
 <!--/codeinclude-->
