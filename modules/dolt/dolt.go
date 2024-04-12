@@ -91,17 +91,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return dc, err
 }
 
-func (c *DoltContainer) initialize(ctx context.Context, createUser bool) (err error) {
-	var connectionString string
-	connectionString, err = c.initialConnectionString(ctx)
+func (c *DoltContainer) initialize(ctx context.Context, createUser bool) error {
+	connectionString, err := c.initialConnectionString(ctx)
 	if err != nil {
-		return
+		return err
 	}
 
 	var db *sql.DB
 	db, err = sql.Open("mysql", connectionString)
 	if err != nil {
-		return
+		return err
 	}
 	defer func() {
 		rerr := db.Close()
@@ -111,35 +110,31 @@ func (c *DoltContainer) initialize(ctx context.Context, createUser bool) (err er
 	}()
 
 	if err = db.Ping(); err != nil {
-		err = fmt.Errorf("error pinging db: %w\n", err)
-		return
+		return fmt.Errorf("error pinging db: %w", err)
 	}
 
 	// create database
 	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s;", c.database))
 	if err != nil {
-		err = fmt.Errorf("error creating database %s: %w\n", c.database, err)
-		return
+		return fmt.Errorf("error creating database %s: %w", c.database, err)
 	}
 
 	if createUser {
 		// create user
 		_, err = db.Exec(fmt.Sprintf("CREATE USER IF NOT EXISTS '%s' IDENTIFIED BY '%s';", c.username, c.password))
 		if err != nil {
-			err = fmt.Errorf("error creating user %s: %w\n", c.username, err)
-			return
+			return fmt.Errorf("error creating user %s: %w", c.username, err)
 		}
 
 		q := fmt.Sprintf("GRANT ALL ON %s.* TO '%s';", c.database, c.username)
 		// grant user privileges
 		_, err = db.Exec(q)
 		if err != nil {
-			err = fmt.Errorf("error creating user %s: %w\n", c.username, err)
-			return
+			return fmt.Errorf("error creating user %s: %w", c.username, err)
 		}
 	}
 
-	return
+	return nil
 }
 
 func (c *DoltContainer) initialConnectionString(ctx context.Context) (string, error) {
