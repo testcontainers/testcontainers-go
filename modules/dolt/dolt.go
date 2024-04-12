@@ -70,6 +70,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 	password := req.Env["DOLT_PASSWORD"]
 
+	database := req.Env["DOLT_DATABASE"]
+	if database == "" {
+		database = defaultDatabaseName
+	}
+
 	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
 		return nil, fmt.Errorf("empty password can be used only with the root user")
 	}
@@ -77,11 +82,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
 		return nil, err
-	}
-
-	database := req.Env["DOLT_DATABASE"]
-	if database == "" {
-		database = defaultDatabaseName
 	}
 
 	dc := &DoltContainer{container, username, password, database}
