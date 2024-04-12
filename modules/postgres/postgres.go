@@ -170,6 +170,9 @@ func WithSnapshotName(name string) SnapshotOption {
 	}
 }
 
+// WithSSLSettings configures the Postgres server to run with the provided CA Chain
+// This will not function if the corresponding postgres conf is not correctly configured.
+// Namely the paths below must match what is set in the conf file
 func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOption {
 	const postgresCaCertPath = "/tmp/data/ca_cert.pem"
 	const postgresCertPath = "/tmp/data/server.cert"
@@ -194,8 +197,6 @@ func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOpt
 			FileMode:          defaultPermission,
 		})
 
-		// TODO: Can we detect TLS by port. I don't think so...
-		// Probably use logs
 		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForLog("database system is ready to accept connections"))
 
 		internalEntrypoint(req)
@@ -228,7 +229,6 @@ func internalEntrypoint(req *testcontainers.GenericContainerRequest) {
 	chown "$pUID":"$pGID" /tmp/data/server.cert
 	chown "$pUID":"$pGID" /tmp/data/server.key
 
-	ls -lah /tmp/data
 	/usr/local/bin/docker-entrypoint.sh "$@"
 	
 	`

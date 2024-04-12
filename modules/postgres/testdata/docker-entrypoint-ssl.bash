@@ -19,5 +19,4 @@ chown "$pUID":"$pGID" /tmp/data/ca_cert.pem
 chown "$pUID":"$pGID" /tmp/data/server.cert
 chown "$pUID":"$pGID" /tmp/data/server.key
 
-ls -lah /tmp/data
 /usr/local/bin/docker-entrypoint.sh "$@"
