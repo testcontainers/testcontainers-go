@@ -34,11 +34,12 @@ func NewTLSConfig() (*TLSConfig, error) {
 
 	// exampleSignSelfSignedCert {
 	nodeCert := tlscert.SelfSignedFromRequest(tlscert.Request{
-		Name:        "node",
-		Host:        "localhost,127.0.0.1",
-		IPAddresses: []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback},
-		ValidFor:    time.Hour,
-		Parent:      caCert, // using the CA certificate as parent
+		Name:              "node",
+		SubjectCommonName: "node",
+		Host:              "localhost,127.0.0.1",
+		IPAddresses:       []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback},
+		ValidFor:          time.Hour,
+		Parent:            caCert, // using the CA certificate as parent
 	})
 	if nodeCert == nil {
 		return nil, fmt.Errorf("failed to generate node certificate")
