@@ -45,6 +45,7 @@ nav:
         - features/files_and_mounts.md
         - features/creating_networks.md
         - features/networking.md
+        - features/tls.md
         - features/garbage_collector.md
         - features/build_from_dockerfile.md
         - features/docker_auth.md
@@ -65,18 +66,22 @@ nav:
         - modules/index.md
         - modules/artemis.md
         - modules/cassandra.md
+        - modules/chroma.md
         - modules/clickhouse.md
         - modules/cockroachdb.md
+        - modules/consul.md
         - modules/couchbase.md
         - modules/dolt.md
         - modules/elasticsearch.md
         - modules/gcloud.md
         - modules/inbucket.md
+        - modules/influxdb.md
         - modules/k3s.md
         - modules/k6.md
         - modules/kafka.md
         - modules/localstack.md
         - modules/mariadb.md
+        - modules/milvus.md
         - modules/minio.md
         - modules/mockserver.md
         - modules/mongodb.md
@@ -84,16 +89,22 @@ nav:
         - modules/mysql.md
         - modules/nats.md
         - modules/neo4j.md
+        - modules/ollama.md
+        - modules/openfga.md
         - modules/openldap.md
+        - modules/opensearch.md
         - modules/postgres.md
         - modules/pulsar.md
+        - modules/qdrant.md
         - modules/rabbitmq.md
         - modules/redis.md
         - modules/redpanda.md
+        - modules/registry.md
+        - modules/surrealdb.md
         - modules/vault.md
+        - modules/weaviate.md
     - Examples:
         - examples/index.md
-        - examples/consul.md
         - examples/nginx.md
         - examples/toxiproxy.md
     - System Requirements:
@@ -118,4 +129,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.27.0
+    latest_version: v0.30.0

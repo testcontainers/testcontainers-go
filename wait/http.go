@@ -28,33 +28,37 @@ type HTTPStrategy struct {
 	timeout *time.Duration
 
 	// additional properties
-	Port               nat.Port
-	Path               string
-	StatusCodeMatcher  func(status int) bool
-	ResponseMatcher    func(body io.Reader) bool
-	UseTLS             bool
-	AllowInsecure      bool
-	TLSConfig          *tls.Config // TLS config for HTTPS
-	Method             string      // http method
-	Body               io.Reader   // http request body
-	PollInterval       time.Duration
-	UserInfo           *url.Userinfo
-	ForceIPv4LocalHost bool
+	Port                   nat.Port
+	Path                   string
+	StatusCodeMatcher      func(status int) bool
+	ResponseMatcher        func(body io.Reader) bool
+	UseTLS                 bool
+	AllowInsecure          bool
+	TLSConfig              *tls.Config // TLS config for HTTPS
+	Method                 string      // http method
+	Body                   io.Reader   // http request body
+	Headers                map[string]string
+	ResponseHeadersMatcher func(headers http.Header) bool
+	PollInterval           time.Duration
+	UserInfo               *url.Userinfo
+	ForceIPv4LocalHost     bool
 }
 
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
 func NewHTTPStrategy(path string) *HTTPStrategy {
 	return &HTTPStrategy{
-		Port:              "",
-		Path:              path,
-		StatusCodeMatcher: defaultStatusCodeMatcher,
-		ResponseMatcher:   func(body io.Reader) bool { return true },
-		UseTLS:            false,
-		TLSConfig:         nil,
-		Method:            http.MethodGet,
-		Body:              nil,
-		PollInterval:      defaultPollInterval(),
-		UserInfo:          nil,
+		Port:                   "",
+		Path:                   path,
+		StatusCodeMatcher:      defaultStatusCodeMatcher,
+		ResponseMatcher:        func(body io.Reader) bool { return true },
+		UseTLS:                 false,
+		TLSConfig:              nil,
+		Method:                 http.MethodGet,
+		Body:                   nil,
+		Headers:                map[string]string{},
+		ResponseHeadersMatcher: func(headers http.Header) bool { return true },
+		PollInterval:           defaultPollInterval(),
+		UserInfo:               nil,
 	}
 }
 
@@ -107,6 +111,16 @@ func (ws *HTTPStrategy) WithMethod(method string) *HTTPStrategy {
 
 func (ws *HTTPStrategy) WithBody(reqdata io.Reader) *HTTPStrategy {
 	ws.Body = reqdata
+	return ws
+}
+
+func (ws *HTTPStrategy) WithHeaders(headers map[string]string) *HTTPStrategy {
+	ws.Headers = headers
+	return ws
+}
+
+func (ws *HTTPStrategy) WithResponseHeadersMatcher(matcher func(http.Header) bool) *HTTPStrategy {
+	ws.ResponseHeadersMatcher = matcher
 	return ws
 }
 
@@ -250,11 +264,12 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	client := http.Client{Transport: tripper, Timeout: time.Second}
 	address := net.JoinHostPort(ipAddress, strconv.Itoa(mappedPort.Int()))
 
-	endpoint := url.URL{
-		Scheme: proto,
-		Host:   address,
-		Path:   ws.Path,
+	endpoint, err := url.Parse(ws.Path)
+	if err != nil {
+		return err
 	}
+	endpoint.Scheme = proto
+	endpoint.Host = address
 
 	if ws.UserInfo != nil {
 		endpoint.User = ws.UserInfo
@@ -281,6 +296,11 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 			if err != nil {
 				return err
 			}
+
+			for k, v := range ws.Headers {
+				req.Header.Set(k, v)
+			}
+
 			resp, err := client.Do(req)
 			if err != nil {
 				continue
@@ -290,6 +310,10 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 				continue
 			}
 			if ws.ResponseMatcher != nil && !ws.ResponseMatcher(resp.Body) {
+				_ = resp.Body.Close()
+				continue
+			}
+			if ws.ResponseHeadersMatcher != nil && !ws.ResponseHeadersMatcher(resp.Header) {
 				_ = resp.Body.Close()
 				continue
 			}

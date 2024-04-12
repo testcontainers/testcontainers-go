@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -121,7 +120,6 @@ func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContai
 
 		return nil
 	}, backoff.WithContext(exp, ctx))
-
 	if err != nil {
 		return nil, err
 	}
@@ -185,8 +183,6 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 
 	return reaperInstance, nil
 }
-
-var createContainerFailDueToNameConflictRegex = regexp.MustCompile("Conflict. The container name .* is already in use by container .*")
 
 // reuseReaperContainer constructs a Reaper from an already running reaper
 // DockerContainer.

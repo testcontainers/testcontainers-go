@@ -15,6 +15,10 @@ superusers:
 kafka_enable_authorization: true
 {{- end }}
 
+{{- if .EnableWasmTransform }}
+data_transforms_enabled: true
+{{- end }}
+
 {{- if .AutoCreateTopics }}
 auto_create_topics_enabled: true
 {{- end }}

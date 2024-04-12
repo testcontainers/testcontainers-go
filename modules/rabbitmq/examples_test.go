@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"path/filepath"
+	"log"
+	"os"
 	"strings"
 
+	"github.com/mdelapenya/tlscert"
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -23,20 +25,20 @@ func ExampleRunContainer() {
 		rabbitmq.WithAdminPassword("password"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := rabbitmqContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -54,27 +56,27 @@ func ExampleRunContainer_connectUsingAmqp() {
 		rabbitmq.WithAdminPassword("password"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	defer func() {
 		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
 	amqpURL, err := rabbitmqContainer.AmqpURL(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get AMQP URL: %s", err) // nolint:gocritic
 	}
 
 	amqpConnection, err := amqp.Dial(amqpURL)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to connect to RabbitMQ: %s", err)
 	}
 	defer func() {
 		err := amqpConnection.Close()
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to close connection: %s", err)
 		}
 	}()
 
@@ -88,10 +90,39 @@ func ExampleRunContainer_withSSL() {
 	// enableSSL {
 	ctx := context.Background()
 
+	tmpDir := os.TempDir()
+	certDirs := tmpDir + "/rabbitmq"
+	if err := os.MkdirAll(certDirs, 0755); err != nil {
+		log.Fatalf("failed to create temporary directory: %s", err)
+	}
+	defer os.RemoveAll(certDirs)
+
+	// generates the CA certificate and the certificate
+	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:      "ca",
+		Host:      "localhost,127.0.0.1",
+		IsCA:      true,
+		ParentDir: certDirs,
+	})
+	if caCert == nil {
+		log.Fatal("failed to generate CA certificate")
+	}
+
+	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:      "client",
+		Host:      "localhost,127.0.0.1",
+		IsCA:      true,
+		Parent:    caCert,
+		ParentDir: certDirs,
+	})
+	if cert == nil {
+		log.Fatal("failed to generate certificate")
+	}
+
 	sslSettings := rabbitmq.SSLSettings{
-		CACertFile:        filepath.Join("testdata", "certs", "server_ca.pem"),
-		CertFile:          filepath.Join("testdata", "certs", "server_cert.pem"),
-		KeyFile:           filepath.Join("testdata", "certs", "server_key.pem"),
+		CACertFile:        caCert.CertPath,
+		CertFile:          cert.CertPath,
+		KeyFile:           cert.KeyPath,
 		VerificationMode:  rabbitmq.SSLVerificationModePeer,
 		FailIfNoCert:      true,
 		VerificationDepth: 1,
@@ -102,19 +133,19 @@ func ExampleRunContainer_withSSL() {
 		rabbitmq.WithSSL(sslSettings),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	// }
 
 	defer func() {
 		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
 	state, err := rabbitmqContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -130,18 +161,18 @@ func ExampleRunContainer_withPlugins() {
 		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
 		// Multiple test implementations of the Executable interface, specific to RabbitMQ, exist in the types_test.go file.
 		// Please refer to them for more examples.
-		testcontainers.WithStartupCommand(
+		testcontainers.WithAfterReadyCommand(
 			testcontainers.NewRawCommand([]string{"rabbitmq_shovel"}),
 			testcontainers.NewRawCommand([]string{"rabbitmq_random_exchange"}),
 		),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	defer func() {
 		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
@@ -158,23 +189,23 @@ func ExampleRunContainer_withCustomConfigFile() {
 		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	defer func() {
 		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
 	logs, err := rabbitmqContainer.Logs(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get logs: %s", err) // nolint:gocritic
 	}
 
 	bytes, err := io.ReadAll(logs)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to read logs: %s", err)
 	}
 
 	fmt.Println(strings.Contains(string(bytes), "config file(s) : /etc/rabbitmq/rabbitmq-testcontainers.conf"))
@@ -190,12 +221,12 @@ func assertPlugins(container testcontainers.Container, plugins ...string) bool {
 
 		_, out, err := container.Exec(ctx, []string{"rabbitmq-plugins", "is_enabled", plugin})
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to execute command: %s", err)
 		}
 
 		check, err := io.ReadAll(out)
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to read output: %s", err)
 		}
 
 		if !strings.Contains(string(check), plugin+" is enabled") {

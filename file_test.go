@@ -1,3 +1,5 @@
+// This test is testing very internal logic that should not be exported away from this package. We'll
+// leave it in the main testcontainers package. Do not use for user facing examples.
 package testcontainers
 
 import (
@@ -117,7 +119,10 @@ func Test_TarFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	buff, err := tarFile(b, "Docker.file", 0o755)
+	buff, err := tarFile("Docker.file", func(tw io.Writer) error {
+		_, err := tw.Write(b)
+		return err
+	}, int64(len(b)), 0o755)
 	if err != nil {
 		t.Fatal(err)
 	}

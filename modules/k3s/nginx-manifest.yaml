@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: pod
+  name: nginx
+  namespace: default
+spec:
+  containers:
+  - name: pod
+    image: nginx
+    imagePullPolicy: Always
+
+ 

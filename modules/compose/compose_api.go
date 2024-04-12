@@ -34,7 +34,7 @@ func (f stackDownOptionFunc) applyToStackDown(do *api.DownOptions) {
 	f(do)
 }
 
-// RunServices is comparable to 'docker-compose run' as it only creates a subset of containers
+// RunServices is comparable to 'docker compose run' as it only creates a subset of containers
 // instead of all services defined by the project
 func RunServices(serviceNames ...string) StackUpOption {
 	return stackUpOptionFunc(func(o *stackUpOptions) {
@@ -186,7 +186,7 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 
 	var err error
 
-	d.project, err = d.compileProject()
+	d.project, err = d.compileProject(ctx)
 	if err != nil {
 		return err
 	}
@@ -231,7 +231,6 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 			Wait:    upOptions.Wait,
 		},
 	})
-
 	if err != nil {
 		return err
 	}
@@ -328,7 +327,7 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 	return container, nil
 }
 
-func (d *dockerCompose) compileProject() (*types.Project, error) {
+func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, error) {
 	const nameAndDefaultConfigPath = 2
 	projectOptions := make([]cli.ProjectOptionsFn, len(d.projectOptions), len(d.projectOptions)+nameAndDefaultConfigPath)
 
@@ -340,7 +339,7 @@ func (d *dockerCompose) compileProject() (*types.Project, error) {
 		return nil, err
 	}
 
-	proj, err := cli.ProjectFromOptions(compiledOptions)
+	proj, err := compiledOptions.LoadProject(ctx)
 	if err != nil {
 		return nil, err
 	}

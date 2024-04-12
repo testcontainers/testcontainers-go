@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -26,20 +27,20 @@ func ExampleRunContainer() {
 		testcontainers.WithImage("localstack/localstack:1.4.0"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := localstackContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := localstackContainer.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -54,37 +55,32 @@ func ExampleRunContainer_withNetwork() {
 
 	newNetwork, err := network.New(ctx, network.WithCheckDuplicate())
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create network: %s", err)
 	}
 
 	nwName := newNetwork.Name
 
 	localstackContainer, err := localstack.RunContainer(
 		ctx,
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Image:          "localstack/localstack:0.13.0",
-				Env:            map[string]string{"SERVICES": "s3,sqs"},
-				Networks:       []string{nwName},
-				NetworkAliases: map[string][]string{nwName: {"localstack"}},
-			},
-		}),
+		testcontainers.WithImage("localstack/localstack:0.13.0"),
+		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
+		network.WithNetwork([]string{nwName}, newNetwork),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	// }
 
 	// Clean up the container
 	defer func() {
 		if err := localstackContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
 	networks, err := localstackContainer.Networks(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container networks: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(len(networks))
@@ -98,16 +94,12 @@ func ExampleRunContainer_legacyMode() {
 
 	_, err := localstack.RunContainer(
 		ctx,
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Image:      "localstack/localstack:0.10.0",
-				Env:        map[string]string{"SERVICES": "s3,sqs"},
-				WaitingFor: wait.ForLog("Ready.").WithStartupTimeout(5 * time.Minute).WithOccurrence(1),
-			},
-		}),
+		testcontainers.WithImage("localstack/localstack:0.10.0"),
+		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
+		testcontainers.WithWaitStrategy(wait.ForLog("Ready.").WithStartupTimeout(5*time.Minute).WithOccurrence(1)),
 	)
 	if err == nil {
-		panic(err)
+		log.Fatalf("expected an error, got nil")
 	}
 
 	fmt.Println(err)
@@ -132,14 +124,15 @@ func ExampleRunContainer_usingLambdas() {
 
 	lambdaName := "localstack-lambda-url-example"
 
+	// withCustomContainerRequest {
 	container, err := localstack.RunContainer(ctx,
 		testcontainers.WithImage("localstack/localstack:2.3.0"),
+		testcontainers.WithEnv(map[string]string{
+			"SERVICES":            "lambda",
+			"LAMBDA_DOCKER_FLAGS": flagsFn(),
+		}),
 		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Env: map[string]string{
-					"SERVICES":            "lambda",
-					"LAMBDA_DOCKER_FLAGS": flagsFn(),
-				},
 				Files: []testcontainers.ContainerFile{
 					{
 						HostFilePath:      filepath.Join("testdata", "function.zip"),
@@ -148,14 +141,15 @@ func ExampleRunContainer_usingLambdas() {
 				},
 			},
 		}),
+		// }
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 	defer func() {
 		err := container.Terminate(ctx)
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
@@ -179,7 +173,7 @@ func ExampleRunContainer_usingLambdas() {
 	for _, cmd := range lambdaCommands {
 		_, _, err := container.Exec(ctx, cmd)
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to execute command %v: %s", cmd, err) // nolint:gocritic
 		}
 	}
 
@@ -189,13 +183,13 @@ func ExampleRunContainer_usingLambdas() {
 	}
 	_, reader, err := container.Exec(ctx, cmd, exec.Multiplexed())
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to execute command %v: %s", cmd, err)
 	}
 
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(reader)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to read from reader: %s", err)
 	}
 
 	content := buf.Bytes()
@@ -213,7 +207,7 @@ func ExampleRunContainer_usingLambdas() {
 	v := &FunctionURLConfig{}
 	err = json.Unmarshal(content, v)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to unmarshal content: %s", err)
 	}
 
 	httpClient := http.Client{
@@ -225,19 +219,19 @@ func ExampleRunContainer_usingLambdas() {
 
 	mappedPort, err := container.MappedPort(ctx, "4566/tcp")
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get mapped port: %s", err)
 	}
 
 	functionURL = strings.ReplaceAll(functionURL, "4566", mappedPort.Port())
 
 	resp, err := httpClient.Post(functionURL, "application/json", bytes.NewBufferString(`{"num1": "10", "num2": "10"}`))
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to send request to lambda function: %s", err)
 	}
 
 	jsonResponse, err := io.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to read response body: %s", err)
 	}
 
 	fmt.Println(string(jsonResponse))

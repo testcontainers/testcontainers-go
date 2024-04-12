@@ -987,7 +987,7 @@ func ExampleDockerProvider_CreateContainer() {
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -1019,7 +1019,7 @@ func ExampleContainer_Host() {
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -1047,7 +1047,7 @@ func ExampleContainer_Start() {
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -1075,7 +1075,7 @@ func ExampleContainer_Stop() {
 	timeout := 10 * time.Second
 	err := nginxC.Stop(ctx, &timeout)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to stop container: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println("Container has been stopped")
@@ -1109,7 +1109,7 @@ func ExampleContainer_MappedPort() {
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -1854,7 +1854,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 }
 
 func TestGetGatewayIP(t *testing.T) {
-	// When using docker-compose with DinD mode, and using host port or http wait strategy
+	// When using docker compose with DinD mode, and using host port or http wait strategy
 	// It's need to invoke GetGatewayIP for get the host
 	provider, err := providerType.GetProvider(WithLogger(TestLogger(t)))
 	if err != nil {

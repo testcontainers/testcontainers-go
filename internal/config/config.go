@@ -11,15 +11,16 @@ import (
 	"github.com/magiconair/properties"
 )
 
-const ReaperDefaultImage = "testcontainers/ryuk:0.6.0"
+const ReaperDefaultImage = "testcontainers/ryuk:0.7.0"
 
 var (
 	tcConfig     Config
 	tcConfigOnce *sync.Once = new(sync.Once)
 )
 
-// Config represents the configuration for Testcontainers
 // testcontainersConfig {
+
+// Config represents the configuration for Testcontainers
 type Config struct {
 	Host                    string        `properties:"docker.host,default="`
 	TLSVerify               int           `properties:"docker.tls.verify,default=0"`

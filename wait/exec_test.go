@@ -30,7 +30,7 @@ func ExampleExecStrategy() {
 		Started:          true,
 	})
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to start container: %s", err)
 	}
 
 	defer func() {
@@ -41,7 +41,7 @@ func ExampleExecStrategy() {
 
 	state, err := localstack.State(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -153,6 +153,27 @@ func TestExecStrategyWaitUntilReady_CustomExitCode(t *testing.T) {
 	err := wg.WaitUntilReady(context.Background(), target)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestExecStrategyWaitUntilReady_withExitCode(t *testing.T) {
+	target := mockExecTarget{
+		exitCode: 10,
+	}
+	wg := wait.NewExecStrategy([]string{"true"}).WithExitCode(10)
+	// Default is 60. Let's shorten that
+	wg.WithStartupTimeout(time.Second * 2)
+	err := wg.WaitUntilReady(context.Background(), target)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Ensure we aren't spuriously returning on any code
+	wg = wait.NewExecStrategy([]string{"true"}).WithExitCode(0)
+	wg.WithStartupTimeout(time.Second * 2)
+	err = wg.WaitUntilReady(context.Background(), target)
+	if err == nil {
+		t.Fatalf("Expected strategy to timeout out")
 	}
 }
 

@@ -3,15 +3,20 @@ package redpanda
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	_ "embed"
 	"fmt"
 	"math"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -59,7 +64,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	// Some (e.g. Image) may be overridden by providing an option argument to this function.
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.redpanda.com/redpandadata/redpanda:v23.1.7",
+			Image: "docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 			User:  "root:root",
 			// Files: Will be added later after we've rendered our YAML templates.
 			ExposedPorts: []string{
@@ -67,9 +72,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				defaultAdminAPIPort,
 				defaultSchemaRegistryPort,
 			},
-			Entrypoint: []string{},
+			Entrypoint: []string{entrypointFile},
 			Cmd: []string{
-				entrypointFile,
 				"redpanda",
 				"start",
 				"--mode=dev-container",
@@ -87,6 +91,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			apply(&settings)
 		}
 		opt.Customize(&req)
+	}
+
+	// 2.1. If the image is not at least v23.3, disable wasm transform
+	if !isAtLeastVersion(req.ContainerRequest.Image, "23.3") {
+		settings.EnableWasmTransform = false
 	}
 
 	// 3. Create temporary entrypoint file. We need a custom entrypoint that waits
@@ -193,6 +202,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
 	}
 
+	scheme := "http"
+	if settings.EnableTLS {
+		scheme += "s"
+	}
+
 	// 9. Create Redpanda Service Accounts if configured to do so.
 	if len(settings.ServiceAccounts) > 0 {
 		adminAPIPort, err := container.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
@@ -200,19 +214,33 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			return nil, fmt.Errorf("failed to get mapped Admin API port: %w", err)
 		}
 
-		adminAPIUrl := fmt.Sprintf("http://%v:%d", hostIP, adminAPIPort.Int())
+		adminAPIUrl := fmt.Sprintf("%s://%v:%d", scheme, hostIP, adminAPIPort.Int())
 		adminCl := NewAdminAPIClient(adminAPIUrl)
+		if settings.EnableTLS {
+			cert, err := tls.X509KeyPair(settings.cert, settings.key)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create admin client with cert: %w", err)
+			}
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(settings.cert)
+			adminCl = adminCl.WithHTTPClient(&http.Client{
+				Timeout: 5 * time.Second,
+				Transport: &http.Transport{
+					ForceAttemptHTTP2:   true,
+					TLSHandshakeTimeout: 10 * time.Second,
+					TLSClientConfig: &tls.Config{
+						Certificates: []tls.Certificate{cert},
+						RootCAs:      caCertPool,
+					},
+				},
+			})
+		}
 
 		for username, password := range settings.ServiceAccounts {
 			if err := adminCl.CreateUser(ctx, username, password); err != nil {
 				return nil, fmt.Errorf("failed to create service account with username %q: %w", username, err)
 			}
 		}
-	}
-
-	scheme := "http"
-	if settings.EnableTLS {
-		scheme += "s"
 	}
 
 	return &Container{Container: container, urlScheme: scheme}, nil
@@ -245,6 +273,7 @@ func renderBootstrapConfig(settings options) ([]byte, error) {
 		Superusers:                  settings.Superusers,
 		KafkaAPIEnableAuthorization: settings.KafkaEnableAuthorization,
 		AutoCreateTopics:            settings.AutoCreateTopics,
+		EnableWasmTransform:         settings.EnableWasmTransform,
 	}
 
 	tpl, err := template.New("bootstrap.yaml").Parse(bootstrapConfigTpl)
@@ -318,6 +347,7 @@ type redpandaBootstrapConfigTplParams struct {
 	Superusers                  []string
 	KafkaAPIEnableAuthorization bool
 	AutoCreateTopics            bool
+	EnableWasmTransform         bool
 }
 
 type redpandaConfigTplParams struct {
@@ -343,4 +373,24 @@ type listener struct {
 	Address              string
 	Port                 int
 	AuthenticationMethod string
+}
+
+// isAtLeastVersion returns true if the base image (without tag) is in a version or above
+func isAtLeastVersion(image, major string) bool {
+	parts := strings.Split(image, ":")
+	version := parts[len(parts)-1]
+
+	if version == "latest" {
+		return true
+	}
+
+	if !strings.HasPrefix(version, "v") {
+		version = fmt.Sprintf("v%s", version)
+	}
+
+	if semver.IsValid(version) {
+		return semver.Compare(version, fmt.Sprintf("v%s", major)) >= 0 // version >= v8.x
+	}
+
+	return false
 }

@@ -24,11 +24,9 @@ concurrency:
 
 jobs:
   test:
-    # do not run this job if it's a PR from dependabot that is not approved yet
-    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}
     strategy:
       matrix:
-        go-version: [1.20.x, 1.x]
+        go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -43,16 +41,14 @@ jobs:
   # The job below is a copy of the job above, but with ryuk disabled.
   # It's executed in the first stage to avoid concurrency issues.
   test-reaper-off:
-    # do not run this job if it's a PR from dependabot that is not approved yet
-    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}
     name: "Test with reaper off"
     strategy:
       matrix:
-        go-version: [1.20.x, 1.x]
+        go-version: [1.21.x, 1.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
-      fail-fast: true
+      fail-fast: false
       platform: "ubuntu-latest"
       project-directory: "."
       rootless-docker: false
@@ -62,17 +58,15 @@ jobs:
   # The job below is a copy of the job above, but with Docker rootless.
   # It's executed in the first stage to avoid concurrency issues.
   test-rootless-docker:
-    # do not run this job if it's a PR from dependabot that is not approved yet
-    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}
     name: "Test with Rootless Docker"
     strategy:
       matrix:
-        go-version: [1.20.x, 1.x]
+        go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
-      fail-fast: true
+      fail-fast: false
       platform: "ubuntu-latest"
       project-directory: "."
       rootless-docker: true
@@ -80,11 +74,9 @@ jobs:
       ryuk-disabled: false
 
   test-module-generator:
-    # do not run this job if it's a PR from dependabot that is not approved yet
-    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}
     strategy:
       matrix:
-        go-version: [1.20.x, 1.x]
+        go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest, macos-latest, windows-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -97,17 +89,12 @@ jobs:
       ryuk-disabled: false
 
   test-modules:
-    # do not run this job if it's a PR from dependabot that is not approved yet
-    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}
     needs: test
     strategy:
       matrix:
-        go-version: [1.20.x, 1.x]
+        go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest]
-        module: [artemis, cassandra, clickhouse, cockroachdb, compose, couchbase, dolt, elasticsearch, gcloud, inbucket, k3s, k6, kafka, localstack, mariadb, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, openldap, postgres, pulsar, rabbitmq, redis, redpanda, vault]
-        exclude:
-          - go-version: 1.20.x
-            module: compose
+        module: [artemis, cassandra, chroma, clickhouse, cockroachdb, compose, consul, couchbase, dolt, elasticsearch, gcloud, inbucket, influxdb, k3s, k6, kafka, localstack, mariadb, milvus, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, ollama, openfga, openldap, opensearch, postgres, pulsar, qdrant, rabbitmq, redis, redpanda, registry, surrealdb, vault, weaviate]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
@@ -119,15 +106,13 @@ jobs:
       ryuk-disabled: false
 
   test-examples:
-    # do not run this job if it's a PR from dependabot that is not approved yet
-    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.state != 'approved' && github.triggering_actor == 'dependabot[bot]') }}
     needs: test-modules
     strategy:
       matrix:
-        module: [consul, nginx, toxiproxy]
+        module: [nginx, toxiproxy]
     uses: ./.github/workflows/ci-test-go.yml
     with:
-      go-version: "1.20.x"
+      go-version: "1.21.x"
       fail-fast: true
       platform: 'ubuntu-latest'
       project-directory: examples/${{ matrix.module }}

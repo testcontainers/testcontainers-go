@@ -82,12 +82,21 @@ It's possible to pass extra parameters to the connection string, e.g. `sslmode=d
 
 ### Postgres variants
 
-It's possible to use the Postgres container with Timescale or Postgis, to name a few. You simply need to update the image name and the wait strategy.
+It's possible to use the Postgres container with PGVector, Timescale or Postgis, to name a few. You simply need to update the image name and the wait strategy.
 
 <!--codeinclude-->
+[Image for PGVector](../../modules/postgres/postgres_test.go) inside_block:pgvector
 [Image for Timescale](../../modules/postgres/postgres_test.go) inside_block:timescale
+[Image for Postgis](../../modules/postgres/postgres_test.go) inside_block:postgis
 <!--/codeinclude-->
 
+## Examples
+
+### Using Snapshots
+This example shows the usage of the postgres module's Snapshot feature to give each test a clean database without having
+to recreate the database container on every test or run heavy scripts to clean your database. This makes the individual
+tests very modular, since they always run on a brand-new database.
+
 <!--codeinclude-->
-[Image for Postgis](../../modules/postgres/postgres_test.go) inside_block:postgis
+[Test with a reusable Postgres container](../../modules/postgres/postgres_test.go) inside_block:snapshotAndReset
 <!--/codeinclude-->

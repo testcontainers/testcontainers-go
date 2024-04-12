@@ -1,17 +1,19 @@
-package nats
+package nats_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/nats-io/nats.go"
+
+	tcnats "github.com/testcontainers/testcontainers-go/modules/nats"
 )
 
 func TestNATS(t *testing.T) {
 	ctx := context.Background()
 
 	//  createNATSContainer {
-	container, err := RunContainer(ctx)
+	container, err := tcnats.RunContainer(ctx)
 	//  }
 	if err != nil {
 		t.Fatal(err)
@@ -30,6 +32,11 @@ func TestNATS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get connection string: %s", err)
 	}
+	mustUri := container.MustConnectionString(ctx)
+	if mustUri!=uri{
+		t.Errorf("URI was not equal to MustUri")
+	}
+
 
 	// perform assertions
 	nc, err := nats.Connect(uri)

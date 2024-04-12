@@ -3,6 +3,7 @@ package gcloud_test
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"cloud.google.com/go/firestore"
 	"google.golang.org/api/option"
@@ -33,13 +34,13 @@ func ExampleRunFirestoreContainer() {
 		gcloud.WithProjectID("firestore-project"),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to run container: %v", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := firestoreContainer.Terminate(ctx); err != nil {
-			panic(err)
+			log.Fatalf("failed to terminate container: %v", err)
 		}
 	}()
 	// }
@@ -49,13 +50,13 @@ func ExampleRunFirestoreContainer() {
 
 	conn, err := grpc.Dial(firestoreContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(emulatorCreds{}))
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to dial: %v", err) // nolint:gocritic
 	}
 
 	options := []option.ClientOption{option.WithGRPCConn(conn)}
 	client, err := firestore.NewClient(ctx, projectID, options...)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create client: %v", err)
 	}
 	defer client.Close()
 	// }
@@ -74,17 +75,17 @@ func ExampleRunFirestoreContainer() {
 	}
 	_, err = docRef.Create(ctx, data)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create document: %v", err)
 	}
 
 	docsnap, err := docRef.Get(ctx)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to get document: %v", err)
 	}
 
 	var saved Person
 	if err := docsnap.DataTo(&saved); err != nil {
-		panic(err)
+		log.Fatalf("failed to convert data: %v", err)
 	}
 
 	fmt.Println(saved.Firstname, saved.Lastname)

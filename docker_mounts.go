@@ -3,6 +3,7 @@ package testcontainers
 import "github.com/docker/docker/api/types/mount"
 
 var mountTypeMapping = map[MountType]mount.Type{
+	MountTypeBind:   mount.TypeBind, // Deprecated, it will be removed in a future release
 	MountTypeVolume: mount.TypeVolume,
 	MountTypeTmpfs:  mount.TypeTmpfs,
 	MountTypePipe:   mount.TypeNamedPipe,
@@ -80,6 +81,12 @@ func (s DockerTmpfsMountSource) GetTmpfsOptions() *mount.TmpfsOptions {
 	return s.TmpfsOptions
 }
 
+// PrepareMounts maps the given []ContainerMount to the corresponding
+// []mount.Mount for further processing
+func (m ContainerMounts) PrepareMounts() []mount.Mount {
+	return mapToDockerMounts(m)
+}
+
 // mapToDockerMounts maps the given []ContainerMount to the corresponding
 // []mount.Mount for further processing
 func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
@@ -107,8 +114,21 @@ func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
 			containerMount.VolumeOptions = typedMounter.GetVolumeOptions()
 		case TmpfsMounter:
 			containerMount.TmpfsOptions = typedMounter.GetTmpfsOptions()
-		default:
+		case BindMounter:
 			Logger.Printf("Mount type %s is not supported by Testcontainers for Go", m.Source.Type())
+		default:
+			// The provided source type has no custom options
+		}
+
+		if mountType == mount.TypeVolume {
+			if containerMount.VolumeOptions == nil {
+				containerMount.VolumeOptions = &mount.VolumeOptions{
+					Labels: make(map[string]string),
+				}
+			}
+			for k, v := range GenericLabels() {
+				containerMount.VolumeOptions.Labels[k] = v
+			}
 		}
 
 		mounts = append(mounts, containerMount)

@@ -45,6 +45,28 @@ func main() {
 		w.WriteHeader(http.StatusUnauthorized)
 	})
 
+	mux.HandleFunc("/query-params-ping", func(w http.ResponseWriter, req *http.Request) {
+		v := req.URL.Query().Get("v")
+		if v == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("pong"))
+	})
+
+	mux.HandleFunc("/headers", func(w http.ResponseWriter, req *http.Request) {
+		h := req.Header.Get("X-request-header")
+		if h != "" {
+			w.Header().Add("X-response-header", h)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("headers"))
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	})
+
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, req *http.Request) {
 		data, _ := io.ReadAll(req.Body)
 		if bytes.Equal(data, []byte("ping")) {

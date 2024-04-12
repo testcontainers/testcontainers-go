@@ -20,6 +20,7 @@ import (
 
 const (
 	// containerPorts {
+
 	MGMT_PORT     = "8091"
 	MGMT_SSL_PORT = "18091"
 
@@ -40,6 +41,7 @@ const (
 
 	KV_PORT     = "11210"
 	KV_SSL_PORT = "11207"
+
 	// }
 )
 
