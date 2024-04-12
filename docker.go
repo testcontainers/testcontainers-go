@@ -58,7 +58,7 @@ type DockerContainer struct {
 	// Container ID from Docker
 	ID         string
 	WaitingFor wait.Strategy
-	DependsOn  []Container
+	DependsOn  []Dependency
 	Image      string
 
 	isRunning     bool
@@ -1096,6 +1096,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		defaultCopyFileToContainerHook(req.Files),
 		defaultLogConsumersHook(req.LogConsumerCfg),
 		defaultReadinessHook(),
+		defaultDependencyHook(dockerInput, p.client),
 	}
 
 	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
@@ -1131,7 +1132,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	c := &DockerContainer{
 		ID:                resp.ID,
 		WaitingFor:        req.WaitingFor,
-		DependsOn:         req.DependsOn,
+		DependsOn:           req.DependsOn,
 		Image:             imageName,
 		imageWasBuilt:     req.ShouldBuildImage(),
 		keepBuiltImage:    req.ShouldKeepBuiltImage(),
