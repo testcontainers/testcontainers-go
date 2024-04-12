@@ -9,28 +9,42 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Dependency interface {
-	StartDependency(context.Context, string) (string, error)
-}
-
 type ContainerDependency struct {
-	request    ContainerRequest
-	envKey     string
-	callbackFn func(Container)
+	Request      ContainerRequest
+	EnvKey       string
+	CallbackFunc func(Container)
 }
 
-func (c *ContainerDependency) StartDependency(ctx context.Context, network string) (string, error) {
-	c.request.Networks = append(c.request.Networks, network)
+func NewContainerDependency(containerRequest ContainerRequest, envKey string) *ContainerDependency {
+	return &ContainerDependency{
+		Request:      containerRequest,
+		EnvKey:       envKey,
+		CallbackFunc: func(c Container) {},
+	}
+}
+
+func (c *ContainerDependency) WithCallback(callbackFunc func(Container)) *ContainerDependency {
+	c.CallbackFunc = callbackFunc
+	return c
+
+}
+
+func (c *ContainerDependency) StartDependency(ctx context.Context, network string) (Container, error) {
+	c.Request.Networks = append(c.Request.Networks, network)
 	dependency, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: c.request,
+		ContainerRequest: c.Request,
 		Started:          true,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	c.callbackFn(dependency)
-	networkAlias, err := dependency.NetworkAliases(ctx)
+	c.CallbackFunc(dependency)
+	return dependency, nil
+}
+
+func resolveDNSName(ctx context.Context, container Container, network string) (string, error) {
+	networkAlias, err := container.NetworkAliases(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -41,22 +55,35 @@ func (c *ContainerDependency) StartDependency(ctx context.Context, network strin
 	return aliases[0], nil
 }
 
-func NewContainerDependency(containerRequest ContainerRequest, envVar string) *ContainerDependency {
-	return &ContainerDependency{
-		request:    containerRequest,
-		envKey:     envVar,
-		callbackFn: func(c Container) {},
+func cleanupDependency(ctx context.Context, dependencies []Container, network *DockerNetwork) error {
+	if network == nil {
+		return nil
 	}
+
+	for _, dependency := range dependencies {
+		err := dependency.Terminate(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return network.Remove(ctx)
 }
 
 var defaultDependencyHook = func(dockerInput *container.Config, client client.APIClient) ContainerLifecycleHooks {
 	var depNetwork *DockerNetwork
+	depContainers := make([]Container, 0)
 	return ContainerLifecycleHooks{
 		PreCreates: []ContainerRequestHook{
-			func(ctx context.Context, req ContainerRequest) error {
+			func(ctx context.Context, req ContainerRequest) (err error) {
 				if len(req.DependsOn) == 0 {
 					return nil
 				}
+				defer func() {
+					if err != nil {
+						cleanupErr := cleanupDependency(ctx, depContainers, depNetwork)
+						Logger.Printf("Could not cleanup dependencies after an error occured: %v", cleanupErr)
+					}
+				}()
 
 				net, err := GenericNetwork(ctx, GenericNetworkRequest{
 					NetworkRequest: NetworkRequest{
@@ -72,12 +99,19 @@ var defaultDependencyHook = func(dockerInput *container.Config, client client.AP
 				}
 
 				for _, dep := range req.DependsOn {
-					name, err := dep.StartDependency(ctx, depNetwork.Name)
+					if dep.EnvKey == "" {
+						return errors.New("cannot create dependency with empty environment key.")
+					}
+					container, err := dep.StartDependency(ctx, depNetwork.Name)
 					if err != nil {
 						return err
 					}
-					envKey := dep.(*ContainerDependency).envKey
-					dockerInput.Env = append(dockerInput.Env, envKey+"="+name)
+					depContainers = append(depContainers, container)
+					name, err := resolveDNSName(ctx, container, depNetwork.Name)
+					if err != nil {
+						return err
+					}
+					dockerInput.Env = append(dockerInput.Env, dep.EnvKey+"="+name)
 				}
 				return nil
 			},
@@ -92,7 +126,7 @@ var defaultDependencyHook = func(dockerInput *container.Config, client client.AP
 		},
 		PostTerminates: []ContainerHook{
 			func(ctx context.Context, container Container) error {
-				return depNetwork.Remove(ctx)
+				return cleanupDependency(ctx, depContainers, depNetwork)
 			},
 		},
 	}

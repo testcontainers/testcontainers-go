@@ -12,7 +12,7 @@ import (
 func Test_ContainerDependsOn(t *testing.T) {
 	type TestCase struct {
 		name                string
-		configureDependants func(ctx context.Context, t *testing.T) []Dependency
+		configureDependants func(ctx context.Context, t *testing.T) []*ContainerDependency
 		containerRequest    ContainerRequest
 		expectedEnv         []string
 		expectedError       string
@@ -21,14 +21,14 @@ func Test_ContainerDependsOn(t *testing.T) {
 	testCases := []TestCase{
 		{
 			name: "dependency is started and the dns name is passed as an environment variable",
-			configureDependants: func(ctx context.Context, t *testing.T) []Dependency {
+			configureDependants: func(ctx context.Context, t *testing.T) []*ContainerDependency {
 				nginxReq := ContainerRequest{
 					Image:        nginxAlpineImage,
 					ExposedPorts: []string{nginxDefaultPort},
 					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
 				}
 
-				return []Dependency{
+				return []*ContainerDependency{
 					NewContainerDependency(nginxReq, "FIRST_DEPENDENCY"),
 					NewContainerDependency(nginxReq, "SECOND_DEPENDENCY"),
 				}
@@ -41,13 +41,13 @@ func Test_ContainerDependsOn(t *testing.T) {
 		},
 		{
 			name: "container fails to start when dependency fails to start",
-			configureDependants: func(ctx context.Context, t *testing.T) []Dependency {
+			configureDependants: func(ctx context.Context, t *testing.T) []*ContainerDependency {
 				badReq := ContainerRequest{
 					Image:        "bad image name",
 					ExposedPorts: []string{"80/tcp"},
 				}
 
-				return []Dependency{
+				return []*ContainerDependency{
 					NewContainerDependency(badReq, "FIRST_DEPENDENCY"),
 				}
 			},
@@ -56,6 +56,24 @@ func Test_ContainerDependsOn(t *testing.T) {
 				Entrypoint: []string{"tail", "-f", "/dev/null"},
 			},
 			expectedError: "failed to create container",
+		},
+		{
+			name: "fails to start dependency when key is empty",
+			configureDependants: func(ctx context.Context, t *testing.T) []*ContainerDependency {
+				nginxReq := ContainerRequest{
+					Image:        nginxAlpineImage,
+					ExposedPorts: []string{nginxDefaultPort},
+					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+				}
+
+				dependency := NewContainerDependency(nginxReq, "")
+				return []*ContainerDependency{dependency}
+			},
+			containerRequest: ContainerRequest{
+				Image:      "curlimages/curl:8.7.1",
+				Entrypoint: []string{"tail", "-f", "/dev/null"},
+			},
+			expectedError: "cannot create dependency with empty environment key",
 		},
 	}
 	for _, tc := range testCases {
@@ -96,11 +114,6 @@ func Test_ContainerDependsOn(t *testing.T) {
 					require.Equal(t, 0, exitCode)
 				}
 			}
-
-			terminateContainerOnEnd(t, ctx, c)
-			//for _, dc := range dependantContainers {
-			//	terminateContainerOnEnd(t, ctx, dc)
-			//}
 		})
 	}
 }
