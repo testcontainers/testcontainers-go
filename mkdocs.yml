@@ -71,6 +71,7 @@ nav:
         - modules/cockroachdb.md
         - modules/consul.md
         - modules/couchbase.md
+        - modules/dolt.md
         - modules/elasticsearch.md
         - modules/gcloud.md
         - modules/inbucket.md
