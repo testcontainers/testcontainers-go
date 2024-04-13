@@ -155,16 +155,27 @@ The above example is updating the predefined command of the image, **appending**
 
 #### DependsOn Another Container
 
-Sometimes, a container may depend on another container to be ready before it can start itself.  For example a web app 
-container may depend on a running database container it can connect to. Use `DependsOn` in `ContainerRequest`
-to list containers that must run before the current one starts. Any container referenced in `DependsOn` will
-be started if not already running.
+If a container depends on another to function correctly, you can use `ContainerDependency`s to group the parent and
+dependent container together. Thereby making the dependent container accessible within the parent container. All
+dependencies listed in `ContainerRequest#DependsOn` will be started prior to the parent container.
 
+Seen below is a parent container that depends on a redis container. The environment variable `REDIS_NAME` will be
+injected into the parent container with the address of the redis container.
 ```golang
-dbContainer, err := testcontainers.GenericContainer(...)
-req = &ContainerRequest{
-    Image: "myapp:latest",
-    Name:  "myapp",
-    DependsOn: []Container{dbContainer}, // myapp depends on dbContainer.
-}
+redisDep := testcontainers.NewContainerDependency(testcontainers.ContainerRequest{
+    Image: "docker.io/redis:latest",
+    /* Other options */
+}, "REDIS_NAME")
+
+container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+    ContainerRequest: testcontainers.ContainerRequest{
+        /* Other options */
+		Name: "my-web-app"
+        DependsOn: []*testcontainers.ContainerDependency{redisDep},
+    },
+    Started: true,
+})
 ```
+
+If you need to access the `Container` struct of the dependent container, you can supply a callback function to
+`WithCallback` which be called with the dependent container once it is started.
