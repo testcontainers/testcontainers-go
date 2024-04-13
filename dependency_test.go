@@ -18,7 +18,6 @@ func Test_ContainerDependency(t *testing.T) {
 		expectedEnv         []string
 		expectedError       string
 	}
-
 	testCases := []TestCase{
 		{
 			name: "dependency's dns name is passed as an environment variable to parent container",
@@ -29,9 +28,13 @@ func Test_ContainerDependency(t *testing.T) {
 					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
 				}
 
+				terminateFn := func(container Container) {
+					terminateContainerOnEnd(t, ctx, container)
+				}
+
 				return []*ContainerDependency{
-					NewContainerDependency(nginxReq, "FIRST_DEPENDENCY"),
-					NewContainerDependency(nginxReq, "SECOND_DEPENDENCY"),
+					NewContainerDependency(nginxReq, "FIRST_DEPENDENCY").WithCallback(terminateFn),
+					NewContainerDependency(nginxReq, "SECOND_DEPENDENCY").WithCallback(terminateFn),
 				}
 			},
 			containerRequest: ContainerRequest{
@@ -115,7 +118,6 @@ func Test_ContainerDependency(t *testing.T) {
 					require.Equal(t, 0, exitCode)
 				}
 			}
-
 			terminateContainerOnEnd(t, ctx, c)
 		})
 	}
@@ -137,6 +139,7 @@ func Test_ContainerDependency_CallbackFunc(t *testing.T) {
 		DependsOn: []*ContainerDependency{
 			NewContainerDependency(nginxReq, "MY_DEPENDENCY").
 				WithCallback(func(c Container) {
+					terminateContainerOnEnd(t, ctx, c)
 					dependencyContainer <- c
 				}),
 		},
@@ -147,6 +150,7 @@ func Test_ContainerDependency_CallbackFunc(t *testing.T) {
 		Started:          true,
 	})
 	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, c)
 
 	select {
 	case <-time.After(3 * time.Second):
@@ -155,8 +159,6 @@ func Test_ContainerDependency_CallbackFunc(t *testing.T) {
 		require.NotNil(t, dependency)
 		require.True(t, dependency.IsRunning())
 	}
-
-	terminateContainerOnEnd(t, ctx, c)
 }
 
 func Test_ContainerDependency_ReuseRunningContainer(t *testing.T) {
@@ -174,6 +176,7 @@ func Test_ContainerDependency_ReuseRunningContainer(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, depContainer.IsRunning())
+	terminateContainerOnEnd(t, ctx, depContainer)
 
 	dependencyContainer := make(chan Container, 1)
 	req := ContainerRequest{
@@ -192,6 +195,7 @@ func Test_ContainerDependency_ReuseRunningContainer(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, c.IsRunning())
+	terminateContainerOnEnd(t, ctx, c)
 
 	select {
 	case <-time.After(3 * time.Second):
@@ -199,5 +203,4 @@ func Test_ContainerDependency_ReuseRunningContainer(t *testing.T) {
 	case dependency := <-dependencyContainer:
 		require.Equal(t, depContainer.GetContainerID(), dependency.GetContainerID())
 	}
-	terminateContainerOnEnd(t, ctx, c)
 }

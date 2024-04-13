@@ -1096,7 +1096,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		defaultCopyFileToContainerHook(req.Files),
 		defaultLogConsumersHook(req.LogConsumerCfg),
 		defaultReadinessHook(),
-		defaultDependencyHook(dockerInput, p.client),
+		defaultDependencyHook(dockerInput),
 	}
 
 	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}

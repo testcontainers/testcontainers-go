@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"golang.org/x/exp/slices"
@@ -48,14 +47,14 @@ func (c *ContainerDependency) StartDependency(ctx context.Context, network strin
 	return dependency, nil
 }
 
-func resolveDNSName(ctx context.Context, container Container, network *DockerNetwork, client client.APIClient) (string, error) {
+func resolveDNSName(ctx context.Context, container Container, network *DockerNetwork) (string, error) {
 	curNetworks, err := container.Networks(ctx)
 	if err != nil {
 		return "", fmt.Errorf("%w: could not retrieve networks for dependency container", err)
 	}
 	// The container may not be connected to the network if it was reused.
 	if slices.Index(curNetworks, network.Name) == -1 {
-		err = client.NetworkConnect(ctx, network.ID, container.GetContainerID(), nil)
+		err = network.provider.client.NetworkConnect(ctx, network.ID, container.GetContainerID(), nil)
 		if err != nil {
 			return "", fmt.Errorf("%w: could not connect dependency container to network", err)
 		}
@@ -73,21 +72,22 @@ func resolveDNSName(ctx context.Context, container Container, network *DockerNet
 	return aliases[0], nil
 }
 
-func cleanupDependencyAndNetwork(ctx context.Context, dependencies []Container, network *DockerNetwork) error {
+func cleanupDependencyNetwork(ctx context.Context, dependencies []Container, network *DockerNetwork) error {
 	if network == nil {
 		return nil
 	}
 
 	for _, dependency := range dependencies {
-		err := dependency.Terminate(ctx)
+		err := network.provider.client.NetworkDisconnect(ctx, network.ID, dependency.GetContainerID(), true)
 		if err != nil {
 			return err
 		}
 	}
+	defer network.provider.Close()
 	return network.Remove(ctx)
 }
 
-var defaultDependencyHook = func(dockerInput *container.Config, client client.APIClient) ContainerLifecycleHooks {
+var defaultDependencyHook = func(dockerInput *container.Config) ContainerLifecycleHooks {
 	var depNetwork *DockerNetwork
 	depContainers := make([]Container, 0)
 	return ContainerLifecycleHooks{
@@ -99,7 +99,7 @@ var defaultDependencyHook = func(dockerInput *container.Config, client client.AP
 				defer func() {
 					if err != nil {
 						// clean up dependencies that were created if an error occurred.
-						cleanupErr := cleanupDependencyAndNetwork(ctx, depContainers, depNetwork)
+						cleanupErr := cleanupDependencyNetwork(ctx, depContainers, depNetwork)
 						if cleanupErr != nil {
 							Logger.Printf("Could not cleanup dependencies after an error occured: %v", cleanupErr)
 						}
@@ -128,7 +128,7 @@ var defaultDependencyHook = func(dockerInput *container.Config, client client.AP
 						return err
 					}
 					depContainers = append(depContainers, container)
-					name, err := resolveDNSName(ctx, container, depNetwork, client)
+					name, err := resolveDNSName(ctx, container, depNetwork)
 					if err != nil {
 						return err
 					}
@@ -139,15 +139,17 @@ var defaultDependencyHook = func(dockerInput *container.Config, client client.AP
 		},
 		PostCreates: []ContainerHook{
 			func(ctx context.Context, container Container) error {
-				if depNetwork != nil {
-					return client.NetworkConnect(ctx, depNetwork.ID, container.GetContainerID(), nil)
+				if depNetwork == nil {
+					return nil
 				}
-				return nil
+				err := depNetwork.provider.client.NetworkConnect(ctx, depNetwork.ID, container.GetContainerID(), nil)
+				defer depNetwork.provider.Close()
+				return err
 			},
 		},
 		PostTerminates: []ContainerHook{
 			func(ctx context.Context, container Container) error {
-				return cleanupDependencyAndNetwork(ctx, depContainers, depNetwork)
+				return cleanupDependencyNetwork(ctx, depContainers, depNetwork)
 			},
 		},
 	}

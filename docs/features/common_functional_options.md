@@ -179,3 +179,5 @@ container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericCon
 
 If you need to access the `Container` struct of the dependent container, you can supply a callback function to
 `WithCallback` which be called with the dependent container once it is started.
+
+Named dependencies are automatically reused if the container is already running.
