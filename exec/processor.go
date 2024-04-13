@@ -82,10 +82,6 @@ func Multiplexed() ProcessOption {
 
 		<-done
 
-		if errBuff.Bytes() != nil {
-			opts.Reader = &errBuff
-		} else {
-			opts.Reader = &outBuff
-		}
+		opts.Reader = io.MultiReader(&outBuff, &errBuff)
 	})
 }

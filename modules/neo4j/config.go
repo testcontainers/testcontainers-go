@@ -123,9 +123,9 @@ func formatNeo4jConfig(name string) string {
 // the commercial licence agreement of Neo4j Enterprise Edition. The license
 // agreement is available at https://neo4j.com/terms/licensing/.
 func WithAcceptCommercialLicenseAgreement() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Env["NEO4J_ACCEPT_LICENSE_AGREEMENT"] = "yes"
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"NEO4J_ACCEPT_LICENSE_AGREEMENT": "yes",
+	})
 }
 
 // WithAcceptEvaluationLicenseAgreement sets the environment variable
@@ -134,7 +134,7 @@ func WithAcceptCommercialLicenseAgreement() testcontainers.CustomizeRequestOptio
 // agreement is available at https://neo4j.com/terms/enterprise_us/. Please
 // read the terms of the evaluation agreement before you accept.
 func WithAcceptEvaluationLicenseAgreement() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Env["NEO4J_ACCEPT_LICENSE_AGREEMENT"] = "eval"
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"NEO4J_ACCEPT_LICENSE_AGREEMENT": "eval",
+	})
 }
