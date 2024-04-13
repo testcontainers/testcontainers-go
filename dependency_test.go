@@ -7,9 +7,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"strings"
 	"testing"
+	"time"
 )
 
-func Test_ContainerDependsOn(t *testing.T) {
+func Test_ContainerDependency(t *testing.T) {
 	type TestCase struct {
 		name                string
 		configureDependants func(ctx context.Context, t *testing.T) []*ContainerDependency
@@ -20,7 +21,7 @@ func Test_ContainerDependsOn(t *testing.T) {
 
 	testCases := []TestCase{
 		{
-			name: "dependency is started and the dns name is passed as an environment variable",
+			name: "dependency's dns name is passed as an environment variable to parent container",
 			configureDependants: func(ctx context.Context, t *testing.T) []*ContainerDependency {
 				nginxReq := ContainerRequest{
 					Image:        nginxAlpineImage,
@@ -34,7 +35,7 @@ func Test_ContainerDependsOn(t *testing.T) {
 				}
 			},
 			containerRequest: ContainerRequest{
-				Image:      "curlimages/curl:8.7.1",
+				Image:      nginxAlpineImage,
 				Entrypoint: []string{"tail", "-f", "/dev/null"},
 			},
 			expectedEnv: []string{"FIRST_DEPENDENCY", "SECOND_DEPENDENCY"},
@@ -70,7 +71,7 @@ func Test_ContainerDependsOn(t *testing.T) {
 				return []*ContainerDependency{dependency}
 			},
 			containerRequest: ContainerRequest{
-				Image:      "curlimages/curl:8.7.1",
+				Image:      nginxAlpineImage,
 				Entrypoint: []string{"tail", "-f", "/dev/null"},
 			},
 			expectedError: "cannot create dependency with empty environment key",
@@ -114,6 +115,89 @@ func Test_ContainerDependsOn(t *testing.T) {
 					require.Equal(t, 0, exitCode)
 				}
 			}
+
+			terminateContainerOnEnd(t, ctx, c)
 		})
 	}
+}
+
+func Test_ContainerDependency_CallbackFunc(t *testing.T) {
+	ctx := context.Background()
+
+	nginxReq := ContainerRequest{
+		Image:        nginxAlpineImage,
+		ExposedPorts: []string{nginxDefaultPort},
+		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+	}
+
+	dependencyContainer := make(chan Container, 1)
+	req := ContainerRequest{
+		Image:      nginxAlpineImage,
+		Entrypoint: []string{"tail", "-f", "/dev/null"},
+		DependsOn: []*ContainerDependency{
+			NewContainerDependency(nginxReq, "MY_DEPENDENCY").
+				WithCallback(func(c Container) {
+					dependencyContainer <- c
+				}),
+		},
+	}
+
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.NoError(t, err)
+
+	select {
+	case <-time.After(3 * time.Second):
+		t.Fatalf("dependency container callback was not called")
+	case dependency := <-dependencyContainer:
+		require.NotNil(t, dependency)
+		require.True(t, dependency.IsRunning())
+	}
+
+	terminateContainerOnEnd(t, ctx, c)
+}
+
+func Test_ContainerDependency_ReuseRunningContainer(t *testing.T) {
+	ctx := context.Background()
+
+	nginxReq := ContainerRequest{
+		Image:        nginxAlpineImage,
+		Name:         "my-nginx-container",
+		ExposedPorts: []string{nginxDefaultPort},
+		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+	}
+	depContainer, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: nginxReq,
+		Started:          true,
+	})
+	require.NoError(t, err)
+	require.True(t, depContainer.IsRunning())
+
+	dependencyContainer := make(chan Container, 1)
+	req := ContainerRequest{
+		Image:      nginxAlpineImage,
+		Entrypoint: []string{"tail", "-f", "/dev/null"},
+		DependsOn: []*ContainerDependency{
+			NewContainerDependency(nginxReq, "MY_DEPENDENCY").
+				WithCallback(func(c Container) {
+					dependencyContainer <- c
+				}),
+		},
+	}
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.NoError(t, err)
+	require.True(t, c.IsRunning())
+
+	select {
+	case <-time.After(3 * time.Second):
+		t.Fatalf("dependency container callback was not called")
+	case dependency := <-dependencyContainer:
+		require.Equal(t, depContainer.GetContainerID(), dependency.GetContainerID())
+	}
+	terminateContainerOnEnd(t, ctx, c)
 }

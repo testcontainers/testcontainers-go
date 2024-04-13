@@ -7,14 +7,19 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/slices"
 )
 
+// ContainerDependency represents a reliance that a container has on another container.
 type ContainerDependency struct {
-	Request      ContainerRequest
-	EnvKey       string
+	Request ContainerRequest
+	EnvKey  string
+	// CallbackFunc is called after the dependency container is started.
 	CallbackFunc func(Container)
 }
 
+// NewContainerDependency can be used to define a dependency and the environment variable that
+// will be used to pass the DNS name to the parent container.
 func NewContainerDependency(containerRequest ContainerRequest, envKey string) *ContainerDependency {
 	return &ContainerDependency{
 		Request:      containerRequest,
@@ -26,7 +31,6 @@ func NewContainerDependency(containerRequest ContainerRequest, envKey string) *C
 func (c *ContainerDependency) WithCallback(callbackFunc func(Container)) *ContainerDependency {
 	c.CallbackFunc = callbackFunc
 	return c
-
 }
 
 func (c *ContainerDependency) StartDependency(ctx context.Context, network string) (Container, error) {
@@ -34,6 +38,7 @@ func (c *ContainerDependency) StartDependency(ctx context.Context, network strin
 	dependency, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: c.Request,
 		Started:          true,
+		Reuse:            c.Request.Name != "", // reuse a running dependency container if a name is provided.
 	})
 	if err != nil {
 		return nil, err
@@ -43,19 +48,32 @@ func (c *ContainerDependency) StartDependency(ctx context.Context, network strin
 	return dependency, nil
 }
 
-func resolveDNSName(ctx context.Context, container Container, network string) (string, error) {
+func resolveDNSName(ctx context.Context, container Container, network *DockerNetwork, client client.APIClient) (string, error) {
+	curNetworks, err := container.Networks(ctx)
+	if err != nil {
+		return "", fmt.Errorf("%w: could not retrieve networks for dependency container", err)
+	}
+	// The container may not be connected to the network if it was reused.
+	if slices.Index(curNetworks, network.Name) == -1 {
+		err = client.NetworkConnect(ctx, network.ID, container.GetContainerID(), nil)
+		if err != nil {
+			return "", fmt.Errorf("%w: could not connect dependency container to network", err)
+		}
+	}
+
 	networkAlias, err := container.NetworkAliases(ctx)
 	if err != nil {
 		return "", err
 	}
-	aliases := networkAlias[network]
+
+	aliases := networkAlias[network.Name]
 	if len(aliases) == 0 {
 		return "", errors.New("could not retrieve network alias for dependency container")
 	}
 	return aliases[0], nil
 }
 
-func cleanupDependency(ctx context.Context, dependencies []Container, network *DockerNetwork) error {
+func cleanupDependencyAndNetwork(ctx context.Context, dependencies []Container, network *DockerNetwork) error {
 	if network == nil {
 		return nil
 	}
@@ -80,8 +98,11 @@ var defaultDependencyHook = func(dockerInput *container.Config, client client.AP
 				}
 				defer func() {
 					if err != nil {
-						cleanupErr := cleanupDependency(ctx, depContainers, depNetwork)
-						Logger.Printf("Could not cleanup dependencies after an error occured: %v", cleanupErr)
+						// clean up dependencies that were created if an error occurred.
+						cleanupErr := cleanupDependencyAndNetwork(ctx, depContainers, depNetwork)
+						if cleanupErr != nil {
+							Logger.Printf("Could not cleanup dependencies after an error occured: %v", cleanupErr)
+						}
 					}
 				}()
 
@@ -107,7 +128,7 @@ var defaultDependencyHook = func(dockerInput *container.Config, client client.AP
 						return err
 					}
 					depContainers = append(depContainers, container)
-					name, err := resolveDNSName(ctx, container, depNetwork.Name)
+					name, err := resolveDNSName(ctx, container, depNetwork, client)
 					if err != nil {
 						return err
 					}
@@ -126,7 +147,7 @@ var defaultDependencyHook = func(dockerInput *container.Config, client client.AP
 		},
 		PostTerminates: []ContainerHook{
 			func(ctx context.Context, container Container) error {
-				return cleanupDependency(ctx, depContainers, depNetwork)
+				return cleanupDependencyAndNetwork(ctx, depContainers, depNetwork)
 			},
 		},
 	}
