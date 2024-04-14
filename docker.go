@@ -10,8 +10,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/docker/docker/api/types/versions"
+	"github.com/moby/buildkit/session"
 	"io"
 	"io/fs"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -876,6 +879,28 @@ var _ ContainerProvider = (*DockerProvider)(nil)
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
 	buildOptions, err := img.BuildOptions()
+
+	const minBuildKitApiVersion = "1.39"
+	clientApiVersion := p.client.ClientVersion()
+	if versions.GreaterThanOrEqualTo(clientApiVersion, minBuildKitApiVersion) {
+		s, err := session.NewSession(ctx, "testcontainers", "")
+		if err == nil {
+			Logger.Printf("Building using buildkit")
+			dialSession := func(ctx context.Context, proto string, meta map[string][]string) (net.Conn, error) {
+				return p.client.DialHijack(ctx, "/session", proto, meta)
+			}
+			go func() {
+				if err := s.Run(ctx, dialSession); err != nil {
+					Logger.Printf("Failed to run the build session: %s", err)
+				}
+			}()
+			defer s.Close()
+			buildOptions.SessionID = s.ID()
+			buildOptions.Version = types.BuilderBuildKit
+		} else {
+			Logger.Printf("Couldnot create a build session, building witout buildkit: %s", err)
+		}
+	}
 
 	var buildError error
 	var resp types.ImageBuildResponse
