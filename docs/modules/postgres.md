@@ -41,7 +41,7 @@ When starting the Postgres container, you can pass options in a variadic way to 
 #### Image
 
 If you need to set a different Postgres Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Postgres. E.g. `testcontainers.WithImage("docker.io/postgres:9.6")`.
+for Postgres. E.g. `testcontainers.WithImage("docker.io/postgres:16-alpine")`.
 
 {% include "../features/common_functional_options.md" %}
 

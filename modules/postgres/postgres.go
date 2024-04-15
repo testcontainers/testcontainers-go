@@ -13,7 +13,7 @@ import (
 const (
 	defaultUser          = "postgres"
 	defaultPassword      = "postgres"
-	defaultPostgresImage = "docker.io/postgres:11-alpine"
+	defaultPostgresImage = "docker.io/postgres:16-alpine"
 	defaultSnapshotName  = "migrated_template"
 )
 
@@ -26,10 +26,9 @@ type PostgresContainer struct {
 	snapshotName string
 }
 
-
 // MustConnectionString panics if the address cannot be determined.
 func (c *PostgresContainer) MustConnectionString(ctx context.Context, args ...string) string {
-	addr, err := c.ConnectionString(ctx,args...)
+	addr, err := c.ConnectionString(ctx, args...)
 	if err != nil {
 		panic(err)
 	}
