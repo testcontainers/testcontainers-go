@@ -113,8 +113,8 @@ var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
 	}
 }
 
-// defaultPreCreateHook is a hook that will apply the default configuration to the container
-var defaultPreCreateHook = func(ctx context.Context, p *DockerProvider, req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) ContainerLifecycleHooks {
+// DefaultPreCreateHook is a hook that will apply the default configuration to the container
+func DefaultPreCreateHook(p *DockerProvider, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PreCreates: []ContainerRequestHook{
 			func(ctx context.Context, req ContainerRequest) error {
@@ -126,7 +126,7 @@ var defaultPreCreateHook = func(ctx context.Context, p *DockerProvider, req Cont
 
 // defaultCopyFileToContainerHook is a hook that will copy files to the container after it's created
 // but before it's started
-var defaultCopyFileToContainerHook = func(files []ContainerFile) ContainerLifecycleHooks {
+func defaultCopyFileToContainerHook(files []ContainerFile) ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PostCreates: []ContainerHook{
 			// copy files to container after it's created
@@ -161,7 +161,7 @@ var defaultCopyFileToContainerHook = func(files []ContainerFile) ContainerLifecy
 }
 
 // defaultLogConsumersHook is a hook that will start log consumers after the container is started
-var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHooks {
+func defaultLogConsumersHook(cfg *LogConsumerConfig) ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PostStarts: []ContainerHook{
 			// first post-start hook is to produce logs and start log consumers
@@ -198,7 +198,7 @@ var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHoo
 }
 
 // defaultReadinessHook is a hook that will wait for the container to be ready
-var defaultReadinessHook = func() ContainerLifecycleHooks {
+func defaultReadinessHook() ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PostStarts: []ContainerHook{
 			// wait for the container to be ready

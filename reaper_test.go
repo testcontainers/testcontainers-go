@@ -1,9 +1,12 @@
+// This test is testing very internal logic that should not be exported away from this package. We'll
+// leave it in the main testcontainers package. Do not use for user facing examples.
 package testcontainers
 
 import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -18,6 +21,32 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+const (
+	nginxAlpineImage  = "docker.io/nginx:alpine"
+	nginxDelayedImage = "docker.io/menedev/delayed-nginx:1.15.2"
+	nginxDefaultPort  = "80/tcp"
+	daemonMaxVersion  = "1.41"
+)
+
+var providerType = ProviderDocker
+
+func init() {
+	if strings.Contains(os.Getenv("DOCKER_HOST"), "podman.sock") {
+		providerType = ProviderPodman
+	}
+}
+
+func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr Container) {
+	tb.Helper()
+	if ctr == nil {
+		return
+	}
+	tb.Cleanup(func() {
+		tb.Log("terminating container")
+		require.NoError(tb, ctr.Terminate(ctx))
+	})
+}
 
 // testSessionID the tests need to create a reaper in a different session, so that it does not interfere with other tests
 const testSessionID = "this-is-a-different-session-id"

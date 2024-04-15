@@ -1,9 +1,10 @@
-package testcontainers
+package testcontainers_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
@@ -13,52 +14,52 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		tr         ProviderType
+		tr         testcontainers.ProviderType
 		DockerHost string
 		want       string
 		wantErr    bool
 	}{
 		{
 			name:       "default provider without podman.socket",
-			tr:         ProviderDefault,
+			tr:         testcontainers.ProviderDefault,
 			DockerHost: dockerHost,
-			want:       Bridge,
+			want:       testcontainers.Bridge,
 		},
 		{
 			name:       "default provider with podman.socket",
-			tr:         ProviderDefault,
+			tr:         testcontainers.ProviderDefault,
 			DockerHost: podmanSocket,
-			want:       Podman,
+			want:       testcontainers.Podman,
 		},
 		{
 			name:       "docker provider without podman.socket",
-			tr:         ProviderDocker,
+			tr:         testcontainers.ProviderDocker,
 			DockerHost: dockerHost,
-			want:       Bridge,
+			want:       testcontainers.Bridge,
 		},
 		{
 			// Explicitly setting Docker provider should not be overridden by auto-detect
 			name:       "docker provider with podman.socket",
-			tr:         ProviderDocker,
+			tr:         testcontainers.ProviderDocker,
 			DockerHost: podmanSocket,
-			want:       Bridge,
+			want:       testcontainers.Bridge,
 		},
 		{
 			name:       "Podman provider without podman.socket",
-			tr:         ProviderPodman,
+			tr:         testcontainers.ProviderPodman,
 			DockerHost: dockerHost,
-			want:       Podman,
+			want:       testcontainers.Podman,
 		},
 		{
 			name:       "Podman provider with podman.socket",
-			tr:         ProviderPodman,
+			tr:         testcontainers.ProviderPodman,
 			DockerHost: podmanSocket,
-			want:       Podman,
+			want:       testcontainers.Podman,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.tr == ProviderPodman && core.IsWindows() {
+			if tt.tr == testcontainers.ProviderPodman && core.IsWindows() {
 				t.Skip("Podman provider is not implemented for Windows")
 			}
 
@@ -69,12 +70,12 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 				t.Errorf("ProviderType.GetProvider() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			provider, ok := got.(*DockerProvider)
+			provider, ok := got.(*testcontainers.DockerProvider)
 			if !ok {
-				t.Fatalf("ProviderType.GetProvider() = %T, want %T", got, &DockerProvider{})
+				t.Fatalf("ProviderType.GetProvider() = %T, want %T", got, &testcontainers.DockerProvider{})
 			}
-			if provider.defaultBridgeNetworkName != tt.want {
-				t.Errorf("ProviderType.GetProvider() = %v, want %v", provider.defaultBridgeNetworkName, tt.want)
+			if provider.DefaultBridgeNetworkName != tt.want {
+				t.Errorf("ProviderType.GetProvider() = %v, want %v", provider.DefaultBridgeNetworkName, tt.want)
 			}
 		})
 	}
