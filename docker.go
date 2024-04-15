@@ -58,7 +58,7 @@ type DockerContainer struct {
 	// Container ID from Docker
 	ID         string
 	WaitingFor wait.Strategy
-	DependsOn  []*ContainerDependency
+	DependsOn  []ContainerDependency
 	Image      string
 
 	isRunning     bool

@@ -13,7 +13,7 @@ import (
 func Test_ContainerDependency(t *testing.T) {
 	type TestCase struct {
 		name                string
-		configureDependants func(ctx context.Context, t *testing.T) []*ContainerDependency
+		configureDependants func(ctx context.Context, t *testing.T) []ContainerDependency
 		containerRequest    ContainerRequest
 		expectedEnv         []string
 		expectedError       string
@@ -21,7 +21,7 @@ func Test_ContainerDependency(t *testing.T) {
 	testCases := []TestCase{
 		{
 			name: "dependency's dns name is passed as an environment variable to parent container",
-			configureDependants: func(ctx context.Context, t *testing.T) []*ContainerDependency {
+			configureDependants: func(ctx context.Context, t *testing.T) []ContainerDependency {
 				nginxReq := ContainerRequest{
 					Image:        nginxAlpineImage,
 					ExposedPorts: []string{nginxDefaultPort},
@@ -32,7 +32,7 @@ func Test_ContainerDependency(t *testing.T) {
 					terminateContainerOnEnd(t, ctx, container)
 				}
 
-				return []*ContainerDependency{
+				return []ContainerDependency{
 					NewContainerDependency(nginxReq, "FIRST_DEPENDENCY").WithCallback(terminateFn),
 					NewContainerDependency(nginxReq, "SECOND_DEPENDENCY").WithCallback(terminateFn),
 				}
@@ -45,13 +45,13 @@ func Test_ContainerDependency(t *testing.T) {
 		},
 		{
 			name: "container fails to start when dependency fails to start",
-			configureDependants: func(ctx context.Context, t *testing.T) []*ContainerDependency {
+			configureDependants: func(ctx context.Context, t *testing.T) []ContainerDependency {
 				badReq := ContainerRequest{
 					Image:        "bad image name",
 					ExposedPorts: []string{"80/tcp"},
 				}
 
-				return []*ContainerDependency{
+				return []ContainerDependency{
 					NewContainerDependency(badReq, "FIRST_DEPENDENCY"),
 				}
 			},
@@ -63,7 +63,7 @@ func Test_ContainerDependency(t *testing.T) {
 		},
 		{
 			name: "fails to start dependency when key is empty",
-			configureDependants: func(ctx context.Context, t *testing.T) []*ContainerDependency {
+			configureDependants: func(ctx context.Context, t *testing.T) []ContainerDependency {
 				nginxReq := ContainerRequest{
 					Image:        nginxAlpineImage,
 					ExposedPorts: []string{nginxDefaultPort},
@@ -71,7 +71,7 @@ func Test_ContainerDependency(t *testing.T) {
 				}
 
 				dependency := NewContainerDependency(nginxReq, "")
-				return []*ContainerDependency{dependency}
+				return []ContainerDependency{dependency}
 			},
 			containerRequest: ContainerRequest{
 				Image:      nginxAlpineImage,
@@ -136,7 +136,7 @@ func Test_ContainerDependency_CallbackFunc(t *testing.T) {
 	req := ContainerRequest{
 		Image:      nginxAlpineImage,
 		Entrypoint: []string{"tail", "-f", "/dev/null"},
-		DependsOn: []*ContainerDependency{
+		DependsOn: []ContainerDependency{
 			NewContainerDependency(nginxReq, "MY_DEPENDENCY").
 				WithCallback(func(c Container) {
 					terminateContainerOnEnd(t, ctx, c)
@@ -182,7 +182,7 @@ func Test_ContainerDependency_ReuseRunningContainer(t *testing.T) {
 	req := ContainerRequest{
 		Image:      nginxAlpineImage,
 		Entrypoint: []string{"tail", "-f", "/dev/null"},
-		DependsOn: []*ContainerDependency{
+		DependsOn: []ContainerDependency{
 			NewContainerDependency(nginxReq, "MY_DEPENDENCY").
 				WithCallback(func(c Container) {
 					dependencyContainer <- c
@@ -202,5 +202,59 @@ func Test_ContainerDependency_ReuseRunningContainer(t *testing.T) {
 		t.Fatalf("dependency container callback was not called")
 	case dependency := <-dependencyContainer:
 		require.Equal(t, depContainer.GetContainerID(), dependency.GetContainerID())
+	}
+}
+
+func Test_ContainerDependency_KeepAlive(t *testing.T) {
+	ctx := context.Background()
+
+	nginxReq := ContainerRequest{
+		Image:        nginxAlpineImage,
+		Name:         "my-nginx-container",
+		ExposedPorts: []string{nginxDefaultPort},
+		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+	}
+
+	testCases := []struct {
+		name          string
+		keepAlive     bool
+		expectRunning bool
+	}{
+		{"dependency is terminated when KeepAlive is set to false", false, false},
+		{"dependency is still running when KeepAlive is set to true", true, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var depContainer Container
+			req := ContainerRequest{
+				Image:      nginxAlpineImage,
+				Entrypoint: []string{"tail", "-f", "/dev/null"},
+				DependsOn: []ContainerDependency{
+					NewContainerDependency(nginxReq, "MY_DEPENDENCY").
+						WithCallback(func(c Container) {
+							depContainer = c
+						}).
+						WithKeepAlive(tc.keepAlive),
+				},
+			}
+
+			c, err := GenericContainer(ctx, GenericContainerRequest{
+				ContainerRequest: req,
+				Started:          true,
+			})
+			require.NoError(t, err)
+			require.True(t, c.IsRunning())
+			require.True(t, depContainer.IsRunning())
+			if tc.keepAlive {
+				terminateContainerOnEnd(t, ctx, depContainer)
+			}
+
+			err = c.Terminate(ctx)
+			require.NoError(t, err)
+
+			// Check the expected state of the dependency after the parent container is terminated.
+			require.Equal(t, tc.expectRunning, depContainer.IsRunning())
+		})
 	}
 }
