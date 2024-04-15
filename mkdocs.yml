@@ -45,6 +45,7 @@ nav:
         - features/files_and_mounts.md
         - features/creating_networks.md
         - features/networking.md
+        - features/tls.md
         - features/garbage_collector.md
         - features/build_from_dockerfile.md
         - features/docker_auth.md
@@ -70,6 +71,7 @@ nav:
         - modules/cockroachdb.md
         - modules/consul.md
         - modules/couchbase.md
+        - modules/dolt.md
         - modules/elasticsearch.md
         - modules/gcloud.md
         - modules/inbucket.md

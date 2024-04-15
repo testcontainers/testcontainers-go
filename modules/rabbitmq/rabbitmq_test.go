@@ -6,11 +6,11 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"path/filepath"
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/mdelapenya/tlscert"
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -49,10 +49,33 @@ func TestRunContainer_connectUsingAmqp(t *testing.T) {
 func TestRunContainer_connectUsingAmqps(t *testing.T) {
 	ctx := context.Background()
 
+	tmpDir := t.TempDir()
+
+	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:      "ca",
+		Host:      "localhost,127.0.0.1",
+		IsCA:      true,
+		ParentDir: tmpDir,
+	})
+	if caCert == nil {
+		t.Fatal("failed to generate CA certificate")
+	}
+
+	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:      "client",
+		Host:      "localhost,127.0.0.1",
+		IsCA:      true,
+		Parent:    caCert,
+		ParentDir: tmpDir,
+	})
+	if cert == nil {
+		t.Fatal("failed to generate certificate")
+	}
+
 	sslSettings := rabbitmq.SSLSettings{
-		CACertFile:        filepath.Join("testdata", "certs", "server_ca.pem"),
-		CertFile:          filepath.Join("testdata", "certs", "server_cert.pem"),
-		KeyFile:           filepath.Join("testdata", "certs", "server_key.pem"),
+		CACertFile:        caCert.CertPath,
+		CertFile:          cert.CertPath,
+		KeyFile:           cert.KeyPath,
 		VerificationMode:  rabbitmq.SSLVerificationModePeer,
 		FailIfNoCert:      false,
 		VerificationDepth: 1,
@@ -80,7 +103,7 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 
 	certs := x509.NewCertPool()
 
-	pemData, err := ioutil.ReadFile(sslSettings.CACertFile)
+	pemData, err := os.ReadFile(sslSettings.CACertFile)
 	if err != nil {
 		t.Fatal(err)
 	}
