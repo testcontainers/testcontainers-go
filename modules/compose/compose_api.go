@@ -147,6 +147,12 @@ type dockerCompose struct {
 	// compiled compose project
 	// can be nil if the stack wasn't started yet
 	project *types.Project
+
+	// sessionID is used to identify the reaper session
+	sessionID string
+
+	// terminationSignal is used to signal the reaper to stop
+	terminationSignal chan bool
 }
 
 func (d *dockerCompose) ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
@@ -166,6 +172,12 @@ func (d *dockerCompose) Services() []string {
 func (d *dockerCompose) Down(ctx context.Context, opts ...StackDownOption) error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
+
+	select {
+	// close reaper if it was created
+	case d.terminationSignal <- true:
+	default:
+	}
 
 	options := stackDownOptions{
 		DownOptions: api.DownOptions{

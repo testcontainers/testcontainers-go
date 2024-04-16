@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -155,6 +156,66 @@ func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
 			assert.Equal(t, label, inspect.Config.Labels[key], "Label %s value is not correct in container %s", key, c.GetContainerID())
 		}
 	}
+}
+
+func TestDockerComposeAPI_WithReaper(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
+	path := filepath.Join(testdataPackage, complexCompose)
+	compose, err := NewDockerCompose(path)
+	require.NoError(t, err, "NewDockerCompose()")
+
+	// reaper is enabled, so we don't need to manually stop the containers: Ryuk will do it for us
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		WaitForService("mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		Up(ctx, Wait(true))
+
+	require.NoError(t, err, "compose.Up()")
+
+	serviceNames := compose.Services()
+
+	assert.Len(t, serviceNames, 2)
+	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "mysql")
+}
+
+func TestDockerComposeAPI_WithoutReaper(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if !tcConfig.RyukDisabled {
+		t.Skip("Ryuk is enabled, skipping test")
+	}
+
+	path := filepath.Join(testdataPackage, complexCompose)
+	compose, err := NewDockerCompose(path)
+	require.NoError(t, err, "NewDockerCompose()")
+	t.Cleanup(func() {
+		// because reaper is disabled, we need to manually stop the containers
+		require.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		WaitForService("mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		Up(ctx, Wait(true))
+
+	require.NoError(t, err, "compose.Up()")
+
+	serviceNames := compose.Services()
+
+	assert.Len(t, serviceNames, 2)
+	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "mysql")
 }
 
 func TestDockerComposeAPIWithStopServices(t *testing.T) {
