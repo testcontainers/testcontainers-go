@@ -118,6 +118,45 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 	assert.Contains(t, serviceNames, "nginx")
 }
 
+func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
+	path := filepath.Join(testdataPackage, complexCompose)
+	compose, err := NewDockerCompose(path)
+	require.NoError(t, err, "NewDockerCompose()")
+
+	t.Cleanup(func() {
+		require.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		WaitForService("mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		Up(ctx, Wait(true))
+
+	require.NoError(t, err, "compose.Up()")
+
+	serviceNames := compose.Services()
+
+	assert.Len(t, serviceNames, 2)
+	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "mysql")
+
+	// all the services in the compose has the Testcontainers Labels
+	for _, serviceName := range serviceNames {
+		c, err := compose.ServiceContainer(context.Background(), serviceName)
+		require.NoError(t, err, "compose.ServiceContainer()")
+
+		inspect, err := compose.dockerClient.ContainerInspect(ctx, c.GetContainerID())
+		require.NoError(t, err, "dockerClient.ContainerInspect()")
+
+		for key, label := range testcontainers.GenericLabels() {
+			assert.Contains(t, inspect.Config.Labels, key, "Label %s is not present in container %s", key, c.GetContainerID())
+			assert.Equal(t, label, inspect.Config.Labels[key], "Label %s value is not correct in container %s", key, c.GetContainerID())
+		}
+	}
+}
+
 func TestDockerComposeAPIWithStopServices(t *testing.T) {
 	path := filepath.Join(testdataPackage, complexCompose)
 	compose, err := NewDockerComposeWith(

@@ -353,6 +353,11 @@ func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, err
 			api.ConfigFilesLabel: strings.Join(proj.ComposeFiles, ","),
 			api.OneoffLabel:      "False", // default, will be overridden by `run` command
 		}
+
+		for k, label := range testcontainers.GenericLabels() {
+			s.CustomLabels[k] = label
+		}
+
 		for i, envFile := range compiledOptions.EnvFiles {
 			// add a label for each env file, indexed by its position
 			s.CustomLabels[fmt.Sprintf("%s.%d", api.EnvironmentFileLabel, i)] = envFile
