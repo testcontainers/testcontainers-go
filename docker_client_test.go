@@ -13,6 +13,10 @@ func TestGetDockerInfo(t *testing.T) {
 		ctx := context.Background()
 		c, err := NewDockerClientWithOpts(ctx)
 		require.NoError(t, err)
+		t.Cleanup(func() {
+			err := c.Close()
+			require.NoError(t, err)
+		})
 
 		info, err := c.Info(ctx)
 		require.NoError(t, err)
@@ -23,6 +27,10 @@ func TestGetDockerInfo(t *testing.T) {
 		ctx := context.Background()
 		c, err := NewDockerClientWithOpts(ctx)
 		require.NoError(t, err)
+		t.Cleanup(func() {
+			err := c.Close()
+			require.NoError(t, err)
+		})
 
 		count := 1024
 		wg := sync.WaitGroup{}

@@ -378,7 +378,7 @@ func Test_NewReaper(t *testing.T) {
 				RyukConnectionTimeout:   time.Minute,
 				RyukReconnectionTimeout: 10 * time.Second,
 			}},
-			ctx: context.WithValue(context.TODO(), core.DockerHostContextKey, core.DockerSocketPathWithSchema),
+			ctx: context.WithValue(context.TODO(), core.DockerHostContextKey, core.DockerSocketSchema+core.DockerSocketPath),
 		},
 		{
 			name: "Reaper including custom Hub prefix",

@@ -37,6 +37,9 @@ on:
         type: boolean
         default: false
         description: "Disable the ryuk container for the test."
+    secrets:
+      TC_CLOUD_TOKEN:
+        required: true
 
 permissions:
   contents: read
@@ -92,15 +95,18 @@ jobs:
         working-directory: ./${{ inputs.project-directory }}
         run: make tools-tidy
 
+      - name: Setup Testcontainers Cloud Client
+        # Use Testcontainers Cloud for Windows and MacOS, but only for merge commits on main
+        if: ${{ inputs.run-tests && (inputs.platform == 'windows-latest' || inputs.platform == 'macos-latest') }}
+        uses: atomicjar/testcontainers-cloud-setup-action@v1
+        with:
+          token: ${{ secrets.TC_CLOUD_TOKEN }}
+
       - name: ensure compilation
         working-directory: ./${{ inputs.project-directory }}
         run: go build
 
       - name: go test
-        # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
-        # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
-        # we can't put Windows Server in "Linux Mode" in Github actions
-        # another, host mode is only available on Linux, and we have tests around that, do we skip them?
         if: ${{ inputs.run-tests }}
         working-directory: ./${{ inputs.project-directory }}
         timeout-minutes: 30
