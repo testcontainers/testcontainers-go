@@ -10,25 +10,29 @@ import (
 
 func TestParseDockerIgnore(t *testing.T) {
 	testCases := []struct {
-		filePath         string
-		expectedErr      error
-		expectedExcluded []string
+		filePath          string
+		expectedErr       error
+		expectedExcluded  []string
+		expectedHasIgnore bool
 	}{
 		{
-			filePath:         "./testdata/dockerignore",
-			expectedErr:      nil,
-			expectedExcluded: []string{"vendor", "foo", "bar"},
+			filePath:          "./testdata/dockerignore",
+			expectedErr:       nil,
+			expectedExcluded:  []string{"vendor", "foo", "bar"},
+			expectedHasIgnore: true,
 		},
 		{
-			filePath:         "./testdata",
-			expectedErr:      nil,
-			expectedExcluded: []string{"Dockerfile", "echo.Dockerfile"},
+			filePath:          "./testdata",
+			expectedErr:       nil,
+			expectedExcluded:  []string{"Dockerfile", "echo.Dockerfile"},
+			expectedHasIgnore: true,
 		},
 	}
 
 	for _, testCase := range testCases {
-		excluded, err := parseDockerIgnore(testCase.filePath)
+		excluded, hasIgnore, err := parseDockerIgnore(testCase.filePath)
 		assert.Equal(t, testCase.expectedErr, err)
 		assert.Equal(t, testCase.expectedExcluded, excluded)
+		assert.Equal(t, testCase.expectedHasIgnore, hasIgnore)
 	}
 }
