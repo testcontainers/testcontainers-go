@@ -16,7 +16,7 @@ type ChromaContainer struct {
 // RunContainer creates an instance of the Chroma container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "chromadb/chroma:0.4.22",
+		Image:        "chromadb/chroma:0.4.24",
 		ExposedPorts: []string{"8000/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("8000/tcp"),

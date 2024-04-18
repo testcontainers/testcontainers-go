@@ -14,7 +14,7 @@ import (
 const (
 	defaultUser          = "postgres"
 	defaultPassword      = "postgres"
-	defaultPostgresImage = "docker.io/postgres:11-alpine"
+	defaultPostgresImage = "docker.io/postgres:16-alpine"
 	defaultSnapshotName  = "migrated_template"
 )
 
