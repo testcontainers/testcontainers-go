@@ -262,6 +262,10 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 			if err != nil {
 				return err
 			}
+
+			// cache all the containers on compose.up
+			d.containers[svc] = target
+
 			return strategy.WaitUntilReady(errGrpCtx, target)
 		})
 	}
