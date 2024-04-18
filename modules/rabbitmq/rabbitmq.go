@@ -48,7 +48,7 @@ func (c *RabbitMQContainer) AmqpURL(ctx context.Context) (string, error) {
 
 // AmqpURL returns the URL for AMQPS clients.
 func (c *RabbitMQContainer) AmqpsURL(ctx context.Context) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, nat.Port(DefaultAMQPPort), "")
+	endpoint, err := c.PortEndpoint(ctx, nat.Port(DefaultAMQPSPort), "")
 	if err != nil {
 		return "", err
 	}

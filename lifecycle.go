@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -131,7 +132,23 @@ var defaultCopyFileToContainerHook = func(files []ContainerFile) ContainerLifecy
 			// copy files to container after it's created
 			func(ctx context.Context, c Container) error {
 				for _, f := range files {
-					err := c.CopyFileToContainer(ctx, f.HostFilePath, f.ContainerFilePath, f.FileMode)
+					if err := f.validate(); err != nil {
+						return fmt.Errorf("invalid file: %w", err)
+					}
+
+					var err error
+					// Bytes takes precedence over HostFilePath
+					if f.Reader != nil {
+						bs, ioerr := io.ReadAll(f.Reader)
+						if ioerr != nil {
+							return fmt.Errorf("can't read from reader: %w", ioerr)
+						}
+
+						err = c.CopyToContainer(ctx, bs, f.ContainerFilePath, f.FileMode)
+					} else {
+						err = c.CopyFileToContainer(ctx, f.HostFilePath, f.ContainerFilePath, f.FileMode)
+					}
+
 					if err != nil {
 						return fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
 					}
@@ -209,65 +226,40 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 
 // creatingHook is a hook that will be called before a container is created.
 func (req ContainerRequest) creatingHook(ctx context.Context) error {
-	for _, lifecycleHooks := range req.LifecycleHooks {
-		err := lifecycleHooks.Creating(ctx)(req)
-		if err != nil {
-			return err
-		}
+	errs := make([]error, len(req.LifecycleHooks))
+	for i, lifecycleHooks := range req.LifecycleHooks {
+		errs[i] = lifecycleHooks.Creating(ctx)(req)
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
 
-// createdHook is a hook that will be called after a container is created
+// createdHook is a hook that will be called after a container is created.
 func (c *DockerContainer) createdHook(ctx context.Context) error {
-	for _, lifecycleHooks := range c.lifecycleHooks {
-		err := containerHookFn(ctx, lifecycleHooks.PostCreates)(c)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return c.applyLifecycleHooks(ctx, false, func(lifecycleHooks ContainerLifecycleHooks) []ContainerHook {
+		return lifecycleHooks.PostCreates
+	})
 }
 
-// startingHook is a hook that will be called before a container is started
+// startingHook is a hook that will be called before a container is started.
 func (c *DockerContainer) startingHook(ctx context.Context) error {
-	for _, lifecycleHooks := range c.lifecycleHooks {
-		err := containerHookFn(ctx, lifecycleHooks.PreStarts)(c)
-		if err != nil {
-			c.printLogs(ctx, err)
-			return err
-		}
-	}
-
-	return nil
+	return c.applyLifecycleHooks(ctx, true, func(lifecycleHooks ContainerLifecycleHooks) []ContainerHook {
+		return lifecycleHooks.PreStarts
+	})
 }
 
-// startedHook is a hook that will be called after a container is started
+// startedHook is a hook that will be called after a container is started.
 func (c *DockerContainer) startedHook(ctx context.Context) error {
-	for _, lifecycleHooks := range c.lifecycleHooks {
-		err := containerHookFn(ctx, lifecycleHooks.PostStarts)(c)
-		if err != nil {
-			c.printLogs(ctx, err)
-			return err
-		}
-	}
-
-	return nil
+	return c.applyLifecycleHooks(ctx, true, func(lifecycleHooks ContainerLifecycleHooks) []ContainerHook {
+		return lifecycleHooks.PostStarts
+	})
 }
 
-// readiedHook is a hook that will be called after a container is ready
+// readiedHook is a hook that will be called after a container is ready.
 func (c *DockerContainer) readiedHook(ctx context.Context) error {
-	for _, lifecycleHooks := range c.lifecycleHooks {
-		err := containerHookFn(ctx, lifecycleHooks.PostReadies)(c)
-		if err != nil {
-			c.printLogs(ctx, err)
-			return err
-		}
-	}
-
-	return nil
+	return c.applyLifecycleHooks(ctx, true, func(lifecycleHooks ContainerLifecycleHooks) []ContainerHook {
+		return lifecycleHooks.PostReadies
+	})
 }
 
 // printLogs is a helper function that will print the logs of a Docker container
@@ -288,49 +280,47 @@ func (c *DockerContainer) printLogs(ctx context.Context, cause error) {
 	c.logger.Printf("container logs (%s):\n%s", cause, b)
 }
 
-// stoppingHook is a hook that will be called before a container is stopped
+// stoppingHook is a hook that will be called before a container is stopped.
 func (c *DockerContainer) stoppingHook(ctx context.Context) error {
-	for _, lifecycleHooks := range c.lifecycleHooks {
-		err := containerHookFn(ctx, lifecycleHooks.PreStops)(c)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return c.applyLifecycleHooks(ctx, false, func(lifecycleHooks ContainerLifecycleHooks) []ContainerHook {
+		return lifecycleHooks.PreStops
+	})
 }
 
-// stoppedHook is a hook that will be called after a container is stopped
+// stoppedHook is a hook that will be called after a container is stopped.
 func (c *DockerContainer) stoppedHook(ctx context.Context) error {
-	for _, lifecycleHooks := range c.lifecycleHooks {
-		err := containerHookFn(ctx, lifecycleHooks.PostStops)(c)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return c.applyLifecycleHooks(ctx, false, func(lifecycleHooks ContainerLifecycleHooks) []ContainerHook {
+		return lifecycleHooks.PostStops
+	})
 }
 
-// terminatingHook is a hook that will be called before a container is terminated
+// terminatingHook is a hook that will be called before a container is terminated.
 func (c *DockerContainer) terminatingHook(ctx context.Context) error {
-	for _, lifecycleHooks := range c.lifecycleHooks {
-		err := containerHookFn(ctx, lifecycleHooks.PreTerminates)(c)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return c.applyLifecycleHooks(ctx, false, func(lifecycleHooks ContainerLifecycleHooks) []ContainerHook {
+		return lifecycleHooks.PreTerminates
+	})
 }
 
-// terminatedHook is a hook that will be called after a container is terminated
+// terminatedHook is a hook that will be called after a container is terminated.
 func (c *DockerContainer) terminatedHook(ctx context.Context) error {
-	for _, lifecycleHooks := range c.lifecycleHooks {
-		err := containerHookFn(ctx, lifecycleHooks.PostTerminates)(c)
-		if err != nil {
-			return err
+	return c.applyLifecycleHooks(ctx, false, func(lifecycleHooks ContainerLifecycleHooks) []ContainerHook {
+		return lifecycleHooks.PostTerminates
+	})
+}
+
+// applyLifecycleHooks applies all lifecycle hooks reporting the container logs on error if logError is true.
+func (c *DockerContainer) applyLifecycleHooks(ctx context.Context, logError bool, hooks func(lifecycleHooks ContainerLifecycleHooks) []ContainerHook) error {
+	errs := make([]error, len(c.lifecycleHooks))
+	for i, lifecycleHooks := range c.lifecycleHooks {
+		errs[i] = containerHookFn(ctx, hooks(lifecycleHooks))(c)
+	}
+
+	if err := errors.Join(errs...); err != nil {
+		if logError {
+			c.printLogs(ctx, err)
 		}
+
+		return err
 	}
 
 	return nil
@@ -353,13 +343,12 @@ func (c ContainerLifecycleHooks) Creating(ctx context.Context) func(req Containe
 // container lifecycle hooks. The created function will iterate over all the hooks and call them one by one.
 func containerHookFn(ctx context.Context, containerHook []ContainerHook) func(container Container) error {
 	return func(container Container) error {
-		for _, hook := range containerHook {
-			if err := hook(ctx, container); err != nil {
-				return err
-			}
+		errs := make([]error, len(containerHook))
+		for i, hook := range containerHook {
+			errs[i] = hook(ctx, container)
 		}
 
-		return nil
+		return errors.Join(errs...)
 	}
 }
 

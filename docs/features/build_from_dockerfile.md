@@ -33,7 +33,6 @@ You can specify them like:
 If you would like to send a build context that you created in code (maybe you have a dynamic Dockerfile), you can
 send the build context as an `io.Reader` since the Docker Daemon accepts it as a tar file, you can use the [tar](https://golang.org/pkg/archive/tar/) package to create your context.
 
-
 To do this you would use the `ContextArchive` attribute in the `FromDockerfile` struct.
 
 ```go
@@ -51,6 +50,15 @@ fromDockerfile := testcontainers.FromDockerfile{
 
 **Please Note** if you specify a `ContextArchive` this will cause _Testcontainers for Go_ to ignore the path passed
 in to `Context`.
+
+## Ignoring files in the build context
+
+The same as Docker has a `.dockerignore` file to ignore files in the build context, _Testcontainers for Go_ also supports this feature.
+A `.dockerignore` living in the root of the build context will be used to filter out files that should not be sent to the Docker daemon.
+The `.dockerignore` file won't be sent to the Docker daemon either.
+
+!!! note
+    At this moment, _Testcontainers for Go_ does not support Dockerfile-specific `.dockerignore` files.
 
 ## Images requiring auth
 

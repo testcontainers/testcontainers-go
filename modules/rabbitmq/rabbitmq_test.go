@@ -2,11 +2,15 @@ package rabbitmq_test
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/mdelapenya/tlscert"
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -38,6 +42,82 @@ func TestRunContainer_connectUsingAmqp(t *testing.T) {
 	}
 
 	if err = amqpConnection.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRunContainer_connectUsingAmqps(t *testing.T) {
+	ctx := context.Background()
+
+	tmpDir := t.TempDir()
+
+	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:      "ca",
+		Host:      "localhost,127.0.0.1",
+		IsCA:      true,
+		ParentDir: tmpDir,
+	})
+	if caCert == nil {
+		t.Fatal("failed to generate CA certificate")
+	}
+
+	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:      "client",
+		Host:      "localhost,127.0.0.1",
+		IsCA:      true,
+		Parent:    caCert,
+		ParentDir: tmpDir,
+	})
+	if cert == nil {
+		t.Fatal("failed to generate certificate")
+	}
+
+	sslSettings := rabbitmq.SSLSettings{
+		CACertFile:        caCert.CertPath,
+		CertFile:          cert.CertPath,
+		KeyFile:           cert.KeyPath,
+		VerificationMode:  rabbitmq.SSLVerificationModePeer,
+		FailIfNoCert:      false,
+		VerificationDepth: 1,
+	}
+
+	rabbitmqContainer, err := rabbitmq.RunContainer(ctx, rabbitmq.WithSSL(sslSettings))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		if err := rabbitmqContainer.Terminate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	amqpsURL, err := rabbitmqContainer.AmqpsURL(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.HasPrefix(amqpsURL, "amqps") {
+		t.Fatal(fmt.Errorf("AMQPS Url should begin with `amqps`"))
+	}
+
+	certs := x509.NewCertPool()
+
+	pemData, err := os.ReadFile(sslSettings.CACertFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	certs.AppendCertsFromPEM(pemData)
+
+	amqpsConnection, err := amqp.DialTLS(amqpsURL, &tls.Config{InsecureSkipVerify: false, RootCAs: certs})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if amqpsConnection.IsClosed() {
+		t.Fatal(fmt.Errorf("AMQPS Connection unexpectdely closed"))
+	}
+	if err = amqpsConnection.Close(); err != nil {
 		t.Fatal(err)
 	}
 }
