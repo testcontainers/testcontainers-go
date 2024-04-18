@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"path/filepath"
 	"strings"
@@ -184,6 +185,10 @@ func (c *PostgresContainer) Snapshot(ctx context.Context, opts ...SnapshotOption
 		snapshotName = config.snapshotName
 	}
 
+	if c.dbName == "postgres" {
+		return fmt.Errorf("cannot snapshot the postgres system database as it cannot be dropped to be restored")
+	}
+
 	// execute the commands to create the snapshot, in order
 	cmds := []string{
 		// Drop the snapshot database if it already exists
@@ -195,9 +200,18 @@ func (c *PostgresContainer) Snapshot(ctx context.Context, opts ...SnapshotOption
 	}
 
 	for _, cmd := range cmds {
-		_, _, err := c.Exec(ctx, []string{"psql", "-U", c.user, "-c", cmd})
+		exitCode, reader, err := c.Exec(ctx, []string{"psql", "-U", c.user, "-d", c.dbName, "-c", cmd})
 		if err != nil {
 			return err
+		}
+		if exitCode != 0 {
+			buf := new(strings.Builder)
+			_, err := io.Copy(buf, reader)
+			if err != nil {
+				return fmt.Errorf("non-zero exit code for snapshot command, could not read command output: %w", err)
+			}
+
+			return fmt.Errorf("non-zero exit code for snapshot command: %s", buf.String())
 		}
 	}
 
@@ -219,6 +233,10 @@ func (c *PostgresContainer) Restore(ctx context.Context, opts ...SnapshotOption)
 		snapshotName = config.snapshotName
 	}
 
+	if c.dbName == "postgres" {
+		return fmt.Errorf("cannot restore the postgres system database as it cannot be dropped to be restored")
+	}
+
 	// execute the commands to restore the snapshot, in order
 	cmds := []string{
 		// Drop the entire database by connecting to the postgres global database
@@ -228,9 +246,18 @@ func (c *PostgresContainer) Restore(ctx context.Context, opts ...SnapshotOption)
 	}
 
 	for _, cmd := range cmds {
-		_, _, err := c.Exec(ctx, []string{"psql", "-U", c.user, "-d", "postgres", "-c", cmd})
+		exitCode, reader, err := c.Exec(ctx, []string{"psql", "-v", "ON_ERROR_STOP=1", "-U", c.user, "-d", "postgres", "-c", cmd})
 		if err != nil {
 			return err
+		}
+		if exitCode != 0 {
+			buf := new(strings.Builder)
+			_, err := io.Copy(buf, reader)
+			if err != nil {
+				return fmt.Errorf("non-zero exit code for restore command, could not read command output: %w", err)
+			}
+
+			return fmt.Errorf("non-zero exit code for restore command: %s", buf.String())
 		}
 	}
 
