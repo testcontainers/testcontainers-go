@@ -98,6 +98,11 @@ func (c *DockerContainer) SetProvider(provider *DockerProvider) {
 	c.provider = provider
 }
 
+// SetTerminationSignal sets the termination signal for the container
+func (c *DockerContainer) SetTerminationSignal(signal chan bool) {
+	c.terminationSignal = signal
+}
+
 func (c *DockerContainer) GetContainerID() string {
 	return c.ID
 }

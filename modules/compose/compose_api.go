@@ -151,8 +151,8 @@ type dockerCompose struct {
 	// sessionID is used to identify the reaper session
 	sessionID string
 
-	// terminationSignal is used to signal the reaper to stop
-	terminationSignal chan bool
+	// reaper is used to clean up containers after the stack is stopped
+	reaper *testcontainers.Reaper
 }
 
 func (d *dockerCompose) ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
@@ -172,12 +172,6 @@ func (d *dockerCompose) Services() []string {
 func (d *dockerCompose) Down(ctx context.Context, opts ...StackDownOption) error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
-
-	select {
-	// close reaper if it was created
-	case d.terminationSignal <- true:
-	default:
-	}
 
 	options := stackDownOptions{
 		DownOptions: api.DownOptions{
@@ -247,11 +241,53 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		return err
 	}
 
+	errGrp, errGrpCtx := errgroup.WithContext(ctx)
+
+	for _, srv := range d.project.Services {
+		// we are going to connect each container to the reaper
+		srv := srv
+		errGrp.Go(func() error {
+			var dc *testcontainers.DockerContainer
+			if d.containers[srv.Name] != nil {
+				dc = d.containers[srv.Name]
+			} else {
+				var err error
+				dc, err = d.lookupContainer(errGrpCtx, srv.Name)
+				if err != nil {
+					return err
+				}
+			}
+
+			if d.reaper != nil {
+				termSignal, err := d.reaper.Connect()
+				if err != nil {
+					return fmt.Errorf("failed to connect to reaper: %w", err)
+				}
+				dc.SetTerminationSignal(termSignal)
+
+				// Cleanup on error, otherwise set termSignal to nil before successful return.
+				defer func() {
+					if termSignal != nil {
+						termSignal <- true
+					}
+				}()
+			}
+
+			d.containers[srv.Name] = dc
+
+			return nil
+		})
+	}
+
+	if err := errGrp.Wait(); err != nil {
+		return err
+	}
+
 	if len(d.waitStrategies) == 0 {
 		return nil
 	}
 
-	errGrp, errGrpCtx := errgroup.WithContext(ctx)
+	errGrp, errGrpCtx = errgroup.WithContext(errGrpCtx)
 
 	for svc, strategy := range d.waitStrategies { // pinning the variables
 		svc := svc

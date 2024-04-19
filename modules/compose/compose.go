@@ -129,39 +129,28 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 
 	tcConfig := reaperProvider.Config()
 
-	ctx := context.Background()
-
-	var termSignal chan bool
+	var composeReaper *testcontainers.Reaper
 	if !tcConfig.RyukDisabled {
 		// NewReaper is deprecated: we need to find a way to create the reaper for compose
 		// bypassing the deprecation.
-		r, err := testcontainers.NewReaper(ctx, testcontainers.SessionID(), reaperProvider, "")
+		r, err := testcontainers.NewReaper(context.Background(), testcontainers.SessionID(), reaperProvider, "")
 		if err != nil {
 			return nil, fmt.Errorf("failed to create reaper for compose: %w", err)
 		}
 
-		termSignal, err = r.Connect()
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect to reaper: %w", err)
-		}
+		composeReaper = r
 	}
-	// Cleanup on error, otherwise set termSignal to nil before successful return.
-	defer func() {
-		if termSignal != nil {
-			termSignal <- true
-		}
-	}()
 
 	composeAPI := &dockerCompose{
-		name:              composeOptions.Identifier,
-		configs:           composeOptions.Paths,
-		logger:            composeOptions.Logger,
-		composeService:    compose.NewComposeService(dockerCli),
-		dockerClient:      dockerCli.Client(),
-		waitStrategies:    make(map[string]wait.Strategy),
-		containers:        make(map[string]*testcontainers.DockerContainer),
-		sessionID:         testcontainers.SessionID(),
-		terminationSignal: termSignal,
+		name:           composeOptions.Identifier,
+		configs:        composeOptions.Paths,
+		logger:         composeOptions.Logger,
+		composeService: compose.NewComposeService(dockerCli),
+		dockerClient:   dockerCli.Client(),
+		waitStrategies: make(map[string]wait.Strategy),
+		containers:     make(map[string]*testcontainers.DockerContainer),
+		sessionID:      testcontainers.SessionID(),
+		reaper:         composeReaper,
 	}
 
 	return composeAPI, nil
