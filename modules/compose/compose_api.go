@@ -247,15 +247,9 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		// we are going to connect each container to the reaper
 		srv := srv
 		errGrpContainers.Go(func() error {
-			var dc *testcontainers.DockerContainer
-			if d.containers[srv.Name] != nil {
-				dc = d.containers[srv.Name]
-			} else {
-				var err error
-				dc, err = d.lookupContainer(errGrpCtx, srv.Name)
-				if err != nil {
-					return err
-				}
+			dc, err := d.lookupContainer(errGrpCtx, srv.Name)
+			if err != nil {
+				return err
 			}
 
 			if d.reaper != nil {
