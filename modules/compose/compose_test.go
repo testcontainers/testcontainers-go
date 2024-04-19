@@ -115,7 +115,7 @@ func TestLocalDockerCompose(t *testing.T) {
 	checkIfError(t, err)
 }
 
-func TestDockerComposeStrategyForInvalidService(t *testing.T) {
+func TestLocalDockerComposeStrategyForInvalidService(t *testing.T) {
 	path := RenderComposeSimple(t)
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -138,7 +138,7 @@ func TestDockerComposeStrategyForInvalidService(t *testing.T) {
 	assert.Contains(t, compose.Services, "nginx")
 }
 
-func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
+func TestLocalDockerComposeWithWaitLogStrategy(t *testing.T) {
 	path := RenderComposeComplex(t)
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -162,7 +162,7 @@ func TestDockerComposeWithWaitLogStrategy(t *testing.T) {
 	assert.Contains(t, compose.Services, "mysql")
 }
 
-func TestDockerComposeWithWaitForService(t *testing.T) {
+func TestLocalDockerComposeWithWaitForService(t *testing.T) {
 	path := RenderComposeSimple(t)
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -187,7 +187,7 @@ func TestDockerComposeWithWaitForService(t *testing.T) {
 	assert.Contains(t, compose.Services, "nginx")
 }
 
-func TestDockerComposeWithWaitForShortLifespanService(t *testing.T) {
+func TestLocalDockerComposeWithWaitForShortLifespanService(t *testing.T) {
 	path := filepath.Join(testdataPackage, "docker-compose-short-lifespan.yml")
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -212,7 +212,7 @@ func TestDockerComposeWithWaitForShortLifespanService(t *testing.T) {
 	assert.Contains(t, compose.Services, "tzatziki")
 }
 
-func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
+func TestLocalDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 	path := RenderComposeSimple(t)
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -237,7 +237,7 @@ func TestDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 	assert.Contains(t, compose.Services, "nginx")
 }
 
-func TestDockerComposeWithContainerName(t *testing.T) {
+func TestLocalDockerComposeWithContainerName(t *testing.T) {
 	path := RenderComposeWithName(t)
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -262,7 +262,7 @@ func TestDockerComposeWithContainerName(t *testing.T) {
 	assert.Contains(t, compose.Services, "nginx")
 }
 
-func TestDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
+func TestLocalDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 	path := filepath.Join(testdataPackage, "docker-compose-no-exposed-ports.yml")
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -284,7 +284,7 @@ func TestDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 	assert.Contains(t, compose.Services, "nginx")
 }
 
-func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
+func TestLocalDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 	path := RenderComposeComplex(t)
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -308,7 +308,7 @@ func TestDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 	assert.Contains(t, compose.Services, "mysql")
 }
 
-func TestDockerComposeWithFailedStrategy(t *testing.T) {
+func TestLocalDockerComposeWithFailedStrategy(t *testing.T) {
 	path := RenderComposeSimple(t)
 
 	identifier := strings.ToLower(uuid.New().String())
