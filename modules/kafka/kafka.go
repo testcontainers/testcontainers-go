@@ -62,7 +62,19 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		Entrypoint: []string{"sh"},
 		// this CMD will wait for the starter script to be copied into the container and then execute it
 		Cmd: []string{"-c", "while [ ! -f " + starterScript + " ]; do sleep 0.1; done; bash " + starterScript},
-		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+	}
+
+	genericContainerReq := testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	for _, opt := range opts {
+		opt.Customize(&genericContainerReq)
+	}
+
+	genericContainerReq.ContainerRequest.LifecycleHooks =
+		[]testcontainers.ContainerLifecycleHooks{
 			{
 				PostStarts: []testcontainers.ContainerHook{
 					// 1. copy the starter script into the container
@@ -77,7 +89,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 							return err
 						}
 
-						scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), host)
+						// fix for internal docker connection
+						alias := host
+						if len(genericContainerReq.ContainerRequest.Networks) > 0 {
+							nw := genericContainerReq.ContainerRequest.Networks[0]
+							if len(genericContainerReq.ContainerRequest.NetworkAliases[nw]) > 0 {
+								alias = genericContainerReq.ContainerRequest.NetworkAliases[nw][0]
+							}
+						}
+
+						scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), alias)
 
 						return c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755)
 					},
@@ -87,17 +108,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 					},
 				},
 			},
-		},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
-	}
+		}
 
 	err := validateKRaftVersion(genericContainerReq.Image)
 	if err != nil {
