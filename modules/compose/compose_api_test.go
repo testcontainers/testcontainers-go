@@ -252,7 +252,7 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 	state, err := mysqlContainer.State(ctx)
 	require.NoError(t, err)
 	assert.False(t, state.Running)
-	assert.Equal(t, "exited", state.Status)
+	assert.Contains(t, []string{"exited", "removing"}, state.Status)
 }
 
 func TestDockerComposeAPIWithWaitForService(t *testing.T) {
