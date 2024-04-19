@@ -5,4 +5,4 @@ services:
     environment:
       POSTGRES_PASSWORD: s3cr3t
     ports:
-     - "15432:5432"
+     - "{{ .Port_0 }}:5432"

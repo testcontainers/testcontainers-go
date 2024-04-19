@@ -11,7 +11,7 @@ services:
     environment:
       bar: ${bar}
     ports:
-     - "9080:80"
+     - "{{ .Port_0 }}:80"
 
 volumes:
   mydata:

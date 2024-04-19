@@ -7,5 +7,5 @@ services:
       FOO: "Hello, World!"
     ports:
       - target: 8080
-        published: 8080
+        published: {{ .Port_0 }}
         protocol: tcp

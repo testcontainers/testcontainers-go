@@ -7,4 +7,4 @@ services:
     environment:
       MYSQL_RANDOM_ROOT_PASSWORD: Y
     ports:
-     - "13306:3306"
+     - "{{ .Port_0 }}:3306"

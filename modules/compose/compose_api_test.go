@@ -19,15 +19,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const (
-	simpleCompose     = "docker-compose-simple.yml"
-	complexCompose    = "docker-compose-complex.yml"
-	composeWithVolume = "docker-compose-volume.yml"
-	testdataPackage   = "testdata"
-)
-
 func TestDockerComposeAPI(t *testing.T) {
-	path := filepath.Join(testdataPackage, simpleCompose)
+	path := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -42,7 +35,7 @@ func TestDockerComposeAPI(t *testing.T) {
 }
 
 func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
-	path := filepath.Join(testdataPackage, simpleCompose)
+	path := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -68,7 +61,7 @@ func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
-	path := filepath.Join(testdataPackage, complexCompose)
+	path := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -93,7 +86,7 @@ func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithRunServices(t *testing.T) {
-	path := filepath.Join(testdataPackage, complexCompose)
+	path := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -120,7 +113,7 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 }
 
 func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
-	path := filepath.Join(testdataPackage, complexCompose)
+	path := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -165,7 +158,7 @@ func TestDockerComposeAPI_WithReaper(t *testing.T) {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
 
-	path := filepath.Join(testdataPackage, complexCompose)
+	path := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -194,7 +187,7 @@ func TestDockerComposeAPI_WithoutReaper(t *testing.T) {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
 
-	path := filepath.Join(testdataPackage, complexCompose)
+	path := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 	t.Cleanup(func() {
@@ -219,7 +212,7 @@ func TestDockerComposeAPI_WithoutReaper(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithStopServices(t *testing.T) {
-	path := filepath.Join(testdataPackage, complexCompose)
+	path := RenderComposeComplex(t)
 	compose, err := NewDockerComposeWith(
 		WithStackFiles(path),
 		WithLogger(testcontainers.TestLogger(t)))
@@ -256,7 +249,7 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitForService(t *testing.T) {
-	path := filepath.Join(testdataPackage, simpleCompose)
+	path := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -283,7 +276,7 @@ func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
-	path := filepath.Join(testdataPackage, simpleCompose)
+	path := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -310,7 +303,7 @@ func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithContainerName(t *testing.T) {
-	path := filepath.Join(testdataPackage, "docker-compose-container-name.yml")
+	path := RenderComposeWithName(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -361,7 +354,7 @@ func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
-	path := filepath.Join(testdataPackage, complexCompose)
+	path := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -387,7 +380,7 @@ func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
-	path := filepath.Join(testdataPackage, simpleCompose)
+	path := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -416,7 +409,7 @@ func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIComplex(t *testing.T) {
-	path := filepath.Join(testdataPackage, complexCompose)
+	path := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -439,7 +432,7 @@ func TestDockerComposeAPIComplex(t *testing.T) {
 func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 	identifier := testNameHash(t.Name())
 
-	path := filepath.Join(testdataPackage, simpleCompose)
+	path := RenderComposeSimple(t)
 
 	compose, err := NewDockerComposeWith(WithStackFiles(path), identifier)
 	require.NoError(t, err, "NewDockerCompose()")
@@ -472,9 +465,9 @@ func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 
 func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 	composeFiles := ComposeStackFiles{
-		filepath.Join(testdataPackage, simpleCompose),
-		filepath.Join(testdataPackage, "docker-compose-postgres.yml"),
-		filepath.Join(testdataPackage, "docker-compose-override.yml"),
+		RenderComposeSimple(t),
+		RenderComposePostgres(t),
+		RenderComposeOverride(t),
 	}
 
 	identifier := testNameHash(t.Name())
@@ -513,7 +506,7 @@ func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithVolume(t *testing.T) {
-	path := filepath.Join(testdataPackage, composeWithVolume)
+	path := RenderComposeWithVolume(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -529,7 +522,7 @@ func TestDockerComposeAPIWithVolume(t *testing.T) {
 }
 
 func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
-	path := filepath.Join(testdataPackage, composeWithVolume)
+	path := RenderComposeWithVolume(t)
 	identifier := uuid.New().String()
 	stackFiles := WithStackFiles(path)
 	compose, err := NewDockerComposeWith(stackFiles, StackIdentifier(identifier))
@@ -556,7 +549,7 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 func TestDockerComposeAPIWithBuild(t *testing.T) {
 	t.Skip("Skipping test because of the opentelemetry dependencies issue. See https://github.com/open-telemetry/opentelemetry-go/issues/4476#issuecomment-1840547010")
 
-	path := filepath.Join(testdataPackage, "docker-compose-build.yml")
+	path := RenderComposeWithBuild(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
