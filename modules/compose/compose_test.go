@@ -98,7 +98,7 @@ func ExampleLocalDockerCompose_WithEnv() {
 }
 
 func TestLocalDockerCompose(t *testing.T) {
-	path := RenderComposeSimple(t)
+	path, _ := RenderComposeSimple(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -116,7 +116,7 @@ func TestLocalDockerCompose(t *testing.T) {
 }
 
 func TestLocalDockerComposeStrategyForInvalidService(t *testing.T) {
-	path := RenderComposeSimple(t)
+	path, ports := RenderComposeSimple(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -130,7 +130,7 @@ func TestLocalDockerComposeStrategyForInvalidService(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		// Appending with _1 as given in the Java Test-Containers Example
-		WithExposedService(compose.Format("mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		WithExposedService(compose.Format("mysql", "1"), ports[0], wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Invoke()
 	require.Error(t, err.Error, "Expected error to be thrown because service with wait strategy is not running")
 
@@ -139,7 +139,7 @@ func TestLocalDockerComposeStrategyForInvalidService(t *testing.T) {
 }
 
 func TestLocalDockerComposeWithWaitLogStrategy(t *testing.T) {
-	path := RenderComposeComplex(t)
+	path, _ := RenderComposeComplex(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -163,7 +163,7 @@ func TestLocalDockerComposeWithWaitLogStrategy(t *testing.T) {
 }
 
 func TestLocalDockerComposeWithWaitForService(t *testing.T) {
-	path := RenderComposeSimple(t)
+	path, _ := RenderComposeSimple(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -213,7 +213,7 @@ func TestLocalDockerComposeWithWaitForShortLifespanService(t *testing.T) {
 }
 
 func TestLocalDockerComposeWithWaitHTTPStrategy(t *testing.T) {
-	path := RenderComposeSimple(t)
+	path, ports := RenderComposeSimple(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -229,7 +229,7 @@ func TestLocalDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService(compose.Format("nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("nginx", "1"), ports[0], wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -285,7 +285,7 @@ func TestLocalDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 }
 
 func TestLocalDockerComposeWithMultipleWaitStrategies(t *testing.T) {
-	path := RenderComposeComplex(t)
+	path, _ := RenderComposeComplex(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -309,7 +309,7 @@ func TestLocalDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 }
 
 func TestLocalDockerComposeWithFailedStrategy(t *testing.T) {
-	path := RenderComposeSimple(t)
+	path, ports := RenderComposeSimple(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -325,7 +325,7 @@ func TestLocalDockerComposeWithFailedStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("nginx_1", 9080, wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
+		WithExposedService("nginx_1", ports[0], wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
 		Invoke()
 	// Verify that an error is thrown and not nil
 	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
@@ -336,7 +336,7 @@ func TestLocalDockerComposeWithFailedStrategy(t *testing.T) {
 }
 
 func TestLocalDockerComposeComplex(t *testing.T) {
-	path := RenderComposeComplex(t)
+	path, _ := RenderComposeComplex(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -358,7 +358,7 @@ func TestLocalDockerComposeComplex(t *testing.T) {
 }
 
 func TestLocalDockerComposeWithEnvironment(t *testing.T) {
-	path := RenderComposeSimple(t)
+	path, _ := RenderComposeSimple(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -388,8 +388,9 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 }
 
 func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
+	simple, _ := RenderComposeSimple(t)
 	composeFiles := []string{
-		RenderComposeSimple(t),
+		simple,
 		RenderComposePostgres(t),
 		RenderComposeOverride(t),
 	}

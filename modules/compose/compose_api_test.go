@@ -20,7 +20,7 @@ import (
 )
 
 func TestDockerComposeAPI(t *testing.T) {
-	path := RenderComposeSimple(t)
+	path, _ := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -35,7 +35,7 @@ func TestDockerComposeAPI(t *testing.T) {
 }
 
 func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
-	path := RenderComposeSimple(t)
+	path, _ := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -61,7 +61,7 @@ func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
-	path := RenderComposeComplex(t)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -86,7 +86,7 @@ func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithRunServices(t *testing.T) {
-	path := RenderComposeComplex(t)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -113,7 +113,7 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 }
 
 func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
-	path := RenderComposeComplex(t)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -158,7 +158,7 @@ func TestDockerComposeAPI_WithReaper(t *testing.T) {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
 
-	path := RenderComposeComplex(t)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -187,7 +187,7 @@ func TestDockerComposeAPI_WithoutReaper(t *testing.T) {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
 
-	path := RenderComposeComplex(t)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 	t.Cleanup(func() {
@@ -212,7 +212,7 @@ func TestDockerComposeAPI_WithoutReaper(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithStopServices(t *testing.T) {
-	path := RenderComposeComplex(t)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerComposeWith(
 		WithStackFiles(path),
 		WithLogger(testcontainers.TestLogger(t)))
@@ -249,7 +249,7 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitForService(t *testing.T) {
-	path := RenderComposeSimple(t)
+	path, _ := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -276,7 +276,7 @@ func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
-	path := RenderComposeSimple(t)
+	path, _ := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -354,7 +354,7 @@ func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
-	path := RenderComposeComplex(t)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -380,7 +380,7 @@ func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
-	path := RenderComposeSimple(t)
+	path, _ := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -409,7 +409,7 @@ func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 }
 
 func TestDockerComposeAPIComplex(t *testing.T) {
-	path := RenderComposeComplex(t)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -432,7 +432,7 @@ func TestDockerComposeAPIComplex(t *testing.T) {
 func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 	identifier := testNameHash(t.Name())
 
-	path := RenderComposeSimple(t)
+	path, _ := RenderComposeSimple(t)
 
 	compose, err := NewDockerComposeWith(WithStackFiles(path), identifier)
 	require.NoError(t, err, "NewDockerCompose()")
@@ -464,8 +464,9 @@ func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
+	simple, _ := RenderComposeSimple(t)
 	composeFiles := ComposeStackFiles{
-		RenderComposeSimple(t),
+		simple,
 		RenderComposePostgres(t),
 		RenderComposeOverride(t),
 	}

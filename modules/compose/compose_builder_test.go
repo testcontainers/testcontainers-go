@@ -14,10 +14,12 @@ const (
 	testdataPackage = "testdata"
 )
 
-func RenderComposeComplex(t *testing.T) string {
+func RenderComposeComplex(t *testing.T) (string, []int) {
 	t.Helper()
 
-	return writeTemplate(t, "docker-compose-complex.yml", getFreePort(t), getFreePort(t))
+	ports := []int{getFreePort(t), getFreePort(t)}
+
+	return writeTemplate(t, "docker-compose-complex.yml", ports...), ports
 }
 
 func RenderComposeOverride(t *testing.T) string {
@@ -32,10 +34,11 @@ func RenderComposePostgres(t *testing.T) string {
 	return writeTemplate(t, "docker-compose-postgres.yml", getFreePort(t))
 }
 
-func RenderComposeSimple(t *testing.T) string {
+func RenderComposeSimple(t *testing.T) (string, []int) {
 	t.Helper()
 
-	return writeTemplate(t, "docker-compose-simple.yml", getFreePort(t))
+	ports := []int{getFreePort(t)}
+	return writeTemplate(t, "docker-compose-simple.yml", ports...), ports
 }
 
 func RenderComposeWithBuild(t *testing.T) string {
