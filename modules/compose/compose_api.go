@@ -241,12 +241,12 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		return err
 	}
 
-	errGrp, errGrpCtx := errgroup.WithContext(ctx)
+	errGrpContainers, errGrpCtx := errgroup.WithContext(ctx)
 
 	for _, srv := range d.project.Services {
 		// we are going to connect each container to the reaper
 		srv := srv
-		errGrp.Go(func() error {
+		errGrpContainers.Go(func() error {
 			var dc *testcontainers.DockerContainer
 			if d.containers[srv.Name] != nil {
 				dc = d.containers[srv.Name]
@@ -279,7 +279,8 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		})
 	}
 
-	if err := errGrp.Wait(); err != nil {
+	// wait here for the containers lookup to finish
+	if err := errGrpContainers.Wait(); err != nil {
 		return err
 	}
 
@@ -287,13 +288,13 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		return nil
 	}
 
-	errGrp, errGrpCtx = errgroup.WithContext(errGrpCtx)
+	errGrpWait, errGrpCtx := errgroup.WithContext(ctx)
 
 	for svc, strategy := range d.waitStrategies { // pinning the variables
 		svc := svc
 		strategy := strategy
 
-		errGrp.Go(func() error {
+		errGrpWait.Go(func() error {
 			target, err := d.lookupContainer(errGrpCtx, svc)
 			if err != nil {
 				return err
@@ -306,7 +307,7 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		})
 	}
 
-	return errGrp.Wait()
+	return errGrpWait.Wait()
 }
 
 func (d *dockerCompose) WaitForService(s string, strategy wait.Strategy) ComposeStack {
