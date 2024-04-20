@@ -4,7 +4,7 @@ Not available until the next release of testcontainers-go <a href="https://githu
 
 ## Introduction
 
-The Testcontainers module for DynamoDB.
+The Testcontainers module for DynamoDB. This module uses a [DynamoDB local](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html) container to run a local DynamoDB server.
 
 ## Adding this module to your project dependencies
 
