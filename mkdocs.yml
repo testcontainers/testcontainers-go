@@ -72,6 +72,7 @@ nav:
         - modules/consul.md
         - modules/couchbase.md
         - modules/dolt.md
+        - modules/dynamodb.md
         - modules/elasticsearch.md
         - modules/gcloud.md
         - modules/inbucket.md
