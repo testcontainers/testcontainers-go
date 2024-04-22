@@ -53,7 +53,24 @@ func TestSomething(t *testing.T) {
 }
 ```
 
-Use the advanced `NewDockerComposeWith(...)` constructor allowing you to specify an identifier:
+Use the advanced `NewDockerComposeWith(...)` constructor allowing you to customise the compose execution with options:
+
+- `StackIdentifier`: the identifier for the stack, which is used to name the network and containers. If not passed, a random identifier is generated.
+- `WithStackFiles`: specify the Docker Compose stack files to use, as a variadic argument of string paths where the stack files are located.
+- `WithStackReaders`: specify the Docker Compose stack files to use, as a variadic argument of `io.Reader` instances. It will create a temporary file in the temp dir of the given O.S., that will be removed after the `Down` method is called. You can use both `WithComposeStackFiles` and `WithComposeStackReaders` at the same time.
+
+#### Compose Up options
+
+- `RemoveOrphans`: remove orphaned containers after the stack is stopped.
+- `Wait`: will wait until the containers reached the running|healthy state.
+
+#### Compose Down options
+
+- `RemoveImages`: remove images after the stack is stopped. The `RemoveImagesAll` option will remove all images, while `RemoveImagesLocal` will remove only the images that don't have a tag.
+- `RemoveOrphans`: remove orphaned containers after the stack is stopped.
+- `RemoveVolumes`: remove volumes after the stack is stopped.
+
+#### Example
 
 ```go
 package example_test
