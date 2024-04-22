@@ -15,18 +15,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const (
-	simpleCompose     = "docker-compose-simple.yml"
-	complexCompose    = "docker-compose-complex.yml"
-	composeWithVolume = "docker-compose-volume.yml"
-	testdataPackage   = "testdata"
-)
-
 func TestDockerComposeAPI(t *testing.T) {
-	path := filepath.Join(testdataPackage, simpleCompose)
+	path, _ := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -41,7 +35,7 @@ func TestDockerComposeAPI(t *testing.T) {
 }
 
 func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
-	path := filepath.Join(testdataPackage, simpleCompose)
+	path, _ := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -54,20 +48,20 @@ func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 
 	err = compose.
 		// Appending with _1 as given in the Java Test-Containers Example
-		WaitForService("mysql-1", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		WaitForService("non-existent-srv-1", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Up(ctx, Wait(true))
 
 	require.Error(t, err, "Expected error to be thrown because service with wait strategy is not running")
-	require.Equal(t, "no container found for service name mysql-1", err.Error())
+	require.Equal(t, "no container found for service name non-existent-srv-1", err.Error())
 
 	serviceNames := compose.Services()
 
 	assert.Len(t, serviceNames, 1)
-	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "api-nginx")
 }
 
 func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
-	path := filepath.Join(testdataPackage, complexCompose)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -79,7 +73,7 @@ func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
 	t.Cleanup(cancel)
 
 	err = compose.
-		WaitForService("mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		WaitForService("api-mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Up(ctx, Wait(true))
 
 	require.NoError(t, err, "compose.Up()")
@@ -87,12 +81,12 @@ func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
 	serviceNames := compose.Services()
 
 	assert.Len(t, serviceNames, 2)
-	assert.Contains(t, serviceNames, "nginx")
-	assert.Contains(t, serviceNames, "mysql")
+	assert.Contains(t, serviceNames, "api-nginx")
+	assert.Contains(t, serviceNames, "api-mysql")
 }
 
 func TestDockerComposeAPIWithRunServices(t *testing.T) {
-	path := filepath.Join(testdataPackage, complexCompose)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -104,22 +98,121 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 	t.Cleanup(cancel)
 
 	err = compose.
-		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
-		Up(ctx, Wait(true), RunServices("nginx"))
+		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		Up(ctx, Wait(true), RunServices("api-nginx"))
 
 	require.NoError(t, err, "compose.Up()")
 
 	serviceNames := compose.Services()
 
-	_, err = compose.ServiceContainer(context.Background(), "mysql")
+	_, err = compose.ServiceContainer(context.Background(), "api-mysql")
 	require.Error(t, err, "Make sure there is no mysql container")
 
 	assert.Len(t, serviceNames, 1)
-	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "api-nginx")
+}
+
+func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
+	path, _ := RenderComposeComplex(t)
+	compose, err := NewDockerCompose(path)
+	require.NoError(t, err, "NewDockerCompose()")
+
+	t.Cleanup(func() {
+		require.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		WaitForService("api-mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		Up(ctx, Wait(true))
+
+	require.NoError(t, err, "compose.Up()")
+
+	serviceNames := compose.Services()
+
+	assert.Len(t, serviceNames, 2)
+	assert.Contains(t, serviceNames, "api-nginx")
+	assert.Contains(t, serviceNames, "api-mysql")
+
+	// all the services in the compose has the Testcontainers Labels
+	for _, serviceName := range serviceNames {
+		c, err := compose.ServiceContainer(context.Background(), serviceName)
+		require.NoError(t, err, "compose.ServiceContainer()")
+
+		inspect, err := compose.dockerClient.ContainerInspect(ctx, c.GetContainerID())
+		require.NoError(t, err, "dockerClient.ContainerInspect()")
+
+		for key, label := range testcontainers.GenericLabels() {
+			assert.Contains(t, inspect.Config.Labels, key, "Label %s is not present in container %s", key, c.GetContainerID())
+			assert.Equal(t, label, inspect.Config.Labels[key], "Label %s value is not correct in container %s", key, c.GetContainerID())
+		}
+	}
+}
+
+func TestDockerComposeAPI_WithReaper(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
+	path, _ := RenderComposeComplex(t)
+	compose, err := NewDockerCompose(path)
+	require.NoError(t, err, "NewDockerCompose()")
+
+	// reaper is enabled, so we don't need to manually stop the containers: Ryuk will do it for us
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		WaitForService("api-mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		Up(ctx, Wait(true))
+
+	require.NoError(t, err, "compose.Up()")
+
+	serviceNames := compose.Services()
+
+	assert.Len(t, serviceNames, 2)
+	assert.Contains(t, serviceNames, "api-nginx")
+	assert.Contains(t, serviceNames, "api-mysql")
+}
+
+func TestDockerComposeAPI_WithoutReaper(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if !tcConfig.RyukDisabled {
+		t.Skip("Ryuk is enabled, skipping test")
+	}
+
+	path, _ := RenderComposeComplex(t)
+	compose, err := NewDockerCompose(path)
+	require.NoError(t, err, "NewDockerCompose()")
+	t.Cleanup(func() {
+		// because reaper is disabled, we need to manually stop the containers
+		require.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		WaitForService("api-mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		Up(ctx, Wait(true))
+
+	require.NoError(t, err, "compose.Up()")
+
+	serviceNames := compose.Services()
+
+	assert.Len(t, serviceNames, 2)
+	assert.Contains(t, serviceNames, "api-nginx")
+	assert.Contains(t, serviceNames, "api-mysql")
 }
 
 func TestDockerComposeAPIWithStopServices(t *testing.T) {
-	path := filepath.Join(testdataPackage, complexCompose)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerComposeWith(
 		WithStackFiles(path),
 		WithLogger(testcontainers.TestLogger(t)))
@@ -137,11 +230,11 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 	serviceNames := compose.Services()
 
 	assert.Len(t, serviceNames, 2)
-	assert.Contains(t, serviceNames, "nginx")
-	assert.Contains(t, serviceNames, "mysql")
+	assert.Contains(t, serviceNames, "api-nginx")
+	assert.Contains(t, serviceNames, "api-mysql")
 
 	// close mysql container in purpose
-	mysqlContainer, err := compose.ServiceContainer(context.Background(), "mysql")
+	mysqlContainer, err := compose.ServiceContainer(context.Background(), "api-mysql")
 	require.NoError(t, err, "Get mysql container")
 
 	stopTimeout := 10 * time.Second
@@ -152,11 +245,11 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 	state, err := mysqlContainer.State(ctx)
 	require.NoError(t, err)
 	assert.False(t, state.Running)
-	assert.Equal(t, "exited", state.Status)
+	assert.Contains(t, []string{"exited", "removing"}, state.Status)
 }
 
 func TestDockerComposeAPIWithWaitForService(t *testing.T) {
-	path := filepath.Join(testdataPackage, simpleCompose)
+	path, _ := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -171,7 +264,7 @@ func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 
 	require.NoError(t, err, "compose.Up()")
@@ -179,11 +272,11 @@ func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 	serviceNames := compose.Services()
 
 	assert.Len(t, serviceNames, 1)
-	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "api-nginx")
 }
 
 func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
-	path := filepath.Join(testdataPackage, simpleCompose)
+	path, _ := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -198,7 +291,7 @@ func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 
 	require.NoError(t, err, "compose.Up()")
@@ -206,11 +299,11 @@ func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
 	serviceNames := compose.Services()
 
 	assert.Len(t, serviceNames, 1)
-	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "api-nginx")
 }
 
 func TestDockerComposeAPIWithContainerName(t *testing.T) {
-	path := filepath.Join(testdataPackage, "docker-compose-container-name.yml")
+	path := RenderComposeWithName(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -225,7 +318,7 @@ func TestDockerComposeAPIWithContainerName(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 
 	require.NoError(t, err, "compose.Up()")
@@ -233,11 +326,11 @@ func TestDockerComposeAPIWithContainerName(t *testing.T) {
 	serviceNames := compose.Services()
 
 	assert.Len(t, serviceNames, 1)
-	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "api-nginx")
 }
 
 func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
-	path := filepath.Join(testdataPackage, "docker-compose-no-exposed-ports.yml")
+	path := RenderComposeWithoutExposedPorts(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -249,7 +342,7 @@ func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
 	t.Cleanup(cancel)
 
 	err = compose.
-		WaitForService("nginx", wait.ForLog("Configuration complete; ready for start up")).
+		WaitForService("api-nginx", wait.ForLog("Configuration complete; ready for start up")).
 		Up(ctx, Wait(true))
 
 	require.NoError(t, err, "compose.Up()")
@@ -257,11 +350,11 @@ func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
 	serviceNames := compose.Services()
 
 	assert.Len(t, serviceNames, 1)
-	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "api-nginx")
 }
 
 func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
-	path := filepath.Join(testdataPackage, complexCompose)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -273,8 +366,8 @@ func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 	t.Cleanup(cancel)
 
 	err = compose.
-		WaitForService("mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
-		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("api-mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
+		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 
 	require.NoError(t, err, "compose.Up()")
@@ -282,12 +375,12 @@ func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 	serviceNames := compose.Services()
 
 	assert.Len(t, serviceNames, 2)
-	assert.Contains(t, serviceNames, "nginx")
-	assert.Contains(t, serviceNames, "mysql")
+	assert.Contains(t, serviceNames, "api-nginx")
+	assert.Contains(t, serviceNames, "api-mysql")
 }
 
 func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
-	path := filepath.Join(testdataPackage, simpleCompose)
+	path, _ := RenderComposeSimple(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -302,7 +395,7 @@ func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("nginx_1", wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
+		WaitForService("api-nginx_1", wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
 		Up(ctx, Wait(true))
 
 	// Verify that an error is thrown and not nil
@@ -312,11 +405,11 @@ func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 	serviceNames := compose.Services()
 
 	assert.Len(t, serviceNames, 1)
-	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "api-nginx")
 }
 
 func TestDockerComposeAPIComplex(t *testing.T) {
-	path := filepath.Join(testdataPackage, complexCompose)
+	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -332,14 +425,14 @@ func TestDockerComposeAPIComplex(t *testing.T) {
 	serviceNames := compose.Services()
 
 	assert.Len(t, serviceNames, 2)
-	assert.Contains(t, serviceNames, "nginx")
-	assert.Contains(t, serviceNames, "mysql")
+	assert.Contains(t, serviceNames, "api-nginx")
+	assert.Contains(t, serviceNames, "api-mysql")
 }
 
 func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 	identifier := testNameHash(t.Name())
 
-	path := filepath.Join(testdataPackage, simpleCompose)
+	path, _ := RenderComposeSimple(t)
 
 	compose, err := NewDockerComposeWith(WithStackFiles(path), identifier)
 	require.NoError(t, err, "NewDockerCompose()")
@@ -361,20 +454,21 @@ func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 	serviceNames := compose.Services()
 
 	assert.Len(t, serviceNames, 1)
-	assert.Contains(t, serviceNames, "nginx")
+	assert.Contains(t, serviceNames, "api-nginx")
 
 	present := map[string]string{
 		"bar": "BAR",
 	}
 	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, identifier.String(), "nginx", present, absent)
+	assertContainerEnvironmentVariables(t, identifier.String(), "api-nginx", present, absent)
 }
 
 func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
+	simple, _ := RenderComposeSimple(t)
 	composeFiles := ComposeStackFiles{
-		filepath.Join(testdataPackage, simpleCompose),
-		filepath.Join(testdataPackage, "docker-compose-postgres.yml"),
-		filepath.Join(testdataPackage, "docker-compose-override.yml"),
+		simple,
+		RenderComposePostgres(t),
+		RenderComposeOverride(t),
 	}
 
 	identifier := testNameHash(t.Name())
@@ -400,20 +494,20 @@ func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 	serviceNames := compose.Services()
 
 	assert.Len(t, serviceNames, 3)
-	assert.Contains(t, serviceNames, "nginx")
-	assert.Contains(t, serviceNames, "mysql")
-	assert.Contains(t, serviceNames, "postgres")
+	assert.Contains(t, serviceNames, "api-nginx")
+	assert.Contains(t, serviceNames, "api-mysql")
+	assert.Contains(t, serviceNames, "api-postgres")
 
 	present := map[string]string{
 		"bar": "BAR",
 		"foo": "FOO",
 	}
 	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, identifier.String(), "nginx", present, absent)
+	assertContainerEnvironmentVariables(t, identifier.String(), "api-nginx", present, absent)
 }
 
 func TestDockerComposeAPIWithVolume(t *testing.T) {
-	path := filepath.Join(testdataPackage, composeWithVolume)
+	path := RenderComposeWithVolume(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -429,7 +523,7 @@ func TestDockerComposeAPIWithVolume(t *testing.T) {
 }
 
 func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
-	path := filepath.Join(testdataPackage, composeWithVolume)
+	path := RenderComposeWithVolume(t)
 	identifier := uuid.New().String()
 	stackFiles := WithStackFiles(path)
 	compose, err := NewDockerComposeWith(stackFiles, StackIdentifier(identifier))
@@ -456,7 +550,7 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 func TestDockerComposeAPIWithBuild(t *testing.T) {
 	t.Skip("Skipping test because of the opentelemetry dependencies issue. See https://github.com/open-telemetry/opentelemetry-go/issues/4476#issuecomment-1840547010")
 
-	path := filepath.Join(testdataPackage, "docker-compose-build.yml")
+	path := RenderComposeWithBuild(t)
 	compose, err := NewDockerCompose(path)
 	require.NoError(t, err, "NewDockerCompose()")
 
@@ -468,7 +562,7 @@ func TestDockerComposeAPIWithBuild(t *testing.T) {
 	t.Cleanup(cancel)
 
 	err = compose.
-		WaitForService("echo", wait.ForHTTP("/env").WithPort("8080/tcp")).
+		WaitForService("api-echo", wait.ForHTTP("/env").WithPort("8080/tcp")).
 		Up(ctx, Wait(true))
 
 	require.NoError(t, err, "compose.Up()")
