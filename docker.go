@@ -49,6 +49,11 @@ const (
 	packagePath   = "github.com/testcontainers/testcontainers-go"
 
 	logStoppedForOutOfSyncMessage = "Stopping log consumer: Headers out of sync"
+
+	healthStatusNone      = ""          // default status for a container with no healthcheck
+	healthStatusHealthy   = "healthy"   // healthy container
+	healthStatusStarting  = "starting"  // starting container
+	healthStatusUnhealthy = "unhealthy" // unhealthy container
 )
 
 var createContainerFailDueToNameConflictRegex = regexp.MustCompile("Conflict. The container name .* is already in use by container .*")
@@ -86,6 +91,8 @@ type DockerContainer struct {
 	logProductionTimeout *time.Duration
 	logger               Logging
 	lifecycleHooks       []ContainerLifecycleHooks
+
+	healthStatus string // container health status, will default to healthStatusNone if no healthcheck is present
 }
 
 // SetLogger sets the logger for the container
@@ -1588,6 +1595,11 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	_, err = container.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// the health status of the container, if any
+	if health := container.raw.State.Health; health != nil {
+		container.healthStatus = health.Status
 	}
 
 	return &container, nil

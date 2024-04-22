@@ -117,6 +117,10 @@ func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContai
 			return err
 		}
 
+		if r.healthStatus != healthStatusHealthy && r.healthStatus != healthStatusNone {
+			return fmt.Errorf("container %s is not healthy, wanted status=%s, got status=%s", resp[0].ID[:8], healthStatusHealthy, r.healthStatus)
+		}
+
 		reaperContainer = r
 
 		return nil
