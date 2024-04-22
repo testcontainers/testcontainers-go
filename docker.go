@@ -98,6 +98,11 @@ func (c *DockerContainer) SetProvider(provider *DockerProvider) {
 	c.provider = provider
 }
 
+// SetTerminationSignal sets the termination signal for the container
+func (c *DockerContainer) SetTerminationSignal(signal chan bool) {
+	c.terminationSignal = signal
+}
+
 func (c *DockerContainer) GetContainerID() string {
 	return c.ID
 }
@@ -844,6 +849,10 @@ func (n *DockerNetwork) Remove(ctx context.Context) error {
 	defer n.provider.Close()
 
 	return n.provider.client.NetworkRemove(ctx, n.ID)
+}
+
+func (n *DockerNetwork) SetTerminationSignal(signal chan bool) {
+	n.terminationSignal = signal
 }
 
 // DockerProvider implements the ContainerProvider interface

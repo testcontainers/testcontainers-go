@@ -3,6 +3,7 @@ package compose
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -121,6 +122,25 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		return nil, err
 	}
 
+	reaperProvider, err := testcontainers.NewDockerProvider()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create reaper provider for compose: %w", err)
+	}
+
+	tcConfig := reaperProvider.Config()
+
+	var composeReaper *testcontainers.Reaper
+	if !tcConfig.RyukDisabled {
+		// NewReaper is deprecated: we need to find a way to create the reaper for compose
+		// bypassing the deprecation.
+		r, err := testcontainers.NewReaper(context.Background(), testcontainers.SessionID(), reaperProvider, "")
+		if err != nil {
+			return nil, fmt.Errorf("failed to create reaper for compose: %w", err)
+		}
+
+		composeReaper = r
+	}
+
 	composeAPI := &dockerCompose{
 		name:           composeOptions.Identifier,
 		configs:        composeOptions.Paths,
@@ -129,6 +149,9 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		dockerClient:   dockerCli.Client(),
 		waitStrategies: make(map[string]wait.Strategy),
 		containers:     make(map[string]*testcontainers.DockerContainer),
+		networks:       make(map[string]*testcontainers.DockerNetwork),
+		sessionID:      testcontainers.SessionID(),
+		reaper:         composeReaper,
 	}
 
 	return composeAPI, nil
