@@ -61,8 +61,8 @@ Use the advanced `NewDockerComposeWith(...)` constructor allowing you to customi
 
 #### Compose Up options
 
-- `Recreate`: recreate the containers.
-- `RecreateDependencies`: recreate dependent containers.
+- `Recreate`: recreate the containers. If any other value than `api.RecreateNever`, `api.RecreateForce` or `api.RecreateDiverged` is provided, the default value `api.RecreateForce` will be used.
+- `RecreateDependencies`: recreate dependent containers. If any other value than `api.RecreateNever`, `api.RecreateForce` or `api.RecreateDiverged` is provided, the default value `api.RecreateForce` will be used.
 - `RemoveOrphans`: remove orphaned containers when the stack is upped.
 - `Wait`: will wait until the containers reached the running|healthy state.
 

@@ -63,14 +63,23 @@ func (io IgnoreOrphans) applyToStackUp(co *api.CreateOptions, _ *api.StartOption
 type Recreate string
 
 func (r Recreate) applyToStackUp(o *stackUpOptions) {
-	o.Recreate = string(r)
+	o.Recreate = validateRecreate(string(r))
 }
 
 // RecreateDependencies will recreate the dependencies of the services that are already running
 type RecreateDependencies string
 
 func (r RecreateDependencies) applyToStackUp(o *stackUpOptions) {
-	o.RecreateDependencies = string(r)
+	o.RecreateDependencies = validateRecreate(string(r))
+}
+
+func validateRecreate(r string) string {
+	switch r {
+	case api.RecreateDiverged, api.RecreateForce, api.RecreateNever:
+		return r
+	default:
+		return api.RecreateForce
+	}
 }
 
 // RemoveOrphans will clean up containers that are not declared on the compose model but own the same labels

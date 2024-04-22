@@ -93,10 +93,16 @@ type waitService struct {
 	publishedPort int
 }
 
+// WithRecreate defines the strategy to apply on existing containers. If any other value than
+// api.RecreateNever, api.RecreateForce or api.RecreateDiverged is provided, the default value
+// api.RecreateForce will be used.
 func WithRecreate(recreate string) StackUpOption {
 	return Recreate(recreate)
 }
 
+// WithRecreateDependencies defines the strategy to apply on container dependencies. If any other value than
+// api.RecreateNever, api.RecreateForce or api.RecreateDiverged is provided, the default value
+// api.RecreateForce will be used.
 func WithRecreateDependencies(recreate string) StackUpOption {
 	return RecreateDependencies(recreate)
 }
