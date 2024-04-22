@@ -98,7 +98,7 @@ func ExampleLocalDockerCompose_WithEnv() {
 }
 
 func TestLocalDockerCompose(t *testing.T) {
-	path, _ := RenderComposeSimple(t)
+	path, _ := RenderComposeSimpleForLocal(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -116,7 +116,7 @@ func TestLocalDockerCompose(t *testing.T) {
 }
 
 func TestLocalDockerComposeStrategyForInvalidService(t *testing.T) {
-	path, ports := RenderComposeSimple(t)
+	path, ports := RenderComposeSimpleForLocal(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -130,16 +130,16 @@ func TestLocalDockerComposeStrategyForInvalidService(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		// Appending with _1 as given in the Java Test-Containers Example
-		WithExposedService(compose.Format("mysql", "1"), ports[0], wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		WithExposedService(compose.Format("non-existent-srv", "1"), ports[0], wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Invoke()
 	require.Error(t, err.Error, "Expected error to be thrown because service with wait strategy is not running")
 
 	assert.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "local-nginx")
 }
 
 func TestLocalDockerComposeWithWaitLogStrategy(t *testing.T) {
-	path, _ := RenderComposeComplex(t)
+	path, _ := RenderComposeComplexForLocal(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -153,17 +153,17 @@ func TestLocalDockerComposeWithWaitLogStrategy(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		// Appending with _1 as given in the Java Test-Containers Example
-		WithExposedService(compose.Format("mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
+		WithExposedService(compose.Format("local-mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Invoke()
 	checkIfError(t, err)
 
 	assert.Len(t, compose.Services, 2)
-	assert.Contains(t, compose.Services, "nginx")
-	assert.Contains(t, compose.Services, "mysql")
+	assert.Contains(t, compose.Services, "local-nginx")
+	assert.Contains(t, compose.Services, "local-mysql")
 }
 
 func TestLocalDockerComposeWithWaitForService(t *testing.T) {
-	path, _ := RenderComposeSimple(t)
+	path, _ := RenderComposeSimpleForLocal(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -179,12 +179,12 @@ func TestLocalDockerComposeWithWaitForService(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService(compose.Format("nginx", "1"), wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService(compose.Format("local-nginx", "1"), wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
 	assert.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "local-nginx")
 }
 
 func TestLocalDockerComposeWithWaitForShortLifespanService(t *testing.T) {
@@ -213,7 +213,7 @@ func TestLocalDockerComposeWithWaitForShortLifespanService(t *testing.T) {
 }
 
 func TestLocalDockerComposeWithWaitHTTPStrategy(t *testing.T) {
-	path, ports := RenderComposeSimple(t)
+	path, ports := RenderComposeSimpleForLocal(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -229,16 +229,16 @@ func TestLocalDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService(compose.Format("nginx", "1"), ports[0], wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("local-nginx", "1"), ports[0], wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
 	assert.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "local-nginx")
 }
 
 func TestLocalDockerComposeWithContainerName(t *testing.T) {
-	path := RenderComposeWithName(t)
+	path := RenderComposeWithNameForLocal(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -254,16 +254,16 @@ func TestLocalDockerComposeWithContainerName(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("nginxy", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService("local-nginxy", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
 	assert.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "local-nginx")
 }
 
 func TestLocalDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
-	path := filepath.Join(testdataPackage, "docker-compose-no-exposed-ports.yml")
+	path := RenderComposeWithoutExposedPortsForLocal(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -276,16 +276,16 @@ func TestLocalDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
-		WithExposedService(compose.Format("nginx", "1"), 9080, wait.ForLog("Configuration complete; ready for start up")).
+		WithExposedService(compose.Format("local-nginx", "1"), 9080, wait.ForLog("Configuration complete; ready for start up")).
 		Invoke()
 	checkIfError(t, err)
 
 	assert.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "local-nginx")
 }
 
 func TestLocalDockerComposeWithMultipleWaitStrategies(t *testing.T) {
-	path, _ := RenderComposeComplex(t)
+	path, _ := RenderComposeComplexForLocal(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -298,18 +298,18 @@ func TestLocalDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
-		WithExposedService(compose.Format("mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
-		WithExposedService(compose.Format("nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("local-mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("local-nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
 	assert.Len(t, compose.Services, 2)
-	assert.Contains(t, compose.Services, "nginx")
-	assert.Contains(t, compose.Services, "mysql")
+	assert.Contains(t, compose.Services, "local-nginx")
+	assert.Contains(t, compose.Services, "local-mysql")
 }
 
 func TestLocalDockerComposeWithFailedStrategy(t *testing.T) {
-	path, ports := RenderComposeSimple(t)
+	path, ports := RenderComposeSimpleForLocal(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -325,18 +325,18 @@ func TestLocalDockerComposeWithFailedStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("nginx_1", ports[0], wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
+		WithExposedService("local-nginx_1", ports[0], wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
 		Invoke()
 	// Verify that an error is thrown and not nil
 	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
 	require.Error(t, err.Error, "Expected error to be thrown because of a wrong suplied wait strategy")
 
 	assert.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "local-nginx")
 }
 
 func TestLocalDockerComposeComplex(t *testing.T) {
-	path, _ := RenderComposeComplex(t)
+	path, _ := RenderComposeComplexForLocal(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -353,12 +353,12 @@ func TestLocalDockerComposeComplex(t *testing.T) {
 	checkIfError(t, err)
 
 	assert.Len(t, compose.Services, 2)
-	assert.Contains(t, compose.Services, "nginx")
-	assert.Contains(t, compose.Services, "mysql")
+	assert.Contains(t, compose.Services, "local-nginx")
+	assert.Contains(t, compose.Services, "local-mysql")
 }
 
 func TestLocalDockerComposeWithEnvironment(t *testing.T) {
-	path, _ := RenderComposeSimple(t)
+	path, _ := RenderComposeSimpleForLocal(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 
@@ -378,21 +378,21 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 	checkIfError(t, err)
 
 	assert.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "nginx")
+	assert.Contains(t, compose.Services, "local-nginx")
 
 	present := map[string]string{
 		"bar": "BAR",
 	}
 	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, compose.Identifier, "nginx", present, absent)
+	assertContainerEnvironmentVariables(t, compose.Identifier, "local-nginx", present, absent)
 }
 
 func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
-	simple, _ := RenderComposeSimple(t)
+	simple, _ := RenderComposeSimpleForLocal(t)
 	composeFiles := []string{
 		simple,
-		RenderComposePostgres(t),
-		RenderComposeOverride(t),
+		RenderComposePostgresForLocal(t),
+		RenderComposeOverrideForLocal(t),
 	}
 
 	identifier := strings.ToLower(uuid.New().String())
@@ -414,20 +414,20 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 	checkIfError(t, err)
 
 	assert.Len(t, compose.Services, 3)
-	assert.Contains(t, compose.Services, "nginx")
-	assert.Contains(t, compose.Services, "mysql")
-	assert.Contains(t, compose.Services, "postgres")
+	assert.Contains(t, compose.Services, "local-nginx")
+	assert.Contains(t, compose.Services, "local-mysql")
+	assert.Contains(t, compose.Services, "local-postgres")
 
 	present := map[string]string{
 		"bar": "BAR",
 		"foo": "FOO",
 	}
 	absent := map[string]string{}
-	assertContainerEnvironmentVariables(t, compose.Identifier, "nginx", present, absent)
+	assertContainerEnvironmentVariables(t, compose.Identifier, "local-nginx", present, absent)
 }
 
 func TestLocalDockerComposeWithVolume(t *testing.T) {
-	path := RenderComposeWithVolume(t)
+	path := RenderComposeWithVolumeForLocal(t)
 
 	identifier := strings.ToLower(uuid.New().String())
 

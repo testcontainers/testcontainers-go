@@ -1,6 +1,6 @@
 version: '3'
 services:
-  postgres:
+  {{ .ServiceType }}-postgres:
     image: docker.io/postgres:14
     environment:
       POSTGRES_PASSWORD: s3cr3t
