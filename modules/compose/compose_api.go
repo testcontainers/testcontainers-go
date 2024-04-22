@@ -135,8 +135,7 @@ type dockerCompose struct {
 	// used in ServiceContainer(...) function to avoid calls to the Docker API
 	containers map[string]*testcontainers.DockerContainer
 
-	// cache for containers that are part of the stack
-	// used in ServiceContainer(...) function to avoid calls to the Docker API
+	// cache for networks in the compose stack
 	networks map[string]*testcontainers.DockerNetwork
 
 	// docker/compose API service instance used to control the compose stack
