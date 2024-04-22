@@ -2102,8 +2102,28 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			shouldRetry: false,
 		},
 		{
-			name:        "no retry on permanent error",
+			name:        "no retry when a resource is not found",
+			errReturned: errdefs.NotFound(errors.New("not available")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when parameters are invalid",
 			errReturned: errdefs.InvalidParameter(errors.New("invalid")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when resource access not authorized",
+			errReturned: errdefs.Unauthorized(errors.New("not authorized")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when resource access is forbidden",
+			errReturned: errdefs.Forbidden(errors.New("forbidden")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when not implemented by provider",
+			errReturned: errdefs.NotImplemented(errors.New("unkown method")),
 			shouldRetry: false,
 		},
 		{
@@ -2143,8 +2163,13 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 			shouldRetry: false,
 		},
 		{
-			name:        "no retry on permanent error",
+			name:        "no retry when parameters are invalid",
 			errReturned: errdefs.InvalidParameter(errors.New("invalid")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when not implemented by provider",
+			errReturned: errdefs.NotImplemented(errors.New("unkown method")),
 			shouldRetry: false,
 		},
 		{
@@ -2189,8 +2214,28 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 			shouldRetry: false,
 		},
 		{
-			name:        "no retry on permanent error",
+			name:        "no retry when a resource is not found",
 			errReturned: errdefs.NotFound(errors.New("not available")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when parameters are invalid",
+			errReturned: errdefs.InvalidParameter(errors.New("invalid")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when resource access not authorized",
+			errReturned: errdefs.Unauthorized(errors.New("not authorized")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when resource access is forbidden",
+			errReturned: errdefs.Forbidden(errors.New("forbidden")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when not implemented by provider",
+			errReturned: errdefs.NotImplemented(errors.New("unkown method")),
 			shouldRetry: false,
 		},
 		{
