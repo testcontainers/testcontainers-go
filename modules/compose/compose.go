@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -27,9 +28,10 @@ const (
 var ErrNoStackConfigured = errors.New("no stack files configured")
 
 type composeStackOptions struct {
-	Identifier string
-	Paths      []string
-	Logger     testcontainers.Logging
+	Identifier     string
+	Paths          []string
+	temporaryPaths map[string]bool
+	Logger         testcontainers.Logging
 }
 
 type ComposeStackOption interface {
@@ -95,14 +97,21 @@ func WithStackFiles(filePaths ...string) ComposeStackOption {
 	return ComposeStackFiles(filePaths)
 }
 
+// WithStackReaders supports reading the compose file/s from a reader.
+// This function will panic if it's no possible to read the content from the reader.
+func WithStackReaders(readers ...io.Reader) ComposeStackOption {
+	return ComposeStackReaders(readers)
+}
+
 func NewDockerCompose(filePaths ...string) (*dockerCompose, error) {
 	return NewDockerComposeWith(WithStackFiles(filePaths...))
 }
 
 func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 	composeOptions := composeStackOptions{
-		Identifier: uuid.New().String(),
-		Logger:     testcontainers.Logger,
+		Identifier:     uuid.New().String(),
+		temporaryPaths: make(map[string]bool),
+		Logger:         testcontainers.Logger,
 	}
 
 	for i := range opts {
@@ -142,16 +151,17 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 	}
 
 	composeAPI := &dockerCompose{
-		name:           composeOptions.Identifier,
-		configs:        composeOptions.Paths,
-		logger:         composeOptions.Logger,
-		composeService: compose.NewComposeService(dockerCli),
-		dockerClient:   dockerCli.Client(),
-		waitStrategies: make(map[string]wait.Strategy),
-		containers:     make(map[string]*testcontainers.DockerContainer),
-		networks:       make(map[string]*testcontainers.DockerNetwork),
-		sessionID:      testcontainers.SessionID(),
-		reaper:         composeReaper,
+		name:             composeOptions.Identifier,
+		configs:          composeOptions.Paths,
+		temporaryConfigs: composeOptions.temporaryPaths,
+		logger:           composeOptions.Logger,
+		composeService:   compose.NewComposeService(dockerCli),
+		dockerClient:     dockerCli.Client(),
+		waitStrategies:   make(map[string]wait.Strategy),
+		containers:       make(map[string]*testcontainers.DockerContainer),
+		networks:         make(map[string]*testcontainers.DockerNetwork),
+		sessionID:        testcontainers.SessionID(),
+		reaper:           composeReaper,
 	}
 
 	return composeAPI, nil

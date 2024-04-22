@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -429,6 +431,45 @@ func TestDockerComposeAPIComplex(t *testing.T) {
 	assert.Contains(t, serviceNames, "api-mysql")
 }
 
+func TestDockerComposeAPIWithStackReader(t *testing.T) {
+	identifier := testNameHash(t.Name())
+
+	composeContent := `version: '3.7'
+services:
+  api-nginx:
+    image: docker.io/nginx:stable-alpine
+    environment:
+      bar: ${bar}
+      foo: ${foo}
+`
+
+	compose, err := NewDockerComposeWith(WithStackReaders(strings.NewReader(composeContent)), identifier)
+	require.NoError(t, err, "NewDockerCompose()")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		WithEnv(map[string]string{
+			"foo": "FOO",
+			"bar": "BAR",
+		}).
+		Up(ctx, Wait(true))
+	require.NoError(t, err, "compose.Up()")
+
+	serviceNames := compose.Services()
+
+	assert.Len(t, serviceNames, 1)
+	assert.Contains(t, serviceNames, "api-nginx")
+
+	require.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+
+	// check files where removed
+	f, err := os.Stat(compose.configs[0])
+	require.Error(t, err, "File should be removed")
+	require.True(t, os.IsNotExist(err), "File should be removed")
+	require.Nil(t, f, "File should be removed")
+}
 func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 	identifier := testNameHash(t.Name())
 
