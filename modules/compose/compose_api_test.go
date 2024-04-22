@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/google/uuid"
@@ -560,6 +561,22 @@ func TestDockerComposeAPIWithVolume(t *testing.T) {
 	t.Cleanup(cancel)
 
 	err = compose.Up(ctx, Wait(true))
+	require.NoError(t, err, "compose.Up()")
+}
+
+func TestDockerComposeAPIWithRecreate(t *testing.T) {
+	path, _ := RenderComposeComplex(t)
+	compose, err := NewDockerCompose(path)
+	require.NoError(t, err, "NewDockerCompose()")
+
+	t.Cleanup(func() {
+		require.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.Up(ctx, WithRecreate(api.RecreateNever), WithRecreateDependencies(api.RecreateNever), Wait(true))
 	require.NoError(t, err, "compose.Up()")
 }
 
