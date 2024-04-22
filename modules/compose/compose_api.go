@@ -11,6 +11,7 @@ import (
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/compose/v2/pkg/api"
+	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
@@ -134,6 +135,10 @@ type dockerCompose struct {
 	// used in ServiceContainer(...) function to avoid calls to the Docker API
 	containers map[string]*testcontainers.DockerContainer
 
+	// cache for containers that are part of the stack
+	// used in ServiceContainer(...) function to avoid calls to the Docker API
+	networks map[string]*testcontainers.DockerNetwork
+
 	// docker/compose API service instance used to control the compose stack
 	composeService api.Service
 
@@ -239,6 +244,28 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 	})
 	if err != nil {
 		return err
+	}
+
+	err = d.lookupNetworks(ctx)
+	if err != nil {
+		return err
+	}
+
+	if d.reaper != nil {
+		for _, n := range d.networks {
+			termSignal, err := d.reaper.Connect()
+			if err != nil {
+				return fmt.Errorf("failed to connect to reaper: %w", err)
+			}
+			n.SetTerminationSignal(termSignal)
+
+			// Cleanup on error, otherwise set termSignal to nil before successful return.
+			defer func() {
+				if termSignal != nil {
+					termSignal <- true
+				}
+			}()
+		}
 	}
 
 	errGrpContainers, errGrpCtx := errgroup.WithContext(ctx)
@@ -374,6 +401,34 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 	return container, nil
 }
 
+func (d *dockerCompose) lookupNetworks(ctx context.Context) error {
+	d.containersLock.Lock()
+	defer d.containersLock.Unlock()
+
+	listOptions := dockertypes.NetworkListOptions{
+		Filters: filters.NewArgs(
+			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
+		),
+	}
+
+	networks, err := d.dockerClient.NetworkList(ctx, listOptions)
+	if err != nil {
+		return err
+	}
+
+	for _, n := range networks {
+		dn := &testcontainers.DockerNetwork{
+			ID:     n.ID,
+			Name:   n.Name,
+			Driver: n.Driver,
+		}
+
+		d.networks[n.ID] = dn
+	}
+
+	return nil
+}
+
 func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, error) {
 	const nameAndDefaultConfigPath = 2
 	projectOptions := make([]cli.ProjectOptionsFn, len(d.projectOptions), len(d.projectOptions)+nameAndDefaultConfigPath)
@@ -411,6 +466,20 @@ func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, err
 		}
 
 		proj.Services[i] = s
+	}
+
+	for key, n := range proj.Networks {
+		n.Labels = map[string]string{
+			api.ProjectLabel: proj.Name,
+			api.NetworkLabel: n.Name,
+			api.VersionLabel: api.ComposeVersion,
+		}
+
+		for k, label := range testcontainers.GenericLabels() {
+			n.Labels[k] = label
+		}
+
+		proj.Networks[key] = n
 	}
 
 	return proj, nil

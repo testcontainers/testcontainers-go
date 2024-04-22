@@ -149,6 +149,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		dockerClient:   dockerCli.Client(),
 		waitStrategies: make(map[string]wait.Strategy),
 		containers:     make(map[string]*testcontainers.DockerContainer),
+		networks:       make(map[string]*testcontainers.DockerNetwork),
 		sessionID:      testcontainers.SessionID(),
 		reaper:         composeReaper,
 	}

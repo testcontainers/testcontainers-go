@@ -851,6 +851,10 @@ func (n *DockerNetwork) Remove(ctx context.Context) error {
 	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
+func (n *DockerNetwork) SetTerminationSignal(signal chan bool) {
+	n.terminationSignal = signal
+}
+
 // DockerProvider implements the ContainerProvider interface
 type DockerProvider struct {
 	*DockerProviderOptions
