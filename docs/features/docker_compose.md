@@ -61,7 +61,9 @@ Use the advanced `NewDockerComposeWith(...)` constructor allowing you to customi
 
 #### Compose Up options
 
-- `RemoveOrphans`: remove orphaned containers after the stack is stopped.
+- `Recreate`: recreate the containers.
+- `RecreateDependencies`: recreate dependent containers.
+- `RemoveOrphans`: remove orphaned containers when the stack is upped.
 - `Wait`: will wait until the containers reached the running|healthy state.
 
 #### Compose Down options
@@ -80,6 +82,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/docker/compose/v2/pkg/api"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
@@ -95,7 +99,7 @@ func TestSomethingElse(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	require.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
+	require.NoError(t, compose.Up(ctx, tc.WithRecreate(api.RecreateNever), tc.Wait(true)), "compose.Up()")
 
 	// do some testing here
 }

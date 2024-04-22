@@ -93,6 +93,14 @@ type waitService struct {
 	publishedPort int
 }
 
+func WithRecreate(recreate string) StackUpOption {
+	return Recreate(recreate)
+}
+
+func WithRecreateDependencies(recreate string) StackUpOption {
+	return RecreateDependencies(recreate)
+}
+
 func WithStackFiles(filePaths ...string) ComposeStackOption {
 	return ComposeStackFiles(filePaths)
 }
