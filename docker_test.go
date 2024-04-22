@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
+	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-units"
 	"github.com/stretchr/testify/assert"
@@ -1219,7 +1221,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 
 		var nf errdefs.ErrNotFound
 		if !errors.As(err, &nf) {
-			t.Fatalf("the error should have bee an errdefs.ErrNotFound: %v", err)
+			t.Fatalf("the error should have been an errdefs.ErrNotFound: %v", err)
 		}
 	})
 
@@ -2054,6 +2056,209 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			} else {
 				require.Error(t, err, "image should not exist anymore")
 			}
+		})
+	}
+}
+
+// errMockCli is a mock implementation of client.APIClient, which is handy for simulating
+// error returns in retry scenarios.
+type errMockCli struct {
+	client.APIClient
+
+	err                error
+	imageBuildCount    int
+	containerListCount int
+	imagePullCount     int
+}
+
+func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ types.ImageBuildOptions) (types.ImageBuildResponse, error) {
+	f.imageBuildCount++
+	return types.ImageBuildResponse{Body: io.NopCloser(&bytes.Buffer{})}, f.err
+}
+
+func (f *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) ([]types.Container, error) {
+	f.containerListCount++
+	return []types.Container{{}}, f.err
+}
+
+func (f *errMockCli) ImagePull(_ context.Context, _ string, _ types.ImagePullOptions) (io.ReadCloser, error) {
+	f.imagePullCount++
+	return io.NopCloser(&bytes.Buffer{}), f.err
+}
+
+func (f *errMockCli) Close() error {
+	return nil
+}
+
+func TestDockerProvider_BuildImage_Retries(t *testing.T) {
+	tests := []struct {
+		name        string
+		errReturned error
+		shouldRetry bool
+	}{
+		{
+			name:        "no retry on success",
+			errReturned: nil,
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when a resource is not found",
+			errReturned: errdefs.NotFound(errors.New("not available")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when parameters are invalid",
+			errReturned: errdefs.InvalidParameter(errors.New("invalid")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when resource access not authorized",
+			errReturned: errdefs.Unauthorized(errors.New("not authorized")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when resource access is forbidden",
+			errReturned: errdefs.Forbidden(errors.New("forbidden")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when not implemented by provider",
+			errReturned: errdefs.NotImplemented(errors.New("unkown method")),
+			shouldRetry: false,
+		},
+		{
+			name:        "retry on non-permanent error",
+			errReturned: errors.New("whoops"),
+			shouldRetry: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := NewDockerProvider()
+			require.NoError(t, err)
+			m := &errMockCli{err: tt.errReturned}
+			p.client = m
+
+			// give a chance to retry
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			defer cancel()
+			_, _ = p.BuildImage(ctx, &ContainerRequest{})
+
+			assert.Greater(t, m.imageBuildCount, 0)
+			assert.Equal(t, tt.shouldRetry, m.imageBuildCount > 1)
+		})
+	}
+}
+
+func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
+	tests := []struct {
+		name        string
+		errReturned error
+		shouldRetry bool
+	}{
+		{
+			name:        "no retry on success",
+			errReturned: nil,
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when parameters are invalid",
+			errReturned: errdefs.InvalidParameter(errors.New("invalid")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when not implemented by provider",
+			errReturned: errdefs.NotImplemented(errors.New("unkown method")),
+			shouldRetry: false,
+		},
+		{
+			name:        "retry when not found",
+			errReturned: errdefs.NotFound(errors.New("not there yet")),
+			shouldRetry: true,
+		},
+		{
+			name:        "retry on non-permanent error",
+			errReturned: errors.New("whoops"),
+			shouldRetry: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := NewDockerProvider()
+			require.NoError(t, err)
+			m := &errMockCli{err: tt.errReturned}
+			p.client = m
+
+			// give a chance to retry
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			defer cancel()
+			_, _ = p.waitContainerCreation(ctx, "someID")
+
+			assert.Greater(t, m.containerListCount, 0)
+			assert.Equal(t, tt.shouldRetry, m.containerListCount > 1)
+		})
+	}
+}
+
+func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
+	tests := []struct {
+		name        string
+		errReturned error
+		shouldRetry bool
+	}{
+		{
+			name:        "no retry on success",
+			errReturned: nil,
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when a resource is not found",
+			errReturned: errdefs.NotFound(errors.New("not available")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when parameters are invalid",
+			errReturned: errdefs.InvalidParameter(errors.New("invalid")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when resource access not authorized",
+			errReturned: errdefs.Unauthorized(errors.New("not authorized")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when resource access is forbidden",
+			errReturned: errdefs.Forbidden(errors.New("forbidden")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry when not implemented by provider",
+			errReturned: errdefs.NotImplemented(errors.New("unkown method")),
+			shouldRetry: false,
+		},
+		{
+			name:        "retry on non-permanent error",
+			errReturned: errors.New("whoops"),
+			shouldRetry: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := NewDockerProvider()
+			require.NoError(t, err)
+			m := &errMockCli{err: tt.errReturned}
+			p.client = m
+
+			// give a chance to retry
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			defer cancel()
+			_ = p.attemptToPullImage(ctx, "someTag", types.ImagePullOptions{})
+
+			assert.Greater(t, m.imagePullCount, 0)
+			assert.Equal(t, tt.shouldRetry, m.imagePullCount > 1)
 		})
 	}
 }

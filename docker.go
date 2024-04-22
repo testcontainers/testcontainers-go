@@ -895,8 +895,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		resp, err = p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 		if err != nil {
 			buildError = errors.Join(buildError, err)
-			var enf errdefs.ErrNotFound
-			if errors.As(err, &enf) {
+			if isPermanentClientError(err) {
 				return backoff.Permanent(err)
 			}
 			Logger.Printf("Failed to build image: %s, will retry", err)
@@ -1175,6 +1174,9 @@ func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string)
 	return container, backoff.Retry(func() error {
 		c, err := p.findContainerByName(ctx, name)
 		if err != nil {
+			if !errdefs.IsNotFound(err) && isPermanentClientError(err) {
+				return backoff.Permanent(err)
+			}
 			return err
 		}
 
@@ -1275,8 +1277,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	err = backoff.Retry(func() error {
 		pull, err = p.client.ImagePull(ctx, tag, pullOpt)
 		if err != nil {
-			var enf errdefs.ErrNotFound
-			if errors.As(err, &enf) {
+			if isPermanentClientError(err) {
 				return backoff.Permanent(err)
 			}
 			Logger.Printf("Failed to pull image: %s, will retry", err)
@@ -1611,4 +1612,21 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 // PullImage pulls image from registry
 func (p *DockerProvider) PullImage(ctx context.Context, image string) error {
 	return p.attemptToPullImage(ctx, image, types.ImagePullOptions{})
+}
+
+var permanentClientErrors = []func(error) bool{
+	errdefs.IsNotFound,
+	errdefs.IsInvalidParameter,
+	errdefs.IsUnauthorized,
+	errdefs.IsForbidden,
+	errdefs.IsNotImplemented,
+}
+
+func isPermanentClientError(err error) bool {
+	for _, isErrFn := range permanentClientErrors {
+		if isErrFn(err) {
+			return true
+		}
+	}
+	return false
 }
