@@ -8,10 +8,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.30.0
 )
 
-require (
-	golang.org/x/crypto v0.22.0 // indirect
-	golang.org/x/sync v0.3.0 // indirect
-)
+require golang.org/x/crypto v0.22.0 // indirect
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
