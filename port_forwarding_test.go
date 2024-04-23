@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -18,113 +19,118 @@ const (
 )
 
 func TestExposeHostPorts(t *testing.T) {
-	freePort, err := getFreePort()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Log("Free port:", freePort)
-
-	// create a simple http server running in the host
-	// this server will be accessed by the container
-	// to check if the port forwarding is working
-	server, err := createHttpServer(freePort)
-	if err != nil {
-		t.Fatal(err)
-	}
-	go func() {
-		_ = server.ListenAndServe()
-	}()
-	t.Cleanup(func() {
-		server.Close()
-	})
-
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:           "alpine:3.17",
-			HostAccessPorts: []int{freePort},
-			Cmd:             []string{"top"},
+	tests := []struct {
+		name          string
+		numberOfPorts int
+		hasNetwork    bool
+		hasHostAccess bool
+	}{
+		{
+			name:          "single port",
+			numberOfPorts: 1,
+			hasHostAccess: true,
 		},
-		Started: true,
+		{
+			name:          "single port using a network",
+			numberOfPorts: 1,
+			hasNetwork:    true,
+			hasHostAccess: true,
+		},
+		{
+			name:          "multiple ports",
+			numberOfPorts: 3,
+			hasHostAccess: true,
+		},
+		{
+			name:          "single port with cancellation",
+			numberOfPorts: 1,
+			hasHostAccess: false,
+		},
 	}
 
-	c, err := testcontainers.GenericContainer(context.Background(), req)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := c.Terminate(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			freePorts := make([]int, tt.numberOfPorts)
+			for i := range freePorts {
+				freePort, err := getFreePort()
+				if err != nil {
+					t.Fatal(err)
+				}
 
-	// create a container that has host access, which will
-	// automatically forward the port to the container
-	assertContainerHasHostAccess(t, c, freePort)
+				freePorts[i] = freePort
+
+				// create an http server for each port
+				server, err := createHttpServer(freePort)
+				if err != nil {
+					t.Fatal(err)
+				}
+				go func() {
+					_ = server.ListenAndServe()
+				}()
+				t.Cleanup(func() {
+					server.Close()
+				})
+			}
+
+			req := testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Image:           "alpine:3.17",
+					HostAccessPorts: freePorts,
+					Cmd:             []string{"top"},
+				},
+				Started: true,
+			}
+
+			if tt.hasNetwork {
+				nw, err := network.New(context.Background())
+				if err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					if err := nw.Remove(context.Background()); err != nil {
+						t.Fatal(err)
+					}
+				})
+
+				req.Networks = []string{nw.ID}
+				req.NetworkAliases = map[string][]string{nw.ID: {"myalpine"}}
+			}
+
+			ctx := context.Background()
+			if !tt.hasHostAccess {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+				defer cancel()
+			}
+
+			c, err := testcontainers.GenericContainer(ctx, req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				if err := c.Terminate(context.Background()); err != nil {
+					t.Fatal(err)
+				}
+			})
+
+			if tt.hasHostAccess {
+				// create a container that has host access, which will
+				// automatically forward the port to the container
+				assertContainerHasHostAccess(t, c, freePorts...)
+			} else {
+				// force cancellation because of timeout
+				time.Sleep(11 * time.Second)
+
+				assertContainerHasNoHostAccess(t, c, freePorts...)
+			}
+		})
+	}
 }
 
-func TestExposeHostPortsInNetwork(t *testing.T) {
-	freePort, err := getFreePort()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Log("Free port:", freePort)
-
-	// create a simple http server running in the host
-	// this server will be accessed by the container
-	// to check if the port forwarding is working
-	server, err := createHttpServer(freePort)
-	if err != nil {
-		t.Fatal(err)
-	}
-	go func() {
-		_ = server.ListenAndServe()
-	}()
-	t.Cleanup(func() {
-		server.Close()
-	})
-
-	nw, err := network.New(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := nw.Remove(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:           "alpine:3.17",
-			HostAccessPorts: []int{freePort},
-			Cmd:             []string{"top"},
-			Networks:        []string{nw.ID},
-			NetworkAliases:  map[string][]string{nw.ID: {"myalpine"}},
-		},
-		Started: true,
-	}
-
-	c, err := testcontainers.GenericContainer(context.Background(), req)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := c.Terminate(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	// create a container that has host access, which will
-	// automatically forward the port to the container
-	assertContainerHasHostAccess(t, c, freePort)
-}
-
-func assertContainerHasHostAccess(t *testing.T, c testcontainers.Container, port int) {
-	_, reader, err := c.Exec(
+func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, string) {
+	code, reader, err := c.Exec(
 		context.Background(),
-		[]string{"wget", "-O", "-", fmt.Sprintf("http://host.testcontainers.internal:%d", port)},
+		[]string{"wget", "-q", "-O", "-", fmt.Sprintf("http://host.testcontainers.internal:%d", port)},
 		tcexec.Multiplexed(),
 	)
 	if err != nil {
@@ -137,9 +143,29 @@ func assertContainerHasHostAccess(t *testing.T, c testcontainers.Container, port
 		t.Fatal(err)
 	}
 
-	// assert the response
-	if string(bs) != expectedResponse {
-		t.Fatalf("expected '%s' but got %s", expectedResponse, string(bs))
+	return code, string(bs)
+}
+
+func assertContainerHasHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
+	for _, port := range ports {
+		code, response := httpRequest(t, c, port)
+		if code != 0 {
+			t.Fatalf("expected status code [%d] but got [%d]", 0, code)
+		}
+
+		if response != expectedResponse {
+			t.Fatalf("expected [%s] but got [%s]", expectedResponse, response)
+		}
+	}
+}
+
+func assertContainerHasNoHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
+	for _, port := range ports {
+		_, response := httpRequest(t, c, port)
+
+		if response == expectedResponse {
+			t.Fatalf("expected not to get [%s] but got [%s]", expectedResponse, response)
+		}
 	}
 }
 
