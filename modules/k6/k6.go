@@ -72,8 +72,11 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 	scriptBaseName := filepath.Base(scriptPath)
 	f, err := os.Open(scriptPath)
 	if err != nil {
-		panic("Cannot create reader for test file ")
+		return func(req *testcontainers.GenericContainerRequest) error {
+			return fmt.Errorf("cannot create reader for test file: %w", err)
+		}
 	}
+
 	return WithTestScriptReader(f, scriptBaseName)
 
 }
@@ -105,7 +108,9 @@ func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainer
 func WithRemoteTestScript(d DownloadableFile) testcontainers.CustomizeRequestOption {
 	err := downloadFileFromDescription(d)
 	if err != nil {
-		panic("Not able to download required test script")
+		return func(req *testcontainers.GenericContainerRequest) error {
+			return fmt.Errorf("not able to download required test script: %w", err)
+		}
 	}
 
 	return WithTestScript(d.getDownloadPath())

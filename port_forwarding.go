@@ -66,7 +66,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 		// Finally it sets the network alias on that network to the given alias.
 		// TODO: Using an anonymous function to avoid cyclic dependencies with the network package.
 		withNetwork := func(aliases []string, nw *DockerNetwork) CustomizeRequestOption {
-			return func(req *GenericContainerRequest) {
+			return func(req *GenericContainerRequest) error {
 				networkName := nw.Name
 
 				// attaching to the network because it was created with success or it already existed.
@@ -76,6 +76,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 					req.NetworkAliases = make(map[string][]string)
 				}
 				req.NetworkAliases[networkName] = aliases
+				return nil
 			}
 		}
 
