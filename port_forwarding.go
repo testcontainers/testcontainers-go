@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	image string = "testcontainers/sshd:1.1.0"
+	image string = "testcontainers/sshd:1.2.0"
 	// hostInternal is the internal hostname used to reach the host from the container,
 	// using the SSHD container as a bridge.
 	hostInternal string = "host.testcontainers.internal"
@@ -144,19 +144,12 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 
 // newSshdContainer creates a new SSHD container with the provided options.
 func newSshdContainer(ctx context.Context, opts ...ContainerCustomizer) (*sshdContainer, error) {
-	// Disable ipv6 & Make it listen on all interfaces, not just localhost
-	// Enable algorithms supported by our ssh client library
-	cmd := `echo "` + user + `:${PASSWORD}" | chpasswd && /usr/sbin/sshd -D -o PermitRootLogin=yes ` +
-		`-o AddressFamily=inet -o GatewayPorts=yes -o AllowAgentForwarding=yes -o AllowTcpForwarding=yes ` +
-		`-o KexAlgorithms=+diffie-hellman-group1-sha1 -o HostkeyAlgorithms=+ssh-rsa `
-
 	req := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			Image:           image,
 			HostAccessPorts: []int{}, // empty list because it does not need any port
 			ExposedPorts:    []string{sshPort},
 			Env:             map[string]string{"PASSWORD": sshPassword},
-			Cmd:             []string{"sh", "-c", cmd},
 		},
 		Started: true,
 	}
