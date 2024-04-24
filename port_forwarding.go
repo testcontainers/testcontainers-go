@@ -240,6 +240,7 @@ type PortForwarder struct {
 	remotePort        int
 	localPort         int
 	connectionCreated chan struct{} // used to signal that the connection has been created, so the caller can proceed
+	terminateChan     chan struct{} // used to signal that the connection has been terminated
 }
 
 func NewPortForwarder(sshDAddr string, sshConfig *ssh.ClientConfig, remotePort, localPort int) *PortForwarder {
@@ -249,10 +250,12 @@ func NewPortForwarder(sshDAddr string, sshConfig *ssh.ClientConfig, remotePort, 
 		remotePort:        remotePort,
 		localPort:         localPort,
 		connectionCreated: make(chan struct{}),
+		terminateChan:     make(chan struct{}),
 	}
 }
 
 func (pf *PortForwarder) Close(ctx context.Context) {
+	close(pf.terminateChan)
 	close(pf.connectionCreated)
 }
 
@@ -272,12 +275,26 @@ func (pf *PortForwarder) Forward(ctx context.Context) error {
 	// signal that the connection has been created
 	pf.connectionCreated <- struct{}{}
 
-	// close the listener and the client when the context is done
-	go func() {
-		<-ctx.Done()
-		listener.Close()
-		client.Close()
-	}()
+	// check if the context or the terminateChan has been closed
+	select {
+	case <-ctx.Done():
+		if err := listener.Close(); err != nil {
+			return fmt.Errorf("error closing listener: %w", err)
+		}
+		if err := client.Close(); err != nil {
+			return fmt.Errorf("error closing client: %w", err)
+		}
+		return nil
+	case <-pf.terminateChan:
+		if err := listener.Close(); err != nil {
+			return fmt.Errorf("error closing listener: %w", err)
+		}
+		if err := client.Close(); err != nil {
+			return fmt.Errorf("error closing client: %w", err)
+		}
+		return nil
+	default:
+	}
 
 	for {
 		remote, err := listener.Accept()
@@ -285,16 +302,16 @@ func (pf *PortForwarder) Forward(ctx context.Context) error {
 			return fmt.Errorf("error accepting connection: %w", err)
 		}
 
-		go runTunnel(ctx, remote, pf.localPort)
+		go pf.runTunnel(ctx, remote)
 	}
 }
 
 // runTunnel runs a tunnel between two connections; as soon as one connection
 // reaches EOF or reports an error, both connections are closed and this
 // function returns.
-func runTunnel(ctx context.Context, remote net.Conn, port int) {
+func (pf *PortForwarder) runTunnel(ctx context.Context, remote net.Conn) {
 	var dialer net.Dialer
-	local, err := dialer.DialContext(ctx, "tcp", fmt.Sprintf("localhost:%d", port))
+	local, err := dialer.DialContext(ctx, "tcp", fmt.Sprintf("localhost:%d", pf.localPort))
 	if err != nil {
 		remote.Close()
 		return
