@@ -88,8 +88,6 @@ There is no current support for mutual authentication.
 
 The `SSLSettings` function will modify the container `entrypoint`. This is done so that key material copied over to the container is chowned by `postgres`. All other container arguments will be passed through to the original container entrypoint.
 
-- Not available until the next release of testcontainers-go 
-
 ### Container Methods
 
 #### ConnectionString
