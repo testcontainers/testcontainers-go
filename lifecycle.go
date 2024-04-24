@@ -10,7 +10,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
-	"golang.org/x/exp/slices"
 )
 
 // ContainerRequestHook is a hook that will be called before a container is created.
@@ -530,8 +529,14 @@ func mergePortBindings(configPortMap, exposedPortMap nat.PortMap, exposedPorts [
 		exposedPortMap = make(map[nat.Port][]nat.PortBinding)
 	}
 
+	mappedPorts := make(map[string]struct{}, len(exposedPorts))
+	for _, p := range exposedPorts {
+		p = strings.Split(p, "/")[0]
+		mappedPorts[p] = struct{}{}
+	}
+
 	for k, v := range configPortMap {
-		if slices.Contains(exposedPorts, strings.Split(string(k), "/")[0]) {
+		if _, ok := mappedPorts[k.Port()]; ok {
 			exposedPortMap[k] = v
 		}
 	}
