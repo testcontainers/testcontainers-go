@@ -130,7 +130,7 @@ func TestExposeHostPorts(t *testing.T) {
 func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, string) {
 	code, reader, err := c.Exec(
 		context.Background(),
-		[]string{"wget", "-q", "-O", "-", fmt.Sprintf("http://host.testcontainers.internal:%d", port)},
+		[]string{"wget", "-q", "-O", "-", fmt.Sprintf("http://%s:%d", testcontainers.HostInternal, port)},
 		tcexec.Multiplexed(),
 	)
 	if err != nil {

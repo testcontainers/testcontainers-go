@@ -15,9 +15,9 @@ import (
 
 const (
 	image string = "testcontainers/sshd:1.2.0"
-	// hostInternal is the internal hostname used to reach the host from the container,
+	// HostInternal is the internal hostname used to reach the host from the container,
 	// using the SSHD container as a bridge.
-	hostInternal string = "host.testcontainers.internal"
+	HostInternal string = "host.testcontainers.internal"
 	user         string = "root"
 	sshPort             = "22"
 )
