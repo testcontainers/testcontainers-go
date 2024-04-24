@@ -245,23 +245,6 @@ func internalEntrypoint(req *testcontainers.GenericContainerRequest) {
 
 }
 
-func WithEntrypoint(hostEntrypointPath string) testcontainers.CustomizeRequestOption {
-
-	const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
-
-	return func(req *testcontainers.GenericContainerRequest) {
-
-		req.Files = append(req.Files, testcontainers.ContainerFile{
-			HostFilePath:      hostEntrypointPath,
-			ContainerFilePath: entrypointPath,
-			FileMode:          0o666,
-		})
-
-		req.Entrypoint = []string{"sh", entrypointPath}
-	}
-
-}
-
 // Snapshot takes a snapshot of the current state of the database as a template, which can then be restored using
 // the Restore method. By default, the snapshot will be created under a database called migrated_template, you can
 // customize the snapshot name with the options.
