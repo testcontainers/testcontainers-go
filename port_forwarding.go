@@ -239,7 +239,7 @@ type PortForwarder struct {
 	sshConfig         *ssh.ClientConfig
 	remotePort        int
 	localPort         int
-	connectionCreated chan bool // used to signal that the connection has been created, so the caller can proceed
+	connectionCreated chan struct{} // used to signal that the connection has been created, so the caller can proceed
 }
 
 func NewPortForwarder(sshDAddr string, sshConfig *ssh.ClientConfig, remotePort, localPort int) *PortForwarder {
@@ -248,7 +248,7 @@ func NewPortForwarder(sshDAddr string, sshConfig *ssh.ClientConfig, remotePort, 
 		sshConfig:         sshConfig,
 		remotePort:        remotePort,
 		localPort:         localPort,
-		connectionCreated: make(chan bool),
+		connectionCreated: make(chan struct{}),
 	}
 }
 
@@ -270,7 +270,7 @@ func (pf *PortForwarder) Forward(ctx context.Context) error {
 	defer listener.Close()
 
 	// signal that the connection has been created
-	pf.connectionCreated <- true
+	pf.connectionCreated <- struct{}{}
 
 	// close the listener and the client when the context is done
 	go func() {
