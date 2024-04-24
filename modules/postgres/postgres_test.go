@@ -30,6 +30,7 @@ const (
 )
 
 func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, error) {
+
 	tmpDir := t.TempDir()
 	certsDir := tmpDir + "/certs"
 
@@ -67,6 +68,7 @@ func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, e
 }
 
 func createSSLSettings(t *testing.T) postgres.SSLSettings {
+
 	caCert, serverCerts, err := createSSLCerts(t)
 	if err != nil {
 		t.Fatal(err)
@@ -242,13 +244,12 @@ func TestWithConfigFile(t *testing.T) {
 	defer db.Close()
 }
 
-func TestWithSSLEnabledConfigFile(t *testing.T) {
+func TestWithSSL(t *testing.T) {
 	ctx := context.Background()
 
 	sslSettings := createSSLSettings(t)
 
 	container, err := postgres.RunContainer(ctx,
-		postgres.WithConfigFile(filepath.Join("testdata", "my-postgres-ssl.conf")),
 		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),

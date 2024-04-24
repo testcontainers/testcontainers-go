@@ -66,6 +66,8 @@ An example of a `*.sh` script that creates a user and database is shown below:
 
 In the case you have a custom config file for Postgres, it's possible to copy that file into the container before it's started, using the `WithConfigFile(cfgPath string)` function.
 
+This function can be used `WithSSLSettings` but requires your configuration correctly sets the SSL properties. See the below section for more information.
+
 !!!tip
     For information on what is available to configure, see the [PostgreSQL docs](https://www.postgresql.org/docs/14/runtime-config.html) for the specific version of PostgreSQL that you are running.
 
@@ -75,7 +77,10 @@ In the case you have a custom config file for Postgres, it's possible to copy th
 
 If you would like to use SSL with the container you can use the `WithSSLSettings`. This function accepts a `SSLSettings` which has the required secret material, namely the ca-certificate, server certificate and key. The container will copy this material to `/tmp/data/ca_cert.pem`, `tmp/data/server.cert` and `/tmp/data/server.key`
 
- If you use this function you must also provide a custom conf via `WithConfigFile`. The configuration must correctly align the key material provided via `SSLSettings` with the server configuration, namely the paths. Your configuration will need to contain the following
+This function will inject a custom postgres configuration file that enables SSL and correctly sets the paths on the key material.
+
+
+If you use this function in conjuction with `WithConfigFile` your custom conf must set the require ssl fields. The configuration must correctly align the key material provided via `SSLSettings` with the server configuration, namely the paths. Your configuration will need to contain the following
  ```
  ssl = on
 ssl_ca_file = '/tmp/data/ca_cert.pem'

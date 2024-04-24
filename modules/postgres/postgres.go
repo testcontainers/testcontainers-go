@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	_ "embed"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -16,6 +18,13 @@ const (
 	defaultPassword      = "postgres"
 	defaultPostgresImage = "docker.io/postgres:11-alpine"
 	defaultSnapshotName  = "migrated_template"
+)
+
+var (
+	//go:embed resources/postgres-ssl.conf
+	embeddedConf string
+	//go:embed resources/customEntrypoint.sh
+	embeddedCustomEntrypoint string
 )
 
 // PostgresContainer represents the postgres container type used in the module
@@ -200,40 +209,27 @@ func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOpt
 		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForLog("database system is ready to accept connections"))
 
 		internalEntrypoint(req)
+		overwriteConfForSSL(req)
 	}
 }
 
-func internalEntrypoint(req *testcontainers.GenericContainerRequest) {
+func overwriteConfForSSL(req *testcontainers.GenericContainerRequest) {
+	const confPath = "/etc/postgresql.conf"
 
+	cfgFile := testcontainers.ContainerFile{
+		ContainerFilePath: confPath,
+		FileMode:          0o755,
+		Reader:            strings.NewReader(embeddedConf),
+	}
+
+	req.Files = append(req.Files, cfgFile)
+	req.Cmd = append(req.Cmd, "-c", "config_file=/etc/postgresql.conf")
+}
+
+func internalEntrypoint(req *testcontainers.GenericContainerRequest) {
 	const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
 
-	entrypoint := `
-	#!/usr/bin/env bash
-	set -Eeo pipefail
-
-
-	pUID=$(id -u postgres)
-	pGID=$(id -g postgres)
-
-	if [ -z "$pUID" ]
-	then
-		exit 1
-	fi
-
-	if [ -z "$pGID" ]
-	then
-		exit 1
-	fi
-
-	chown "$pUID":"$pGID" /tmp/data/ca_cert.pem
-	chown "$pUID":"$pGID" /tmp/data/server.cert
-	chown "$pUID":"$pGID" /tmp/data/server.key
-
-	/usr/local/bin/docker-entrypoint.sh "$@"
-	
-	`
-
-	reader := strings.NewReader(entrypoint)
+	reader := strings.NewReader(embeddedCustomEntrypoint)
 
 	req.Files = append(req.Files, testcontainers.ContainerFile{
 		Reader:            reader,
@@ -242,7 +238,6 @@ func internalEntrypoint(req *testcontainers.GenericContainerRequest) {
 	})
 
 	req.Entrypoint = []string{"sh", entrypointPath}
-
 }
 
 // Snapshot takes a snapshot of the current state of the database as a template, which can then be restored using
