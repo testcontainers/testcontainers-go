@@ -2123,7 +2123,7 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 		},
 		{
 			name:        "no retry when not implemented by provider",
-			errReturned: errdefs.NotImplemented(errors.New("unkown method")),
+			errReturned: errdefs.NotImplemented(errors.New("unknown method")),
 			shouldRetry: false,
 		},
 		{
@@ -2169,7 +2169,7 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 		},
 		{
 			name:        "no retry when not implemented by provider",
-			errReturned: errdefs.NotImplemented(errors.New("unkown method")),
+			errReturned: errdefs.NotImplemented(errors.New("unknown method")),
 			shouldRetry: false,
 		},
 		{
@@ -2235,7 +2235,7 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 		},
 		{
 			name:        "no retry when not implemented by provider",
-			errReturned: errdefs.NotImplemented(errors.New("unkown method")),
+			errReturned: errdefs.NotImplemented(errors.New("unknown method")),
 			shouldRetry: false,
 		},
 		{
