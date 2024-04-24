@@ -217,12 +217,12 @@ func internalEntrypoint(req *testcontainers.GenericContainerRequest) {
 
 	if [ -z "$pUID" ]
 	then
-      exit 1
+		exit 1
 	fi
 
 	if [ -z "$pGID" ]
 	then
-      exit 1
+		exit 1
 	fi
 
 	chown "$pUID":"$pGID" /tmp/data/ca_cert.pem
