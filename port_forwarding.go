@@ -79,7 +79,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 			}
 		}
 
-		opts = append(opts, withNetwork([]string{hostInternal}, &dockerNw))
+		opts = append(opts, withNetwork([]string{HostInternal}, &dockerNw))
 	}
 
 	// start the SSHD container with the provided options
@@ -103,7 +103,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 	req.HostConfigModifier = func(hostConfig *container.HostConfig) {
 		// adding the host internal alias to the container as an extra host
 		// to allow the container to reach the SSHD container.
-		hostConfig.ExtraHosts = append(hostConfig.ExtraHosts, fmt.Sprintf("%s:%s", hostInternal, sshdIP))
+		hostConfig.ExtraHosts = append(hostConfig.ExtraHosts, fmt.Sprintf("%s:%s", HostInternal, sshdIP))
 
 		modes := []container.NetworkMode{container.NetworkMode(sshdFirstNetwork), "none", "host"}
 		// if the container is not in one of the modes, attach it to the first network of the SSHD container
