@@ -71,6 +71,8 @@ In the case you have a custom config file for Postgres, it's possible to copy th
 
 #### SSL Configuration
 
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 If you would like to use SSL with the container you can use the `WithSSLSettings` this function accepts a `SSLSettings` which has the required secret material, namely the ca-certificate, server certificate and key. The container will copy this material to `/tmp/data/ca_cert.pem`, `tmp/data/server.cert` and `/tmp/data/server.key`
 
  If you use this function you must also provide a custom conf via `WithConfigFile`. The configuration must correctly align the key material provided via `SSLSettings` with the server configuration, namely the paths. Your configuration will need to contain the following
