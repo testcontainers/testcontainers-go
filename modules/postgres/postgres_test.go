@@ -68,7 +68,6 @@ func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, e
 }
 
 func createSSLSettings(t *testing.T) postgres.SSLSettings {
-
 	caCert, serverCerts, err := createSSLCerts(t)
 	if err != nil {
 		t.Fatal(err)
