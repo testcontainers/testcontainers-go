@@ -1096,6 +1096,20 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		defaultReadinessHook(),
 	}
 
+	// in the case the container needs to access a local port
+	// we need to forward the local port to the container
+	if len(req.HostAccessPorts) > 0 {
+		// a container lifecycle hook will be added, which will expose the host ports to the container
+		// using a SSHD server running in a container. The SSHD server will be started and will
+		// forward the host ports to the container ports.
+		sshdForwardPortsHook, err := exposeHostPorts(ctx, &req, req.HostAccessPorts...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to expose host ports: %w", err)
+		}
+
+		defaultHooks = append(defaultHooks, sshdForwardPortsHook)
+	}
+
 	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
 
 	err = req.creatingHook(ctx)
