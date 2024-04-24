@@ -69,6 +69,27 @@ In the case you have a custom config file for Postgres, it's possible to copy th
 !!!tip
     For information on what is available to configure, see the [PostgreSQL docs](https://www.postgresql.org/docs/14/runtime-config.html) for the specific version of PostgreSQL that you are running.
 
+#### SSL Configuration
+
+If you would like to use SSL with the container you can use the `WithSSLSettings` this function accepts a `SSLSettings` which has the required secret material, namely the ca-certificate, server certificate and key. The container will copy this material to `/tmp/data/ca_cert.pem`, `tmp/data/server.cert` and `/tmp/data/server.key`
+
+ If you use this function you must also provide a custom conf via `WithConfigFile`. The configuration must correctly align the key material provided via `SSLSettings` with the server configuration, namely the paths. Your configuration will need to contain the following
+ ```
+ ssl = on
+ssl_ca_file = '/tmp/data/ca_cert.pem'
+ssl_cert_file = '/tmp/data/server.cert'
+ssl_key_file = '/tmp/data/server.key'
+ ```
+
+
+This function assumes the postgres user in the container is `postgres`
+
+There is no current support for mutual authentication.
+
+The `SSLSettings` function will modify the container `entrypoint`. This is done so that key material copied over to the container is chowned by `postgres`. All other container arguments will be passed through to the original container entrypoint.
+
+- Not available until the next release of testcontainers-go 
+
 ### Container Methods
 
 #### ConnectionString
