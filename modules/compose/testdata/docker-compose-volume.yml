@@ -1,6 +1,6 @@
 version: '3'
 services:
-  nginx:
+  {{ .ServiceType }}-nginx:
     image: docker.io/nginx:stable-alpine
     volumes:
       - type: volume
@@ -11,7 +11,7 @@ services:
     environment:
       bar: ${bar}
     ports:
-     - "9080:80"
+     - "{{ .Port_0 }}:80"
 
 volumes:
   mydata:
