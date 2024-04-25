@@ -210,3 +210,36 @@ func TestWithEnv(t *testing.T) {
 		})
 	}
 }
+
+func TestWithHostPortAccess(t *testing.T) {
+	tests := []struct {
+		name      string
+		req       *testcontainers.GenericContainerRequest
+		hostPorts []int
+		expect    []int
+	}{
+		{
+			name: "add to existing",
+			req: &testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					HostAccessPorts: []int{1, 2},
+				},
+			},
+			hostPorts: []int{3, 4},
+			expect:    []int{1, 2, 3, 4},
+		},
+		{
+			name:      "add to nil",
+			req:       &testcontainers.GenericContainerRequest{},
+			hostPorts: []int{3, 4},
+			expect:    []int{3, 4},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			opt := testcontainers.WithHostPortAccess(tc.hostPorts...)
+			opt.Customize(tc.req)
+			require.Equal(t, tc.expect, tc.req.HostAccessPorts)
+		})
+	}
+}
