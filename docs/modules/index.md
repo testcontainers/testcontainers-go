@@ -192,6 +192,17 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {...}
 In order to simplify the creation of the container for a given module, `Testcontainers for Go` provides a set of `testcontainers.CustomizeRequestOption` functions to customize the container request for the module. These options are:
 
 - `testcontainers.WithImage`: a function that sets the image for the container request.
+- `testcontainers.WithImageSubstitutors`: a function that sets your own substitutions to the container images.
+- `testcontainers.WithEnv`: a function that sets the environment variables for the container request.
+- `testcontainers.WithHostPortAccess`: a function that enables the container to access a port that is already running in the host.
+- `testcontainers.WithLogConsumers`: a function that sets the log consumers for the container request.
+- `testcontainers.WithLogger`: a function that sets the logger for the container request.
+- `testcontainers.WithWaitStrategy`: a function that sets the wait strategy for the container request.
+- `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request with a deadline.
+- `testcontainers.WithStartupCommand`: a function that sets the execution of a command when the container starts.
+- `testcontainers.WithAfterReadyCommand`: a function that sets the execution of a command right after the container is ready (its wait strategy is satisfied).
+- `testcontainers.WithNetwork`: a function that sets the network and the network aliases for the container request.
+- `testcontainers.WithNewNetwork`: a function that sets the network aliases for a throw-away network for the container request.
 - `testcontainers.WithConfigModifier`: a function that sets the config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithHostConfigModifier`: a function that sets the host config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
