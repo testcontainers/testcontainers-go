@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/testcontainers/testcontainers-go/internal/core/network"
@@ -25,7 +26,7 @@ const (
 )
 
 // sshPassword is a random password generated for the SSHD container.
-var sshPassword = "123456"
+var sshPassword = uuid.NewString()
 
 // exposeHostPorts performs all the necessary steps to expose the host ports to the container, leveraging
 // the SSHD container to create the tunnel, and the container lifecycle hooks to manage the tunnel lifecycle.
