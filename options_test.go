@@ -242,7 +242,7 @@ func TestWithHostPortAccess(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			opt := testcontainers.WithHostPortAccess(tc.hostPorts...)
-			opt.Customize(tc.req)
+			require.NoError(t, opt.Customize(tc.req))
 			require.Equal(t, tc.expect, tc.req.HostAccessPorts)
 		})
 	}
