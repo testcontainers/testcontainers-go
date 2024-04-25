@@ -85,12 +85,13 @@ func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) Cus
 
 // WithHostPortAccess allows to expose the host ports to the container
 func WithHostPortAccess(ports ...int) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) {
+	return func(req *GenericContainerRequest) error {
 		if req.HostAccessPorts == nil {
 			req.HostAccessPorts = []int{}
 		}
 
 		req.HostAccessPorts = append(req.HostAccessPorts, ports...)
+		return nil
 	}
 }
 
