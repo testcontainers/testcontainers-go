@@ -483,6 +483,13 @@ func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]stri
 	return a, nil
 }
 
+// Exec executes a command in the current container.
+// It returns the exit status of the executed command, an [io.Reader] containing the combined
+// stdout and stderr, and any encountered error. Note that reading directly from the [io.Reader]
+// may result in unexpected bytes due to custom stream multiplexing headers.
+// Use [tcexec.Multiplexed] option to read the combined output without the multiplexing headers.
+// Alternatively, to separate the stdout and stderr from [io.Reader] and interpret these headers properly,
+// [github.com/docker/docker/pkg/stdcopy.StdCopy] from the Docker API should be used.
 func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
 	cli := c.provider.client
 
