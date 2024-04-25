@@ -73,11 +73,13 @@ func TestExposeHostPorts(t *testing.T) {
 			}
 
 			req := testcontainers.GenericContainerRequest{
+				// hostAccessPorts {
 				ContainerRequest: testcontainers.ContainerRequest{
 					Image:           "alpine:3.17",
 					HostAccessPorts: freePorts,
 					Cmd:             []string{"top"},
 				},
+				// }
 				Started: true,
 			}
 
@@ -128,11 +130,13 @@ func TestExposeHostPorts(t *testing.T) {
 }
 
 func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, string) {
+	// wgetHostInternal {
 	code, reader, err := c.Exec(
 		context.Background(),
 		[]string{"wget", "-q", "-O", "-", fmt.Sprintf("http://%s:%d", testcontainers.HostInternal, port)},
 		tcexec.Multiplexed(),
 	)
+	// }
 	if err != nil {
 		t.Fatal(err)
 	}
