@@ -326,12 +326,12 @@ func (pf *PortForwarder) runTunnel(ctx context.Context, remote net.Conn) {
 	done := make(chan struct{}, 2)
 
 	go func() {
-		_, _ = io.Copy(local, remote)
+		io.Copy(local, remote) //nolint:errcheck // Nothing we can usefully do with the error
 		done <- struct{}{}
 	}()
 
 	go func() {
-		_, _ = io.Copy(remote, local)
+		io.Copy(remote, local) //nolint:errcheck // Nothing we can usefully do with the error
 		done <- struct{}{}
 	}()
 
