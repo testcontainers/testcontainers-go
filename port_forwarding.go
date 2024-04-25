@@ -14,7 +14,9 @@ import (
 )
 
 const (
+	// hubSshdImage {
 	image string = "testcontainers/sshd:1.2.0"
+	// }
 	// HostInternal is the internal hostname used to reach the host from the container,
 	// using the SSHD container as a bridge.
 	HostInternal string = "host.testcontainers.internal"

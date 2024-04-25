@@ -25,6 +25,18 @@ If you need to either pass additional environment variables to a container or ov
 postgres, err = postgresModule.RunContainer(ctx, testcontainers.WithEnv(map[string]string{"POSTGRES_INITDB_ARGS": "--no-sync"}))
 ```
 
+#### WithHostPortAccess
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to access a port that is already running in the host, you can use `testcontainers.WithHostPortAccess` for example:
+
+```golang
+postgres, err = postgresModule.RunContainer(ctx, testcontainers.WithHostPortAccess(8080))
+```
+
+To understand more about this feature, please read the [Exposing host ports to the container](/features/networking/#exposing-host-ports-to-the-container) documentation.
+
 #### WithLogConsumers
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
