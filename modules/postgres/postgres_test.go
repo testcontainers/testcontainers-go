@@ -30,7 +30,6 @@ const (
 )
 
 func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, error) {
-
 	tmpDir := t.TempDir()
 	certsDir := tmpDir + "/certs"
 
