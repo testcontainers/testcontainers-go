@@ -291,7 +291,7 @@ func TestSSLValidatesKeyMaterialPath(t *testing.T) {
 		postgres.WithSSLSettings(sslSettings),
 	)
 	if err == nil {
-		t.Fatal(err)
+		t.Fatal("Error should not have been nil. Container creation should have failed due to empty key material")
 	}
 }
 
