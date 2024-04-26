@@ -69,7 +69,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 		// Finally it sets the network alias on that network to the given alias.
 		// TODO: Using an anonymous function to avoid cyclic dependencies with the network package.
 		withNetwork := func(aliases []string, nw *DockerNetwork) CustomizeRequestOption {
-			return func(req *GenericContainerRequest) {
+			return func(req *GenericContainerRequest) error {
 				networkName := nw.Name
 
 				// attaching to the network because it was created with success or it already existed.
@@ -79,6 +79,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 					req.NetworkAliases = make(map[string][]string)
 				}
 				req.NetworkAliases[networkName] = aliases
+				return nil
 			}
 		}
 
@@ -130,8 +131,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 	sshdConnectHook = ContainerLifecycleHooks{
 		PostReadies: []ContainerHook{
 			func(ctx context.Context, c Container) error {
-				sshdContainer.exposeHostPort(ctx, req.HostAccessPorts...)
-				return nil
+				return sshdContainer.exposeHostPort(ctx, req.HostAccessPorts...)
 			},
 		},
 		PreTerminates: []ContainerHook{
@@ -158,7 +158,9 @@ func newSshdContainer(ctx context.Context, opts ...ContainerCustomizer) (*sshdCo
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&req)
+		if err := opt.Customize(&req); err != nil {
+			return nil, err
+		}
 	}
 
 	c, err := GenericContainer(ctx, req)
@@ -325,12 +327,12 @@ func (pf *PortForwarder) runTunnel(ctx context.Context, remote net.Conn) {
 	done := make(chan struct{}, 2)
 
 	go func() {
-		io.Copy(local, remote)
+		io.Copy(local, remote) //nolint:errcheck // Nothing we can usefully do with the error
 		done <- struct{}{}
 	}()
 
 	go func() {
-		io.Copy(remote, local)
+		io.Copy(remote, local) //nolint:errcheck // Nothing we can usefully do with the error
 		done <- struct{}{}
 	}()
 

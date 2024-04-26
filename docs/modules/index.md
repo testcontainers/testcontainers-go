@@ -105,7 +105,22 @@ We are going to propose a set of steps to follow when adding types and methods t
 
 - Make sure a public `Container` type exists for the module. This type has to use composition to embed the `testcontainers.Container` type, promoting all the methods from it.
 - Make sure a `RunContainer` function exists and is public. This function is the entrypoint to the module and will define the initial values for a `testcontainers.GenericContainerRequest` struct, including the image, the default exposed ports, wait strategies, etc. Therefore, the function must initialise the container request with the default values.
-- Define container options for the module leveraging the `testcontainers.ContainerCustomizer` interface, that has one single method: `Customize(req *GenericContainerRequest)`.
+- Define container options for the module leveraging the `testcontainers.ContainerCustomizer` interface, that has one single method: `Customize(req *GenericContainerRequest) error`.
+
+!!!warning
+    The interface definition for `ContainerCustomizer` was changed to allow errors to be correctly processed.
+    More specifically, the `Customize` method was changed from:
+
+    ```go
+    Customize(req *GenericContainerRequest)
+    ```
+
+    To:
+
+    ```go
+    Customize(req *GenericContainerRequest) error
+    ```
+
 - We consider that a best practice for the options is define a function using the `With` prefix, that returns a function returning a modified `testcontainers.GenericContainerRequest` type. For that, the library already provides a `testcontainers.CustomizeRequestOption` type implementing the `ContainerCustomizer` interface, and we encourage you to use this type for creating your own customizer functions.
 - At the same time, you could need to create your own container customizers for your module. Make sure they implement the `testcontainers.ContainerCustomizer` interface. Defining your own customizer functions is useful when you need to transfer a certain state that is not present at the `ContainerRequest` for the container, possibly using an intermediate Config struct.
 - The options will be passed to the `RunContainer` function as variadic arguments after the Go context, and they will be processed right after defining the initial `testcontainers.GenericContainerRequest` struct using a for loop.
@@ -130,7 +145,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
     }
     ...
     for _, opt := range opts {
-        req = opt.Customize(&genericContainerReq)
+        if err := opt.Customize(&genericContainerReq); err != nil {
+            return nil, fmt.Errorf("customise: %w", err)
+        }
 
         // If you need to transfer some state from the options to the container, you can do it here
         if myCustomizer, ok := opt.(MyCustomizer); ok {
@@ -174,13 +191,24 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {...}
 
 In order to simplify the creation of the container for a given module, `Testcontainers for Go` provides a set of `testcontainers.CustomizeRequestOption` functions to customize the container request for the module. These options are:
 
-- `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customizing the container request.
 - `testcontainers.WithImage`: a function that sets the image for the container request.
+- `testcontainers.WithImageSubstitutors`: a function that sets your own substitutions to the container images.
+- `testcontainers.WithEnv`: a function that sets the environment variables for the container request.
+- `testcontainers.WithHostPortAccess`: a function that enables the container to access a port that is already running in the host.
+- `testcontainers.WithLogConsumers`: a function that sets the log consumers for the container request.
+- `testcontainers.WithLogger`: a function that sets the logger for the container request.
+- `testcontainers.WithWaitStrategy`: a function that sets the wait strategy for the container request.
+- `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request with a deadline.
+- `testcontainers.WithStartupCommand`: a function that sets the execution of a command when the container starts.
+- `testcontainers.WithAfterReadyCommand`: a function that sets the execution of a command right after the container is ready (its wait strategy is satisfied).
+- `testcontainers.WithNetwork`: a function that sets the network and the network aliases for the container request.
+- `testcontainers.WithNewNetwork`: a function that sets the network aliases for a throw-away network for the container request.
 - `testcontainers.WithConfigModifier`: a function that sets the config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithHostConfigModifier`: a function that sets the host config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithWaitStrategy`: a function that sets the wait strategy for the container request, adding all the passed wait strategies to the container request, using a `testcontainers.MultiStrategy` with 60 seconds of deadline. Please see [Wait strategies](../features/wait/multi.md) for more information.
 - `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request, adding all the passed wait strategies to the container request, using a `testcontainers.MultiStrategy` with the passed deadline. Please see [Wait strategies](../features/wait/multi.md) for more information.
+- `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customizing the container request.
 
 ### Update Go dependencies in the modules
 

@@ -31,7 +31,7 @@ type MySQLContainer struct {
 }
 
 func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		username := req.Env["MYSQL_USER"]
 		password := req.Env["MYSQL_PASSWORD"]
 		if strings.EqualFold(rootUser, username) {
@@ -43,6 +43,8 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 			req.Env["MYSQL_ALLOW_EMPTY_PASSWORD"] = "yes"
 			delete(req.Env, "MYSQL_PASSWORD")
 		}
+
+		return nil
 	}
 }
 
@@ -67,7 +69,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	opts = append(opts, WithDefaultCredentials())
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	username, ok := req.Env["MYSQL_USER"]
@@ -123,36 +127,44 @@ func (c *MySQLContainer) ConnectionString(ctx context.Context, args ...string) (
 }
 
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["MYSQL_USER"] = username
+
+		return nil
 	}
 }
 
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["MYSQL_PASSWORD"] = password
+
+		return nil
 	}
 }
 
 func WithDatabase(database string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["MYSQL_DATABASE"] = database
+
+		return nil
 	}
 }
 
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/mysql/conf.d/my.cnf",
 			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
+
+		return nil
 	}
 }
 
 func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		var initScripts []testcontainers.ContainerFile
 		for _, script := range scripts {
 			cf := testcontainers.ContainerFile{
@@ -163,5 +175,7 @@ func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 			initScripts = append(initScripts, cf)
 		}
 		req.Files = append(req.Files, initScripts...)
+
+		return nil
 	}
 }

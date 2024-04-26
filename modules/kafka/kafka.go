@@ -96,7 +96,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	err := validateKRaftVersion(genericContainerReq.Image)
@@ -117,8 +119,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["CLUSTER_ID"] = clusterID
+
+		return nil
 	}
 }
 

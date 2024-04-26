@@ -40,20 +40,24 @@ func (c *ConsulContainer) ApiEndpoint(ctx context.Context) (string, error) {
 
 // WithConfigString takes in a JSON string of keys and values to define a configuration to be used by the instance.
 func WithConfigString(config string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["CONSUL_LOCAL_CONFIG"] = config
+
+		return nil
 	}
 }
 
 // WithConfigFile takes in a path to a JSON file to define a configuration to be used by the instance.
 func WithConfigFile(configPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configPath,
 			ContainerFilePath: "/consul/config/node.json",
 			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
+
+		return nil
 	}
 }
 
@@ -77,7 +81,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&containerReq)
+		if err := opt.Customize(&containerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, containerReq)

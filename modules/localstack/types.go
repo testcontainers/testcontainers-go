@@ -15,36 +15,46 @@ type LocalStackContainerRequest struct {
 	testcontainers.GenericContainerRequest
 }
 
+// Deprecated: use testcontainers.ContainerCustomizer instead
 // OverrideContainerRequestOption is a type that can be used to configure the Testcontainers container request.
 // The passed request will be merged with the default one.
-// Deprecated: use testcontainers.ContainerCustomizer instead
-type OverrideContainerRequestOption func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest
+type OverrideContainerRequestOption func(req testcontainers.ContainerRequest) (testcontainers.ContainerRequest, error)
 
+// Deprecated: use testcontainers.ContainerCustomizer instead
 // NoopOverrideContainerRequest returns a helper function that does not override the container request
+var NoopOverrideContainerRequest = func(req testcontainers.ContainerRequest) (testcontainers.ContainerRequest, error) {
+	return req, nil
+}
+
 // Deprecated: use testcontainers.ContainerCustomizer instead
-var NoopOverrideContainerRequest = func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
-	return req
+func (opt OverrideContainerRequestOption) Customize(req *testcontainers.GenericContainerRequest) error {
+	r, err := opt(req.ContainerRequest)
+	if err != nil {
+		return err
+	}
+
+	req.ContainerRequest = r
+
+	return nil
 }
 
-func (opt OverrideContainerRequestOption) Customize(req *testcontainers.GenericContainerRequest) {
-	req.ContainerRequest = opt(req.ContainerRequest)
-}
-
-// OverrideContainerRequest returns a function that can be used to merge the passed container request with one that is created by the LocalStack container
 // Deprecated: use testcontainers.CustomizeRequest instead
-func OverrideContainerRequest(r testcontainers.ContainerRequest) func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
+// OverrideContainerRequest returns a function that can be used to merge the passed container request with one that is created by the LocalStack container
+func OverrideContainerRequest(r testcontainers.ContainerRequest) func(req testcontainers.ContainerRequest) (testcontainers.ContainerRequest, error) {
 	destContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: r,
 	}
 
-	return func(req testcontainers.ContainerRequest) testcontainers.ContainerRequest {
+	return func(req testcontainers.ContainerRequest) (testcontainers.ContainerRequest, error) {
 		srcContainerReq := testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 		}
 
 		opt := testcontainers.CustomizeRequest(destContainerReq)
-		opt.Customize(&srcContainerReq)
+		if err := opt.Customize(&srcContainerReq); err != nil {
+			return testcontainers.ContainerRequest{}, err
+		}
 
-		return srcContainerReq.ContainerRequest
+		return srcContainerReq.ContainerRequest, nil
 	}
 }
