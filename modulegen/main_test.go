@@ -428,7 +428,9 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 	assert.Equal(t, data[13], "// "+entrypoint+" creates an instance of the "+exampleName+" container type")
 	assert.Equal(t, data[14], "func "+entrypoint+"(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*"+containerName+", error) {")
 	assert.Equal(t, data[16], "\t\tImage: \""+module.Image+"\",")
-	assert.Equal(t, data[33], "\treturn &"+containerName+"{Container: container}, nil")
+	assert.Equal(t, data[25], "\t\tif err := opt.Customize(&genericContainerReq); err != nil {")
+	assert.Equal(t, data[26], "\t\t\treturn nil, fmt.Errorf(\"customize: %w\", err)")
+	assert.Equal(t, data[35], "\treturn &"+containerName+"{Container: container}, nil")
 }
 
 // assert content GitHub workflow for the module

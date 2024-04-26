@@ -304,7 +304,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		)
 	})
 
-	t.Run("Request contains exposed port modifiers", func(t *testing.T) {
+	t.Run("Request contains exposed port modifiers without protocol", func(t *testing.T) {
 		req := ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
@@ -318,6 +318,37 @@ func TestPreCreateModifierHook(t *testing.T) {
 				}
 			},
 			ExposedPorts: []string{"80"},
+		}
+
+		// define empty inputs to be overwritten by the pre create hook
+		inputConfig := &container.Config{
+			Image: req.Image,
+		}
+		inputHostConfig := &container.HostConfig{}
+		inputNetworkingConfig := &network.NetworkingConfig{}
+
+		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		require.NoError(t, err)
+
+		// assertions
+		assert.Equal(t, "localhost", inputHostConfig.PortBindings["80/tcp"][0].HostIP)
+		assert.Equal(t, "8080", inputHostConfig.PortBindings["80/tcp"][0].HostPort)
+	})
+
+	t.Run("Request contains exposed port modifiers with protocol", func(t *testing.T) {
+		req := ContainerRequest{
+			Image: nginxAlpineImage, // alpine image does expose port 80
+			HostConfigModifier: func(hostConfig *container.HostConfig) {
+				hostConfig.PortBindings = nat.PortMap{
+					"80/tcp": []nat.PortBinding{
+						{
+							HostIP:   "localhost",
+							HostPort: "8080",
+						},
+					},
+				}
+			},
+			ExposedPorts: []string{"80/tcp"},
 		}
 
 		// define empty inputs to be overwritten by the pre create hook
@@ -407,7 +438,7 @@ func TestMergePortBindings(t *testing.T) {
 					"80/tcp": {{HostIP: "", HostPort: ""}},
 					"90/tcp": {{HostIP: "", HostPort: ""}},
 				},
-				exposedPorts: []string{"70", "80"},
+				exposedPorts: []string{"70", "80/tcp"},
 			},
 			expected: map[nat.Port][]nat.PortBinding{
 				"70/tcp": {{HostIP: "1", HostPort: "2"}},

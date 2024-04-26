@@ -153,7 +153,34 @@ func TestGetDockerConfig(t *testing.T) {
 		}`)
 
 		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
-		require.Equal(t, err, dockercfg.ErrCredentialsNotFound)
+		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
+		require.Empty(t, cfg)
+
+		assert.Equal(t, imageReg, registry)
+	})
+
+	t.Run("fail to match registry authentication by host with empty URL scheme creds and missing default", func(t *testing.T) {
+		origDefaultRegistryFn := defaultRegistryFn
+		t.Cleanup(func() {
+			defaultRegistryFn = origDefaultRegistryFn
+		})
+		defaultRegistryFn = func(ctx context.Context) string {
+			return ""
+		}
+
+		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
+		imageReg := ""
+		imagePath := "image:latest"
+
+		t.Setenv("DOCKER_AUTH_CONFIG", `{
+			"auths": {
+					"example-auth.com": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
+			},
+			"credsStore": "desktop"
+		}`)
+
+		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
+		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
 		require.Empty(t, cfg)
 
 		assert.Equal(t, imageReg, registry)

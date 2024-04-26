@@ -60,7 +60,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
@@ -76,7 +78,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	const defaultConfigFile = "/usr/local/redis.conf"
 
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: defaultConfigFile,
@@ -86,7 +88,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 
 		if len(req.Cmd) == 0 {
 			req.Cmd = []string{redisServerProcess, defaultConfigFile}
-			return
+			return nil
 		}
 
 		// prepend the command to run the redis server with the config file, which must be the first argument of the redis server process
@@ -97,14 +99,18 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 			// prepend the redis server and the confif file, then the rest of the args
 			req.Cmd = append([]string{redisServerProcess, defaultConfigFile}, req.Cmd...)
 		}
+
+		return nil
 	}
 }
 
 // WithLogLevel sets the log level for the redis server process
 // See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
 func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		processRedisServerArgs(req, []string{"--loglevel", string(level)})
+
+		return nil
 	}
 }
 
@@ -120,8 +126,9 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 		seconds = 1
 	}
 
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		processRedisServerArgs(req, []string{"--save", fmt.Sprintf("%d", seconds), fmt.Sprintf("%d", changedKeys)})
+		return nil
 	}
 }
 

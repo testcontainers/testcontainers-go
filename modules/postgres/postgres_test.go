@@ -416,3 +416,76 @@ func TestSnapshot(t *testing.T) {
 	})
 	// }
 }
+
+func TestSnapshotWithOverrides(t *testing.T) {
+	ctx := context.Background()
+
+	dbname := "other-db"
+	user := "other-user"
+	password := "other-password"
+
+	container, err := postgres.RunContainer(
+		ctx,
+		testcontainers.WithImage("docker.io/postgres:16-alpine"),
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).
+				WithStartupTimeout(5*time.Second)),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = container.Exec(ctx, []string{"psql", "-U", user, "-d", dbname, "-c", "CREATE TABLE users (id SERIAL, name TEXT NOT NULL, age INT NOT NULL)"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = container.Snapshot(ctx, postgres.WithSnapshotName("other-snapshot"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	dbURL, err := container.ConnectionString(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("Test that the restore works when not using defaults", func(t *testing.T) {
+		_, _, err = container.Exec(ctx, []string{"psql", "-U", user, "-d", dbname, "-c", "INSERT INTO users(name, age) VALUES ('test', 42)"})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Doing the restore before we connect since this resets the pgx connection
+		err = container.Restore(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		conn, err := pgx.Connect(context.Background(), dbURL)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer conn.Close(context.Background())
+
+		var count int64
+		err = conn.QueryRow(context.Background(), "SELECT COUNT(1) FROM users").Scan(&count)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if count != 0 {
+			t.Fatalf("Expected %d to equal `0`", count)
+		}
+	})
+}

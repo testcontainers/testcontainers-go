@@ -63,7 +63,7 @@ type TestLogConsumer struct {
 	Msgs []string // store the logs as a slice of strings
 }
 
-func (g *TestLogConsumer) Accept(l Log) {
+func (g *TestLogConsumer) Accept(l testcontainers.Log) {
 	g.Msgs = append(g.Msgs, string(l.Content))
 }
 ```

@@ -41,7 +41,7 @@ When starting the Postgres container, you can pass options in a variadic way to 
 #### Image
 
 If you need to set a different Postgres Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Postgres. E.g. `testcontainers.WithImage("docker.io/postgres:9.6")`.
+for Postgres. E.g. `testcontainers.WithImage("docker.io/postgres:16-alpine")`.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -121,6 +121,12 @@ It's possible to use the Postgres container with PGVector, Timescale or Postgis,
 This example shows the usage of the postgres module's Snapshot feature to give each test a clean database without having
 to recreate the database container on every test or run heavy scripts to clean your database. This makes the individual
 tests very modular, since they always run on a brand-new database.
+
+!!!tip
+    You should never pass the `"postgres"` system database as the container database name if you want to use snapshots. 
+    The Snapshot logic requires dropping the connected database and using the system database to run commands, which will
+    not work if the database for the container is set to `"postgres"`.
+
 
 <!--codeinclude-->
 [Test with a reusable Postgres container](../../modules/postgres/postgres_test.go) inside_block:snapshotAndReset
