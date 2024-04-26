@@ -87,7 +87,6 @@ ssl_cert_file = '/tmp/data/server.cert'
 ssl_key_file = '/tmp/data/server.key'
  ```
 
-
 This function assumes the postgres user in the container is `postgres`
 
 There is no current support for mutual authentication.
