@@ -246,6 +246,7 @@ func TestWithSSL(t *testing.T) {
 	sslSettings := createSSLSettings(t)
 
 	container, err := postgres.RunContainer(ctx,
+		postgres.WithConfigFile(filepath.Join("testdata", "postgres-ssl.conf")),
 		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),

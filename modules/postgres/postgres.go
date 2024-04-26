@@ -21,8 +21,6 @@ const (
 )
 
 var (
-	//go:embed resources/postgres-ssl.conf
-	embeddedConf string
 	//go:embed resources/customEntrypoint.sh
 	embeddedCustomEntrypoint string
 )
@@ -209,21 +207,7 @@ func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOpt
 		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForLog("database system is ready to accept connections"))
 
 		internalEntrypoint(req)
-		overwriteConfForSSL(req)
 	}
-}
-
-func overwriteConfForSSL(req *testcontainers.GenericContainerRequest) {
-	const confPath = "/etc/postgresql.conf"
-
-	cfgFile := testcontainers.ContainerFile{
-		ContainerFilePath: confPath,
-		FileMode:          0o755,
-		Reader:            strings.NewReader(embeddedConf),
-	}
-
-	req.Files = append(req.Files, cfgFile)
-	req.Cmd = append(req.Cmd, "-c", "config_file=/etc/postgresql.conf")
 }
 
 func internalEntrypoint(req *testcontainers.GenericContainerRequest) {
