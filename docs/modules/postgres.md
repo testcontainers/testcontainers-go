@@ -79,7 +79,8 @@ If you would like to use SSL with the container you can use the `WithSSLSettings
 
 This function will inject a custom postgres configuration file that enables SSL and correctly sets the paths on the key material.
 
-If you use this function in conjuction with `WithConfigFile` your custom conf must set the require ssl fields. The configuration must correctly align the key material provided via `SSLSettings` with the server configuration, namely the paths. Your configuration will need to contain the following
+If you use this function in conjuction with `WithConfigFile` your custom conf must set the require ssl fields. The configuration must correctly align the key material provided via `SSLSettings` with the server configuration, namely the paths. Your configuration will need to contain the following:
+
  ```
  ssl = on
 ssl_ca_file = '/tmp/data/ca_cert.pem'
