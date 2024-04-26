@@ -79,7 +79,6 @@ func createSSLSettings(t *testing.T) postgres.SSLSettings {
 		CertFile:   serverCerts.CertPath,
 		KeyFile:    serverCerts.KeyPath,
 	}
-
 }
 
 func TestPostgres(t *testing.T) {
