@@ -277,6 +277,26 @@ func TestWithSSL(t *testing.T) {
 	assert.NotNil(t, result)
 }
 
+func TestSSLValidatesKeyMaterialPath(t *testing.T) {
+
+	ctx := context.Background()
+
+	sslSettings := postgres.SSLSettings{}
+
+	_, err := postgres.RunContainer(ctx,
+		postgres.WithConfigFile(filepath.Join("testdata", "postgres-ssl.conf")),
+		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		postgres.WithSSLSettings(sslSettings),
+	)
+	if err == nil {
+		t.Fatal(err)
+	}
+
+}
 func TestWithInitScript(t *testing.T) {
 	ctx := context.Background()
 

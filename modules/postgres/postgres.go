@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -200,7 +201,7 @@ func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOpt
 
 	const defaultPermission = 0o600
 
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      sslSettings.CACertFile,
 			ContainerFilePath: postgresCaCertPath,
@@ -217,9 +218,18 @@ func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOpt
 			FileMode:          defaultPermission,
 		})
 
+		expectedFiles := []string{sslSettings.CACertFile, sslSettings.CertFile, sslSettings.KeyFile}
+		for _, expectedFile := range expectedFiles {
+			_, err := os.Stat(expectedFile)
+			if err != nil {
+				return err
+			}
+		}
+
 		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForLog("database system is ready to accept connections"))
 
 		internalEntrypoint(req)
+		return nil
 	}
 }
 
