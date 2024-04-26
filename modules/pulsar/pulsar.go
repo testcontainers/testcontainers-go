@@ -71,7 +71,7 @@ func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, erro
 // WithFunctionsWorker enables the functions worker, which will override the default pulsar command
 // and add a waiting strategy for the functions worker
 func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Cmd = []string{"/bin/bash", "-c", defaultPulsarCmd}
 
 		ss := []wait.Strategy{
@@ -81,6 +81,8 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 		ss = append(ss, defaultWaitStrategies.Strategies...)
 
 		req.WaitingFor = wait.ForAll(ss...)
+
+		return nil
 	}
 }
 
@@ -100,14 +102,18 @@ func (c *Container) WithLogConsumers(ctx context.Context, consumer ...testcontai
 
 // WithPulsarEnv allows to use the native APIs and set each variable with PULSAR_PREFIX_ as prefix.
 func WithPulsarEnv(configVar string, configValue string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["PULSAR_PREFIX_"+configVar] = configValue
+
+		return nil
 	}
 }
 
 func WithTransactions() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		WithPulsarEnv("transactionCoordinatorEnabled", "true")(req)
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if err := WithPulsarEnv("transactionCoordinatorEnabled", "true")(req); err != nil {
+			return err
+		}
 
 		// clone defaultWaitStrategies
 		ss := []wait.Strategy{
@@ -119,6 +125,8 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 		ss = append(ss, defaultWaitStrategies.Strategies...)
 
 		req.WaitingFor = wait.ForAll(ss...)
+
+		return nil
 	}
 }
 
@@ -146,7 +154,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, genericContainerReq)

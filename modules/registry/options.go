@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -19,13 +20,14 @@ const (
 // REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY environment variable.
 // The dataPath must have the same structure as the registry data directory.
 func WithData(dataPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      dataPath,
 			ContainerFilePath: containerDataPath,
 		})
 
 		req.Env["REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY"] = containerDataPath
+		return nil
 	}
 }
 
@@ -34,23 +36,22 @@ func WithData(dataPath string) testcontainers.CustomizeRequestOption {
 // in the /auth/htpasswd path. The container will be configured to use this file as
 // the htpasswd file, thanks to the REGISTRY_AUTH_HTPASSWD_PATH environment variable.
 func WithHtpasswd(credentials string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		tmpFile, err := os.Create(filepath.Join(os.TempDir(), "htpasswd"))
 		if err != nil {
 			tmpFile, err = os.Create(".")
 			if err != nil {
-				// cannot create the file in the temp dir or in the current dir
-				panic(err)
+				return fmt.Errorf("cannot create the file in the temp dir or in the current dir: %w", err)
 			}
 		}
 		defer tmpFile.Close()
 
 		_, err = tmpFile.WriteString(credentials)
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("cannot write the credentials to the file: %w", err)
 		}
 
-		WithHtpasswdFile(tmpFile.Name())(req)
+		return WithHtpasswdFile(tmpFile.Name())(req)
 	}
 }
 
@@ -59,7 +60,7 @@ func WithHtpasswd(credentials string) testcontainers.CustomizeRequestOption {
 // The container will be configured to use this file as the htpasswd file,
 // thanks to the REGISTRY_AUTH_HTPASSWD_PATH environment variable.
 func WithHtpasswdFile(htpasswdPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      htpasswdPath,
 			ContainerFilePath: containerHtpasswdPath,
@@ -70,5 +71,6 @@ func WithHtpasswdFile(htpasswdPath string) testcontainers.CustomizeRequestOption
 		req.Env["REGISTRY_AUTH_HTPASSWD_REALM"] = "Registry"
 		req.Env["REGISTRY_AUTH_HTPASSWD_PATH"] = containerHtpasswdPath
 		req.Env["REGISTRY_AUTH_HTPASSWD_PATH"] = containerHtpasswdPath
+		return nil
 	}
 }

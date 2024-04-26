@@ -49,7 +49,8 @@ func TestOverrideContainerRequest(t *testing.T) {
 	}
 
 	// the toBeMergedRequest should be merged into the req
-	testcontainers.CustomizeRequest(toBeMergedRequest)(&req)
+	err := testcontainers.CustomizeRequest(toBeMergedRequest)(&req)
+	require.NoError(t, err)
 
 	// toBeMergedRequest should not be changed
 	assert.Equal(t, "", toBeMergedRequest.Env["BAR"])
@@ -87,7 +88,8 @@ func TestWithLogConsumers(t *testing.T) {
 
 	lc := &msgsLogConsumer{}
 
-	testcontainers.WithLogConsumers(lc)(&req)
+	err := testcontainers.WithLogConsumers(lc)(&req)
+	require.NoError(t, err)
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
 	// we expect an error because the MySQL environment variables are not set
@@ -112,7 +114,8 @@ func TestWithStartupCommand(t *testing.T) {
 
 	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
 
-	testcontainers.WithStartupCommand(testExec)(&req)
+	err := testcontainers.WithStartupCommand(testExec)(&req)
+	require.NoError(t, err)
 
 	assert.Len(t, req.LifecycleHooks, 1)
 	assert.Len(t, req.LifecycleHooks[0].PostStarts, 1)
@@ -143,7 +146,8 @@ func TestWithAfterReadyCommand(t *testing.T) {
 
 	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
 
-	testcontainers.WithAfterReadyCommand(testExec)(&req)
+	err := testcontainers.WithAfterReadyCommand(testExec)(&req)
+	require.NoError(t, err)
 
 	assert.Len(t, req.LifecycleHooks, 1)
 	assert.Len(t, req.LifecycleHooks[0].PostReadies, 1)
@@ -205,7 +209,7 @@ func TestWithEnv(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			opt := testcontainers.WithEnv(tc.env)
-			opt.Customize(tc.req)
+			require.NoError(t, opt.Customize(tc.req))
 			require.Equal(t, tc.expect, tc.req.Env)
 		})
 	}
@@ -238,7 +242,7 @@ func TestWithHostPortAccess(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			opt := testcontainers.WithHostPortAccess(tc.hostPorts...)
-			opt.Customize(tc.req)
+			require.NoError(t, opt.Customize(tc.req))
 			require.Equal(t, tc.expect, tc.req.HostAccessPorts)
 		})
 	}

@@ -39,7 +39,8 @@ func TestWithConfigFile(t *testing.T) {
 				},
 			}
 
-			WithConfigFile("redis.conf")(req)
+			err := WithConfigFile("redis.conf")(req)
+			require.NoError(t, err)
 
 			require.Equal(t, tt.expectedCmds, req.Cmd)
 		})
@@ -77,7 +78,8 @@ func TestWithLogLevel(t *testing.T) {
 				},
 			}
 
-			WithLogLevel(LogLevelDebug)(req)
+			err := WithLogLevel(LogLevelDebug)(req)
+			require.NoError(t, err)
 
 			require.Equal(t, tt.expectedCmds, req.Cmd)
 		})
@@ -130,7 +132,8 @@ func TestWithSnapshotting(t *testing.T) {
 				},
 			}
 
-			WithSnapshotting(tt.seconds, tt.changedKeys)(req)
+			err := WithSnapshotting(tt.seconds, tt.changedKeys)(req)
+			require.NoError(t, err)
 
 			require.Equal(t, tt.expectedCmds, req.Cmd)
 		})

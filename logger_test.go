@@ -11,7 +11,7 @@ func TestWithLogger(t *testing.T) {
 	logOpt := WithLogger(logger)
 	t.Run("container", func(t *testing.T) {
 		var req GenericContainerRequest
-		logOpt.Customize(&req)
+		require.NoError(t, logOpt.Customize(&req))
 		require.Equal(t, logger, req.Logger)
 	})
 
