@@ -63,7 +63,6 @@ func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, e
 	}
 
 	return caCert, cert, nil
-
 }
 
 func createSSLSettings(t *testing.T) postgres.SSLSettings {
