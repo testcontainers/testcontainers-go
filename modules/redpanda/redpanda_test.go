@@ -2,8 +2,6 @@ package redpanda_test
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mdelapenya/tlscert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
@@ -346,12 +345,17 @@ func TestRedpandaProduceWithAutoCreateTopics(t *testing.T) {
 }
 
 func TestRedpandaWithTLS(t *testing.T) {
-	cert, err := tls.X509KeyPair(localhostCert, localhostKey)
-	require.NoError(t, err, "failed to load key pair")
+	tmp := t.TempDir()
+	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:      "client",
+		Host:      "localhost,127.0.0.1",
+		ParentDir: tmp,
+	})
+	require.NotNil(t, cert, "failed to generate cert")
 
 	ctx := context.Background()
 
-	container, err := redpanda.RunContainer(ctx, redpanda.WithTLS(localhostCert, localhostKey))
+	container, err := redpanda.RunContainer(ctx, redpanda.WithTLS(cert.Bytes, cert.KeyBytes))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -360,13 +364,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 		}
 	})
 
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(localhostCert)
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      caCertPool,
-	}
+	tlsConfig := cert.TLSConfig()
 
 	httpCl := &http.Client{
 		Timeout: 5 * time.Second,
@@ -415,13 +413,19 @@ func TestRedpandaWithTLS(t *testing.T) {
 }
 
 func TestRedpandaWithTLSAndSASL(t *testing.T) {
-	cert, err := tls.X509KeyPair(localhostCert, localhostKey)
-	require.NoError(t, err, "failed to load key pair")
+	tmp := t.TempDir()
+
+	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Name:      "client",
+		Host:      "localhost,127.0.0.1",
+		ParentDir: tmp,
+	})
+	require.NotNil(t, cert, "failed to generate cert")
 
 	ctx := context.Background()
 
 	container, err := redpanda.RunContainer(ctx,
-		redpanda.WithTLS(localhostCert, localhostKey),
+		redpanda.WithTLS(cert.Bytes, cert.KeyBytes),
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
 		redpanda.WithNewServiceAccount("superuser-1", "test"),
@@ -435,13 +439,7 @@ func TestRedpandaWithTLSAndSASL(t *testing.T) {
 		}
 	})
 
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(localhostCert)
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      caCertPool,
-	}
+	tlsConfig := cert.TLSConfig()
 
 	broker, err := container.KafkaSeedBroker(ctx)
 	require.NoError(t, err)
@@ -573,59 +571,3 @@ func TestRedpandaListener_NoNetwork(t *testing.T) {
 
 	require.Contains(t, err.Error(), "container must be attached to at least one network")
 }
-
-// localhostCert is a PEM-encoded TLS cert with SAN IPs
-// generated from src/crypto/tls:
-// go run generate_cert.go  --rsa-bits 2048 --host 127.0.0.1,::1,localhost --ca --start-date "Jan 1 00:00:00 1970" --duration=1000000h
-var localhostCert = []byte(`-----BEGIN CERTIFICATE-----
-MIIDODCCAiCgAwIBAgIRAKMykg5qJSCb4L3WtcZznSQwDQYJKoZIhvcNAQELBQAw
-EjEQMA4GA1UEChMHQWNtZSBDbzAgFw03MDAxMDEwMDAwMDBaGA8yMDg0MDEyOTE2
-MDAwMFowEjEQMA4GA1UEChMHQWNtZSBDbzCCASIwDQYJKoZIhvcNAQEBBQADggEP
-ADCCAQoCggEBAPYcLIhqCsrmqvsY1gWqI1jx3Ytn5Qjfvlg3BPD/YeD4UVouBhgQ
-NIIERFCmDUzu52pXYZeCouBIVDWqZKixQf3PyBzAqbFvX0pTsZrOnvjuoahzjEcl
-x+CfkIp58mVaV/8v9TyBYCXNuHlI7Pndu/3U5d6npSg8+dTkwW3VZzZyHpsDW+a4
-ByW02NI58LoHzQPMRg9MFToL1qNQy4PFyADf2N/3/SYOkrbSrXA0jYqXE8yvQGYe
-LWcoQ+4YkurSS1TgSNEKxrzGj8w4xRjEjRNsLVNWd8uxZkHwv6LXOn4s39ix3jN4
-7OJJHA8fJAWxAP4ThrpM1j5J+Rq1PD380u8CAwEAAaOBhjCBgzAOBgNVHQ8BAf8E
-BAMCAqQwEwYDVR0lBAwwCgYIKwYBBQUHAwEwDwYDVR0TAQH/BAUwAwEB/zAdBgNV
-HQ4EFgQU8gMBt2leRAnGgCQ6pgIYPHY35GAwLAYDVR0RBCUwI4IJbG9jYWxob3N0
-hwR/AAABhxAAAAAAAAAAAAAAAAAAAAABMA0GCSqGSIb3DQEBCwUAA4IBAQA5F6aw
-6JJMsnCjxRGYXb252zqjxOxweawZ2je4UAGSsF27Phm1Bx6/2mzPpgIB0I7xNBFL
-ljtqBG/FpH6qWpkkegljL8Z5soXiye/4r1G+V6hadm32/OLQCS//dyq7W1a2uVlS
-KdFjoNqRW2PacVQLjnTbP2SJV5CnrJgCsSMXVoNnKdj5gr5ltNNAt9TAJ85iFa5d
-rJla/XghtqEOzYtigKPF7EVqRRl4RmPu30hxwDZMT60ptFolfCEeXpDra5uonJMv
-ElEbzK8ZzXmvWCj94RjPkGKZs8+SDM2qfKPk5ZW2xJxwqS3tkEkZlj1L+b7zYOlt
-aJ65OWCXHLecrgdl
------END CERTIFICATE-----`)
-
-// localhostKey is the private key for localhostCert.
-var localhostKey = []byte(testingKey(`-----BEGIN TESTING KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD2HCyIagrK5qr7
-GNYFqiNY8d2LZ+UI375YNwTw/2Hg+FFaLgYYEDSCBERQpg1M7udqV2GXgqLgSFQ1
-qmSosUH9z8gcwKmxb19KU7Gazp747qGoc4xHJcfgn5CKefJlWlf/L/U8gWAlzbh5
-SOz53bv91OXep6UoPPnU5MFt1Wc2ch6bA1vmuAcltNjSOfC6B80DzEYPTBU6C9aj
-UMuDxcgA39jf9/0mDpK20q1wNI2KlxPMr0BmHi1nKEPuGJLq0ktU4EjRCsa8xo/M
-OMUYxI0TbC1TVnfLsWZB8L+i1zp+LN/Ysd4zeOziSRwPHyQFsQD+E4a6TNY+Sfka
-tTw9/NLvAgMBAAECggEBALKxAiSJ2gw4Lyzhe4PhZIjQE+uEI+etjKbAS/YvdwHB
-SlAP2pzeJ0G/l1p3NnEFhUDQ8SrwzxHJclsEvNE+4otGsiUuPgd2tdlhqzKbkxFr
-MjT8sH14EQgm0uu4Xyb30ayXRZgI16abF7X4HRfOxxAl5EElt+TfYQYSkd8Nc0Mz
-bD7g0riSdOKVhNIkUTT1U7x8ClIgff6vbWztOVP4hGezqEKpO/8+JBkg2GLeH3lC
-PyuHEb33Foxg7SX35M1a89EKC2p4ER6/nfg6wGYyIsn42gBk1JgQdg23x7c/0WOu
-vcw1unNP2kCbnsCeZ6KPRRGXEjbpTqOTzAUOekOeOgECgYEA9/jwK2wrX2J3kJN7
-v6kmxazigXHCa7XmFMgTfdqiQfXfjdi/4u+4KAX04jWra3ZH4KT98ztPOGjb6KhM
-hfMldsxON8S9IQPcbDyj+5R77KU4BG/JQBEOX1uzS9KjMVG5e9ZUpG5UnSoSOgyM
-oN3DZto7C5ULO2U2MT8JaoGb53cCgYEA/hPNMsCXFairxKy0BCsvJFan93+GIdwM
-YoAGLc4Oj67ES8TYC4h9Im5i81JYOjpY4aZeKdj8S+ozmbqqa/iJiAfOr37xOMuX
-AQA2T8uhPXXNXA5s6T3LaIXtzL0NmRRZCtuyEGdCidIXub7Bz8LrfsMc+s/jv57f
-4IPmW12PPkkCgYBpEdDqBT5nfzh8SRGhR1IHZlbfVE12CDACVDh2FkK0QjNETjgY
-N0zHoKZ/hxAoS4jvNdnoyxOpKj0r2sv54enY6X6nALTGnXUzY4p0GhlcTzFqJ9eV
-TuTRIPDaytidGCzIvStGNP2jTmVEtXaM3wphtUxZfwCwXRVWToh12Y8uxwKBgA1a
-FQp5vHbS6lPnj344lr2eIC2NcgsNeUkj2S9HCNTcJkylB4Vzor/QdTq8NQ66Sjlx
-eLlSQc/retK1UIdkBDY10tK+JQcLC+Btlm0TEmIccrJHv8lyCeJwR1LfDHvi6dr8
-OJtMEd8UP1Lvh1fXsnBy6G71xc4oFzPBOrXKcOChAoGACOgyYe47ZizScsUGjCC7
-xARTEolZhtqHKVd5s9oi95P0r7A1gcNx/9YW0rCT2ZD8BD9H++HTE2L+mh3R9zDn
-jwDeW7wVZec+oyGdc9L+B1xU25O+88zNLxlRAX8nXJbHdgL83UclmC51GbXejloP
-D4ZNvyXf/6E27Ibu6v2p/vs=
------END TESTING KEY-----`))
-
-func testingKey(s string) string { return strings.ReplaceAll(s, "TESTING KEY", "PRIVATE KEY") }

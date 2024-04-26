@@ -49,16 +49,20 @@ func (c *Container) ConsoleURL(ctx context.Context) (string, error) {
 
 // WithCredentials sets the administrator credentials. The default is artemis:artemis.
 func WithCredentials(user, password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["ARTEMIS_USER"] = user
 		req.Env["ARTEMIS_PASSWORD"] = password
+
+		return nil
 	}
 }
 
 // WithAnonymousLogin enables anonymous logins.
 func WithAnonymousLogin() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["ANONYMOUS_LOGIN"] = "true"
+
+		return nil
 	}
 }
 
@@ -67,8 +71,10 @@ func WithAnonymousLogin() testcontainers.CustomizeRequestOption {
 // Setting this value will override the default.
 // See the documentation on `artemis create` for available options.
 func WithExtraArgs(args string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["EXTRA_ARGS"] = args
+
+		return nil
 	}
 }
 
@@ -91,7 +97,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&req)
+		if err := opt.Customize(&req); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, req)

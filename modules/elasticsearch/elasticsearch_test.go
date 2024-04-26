@@ -163,6 +163,51 @@ func TestElasticsearch(t *testing.T) {
 	}
 }
 
+func TestElasticsearch8WithoutSSL(t *testing.T) {
+	tests := []struct {
+		name      string
+		configKey string
+	}{
+		{
+			name:      "security disabled",
+			configKey: "xpack.security.enabled",
+		},
+		{
+			name:      "transport ssl disabled",
+			configKey: "xpack.security.transport.ssl.enabled",
+		},
+		{
+			name:      "http ssl disabled",
+			configKey: "xpack.security.http.ssl.enabled",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			container, err := elasticsearch.RunContainer(
+				ctx,
+				testcontainers.WithImage(baseImage8),
+				testcontainers.WithEnv(map[string]string{
+					test.configKey: "false",
+				}))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Cleanup(func() {
+				if err := container.Terminate(ctx); err != nil {
+					t.Fatalf("failed to terminate container: %s", err)
+				}
+			})
+
+			if len(container.Settings.CACert) > 0 {
+				t.Fatal("expected CA cert to be empty")
+			}
+		})
+	}
+
+}
+
 func TestElasticsearch8WithoutCredentials(t *testing.T) {
 	ctx := context.Background()
 

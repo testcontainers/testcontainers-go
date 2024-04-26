@@ -36,7 +36,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 	username := req.Env["MONGO_INITDB_ROOT_USERNAME"]
 	password := req.Env["MONGO_INITDB_ROOT_PASSWORD"]
@@ -59,8 +61,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 // It is used in conjunction with WithPassword to set a username and its password.
 // It will create the specified user with superuser power.
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["MONGO_INITDB_ROOT_USERNAME"] = username
+
+		return nil
 	}
 }
 
@@ -68,8 +72,10 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 // It is used in conjunction with WithUsername to set a username and its password.
 // It will set the superuser password for MongoDB.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["MONGO_INITDB_ROOT_PASSWORD"] = password
+
+		return nil
 	}
 }
 

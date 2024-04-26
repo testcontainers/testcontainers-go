@@ -21,7 +21,7 @@ func ExampleRunContainer() {
 	dbPassword := "password"
 
 	postgresContainer, err := postgres.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/postgres:15.2-alpine"),
+		testcontainers.WithImage("docker.io/postgres:16-alpine"),
 		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		postgres.WithConfigFile(filepath.Join("testdata", "my-postgres.conf")),
 		postgres.WithDatabase(dbName),

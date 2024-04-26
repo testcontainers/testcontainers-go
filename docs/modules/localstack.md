@@ -23,7 +23,7 @@ Running LocalStack as a stand-in for multiple AWS services during a test:
 <!--/codeinclude-->
 
 Environment variables listed in [Localstack's README](https://github.com/localstack/localstack#configurations) may be used to customize Localstack's configuration. 
-Use the `OverrideContainerRequest` option when creating the `LocalStackContainer` to apply configuration settings.
+Use the `testcontainers.WithEnv` option when creating the `LocalStackContainer` to apply those variables.
 
 ## Module reference
 
