@@ -33,7 +33,7 @@ func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, e
 	tmpDir := t.TempDir()
 	certsDir := tmpDir + "/certs"
 
-	if err := os.MkdirAll(certsDir, 0755); err != nil {
+	if err := os.MkdirAll(certsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -48,7 +48,6 @@ func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, e
 	})
 
 	if caCert == nil {
-
 		return caCert, nil, errors.New("Unable to create CA Authority")
 	}
 
@@ -278,7 +277,6 @@ func TestWithSSL(t *testing.T) {
 }
 
 func TestSSLValidatesKeyMaterialPath(t *testing.T) {
-
 	ctx := context.Background()
 
 	sslSettings := postgres.SSLSettings{}
@@ -295,8 +293,8 @@ func TestSSLValidatesKeyMaterialPath(t *testing.T) {
 	if err == nil {
 		t.Fatal(err)
 	}
-
 }
+
 func TestWithInitScript(t *testing.T) {
 	ctx := context.Background()
 

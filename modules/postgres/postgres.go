@@ -22,10 +22,8 @@ const (
 	defaultSnapshotName  = "migrated_template"
 )
 
-var (
-	//go:embed resources/customEntrypoint.sh
-	embeddedCustomEntrypoint string
-)
+//go:embed resources/customEntrypoint.sh
+var embeddedCustomEntrypoint string
 
 // PostgresContainer represents the postgres container type used in the module
 type PostgresContainer struct {
