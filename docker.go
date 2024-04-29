@@ -98,6 +98,11 @@ func (c *DockerContainer) SetProvider(provider *DockerProvider) {
 	c.provider = provider
 }
 
+// SetTerminationSignal sets the termination signal for the container
+func (c *DockerContainer) SetTerminationSignal(signal chan bool) {
+	c.terminationSignal = signal
+}
+
 func (c *DockerContainer) GetContainerID() string {
 	return c.ID
 }
@@ -479,6 +484,13 @@ func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]stri
 	return a, nil
 }
 
+// Exec executes a command in the current container.
+// It returns the exit status of the executed command, an [io.Reader] containing the combined
+// stdout and stderr, and any encountered error. Note that reading directly from the [io.Reader]
+// may result in unexpected bytes due to custom stream multiplexing headers.
+// Use [tcexec.Multiplexed] option to read the combined output without the multiplexing headers.
+// Alternatively, to separate the stdout and stderr from [io.Reader] and interpret these headers properly,
+// [github.com/docker/docker/pkg/stdcopy.StdCopy] from the Docker API should be used.
 func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
 	cli := c.provider.client
 
@@ -847,6 +859,10 @@ func (n *DockerNetwork) Remove(ctx context.Context) error {
 	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
+func (n *DockerNetwork) SetTerminationSignal(signal chan bool) {
+	n.terminationSignal = signal
+}
+
 // DockerProvider implements the ContainerProvider interface
 type DockerProvider struct {
 	*DockerProviderOptions
@@ -887,8 +903,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		resp, err = p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 		if err != nil {
 			buildError = errors.Join(buildError, err)
-			var enf errdefs.ErrNotFound
-			if errors.As(err, &enf) {
+			if isPermanentClientError(err) {
 				return backoff.Permanent(err)
 			}
 			Logger.Printf("Failed to build image: %s, will retry", err)
@@ -1089,6 +1104,20 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		defaultReadinessHook(),
 	}
 
+	// in the case the container needs to access a local port
+	// we need to forward the local port to the container
+	if len(req.HostAccessPorts) > 0 {
+		// a container lifecycle hook will be added, which will expose the host ports to the container
+		// using a SSHD server running in a container. The SSHD server will be started and will
+		// forward the host ports to the container ports.
+		sshdForwardPortsHook, err := exposeHostPorts(ctx, &req, req.HostAccessPorts...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to expose host ports: %w", err)
+		}
+
+		defaultHooks = append(defaultHooks, sshdForwardPortsHook)
+	}
+
 	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
 
 	err = req.creatingHook(ctx)
@@ -1167,6 +1196,9 @@ func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string)
 	return container, backoff.Retry(func() error {
 		c, err := p.findContainerByName(ctx, name)
 		if err != nil {
+			if !errdefs.IsNotFound(err) && isPermanentClientError(err) {
+				return backoff.Permanent(err)
+			}
 			return err
 		}
 
@@ -1267,8 +1299,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	err = backoff.Retry(func() error {
 		pull, err = p.client.ImagePull(ctx, tag, pullOpt)
 		if err != nil {
-			var enf errdefs.ErrNotFound
-			if errors.As(err, &enf) {
+			if isPermanentClientError(err) {
 				return backoff.Permanent(err)
 			}
 			Logger.Printf("Failed to pull image: %s, will retry", err)
@@ -1603,4 +1634,21 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 // PullImage pulls image from registry
 func (p *DockerProvider) PullImage(ctx context.Context, image string) error {
 	return p.attemptToPullImage(ctx, image, types.ImagePullOptions{})
+}
+
+var permanentClientErrors = []func(error) bool{
+	errdefs.IsNotFound,
+	errdefs.IsInvalidParameter,
+	errdefs.IsUnauthorized,
+	errdefs.IsForbidden,
+	errdefs.IsNotImplemented,
+}
+
+func isPermanentClientError(err error) bool {
+	for _, isErrFn := range permanentClientErrors {
+		if isErrFn(err) {
+			return true
+		}
+	}
+	return false
 }

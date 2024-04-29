@@ -29,12 +29,14 @@ type DoltContainer struct {
 }
 
 func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		username := req.Env["DOLT_USER"]
 		if strings.EqualFold(rootUser, username) {
 			delete(req.Env, "DOLT_USER")
 			delete(req.Env, "DOLT_PASSWORD")
 		}
+
+		return nil
 	}
 }
 
@@ -184,59 +186,66 @@ func (c *DoltContainer) ConnectionString(ctx context.Context, args ...string) (s
 }
 
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["DOLT_USER"] = username
+		return nil
 	}
 }
 
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["DOLT_PASSWORD"] = password
+		return nil
 	}
 }
 
 func WithDoltCredsPublicKey(key string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["DOLT_CREDS_PUB_KEY"] = key
+		return nil
 	}
 }
 
 func WithDoltCloneRemoteUrl(url string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["DOLT_REMOTE_CLONE_URL"] = url
+		return nil
 	}
 }
 
 func WithDatabase(database string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["DOLT_DATABASE"] = database
+		return nil
 	}
 }
 
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/dolt/servercfg.d/server.cnf",
 			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
+		return nil
 	}
 }
 
 func WithCredsFile(credsFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      credsFile,
 			ContainerFilePath: "/root/.dolt/creds/" + filepath.Base(credsFile),
 			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
+		return nil
 	}
 }
 
 func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		var initScripts []testcontainers.ContainerFile
 		for _, script := range scripts {
 			cf := testcontainers.ContainerFile{
@@ -247,5 +256,6 @@ func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 			initScripts = append(initScripts, cf)
 		}
 		req.Files = append(req.Files, initScripts...)
+		return nil
 	}
 }

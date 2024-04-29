@@ -41,7 +41,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
@@ -54,15 +56,17 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // WithToken is a container option function that sets the root token for the Vault
 func WithToken(token string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["VAULT_DEV_ROOT_TOKEN_ID"] = token
 		req.Env["VAULT_TOKEN"] = token
+
+		return nil
 	}
 }
 
 // WithInitCommand is an option function that adds a set of initialization commands to the Vault's configuration
 func WithInitCommand(commands ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		commandsList := make([]string, 0, len(commands))
 		for _, command := range commands {
 			commandsList = append(commandsList, "vault "+command)
@@ -70,6 +74,8 @@ func WithInitCommand(commands ...string) testcontainers.CustomizeRequestOption {
 		cmd := []string{"/bin/sh", "-c", strings.Join(commandsList, " && ")}
 
 		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForExec(cmd))
+
+		return nil
 	}
 }
 

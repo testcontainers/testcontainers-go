@@ -107,31 +107,35 @@ func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context) (string, error) {
 }
 
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["INFLUXDB_USER"] = username
+		return nil
 	}
 }
 
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["INFLUXDB_PASSWORD"] = password
+		return nil
 	}
 }
 
 func WithDatabase(database string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["INFLUXDB_DATABASE"] = database
+		return nil
 	}
 }
 
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/influxdb/influxdb.conf",
 			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
+		return nil
 	}
 }
 
@@ -139,12 +143,13 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // The secPath is the path to the directory on the host machine.
 // The directory will be copied to the root of the container.
 func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
 			HostFilePath:      path.Join(srcPath, "docker-entrypoint-initdb.d"),
 			ContainerFilePath: "/",
 			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
+		return nil
 	}
 }
