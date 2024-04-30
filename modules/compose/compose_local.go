@@ -96,8 +96,9 @@ func (o ComposeLoggerOption) ApplyToLocalCompose(opts *LocalDockerComposeOptions
 	opts.Logger = o.logger
 }
 
-func (o ComposeLoggerOption) applyToComposeStack(opts *composeStackOptions) {
+func (o ComposeLoggerOption) applyToComposeStack(opts *composeStackOptions) error {
 	opts.Logger = o.logger
+	return nil
 }
 
 // Deprecated: it will be removed in the next major release
