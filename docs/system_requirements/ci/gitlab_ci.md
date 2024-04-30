@@ -23,13 +23,13 @@ See below for an example runner configuration:
 ```
 
 !!! warning
-    The environment variable `TESTCONTAINERS_HOST_OVERRIDE` needs to be configured, otherwise, a wrong IP address would be used to resolve the Docker host, which will likely lead to failing tests.
+    The environment variable `TC_HOST` needs to be configured, otherwise, a wrong IP address would be used to resolve the Docker host, which will likely lead to failing tests.
 
 Please also include the following in your GitlabCI pipeline definitions (`.gitlab-ci.yml`) that use Testcontainers:
 
 ```yml
 variables:
-  TESTCONTAINERS_HOST_OVERRIDE: "host.docker.internal"
+  TC_HOST: "host.docker.internal"
 ```
 
 ## Example using DinD (Docker-in-Docker)

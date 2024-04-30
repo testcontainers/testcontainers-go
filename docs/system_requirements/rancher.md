@@ -18,7 +18,7 @@ Steps are as follows:
 ```sh
 export DOCKER_HOST=unix://$HOME/.rd/docker.sock
 export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
-export TESTCONTAINERS_HOST_OVERRIDE=$(rdctl shell ip a show vznat | awk '/inet / {sub("/.*",""); print $2}')
+export TC_HOST=$(rdctl shell ip a show vznat | awk '/inet / {sub("/.*",""); print $2}')
 ```
 
 As always, remember that environment variables are not persisted unless you add them to the relevant file for your default shell e.g. `~/.zshrc`.
