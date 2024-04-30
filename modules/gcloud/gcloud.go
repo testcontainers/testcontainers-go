@@ -41,12 +41,14 @@ func newGCloudContainer(ctx context.Context, port int, c testcontainers.Containe
 }
 
 type options struct {
-	ProjectID string
+	ProjectID    string
+	DataYamlFile string
 }
 
 func defaultOptions() options {
 	return options{
-		ProjectID: defaultProjectID,
+		ProjectID:    defaultProjectID,
+		DataYamlFile: "/data.yaml",
 	}
 }
 
@@ -66,6 +68,20 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 func WithProjectID(projectID string) Option {
 	return func(o *options) {
 		o.ProjectID = projectID
+	}
+}
+
+// WithDataYamlFile seeds the Bigquery project for the GCloud container.
+func WithDataYamlFile(dataYamlFile string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		dataFile := testcontainers.ContainerFile{
+			HostFilePath:      dataYamlFile,
+			ContainerFilePath: "/data.yaml",
+			FileMode:          0o755,
+		}
+
+		req.Files = append(req.Files, dataFile)
+		req.Cmd = append(req.Cmd, "--data-from-yaml", "/data.yaml")
 	}
 }
 
