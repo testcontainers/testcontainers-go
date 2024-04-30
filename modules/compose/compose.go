@@ -35,7 +35,7 @@ type composeStackOptions struct {
 }
 
 type ComposeStackOption interface {
-	applyToComposeStack(o *composeStackOptions)
+	applyToComposeStack(o *composeStackOptions) error
 }
 
 type stackUpOptions struct {
@@ -112,7 +112,6 @@ func WithStackFiles(filePaths ...string) ComposeStackOption {
 }
 
 // WithStackReaders supports reading the compose file/s from a reader.
-// This function will panic if it's no possible to read the content from the reader.
 func WithStackReaders(readers ...io.Reader) ComposeStackOption {
 	return ComposeStackReaders(readers)
 }
@@ -129,7 +128,9 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 	}
 
 	for i := range opts {
-		opts[i].applyToComposeStack(&composeOptions)
+		if err := opts[i].applyToComposeStack(&composeOptions); err != nil {
+			return nil, err
+		}
 	}
 
 	if len(composeOptions.Paths) < 1 {
