@@ -120,7 +120,7 @@ func (ri RemoveImages) applyToStackDown(o *stackDownOptions) {
 
 type ComposeStackReaders []io.Reader
 
-func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) {
+func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) error {
 	f := make([]string, len(r))
 	baseName := "docker-compose-%d.yml"
 	for i, reader := range r {
@@ -128,19 +128,19 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) {
 		tmp = filepath.Join(tmp, strconv.FormatInt(time.Now().UnixNano(), 10))
 		err := os.MkdirAll(tmp, 0755)
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("failed to create temporary directory: %w", err)
 		}
 
 		name := fmt.Sprintf(baseName, i)
 
 		bs, err := io.ReadAll(reader)
 		if err != nil {
-			panic(err)
+			fmt.Errorf("failed to read from reader: %w", err)
 		}
 
 		err = os.WriteFile(filepath.Join(tmp, name), bs, 0644)
 		if err != nil {
-			panic(err)
+			fmt.Errorf("failed to write to temporary file: %w", err)
 		}
 
 		f[i] = filepath.Join(tmp, name)
@@ -150,18 +150,22 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) {
 	}
 
 	o.Paths = f
+
+	return nil
 }
 
 type ComposeStackFiles []string
 
-func (f ComposeStackFiles) applyToComposeStack(o *composeStackOptions) {
+func (f ComposeStackFiles) applyToComposeStack(o *composeStackOptions) error {
 	o.Paths = f
+	return nil
 }
 
 type StackIdentifier string
 
-func (f StackIdentifier) applyToComposeStack(o *composeStackOptions) {
+func (f StackIdentifier) applyToComposeStack(o *composeStackOptions) error {
 	o.Identifier = string(f)
+	return nil
 }
 
 func (f StackIdentifier) String() string {
