@@ -15,13 +15,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
-func TestBigQueryContainer(t *testing.T) {
+func ExampleRunBigQueryContainer() {
 	// runBigQueryContainer {
 	ctx := context.Background()
 
@@ -82,20 +80,12 @@ func TestBigQueryContainer(t *testing.T) {
 		}
 	}
 
-	// Output:
-	// [30]
-	expectedValue := int64(30)
-	actualValue := val[0]
 	fmt.Println(val[0])
-
-	require.NoError(t, err)
-	if assert.NotNil(t, val) {
-		assert.Equal(t, expectedValue, actualValue)
-	}
+	// Output:
+	// 30
 }
 
 func TestBigQueryWithDataYamlFile(t *testing.T) {
-	// runBigQueryContainer {
 	ctx := context.Background()
 
 	absPath, err := filepath.Abs(filepath.Join(".", "testdata", "data.yaml"))
@@ -113,15 +103,12 @@ func TestBigQueryWithDataYamlFile(t *testing.T) {
 		log.Fatalf("failed to run container: %v", err)
 	}
 
-	// Clean up the container
 	defer func() {
 		if err := bigQueryContainer.Terminate(ctx); err != nil {
 			log.Fatalf("failed to terminate container: %v", err)
 		}
 	}()
-	// }
 
-	// bigQueryClient {
 	projectID := bigQueryContainer.Settings.ProjectID
 
 	opts := []option.ClientOption{
@@ -136,7 +123,6 @@ func TestBigQueryWithDataYamlFile(t *testing.T) {
 		log.Fatalf("failed to create bigquery client: %v", err) // nolint:gocritic
 	}
 	defer client.Close()
-	// }
 
 	selectQuery := client.Query("SELECT * FROM dataset1.table_a where name = @name")
 	selectQuery.QueryConfig.Parameters = []bigquery.QueryParameter{
@@ -162,5 +148,7 @@ func TestBigQueryWithDataYamlFile(t *testing.T) {
 	// [30]
 	expectedValue := int64(30)
 	actualValue := val[0]
-	assert.Equal(t, expectedValue, actualValue)
+	if expectedValue != actualValue {
+		t.Errorf("BigQuery value didn't match. \nExpected %v, \nbut got: %v", expectedValue, actualValue)
+	}
 }
