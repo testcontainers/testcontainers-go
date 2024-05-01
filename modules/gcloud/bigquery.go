@@ -28,7 +28,9 @@ func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerC
 	req.Cmd = []string{"--project", settings.ProjectID}
 
 	for _, opt := range opts {
-		opt.Customize(&req)
+		if err := opt.Customize(&req); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, req)
