@@ -53,6 +53,15 @@ If you need to set a different password to request authorization when performing
 [Custom Password](../../modules/elasticsearch/examples_test.go) inside_block:usingPassword
 <!--/codeinclude-->
 
+#### Skipping cert retrieval
+
+If you do not want to retrieve the Elasticsearch certificate, you can use the `WithoutCertRetrieval` option.
+This can be useful in some edge cases where the certificate to download from the container are not available.
+
+<!--codeinclude-->
+[Skip Certificate Retrieval](../../modules/elasticsearch/examples_test.go) inside_block:withoutCertRetrieval
+<!--/codeinclude-->
+
 ### Configuring the access to the Elasticsearch container
 
 The Elasticsearch container exposes its settings in order to configure the client to connect to it. With those settings it's very easy to setup up our preferred way to connect to the container. We are going to show you two ways to connect to the container, using the HTTP client from the standard library, and using the Elasticsearch client.

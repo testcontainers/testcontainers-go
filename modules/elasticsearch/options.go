@@ -8,16 +8,18 @@ import (
 // It could be used to build an HTTP client for the Elasticsearch container, as it will
 // hold information on how to connect to the container.
 type Options struct {
-	Address  string
-	CACert   []byte
-	Password string
-	Username string
+	Address           string
+	CACert            []byte
+	Password          string
+	Username          string
+	SkipCertRetrieval bool
 }
 
 func defaultOptions() *Options {
 	return &Options{
-		CACert:   nil,
-		Username: defaultUsername,
+		CACert:            nil,
+		Username:          defaultUsername,
+		SkipCertRetrieval: false,
 	}
 }
 
@@ -37,5 +39,11 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 func WithPassword(password string) Option {
 	return func(o *Options) {
 		o.Password = password
+	}
+}
+
+func WithoutCertRetrieval() Option {
+	return func(o *Options) {
+		o.SkipCertRetrieval = true
 	}
 }

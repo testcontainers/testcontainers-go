@@ -134,7 +134,9 @@ func TestElasticsearch(t *testing.T) {
 					// finish validating the response when the request is unauthorised
 					return
 				}
-
+				if esContainer.Settings.CACert == nil {
+					t.Fatal("expected CA cert to be set")
+				}
 			}
 
 			// validate response
@@ -257,6 +259,25 @@ func TestElasticsearchOSSCannotuseWithPassword(t *testing.T) {
 	_, err := elasticsearch.RunContainer(ctx, testcontainers.WithImage(ossImage), elasticsearch.WithPassword("foo"))
 	if err == nil {
 		t.Fatal(err, "Should not be able to use WithPassword with OSS image.")
+	}
+}
+
+func TestElastictSearchWithoutCertRetrieval(t *testing.T) {
+	ctx := context.Background()
+
+	container, err := elasticsearch.RunContainer(ctx, testcontainers.WithImage(baseImage8), elasticsearch.WithoutCertRetrieval())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	if container.Settings.CACert != nil {
+		t.Fatal("expected CA cert to be empty")
 	}
 }
 

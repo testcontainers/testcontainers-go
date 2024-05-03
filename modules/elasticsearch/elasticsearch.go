@@ -128,7 +128,7 @@ func configureAddress(ctx context.Context, c *ElasticsearchContainer) (string, e
 // For that, it defines a post start hook that copies the certificate from the container to the host.
 // The certificate is only available since version 8, and will be located in a well-known location.
 func configureCertificate(settings *Options, req *testcontainers.GenericContainerRequest) error {
-	if isAtLeastVersion(req.Image, 8) {
+	if isAtLeastVersion(req.Image, 8) && !settings.SkipCertRetrieval {
 		// These configuration keys explicitly disable CA generation.
 		// If any are set we skip the file retrieval.
 		configKeys := []string{

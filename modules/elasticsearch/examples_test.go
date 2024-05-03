@@ -112,3 +112,30 @@ func ExampleRunContainer_connectUsingElasticsearchClient() {
 	fmt.Println(esResp.Tagline)
 	// Output: You Know, for Search
 }
+
+func ExampleRunContainer_withoutCertRetrieval() {
+	// withoutCertRetrieval {
+	ctx := context.Background()
+	elasticsearchContainer, err := elasticsearch.RunContainer(
+		ctx,
+		testcontainers.WithImage("docker.elastic.co/elasticsearch/elasticsearch:8.9.0"),
+		elasticsearch.WithoutCertRetrieval(),
+	)
+	if err != nil {
+		log.Fatalf("failed to start container: %s", err)
+	}
+	defer func() {
+		err := elasticsearchContainer.Terminate(ctx)
+		if err != nil {
+			log.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
+	// }
+
+	fmt.Println(elasticsearchContainer.Settings.SkipCertRetrieval)
+	fmt.Println(elasticsearchContainer.Settings.CACert)
+
+	// Output:
+	// true
+	// nil
+}
