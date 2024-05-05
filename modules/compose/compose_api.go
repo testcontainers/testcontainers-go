@@ -370,6 +370,8 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 				}()
 			}
 
+			d.containersLock.Lock()
+			defer d.containersLock.Unlock()
 			d.containers[srv.Name] = dc
 
 			return nil
@@ -398,6 +400,8 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 			}
 
 			// cache all the containers on compose.up
+			d.containersLock.Lock()
+			defer d.containersLock.Unlock()
 			d.containers[svc] = target
 
 			return strategy.WaitUntilReady(errGrpCtx, target)
