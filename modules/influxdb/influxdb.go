@@ -69,7 +69,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		if lastIndex := strings.LastIndex(genericContainerReq.Image, ":"); lastIndex != -1 {
 			tag := genericContainerReq.Image[lastIndex+1:]
 			if tag == "latest" || tag[0] == '2' {
-				genericContainerReq.WaitingFor = wait.ForLog(`Listening log_id=[0-9a-zA-Z_]+ service=tcp-listener transport=http`).AsRegexp()
+				genericContainerReq.WaitingFor = wait.ForLog(`Listening log_id=[0-9a-zA-Z_~]+ service=tcp-listener transport=http`).AsRegexp()
 			}
 		} else {
 			genericContainerReq.WaitingFor = wait.ForLog("Listening for signals")
