@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/docker/docker/api/types"
 	"math/rand"
 	"net"
 	"strings"
@@ -117,8 +118,11 @@ func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContai
 			return err
 		}
 
-		if r.healthStatus != healthStatusHealthy && r.healthStatus != healthStatusNone {
-			return fmt.Errorf("container %s is not healthy, wanted status=%s, got status=%s", resp[0].ID[:8], healthStatusHealthy, r.healthStatus)
+		// if a health status is present on the container, and the container is not healthy, error
+		if r.healthStatus != "" {
+			if r.healthStatus != types.Healthy && r.healthStatus != types.NoHealthcheck {
+				return fmt.Errorf("container %s is not healthy, wanted status=%s, got status=%s", resp[0].ID[:8], types.Healthy, r.healthStatus)
+			}
 		}
 
 		reaperContainer = r

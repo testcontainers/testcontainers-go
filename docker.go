@@ -49,11 +49,6 @@ const (
 	packagePath   = "github.com/testcontainers/testcontainers-go"
 
 	logStoppedForOutOfSyncMessage = "Stopping log consumer: Headers out of sync"
-
-	healthStatusNone      = ""          // default status for a container with no healthcheck
-	healthStatusHealthy   = "healthy"   // healthy container
-	healthStatusStarting  = "starting"  // starting container
-	healthStatusUnhealthy = "unhealthy" // unhealthy container
 )
 
 var createContainerFailDueToNameConflictRegex = regexp.MustCompile("Conflict. The container name .* is already in use by container .*")
