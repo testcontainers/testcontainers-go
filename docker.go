@@ -114,10 +114,12 @@ func (c *DockerContainer) IsRunning() bool {
 // Endpoint gets proto://host:port string for the first exposed port
 // Will returns just host:port if proto is ""
 func (c *DockerContainer) Endpoint(ctx context.Context, proto string) (string, error) {
-	ports, err := c.Ports(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return "", err
 	}
+
+	ports := inspect.NetworkSettings.Ports
 
 	// get first port
 	var firstPort nat.Port
@@ -177,17 +179,15 @@ func (c *DockerContainer) Inspect(ctx context.Context) (*types.ContainerJSON, er
 
 // MappedPort gets externally mapped port for a container port
 func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return "", err
 	}
 	if inspect.ContainerJSONBase.HostConfig.NetworkMode == "host" {
 		return port, nil
 	}
-	ports, err := c.Ports(ctx)
-	if err != nil {
-		return "", err
-	}
+
+	ports := inspect.NetworkSettings.Ports
 
 	for k, p := range ports {
 		if k.Port() != port.Port() {
@@ -205,9 +205,10 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 	return "", errors.New("port not found")
 }
 
+// Deprecated: use c.Inspect(ctx).NetworkSettings.Ports instead.
 // Ports gets the exposed ports for the container.
 func (c *DockerContainer) Ports(ctx context.Context) (nat.PortMap, error) {
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -319,23 +320,14 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 // update container raw info
 func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.ContainerJSON, error) {
-	inspect, err := c.inspectContainer(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	c.raw = inspect
-	return c.raw, nil
-}
-
-func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.ContainerJSON, error) {
 	defer c.provider.Close()
 	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &inspect, nil
+	c.raw = &inspect
+	return c.raw, nil
 }
 
 // Logs will fetch both STDOUT and STDERR from the current container. Returns a
@@ -403,9 +395,10 @@ func (c *DockerContainer) followOutput(consumer LogConsumer) {
 	c.consumers = append(c.consumers, consumer)
 }
 
+// Deprecated: use c.Inspect(ctx).Name instead.
 // Name gets the name of the container.
 func (c *DockerContainer) Name(ctx context.Context) (string, error) {
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -426,7 +419,7 @@ func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, err
 
 // Networks gets the names of the networks the container is attached to.
 func (c *DockerContainer) Networks(ctx context.Context) ([]string, error) {
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return []string{}, err
 	}
@@ -444,7 +437,7 @@ func (c *DockerContainer) Networks(ctx context.Context) ([]string, error) {
 
 // ContainerIP gets the IP address of the primary network within the container.
 func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -467,7 +460,7 @@ func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
 func (c *DockerContainer) ContainerIPs(ctx context.Context) ([]string, error) {
 	ips := make([]string, 0)
 
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -482,7 +475,7 @@ func (c *DockerContainer) ContainerIPs(ctx context.Context) ([]string, error) {
 
 // NetworkAliases gets the aliases of the container for the networks it is attached to.
 func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]string, error) {
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return map[string][]string{}, err
 	}

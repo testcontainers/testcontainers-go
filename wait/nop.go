@@ -51,6 +51,11 @@ func (st NopStrategyTarget) Host(_ context.Context) (string, error) {
 	return "", nil
 }
 
+func (st NopStrategyTarget) Inspect(_ context.Context) (*types.ContainerJSON, error) {
+	return nil, nil
+}
+
+// Deprecated: use Inspect instead
 func (st NopStrategyTarget) Ports(_ context.Context) (nat.PortMap, error) {
 	return nil, nil
 }

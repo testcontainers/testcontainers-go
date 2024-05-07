@@ -20,6 +20,11 @@ func (st exitStrategyTarget) Host(ctx context.Context) (string, error) {
 	return "", nil
 }
 
+func (st exitStrategyTarget) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+	return nil, nil
+}
+
+// Deprecated: use Inspect instead
 func (st exitStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
 	return nil, nil
 }
