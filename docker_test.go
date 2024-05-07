@@ -267,8 +267,8 @@ func TestContainerTerminationResetsState(t *testing.T) {
 	if nginxA.SessionID() != "" {
 		t.Fatal("Internal state must be reset.")
 	}
-	ports, err := nginxA.Ports(ctx)
-	if err == nil || ports != nil {
+	inspect, err := nginxA.Inspect(ctx)
+	if err == nil || inspect != nil {
 		t.Fatal("expected error from container inspect.")
 	}
 }
@@ -306,7 +306,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		assert.Nil(t, state, "expected nil container inspect.")
 	})
 
-	t.Run("Non-nil State after termination if raw as already set", func(t *testing.T) {
+	t.Run("Nil State after termination if raw as already set", func(t *testing.T) {
 		ctx := context.Background()
 		nginx, err := createContainerFn(ctx)
 		if err != nil {
@@ -327,7 +327,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		state, err = nginx.State(ctx)
 		require.Error(t, err, "expected error from container inspect after container termination.")
 
-		assert.NotNil(t, state, "unexpected nil container inspect after container termination.")
+		assert.Nil(t, state, "unexpected nil container inspect after container termination.")
 	})
 }
 
@@ -539,10 +539,12 @@ func TestContainerCreationWithName(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
-	name, err := nginxC.Name(ctx)
+	inspect, err := nginxC.Inspect(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	name := inspect.Name
 	if name != expectedName {
 		t.Errorf("Expected container name '%s'. Got '%s'.", expectedName, name)
 	}
@@ -1320,6 +1322,29 @@ func TestContainerWithCustomHostname(t *testing.T) {
 	}
 }
 
+func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
+	container, err := GenericContainer(context.Background(), GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: nginxImage,
+		},
+		Started: true,
+	})
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, context.Background(), container)
+
+	inspect, err := container.Inspect(context.Background())
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, inspect.ID)
+
+	container.Stop(context.Background(), nil)
+
+	// type assertion to ensure that the container is a DockerContainer
+	dc := container.(*DockerContainer)
+
+	assert.Nil(t, dc.raw)
+}
+
 func readHostname(tb testing.TB, containerId string) string {
 	containerClient, err := NewDockerClientWithOpts(context.Background())
 	if err != nil {
@@ -1984,9 +2009,12 @@ func TestDockerProviderFindContainerByName(t *testing.T) {
 		Started: true,
 	})
 	require.NoError(t, err)
-	c1Name, err := c1.Name(ctx)
+
+	c1Inspect, err := c1.Inspect(ctx)
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, c1)
+
+	c1Name := c1Inspect.Name
 
 	c2, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
@@ -2036,8 +2064,10 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			require.NoError(t, err, "create container should not fail")
 			defer func() { _ = c.Terminate(context.Background()) }()
 			// Get the image ID.
-			containerName, err := c.Name(ctx)
-			require.NoError(t, err, "get container name should not fail")
+			containerInspect, err := c.Inspect(ctx)
+			require.NoError(t, err, "container inspect should not fail")
+
+			containerName := containerInspect.Name
 			containerDetails, err := cli.ContainerInspect(ctx, containerName)
 			require.NoError(t, err, "inspect container should not fail")
 			containerImage := containerDetails.Image

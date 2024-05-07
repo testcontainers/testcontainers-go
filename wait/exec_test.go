@@ -62,6 +62,11 @@ func (st mockExecTarget) Host(_ context.Context) (string, error) {
 	return "", errors.New("not implemented")
 }
 
+func (st mockExecTarget) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+	return nil, errors.New("not implemented")
+}
+
+// Deprecated: use Inspect instead
 func (st mockExecTarget) Ports(ctx context.Context) (nat.PortMap, error) {
 	return nil, errors.New("not implemented")
 }

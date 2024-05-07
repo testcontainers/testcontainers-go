@@ -90,10 +90,13 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	internalPort := hp.Port
 	if internalPort == "" {
 		var ports nat.PortMap
-		ports, err = target.Ports(ctx)
+		inspect, err := target.Inspect(ctx)
 		if err != nil {
 			return err
 		}
+
+		ports = inspect.NetworkSettings.Ports
+
 		if len(ports) > 0 {
 			for p := range ports {
 				internalPort = p

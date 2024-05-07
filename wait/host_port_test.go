@@ -80,12 +80,18 @@ func TestWaitForExposedPortSucceeds(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		PortsImpl: func(_ context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"80": []nat.PortBinding{
-					{
-						HostIP:   "0.0.0.0",
-						HostPort: port.Port(),
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"80": []nat.PortBinding{
+								{
+									HostIP:   "0.0.0.0",
+									HostPort: port.Port(),
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -500,12 +506,18 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		PortsImpl: func(_ context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"80": []nat.PortBinding{
-					{
-						HostIP:   "0.0.0.0",
-						HostPort: port.Port(),
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"80": []nat.PortBinding{
+								{
+									HostIP:   "0.0.0.0",
+									HostPort: port.Port(),
+								},
+							},
+						},
 					},
 				},
 			}, nil
