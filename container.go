@@ -39,6 +39,7 @@ type Container interface {
 	Endpoint(context.Context, string) (string, error)               // get proto://ip:port string for the first exposed port
 	PortEndpoint(context.Context, nat.Port, string) (string, error) // get proto://ip:port string for the given exposed port
 	Host(context.Context) (string, error)                           // get host where the container port is exposed
+	Inspect(context.Context) (*types.ContainerJSON, error)          // get container info
 	MappedPort(context.Context, nat.Port) (nat.Port, error)         // get externally mapped port for a container port
 	Ports(context.Context) (nat.PortMap, error)                     // get all exposed ports
 	SessionID() string                                              // get session id

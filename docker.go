@@ -161,6 +161,20 @@ func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 	return host, nil
 }
 
+// Inspect gets the raw container info, caching the result for subsequent calls
+func (c *DockerContainer) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+	if c.raw != nil {
+		return c.raw, nil
+	}
+
+	json, err := c.inspectRawContainer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return json, nil
+}
+
 // MappedPort gets externally mapped port for a container port
 func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
 	inspect, err := c.inspectContainer(ctx)
@@ -260,6 +274,7 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	defer c.provider.Close()
 
 	c.isRunning = false
+	c.raw = nil // invalidate the cache, as the container representation will change after stopping
 
 	err = c.stoppedHook(ctx)
 	if err != nil {
@@ -298,18 +313,18 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 	c.sessionID = ""
 	c.isRunning = false
+	c.raw = nil // invalidate the cache here too
 	return errors.Join(errs...)
 }
 
 // update container raw info
 func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.ContainerJSON, error) {
-	defer c.provider.Close()
-	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
+	inspect, err := c.inspectContainer(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	c.raw = &inspect
+	c.raw = inspect
 	return c.raw, nil
 }
 

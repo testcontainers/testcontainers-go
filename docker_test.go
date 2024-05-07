@@ -1320,6 +1320,29 @@ func TestContainerWithCustomHostname(t *testing.T) {
 	}
 }
 
+func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
+	container, err := GenericContainer(context.Background(), GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image: nginxImage,
+		},
+		Started: true,
+	})
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, context.Background(), container)
+
+	inspect, err := container.Inspect(context.Background())
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, inspect.ID)
+
+	container.Stop(context.Background(), nil)
+
+	// type assertion to ensure that the container is a DockerContainer
+	dc := container.(*DockerContainer)
+
+	assert.Nil(t, dc.raw)
+}
+
 func readHostname(tb testing.TB, containerId string) string {
 	containerClient, err := NewDockerClientWithOpts(context.Background())
 	if err != nil {
