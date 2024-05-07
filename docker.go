@@ -405,15 +405,6 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 	return inspect.Name, nil
 }
 
-// Hostname gets the name of the container.
-func (c *DockerContainer) Hostname(ctx context.Context) (string, error) {
-	inspect, err := c.Inspect(ctx)
-	if err != nil {
-		return "", err
-	}
-	return inspect.Config.Hostname, nil
-}
-
 // State returns container's running state. This method does not use the cache
 // and always fetches the latest state from the Docker daemon.
 func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {

@@ -72,10 +72,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 							return err
 						}
 
-						hostname, err := c.Hostname(ctx)
+						inspect, err := c.Inspect(ctx)
 						if err != nil {
 							return err
 						}
+
+						hostname := inspect.Config.Hostname
 
 						port, err := c.MappedPort(ctx, publicPort)
 						if err != nil {
