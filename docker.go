@@ -405,10 +405,14 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 	return inspect.Name, nil
 }
 
-// State returns container's running state
+// State returns container's running state. This method does not use the cache
+// and always fetches the latest state from the Docker daemon.
 func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
-	inspect, err := c.Inspect(ctx)
+	inspect, err := c.inspectRawContainer(ctx)
 	if err != nil {
+		if c.raw != nil {
+			return c.raw.State, err
+		}
 		return nil, err
 	}
 	return inspect.State, nil
