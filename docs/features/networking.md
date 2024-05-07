@@ -47,6 +47,44 @@ It is normally advisable to use `Host` and `MappedPort` together when constructi
 !!! info
     Setting the `TC_HOST` environment variable overrides the host of the docker daemon where the container port is exposed. For example, `TC_HOST=172.17.0.1`.
 
+## Exposing host ports to the container
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+In some cases it is necessary to make a network connection from a container to a socket that is listening on the host machine. Natively, Docker has limited support for this model across platforms. Testcontainers, however, makes this possible, allowing your code to access services running on the host machine.
+
+In this example, assume that `freePorts` is an slice of ports on our test host machine where different servers (e.g. a web application) are running.
+
+We can simply create a container and expose these ports to the container using the `ContainerRequest` struct:
+
+<!--codeinclude-->
+[Exposing the host ports](../../port_forwarding_test.go) inside_block:hostAccessPorts
+<!--/codeinclude-->
+
+!!!warning
+    Note that the server/s listening on those ports on the host must have been started before the container is created.
+
+From a container's perspective, the hostname will be `host.testcontainers.internal` and the port will be the same value as any in the `freePorts` slice. _Testcontainers for Go_ exposes the host internal name as the `testcontainers.HostInternal` constant, so you can use it to build the address to connect to the host on the exposed port.
+
+<!--codeinclude-->
+[Accessing the exposed host port from a container](../../port_forwarding_test.go) inside_block:wgetHostInternal
+<!--/codeinclude-->
+
+In the above example we are executing an HTTP request from the command line inside the given container to the host machine.
+
+### How it works
+
+When you expose a host port to a container, _Testcontainers for Go_ creates an SSHD server companion container, which will be used to forward the traffic from the container to the host machine. This is done by creating a tunnel between the container and the host machine through the SSHD server container.
+
+You can find more information about this SSHD server container on its Github repository: [https://github.com/testcontainers/sshd-docker](https://github.com/testcontainers/sshd-docker).
+
+<!--codeinclude-->
+[SSHD Server Docker Image](../../port_forwarding.go) inside_block:hubSshdImage
+<!--/codeinclude-->
+
+!!!important
+    At this moment, each container request will use a new SSHD server container. This means that if you create multiple containers with exposed host ports, each one will have its own SSHD server container.
+
 ## Docker's host networking mode
 
 From [Docker documentation](https://docs.docker.com/network/drivers/host/):

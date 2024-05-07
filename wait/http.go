@@ -185,7 +185,12 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 					return err
 				}
 
-				ports, err = target.Ports(ctx)
+				inspect, err := target.Inspect(ctx)
+				if err != nil {
+					return err
+				}
+
+				ports = inspect.NetworkSettings.Ports
 			}
 		}
 
@@ -264,11 +269,12 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	client := http.Client{Transport: tripper, Timeout: time.Second}
 	address := net.JoinHostPort(ipAddress, strconv.Itoa(mappedPort.Int()))
 
-	endpoint := url.URL{
-		Scheme: proto,
-		Host:   address,
-		Path:   ws.Path,
+	endpoint, err := url.Parse(ws.Path)
+	if err != nil {
+		return err
 	}
+	endpoint.Scheme = proto
+	endpoint.Host = address
 
 	if ws.UserInfo != nil {
 		endpoint.User = ws.UserInfo

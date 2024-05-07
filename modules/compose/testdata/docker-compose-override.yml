@@ -1,10 +1,10 @@
 version: '3'
 services:
-  nginx:
+  {{ .ServiceType }}-nginx:
     image: docker.io/nginx:stable-alpine
-  mysql:
+  {{ .ServiceType }}-mysql:
     image: docker.io/mysql:8.0.36
     environment:
       MYSQL_RANDOM_ROOT_PASSWORD: Y
     ports:
-     - "13306:3306"
+     - "{{ .Port_0 }}:3306"

@@ -24,17 +24,21 @@ type MSSQLServerContainer struct {
 }
 
 func WithAcceptEULA() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["ACCEPT_EULA"] = "Y"
+
+		return nil
 	}
 }
 
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		if password == "" {
 			password = defaultPassword
 		}
 		req.Env["MSSQL_SA_PASSWORD"] = password
+
+		return nil
 	}
 }
 
@@ -55,7 +59,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

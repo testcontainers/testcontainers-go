@@ -32,20 +32,22 @@ func WithoutAuthentication() testcontainers.CustomizeRequestOption {
 // An empty string disables authentication.
 // The default password is "password".
 func WithAdminPassword(adminPassword string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		pwd := "none"
 		if adminPassword != "" {
 			pwd = fmt.Sprintf("neo4j/%s", adminPassword)
 		}
 
 		req.Env["NEO4J_AUTH"] = pwd
+
+		return nil
 	}
 }
 
 // WithLabsPlugin registers one or more Neo4jLabsPlugin for download and server startup.
 // There might be plugins not supported by your selected version of Neo4j.
 func WithLabsPlugin(plugins ...LabsPlugin) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		rawPluginValues := make([]string, len(plugins))
 		for i := 0; i < len(plugins); i++ {
 			rawPluginValues[i] = string(plugins[i])
@@ -54,6 +56,8 @@ func WithLabsPlugin(plugins ...LabsPlugin) testcontainers.CustomizeRequestOption
 		if len(plugins) > 0 {
 			req.Env["NEO4JLABS_PLUGINS"] = fmt.Sprintf(`["%s"]`, strings.Join(rawPluginValues, `","`))
 		}
+
+		return nil
 	}
 }
 
@@ -64,8 +68,8 @@ func WithLabsPlugin(plugins ...LabsPlugin) testcontainers.CustomizeRequestOption
 // See WithNeo4jSettings to add multiple settings at once
 // Note: credentials must be configured with WithAdminPassword
 func WithNeo4jSetting(key, value string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		addSetting(req, key, value)
+	return func(req *testcontainers.GenericContainerRequest) error {
+		return addSetting(req, key, value)
 	}
 }
 
@@ -76,33 +80,41 @@ func WithNeo4jSetting(key, value string) testcontainers.CustomizeRequestOption {
 // See WithNeo4jSetting to add a single setting
 // Note: credentials must be configured with WithAdminPassword
 func WithNeo4jSettings(settings map[string]string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		for key, value := range settings {
-			addSetting(req, key, value)
+			if err := addSetting(req, key, value); err != nil {
+				return err
+			}
 		}
+
+		return nil
 	}
 }
 
 // WithLogger sets a custom logger to be used by the container
 // Consider calling this before other "With functions" as these may generate logs
 func WithLogger(logger testcontainers.Logging) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Logger = logger
+
+		return nil
 	}
 }
 
-func addSetting(req *testcontainers.GenericContainerRequest, key string, newVal string) {
+func addSetting(req *testcontainers.GenericContainerRequest, key string, newVal string) error {
 	normalizedKey := formatNeo4jConfig(key)
 	if oldVal, found := req.Env[normalizedKey]; found {
 		// make sure AUTH is not overwritten by a setting
 		if key == "AUTH" {
-			req.Logger.Printf("setting %q is not permitted, WithAdminPassword has already been set\n", normalizedKey)
-			return
+			return fmt.Errorf("setting %q is not permitted, WithAdminPassword has already been set", normalizedKey)
 		}
 
 		req.Logger.Printf("setting %q with value %q is now overwritten with value %q\n", []any{key, oldVal, newVal}...)
 	}
+
 	req.Env[normalizedKey] = newVal
+
+	return nil
 }
 
 func validate(req *testcontainers.GenericContainerRequest) error {
@@ -123,9 +135,9 @@ func formatNeo4jConfig(name string) string {
 // the commercial licence agreement of Neo4j Enterprise Edition. The license
 // agreement is available at https://neo4j.com/terms/licensing/.
 func WithAcceptCommercialLicenseAgreement() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Env["NEO4J_ACCEPT_LICENSE_AGREEMENT"] = "yes"
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"NEO4J_ACCEPT_LICENSE_AGREEMENT": "yes",
+	})
 }
 
 // WithAcceptEvaluationLicenseAgreement sets the environment variable
@@ -134,7 +146,7 @@ func WithAcceptCommercialLicenseAgreement() testcontainers.CustomizeRequestOptio
 // agreement is available at https://neo4j.com/terms/enterprise_us/. Please
 // read the terms of the evaluation agreement before you accept.
 func WithAcceptEvaluationLicenseAgreement() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Env["NEO4J_ACCEPT_LICENSE_AGREEMENT"] = "eval"
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"NEO4J_ACCEPT_LICENSE_AGREEMENT": "eval",
+	})
 }

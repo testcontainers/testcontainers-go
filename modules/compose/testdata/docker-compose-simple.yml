@@ -1,9 +1,9 @@
 version: '3'
 services:
-  nginx:
+  {{ .ServiceType }}-nginx:
     image: docker.io/nginx:stable-alpine
     environment:
       bar: ${bar}
       foo: ${foo}
     ports:
-     - "9080:80"
+     - "{{ .Port_0 }}:80"

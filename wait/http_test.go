@@ -300,6 +300,87 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	}
 }
 
+func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
+	workdir, err := os.Getwd()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	capath := filepath.Join(workdir, "testdata", "root.pem")
+	cafile, err := os.ReadFile(capath)
+	if err != nil {
+		t.Errorf("can't load ca file: %v", err)
+		return
+	}
+
+	certpool := x509.NewCertPool()
+	if !certpool.AppendCertsFromPEM(cafile) {
+		t.Errorf("the ca file isn't valid")
+		return
+	}
+
+	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
+	dockerReq := testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context: filepath.Join(workdir, "testdata"),
+		},
+
+		ExposedPorts: []string{"6443/tcp"},
+		WaitingFor: wait.NewHTTPStrategy("/query-params-ping?v=pong").WithTLS(true, tlsconfig).
+			WithStartupTimeout(time.Second * 10).WithPort("6443/tcp").
+			WithResponseMatcher(func(body io.Reader) bool {
+				data, _ := io.ReadAll(body)
+				return bytes.Equal(data, []byte("pong"))
+			}),
+	}
+
+	container, err := testcontainers.GenericContainer(context.Background(),
+		testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer container.Terminate(context.Background()) // nolint: errcheck
+
+	host, err := container.Host(context.Background())
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	port, err := container.MappedPort(context.Background(), "6443/tcp")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsconfig,
+			Proxy:           http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	}
+	resp, err := client.Get(fmt.Sprintf("https://%s:%s", host, port.Port()))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status code isn't ok: %s", resp.Status)
+		return
+	}
+}
+
 func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 	workdir, err := os.Getwd()
 	if err != nil {
@@ -410,12 +491,18 @@ func TestHttpStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) 
 				OOMKilled: true,
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -458,12 +545,18 @@ func TestHttpStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 				ExitCode: 1,
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -505,12 +598,18 @@ func TestHttpStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *test
 				Status: "dead",
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -547,12 +646,18 @@ func TestHTTPStrategyFailsWhileRequestSendingDueToOOMKilledContainer(t *testing.
 				OOMKilled: true,
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -590,12 +695,18 @@ func TestHttpStrategyFailsWhileRequestSendingDueToExitedContainer(t *testing.T) 
 				ExitCode: 1,
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -632,12 +743,18 @@ func TestHttpStrategyFailsWhileRequestSendingDueToUnexpectedContainerStatus(t *t
 				Status: "dead",
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -680,8 +797,14 @@ func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
 				Running: true,
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{}, nil
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{},
+					},
+				},
+			}, nil
 		},
 	}
 
@@ -721,12 +844,18 @@ func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
 				Status:  "running",
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/udp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/udp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -769,9 +898,15 @@ func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.
 				Status:  "running",
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{},
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{},
+						},
+					},
+				},
 			}, nil
 		},
 	}

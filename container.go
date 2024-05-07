@@ -39,8 +39,9 @@ type Container interface {
 	Endpoint(context.Context, string) (string, error)               // get proto://ip:port string for the first exposed port
 	PortEndpoint(context.Context, nat.Port, string) (string, error) // get proto://ip:port string for the given exposed port
 	Host(context.Context) (string, error)                           // get host where the container port is exposed
+	Inspect(context.Context) (*types.ContainerJSON, error)          // get container info
 	MappedPort(context.Context, nat.Port) (nat.Port, error)         // get externally mapped port for a container port
-	Ports(context.Context) (nat.PortMap, error)                     // get all exposed ports
+	Ports(context.Context) (nat.PortMap, error)                     // Deprecated: Use c.Inspect(ctx).NetworkSettings.Ports instead
 	SessionID() string                                              // get session id
 	IsRunning() bool
 	Start(context.Context) error                                    // start the container
@@ -50,7 +51,7 @@ type Container interface {
 	FollowOutput(LogConsumer)                                       // Deprecated: it will be removed in the next major release
 	StartLogProducer(context.Context, ...LogProductionOption) error // Deprecated: Use the ContainerRequest instead
 	StopLogProducer() error                                         // Deprecated: it will be removed in the next major release
-	Name(context.Context) (string, error)                           // get container name
+	Name(context.Context) (string, error)                           // Deprecated: Use c.Inspect(ctx).Name instead
 	State(context.Context) (*types.ContainerState, error)           // returns container's running state
 	Networks(context.Context) ([]string, error)                     // get container networks
 	NetworkAliases(context.Context) (map[string][]string, error)    // get container network aliases for a network
@@ -122,6 +123,7 @@ func (c *ContainerFile) validate() error {
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
 	FromDockerfile
+	HostAccessPorts         []int
 	Image                   string
 	ImageSubstitutors       []ImageSubstitutor
 	Entrypoint              []string
@@ -222,13 +224,17 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	}
 	c.Context = abs
 
-	excluded, err := parseDockerIgnore(abs)
+	dockerIgnoreExists, excluded, err := parseDockerIgnore(abs)
 	if err != nil {
 		return nil, err
 	}
 
-	dockerIgnoreLocation := filepath.Join(abs, ".dockerignore")
-	includes = append(includes, dockerIgnoreLocation, c.GetDockerfile())
+	if dockerIgnoreExists {
+		// only add .dockerignore if it exists
+		includes = append(includes, ".dockerignore")
+	}
+
+	includes = append(includes, c.GetDockerfile())
 
 	buildContext, err := archive.TarWithOptions(
 		c.Context,
@@ -241,18 +247,24 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	return buildContext, nil
 }
 
-func parseDockerIgnore(targetDir string) ([]string, error) {
+// parseDockerIgnore returns if the file exists, the excluded files and an error if any
+func parseDockerIgnore(targetDir string) (bool, []string, error) {
 	// based on https://github.com/docker/cli/blob/master/cli/command/image/build/dockerignore.go#L14
 	fileLocation := filepath.Join(targetDir, ".dockerignore")
 	var excluded []string
+	exists := false
 	if f, openErr := os.Open(fileLocation); openErr == nil {
+		defer f.Close()
+
+		exists = true
+
 		var err error
 		excluded, err = ignorefile.ReadAll(f)
 		if err != nil {
-			return excluded, fmt.Errorf("error reading .dockerignore: %w", err)
+			return true, excluded, fmt.Errorf("error reading .dockerignore: %w", err)
 		}
 	}
-	return excluded, nil
+	return exists, excluded, nil
 }
 
 // GetBuildArgs returns the env args to be used when creating from Dockerfile
