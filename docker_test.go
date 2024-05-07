@@ -306,7 +306,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		assert.Nil(t, state, "expected nil container inspect.")
 	})
 
-	t.Run("Non-nil State after termination if raw as already set", func(t *testing.T) {
+	t.Run("Nil State after termination if raw as already set", func(t *testing.T) {
 		ctx := context.Background()
 		nginx, err := createContainerFn(ctx)
 		if err != nil {
@@ -327,7 +327,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		state, err = nginx.State(ctx)
 		require.Error(t, err, "expected error from container inspect after container termination.")
 
-		assert.NotNil(t, state, "unexpected nil container inspect after container termination.")
+		assert.Nil(t, state, "unexpected nil container inspect after container termination.")
 	})
 }
 
