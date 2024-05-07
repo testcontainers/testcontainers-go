@@ -407,11 +407,8 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 
 // State returns container's running state
 func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
-	inspect, err := c.inspectRawContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
-		if c.raw != nil {
-			return c.raw.State, err
-		}
 		return nil, err
 	}
 	return inspect.State, nil
