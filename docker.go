@@ -154,7 +154,7 @@ func (c *DockerContainer) PortEndpoint(ctx context.Context, port nat.Port, proto
 
 // Host gets host (ip or name) of the docker daemon where the container port is exposed
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
-// You can use the "TC_HOST" env variable to set this yourself
+// You can use the "TESTCONTAINERS_HOST_OVERRIDE" env variable to set this yourself
 func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 	host, err := c.provider.DaemonHost(ctx)
 	if err != nil {
@@ -1358,7 +1358,7 @@ func (p *DockerProvider) Config() TestcontainersConfig {
 
 // DaemonHost gets the host or ip of the Docker daemon where ports are exposed on
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
-// You can use the "TC_HOST" env variable to set this yourself
+// You can use the "TESTCONTAINERS_HOST_OVERRIDE" env variable to set this yourself
 func (p *DockerProvider) DaemonHost(ctx context.Context) (string, error) {
 	return daemonHost(ctx, p)
 }
@@ -1368,7 +1368,7 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 		return p.hostCache, nil
 	}
 
-	host, exists := os.LookupEnv("TC_HOST")
+	host, exists := os.LookupEnv("TESTCONTAINERS_HOST_OVERRIDE")
 	if exists {
 		p.hostCache = host
 		return p.hostCache, nil
