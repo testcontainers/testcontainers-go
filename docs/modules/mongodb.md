@@ -58,6 +58,12 @@ It is used in conjunction with `WithUsername` to set a username and its password
 
 E.g. `testcontainers.WithPassword("mymongopwd")`.
 
+#### WithReplicaSet
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `WithReplicaSet` functional option configures the container to run a single-node MongoDB replica set named `rs`. The MongoDB container will wait until the replica set is ready.
+
 {% include "../features/common_functional_options.md" %}
 
 ### Container Methods
