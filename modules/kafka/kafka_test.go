@@ -2,6 +2,7 @@ package kafka_test
 
 import (
 	"context"
+	"io"
 	"strings"
 	"testing"
 
@@ -27,6 +28,8 @@ func TestKafka(t *testing.T) {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
+
+	assertAdvertisedListeners(t, kafkaContainer)
 
 	if !strings.EqualFold(kafkaContainer.ClusterID, "kraftCluster") {
 		t.Fatalf("expected clusterID to be %s, got %s", "kraftCluster", kafkaContainer.ClusterID)
@@ -91,5 +94,34 @@ func TestKafka_invalidVersion(t *testing.T) {
 	_, err := kafka.RunContainer(ctx, kafka.WithClusterID("kraftCluster"), testcontainers.WithImage("confluentinc/confluent-local:6.3.3"))
 	if err == nil {
 		t.Fatal(err)
+	}
+}
+
+// assertAdvertisedListeners checks that the advertised listeners are set correctly:
+// - The BROKER:// protocol is using the hostname of the Kafka container
+func assertAdvertisedListeners(t *testing.T, container testcontainers.Container) {
+	inspect, err := container.Inspect(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	hostname := inspect.Config.Hostname
+
+	code, r, err := container.Exec(context.Background(), []string{"cat", "/usr/sbin/testcontainers_start.sh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if code != 0 {
+		t.Fatalf("expected exit code to be 0, got %d", code)
+	}
+
+	bs, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(string(bs), "BROKER://"+hostname+":9092") {
+		t.Fatalf("expected advertised listeners to contain %s, got %s", "BROKER://"+hostname+":9092", string(bs))
 	}
 }
