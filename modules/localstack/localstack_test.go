@@ -127,8 +127,10 @@ func TestRunContainer(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, container)
 
-			rawPorts, err := container.Ports(ctx)
+			inspect, err := container.Inspect(ctx)
 			require.NoError(t, err)
+
+			rawPorts := inspect.NetworkSettings.Ports
 
 			ports := 0
 			// only one port is exposed among all the ports in the container

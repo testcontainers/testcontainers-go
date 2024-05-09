@@ -74,7 +74,7 @@ jobs:
       - name: golangci-lint
         # TODO: Remove each example/module once it passes the golangci-lint
         if: ${{ inputs.platform == 'ubuntu-latest' && inputs.go-version == '1.20.x' }}
-        uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc # v3
+        uses: golangci/golangci-lint-action@9d1e0624a798bb64f6c3cea93db47765312263dc # v5
         with:
           # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
           version: v1.55.2
@@ -123,7 +123,7 @@ jobs:
             ./scripts/check_environment.sh
 
       - name: Test Summary
-        uses: test-summary/action@fee35d7df20790255fe6aa92cf0f6d28092ecf2f # v2
+        uses: test-summary/action@032c8a9cec6aaa3c20228112cae6ca10a3b29336 # v2.3
         with:
             paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
         if: always()

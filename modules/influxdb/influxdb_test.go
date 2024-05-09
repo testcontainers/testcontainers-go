@@ -41,7 +41,7 @@ func TestV1Container(t *testing.T) {
 func TestV2Container(t *testing.T) {
 	ctx := context.Background()
 	influxDbContainer, err := influxdb.RunContainer(ctx,
-		testcontainers.WithImage("influxdb:latest"),
+		testcontainers.WithImage("influxdb:2.7.5-alpine"),
 		influxdb.WithDatabase("foo"),
 		influxdb.WithUsername("root"),
 		influxdb.WithPassword("password"),
