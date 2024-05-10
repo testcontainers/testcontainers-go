@@ -7,7 +7,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/devtools/internal/release"
 )
 
-var dryRun bool
+var (
+	branch string
+	dryRun bool
+)
 
 var ReleaseCmd = &cobra.Command{
 	Use:   "release",
@@ -19,7 +22,7 @@ var ReleaseCmd = &cobra.Command{
 			return err
 		}
 
-		releaser := release.NewReleaseManager(dryRun)
+		releaser := release.NewReleaseManager(branch, dryRun)
 
 		return releaser.PreRun(ctx)
 	},
@@ -27,4 +30,5 @@ var ReleaseCmd = &cobra.Command{
 
 func init() {
 	ReleaseCmd.Flags().BoolVarP(&dryRun, dryRunFlag, "d", false, "If true, the release will be a dry-run and no changes will be made to the repository")
+	ReleaseCmd.Flags().StringVarP(&branch, branchFlag, "b", "main", "The branch to perform the release on. Default is 'main'")
 }

@@ -17,6 +17,10 @@ type GitClient struct {
 }
 
 func New(ctx context.Context, branch string, dryRun bool) *GitClient {
+	if branch == "" {
+		branch = "main"
+	}
+
 	return &GitClient{
 		ctx:           ctx,
 		defaultBranch: branch,

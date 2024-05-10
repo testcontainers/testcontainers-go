@@ -23,24 +23,34 @@ type Releaser interface {
 	PreRun(ctx context.Context) error
 }
 
-type DryRunReleaseManager struct{}
+type dryRunReleaseManager struct {
+	releaseManager
+}
 
-func NewReleaseManager(dryRun bool) Releaser {
+func NewReleaseManager(branch string, dryRun bool) Releaser {
 	if dryRun {
-		return &DryRunReleaseManager{}
+		return &dryRunReleaseManager{
+			releaseManager: releaseManager{
+				branch: branch,
+			},
+		}
 	}
 
-	return &ReleaseManager{}
+	return &releaseManager{
+		branch: branch,
+	}
 }
 
-func (p *DryRunReleaseManager) PreRun(ctx context.Context) error {
-	return preRun(ctx, "main", true)
+func (p *dryRunReleaseManager) PreRun(ctx context.Context) error {
+	return preRun(ctx, p.branch, true)
 }
 
-type ReleaseManager struct{}
+type releaseManager struct {
+	branch string
+}
 
-func (p *ReleaseManager) PreRun(ctx context.Context) error {
-	return preRun(ctx, "main", false)
+func (p *releaseManager) PreRun(ctx context.Context) error {
+	return preRun(ctx, p.branch, false)
 }
 
 func preRun(ctx context.Context, branch string, dryRun bool) error {
