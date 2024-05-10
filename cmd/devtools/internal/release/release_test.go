@@ -22,6 +22,15 @@ var (
 	examples          = []string{"example1", "example2", "example3"}
 )
 
+type TestReleaser struct {
+	dryRun bool
+	branch string
+}
+
+func (p *TestReleaser) PreRun(ctx context.Context) error {
+	return preRun(ctx, p.branch, p.dryRun)
+}
+
 func TestPre(t *testing.T) {
 	t.Parallel()
 
@@ -61,6 +70,11 @@ func TestPre(t *testing.T) {
 
 			ctx := context.New(tt.TempDir())
 
+			releaser := TestReleaser{
+				dryRun: tc.args.dryRun,
+				branch: "main-" + filepath.Base(filepath.Dir(ctx.RootDir)),
+			}
+
 			initVersion := "0.0.1"
 			nextVersion := "0.1.0"
 
@@ -72,12 +86,12 @@ func TestPre(t *testing.T) {
 			createModules(tt, ctx, rootCtx, initVersion)
 
 			// init the git repository for testing
-			gitClient := git.New(ctx, tc.args.dryRun)
+			gitClient := git.New(ctx, releaser.branch, tc.args.dryRun)
 			if err := gitClient.InitRepository(); err != nil {
 				tt.Fatalf("Error initializing git repository: %v", err)
 			}
 
-			if err := PreRun(ctx, tc.args.dryRun); err != nil {
+			if err := releaser.PreRun(ctx); err != nil {
 				tt.Errorf("Pre() error = %v", err)
 			}
 

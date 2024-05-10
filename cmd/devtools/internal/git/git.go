@@ -11,14 +11,16 @@ import (
 )
 
 type GitClient struct {
-	ctx    context.Context
-	dryRun bool
+	ctx           context.Context
+	defaultBranch string
+	dryRun        bool
 }
 
-func New(ctx context.Context, dryRun bool) *GitClient {
+func New(ctx context.Context, branch string, dryRun bool) *GitClient {
 	return &GitClient{
-		ctx:    ctx,
-		dryRun: dryRun,
+		ctx:           ctx,
+		defaultBranch: branch,
+		dryRun:        dryRun,
 	}
 }
 
@@ -27,6 +29,7 @@ func New(ctx context.Context, dryRun bool) *GitClient {
 func (g *GitClient) InitRepository() error {
 	if g.dryRun {
 		fmt.Println("git init")
+		fmt.Println("git checkout -b " + g.defaultBranch)
 		fmt.Println("touch .keep")
 		fmt.Println("git add .keep")
 		fmt.Println("git commit -m 'Initial commit'")
@@ -34,6 +37,10 @@ func (g *GitClient) InitRepository() error {
 	}
 
 	if err := g.Exec("init"); err != nil {
+		return err
+	}
+
+	if err := g.Exec("checkout", "-b", g.defaultBranch); err != nil {
 		return err
 	}
 

@@ -19,7 +19,31 @@ const (
 
 var directories = []string{"examples", "modules"}
 
-func PreRun(ctx context.Context, dryRun bool) error {
+type Releaser interface {
+	PreRun(ctx context.Context) error
+}
+
+type DryRunReleaseManager struct{}
+
+func NewReleaseManager(dryRun bool) Releaser {
+	if dryRun {
+		return &DryRunReleaseManager{}
+	}
+
+	return &ReleaseManager{}
+}
+
+func (p *DryRunReleaseManager) PreRun(ctx context.Context) error {
+	return preRun(ctx, "main", true)
+}
+
+type ReleaseManager struct{}
+
+func (p *ReleaseManager) PreRun(ctx context.Context) error {
+	return preRun(ctx, "main", false)
+}
+
+func preRun(ctx context.Context, branch string, dryRun bool) error {
 	version, err := extractCurrentVersion(ctx)
 	if err != nil {
 		return err
@@ -27,9 +51,9 @@ func PreRun(ctx context.Context, dryRun bool) error {
 
 	vVersion := "v" + version
 
-	gitClient := git.New(ctx, dryRun)
+	gitClient := git.New(ctx, branch, dryRun)
 
-	err = gitClient.Exec("checkout", "main")
+	err = gitClient.Exec("checkout", branch)
 	if err != nil {
 		return err
 	}

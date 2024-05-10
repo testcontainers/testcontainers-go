@@ -19,7 +19,9 @@ var ReleaseCmd = &cobra.Command{
 			return err
 		}
 
-		return release.PreRun(ctx, dryRun)
+		releaser := release.NewReleaseManager(dryRun)
+
+		return releaser.PreRun(ctx)
 	},
 }
 
