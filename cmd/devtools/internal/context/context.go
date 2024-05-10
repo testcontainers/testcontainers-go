@@ -88,6 +88,10 @@ func (ctx Context) SonarProjectFile() string {
 	return filepath.Join(ctx.RootDir, "sonar-project.properties")
 }
 
+func (ctx Context) VersionFile() string {
+	return filepath.Join(ctx.RootDir, "internal", "version.go")
+}
+
 func (ctx Context) VSCodeWorkspaceFile() string {
 	return filepath.Join(ctx.RootDir, ".vscode", ".testcontainers-go.code-workspace")
 }
