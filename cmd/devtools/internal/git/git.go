@@ -75,7 +75,7 @@ func (g *GitClient) Exec(args ...string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("git command failed: %w", err)
+		return fmt.Errorf("git command [git %s] failed: %w", args, err)
 	}
 
 	return nil
