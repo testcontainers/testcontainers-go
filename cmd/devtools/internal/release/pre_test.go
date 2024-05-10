@@ -31,6 +31,10 @@ func (p *TestReleaser) PreRun(ctx context.Context) error {
 	return preRun(ctx, p.branch, p.dryRun)
 }
 
+func (p *TestReleaser) Run(ctx context.Context) error {
+	return run(ctx, p.branch, p.dryRun)
+}
+
 func TestPre(t *testing.T) {
 	t.Parallel()
 
