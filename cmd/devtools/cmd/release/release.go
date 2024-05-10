@@ -8,7 +8,6 @@ import (
 )
 
 var (
-	branch   string
 	bumpType string
 	dryRun   bool
 )
@@ -25,7 +24,8 @@ executing them.`,
 			return err
 		}
 
-		releaser := release.NewReleaseManager(branch, bumpType, dryRun)
+		// when using the CLI, we are going to use the main branch for the release
+		releaser := release.NewReleaseManager("main", bumpType, dryRun)
 
 		err = releaser.PreRun(ctx)
 		if err != nil {
@@ -39,5 +39,4 @@ executing them.`,
 func init() {
 	ReleaseCmd.Flags().BoolVarP(&dryRun, dryRunFlag, "d", false, "If true, the release will be a dry-run and no changes will be made to the repository")
 	ReleaseCmd.Flags().StringVarP(&bumpType, bumpTypeFlag, "B", "minor", "The type of bump to perform. Can be 'major', 'minor', or 'patch'. Default is 'minor'")
-	ReleaseCmd.Flags().StringVarP(&branch, branchFlag, "b", "main", "The branch to perform the release on. Default is 'main'")
 }
