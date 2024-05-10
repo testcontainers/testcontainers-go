@@ -80,3 +80,17 @@ func (g *GitClient) Exec(args ...string) error {
 
 	return nil
 }
+
+func (g *GitClient) PushTags() error {
+	return g.Exec("push", "origin", "--tags")
+}
+
+func (g *GitClient) Tag(tag string) error {
+	err := g.Exec("tag", "-d", tag)
+	if err != nil {
+		// do not fail if tag does not exist
+		fmt.Println("Error deleting tag", err)
+	}
+
+	return g.Exec("tag", tag)
+}
