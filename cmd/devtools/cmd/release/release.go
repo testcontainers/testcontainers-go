@@ -26,7 +26,12 @@ executing them.`,
 
 		releaser := release.NewReleaseManager(branch, dryRun)
 
-		return releaser.PreRun(ctx)
+		err = releaser.PreRun(ctx)
+		if err != nil {
+			return err
+		}
+
+		return releaser.Run(ctx)
 	},
 }
 

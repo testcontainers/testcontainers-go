@@ -12,6 +12,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/devtools/internal/git"
 )
 
+// preRun prepares the release:
+// - updating the version in the mkdocs.yml and sonar-project.properties files
+// - updating the version in the go.mod files of the examples and modules directories
+// - running the make tidy-examples and make tidy-modules commands
+// - updating the version in the markdown files in the docs directory
 func preRun(ctx context.Context, branch string, dryRun bool) error {
 	version, err := extractCurrentVersion(ctx)
 	if err != nil {
