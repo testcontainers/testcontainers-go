@@ -130,21 +130,13 @@ func TestRun(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		if tc.args.dryRun {
-			continue
-		}
-
 		tc := tc
 		t.Run(tc.name, func(tt *testing.T) {
-			// tt.Parallel()
+			tt.Parallel()
 
 			ctx := context.New(tt.TempDir())
 
-			releaser := TestReleaser{
-				dryRun:   tc.args.dryRun,
-				branch:   "main-" + filepath.Base(filepath.Dir(ctx.RootDir)),
-				bumpType: tc.args.bumpType,
-			}
+			releaser := NewTestReleaser(tc.args.dryRun, ctx.RootDir, tc.args.bumpType)
 
 			initVersion := "0.0.1"
 			nextVersion := "0.1.0"

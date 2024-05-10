@@ -13,18 +13,27 @@ import (
 	"github.com/testcontainers/testcontainers-go/devtools/internal/module"
 )
 
-type TestReleaser struct {
+type testReleaser struct {
 	dryRun        bool
 	branch        string
 	bumpType      string
 	skipRemoteOps bool
 }
 
-func (p *TestReleaser) PreRun(ctx context.Context) error {
+func NewTestReleaser(dryRun bool, rootDir string, bumpType string) *testReleaser {
+	return &testReleaser{
+		dryRun:        dryRun,
+		branch:        "main-" + filepath.Base(filepath.Dir(rootDir)),
+		bumpType:      bumpType,
+		skipRemoteOps: true,
+	}
+}
+
+func (p *testReleaser) PreRun(ctx context.Context) error {
 	return preRun(ctx, p.branch, p.dryRun)
 }
 
-func (p *TestReleaser) Run(ctx context.Context) error {
+func (p *testReleaser) Run(ctx context.Context) error {
 	return run(ctx, p.branch, p.bumpType, p.dryRun, p.skipRemoteOps)
 }
 
