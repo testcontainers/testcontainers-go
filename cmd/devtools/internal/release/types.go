@@ -5,7 +5,6 @@ import (
 )
 
 const (
-	repository      = "github.com/testcontainers/testcontainers-go"
 	nonReleasedText = `Not available until the next release of testcontainers-go <a href=\"https://github.com/testcontainers/testcontainers-go\"><span class=\"tc-version\">:material-tag: main</span></a>`
 )
 
@@ -20,18 +19,19 @@ type dryRunReleaseManager struct {
 	releaseManager
 }
 
-func NewReleaseManager(branch string, dryRun bool) Releaser {
+func NewReleaseManager(branch string, bumpType string, dryRun bool) Releaser {
+	r := releaseManager{
+		branch:   branch,
+		bumpType: bumpType,
+	}
+
 	if dryRun {
 		return &dryRunReleaseManager{
-			releaseManager: releaseManager{
-				branch: branch,
-			},
+			releaseManager: r,
 		}
 	}
 
-	return &releaseManager{
-		branch: branch,
-	}
+	return &r
 }
 
 func (p *dryRunReleaseManager) PreRun(ctx context.Context) error {
@@ -39,11 +39,13 @@ func (p *dryRunReleaseManager) PreRun(ctx context.Context) error {
 }
 
 func (p *dryRunReleaseManager) Run(ctx context.Context) error {
-	return run(ctx, p.branch, true)
+	// dry run and skip remote operations
+	return run(ctx, p.branch, p.bumpType, true, true)
 }
 
 type releaseManager struct {
-	branch string
+	branch   string
+	bumpType string
 }
 
 func (p *releaseManager) PreRun(ctx context.Context) error {
@@ -51,5 +53,6 @@ func (p *releaseManager) PreRun(ctx context.Context) error {
 }
 
 func (p *releaseManager) Run(ctx context.Context) error {
-	return run(ctx, p.branch, false)
+	// no dry run and execute remote operations
+	return run(ctx, p.branch, p.bumpType, false, false)
 }

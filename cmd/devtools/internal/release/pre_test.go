@@ -2,17 +2,12 @@ package release
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
 	"github.com/testcontainers/testcontainers-go/devtools/internal/context"
 	"github.com/testcontainers/testcontainers-go/devtools/internal/git"
-	"github.com/testcontainers/testcontainers-go/devtools/internal/module"
 )
 
 var (
@@ -21,19 +16,6 @@ var (
 	modules           = []string{"module1", "module2", "module3"}
 	examples          = []string{"example1", "example2", "example3"}
 )
-
-type TestReleaser struct {
-	dryRun bool
-	branch string
-}
-
-func (p *TestReleaser) PreRun(ctx context.Context) error {
-	return preRun(ctx, p.branch, p.dryRun)
-}
-
-func (p *TestReleaser) Run(ctx context.Context) error {
-	return run(ctx, p.branch, p.dryRun)
-}
 
 func TestPre(t *testing.T) {
 	t.Parallel()
@@ -83,11 +65,7 @@ func TestPre(t *testing.T) {
 			nextVersion := "0.1.0"
 
 			// initialise project files
-			createVersionFile(tt, ctx, nextVersion)
-			createBumpFiles(tt, ctx, initVersion)
-			createMarkdownFiles(tt, ctx)
-			createModFile(tt, ctx)
-			createModules(tt, ctx, rootCtx, initVersion)
+			initialiseProject(tt, ctx, rootCtx, initVersion, nextVersion)
 
 			// init the git repository for testing
 			gitClient := git.New(ctx, releaser.branch, tc.args.dryRun)
@@ -187,84 +165,6 @@ go 1.21`
 	}
 }
 
-func createModFile(t *testing.T, ctx context.Context) {
-	content := `module github.com/testcontainers/testcontainers-go
-go 1.21`
-
-	err := os.WriteFile(filepath.Join(ctx.RootDir, "go.mod"), []byte(content), 0o644)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func createModules(t *testing.T, ctx context.Context, rootCtx context.Context, version string) {
-	rootTemplatesDir := filepath.Join(rootCtx.RootDir, "cmd", "devtools", "_template")
-	templatesDir := filepath.Join(ctx.RootDir, "cmd", "devtools")
-
-	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-
-	cmd := exec.Command("cp", "-R", rootTemplatesDir, templatesDir)
-	if err := cmd.Run(); err != nil {
-		t.Fatal(err)
-	}
-
-	cmd = exec.Command("cp", filepath.Join(rootCtx.RootDir, "commons-test.mk"), ctx.RootDir)
-	if err := cmd.Run(); err != nil {
-		t.Fatal(err)
-	}
-
-	modulesDir := filepath.Join(ctx.RootDir, "modules")
-	if err := os.MkdirAll(modulesDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-
-	cmd = exec.Command("cp", filepath.Join(rootCtx.RootDir, "modules", "Makefile"), modulesDir)
-	if err := cmd.Run(); err != nil {
-		t.Fatal(err)
-	}
-
-	mg := module.Generator{}
-	for _, module := range modules {
-		err := mg.AddModule(ctx, context.TestcontainersModule{
-			IsModule:  true,
-			Name:      module,
-			Image:     module + ":latest",
-			TitleName: cases.Title(language.Und, cases.NoLower).String(module),
-			TCVersion: version,
-			Context:   ctx,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	examplesDir := filepath.Join(ctx.RootDir, "examples")
-	if err := os.MkdirAll(examplesDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-
-	cmd = exec.Command("cp", filepath.Join(rootCtx.RootDir, "examples", "Makefile"), examplesDir)
-	if err := cmd.Run(); err != nil {
-		t.Fatal(err)
-	}
-
-	for _, example := range examples {
-		err := mg.AddModule(ctx, context.TestcontainersModule{
-			IsModule:  false,
-			Name:      example,
-			Image:     example + ":latest",
-			TitleName: cases.Title(language.Und, cases.NoLower).String(example),
-			TCVersion: version,
-			Context:   ctx,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-}
-
 func TestBumpVersion(t *testing.T) {
 	const version = "1.2.3"
 	newVersion := "4.5.6"
@@ -326,36 +226,6 @@ func TestBumpVersion(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func createBumpFiles(t *testing.T, ctx context.Context, version string) {
-	files := map[string]string{
-		bumpFiles[0]: `extra:
-  latest_version: v` + version,
-		bumpFiles[1]: "sonar.projectVersion=v" + version,
-	}
-
-	for f, content := range files {
-		err := os.WriteFile(filepath.Join(ctx.RootDir, f), []byte(content), 0o644)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-}
-
-func createVersionFile(t *testing.T, ctx context.Context, version string) {
-	internalDir := filepath.Join(ctx.RootDir, "internal")
-	content := `const Version = "` + version + `"`
-
-	err := os.MkdirAll(internalDir, 0o755)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = os.WriteFile(filepath.Join(internalDir, "version.go"), []byte(content), 0o644)
-	if err != nil {
-		t.Fatal(err)
 	}
 }
 
@@ -487,21 +357,5 @@ func TestProcessMarkdownFiles(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func createMarkdownFiles(t *testing.T, ctx context.Context) {
-	docsDir := filepath.Join(ctx.RootDir, "docs")
-
-	err := os.MkdirAll(docsDir, 0o755)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, f := range testMarkdownFiles {
-		err = os.WriteFile(filepath.Join(docsDir, f), []byte(nonReleasedText), 0o644)
-		if err != nil {
-			t.Fatal(err)
-		}
 	}
 }

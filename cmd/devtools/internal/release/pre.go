@@ -50,7 +50,6 @@ func preRun(ctx context.Context, branch string, dryRun bool) error {
 			if err != nil {
 				return fmt.Errorf("error replacing in file: %w", err)
 			}
-
 		}
 
 		// tidy all the modules in the directory
@@ -157,13 +156,13 @@ func processMarkdownFiles(dryRun bool, docsDir, version string) error {
 	})
 }
 
-func runCommand(ctx context.Context, dryRun bool, command string, arg string) error {
+func runCommand(ctx context.Context, dryRun bool, command string, arg ...string) error {
 	if dryRun {
 		fmt.Printf("%s %s\n", command, arg)
 		return nil
 	}
 
-	cmd := exec.Command(command, arg)
+	cmd := exec.Command(command, arg...)
 	cmd.Dir = ctx.RootDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

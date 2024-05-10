@@ -1,6 +1,7 @@
 package release
 
 const (
-	branchFlag string = "branch"
-	dryRunFlag string = "dry-run"
+	branchFlag   string = "branch"
+	bumpTypeFlag string = "bump-type"
+	dryRunFlag   string = "dry-run"
 )

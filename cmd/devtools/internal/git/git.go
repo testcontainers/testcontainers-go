@@ -57,7 +57,7 @@ func (g *GitClient) InitRepository() error {
 		return err
 	}
 
-	if err := g.Exec("commit", "-m", "Initial commit"); err != nil {
+	if err := g.Exec("commit", "-m", "'Initial commit'"); err != nil {
 		return err
 	}
 
@@ -66,19 +66,31 @@ func (g *GitClient) InitRepository() error {
 
 func (g *GitClient) Exec(args ...string) error {
 	if g.dryRun {
-		fmt.Printf("git %s\n", strings.Join(args, " "))
+		fmt.Printf("/bin/bash -c 'git %s'\n", strings.Join(args, " "))
 		return nil
 	}
 
-	cmd := exec.Command("git", args...)
+	bashArgs := []string{"-c", "git " + strings.Join(args, " ")}
+
+	cmd := exec.Command("/bin/bash", bashArgs...)
 	cmd.Dir = g.ctx.RootDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("git command [git %s] failed: %w", args, err)
+		return fmt.Errorf("bash -c 'git %s' failed: %w", bashArgs, err)
 	}
 
 	return nil
+}
+
+func (g *GitClient) Add(files ...string) error {
+	args := append([]string{"add"}, files...)
+
+	return g.Exec(args...)
+}
+
+func (g *GitClient) Commit(msg string) error {
+	return g.Exec("commit", "-m", "'"+msg+"'")
 }
 
 func (g *GitClient) PushTags() error {
