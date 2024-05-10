@@ -15,7 +15,9 @@ var (
 var ReleaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "Performs a release of the Testcontainers Go library",
-	Long:  "Performs a release of the Testcontainers Go library",
+	Long: `This script is used to prepare a release for a new version of the Testcontainers for Go library.
+If the dry-run flag is set, it will be run in dry-run mode, which will print the commands that would be executed, without actually
+executing them.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, err := context.GetRootContext()
 		if err != nil {
