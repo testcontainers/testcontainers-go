@@ -115,24 +115,16 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 		})
 	})
 
-	outer.Run("ignores auth setting outside WithAdminPassword", func(t *testing.T) {
+	outer.Run("auth setting outside WithAdminPassword raises error", func(t *testing.T) {
 		container, err := neo4j.RunContainer(ctx,
 			neo4j.WithAdminPassword(testPassword),
-			neo4j.WithNeo4jSetting("AUTH", "neo4j/thisisgonnabeignored"),
+			neo4j.WithNeo4jSetting("AUTH", "neo4j/thisisgonnafail"),
 		)
-		if err != nil {
-			t.Fatalf("expected env to successfully run but did not: %s", err)
+		if err == nil {
+			t.Fatalf("expected env to fail due to conflicting auth settings but did not")
 		}
-		t.Cleanup(func() {
-			if err := container.Terminate(ctx); err != nil {
-				outer.Fatalf("failed to terminate container: %s", err)
-			}
-		})
-
-		env := getContainerEnv(t, ctx, container)
-
-		if !strings.Contains(env, "NEO4J_AUTH=neo4j/"+testPassword) {
-			t.Fatalf("expected WithAdminPassword to have higher precedence than auth set with WithNeo4jSetting")
+		if container != nil {
+			t.Fatalf("container must not be created with conflicting auth settings")
 		}
 	})
 

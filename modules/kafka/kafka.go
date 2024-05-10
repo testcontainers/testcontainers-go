@@ -81,7 +81,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		if apply, ok := opt.(Option); ok {
 			apply(&settings)
 		}
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	trimListeners(settings.Listeners)

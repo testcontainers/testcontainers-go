@@ -185,7 +185,12 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 					return err
 				}
 
-				ports, err = target.Ports(ctx)
+				inspect, err := target.Inspect(ctx)
+				if err != nil {
+					return err
+				}
+
+				ports = inspect.NetworkSettings.Ports
 			}
 		}
 

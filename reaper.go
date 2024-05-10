@@ -46,7 +46,8 @@ type ReaperProvider interface {
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
-// Deprecated: it's not possible to create a reaper anymore.
+// Deprecated: it's not possible to create a reaper anymore. Compose module uses this method
+// to create a reaper for the compose stack.
 func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
 	return reuseOrCreateReaper(ctx, sessionID, provider)
 }

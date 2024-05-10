@@ -90,7 +90,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&localStackReq.GenericContainerRequest)
+		if err := opt.Customize(&localStackReq.GenericContainerRequest); err != nil {
+			return nil, err
+		}
 	}
 
 	if isLegacyMode(localStackReq.Image) {
@@ -119,9 +121,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return c, nil
 }
 
+// Deprecated: use RunContainer instead
 // StartContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
-// Deprecated: use RunContainer instead
 func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOption) (*LocalStackContainer, error) {
 	return RunContainer(ctx, overrideReq)
 }

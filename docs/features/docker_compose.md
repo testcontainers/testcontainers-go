@@ -20,7 +20,7 @@ Because `compose` v2 is implemented in Go it's possible for _Testcontainers for 
 use [`github.com/docker/compose`](https://github.com/docker/compose) directly and skip any process execution/_docker-compose-in-a-container_ scenario.
 The `ComposeStack` API exposes this variant of using `docker compose` in an easy way.
 
-### Basic examples
+### Usage
 
 Use the convenience `NewDockerCompose(...)` constructor which creates a random identifier and takes a variable number
 of stack files:
@@ -53,7 +53,26 @@ func TestSomething(t *testing.T) {
 }
 ```
 
-Use the advanced `NewDockerComposeWith(...)` constructor allowing you to specify an identifier:
+Use the advanced `NewDockerComposeWith(...)` constructor allowing you to customise the compose execution with options:
+
+- `StackIdentifier`: the identifier for the stack, which is used to name the network and containers. If not passed, a random identifier is generated.
+- `WithStackFiles`: specify the Docker Compose stack files to use, as a variadic argument of string paths where the stack files are located.
+- `WithStackReaders`: specify the Docker Compose stack files to use, as a variadic argument of `io.Reader` instances. It will create a temporary file in the temp dir of the given O.S., that will be removed after the `Down` method is called. You can use both `WithComposeStackFiles` and `WithComposeStackReaders` at the same time.
+
+#### Compose Up options
+
+- `Recreate`: recreate the containers. If any other value than `api.RecreateNever`, `api.RecreateForce` or `api.RecreateDiverged` is provided, the default value `api.RecreateForce` will be used.
+- `RecreateDependencies`: recreate dependent containers. If any other value than `api.RecreateNever`, `api.RecreateForce` or `api.RecreateDiverged` is provided, the default value `api.RecreateForce` will be used.
+- `RemoveOrphans`: remove orphaned containers when the stack is upped.
+- `Wait`: will wait until the containers reached the running|healthy state.
+
+#### Compose Down options
+
+- `RemoveImages`: remove images after the stack is stopped. The `RemoveImagesAll` option will remove all images, while `RemoveImagesLocal` will remove only the images that don't have a tag.
+- `RemoveOrphans`: remove orphaned containers after the stack is stopped.
+- `RemoveVolumes`: remove volumes after the stack is stopped.
+
+#### Example
 
 ```go
 package example_test
@@ -63,6 +82,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/docker/compose/v2/pkg/api"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
@@ -78,7 +99,7 @@ func TestSomethingElse(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	require.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
+	require.NoError(t, compose.Up(ctx, tc.WithRecreate(api.RecreateNever), tc.Wait(true)), "compose.Up()")
 
 	// do some testing here
 }

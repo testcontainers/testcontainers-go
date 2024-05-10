@@ -3,6 +3,8 @@ package compose
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -26,13 +28,14 @@ const (
 var ErrNoStackConfigured = errors.New("no stack files configured")
 
 type composeStackOptions struct {
-	Identifier string
-	Paths      []string
-	Logger     testcontainers.Logging
+	Identifier     string
+	Paths          []string
+	temporaryPaths map[string]bool
+	Logger         testcontainers.Logging
 }
 
 type ComposeStackOption interface {
-	applyToComposeStack(o *composeStackOptions)
+	applyToComposeStack(o *composeStackOptions) error
 }
 
 type stackUpOptions struct {
@@ -90,8 +93,27 @@ type waitService struct {
 	publishedPort int
 }
 
+// WithRecreate defines the strategy to apply on existing containers. If any other value than
+// api.RecreateNever, api.RecreateForce or api.RecreateDiverged is provided, the default value
+// api.RecreateForce will be used.
+func WithRecreate(recreate string) StackUpOption {
+	return Recreate(recreate)
+}
+
+// WithRecreateDependencies defines the strategy to apply on container dependencies. If any other value than
+// api.RecreateNever, api.RecreateForce or api.RecreateDiverged is provided, the default value
+// api.RecreateForce will be used.
+func WithRecreateDependencies(recreate string) StackUpOption {
+	return RecreateDependencies(recreate)
+}
+
 func WithStackFiles(filePaths ...string) ComposeStackOption {
 	return ComposeStackFiles(filePaths)
+}
+
+// WithStackReaders supports reading the compose file/s from a reader.
+func WithStackReaders(readers ...io.Reader) ComposeStackOption {
+	return ComposeStackReaders(readers)
 }
 
 func NewDockerCompose(filePaths ...string) (*dockerCompose, error) {
@@ -100,12 +122,15 @@ func NewDockerCompose(filePaths ...string) (*dockerCompose, error) {
 
 func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 	composeOptions := composeStackOptions{
-		Identifier: uuid.New().String(),
-		Logger:     testcontainers.Logger,
+		Identifier:     uuid.New().String(),
+		temporaryPaths: make(map[string]bool),
+		Logger:         testcontainers.Logger,
 	}
 
 	for i := range opts {
-		opts[i].applyToComposeStack(&composeOptions)
+		if err := opts[i].applyToComposeStack(&composeOptions); err != nil {
+			return nil, err
+		}
 	}
 
 	if len(composeOptions.Paths) < 1 {
@@ -121,14 +146,37 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		return nil, err
 	}
 
+	reaperProvider, err := testcontainers.NewDockerProvider()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create reaper provider for compose: %w", err)
+	}
+
+	tcConfig := reaperProvider.Config()
+
+	var composeReaper *testcontainers.Reaper
+	if !tcConfig.RyukDisabled {
+		// NewReaper is deprecated: we need to find a way to create the reaper for compose
+		// bypassing the deprecation.
+		r, err := testcontainers.NewReaper(context.Background(), testcontainers.SessionID(), reaperProvider, "")
+		if err != nil {
+			return nil, fmt.Errorf("failed to create reaper for compose: %w", err)
+		}
+
+		composeReaper = r
+	}
+
 	composeAPI := &dockerCompose{
-		name:           composeOptions.Identifier,
-		configs:        composeOptions.Paths,
-		logger:         composeOptions.Logger,
-		composeService: compose.NewComposeService(dockerCli),
-		dockerClient:   dockerCli.Client(),
-		waitStrategies: make(map[string]wait.Strategy),
-		containers:     make(map[string]*testcontainers.DockerContainer),
+		name:             composeOptions.Identifier,
+		configs:          composeOptions.Paths,
+		temporaryConfigs: composeOptions.temporaryPaths,
+		logger:           composeOptions.Logger,
+		composeService:   compose.NewComposeService(dockerCli),
+		dockerClient:     dockerCli.Client(),
+		waitStrategies:   make(map[string]wait.Strategy),
+		containers:       make(map[string]*testcontainers.DockerContainer),
+		networks:         make(map[string]*testcontainers.DockerNetwork),
+		sessionID:        testcontainers.SessionID(),
+		reaper:           composeReaper,
 	}
 
 	return composeAPI, nil

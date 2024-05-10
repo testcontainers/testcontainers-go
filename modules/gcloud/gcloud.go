@@ -57,8 +57,9 @@ var _ testcontainers.ContainerCustomizer = (*Option)(nil)
 type Option func(*options)
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
-func (o Option) Customize(*testcontainers.GenericContainerRequest) {
+func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	// NOOP to satisfy interface.
+	return nil
 }
 
 // WithProjectID sets the project ID for the GCloud container.
@@ -69,14 +70,16 @@ func WithProjectID(projectID string) Option {
 }
 
 // applyOptions applies the options to the container request and returns the settings.
-func applyOptions(req *testcontainers.GenericContainerRequest, opts []testcontainers.ContainerCustomizer) options {
+func applyOptions(req *testcontainers.GenericContainerRequest, opts []testcontainers.ContainerCustomizer) (options, error) {
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
 			apply(&settings)
 		}
-		opt.Customize(req)
+		if err := opt.Customize(req); err != nil {
+			return options{}, err
+		}
 	}
 
-	return settings
+	return settings, nil
 }

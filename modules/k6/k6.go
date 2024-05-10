@@ -69,12 +69,14 @@ func downloadFileFromDescription(d DownloadableFile) error {
 // and passes it to k6 as the test to run.
 // The path to the script must be an absolute path
 func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
-
 	scriptBaseName := filepath.Base(scriptPath)
 	f, err := os.Open(scriptPath)
 	if err != nil {
-		panic("Cannot create reader for test file ")
+		return func(req *testcontainers.GenericContainerRequest) error {
+			return fmt.Errorf("cannot create reader for test file: %w", err)
+		}
 	}
+
 	return WithTestScriptReader(f, scriptBaseName)
 
 }
@@ -83,7 +85,7 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 // The script base name is not a path, neither absolute or relative and should
 // be just the file name of the script
 func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainers.CustomizeRequestOption {
-	opt := func(req *testcontainers.GenericContainerRequest) {
+	opt := func(req *testcontainers.GenericContainerRequest) error {
 		target := "/home/k6x/" + scriptBaseName
 		req.Files = append(
 			req.Files,
@@ -96,16 +98,19 @@ func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainer
 
 		// add script to the k6 run command
 		req.Cmd = append(req.Cmd, target)
+
+		return nil
 	}
 	return opt
 }
 
 // WithRemoteTestScript takes a RemoteTestFileDescription and copies to container
 func WithRemoteTestScript(d DownloadableFile) testcontainers.CustomizeRequestOption {
-
 	err := downloadFileFromDescription(d)
 	if err != nil {
-		panic("Not able to download required test script")
+		return func(req *testcontainers.GenericContainerRequest) error {
+			return fmt.Errorf("not able to download required test script: %w", err)
+		}
 	}
 
 	return WithTestScript(d.getDownloadPath())
@@ -113,15 +118,19 @@ func WithRemoteTestScript(d DownloadableFile) testcontainers.CustomizeRequestOpt
 
 // WithCmdOptions pass the given options to the k6 run command
 func WithCmdOptions(options ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Cmd = append(req.Cmd, options...)
+
+		return nil
 	}
 }
 
 // SetEnvVar adds a '--env' command-line flag to the k6 command in the container for setting an environment variable for the test script.
 func SetEnvVar(variable string, value string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Cmd = append(req.Cmd, "--env", fmt.Sprintf("%s=%s", variable, value))
+
+		return nil
 	}
 }
 
@@ -141,7 +150,7 @@ func WithCache() testcontainers.CustomizeRequestOption {
 		}
 	}
 
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		mount := testcontainers.ContainerMount{
 			Source: testcontainers.DockerVolumeMountSource{
 				Name:          cacheVol,
@@ -150,6 +159,8 @@ func WithCache() testcontainers.CustomizeRequestOption {
 			Target: "/cache",
 		}
 		req.Mounts = append(req.Mounts, mount)
+
+		return nil
 	}
 }
 
@@ -167,7 +178,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

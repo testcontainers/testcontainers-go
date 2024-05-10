@@ -19,7 +19,10 @@ func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCus
 		Started: true,
 	}
 
-	settings := applyOptions(&req, opts)
+	settings, err := applyOptions(&req, opts)
+	if err != nil {
+		return nil, err
+	}
 
 	req.Cmd = []string{
 		"/bin/sh",
