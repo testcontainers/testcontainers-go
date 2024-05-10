@@ -41,6 +41,11 @@ func generateGoModFile(moduleDir string, tcModule context.TestcontainersModule) 
 	if err != nil {
 		return err
 	}
+
+	if tcModule.Context.RootDir != "" {
+		rootCtx = tcModule.Context
+	}
+
 	mkdocsConfig, err := mkdocs.ReadConfig(rootCtx.MkdocsConfigFile())
 	if err != nil {
 		fmt.Printf(">> could not read MkDocs config: %v\n", err)
@@ -60,9 +65,14 @@ func GenerateFiles(moduleDir string, moduleName string, funcMap template.FuncMap
 		templates = append(templates, "examples_test.go")
 	}
 
+	templatesPath := filepath.Join("_template")
+	if tcModuleCtx.Context.RootDir != "" {
+		templatesPath = filepath.Join(tcModuleCtx.Context.RootDir, "cmd", "devtools", "_template")
+	}
+
 	for _, tmpl := range templates {
 		name := tmpl + ".tmpl"
-		t, err := template.New(name).Funcs(funcMap).ParseFiles(filepath.Join("_template", name))
+		t, err := template.New(name).Funcs(funcMap).ParseFiles(filepath.Join(templatesPath, name))
 		if err != nil {
 			return err
 		}

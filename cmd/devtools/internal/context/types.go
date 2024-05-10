@@ -15,8 +15,9 @@ type TestcontainersModule struct {
 	Image     string // fully qualified name of the Docker image
 	IsModule  bool   // if true, the module will be generated as a Go module, otherwise an example
 	Name      string
-	TitleName string // title of the name: m.g. "mongodb" -> "MongoDB"
-	TCVersion string // Testcontainers for Go version
+	TitleName string  // title of the name: m.g. "mongodb" -> "MongoDB"
+	TCVersion string  // Testcontainers for Go version
+	Context   Context // execution context of the module
 }
 
 // ContainerName returns the name of the container, which is the lower-cased title of the example
