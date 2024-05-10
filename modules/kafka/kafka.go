@@ -20,7 +20,7 @@ const (
 	// starterScript {
 	starterScriptContent = `#!/bin/bash
 source /etc/confluent/docker/bash-config
-export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://%s:%d,BROKER://%s:9092
+export KAFKA_ADVERTISED_LISTENERS=%s
 echo Starting Kafka KRaft mode
 sed -i '/KAFKA_ZOOKEEPER_CONNECT/d' /etc/confluent/docker/configure
 echo 'kafka-storage format --ignore-formatted -t "$(kafka-storage random-uuid)" -c /etc/kafka/kafka.properties' >> /etc/confluent/docker/configure
@@ -34,6 +34,13 @@ echo '' > /etc/confluent/docker/ensure
 type KafkaContainer struct {
 	testcontainers.Container
 	ClusterID string
+	Listeners KafkaListener
+}
+
+type KafkaListener struct {
+	Name string
+	Ip   string
+	Port string
 }
 
 // RunContainer creates an instance of the Kafka container type
@@ -43,10 +50,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		ExposedPorts: []string{string(publicPort)},
 		Env: map[string]string{
 			// envVars {
-			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT",
-			"KAFKA_INTER_BROKER_LISTENER_NAME":               "BROKER",
+			"KAFKA_LISTENERS":                                "EXTERNAL://0.0.0.0:9093,INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
+			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "EXTERNAL://0.0.0.0:9093,INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
+			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT",
+			"KAFKA_INTER_BROKER_LISTENER_NAME":               "INTERNAL",
 			"KAFKA_BROKER_ID":                                "1",
 			"KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR":         "1",
 			"KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS":             "1",
@@ -69,8 +76,23 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		Started:          true,
 	}
 
+	settings := defaultOptions()
 	for _, opt := range opts {
+		if apply, ok := opt.(Option); ok {
+			apply(&settings)
+		}
 		opt.Customize(&genericContainerReq)
+	}
+
+	trimListeners(settings.Listeners)
+	if err := validateListeners(settings.Listeners); err != nil {
+		return nil, fmt.Errorf("listeners validation: %w", err)
+	}
+
+	// apply envs for listeners
+	envChange := editEnvsForListeners(settings.Listeners)
+	for key, item := range envChange {
+		genericContainerReq.Env[key] = item
 	}
 
 	genericContainerReq.ContainerRequest.LifecycleHooks =
@@ -79,26 +101,27 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				PostStarts: []testcontainers.ContainerHook{
 					// 1. copy the starter script into the container
 					func(ctx context.Context, c testcontainers.Container) error {
-						host, err := c.Host(ctx)
-						if err != nil {
-							return err
-						}
-
-						port, err := c.MappedPort(ctx, publicPort)
-						if err != nil {
-							return err
-						}
-
-						// fix for internal docker connection
-						alias := host
-						if len(genericContainerReq.ContainerRequest.Networks) > 0 {
-							nw := genericContainerReq.ContainerRequest.Networks[0]
-							if len(genericContainerReq.ContainerRequest.NetworkAliases[nw]) > 0 {
-								alias = genericContainerReq.ContainerRequest.NetworkAliases[nw][0]
+						if len(settings.Listeners) == 0 {
+							defaultInternal, err := internalListener(ctx, c)
+							if err != nil {
+								return fmt.Errorf("can't create default internal listener: %w", err)
 							}
+							settings.Listeners = append(settings.Listeners, defaultInternal)
 						}
 
-						scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), alias)
+						defaultExternal, err := externalListener(ctx, c)
+						if err != nil {
+							return fmt.Errorf("can't create default external listener: %w", err)
+						}
+
+						settings.Listeners = append(settings.Listeners, defaultExternal)
+
+						var advertised []string
+						for _, item := range settings.Listeners {
+							advertised = append(advertised, fmt.Sprintf("%s://%s:%s", item.Name, item.Ip, item.Port))
+						}
+
+						scriptContent := fmt.Sprintf(starterScriptContent, strings.Join(advertised, ","))
 
 						return c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755)
 					},
@@ -127,10 +150,78 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &KafkaContainer{Container: container, ClusterID: clusterID}, nil
 }
 
-func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Env["CLUSTER_ID"] = clusterID
+func trimListeners(listeners []KafkaListener) {
+	for i := 0; i < len(listeners); i++ {
+		listeners[i].Name = strings.ToUpper(strings.Trim(listeners[i].Name, " "))
+		listeners[i].Ip = strings.Trim(listeners[i].Ip, " ")
+		listeners[i].Port = strings.Trim(listeners[i].Port, " ")
 	}
+}
+
+func validateListeners(listeners []KafkaListener) error {
+	var ports map[string]bool = make(map[string]bool, len(listeners)+2)
+	var names map[string]bool = make(map[string]bool, len(listeners)+2)
+
+	// check for default listeners
+	ports["9094"] = true
+	ports["9093"] = true
+
+	// check for default listeners
+	names["CONTROLLER"] = true
+	names["EXTERNAL"] = true
+
+	for _, item := range listeners {
+		if names[item.Name] {
+			return fmt.Errorf("duplicate of listener name: %s", item.Name)
+		}
+		names[item.Name] = true
+
+		if ports[item.Port] {
+			return fmt.Errorf("duplicate of listener port: %s", item.Port)
+		}
+		ports[item.Port] = true
+	}
+
+	return nil
+}
+
+func editEnvsForListeners(listeners []KafkaListener) map[string]string {
+	if len(listeners) == 0 {
+		// no change
+		return map[string]string{}
+	}
+
+	envs := map[string]string{
+		"KAFKA_LISTENERS":                      "CONTROLLER://0.0.0.0:9094, EXTERNAL://0.0.0.0:9093",
+		"KAFKA_REST_BOOTSTRAP_SERVERS":         "CONTROLLER://0.0.0.0:9094, EXTERNAL://0.0.0.0:9093",
+		"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "CONTROLLER:PLAINTEXT, EXTERNAL:PLAINTEXT",
+	}
+
+	// expect first listener has common network between kafka instances
+	envs["KAFKA_INTER_BROKER_LISTENER_NAME"] = listeners[0].Name
+
+	// expect small number of listeners, so joins is okay
+	for _, item := range listeners {
+		envs["KAFKA_LISTENERS"] = strings.Join(
+			[]string{
+				envs["KAFKA_LISTENERS"],
+				fmt.Sprintf("%s://0.0.0.0:%s", item.Name, item.Port),
+			},
+			",",
+		)
+
+		envs["KAFKA_REST_BOOTSTRAP_SERVERS"] = envs["KAFKA_LISTENERS"]
+
+		envs["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = strings.Join(
+			[]string{
+				envs["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"],
+				item.Name + ":" + "PLAINTEXT",
+			},
+			",",
+		)
+	}
+
+	return envs
 }
 
 // Brokers retrieves the broker connection strings from Kafka with only one entry,
