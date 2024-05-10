@@ -19,7 +19,7 @@ on:
       - 'README.md'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
+  group: {{ "${{ github.workflow }}-${{ github.head_ref || github.sha }}" }}
   cancel-in-progress: true
 
 jobs:
@@ -30,12 +30,12 @@ jobs:
         platform: [ubuntu-latest, macos-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
-      go-version: ${{ matrix.go-version }}
+      go-version: {{ "${{ matrix.go-version }}" }}
       fail-fast: true
-      platform: ${{ matrix.platform }}
+      platform: {{ "${{ matrix.platform }}" }}
       project-directory: "."
       rootless-docker: false
-      run-tests: ${{ matrix.platform == 'ubuntu-latest' }}
+      run-tests: {{ "${{ matrix.platform == 'ubuntu-latest' }}" }}
       ryuk-disabled: false
 
   # The job below is a copy of the job above, but with ryuk disabled.
@@ -47,7 +47,7 @@ jobs:
         go-version: [1.21.x, 1.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
-      go-version: ${{ matrix.go-version }}
+      go-version: {{ "${{ matrix.go-version }}" }}
       fail-fast: false
       platform: "ubuntu-latest"
       project-directory: "."
@@ -65,7 +65,7 @@ jobs:
         platform: [ubuntu-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
-      go-version: ${{ matrix.go-version }}
+      go-version: {{ "${{ matrix.go-version }}" }}
       fail-fast: false
       platform: "ubuntu-latest"
       project-directory: "."
@@ -80,9 +80,9 @@ jobs:
         platform: [ubuntu-latest, macos-latest, windows-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
-      go-version: ${{ matrix.go-version }}
+      go-version: {{ "${{ matrix.go-version }}" }}
       fail-fast: true
-      platform: ${{ matrix.platform }}
+      platform: {{ "${{ matrix.platform }}" }}
       project-directory: "cmd/devtools"
       rootless-docker: false
       run-tests: true
@@ -94,28 +94,28 @@ jobs:
       matrix:
         go-version: [1.21.x, 1.x]
         platform: [ubuntu-latest]
-        module: [artemis, azurite, cassandra, chroma, clickhouse, cockroachdb, compose, consul, couchbase, dolt, elasticsearch, gcloud, grafana-lgtm, inbucket, influxdb, k3s, k6, kafka, localstack, mariadb, milvus, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, ollama, openfga, openldap, opensearch, postgres, pulsar, qdrant, rabbitmq, redis, redpanda, registry, surrealdb, valkey, vault, vearch, weaviate]
+        module: [{{ .Modules }}]
     uses: ./.github/workflows/ci-test-go.yml
     with:
-      go-version: ${{ matrix.go-version }}
+      go-version: {{ "${{ matrix.go-version }}" }}
       fail-fast: false
-      platform: ${{ matrix.platform }}
-      project-directory: modules/${{ matrix.module }}
+      platform: {{ "${{ matrix.platform }}" }}
+      project-directory: {{ "modules/${{ matrix.module }}" }}
       rootless-docker: false
-      run-tests: ${{ matrix.platform == 'ubuntu-latest' }}
+      run-tests: {{ "${{ matrix.platform == 'ubuntu-latest' }}" }}
       ryuk-disabled: false
 
   test-examples:
     needs: test-modules
     strategy:
       matrix:
-        module: [nginx, toxiproxy]
+        module: [{{ .Examples }}]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: "1.21.x"
       fail-fast: true
       platform: 'ubuntu-latest'
-      project-directory: examples/${{ matrix.module }}
+      project-directory: {{ "examples/${{ matrix.module }}" }}
       rootless-docker: false
       run-tests: true
       ryuk-disabled: false
@@ -124,7 +124,7 @@ jobs:
     permissions:
       contents: read  # for actions/checkout to fetch code
       pull-requests: read  # for sonarsource/sonarcloud-github-action to determine which PR to decorate
-    if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
+    if: {{ "${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}" }}
     needs: test-examples
     runs-on: ubuntu-latest 
     steps:
@@ -141,5 +141,5 @@ jobs:
       - name: Analyze with SonarCloud
         uses: sonarsource/sonarcloud-github-action@49e6cd3b187936a73b8280d59ffd9da69df63ec9 # v2.1.1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: {{ "${{ secrets.GITHUB_TOKEN }}" }}
+          SONAR_TOKEN: {{ "${{ secrets.SONAR_TOKEN }}" }}

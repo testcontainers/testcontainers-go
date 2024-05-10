@@ -83,7 +83,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 
 ### How to run the tool
 
-From the [`modulegen` directory]({{repo_url}}/tree/main/modulegen), please run:
+From the [`cmd/devtools` directory]({{repo_url}}/tree/main/cmd/devtools), please run:
 
 ```shell
 go run . new module --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
