@@ -63,6 +63,54 @@ The environment variables that are already set by default are:
 
 {% include "../features/common_functional_options.md" %}
 
+
+#### ClusterId
+
+You can set up cluster id by using `WithClusterID` option.
+
+```
+KafkaContainer, err = kafka.RunContainer(ctx,
+		kafka.WithClusterID("test-cluster"),
+		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"))
+```
+
+#### Listeners
+
+If you need to connect new listeners, you can use `WithListener(listeners []KafkaListener)`. 
+This option controls next env parameters: 
+- `KAFKA_LISTENERS`
+- `KAFKA_REST_BOOTSTRAP_SERVERS`
+- `KAFKA_LISTENER_SECURITY_PROTOCOL_MAP`
+- `KAFKA_INTER_BROKER_LISTENER_NAME`
+- `KAFKA_ADVERTISED_LISTENERS`
+
+Example:
+```
+KafkaContainer, err = kafka.RunContainer(ctx,
+		kafka.WithClusterID("test-cluster"),
+		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
+		network.WithNetwork([]string{"kafka"}, Network),
+		kafka.WithListener([]kafka.KafkaListener{
+			{
+				Name: "INTERNAL",
+				Ip:   "kafka",
+				Port: "9092",
+			},
+		}),
+	)
+```
+
+Here we created network for our container and added kafka to it, so they can communicate. Then we marked port 9092 for our internal usage.
+
+First listener in slice will be written in `KAFKA_INTER_BROKER_LISTENER_NAME`  
+
+Every listener's name will be converted in upper case. Every name and port should be unique and will be checked in validation step.
+
+If you are not using this option or list is empty, there will be 2 default listeners with next addresses
+
+External - Host():MappedPort()  
+Internal - Host():9092
+
 ### Container Methods
 
 The Kafka container exposes the following methods:
