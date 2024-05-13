@@ -40,14 +40,14 @@ func TestMongoDB(t *testing.T) {
 			name: "With Replica set and mongo:4",
 			opts: []testcontainers.ContainerCustomizer{
 				testcontainers.WithImage("mongo:4"),
-				mongodb.WithReplicaSet(),
+				mongodb.WithReplicaSet("rs"),
 			},
 		},
 		{
 			name: "With Replica set and mongo:6",
 			opts: []testcontainers.ContainerCustomizer{
 				testcontainers.WithImage("mongo:6"),
-				mongodb.WithReplicaSet(),
+				mongodb.WithReplicaSet("rs"),
 			},
 		},
 	}
