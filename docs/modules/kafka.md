@@ -100,13 +100,13 @@ KafkaContainer, err = kafka.RunContainer(ctx,
 	)
 ```
 
-Here we created network for our container and added kafka to it, so they can communicate. Then we marked port 9092 for our internal usage.
+In the above code, we created a network for our container and attached kafka to it, so they can communicate. Then we marked port 9092 for our internal usage.
 
 First listener in slice will be written in `KAFKA_INTER_BROKER_LISTENER_NAME`  
 
-Every listener's name will be converted in upper case. Every name and port should be unique and will be checked in validation step.
+Every listener's name will be converted in upper case. Every name and port should be unique and will be checked in a validation step.
 
-If you are not using this option or list is empty, there will be 2 default listeners with next addresses
+If you are not using this option or the listeners list is empty, there will be 2 default listeners with the following addresses and ports:
 
 External - Host():MappedPort()  
 Internal - Host():9092
