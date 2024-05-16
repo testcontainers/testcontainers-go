@@ -85,24 +85,14 @@ This option controls next env parameters:
 - `KAFKA_ADVERTISED_LISTENERS`
 
 Example:
-```
-KafkaContainer, err = kafka.RunContainer(ctx,
-		kafka.WithClusterID("test-cluster"),
-		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
-		network.WithNetwork([]string{"kafka"}, Network),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "INTERNAL",
-				Ip:   "kafka",
-				Port: "9092",
-			},
-		}),
-	)
-```
+
+<!--codeinclude-->
+[Get Kafka brokers](../../modules/kafka/kafka_test.go) inside_block:kafkaWithListener
+<!--/codeinclude-->
 
 Here we created network for our container and added kafka to it, so they can communicate. Then we marked port 9092 for our internal usage.
 
-First listener in slice will be written in `KAFKA_INTER_BROKER_LISTENER_NAME`  
+The first listener in the slice will be written in the env parameter `KAFKA_INTER_BROKER_LISTENER_NAME`  
 
 Every listener's name will be converted in upper case. Every name and port should be unique and will be checked in validation step.
 
