@@ -100,7 +100,7 @@ func TestKafka_invalidVersion(t *testing.T) {
 	}
 }
 
-func TestKafka_network(t *testing.T) {
+func TestKafka_networkConnectivity(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
@@ -193,7 +193,7 @@ func TestKafka_network(t *testing.T) {
 func initKafkaTest(ctx context.Context, network string, brokers string, input string, output string) (testcontainers.Container, error) {
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:       "./docker",
+			Context:       "./testdata",
 			Dockerfile:    "Dockerfile",
 			PrintBuildLog: true,
 			KeepImage:     true,
