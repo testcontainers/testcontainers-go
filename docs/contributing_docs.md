@@ -1,6 +1,6 @@
 # Contributing to documentation
 
-The Testcontainers for Go documentation is a static site built with [MkDocs](https://www.mkdocs.org/).
+The _Testcontainers for Go_ documentation is a static site built with [MkDocs](https://www.mkdocs.org/).
 We use the [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) theme, which offers a number of useful extensions to MkDocs.
 
 In addition we use a [custom plugin](https://github.com/rnorth/mkdocs-codeinclude-plugin) for inclusion of code snippets.
@@ -11,9 +11,19 @@ We publish our documentation using Netlify.
 
 ### Using Python locally
 
-* Ensure that you have Python 3.8.0 or higher.
-* Set up a virtualenv and run `pip install -r requirements.txt` in the `testcontainers-go` root directory.
-* Once Python dependencies have been installed, run `mkdocs serve` to start a local auto-updating MkDocs server.
+From the root directory of the repository, you can use the following command to build and serve the documentation locally:
+
+```shell
+make serve-docs
+```
+
+It will use a Python's virtual environment to install the required dependencies and start a local server at `http://localhost:8000`.
+
+Once finished, you can destroy the virtual environment with the following command:
+
+```shell
+make clean-docs
+```
 
 ### PR Preview deployments
 
