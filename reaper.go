@@ -171,7 +171,7 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 			return nil, err
 		}
 
-		Logger.Printf("⏳  Waiting for Reaper port to be ready")
+		Logger.Printf("⏳ Waiting for Reaper port to be ready")
 
 		var containerJson *types.ContainerJSON
 
