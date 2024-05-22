@@ -14,8 +14,8 @@ A `LogConsumer` must implement the `LogConsumer` interface, and it could be as s
 as in the following example:
 
 <!--codeinclude-->
-[The LogConsumer Interface](../../logconsumer.go) inside_block:logConsumerInterface
-[The Log struct](../../logconsumer.go) inside_block:logStruct
+[The LogConsumer Interface](../../container/logconsumer.go) inside_block:logConsumerInterface
+[The Log struct](../../container/log.go) inside_block:logStruct
 [Example LogConsumer](../../testing.go) inside_block:exampleLogConsumer
 <!--/codeinclude-->
 
