@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/docker/go-connections/nat"
 	"golang.org/x/mod/semver"
@@ -67,6 +68,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				PostStarts: []testcontainers.ContainerHook{
 					// 1. copy the starter script into the container
 					func(ctx context.Context, c testcontainers.Container) error {
+						// it is a workaround for the container is not exposing the port yet
+						// ref. https://github.com/testcontainers/testcontainers-go/issues/2543
+						// wait for the container port to be exposed
+						time.Sleep(time.Second)
+
 						host, err := c.Host(ctx)
 						if err != nil {
 							return err
