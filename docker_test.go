@@ -972,6 +972,40 @@ func TestWorkingDir(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, c)
 }
 
+func TestExposePortOnPostStartHook(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:        "docker.io/nginx:alpine",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
+		LifecycleHooks: []ContainerLifecycleHooks{
+			{
+				PostStarts: []ContainerHook{
+					func(ctx context.Context, c Container) error {
+						// fill inspect cache
+						_, err := c.Host(ctx)
+						require.NoError(t, err)
+
+						// get expose image port from inspect cache
+						_, err = c.MappedPort(ctx, "80/tcp")
+						require.NoError(t, err, "expected to get mapped port for 80/tcp")
+
+						return nil
+					},
+				},
+			},
+		},
+	}
+	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, nginxC)
+}
+
 func ExampleDockerProvider_CreateContainer() {
 	ctx := context.Background()
 	req := ContainerRequest{
