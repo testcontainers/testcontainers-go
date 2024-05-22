@@ -589,7 +589,7 @@ func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, filePath st
 // CopyDirToContainer copies the contents of a directory to a parent path in the container. This parent path must exist in the container first
 // as we cannot create it
 func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error {
-	dir, err := isDir(hostDirPath)
+	dir, err := file.IsDir(hostDirPath)
 	if err != nil {
 		return err
 	}
@@ -599,7 +599,7 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 		return fmt.Errorf("path %s is not a directory", hostDirPath)
 	}
 
-	buff, err := tarDir(hostDirPath, fileMode)
+	buff, err := file.TarDir(hostDirPath, fileMode)
 	if err != nil {
 		return err
 	}
@@ -617,7 +617,7 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 }
 
 func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
-	dir, err := isDir(hostFilePath)
+	dir, err := file.IsDir(hostFilePath)
 	if err != nil {
 		return err
 	}
@@ -660,7 +660,7 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 }
 
 func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(tw io.Writer) error, fileContentSize int64, containerFilePath string, fileMode int64) error {
-	buffer, err := tarFile(containerFilePath, fileContent, fileContentSize, fileMode)
+	buffer, err := file.TarFile(containerFilePath, fileContent, fileContentSize, fileMode)
 	if err != nil {
 		return err
 	}

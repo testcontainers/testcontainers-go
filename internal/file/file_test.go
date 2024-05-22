@@ -1,6 +1,6 @@
 // This test is testing very internal logic that should not be exported away from this package. We'll
 // leave it in the main testcontainers package. Do not use for user facing examples.
-package testcontainers
+package file_test
 
 import (
 	"archive/tar"
@@ -15,6 +15,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go/internal/file"
 )
 
 func Test_IsDir(t *testing.T) {
@@ -31,7 +33,7 @@ func Test_IsDir(t *testing.T) {
 			err:      nil,
 		},
 		{
-			filepath: "docker.go",
+			filepath: "dir.go",
 			expected: false,
 			err:      nil,
 		},
@@ -44,7 +46,7 @@ func Test_IsDir(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.filepath, func(t *testing.T) {
-			result, err := isDir(test.filepath)
+			result, err := file.IsDir(test.filepath)
 			if test.err != nil {
 				require.Error(t, err, "expected error")
 			} else {
@@ -78,7 +80,7 @@ func Test_TarDir(t *testing.T) {
 				src = absSrc
 			}
 
-			buff, err := tarDir(src, 0o755)
+			buff, err := file.TarDir(src, 0o755)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -119,7 +121,7 @@ func Test_TarFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	buff, err := tarFile("Docker.file", func(tw io.Writer) error {
+	buff, err := file.TarFile("Docker.file", func(tw io.Writer) error {
 		_, err := tw.Write(b)
 		return err
 	}, int64(len(b)), 0o755)

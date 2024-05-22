@@ -1,4 +1,4 @@
-package testcontainers
+package file
 
 import (
 	"archive/tar"
@@ -11,27 +11,8 @@ import (
 	"strings"
 )
 
-func isDir(path string) (bool, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return false, err
-	}
-	defer file.Close()
-
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return false, err
-	}
-
-	if fileInfo.IsDir() {
-		return true, nil
-	}
-
-	return false, nil
-}
-
-// tarDir compress a directory using tar + gzip algorithms
-func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
+// TarDir compress a directory using tar + gzip algorithms
+func TarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 	// always pass src as absolute path
 	abs, err := filepath.Abs(src)
 	if err != nil {
@@ -40,8 +21,6 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 	src = abs
 
 	buffer := &bytes.Buffer{}
-
-	Logger.Printf(">> creating TAR file from directory: %s\n", src)
 
 	// tar > gzip > buffer
 	zr := gzip.NewWriter(buffer)
@@ -59,7 +38,6 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 
 		// if a symlink, skip file
 		if fi.Mode().Type() == os.ModeSymlink {
-			Logger.Printf(">> skipping symlink: %s\n", file)
 			return nil
 		}
 
@@ -109,8 +87,8 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 	return buffer, nil
 }
 
-// tarFile compress a single file using tar + gzip algorithms
-func tarFile(basePath string, fileContent func(tw io.Writer) error, fileContentSize int64, fileMode int64) (*bytes.Buffer, error) {
+// TarFile compress a single file using tar + gzip algorithms
+func TarFile(basePath string, fileContent func(tw io.Writer) error, fileContentSize int64, fileMode int64) (*bytes.Buffer, error) {
 	buffer := &bytes.Buffer{}
 
 	zr := gzip.NewWriter(buffer)
