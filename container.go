@@ -21,6 +21,7 @@ import (
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -159,7 +160,7 @@ type ContainerRequest struct {
 	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 	LifecycleHooks          []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
-	LogConsumerCfg          *LogConsumerConfig                         // define the configuration for the log producer and its log consumers to follow the logs
+	LogConsumerCfg          *log.ConsumerConfig                        // define the configuration for the log producer and its log consumers to follow the logs
 }
 
 // containerOptions functional options for a container

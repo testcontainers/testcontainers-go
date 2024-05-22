@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"testing"
+
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 // SkipIfProviderIsNotHealthy is a utility function capable of skipping tests
@@ -46,7 +48,7 @@ func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
 type StdoutLogConsumer struct{}
 
 // Accept prints the log to stdout
-func (lc *StdoutLogConsumer) Accept(l Log) {
+func (lc *StdoutLogConsumer) Accept(l log.Log) {
 	fmt.Print(string(l.Content))
 }
 

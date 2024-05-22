@@ -11,6 +11,7 @@ import (
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -169,10 +170,10 @@ func WithImageSubstitutors(fn ...ImageSubstitutor) CustomizeRequestOption {
 }
 
 // WithLogConsumers sets the log consumers for a container
-func WithLogConsumers(consumer ...LogConsumer) CustomizeRequestOption {
+func WithLogConsumers(consumer ...log.Consumer) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
 		if req.LogConsumerCfg == nil {
-			req.LogConsumerCfg = &LogConsumerConfig{}
+			req.LogConsumerCfg = &log.ConsumerConfig{}
 		}
 
 		req.LogConsumerCfg.Consumers = consumer

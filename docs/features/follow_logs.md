@@ -10,12 +10,12 @@ As logs are written to either `stdout`, or `stderr` (`stdin` is not supported) t
 
 ## Creating a LogConsumer
 
-A `LogConsumer` must implement the `LogConsumer` interface, and it could be as simple as directly printing the log to `stdout`,
+A `LogConsumer` must implement the `log.Consumer` interface, and it could be as simple as directly printing the log to `stdout`,
 as in the following example:
 
 <!--codeinclude-->
-[The LogConsumer Interface](../../container/logconsumer.go) inside_block:logConsumerInterface
-[The Log struct](../../container/log.go) inside_block:logStruct
+[The LogConsumer Interface](../../log/consumer.go) inside_block:logConsumerInterface
+[The Log struct](../../log/log.go) inside_block:logStruct
 [Example LogConsumer](../../testing.go) inside_block:exampleLogConsumer
 <!--/codeinclude-->
 
@@ -33,13 +33,13 @@ This will represent the current way for associating `LogConsumer`s. You simply d
 [Passing LogConsumers](../../logconsumer_test.go) inside_block:logConsumersAtRequest
 <!--/codeinclude-->
 
-Please check that it's possible to configure the log production with an slice of functional options. These options must be of the `LogProductionOption` type:
+Please check that it's possible to configure the log production with an slice of functional options. These options must be of the `log.ProductionOption` type:
 
 ```go
-type LogProductionOption func(*DockerContainer)
+type ProductionOption func(*DockerContainer)
 ```
 
-At the moment, _Testcontainers for Go_ exposes an option to set log production timeout, using the `WithLogProductionTimeout` function.
+At the moment, _Testcontainers for Go_ exposes an option to set log production timeout, using the `WithProductionTimeout` function.
 
 _Testcontainers for Go_ will read this log producer/consumer configuration to automatically start producing logs if an only if the consumers slice contains at least one valid `LogConsumer`.
 
@@ -117,7 +117,7 @@ For example, you would start the log production normally, defining the log produ
 ```go
 // start log production normally, using the ContainerRequest struct, or
 // using the deprecated c.StartLogProducer method.
-// err = container.StartLogProducer(ctx, WithLogProductionTimeout(10*time.Second))
+// err = container.StartLogProducer(ctx, WithProductionTimeout(10*time.Second))
 
 // listen to errors in a detached goroutine
 go func(done chan struct{}, timeout time.Duration) {

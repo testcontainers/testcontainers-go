@@ -38,6 +38,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	tccontainer "github.com/testcontainers/testcontainers-go/internal/core/container"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -49,8 +50,6 @@ const (
 	Podman        = "podman"
 	ReaperDefault = "reaper_default" // Default network name when bridge is not available
 	packagePath   = "github.com/testcontainers/testcontainers-go"
-
-	logStoppedForOutOfSyncMessage = "Stopping log consumer: Headers out of sync"
 )
 
 var createContainerFailDueToNameConflictRegex = regexp.MustCompile("Conflict. The container name .* is already in use by container .*")
@@ -69,7 +68,7 @@ type DockerContainer struct {
 	provider           *DockerProvider
 	sessionID          string
 	terminationSignal  chan bool
-	consumers          []LogConsumer
+	consumers          []log.Consumer
 	raw                *types.ContainerJSON
 	logProductionError chan error
 
@@ -89,6 +88,11 @@ type DockerContainer struct {
 	lifecycleHooks       []ContainerLifecycleHooks
 
 	healthStatus string // container health status, will default to healthStatusNone if no healthcheck is present
+}
+
+// Deprecated: created to satisfy the log.OptionsContainer interface
+func (c *DockerContainer) WithLogProductionTimeout(timeout time.Duration) {
+	c.logProductionTimeout = &timeout
 }
 
 // SetLogger sets the logger for the container
@@ -387,14 +391,14 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	return pr, nil
 }
 
-// Deprecated: use the ContainerRequest.LogConsumerConfig field instead.
-func (c *DockerContainer) FollowOutput(consumer LogConsumer) {
+// Deprecated: use the ContainerRequest's log.ConsumerConfig field instead.
+func (c *DockerContainer) FollowOutput(consumer log.Consumer) {
 	c.followOutput(consumer)
 }
 
 // followOutput adds a LogConsumer to be sent logs from the container's
 // STDOUT and STDERR
-func (c *DockerContainer) followOutput(consumer LogConsumer) {
+func (c *DockerContainer) followOutput(consumer log.Consumer) {
 	c.consumers = append(c.consumers, consumer)
 }
 
@@ -674,17 +678,17 @@ func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(
 	return nil
 }
 
-type LogProductionOption func(*DockerContainer)
+// Deprecated: use log.ProductionOption instead.
+type LogProductionOption = log.ProductionOption
 
+// Deprecated: use log.WithProductionTimeout instead.
 // WithLogProductionTimeout is a functional option that sets the timeout for the log production.
 // If the timeout is lower than 5s or greater than 60s it will be set to 5s or 60s respectively.
 func WithLogProductionTimeout(timeout time.Duration) LogProductionOption {
-	return func(c *DockerContainer) {
-		c.logProductionTimeout = &timeout
-	}
+	return log.WithProductionTimeout(timeout)
 }
 
-// Deprecated: use the ContainerRequest.LogConsumerConfig field instead.
+// Deprecated: use the ContainerRequest's log.ConsumerConfig field instead.
 func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProductionOption) error {
 	return c.startLogProduction(ctx, opts...)
 }
@@ -694,9 +698,9 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProdu
 // Default log production timeout is 5s. It is used to set the context timeout
 // which means that each log-reading loop will last at least the specified timeout
 // and that it cannot be cancelled earlier.
-// Use functional option WithLogProductionTimeout() to override default timeout. If it's
+// Use functional option log.WithProductionTimeout() to override default timeout. If it's
 // lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
-func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogProductionOption) error {
+func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...log.ProductionOption) error {
 	c.logProductionStop = make(chan struct{}, 1) // buffered channel to avoid blocking
 	c.logProductionWaitGroup.Add(1)
 
@@ -766,7 +770,7 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 						// Probably safe to continue here
 						continue
 					}
-					_, _ = fmt.Fprintf(os.Stderr, "container log error: %+v. %s", err, logStoppedForOutOfSyncMessage)
+					_, _ = fmt.Fprintf(os.Stderr, "container log error: %+v. %s", err, log.StoppedForOutOfSyncMessage)
 					// if we would continue here, the next header-read will result into random data...
 					return
 				}
@@ -783,7 +787,7 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 				}
 
 				// a map of the log type --> int representation in the header, notice the first is blank, this is stdin, but the go docker client doesn't allow following that in logs
-				logTypes := []string{"", StdoutLog, StderrLog}
+				logTypes := []string{"", log.Stdout, log.Stderr}
 
 				b := make([]byte, count)
 				_, err = io.ReadFull(r, b)
@@ -795,7 +799,7 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 						continue
 					}
 					// we can not continue here as the next read most likely will not be the next header
-					_, _ = fmt.Fprintln(os.Stderr, logStoppedForOutOfSyncMessage)
+					_, _ = fmt.Fprintln(os.Stderr, log.StoppedForOutOfSyncMessage)
 					return
 				}
 				for _, c := range c.consumers {
@@ -1565,7 +1569,7 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	ctr.provider = provider
 
 	ctr.sessionID = core.SessionID()
-	ctr.consumers = []LogConsumer{}
+	ctr.consumers = []log.Consumer{}
 	ctr.isRunning = response.State == "running"
 
 	// the termination signal should be obtained from the reaper

@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -81,8 +82,8 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 		},
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
-			Consumers: []LogConsumer{&g},
+		LogConsumerCfg: &log.ConsumerConfig{
+			Consumers: []log.Consumer{&g},
 		},
 	}
 
@@ -146,8 +147,8 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 		},
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
-			Consumers: []LogConsumer{&g},
+		LogConsumerCfg: &log.ConsumerConfig{
+			Consumers: []log.Consumer{&g},
 		},
 	}
 
@@ -175,8 +176,8 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	<-g.Ack
 
 	assert.Equal(t, map[string]string{
-		StdoutLog: "echo this-is-stdout\n",
-		StderrLog: "echo this-is-stderr\n",
+		log.Stdout: "echo this-is-stdout\n",
+		log.Stderr: "echo this-is-stderr\n",
 	}, g.LogTypes)
 }
 
@@ -201,8 +202,8 @@ func Test_MultipleLogConsumers(t *testing.T) {
 		},
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
-			Consumers: []LogConsumer{&first, &second},
+		LogConsumerCfg: &log.ConsumerConfig{
+			Consumers: []log.Consumer{&first, &second},
 		},
 	}
 
@@ -310,8 +311,8 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	nginx, err := provider.CreateContainer(ctx, ContainerRequest{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
-		LogConsumerCfg: &LogConsumerConfig{
-			Consumers: []LogConsumer{&consumer},
+		LogConsumerCfg: &log.ConsumerConfig{
+			Consumers: []log.Consumer{&consumer},
 		},
 	})
 	if err != nil {
@@ -416,9 +417,9 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 		},
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
-			Opts:      []LogProductionOption{WithLogProductionTimeout(10 * time.Second)},
-			Consumers: []LogConsumer{&g},
+		LogConsumerCfg: &log.ConsumerConfig{
+			Opts:      []log.ProductionOption{log.WithProductionTimeout(10 * time.Second)},
+			Consumers: []log.Consumer{&g},
 		},
 	}
 	// }
@@ -469,9 +470,9 @@ func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
 		},
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
-			Opts:      []LogProductionOption{WithLogProductionTimeout(4 * time.Second)},
-			Consumers: []LogConsumer{&g},
+		LogConsumerCfg: &log.ConsumerConfig{
+			Opts:      []log.ProductionOption{log.WithProductionTimeout(4 * time.Second)},
+			Consumers: []log.Consumer{&g},
 		},
 	}
 
@@ -501,9 +502,9 @@ func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 		},
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
-			Opts:      []LogProductionOption{WithLogProductionTimeout(61 * time.Second)},
-			Consumers: []LogConsumer{&g},
+		LogConsumerCfg: &log.ConsumerConfig{
+			Opts:      []log.ProductionOption{log.WithProductionTimeout(61 * time.Second)},
+			Consumers: []log.Consumer{&g},
 		},
 	}
 
@@ -547,8 +548,8 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 		},
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
-			Consumers: []LogConsumer{&first},
+		LogConsumerCfg: &log.ConsumerConfig{
+			Consumers: []log.Consumer{&first},
 		},
 	}
 
@@ -582,8 +583,8 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 		},
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
-			Consumers: []LogConsumer{&second},
+		LogConsumerCfg: &log.ConsumerConfig{
+			Consumers: []log.Consumer{&second},
 		},
 	}
 
@@ -634,9 +635,9 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	actual := buf.String()
 
 	// The context cancel shouldn't cause the system to throw a
-	// logStoppedForOutOfSyncMessage, as it hangs the system with
+	// log.StoppedForOutOfSyncMessage, as it hangs the system with
 	// the multiple containers.
-	assert.False(t, strings.Contains(actual, logStoppedForOutOfSyncMessage))
+	assert.False(t, strings.Contains(actual, log.StoppedForOutOfSyncMessage))
 }
 
 type FooLogConsumer struct {

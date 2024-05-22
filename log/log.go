@@ -1,5 +1,11 @@
 package log
 
+// Stdout is the log type for STDOUT
+const Stdout = "STDOUT"
+
+// Stderr is the log type for STDERR
+const Stderr = "STDERR"
+
 // logStruct {
 
 // Log represents a message that was created by a process,
