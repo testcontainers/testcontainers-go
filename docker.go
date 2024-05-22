@@ -37,6 +37,7 @@ import (
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	tccontainer "github.com/testcontainers/testcontainers-go/internal/core/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -1120,7 +1121,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		return nil, err
 	}
 
-	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, networkingConfig, platform, req.Name)
+	resp, err := tccontainer.Create(ctx, dockerInput, hostConfig, networkingConfig, platform, req.Name)
 	if err != nil {
 		return nil, err
 	}
