@@ -1,0 +1,39 @@
+{
+  "emulators": {
+    "ui": {
+      "//": "UI will only partially work in the container. Because ports get mangled, some of the features will be broken. A solution is to run UI externally and provide the mangled ports as inputs.",
+      "enabled": true,
+      "port": 4000,
+      "host": "0.0.0.0"
+    },
+    "hub": {
+      "port": 4400,
+      "host": "0.0.0.0"
+    },
+    "logging": {
+      "port": 4600,
+      "host": "0.0.0.0"
+    },
+    "firestore": {
+      "port": 8080,
+      "host": "0.0.0.0",
+      "websocketPort": 8081
+    },
+    "auth": {
+      "port": 9099,
+      "host": "0.0.0.0"
+    },
+    "storage": {
+      "port": 9199,
+      "host": "0.0.0.0"
+    },
+    "singleProjectMode": true
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}
