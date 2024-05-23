@@ -7,23 +7,24 @@ import (
 	"testing"
 
 	"github.com/docker/docker/client"
+
+	tclog "github.com/testcontainers/testcontainers-go/log"
 )
 
 // Logger is the default log instance
-var Logger Logging = log.New(os.Stderr, "", log.LstdFlags)
+var Logger tclog.Logging = log.New(os.Stderr, "", log.LstdFlags)
 
 // Validate our types implement the required interfaces.
 var (
-	_ Logging               = (*log.Logger)(nil)
+	_ Logging               = (*log.Logger)(nil) // Deprecated: use tclog.Logging instead
 	_ ContainerCustomizer   = LoggerOption{}
 	_ GenericProviderOption = LoggerOption{}
 	_ DockerProviderOption  = LoggerOption{}
 )
 
+// Deprecated: use tclog.Logging instead
 // Logging defines the Logger interface
-type Logging interface {
-	Printf(format string, v ...interface{})
-}
+type Logging = tclog.Logging
 
 // Deprecated: this function will be removed in a future release
 // LogDockerServerInfo logs the docker server info using the provided logger and Docker client
@@ -31,9 +32,10 @@ func LogDockerServerInfo(ctx context.Context, client client.APIClient, logger Lo
 	// NOOP
 }
 
+// Deprecated: use log.NewTestLogger instead
 // TestLogger returns a Logging implementation for testing.TB
 // This way logs from testcontainers are part of the test output of a test suite or test case.
-func TestLogger(tb testing.TB) Logging {
+func TestLogger(tb testing.TB) tclog.Logging {
 	tb.Helper()
 	return testLogger{TB: tb}
 }
@@ -73,10 +75,12 @@ func (o LoggerOption) Customize(req *GenericContainerRequest) error {
 	return nil
 }
 
+// Deprecated: use log.testLogger instead
 type testLogger struct {
 	testing.TB
 }
 
+// Deprecated: use log.testLogger instead
 // Printf implements Logging.
 func (t testLogger) Printf(format string, v ...interface{}) {
 	t.Helper()
