@@ -31,6 +31,8 @@ echo '' > /etc/confluent/docker/ensure
 	// }
 )
 
+var timeToWaitUntilContainerMapPorts = time.Second
+
 // KafkaContainer represents the Kafka container type used in the module
 type KafkaContainer struct {
 	testcontainers.Container
@@ -71,7 +73,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 						// it is a workaround for the container is not exposing the port yet
 						// ref. https://github.com/testcontainers/testcontainers-go/issues/2543
 						// wait for the container port to be exposed
-						time.Sleep(time.Second)
+						time.Sleep(timeToWaitUntilContainerMapPorts)
 
 						host, err := c.Host(ctx)
 						if err != nil {
@@ -135,6 +137,13 @@ func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["CLUSTER_ID"] = clusterID
 
+		return nil
+	}
+}
+
+func WithTimeWaitUntilContainerMapPorts(timeWait time.Duration) testcontainers.CustomizeRequestOption {
+	timeToWaitUntilContainerMapPorts = timeWait
+	return func(req *testcontainers.GenericContainerRequest) error {
 		return nil
 	}
 }
