@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types/mount"
 
 	"github.com/testcontainers/testcontainers-go"
+	tcmount "github.com/testcontainers/testcontainers-go/mount"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -147,8 +148,8 @@ func WithCache() testcontainers.CustomizeRequestOption {
 	}
 
 	return func(req *testcontainers.GenericContainerRequest) error {
-		mount := testcontainers.ContainerMount{
-			Source: testcontainers.DockerVolumeMountSource{
+		mount := tcmount.ContainerMount{
+			Source: tcmount.DockerVolumeSource{
 				Name:          cacheVol,
 				VolumeOptions: volOptions,
 			},

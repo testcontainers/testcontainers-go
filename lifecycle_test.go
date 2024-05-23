@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	tcmount "github.com/testcontainers/testcontainers-go/mount"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -33,9 +34,9 @@ func TestPreCreateModifierHook(t *testing.T) {
 			ConfigModifier: func(config *container.Config) {
 				config.Env = []string{"a=b"}
 			},
-			Mounts: ContainerMounts{
+			Mounts: tcmount.ContainerMounts{
 				{
-					Source: DockerVolumeMountSource{
+					Source: tcmount.DockerVolumeSource{
 						Name: "appdata",
 						VolumeOptions: &mount.VolumeOptions{
 							Labels: GenericLabels(),
@@ -70,7 +71,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = req.PreCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
 		require.NoError(t, err)
 
 		// assertions
@@ -150,7 +151,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = req.PreCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
 		require.NoError(t, err)
 
 		// assertions
@@ -191,7 +192,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = req.PreCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
 		require.NoError(t, err)
 
 		// assertions
@@ -237,7 +238,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = req.PreCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
 		require.NoError(t, err)
 
 		// assertions
@@ -286,7 +287,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = req.PreCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
 		require.NoError(t, err)
 
 		// assertions
@@ -327,7 +328,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = req.PreCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
 		require.NoError(t, err)
 
 		// assertions
@@ -358,7 +359,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err = req.PreCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
 		require.NoError(t, err)
 
 		// assertions

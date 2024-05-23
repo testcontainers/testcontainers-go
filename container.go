@@ -22,6 +22,7 @@ import (
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
+	tcmount "github.com/testcontainers/testcontainers-go/mount"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -131,7 +132,7 @@ type ContainerRequest struct {
 	ExposedPorts            []string // allow specifying protocol info
 	Cmd                     []string
 	Labels                  map[string]string
-	Mounts                  ContainerMounts
+	Mounts                  tcmount.ContainerMounts
 	Tmpfs                   map[string]string
 	RegistryCred            string // Deprecated: Testcontainers will detect registry credentials automatically
 	WaitingFor              wait.Strategy
@@ -429,7 +430,7 @@ func (c *ContainerRequest) validateMounts() error {
 		m := c.Mounts[idx]
 		targetPath := m.Target.Target()
 		if targets[targetPath] {
-			return fmt.Errorf("%w: %s", ErrDuplicateMountTarget, targetPath)
+			return fmt.Errorf("%w: %s", tcmount.ErrDuplicateMountTarget, targetPath)
 		} else {
 			targets[targetPath] = true
 		}
@@ -447,11 +448,11 @@ func (c *ContainerRequest) validateMounts() error {
 		for _, bind := range hostConfig.Binds {
 			parts := strings.Split(bind, ":")
 			if len(parts) != 2 {
-				return fmt.Errorf("%w: %s", ErrInvalidBindMount, bind)
+				return fmt.Errorf("%w: %s", tcmount.ErrInvalidBindMount, bind)
 			}
 			targetPath := parts[1]
 			if targets[targetPath] {
-				return fmt.Errorf("%w: %s", ErrDuplicateMountTarget, targetPath)
+				return fmt.Errorf("%w: %s", tcmount.ErrDuplicateMountTarget, targetPath)
 			} else {
 				targets[targetPath] = true
 			}

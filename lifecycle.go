@@ -10,6 +10,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
+
+	tcnetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
 )
 
 // ContainerRequestHook is a hook that will be called before a container is created.
@@ -113,15 +115,7 @@ var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
 }
 
 // defaultPreCreateHook is a hook that will apply the default configuration to the container
-var defaultPreCreateHook = func(ctx context.Context, p *DockerProvider, req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) ContainerLifecycleHooks {
-	return ContainerLifecycleHooks{
-		PreCreates: []ContainerRequestHook{
-			func(ctx context.Context, req ContainerRequest) error {
-				return p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
-			},
-		},
-	}
-}
+var defaultPreCreateHook = tccontainer.DefaultPreCreateHook
 
 // defaultCopyFileToContainerHook is a hook that will copy files to the container after it's created
 // but before it's started
@@ -391,9 +385,9 @@ func (c ContainerLifecycleHooks) Terminated(ctx context.Context) func(container 
 	return containerHookFn(ctx, c.PostTerminates)
 }
 
-func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
+func (req *ContainerRequest) PreCreateContainerHook(ctx context.Context, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
 	// prepare mounts
-	hostConfig.Mounts = mapToDockerMounts(req.Mounts)
+	hostConfig.Mounts = req.Mounts.Prepare()
 
 	endpointSettings := map[string]*network.EndpointSettings{}
 
@@ -403,9 +397,7 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	if len(req.Networks) > 0 {
 		attachContainerTo := req.Networks[0]
 
-		nw, err := p.GetNetwork(ctx, NetworkRequest{
-			Name: attachContainerTo,
-		})
+		nw, err := tcnetwork.Get(ctx, attachContainerTo)
 		if err == nil {
 			aliases := []string{}
 			if _, ok := req.NetworkAliases[attachContainerTo]; ok {
@@ -437,10 +429,17 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	exposedPorts := req.ExposedPorts
 	// this check must be done after the pre-creation Modifiers are called, so the network mode is already set
 	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
-		image, _, err := p.client.ImageInspectWithRaw(ctx, dockerInput.Image)
+		cli, err := NewDockerClientWithOpts(ctx)
 		if err != nil {
 			return err
 		}
+		defer cli.Close()
+
+		image, _, err := cli.ImageInspectWithRaw(ctx, dockerInput.Image)
+		if err != nil {
+			return err
+		}
+
 		for p := range image.Config.ExposedPorts {
 			exposedPorts = append(exposedPorts, string(p))
 		}
@@ -544,7 +543,7 @@ func mergePortBindings(configPortMap, exposedPortMap nat.PortMap, exposedPorts [
 }
 
 // defaultHostConfigModifier provides a default modifier including the deprecated fields
-func defaultHostConfigModifier(req ContainerRequest) func(hostConfig *container.HostConfig) {
+func defaultHostConfigModifier(req *ContainerRequest) func(hostConfig *container.HostConfig) {
 	return func(hostConfig *container.HostConfig) {
 		hostConfig.AutoRemove = req.AutoRemove
 		hostConfig.CapAdd = req.CapAdd

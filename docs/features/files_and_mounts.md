@@ -7,7 +7,7 @@ Copying data of any type into a container is a very common practice when working
 It is possible to map a Docker volume into the container using the `Mounts` attribute at the `ContainerRequest` struct. For that, please pass an instance of the `GenericVolumeMountSource` type, which allows you to specify the name of the volume to be mapped, and the path inside the container where it should be mounted:
 
 <!--codeinclude-->
-[Volume mounts](../../mounts_test.go) inside_block:volumeMounts
+[Volume mounts](../../mount/mounts_test.go) inside_block:volumeMounts
 <!--/codeinclude-->
 
 !!!tip

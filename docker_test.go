@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	tcmount "github.com/testcontainers/testcontainers-go/mount"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -1145,7 +1146,7 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 					ContainerFilePath: "/hello.sh",
 				},
 			},
-			Mounts:     Mounts(VolumeMount(volumeName, "/data")),
+			Mounts:     tcmount.Mounts(tcmount.VolumeMount(volumeName, "/data")),
 			Cmd:        []string{"bash", "/hello.sh"},
 			WaitingFor: wait.ForLog("done"),
 		},
