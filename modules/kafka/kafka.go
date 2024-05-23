@@ -86,8 +86,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		}
 	}
 
-	trimListeners(settings.Listeners)
-	if err := validateListeners(settings.Listeners); err != nil {
+	if err := trimValidateListeners(settings.Listeners); err != nil {
 		return nil, fmt.Errorf("listeners validation: %w", err)
 	}
 
@@ -152,15 +151,15 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return &KafkaContainer{Container: container, ClusterID: clusterID}, nil
 }
 
-func trimListeners(listeners []KafkaListener) {
+func trimValidateListeners(listeners []KafkaListener) error {
+	// Trim
 	for i := 0; i < len(listeners); i++ {
 		listeners[i].Name = strings.ToUpper(strings.Trim(listeners[i].Name, " "))
 		listeners[i].Ip = strings.Trim(listeners[i].Ip, " ")
 		listeners[i].Port = strings.Trim(listeners[i].Port, " ")
 	}
-}
 
-func validateListeners(listeners []KafkaListener) error {
+	// Validate
 	var ports map[string]bool = make(map[string]bool, len(listeners)+2)
 	var names map[string]bool = make(map[string]bool, len(listeners)+2)
 

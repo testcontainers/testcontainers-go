@@ -190,6 +190,117 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	}
 }
 
+func TestKafka_listenersValidation(t *testing.T) {
+	ctx := context.Background()
+	var err error
+
+	_, err = kafka.RunContainer(ctx,
+		kafka.WithClusterID("test-cluster"),
+		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
+		kafka.WithListener([]kafka.KafkaListener{
+			{
+				Name: "INTERNAL",
+				Ip:   "kafka",
+				Port: "9093",
+			},
+		}),
+	)
+
+	if err == nil {
+		t.Fatalf("expected to fail due to reserved listener port duplication")
+	}
+
+	_, err = kafka.RunContainer(ctx,
+		kafka.WithClusterID("test-cluster"),
+		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
+		kafka.WithListener([]kafka.KafkaListener{
+			{
+				Name: "INTERNAL",
+				Ip:   "kafka",
+				Port: "9094",
+			},
+		}),
+	)
+
+	if err == nil {
+		t.Fatalf("expected to fail due to reserved listener port duplication")
+	}
+
+	_, err = kafka.RunContainer(ctx,
+		kafka.WithClusterID("test-cluster"),
+		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
+		kafka.WithListener([]kafka.KafkaListener{
+			{
+				Name: "  cOnTrOller   ",
+				Ip:   "kafka",
+				Port: "9092",
+			},
+		}),
+	)
+
+	if err == nil {
+		t.Fatalf("expected to fail due to reserved listener name duplication")
+	}
+
+	_, err = kafka.RunContainer(ctx,
+		kafka.WithClusterID("test-cluster"),
+		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
+		kafka.WithListener([]kafka.KafkaListener{
+			{
+				Name: "external",
+				Ip:   "kafka",
+				Port: "9092",
+			},
+		}),
+	)
+
+	if err == nil {
+		t.Fatalf("expected to fail due to reserved listener name duplication")
+	}
+
+	_, err = kafka.RunContainer(ctx,
+		kafka.WithClusterID("test-cluster"),
+		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
+		kafka.WithListener([]kafka.KafkaListener{
+			{
+				Name: "test",
+				Ip:   "kafka",
+				Port: "9092",
+			},
+			{
+				Name: "test2",
+				Ip:   "kafka",
+				Port: "9092",
+			},
+		}),
+	)
+
+	if err == nil {
+		t.Fatalf("expected to fail due to port duplication")
+	}
+
+	_, err = kafka.RunContainer(ctx,
+		kafka.WithClusterID("test-cluster"),
+		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
+		kafka.WithListener([]kafka.KafkaListener{
+			{
+				Name: "test",
+				Ip:   "kafka",
+				Port: "9092",
+			},
+			{
+				Name: "test",
+				Ip:   "kafka",
+				Port: "9095",
+			},
+		}),
+	)
+
+	if err == nil {
+		t.Fatalf("expected to fail due to name duplication")
+	}
+}
+
 func initKafkaTest(ctx context.Context, network string, brokers string, input string, output string) (testcontainers.Container, error) {
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
