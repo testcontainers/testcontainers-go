@@ -88,16 +88,10 @@ func (s DockerTmpfsSource) GetTmpfsOptions() *mount.TmpfsOptions {
 // Prepare maps the given []ContainerMount to the corresponding
 // []mount.Mount for further processing
 func (m ContainerMounts) Prepare() []mount.Mount {
-	return mapToDockerMounts(m)
-}
+	mounts := make([]mount.Mount, 0, len(m))
 
-// mapToDockerMounts maps the given []ContainerMount to the corresponding
-// []mount.Mount for further processing
-func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
-	mounts := make([]mount.Mount, 0, len(containerMounts))
-
-	for idx := range containerMounts {
-		m := containerMounts[idx]
+	for idx := range m {
+		m := m[idx]
 
 		var mountType mount.Type
 		if mt, ok := mountTypeMapping[m.Source.Type()]; ok {
