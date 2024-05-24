@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
 	tcmount "github.com/testcontainers/testcontainers-go/mount"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -560,8 +561,8 @@ func TestContainerCreationWithName(t *testing.T) {
 	network := networks[0]
 	switch providerType {
 	case ProviderDocker:
-		if network != Bridge {
-			t.Errorf("Expected network name '%s'. Got '%s'.", Bridge, network)
+		if network != corenetwork.Bridge {
+			t.Errorf("Expected network name '%s'. Got '%s'.", corenetwork.Bridge, network)
 		}
 	case ProviderPodman:
 		if network != Podman {

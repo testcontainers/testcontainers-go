@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
 )
 
 // possible provider types
@@ -109,7 +110,7 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 
 	switch pt {
 	case ProviderDefault, ProviderDocker:
-		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Bridge))
+		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(corenetwork.Bridge))
 		provider, err := NewDockerProvider(providerOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w, failed to create Docker provider", err)

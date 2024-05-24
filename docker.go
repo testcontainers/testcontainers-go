@@ -38,6 +38,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	tccontainer "github.com/testcontainers/testcontainers-go/internal/core/container"
+	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -46,9 +47,11 @@ import (
 var _ Container = (*DockerContainer)(nil)
 
 const (
-	Bridge        = "bridge" // Bridge network name (as well as driver)
-	Podman        = "podman"
-	ReaperDefault = "reaper_default" // Default network name when bridge is not available
+	// Deprecated: use internal/core/network.Bridge instead.
+	Bridge = corenetwork.Bridge // Bridge network name (as well as driver)
+	Podman = "podman"
+	// Deprecated: use internal/core/network.ReaperDefault instead.
+	ReaperDefault = corenetwork.ReaperDefault // Default network name when bridge is not available
 	packagePath   = "github.com/testcontainers/testcontainers-go"
 )
 
@@ -1519,7 +1522,7 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 		return "", err
 	}
 
-	reaperNetwork := ReaperDefault
+	reaperNetwork := corenetwork.ReaperDefault
 
 	reaperNetworkExists := false
 
@@ -1536,7 +1539,7 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 	// Create a bridge network for the container communications
 	if !reaperNetworkExists {
 		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
-			Driver:     Bridge,
+			Driver:     corenetwork.Bridge,
 			Attachable: true,
 			Labels:     core.DefaultLabels(core.SessionID()),
 		})

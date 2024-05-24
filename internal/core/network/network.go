@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/docker/docker/api/types"
@@ -16,6 +17,9 @@ const (
 
 	// FilterByName uses to filter network by name.
 	FilterByName = "name"
+
+	Bridge        string = "bridge"         // Bridge network name (as well as driver)
+	ReaperDefault string = "reaper_default" // Default network name when bridge is not available
 )
 
 // Get returns a network by its ID.
@@ -50,4 +54,71 @@ func get(ctx context.Context, filter string, value string) (types.NetworkResourc
 	}
 
 	return list[0], nil
+}
+
+func GetGatewayIP(ctx context.Context) (string, error) {
+	defaultNetwork, err := GetDefault(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	nw, err := Get(ctx, defaultNetwork)
+	if err != nil {
+		return "", err
+	}
+
+	var ip string
+	for _, config := range nw.IPAM.Config {
+		if config.Gateway != "" {
+			ip = config.Gateway
+			break
+		}
+	}
+	if ip == "" {
+		return "", errors.New("failed to get gateway IP from network settings")
+	}
+
+	return ip, nil
+}
+
+func GetDefault(ctx context.Context) (string, error) {
+	cli, err := core.NewClient(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer cli.Close()
+
+	// Get list of available networks
+	networkResources, err := cli.NetworkList(ctx, types.NetworkListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	reaperNetwork := ReaperDefault
+
+	reaperNetworkExists := false
+
+	for _, net := range networkResources {
+		if net.Name == Bridge {
+			return net.Name, nil
+		}
+
+		if net.Name == reaperNetwork {
+			reaperNetworkExists = true
+		}
+	}
+
+	// Create a bridge network for the container communications
+	if !reaperNetworkExists {
+		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
+			Driver:     Bridge,
+			Attachable: true,
+			Labels:     core.DefaultLabels(core.SessionID()),
+		})
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return reaperNetwork, nil
 }

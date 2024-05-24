@@ -19,6 +19,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -256,7 +257,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.AutoRemove = true
 			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
-			hc.NetworkMode = Bridge
+			hc.NetworkMode = container.NetworkMode(corenetwork.Bridge)
 		},
 		Env: map[string]string{},
 	}

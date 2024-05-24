@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
 )
 
 func TestProviderTypeGetProviderAutodetect(t *testing.T) {
@@ -22,7 +23,7 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 			name:       "default provider without podman.socket",
 			tr:         ProviderDefault,
 			DockerHost: dockerHost,
-			want:       Bridge,
+			want:       corenetwork.Bridge,
 		},
 		{
 			name:       "default provider with podman.socket",
@@ -34,14 +35,14 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 			name:       "docker provider without podman.socket",
 			tr:         ProviderDocker,
 			DockerHost: dockerHost,
-			want:       Bridge,
+			want:       corenetwork.Bridge,
 		},
 		{
 			// Explicitly setting Docker provider should not be overridden by auto-detect
 			name:       "docker provider with podman.socket",
 			tr:         ProviderDocker,
 			DockerHost: podmanSocket,
-			want:       Bridge,
+			want:       corenetwork.Bridge,
 		},
 		{
 			name:       "Podman provider without podman.socket",
