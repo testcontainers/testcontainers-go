@@ -2,26 +2,18 @@ package testcontainers
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"io"
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/registry"
-	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
-	"github.com/google/uuid"
-	"github.com/moby/patternmatcher/ignorefile"
 
 	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
-	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/log"
 	tcmount "github.com/testcontainers/testcontainers-go/mount"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -68,19 +60,11 @@ type Container interface {
 	GetLogProductionErrorChannel() <-chan error
 }
 
+// Deprecated: use image.BuildInfo instead
 // ImageBuildInfo defines what is needed to build an image
-type ImageBuildInfo interface {
-	BuildOptions() (types.ImageBuildOptions, error) // converts the ImageBuildInfo to a types.ImageBuildOptions
-	GetContext() (io.Reader, error)                 // the path to the build context
-	GetDockerfile() string                          // the relative path to the Dockerfile, including the fileitself
-	GetRepo() string                                // get repo label for image
-	GetTag() string                                 // get tag label for image
-	ShouldPrintBuildLog() bool                      // allow build log to be printed to stdout
-	ShouldBuildImage() bool                         // return true if the image needs to be built
-	GetBuildArgs() map[string]*string               // return the environment args used to build the from Dockerfile
-	GetAuthConfigs() map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Return the auth configs to be able to pull from an authenticated docker registry
-}
+type ImageBuildInfo = image.BuildInfo
 
+// Deprecated: use tccontainer.FromDockerfile instead
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
 // rather than using a pre-built one
 type FromDockerfile struct {
@@ -172,276 +156,4 @@ func WithRegistryCredentials(registryCredentials string) ContainerOption {
 	return func(o *containerOptions) {
 		o.RegistryCredentials = registryCredentials
 	}
-}
-
-// Validate ensures that the ContainerRequest does not have invalid parameters configured to it
-// ex. make sure you are not specifying both an image as well as a context
-func (c *ContainerRequest) Validate() error {
-	validationMethods := []func() error{
-		c.validateContextAndImage,
-		c.validateContextOrImageIsSpecified,
-		c.validateMounts,
-	}
-
-	var err error
-	for _, validationMethod := range validationMethods {
-		err = validationMethod()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// GetContext retrieve the build context for the request
-func (c *ContainerRequest) GetContext() (io.Reader, error) {
-	var includes []string = []string{"."}
-
-	if c.ContextArchive != nil {
-		return c.ContextArchive, nil
-	}
-
-	// always pass context as absolute path
-	abs, err := filepath.Abs(c.Context)
-	if err != nil {
-		return nil, fmt.Errorf("error getting absolute path: %w", err)
-	}
-	c.Context = abs
-
-	dockerIgnoreExists, excluded, err := parseDockerIgnore(abs)
-	if err != nil {
-		return nil, err
-	}
-
-	if dockerIgnoreExists {
-		// only add .dockerignore if it exists
-		includes = append(includes, ".dockerignore")
-	}
-
-	includes = append(includes, c.GetDockerfile())
-
-	buildContext, err := archive.TarWithOptions(
-		c.Context,
-		&archive.TarOptions{ExcludePatterns: excluded, IncludeFiles: includes},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return buildContext, nil
-}
-
-// parseDockerIgnore returns if the file exists, the excluded files and an error if any
-func parseDockerIgnore(targetDir string) (bool, []string, error) {
-	// based on https://github.com/docker/cli/blob/master/cli/command/image/build/dockerignore.go#L14
-	fileLocation := filepath.Join(targetDir, ".dockerignore")
-	var excluded []string
-	exists := false
-	if f, openErr := os.Open(fileLocation); openErr == nil {
-		defer f.Close()
-
-		exists = true
-
-		var err error
-		excluded, err = ignorefile.ReadAll(f)
-		if err != nil {
-			return true, excluded, fmt.Errorf("error reading .dockerignore: %w", err)
-		}
-	}
-	return exists, excluded, nil
-}
-
-// GetBuildArgs returns the env args to be used when creating from Dockerfile
-func (c *ContainerRequest) GetBuildArgs() map[string]*string {
-	return c.FromDockerfile.BuildArgs
-}
-
-// GetDockerfile returns the Dockerfile from the ContainerRequest, defaults to "Dockerfile"
-func (c *ContainerRequest) GetDockerfile() string {
-	f := c.FromDockerfile.Dockerfile
-	if f == "" {
-		return "Dockerfile"
-	}
-
-	return f
-}
-
-// GetRepo returns the Repo label for image from the ContainerRequest, defaults to UUID
-func (c *ContainerRequest) GetRepo() string {
-	r := c.FromDockerfile.Repo
-	if r == "" {
-		return uuid.NewString()
-	}
-
-	return strings.ToLower(r)
-}
-
-// GetTag returns the Tag label for image from the ContainerRequest, defaults to UUID
-func (c *ContainerRequest) GetTag() string {
-	t := c.FromDockerfile.Tag
-	if t == "" {
-		return uuid.NewString()
-	}
-
-	return strings.ToLower(t)
-}
-
-// Deprecated: Testcontainers will detect registry credentials automatically, and it will be removed in the next major release
-// GetAuthConfigs returns the auth configs to be able to pull from an authenticated docker registry
-func (c *ContainerRequest) GetAuthConfigs() map[string]registry.AuthConfig {
-	return getAuthConfigsFromDockerfile(c)
-}
-
-// getAuthConfigsFromDockerfile returns the auth configs to be able to pull from an authenticated docker registry
-func getAuthConfigsFromDockerfile(c *ContainerRequest) map[string]registry.AuthConfig {
-	images, err := core.ExtractImagesFromDockerfile(filepath.Join(c.Context, c.GetDockerfile()), c.GetBuildArgs())
-	if err != nil {
-		return map[string]registry.AuthConfig{}
-	}
-
-	authConfigs := map[string]registry.AuthConfig{}
-	for _, image := range images {
-		registry, authConfig, err := DockerImageAuth(context.Background(), image)
-		if err != nil {
-			continue
-		}
-
-		authConfigs[registry] = authConfig
-	}
-
-	return authConfigs
-}
-
-func (c *ContainerRequest) ShouldBuildImage() bool {
-	return c.FromDockerfile.Context != "" || c.FromDockerfile.ContextArchive != nil
-}
-
-func (c *ContainerRequest) ShouldKeepBuiltImage() bool {
-	return c.FromDockerfile.KeepImage
-}
-
-func (c *ContainerRequest) ShouldPrintBuildLog() bool {
-	return c.FromDockerfile.PrintBuildLog
-}
-
-// BuildOptions returns the image build options when building a Docker image from a Dockerfile.
-// It will apply some defaults and finally call the BuildOptionsModifier from the FromDockerfile struct,
-// if set.
-func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
-	buildOptions := types.ImageBuildOptions{
-		Remove:      true,
-		ForceRemove: true,
-	}
-
-	if c.FromDockerfile.BuildOptionsModifier != nil {
-		c.FromDockerfile.BuildOptionsModifier(&buildOptions)
-	}
-
-	// apply mandatory values after the modifier
-	buildOptions.BuildArgs = c.GetBuildArgs()
-	buildOptions.Dockerfile = c.GetDockerfile()
-
-	buildContext, err := c.GetContext()
-	if err != nil {
-		return buildOptions, err
-	}
-	buildOptions.Context = buildContext
-
-	// Make sure the auth configs from the Dockerfile are set right after the user-defined build options.
-	authsFromDockerfile := getAuthConfigsFromDockerfile(c)
-
-	if buildOptions.AuthConfigs == nil {
-		buildOptions.AuthConfigs = map[string]registry.AuthConfig{}
-	}
-
-	for registry, authConfig := range authsFromDockerfile {
-		buildOptions.AuthConfigs[registry] = authConfig
-	}
-
-	// make sure the first tag is the one defined in the ContainerRequest
-	tag := fmt.Sprintf("%s:%s", c.GetRepo(), c.GetTag())
-
-	// apply substitutors to the built image
-	for _, is := range c.ImageSubstitutors {
-		modifiedTag, err := is.Substitute(tag)
-		if err != nil {
-			return buildOptions, fmt.Errorf("failed to substitute image %s with %s: %w", tag, is.Description(), err)
-		}
-
-		if modifiedTag != tag {
-			Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), tag, modifiedTag)
-			tag = modifiedTag
-		}
-	}
-
-	if len(buildOptions.Tags) > 0 {
-		// prepend the tag
-		buildOptions.Tags = append([]string{tag}, buildOptions.Tags...)
-	} else {
-		buildOptions.Tags = []string{tag}
-	}
-
-	if !c.ShouldKeepBuiltImage() {
-		buildOptions.Labels = core.DefaultLabels(core.SessionID())
-	}
-
-	return buildOptions, nil
-}
-
-func (c *ContainerRequest) validateContextAndImage() error {
-	if c.FromDockerfile.Context != "" && c.Image != "" {
-		return errors.New("you cannot specify both an Image and Context in a ContainerRequest")
-	}
-
-	return nil
-}
-
-func (c *ContainerRequest) validateContextOrImageIsSpecified() error {
-	if c.FromDockerfile.Context == "" && c.FromDockerfile.ContextArchive == nil && c.Image == "" {
-		return errors.New("you must specify either a build context or an image")
-	}
-
-	return nil
-}
-
-// validateMounts ensures that the mounts do not have duplicate targets.
-// It will check the Mounts and HostConfigModifier.Binds fields.
-func (c *ContainerRequest) validateMounts() error {
-	targets := make(map[string]bool, len(c.Mounts))
-
-	for idx := range c.Mounts {
-		m := c.Mounts[idx]
-		targetPath := m.Target.Target()
-		if targets[targetPath] {
-			return fmt.Errorf("%w: %s", tcmount.ErrDuplicateMountTarget, targetPath)
-		} else {
-			targets[targetPath] = true
-		}
-	}
-
-	if c.HostConfigModifier == nil {
-		return nil
-	}
-
-	hostConfig := container.HostConfig{}
-
-	c.HostConfigModifier(&hostConfig)
-
-	if hostConfig.Binds != nil && len(hostConfig.Binds) > 0 {
-		for _, bind := range hostConfig.Binds {
-			parts := strings.Split(bind, ":")
-			if len(parts) != 2 {
-				return fmt.Errorf("%w: %s", tcmount.ErrInvalidBindMount, bind)
-			}
-			targetPath := parts[1]
-			if targets[targetPath] {
-				return fmt.Errorf("%w: %s", tcmount.ErrDuplicateMountTarget, targetPath)
-			} else {
-				targets[targetPath] = true
-			}
-		}
-	}
-
-	return nil
 }

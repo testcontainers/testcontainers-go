@@ -3,7 +3,6 @@ package testcontainers
 import (
 	"archive/tar"
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/binary"
@@ -29,13 +28,12 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
-	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/go-connections/nat"
-	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	tccontainer "github.com/testcontainers/testcontainers-go/internal/core/container"
@@ -886,50 +884,10 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 
 var _ ContainerProvider = (*DockerProvider)(nil)
 
+// Deprecated: use image.Build instead.
 // BuildImage will build and image from context and Dockerfile, then return the tag
-func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
-	buildOptions, err := img.BuildOptions()
-
-	var buildError error
-	var resp types.ImageBuildResponse
-	err = backoff.Retry(func() error {
-		resp, err = p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
-		if err != nil {
-			buildError = errors.Join(buildError, err)
-			if isPermanentClientError(err) {
-				return backoff.Permanent(err)
-			}
-			Logger.Printf("Failed to build image: %s, will retry", err)
-			return err
-		}
-		defer p.Close()
-
-		return nil
-	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
-	if err != nil {
-		return "", errors.Join(buildError, err)
-	}
-
-	if img.ShouldPrintBuildLog() {
-		termFd, isTerm := term.GetFdInfo(os.Stderr)
-		err = jsonmessage.DisplayJSONMessagesStream(resp.Body, os.Stderr, termFd, isTerm, nil)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	// need to read the response from Docker, I think otherwise the image
-	// might not finish building before continuing to execute here
-	buf := new(bytes.Buffer)
-	_, err = buf.ReadFrom(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	_ = resp.Body.Close()
-
-	// the first tag is the one we want
-	return buildOptions.Tags[0], nil
+func (p *DockerProvider) BuildImage(ctx context.Context, img image.BuildInfo) (string, error) {
+	return image.Build(ctx, img)
 }
 
 // CreateContainer fulfills a request for a container without starting it
@@ -1009,7 +967,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	var platform *specs.Platform
 
 	if req.ShouldBuildImage() {
-		imageName, err = p.BuildImage(ctx, &req)
+		imageName, err = image.Build(ctx, &req)
 		if err != nil {
 			return nil, err
 		}
@@ -1189,7 +1147,7 @@ func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string)
 	return ctr, backoff.Retry(func() error {
 		c, err := p.findContainerByName(ctx, name)
 		if err != nil {
-			if !errdefs.IsNotFound(err) && isPermanentClientError(err) {
+			if !errdefs.IsNotFound(err) && core.IsPermanentClientError(err) {
 				return backoff.Permanent(err)
 			}
 			return err
@@ -1292,7 +1250,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	err = backoff.Retry(func() error {
 		pull, err = p.client.ImagePull(ctx, tag, pullOpt)
 		if err != nil {
-			if isPermanentClientError(err) {
+			if core.IsPermanentClientError(err) {
 				return backoff.Permanent(err)
 			}
 			Logger.Printf("Failed to pull image: %s, will retry", err)
@@ -1618,21 +1576,4 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 // PullImage pulls image from registry
 func (p *DockerProvider) PullImage(ctx context.Context, img string) error {
 	return p.attemptToPullImage(ctx, img, image.PullOptions{})
-}
-
-var permanentClientErrors = []func(error) bool{
-	errdefs.IsNotFound,
-	errdefs.IsInvalidParameter,
-	errdefs.IsUnauthorized,
-	errdefs.IsForbidden,
-	errdefs.IsNotImplemented,
-}
-
-func isPermanentClientError(err error) bool {
-	for _, isErrFn := range permanentClientErrors {
-		if isErrFn(err) {
-			return true
-		}
-	}
-	return false
 }

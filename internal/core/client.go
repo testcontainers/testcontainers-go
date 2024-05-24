@@ -5,10 +5,28 @@ import (
 	"path/filepath"
 
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/errdefs"
 
 	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
+
+var permanentClientErrors = []func(error) bool{
+	errdefs.IsNotFound,
+	errdefs.IsInvalidParameter,
+	errdefs.IsUnauthorized,
+	errdefs.IsForbidden,
+	errdefs.IsNotImplemented,
+}
+
+func IsPermanentClientError(err error) bool {
+	for _, isErrFn := range permanentClientErrors {
+		if isErrFn(err) {
+			return true
+		}
+	}
+	return false
+}
 
 // NewClient returns a new docker client extracting the docker host from the different alternatives
 func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {

@@ -1,6 +1,4 @@
-// This test is testing very internal logic that should not be exported away from this package. We'll
-// leave it in the main testcontainers package. Do not use for user facing examples.
-package testcontainers
+package image
 
 import (
 	"testing"
@@ -35,7 +33,7 @@ func TestParseDockerIgnore(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		exists, excluded, err := parseDockerIgnore(testCase.filePath)
+		exists, excluded, err := ParseDockerIgnore(testCase.filePath)
 		assert.Equal(t, testCase.exists, exists)
 		assert.Equal(t, testCase.expectedErr, err)
 		assert.Equal(t, testCase.expectedExcluded, excluded)

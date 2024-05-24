@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	tccontainer "github.com/testcontainers/testcontainers-go/container"
+	"github.com/testcontainers/testcontainers-go/image"
 	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
 	tcmount "github.com/testcontainers/testcontainers-go/mount"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -2177,7 +2178,7 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			// give a chance to retry
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			_, _ = p.BuildImage(ctx, &ContainerRequest{})
+			_, _ = image.Build(ctx, &ContainerRequest{})
 
 			assert.Positive(t, m.imageBuildCount)
 			assert.Equal(t, tt.shouldRetry, m.imageBuildCount > 1)

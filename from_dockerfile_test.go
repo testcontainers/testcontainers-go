@@ -5,123 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/image"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestBuildImageFromDockerfile(t *testing.T) {
-	provider, err := NewDockerProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer provider.Close()
-
-	cli := provider.Client()
-
-	ctx := context.Background()
-
-	tag, err := provider.BuildImage(ctx, &ContainerRequest{
-		// fromDockerfileIncludingRepo {
-		FromDockerfile: FromDockerfile{
-			Context:    "testdata",
-			Dockerfile: "echo.Dockerfile",
-			Repo:       "test-repo",
-			Tag:        "test-tag",
-		},
-		// }
-	})
-	require.NoError(t, err)
-	assert.Equal(t, "test-repo:test-tag", tag)
-
-	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
-			Force:         true,
-			PruneChildren: true,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-}
-
-func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
-	provider, err := NewDockerProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer provider.Close()
-
-	cli := provider.Client()
-
-	ctx := context.Background()
-
-	tag, err := provider.BuildImage(ctx, &ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "testdata",
-			Dockerfile: "echo.Dockerfile",
-			Repo:       "test-repo",
-		},
-	})
-	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(tag, "test-repo:"))
-
-	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
-			Force:         true,
-			PruneChildren: true,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-}
-
-func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
-	provider, err := NewDockerProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer provider.Close()
-
-	cli := provider.Client()
-
-	ctx := context.Background()
-
-	tag, err := provider.BuildImage(ctx, &ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "testdata",
-			Dockerfile: "echo.Dockerfile",
-			Tag:        "test-tag",
-		},
-	})
-	require.NoError(t, err)
-	assert.True(t, strings.HasSuffix(tag, ":test-tag"))
-
-	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
-			Force:         true,
-			PruneChildren: true,
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-}
 
 func TestBuildImageFromDockerfile_Target(t *testing.T) {
 	// there are thre targets: target0, target1 and target2.
