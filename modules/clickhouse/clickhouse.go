@@ -13,6 +13,7 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -117,7 +118,7 @@ func WithZookeeper(host, port string) testcontainers.CustomizeRequestOption {
 		if _, err := f.Write(data); err != nil {
 			return fmt.Errorf("write zookeeper config: %w", err)
 		}
-		cf := testcontainers.ContainerFile{
+		cf := tccontainer.ContainerFile{
 			HostFilePath:      f.Name(),
 			ContainerFilePath: "/etc/clickhouse-server/config.d/zookeeper_config.xml",
 			FileMode:          0o755,
@@ -131,9 +132,9 @@ func WithZookeeper(host, port string) testcontainers.CustomizeRequestOption {
 // WithInitScripts sets the init scripts to be run when the container starts
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		initScripts := []testcontainers.ContainerFile{}
+		initScripts := []tccontainer.ContainerFile{}
 		for _, script := range scripts {
-			cf := testcontainers.ContainerFile{
+			cf := tccontainer.ContainerFile{
 				HostFilePath:      script,
 				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
 				FileMode:          0o755,
@@ -151,7 +152,7 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 // as a command line argument to the container.
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
+		cf := tccontainer.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/clickhouse-server/config.d/config.xml",
 			FileMode:          0o755,
@@ -167,7 +168,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // as a command line argument to the container.
 func WithYamlConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
+		cf := tccontainer.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/clickhouse-server/config.d/config.yaml",
 			FileMode:          0o755,

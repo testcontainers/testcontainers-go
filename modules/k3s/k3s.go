@@ -13,6 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -38,7 +39,7 @@ func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
 		manifest := filepath.Base(manifestPath)
 		target := k3sManifests + manifest
 
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		req.Files = append(req.Files, tccontainer.ContainerFile{
 			HostFilePath:      manifestPath,
 			ContainerFilePath: target,
 		})

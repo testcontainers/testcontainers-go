@@ -8,6 +8,7 @@ import (
 	"net"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -93,7 +94,7 @@ func WithRoot(root string) testcontainers.CustomizeRequestOption {
 // WithInitialLdif sets the initial ldif file to be loaded into the OpenLDAP container
 func WithInitialLdif(ldif string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		req.Files = append(req.Files, tccontainer.ContainerFile{
 			HostFilePath:      ldif,
 			ContainerFilePath: "/initial_ldif.ldif",
 			FileMode:          0o644,

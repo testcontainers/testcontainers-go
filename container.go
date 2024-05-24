@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/moby/patternmatcher/ignorefile"
 
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
@@ -101,25 +102,8 @@ type FromDockerfile struct {
 	BuildOptionsModifier func(*types.ImageBuildOptions)
 }
 
-type ContainerFile struct {
-	HostFilePath      string    // If Reader is present, HostFilePath is ignored
-	Reader            io.Reader // If Reader is present, HostFilePath is ignored
-	ContainerFilePath string
-	FileMode          int64
-}
-
-// validate validates the ContainerFile
-func (c *ContainerFile) validate() error {
-	if c.HostFilePath == "" && c.Reader == nil {
-		return errors.New("either HostFilePath or Reader must be specified")
-	}
-
-	if c.ContainerFilePath == "" {
-		return errors.New("ContainerFilePath must be specified")
-	}
-
-	return nil
-}
+// Deprecated: use tccontainer.ContainerFile instead
+type ContainerFile = tccontainer.ContainerFile
 
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
@@ -145,7 +129,7 @@ type ContainerRequest struct {
 	NetworkAliases          map[string][]string                        // for specifying network aliases
 	NetworkMode             container.NetworkMode                      // Deprecated: Use HostConfigModifier instead
 	Resources               container.Resources                        // Deprecated: Use HostConfigModifier instead
-	Files                   []ContainerFile                            // files which will be copied when container starts
+	Files                   []tccontainer.ContainerFile                // files which will be copied when container starts
 	User                    string                                     // for specifying uid:gid
 	SkipReaper              bool                                       // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
 	ReaperImage             string                                     // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image

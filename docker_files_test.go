@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -31,7 +32,7 @@ func TestCopyFileToContainer(t *testing.T) {
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "docker.io/bash",
-			Files: []testcontainers.ContainerFile{
+			Files: []tccontainer.ContainerFile{
 				{
 					Reader:            r,
 					HostFilePath:      absPath, // will be discarded internally
@@ -68,7 +69,7 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "docker.io/bash:5.2.26",
-			Files: []testcontainers.ContainerFile{
+			Files: []tccontainer.ContainerFile{
 				{
 					HostFilePath:      waitForPath,
 					ContainerFilePath: "/waitForHello.sh",
@@ -109,7 +110,7 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "docker.io/bash",
-			Files: []testcontainers.ContainerFile{
+			Files: []tccontainer.ContainerFile{
 				{
 					HostFilePath: dataDirectory,
 					// ContainerFile cannot create the parent directory, so we copy the scripts
@@ -147,7 +148,7 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "docker.io/bash",
-			Files: []testcontainers.ContainerFile{
+			Files: []tccontainer.ContainerFile{
 				{
 					HostFilePath:      waitForPath,
 					ContainerFilePath: "/waitForHello.sh",
@@ -197,7 +198,7 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "docker.io/bash",
-			Files: []testcontainers.ContainerFile{
+			Files: []tccontainer.ContainerFile{
 				{
 					HostFilePath:      waitForPath,
 					ContainerFilePath: "/waitForHello.sh",

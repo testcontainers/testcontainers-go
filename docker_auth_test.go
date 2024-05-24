@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -322,7 +323,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 			"REGISTRY_AUTH_HTPASSWD_PATH":               "/auth/htpasswd",
 			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY": "/data",
 		},
-		Files: []ContainerFile{
+		Files: []tccontainer.ContainerFile{
 			{
 				HostFilePath:      fmt.Sprintf("%s/testdata/auth", wd),
 				ContainerFilePath: "/auth",

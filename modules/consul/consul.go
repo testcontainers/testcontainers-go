@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -50,7 +51,7 @@ func WithConfigString(config string) testcontainers.CustomizeRequestOption {
 // WithConfigFile takes in a path to a JSON file to define a configuration to be used by the instance.
 func WithConfigFile(configPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
+		cf := tccontainer.ContainerFile{
 			HostFilePath:      configPath,
 			ContainerFilePath: "/consul/config/node.json",
 			FileMode:          0o755,

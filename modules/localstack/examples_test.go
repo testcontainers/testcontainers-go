@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/localstack"
 	"github.com/testcontainers/testcontainers-go/network"
@@ -133,7 +134,7 @@ func ExampleRunContainer_usingLambdas() {
 		}),
 		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Files: []testcontainers.ContainerFile{
+				Files: []tccontainer.ContainerFile{
 					{
 						HostFilePath:      filepath.Join("testdata", "function.zip"),
 						ContainerFilePath: "/tmp/function.zip",

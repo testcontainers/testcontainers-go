@@ -1,6 +1,6 @@
 // This test is testing very internal logic that should not be exported away from this package. We'll
 // leave it in the main testcontainers package. Do not use for user facing examples.
-package testcontainers
+package container
 
 import (
 	"errors"
@@ -57,7 +57,7 @@ func TestContainerFileValidation(t *testing.T) {
 
 	for _, testCase := range testTable {
 		t.Run(testCase.Name, func(t *testing.T) {
-			err := testCase.File.validate()
+			err := testCase.File.Validate()
 			switch {
 			case err == nil && testCase.ExpectedError == nil:
 				return

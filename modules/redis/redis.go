@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -79,7 +80,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	const defaultConfigFile = "/usr/local/redis.conf"
 
 	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
+		cf := tccontainer.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: defaultConfigFile,
 			FileMode:          0o755,

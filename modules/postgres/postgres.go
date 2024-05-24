@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 )
 
 const (
@@ -61,7 +62,7 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string
 // as a command line argument to the container
 func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		cfgFile := testcontainers.ContainerFile{
+		cfgFile := tccontainer.ContainerFile{
 			HostFilePath:      cfg,
 			ContainerFilePath: "/etc/postgresql.conf",
 			FileMode:          0o755,
@@ -88,9 +89,9 @@ func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
 // WithInitScripts sets the init scripts to be run when the container starts
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		initScripts := []testcontainers.ContainerFile{}
+		initScripts := []tccontainer.ContainerFile{}
 		for _, script := range scripts {
-			cf := testcontainers.ContainerFile{
+			cf := tccontainer.ContainerFile{
 				HostFilePath:      script,
 				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
 				FileMode:          0o755,

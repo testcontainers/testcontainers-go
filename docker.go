@@ -34,6 +34,7 @@ import (
 	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -556,18 +557,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 	return exitCode, processOptions.Reader, nil
 }
 
-type FileFromContainer struct {
-	underlying *io.ReadCloser
-	tarreader  *tar.Reader
-}
-
-func (fc *FileFromContainer) Read(b []byte) (int, error) {
-	return (*fc.tarreader).Read(b)
-}
-
-func (fc *FileFromContainer) Close() error {
-	return (*fc.underlying).Close()
-}
+type FileFromContainer = tccontainer.FileFromContainer
 
 func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error) {
 	r, _, err := c.provider.client.CopyFromContainer(ctx, c.ID, filePath)
@@ -586,8 +576,8 @@ func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, filePath st
 	}
 
 	ret := &FileFromContainer{
-		underlying: &r,
-		tarreader:  tarReader,
+		Underlying: &r,
+		Tarreader:  tarReader,
 	}
 
 	return ret, nil

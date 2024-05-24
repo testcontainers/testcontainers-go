@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types/mount"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	tcmount "github.com/testcontainers/testcontainers-go/mount"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -86,7 +87,7 @@ func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainer
 		target := "/home/k6x/" + scriptBaseName
 		req.Files = append(
 			req.Files,
-			testcontainers.ContainerFile{
+			tccontainer.ContainerFile{
 				Reader:            reader,
 				ContainerFilePath: target,
 				FileMode:          0o644,

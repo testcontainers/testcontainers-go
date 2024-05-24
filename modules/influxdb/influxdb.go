@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -131,7 +132,7 @@ func WithDatabase(database string) testcontainers.CustomizeRequestOption {
 
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
+		cf := tccontainer.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/influxdb/influxdb.conf",
 			FileMode:          0o755,
@@ -146,7 +147,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // The directory will be copied to the root of the container.
 func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
+		cf := tccontainer.ContainerFile{
 			HostFilePath:      path.Join(srcPath, "docker-entrypoint-initdb.d"),
 			ContainerFilePath: "/",
 			FileMode:          0o755,

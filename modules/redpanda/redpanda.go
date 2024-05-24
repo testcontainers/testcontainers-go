@@ -19,6 +19,7 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -129,12 +130,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	req.Files = append(req.Files,
-		testcontainers.ContainerFile{
+		tccontainer.ContainerFile{
 			HostFilePath:      entrypointPath,
 			ContainerFilePath: entrypointFile,
 			FileMode:          700,
 		},
-		testcontainers.ContainerFile{
+		tccontainer.ContainerFile{
 			HostFilePath:      bootstrapConfigPath,
 			ContainerFilePath: filepath.Join(redpandaDir, bootstrapConfigFile),
 			FileMode:          600,
@@ -153,12 +154,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		}
 
 		req.Files = append(req.Files,
-			testcontainers.ContainerFile{
+			tccontainer.ContainerFile{
 				HostFilePath:      certPath,
 				ContainerFilePath: filepath.Join(redpandaDir, certFile),
 				FileMode:          600,
 			},
-			testcontainers.ContainerFile{
+			tccontainer.ContainerFile{
 				HostFilePath:      keyPath,
 				ContainerFilePath: filepath.Join(redpandaDir, keyFile),
 				FileMode:          600,

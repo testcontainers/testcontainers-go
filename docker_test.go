@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
 	tcmount "github.com/testcontainers/testcontainers-go/mount"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -66,7 +67,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
-			Files: []ContainerFile{
+			Files: []tccontainer.ContainerFile{
 				{
 					HostFilePath:      absPath,
 					ContainerFilePath: "/etc/nginx/conf.d/default.conf",
@@ -186,7 +187,7 @@ func TestContainerWithHostNetwork(t *testing.T) {
 		ContainerRequest: ContainerRequest{
 			Image:      nginxAlpineImage,
 			WaitingFor: wait.ForListeningPort(nginxHighPort),
-			Files: []ContainerFile{
+			Files: []tccontainer.ContainerFile{
 				{
 					HostFilePath:      absPath,
 					ContainerFilePath: "/etc/nginx/conf.d/default.conf",
@@ -1141,7 +1142,7 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: "docker.io/bash",
-			Files: []ContainerFile{
+			Files: []tccontainer.ContainerFile{
 				{
 					HostFilePath:      absPath,
 					ContainerFilePath: "/hello.sh",
@@ -1442,12 +1443,12 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 	copiedFileName := "/hello_copy.sh"
 	tests := []struct {
 		name   string
-		files  []ContainerFile
+		files  []tccontainer.ContainerFile
 		errMsg string
 	}{
 		{
 			name: "success copy",
-			files: []ContainerFile{
+			files: []tccontainer.ContainerFile{
 				{
 					HostFilePath:      hostFileName,
 					ContainerFilePath: copiedFileName,
@@ -1457,7 +1458,7 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 		},
 		{
 			name: "host file not found",
-			files: []ContainerFile{
+			files: []tccontainer.ContainerFile{
 				{
 					HostFilePath:      hostFileName + "123",
 					ContainerFilePath: copiedFileName,
@@ -1513,12 +1514,12 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		dir      ContainerFile
+		dir      tccontainer.ContainerFile
 		hasError bool
 	}{
 		{
 			name: "success copy directory with full path",
-			dir: ContainerFile{
+			dir: tccontainer.ContainerFile{
 				HostFilePath:      abs,
 				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
 				FileMode:          700,
@@ -1527,7 +1528,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 		},
 		{
 			name: "success copy directory",
-			dir: ContainerFile{
+			dir: tccontainer.ContainerFile{
 				HostFilePath:      filepath.Join(".", hostDirName),
 				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
 				FileMode:          700,
@@ -1536,7 +1537,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 		},
 		{
 			name: "host dir not found",
-			dir: ContainerFile{
+			dir: tccontainer.ContainerFile{
 				HostFilePath:      filepath.Join(".", "testdata123"), // does not exist
 				ContainerFilePath: "/tmp/" + hostDirName,             // the parent dir must exist
 				FileMode:          700,
@@ -1545,7 +1546,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 		},
 		{
 			name: "container dir not found",
-			dir: ContainerFile{
+			dir: tccontainer.ContainerFile{
 				HostFilePath:      filepath.Join(".", hostDirName),
 				ContainerFilePath: "/parent-does-not-exist/testdata123", // does not exist
 				FileMode:          700,
@@ -1561,7 +1562,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 					Image:        "nginx:1.17.6",
 					ExposedPorts: []string{"80/tcp"},
 					WaitingFor:   wait.ForListeningPort("80/tcp"),
-					Files:        []ContainerFile{tc.dir},
+					Files:        []tccontainer.ContainerFile{tc.dir},
 				},
 				Started: false,
 			})

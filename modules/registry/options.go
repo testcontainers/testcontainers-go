@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 )
 
 const (
@@ -21,7 +22,7 @@ const (
 // The dataPath must have the same structure as the registry data directory.
 func WithData(dataPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		req.Files = append(req.Files, tccontainer.ContainerFile{
 			HostFilePath:      dataPath,
 			ContainerFilePath: containerDataPath,
 		})
@@ -61,7 +62,7 @@ func WithHtpasswd(credentials string) testcontainers.CustomizeRequestOption {
 // thanks to the REGISTRY_AUTH_HTPASSWD_PATH environment variable.
 func WithHtpasswdFile(htpasswdPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		req.Files = append(req.Files, tccontainer.ContainerFile{
 			HostFilePath:      htpasswdPath,
 			ContainerFilePath: containerHtpasswdPath,
 			FileMode:          0o644,

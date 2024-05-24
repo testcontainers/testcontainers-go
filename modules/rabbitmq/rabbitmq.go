@@ -13,6 +13,7 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
+	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -144,7 +145,7 @@ func withConfig(hostPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["RABBITMQ_CONFIG_FILE"] = defaultCustomConfPath
 
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		req.Files = append(req.Files, tccontainer.ContainerFile{
 			HostFilePath:      hostPath,
 			ContainerFilePath: defaultCustomConfPath,
 			FileMode:          0o644,
@@ -163,17 +164,17 @@ func applySSLSettings(sslSettings *SSLSettings) testcontainers.CustomizeRequestO
 	const defaultPermission = 0o644
 
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		req.Files = append(req.Files, tccontainer.ContainerFile{
 			HostFilePath:      sslSettings.CACertFile,
 			ContainerFilePath: rabbitCaCertPath,
 			FileMode:          defaultPermission,
 		})
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		req.Files = append(req.Files, tccontainer.ContainerFile{
 			HostFilePath:      sslSettings.CertFile,
 			ContainerFilePath: rabbitCertPath,
 			FileMode:          defaultPermission,
 		})
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		req.Files = append(req.Files, tccontainer.ContainerFile{
 			HostFilePath:      sslSettings.KeyFile,
 			ContainerFilePath: rabbitKeyPath,
 			FileMode:          defaultPermission,
