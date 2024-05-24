@@ -122,3 +122,32 @@ func GetDefault(ctx context.Context) (string, error) {
 
 	return reaperNetwork, nil
 }
+
+// New creates a new network.
+func New(ctx context.Context, req Request) (types.NetworkCreateResponse, error) {
+	if req.Labels == nil {
+		req.Labels = make(map[string]string)
+	}
+
+	// add the labels that the reaper will use to terminate the network to the request
+	for k, v := range core.DefaultLabels(core.SessionID()) {
+		req.Labels[k] = v
+	}
+
+	cli, err := core.NewClient(ctx)
+	if err != nil {
+		return types.NetworkCreateResponse{}, err
+	}
+	defer cli.Close()
+
+	nc := types.NetworkCreate{
+		Driver:     req.Driver,
+		Internal:   req.Internal,
+		EnableIPv6: req.EnableIPv6,
+		Attachable: req.Attachable,
+		Labels:     req.Labels,
+		IPAM:       req.IPAM,
+	}
+
+	return cli.NetworkCreate(ctx, req.Name, nc)
+}
