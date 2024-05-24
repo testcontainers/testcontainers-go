@@ -94,8 +94,8 @@ func TestExposeHostPorts(t *testing.T) {
 					}
 				})
 
-				req.Networks = []string{nw.ID}
-				req.NetworkAliases = map[string][]string{nw.ID: {"myalpine"}}
+				req.Networks = []string{nw.Name}
+				req.NetworkAliases = map[string][]string{nw.Name: {"myalpine"}}
 			}
 
 			ctx := context.Background()

@@ -55,7 +55,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 	opts := []ContainerCustomizer{}
 	if len(req.Networks) > 0 {
 		// get the first network of the container to connect the SSHD container to it.
-		nw, err := network.Get(ctx, sshdFirstNetwork)
+		nw, err := network.GetByName(ctx, sshdFirstNetwork)
 		if err != nil {
 			return sshdConnectHook, fmt.Errorf("failed to get the network: %w", err)
 		}
