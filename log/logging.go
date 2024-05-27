@@ -15,6 +15,20 @@ type Logging interface {
 	Printf(format string, v ...interface{})
 }
 
+type standardLogger struct {
+	*log.Logger
+}
+
+// Printf implements Logging.
+func (s standardLogger) Printf(format string, v ...interface{}) {
+	s.Logger.Printf(format, v...)
+}
+
+// StandardLogger returns a default Logging implementation using the standard log package.
+func StandardLogger() Logging {
+	return standardLogger{Logger: log.Default()}
+}
+
 type testLogger struct {
 	testing.TB
 }
