@@ -14,6 +14,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	tccontainer "github.com/testcontainers/testcontainers-go/container"
+	tcimage "github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -191,11 +192,6 @@ func unmarshal(bytes []byte) (*KubeConfigValue, error) {
 
 // LoadImages loads images into the k3s container.
 func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
-	provider, err := testcontainers.ProviderDocker.GetProvider()
-	if err != nil {
-		return fmt.Errorf("getting docker provider %w", err)
-	}
-
 	// save image
 	imagesTar, err := os.CreateTemp(os.TempDir(), "images*.tar")
 	if err != nil {
@@ -205,7 +201,7 @@ func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
 		_ = os.Remove(imagesTar.Name())
 	}()
 
-	err = provider.SaveImages(context.Background(), imagesTar.Name(), images...)
+	err = tcimage.SaveImages(context.Background(), imagesTar.Name(), images...)
 	if err != nil {
 		return fmt.Errorf("saving images %w", err)
 	}
