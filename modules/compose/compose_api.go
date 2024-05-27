@@ -23,6 +23,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/internal/core/reaper"
 	wait "github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -329,7 +330,7 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 
 	if d.reaper != nil {
 		for _, n := range d.networks {
-			termSignal, err := d.reaper.Connect()
+			termSignal, err := reaper.Connect(d.reaper.Endpoint, d.reaper.SessionID)
 			if err != nil {
 				return fmt.Errorf("failed to connect to reaper: %w", err)
 			}
@@ -356,7 +357,7 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 			}
 
 			if d.reaper != nil {
-				termSignal, err := d.reaper.Connect()
+				termSignal, err := reaper.Connect(d.reaper.Endpoint, d.reaper.SessionID)
 				if err != nil {
 					return fmt.Errorf("failed to connect to reaper: %w", err)
 				}

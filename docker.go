@@ -38,6 +38,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	tccontainer "github.com/testcontainers/testcontainers-go/internal/core/container"
 	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
+	"github.com/testcontainers/testcontainers-go/internal/core/reaper"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -944,7 +945,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
-		termSignal, err = r.Connect()
+		termSignal, err = reaper.Connect(r.Endpoint, r.SessionID)
 		if err != nil {
 			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
 		}
@@ -1191,7 +1192,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
-		termSignal, err = r.Connect()
+		termSignal, err = reaper.Connect(r.Endpoint, r.SessionID)
 		if err != nil {
 			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
 		}
@@ -1371,7 +1372,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}
-		termSignal, err = r.Connect()
+		termSignal, err = reaper.Connect(r.Endpoint, r.SessionID)
 		if err != nil {
 			return nil, fmt.Errorf("%w: connecting to network reaper failed", err)
 		}
