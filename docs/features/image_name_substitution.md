@@ -71,8 +71,8 @@ You can implement a custom image name substitutor by:
 The following is an example image substitutor implementation prepending the `docker.io/` prefix, used in the tests:
 
 <!--codeinclude-->
-[Image Substitutor Interface](../../options.go) inside_block:imageSubstitutor
-[Docker prefix Image Substitutor](../../container_test.go) inside_block:dockerImageSubstitutor
+[Image Substitutor Interface](../../image/substitutor.go) inside_block:imageSubstitutor
+[Docker prefix Image Substitutor](../../image/substitutors.go) inside_block:dockerImageSubstitutor
 [Applying the substitutor](../../container_test.go) inside_block:applyImageSubstitutors
 <!--/codeinclude-->
 

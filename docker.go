@@ -963,7 +963,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	// always append the hub substitutor after the user-defined ones
-	req.ImageSubstitutors = append(req.ImageSubstitutors, newPrependHubRegistry(tcConfig.HubImageNamePrefix))
+	req.ImageSubstitutors = append(req.ImageSubstitutors, image.NewPrependHubRegistry(tcConfig.HubImageNamePrefix))
 
 	var platform *specs.Platform
 

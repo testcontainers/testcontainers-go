@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -344,20 +345,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 	}
 }
 
-// dockerImageSubstitutor {
-type dockerImageSubstitutor struct{}
-
-func (s dockerImageSubstitutor) Description() string {
-	return "DockerImageSubstitutor (prepends docker.io)"
-}
-
-func (s dockerImageSubstitutor) Substitute(image string) (string, error) {
-	return "docker.io/" + image, nil
-}
-
-// }
-
-// noopImageSubstitutor {
+// Deprecated: use image.NoopImageSubstitutor instead
 type NoopImageSubstitutor struct{}
 
 // Description returns a description of what is expected from this Substitutor,
@@ -370,8 +358,6 @@ func (s NoopImageSubstitutor) Description() string {
 func (s NoopImageSubstitutor) Substitute(image string) (string, error) {
 	return image, nil
 }
-
-// }
 
 type errorSubstitutor struct{}
 
@@ -392,7 +378,7 @@ func TestImageSubstitutors(t *testing.T) {
 	tests := []struct {
 		name          string
 		image         string // must be a valid image, as the test will try to create a container from it
-		substitutors  []testcontainers.ImageSubstitutor
+		substitutors  []image.Substitutor
 		expectedImage string
 		expectedError error
 	}{
@@ -404,19 +390,19 @@ func TestImageSubstitutors(t *testing.T) {
 		{
 			name:          "Noop substitutor",
 			image:         "alpine",
-			substitutors:  []testcontainers.ImageSubstitutor{NoopImageSubstitutor{}},
+			substitutors:  []image.Substitutor{image.NoopSubstitutor{}},
 			expectedImage: "alpine",
 		},
 		{
 			name:          "Prepend namespace",
 			image:         "alpine",
-			substitutors:  []testcontainers.ImageSubstitutor{dockerImageSubstitutor{}},
+			substitutors:  []image.Substitutor{image.DockerSubstitutor{}},
 			expectedImage: "docker.io/alpine",
 		},
 		{
 			name:          "Substitution with error",
 			image:         "alpine",
-			substitutors:  []testcontainers.ImageSubstitutor{errorSubstitutor{}},
+			substitutors:  []image.Substitutor{errorSubstitutor{}},
 			expectedImage: "alpine",
 			expectedError: errSubstitution,
 		},
@@ -496,7 +482,7 @@ func ExampleGenericContainer_withSubstitutors() {
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:             "alpine:latest",
-			ImageSubstitutors: []testcontainers.ImageSubstitutor{dockerImageSubstitutor{}},
+			ImageSubstitutors: []image.Substitutor{image.DockerSubstitutor{}},
 		},
 		Started: true,
 	})
