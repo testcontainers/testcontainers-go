@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types/registry"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/auth"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -41,7 +42,7 @@ func (c *RegistryContainer) Address(ctx context.Context) (string, error) {
 // for the image referece.
 // E.g. imageRef = "localhost:5000/alpine:latest"
 func getEndpointWithAuth(ctx context.Context, imageRef string) (string, string, registry.AuthConfig, error) {
-	registry, imageAuth, err := testcontainers.DockerImageAuth(ctx, imageRef)
+	registry, imageAuth, err := auth.ForDockerImage(ctx, imageRef)
 	if err != nil {
 		return "", "", imageAuth, fmt.Errorf("failed to get image auth: %w", err)
 	}
@@ -130,7 +131,7 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 
 	dockerCli := dockerProvider.Client()
 
-	_, imageAuth, err := testcontainers.DockerImageAuth(ctx, ref)
+	_, imageAuth, err := auth.ForDockerImage(ctx, ref)
 	if err != nil {
 		return fmt.Errorf("failed to get image auth: %w", err)
 	}

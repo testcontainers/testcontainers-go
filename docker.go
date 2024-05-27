@@ -31,6 +31,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
+	"github.com/testcontainers/testcontainers-go/auth"
 	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/image"
@@ -1234,7 +1235,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 // attemptToPullImage tries to pull the image while respecting the ctx cancellations.
 // Besides, if the image cannot be pulled due to ErrorNotFound then no need to retry but terminate immediately.
 func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt image.PullOptions) error {
-	registry, imageAuth, err := DockerImageAuth(ctx, tag)
+	registry, imageAuth, err := auth.ForDockerImage(ctx, tag)
 	if err != nil {
 		p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, tag, err)
 	} else {
