@@ -16,23 +16,19 @@ const (
 
 // NATSContainer represents the NATS container type used in the module
 type NATSContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	User     string
 	Password string
 }
 
 // RunContainer creates an instance of the NATS container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*NATSContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*NATSContainer, error) {
+	req := testcontainers.Request{
 		Image:        "nats:2.9",
 		ExposedPorts: []string{defaultClientPort, defaultRoutingPort, defaultMonitoringPort},
 		Cmd:          []string{"-DV", "-js"},
 		WaitingFor:   wait.ForLog("Listening for client connections on 0.0.0.0:4222"),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started:      true,
 	}
 
 	// Gather all config options (defaults and then apply provided options)
@@ -41,7 +37,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		if apply, ok := opt.(CmdOption); ok {
 			apply(&settings)
 		}
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
@@ -49,18 +45,18 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	// Include the command line arguments
 	for k, v := range settings.CmdArgs {
 		// always prepend the dash because it was removed in the options
-		genericContainerReq.Cmd = append(genericContainerReq.Cmd, []string{"--" + k, v}...)
+		req.Cmd = append(req.Cmd, []string{"--" + k, v}...)
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	natsContainer := NATSContainer{
-		Container: container,
-		User:      settings.CmdArgs["user"],
-		Password:  settings.CmdArgs["pass"],
+		DockerContainer: container,
+		User:            settings.CmdArgs["user"],
+		Password:        settings.CmdArgs["pass"],
 	}
 
 	return &natsContainer, nil

@@ -16,14 +16,14 @@ func defaultOptions() options {
 	}
 }
 
-// Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
-var _ testcontainers.ContainerCustomizer = (*CmdOption)(nil)
+// Compiler check to ensure that Option implements the testcontainers.RequestCustomizer interface.
+var _ testcontainers.RequestCustomizer = (*CmdOption)(nil)
 
 // CmdOption is an option for the NATS container.
 type CmdOption func(opts *options)
 
-// Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
-func (o CmdOption) Customize(req *testcontainers.GenericContainerRequest) error {
+// Customize is a NOOP. It's defined to satisfy the testcontainers.RequestCustomizer interface.
+func (o CmdOption) Customize(req *testcontainers.Request) error {
 	// NOOP to satisfy interface.
 	return nil
 }
