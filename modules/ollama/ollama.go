@@ -18,7 +18,7 @@ const DefaultOllamaImage = "ollama/ollama:0.1.25"
 
 // OllamaContainer represents the Ollama container type used in the module
 type OllamaContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // ConnectionString returns the connection string for the Ollama container,
@@ -72,31 +72,27 @@ func (c *OllamaContainer) Commit(ctx context.Context, targetImage string) error 
 }
 
 // RunContainer creates an instance of the Ollama container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OllamaContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*OllamaContainer, error) {
+	req := testcontainers.Request{
 		Image:        DefaultOllamaImage,
 		ExposedPorts: []string{"11434/tcp"},
 		WaitingFor:   wait.ForListeningPort("11434/tcp").WithStartupTimeout(60 * time.Second),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started:      true,
 	}
 
 	// always request a GPU if the host supports it
 	opts = append(opts, withGpu())
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, fmt.Errorf("customize: %w", err)
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &OllamaContainer{Container: container}, nil
+	return &OllamaContainer{DockerContainer: container}, nil
 }
