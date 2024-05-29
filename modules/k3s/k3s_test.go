@@ -12,12 +12,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/docker/docker/api/types"
 	"github.com/testcontainers/testcontainers-go"
+	tcimage "github.com/testcontainers/testcontainers-go/image"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/modules/k3s"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func Test_LoadImages(t *testing.T) {
+func TestLoadImages(t *testing.T) {
 	// Give up to three minutes to run this test
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(3*time.Minute))
 	defer cancel()
@@ -51,13 +54,8 @@ func Test_LoadImages(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	provider, err := testcontainers.ProviderDocker.GetProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	// ensure nginx image is available locally
-	err = provider.PullImage(ctx, "nginx")
+	err = tcimage.Pull(ctx, "nginx", tclog.NewTestLogger(t), types.ImagePullOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +131,7 @@ func getTestPodState(ctx context.Context, k8s *kubernetes.Clientset) (corev1.Con
 	return pod.Status.ContainerStatuses[0].State, nil
 }
 
-func Test_APIServerReady(t *testing.T) {
+func TestAPIServerReady(t *testing.T) {
 	ctx := context.Background()
 
 	k3sContainer, err := k3s.RunContainer(ctx,
@@ -189,7 +187,7 @@ func Test_APIServerReady(t *testing.T) {
 	}
 }
 
-func Test_WithManifestOption(t *testing.T) {
+func TestWithManifestOption(t *testing.T) {
 	ctx := context.Background()
 
 	k3sContainer, err := k3s.RunContainer(ctx,

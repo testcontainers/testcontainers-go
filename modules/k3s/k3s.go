@@ -13,8 +13,8 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	tcimage "github.com/testcontainers/testcontainers-go/image"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -28,7 +28,7 @@ var (
 
 // K3sContainer represents the K3s container type used in the module
 type K3sContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // path to the k3s manifests directory
@@ -36,11 +36,11 @@ const k3sManifests = "/var/lib/rancher/k3s/server/manifests/"
 
 // WithManifest loads the manifest into the cluster. K3s applies it automatically during the startup process
 func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		manifest := filepath.Base(manifestPath)
 		target := k3sManifests + manifest
 
-		req.Files = append(req.Files, tccontainer.ContainerFile{
+		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      manifestPath,
 			ContainerFilePath: target,
 		})
@@ -50,13 +50,13 @@ func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the K3s container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*K3sContainer, error) {
 	host, err := getContainerHost(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image: "docker.io/rancher/k3s:v1.27.1-k3s1",
 		ExposedPorts: []string{
 			defaultKubeSecurePort,
@@ -80,30 +80,26 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"K3S_KUBECONFIG_MODE": "644",
 		},
 		WaitingFor: wait.ForLog(".*Node controller sync successful.*").AsRegexp(),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started:    true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &K3sContainer{Container: container}, nil
+	return &K3sContainer{DockerContainer: container}, nil
 }
 
-func getContainerHost(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (string, error) {
+func getContainerHost(ctx context.Context, opts ...testcontainers.RequestCustomizer) (string, error) {
 	// Use a dummy request to get the provider from options.
-	var req testcontainers.GenericContainerRequest
+	var req testcontainers.Request
 	for _, opt := range opts {
 		if err := opt.Customize(&req); err != nil {
 			return "", err
@@ -112,19 +108,17 @@ func getContainerHost(ctx context.Context, opts ...testcontainers.ContainerCusto
 
 	logging := req.Logger
 	if logging == nil {
-		logging = testcontainers.Logger
+		logging = tclog.StandardLogger()
 	}
-	p, err := req.ProviderType.GetProvider(testcontainers.WithLogger(logging))
+
+	cli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
-		return "", err
+		// Fall back to localhost.
+		return "localhost", nil
 	}
+	defer cli.Close()
 
-	if p, ok := p.(*testcontainers.DockerProvider); ok {
-		return p.DaemonHost(ctx)
-	}
-
-	// Fall back to localhost.
-	return "localhost", nil
+	return cli.DaemonHost(), nil
 }
 
 // GetKubeConfig returns the modified kubeconfig with server url
@@ -207,12 +201,12 @@ func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
 	}
 
 	containerPath := fmt.Sprintf("/tmp/%s", filepath.Base(imagesTar.Name()))
-	err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
+	err = c.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
 	if err != nil {
 		return fmt.Errorf("copying image to container %w", err)
 	}
 
-	_, _, err = c.Container.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", containerPath})
+	_, _, err = c.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", containerPath})
 	if err != nil {
 		return fmt.Errorf("importing image %w", err)
 	}
