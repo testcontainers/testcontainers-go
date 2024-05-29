@@ -470,7 +470,7 @@ func TestRedpandaListener_Simple(t *testing.T) {
 	// withListenerRP {
 	container, err := redpanda.RunContainer(ctx,
 		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
-		network.WithNetwork([]string{"redpanda-host"}, rpNetwork),
+		testcontainers.WithNetwork([]string{"redpanda-host"}, rpNetwork),
 		redpanda.WithListener("redpanda:29092"), redpanda.WithAutoCreateTopics(),
 	)
 	// }
@@ -478,19 +478,17 @@ func TestRedpandaListener_Simple(t *testing.T) {
 
 	// 3. Start KCat container
 	// withListenerKcat {
-	kcat, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "confluentinc/cp-kcat:7.4.1",
-			Networks: []string{
-				rpNetwork.Name,
-			},
-			Entrypoint: []string{
-				"sh",
-			},
-			Cmd: []string{
-				"-c",
-				"tail -f /dev/null",
-			},
+	kcat, err := testcontainers.New(ctx, testcontainers.Request{
+		Image: "confluentinc/cp-kcat:7.4.1",
+		Networks: []string{
+			rpNetwork.Name,
+		},
+		Entrypoint: []string{
+			"sh",
+		},
+		Cmd: []string{
+			"-c",
+			"tail -f /dev/null",
 		},
 		Started: true,
 	})
@@ -544,7 +542,7 @@ func TestRedpandaListener_InvalidPort(t *testing.T) {
 	_, err = redpanda.RunContainer(ctx,
 		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
 		redpanda.WithListener("redpanda:99092"),
-		network.WithNetwork([]string{"redpanda-host"}, RPNetwork),
+		testcontainers.WithNetwork([]string{"redpanda-host"}, RPNetwork),
 	)
 
 	require.Error(t, err)

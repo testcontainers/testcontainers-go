@@ -19,7 +19,6 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -49,12 +48,12 @@ const (
 
 // Container represents the Redpanda container type used in the module.
 type Container struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	urlScheme string
 }
 
 // RunContainer creates an instance of the Redpanda container type.
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	tmpDir, err := os.MkdirTemp("", "redpanda")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
@@ -63,24 +62,22 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 	// 1. Create container request.
 	// Some (e.g. Image) may be overridden by providing an option argument to this function.
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.redpanda.com/redpandadata/redpanda:v23.3.3",
-			User:  "root:root",
-			// Files: Will be added later after we've rendered our YAML templates.
-			ExposedPorts: []string{
-				defaultKafkaAPIPort,
-				defaultAdminAPIPort,
-				defaultSchemaRegistryPort,
-			},
-			Entrypoint: []string{entrypointFile},
-			Cmd: []string{
-				"redpanda",
-				"start",
-				"--mode=dev-container",
-				"--smp=1",
-				"--memory=1G",
-			},
+	req := testcontainers.Request{
+		Image: "docker.redpanda.com/redpandadata/redpanda:v23.3.3",
+		User:  "root:root",
+		// Files: Will be added later after we've rendered our YAML templates.
+		ExposedPorts: []string{
+			defaultKafkaAPIPort,
+			defaultAdminAPIPort,
+			defaultSchemaRegistryPort,
+		},
+		Entrypoint: []string{entrypointFile},
+		Cmd: []string{
+			"redpanda",
+			"start",
+			"--mode=dev-container",
+			"--smp=1",
+			"--memory=1G",
 		},
 		Started: true,
 	}
@@ -97,7 +94,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	// 2.1. If the image is not at least v23.3, disable wasm transform
-	if !isAtLeastVersion(req.ContainerRequest.Image, "23.3") {
+	if !isAtLeastVersion(req.Image, "23.3") {
 		settings.EnableWasmTransform = false
 	}
 
@@ -130,12 +127,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	req.Files = append(req.Files,
-		tccontainer.ContainerFile{
+		testcontainers.ContainerFile{
 			HostFilePath:      entrypointPath,
 			ContainerFilePath: entrypointFile,
 			FileMode:          700,
 		},
-		tccontainer.ContainerFile{
+		testcontainers.ContainerFile{
 			HostFilePath:      bootstrapConfigPath,
 			ContainerFilePath: filepath.Join(redpandaDir, bootstrapConfigFile),
 			FileMode:          600,
@@ -154,12 +151,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		}
 
 		req.Files = append(req.Files,
-			tccontainer.ContainerFile{
+			testcontainers.ContainerFile{
 				HostFilePath:      certPath,
 				ContainerFilePath: filepath.Join(redpandaDir, certFile),
 				FileMode:          600,
 			},
-			tccontainer.ContainerFile{
+			testcontainers.ContainerFile{
 				HostFilePath:      keyPath,
 				ContainerFilePath: filepath.Join(redpandaDir, keyFile),
 				FileMode:          600,
@@ -167,7 +164,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		)
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +242,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		}
 	}
 
-	return &Container{Container: container, urlScheme: scheme}, nil
+	return &Container{DockerContainer: container, urlScheme: scheme}, nil
 }
 
 // KafkaSeedBroker returns the seed broker that should be used for connecting
@@ -293,7 +290,7 @@ func renderBootstrapConfig(settings options) ([]byte, error) {
 
 // registerListeners validates that the provided listeners are valid and set network aliases for the provided addresses.
 // The container must be attached to at least one network.
-func registerListeners(ctx context.Context, settings options, req testcontainers.GenericContainerRequest) error {
+func registerListeners(ctx context.Context, settings options, req testcontainers.Request) error {
 	if len(settings.Listeners) == 0 {
 		return nil
 	}
