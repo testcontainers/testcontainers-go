@@ -16,7 +16,7 @@ const (
 
 // MinioContainer represents the Minio container type used in the module
 type MinioContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	Username string
 	Password string
 }
@@ -25,7 +25,7 @@ type MinioContainer struct {
 // It is used in conjunction with WithPassword to set a user and its password.
 // It will create the specified user. It must not be empty or undefined.
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["MINIO_ROOT_USER"] = username
 
 		return nil
@@ -36,7 +36,7 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 // It is required for you to use the Minio image. It must not be empty or undefined.
 // This environment variable sets the root user password for Minio.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["MINIO_ROOT_PASSWORD"] = password
 
 		return nil
@@ -58,8 +58,8 @@ func (c *MinioContainer) ConnectionString(ctx context.Context) (string, error) {
 }
 
 // RunContainer creates an instance of the Minio container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MinioContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MinioContainer, error) {
+	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"9000/tcp"},
 		WaitingFor:   wait.ForHTTP("/minio/health/live").WithPort("9000"),
@@ -67,16 +67,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"MINIO_ROOT_USER":     defaultUser,
 			"MINIO_ROOT_PASSWORD": defaultPassword,
 		},
-		Cmd: []string{"server", "/data"},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Cmd:     []string{"server", "/data"},
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
@@ -87,10 +83,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("username or password has not been set")
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &MinioContainer{Container: container, Username: username, Password: password}, nil
+	return &MinioContainer{DockerContainer: container, Username: username, Password: password}, nil
 }
