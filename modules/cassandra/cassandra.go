@@ -9,7 +9,6 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -19,7 +18,7 @@ const (
 
 // CassandraContainer represents the Cassandra container type used in the module
 type CassandraContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // ConnectionHost returns the host and port of the cassandra container, using the default, native 9000 port, and
@@ -42,8 +41,8 @@ func (c *CassandraContainer) ConnectionHost(ctx context.Context) (string, error)
 // It will also set the "configFile" parameter to the path of the config file
 // as a command line argument to the container.
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/cassandra/cassandra.yaml",
 			FileMode:          0o755,
@@ -56,11 +55,11 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 
 // WithInitScripts sets the init cassandra queries to be run when the container starts
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		var initScripts []tccontainer.ContainerFile
+	return func(req *testcontainers.Request) error {
+		var initScripts []testcontainers.ContainerFile
 		var execs []testcontainers.Executable
 		for _, script := range scripts {
-			cf := tccontainer.ContainerFile{
+			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,
 				ContainerFilePath: "/" + filepath.Base(script),
 				FileMode:          0o755,
@@ -76,8 +75,8 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the Cassandra container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CassandraContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*CassandraContainer, error) {
+	req := testcontainers.Request{
 		Image:        "cassandra:4.1.3",
 		ExposedPorts: []string{string(port)},
 		Env: map[string]string{
@@ -95,23 +94,19 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				return strings.Contains(string(data), "COMPLETED")
 			}),
 		),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &CassandraContainer{Container: container}, nil
+	return &CassandraContainer{DockerContainer: container}, nil
 }
