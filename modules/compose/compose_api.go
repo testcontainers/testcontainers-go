@@ -567,6 +567,20 @@ func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, err
 		proj.Networks[key] = n
 	}
 
+	for key, v := range proj.Volumes {
+		v.Labels = map[string]string{
+			api.ProjectLabel: proj.Name,
+			api.VolumeLabel:  v.Name,
+			api.VersionLabel: api.ComposeVersion,
+		}
+
+		for k, label := range testcontainers.GenericLabels() {
+			v.Labels[k] = label
+		}
+
+		proj.Volumes[key] = v
+	}
+
 	return proj, nil
 }
 
