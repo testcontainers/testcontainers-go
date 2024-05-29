@@ -11,7 +11,7 @@ import (
 
 // InbucketContainer represents the Inbucket container type used in the module
 type InbucketContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // SmtpConnection returns the connection string for the smtp server, using the default
@@ -48,28 +48,24 @@ func (c *InbucketContainer) WebInterface(ctx context.Context) (string, error) {
 }
 
 // RunContainer creates an instance of the Inbucket container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*InbucketContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*InbucketContainer, error) {
+	req := testcontainers.Request{
 		Image:        "inbucket/inbucket:sha-2d409bb",
 		ExposedPorts: []string{"2500/tcp", "9000/tcp"},
 		WaitingFor:   wait.ForLog("SMTP listening on tcp4"),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started:      true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &InbucketContainer{Container: container}, nil
+	return &InbucketContainer{DockerContainer: container}, nil
 }
