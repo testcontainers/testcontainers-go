@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -23,14 +22,14 @@ const defaultImage = "dolthub/dolt-sql-server:1.32.4"
 
 // DoltContainer represents the Dolt container type used in the module
 type DoltContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	username string
 	password string
 	database string
 }
 
 func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		username := req.Env["DOLT_USER"]
 		if strings.EqualFold(rootUser, username) {
 			delete(req.Env, "DOLT_USER")
@@ -42,8 +41,8 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the Dolt container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DoltContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*DoltContainer, error) {
+	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
@@ -52,17 +51,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"DOLT_DATABASE": defaultDatabaseName,
 		},
 		WaitingFor: wait.ForLog("Server ready. Accepting connections."),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started:    true,
 	}
 
 	opts = append(opts, WithDefaultCredentials())
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
@@ -84,7 +79,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("empty password can be used only with the root user")
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -189,43 +184,43 @@ func (c *DoltContainer) ConnectionString(ctx context.Context, args ...string) (s
 }
 
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["DOLT_USER"] = username
 		return nil
 	}
 }
 
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["DOLT_PASSWORD"] = password
 		return nil
 	}
 }
 
 func WithDoltCredsPublicKey(key string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["DOLT_CREDS_PUB_KEY"] = key
 		return nil
 	}
 }
 
 func WithDoltCloneRemoteUrl(url string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["DOLT_REMOTE_CLONE_URL"] = url
 		return nil
 	}
 }
 
 func WithDatabase(database string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["DOLT_DATABASE"] = database
 		return nil
 	}
 }
 
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/dolt/servercfg.d/server.cnf",
 			FileMode:          0o755,
@@ -236,8 +231,8 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 }
 
 func WithCredsFile(credsFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		cf := testcontainers.ContainerFile{
 			HostFilePath:      credsFile,
 			ContainerFilePath: "/root/.dolt/creds/" + filepath.Base(credsFile),
 			FileMode:          0o755,
@@ -248,10 +243,10 @@ func WithCredsFile(credsFile string) testcontainers.CustomizeRequestOption {
 }
 
 func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		var initScripts []tccontainer.ContainerFile
+	return func(req *testcontainers.Request) error {
+		var initScripts []testcontainers.ContainerFile
 		for _, script := range scripts {
-			cf := tccontainer.ContainerFile{
+			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,
 				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
 				FileMode:          0o755,
