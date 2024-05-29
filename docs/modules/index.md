@@ -100,30 +100,27 @@ go run . new module --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}
 
 We are going to propose a set of steps to follow when adding types and methods to the module:
 
-!!!warning
-    The `StartContainer` function will be eventually deprecated and replaced with `RunContainer`. We are keeping it in certain modules for backwards compatibility, but they will be removed in the future.
-
-- Make sure a public `Container` type exists for the module. This type has to use composition to embed a pointer to the `container.DockerContainer` type, promoting all the methods from it.
-- Make sure a `RunContainer` function exists and is public. This function is the entrypoint to the module and will define the initial values for a `container.Request` struct, including the image, the default exposed ports, wait strategies, etc. Therefore, the function must initialise the container request with the default values.
-- Define container options for the module leveraging the `container.RequestCustomizer` interface, that has one single method: `Customize(req *Request) error`.
+- Make sure a public `Container` type exists for the module. This type has to use composition to embed a pointer to the `testcontainers.DockerContainer` type, promoting all the methods from it.
+- Make sure a `RunContainer` function exists and is public. This function is the entrypoint to the module and will define the initial values for a `testcontainers.Request` struct, including the image, the default exposed ports, wait strategies, etc. Therefore, the function must initialise the container request with the default values.
+- Define container options for the module leveraging the `testcontainers.RequestCustomizer` interface, that has one single method: `Customize(req *testcontainers.Request) error`.
 
 !!!warning
-    The interface definition for `RequestCustomizer` was changed to allow errors to be correctly processed.
+    Before v1.0.0, the interface definition for `testcontainers.RequestCustomizer` was changed to allow errors to be correctly processed.
     More specifically, the `Customize` method was changed from:
 
     ```go
-    Customize(req *Request)
+    Customize(req *testcontainers.Request)
     ```
 
     To:
 
     ```go
-    Customize(req *Request) error
+    Customize(req *testcontainers.Request) error
     ```
 
-- We consider that a best practice for the options is define a function using the `With` prefix, that returns a function returning a modified `container.Request` type. For that, the library already provides a `container.CustomizeRequestOption` type implementing the `RequestCustomizer` interface, and we encourage you to use this type for creating your own customizer functions.
-- At the same time, you could need to create your own container customizers for your module. Make sure they implement the `container.RequestCustomizer` interface. Defining your own customizer functions is useful when you need to transfer a certain state that is not present at the `Request` for the container, possibly using an intermediate Config struct.
-- The options will be passed to the `RunContainer` function as variadic arguments after the Go context, and they will be processed right after defining the initial `container.Request` struct using a for loop.
+- We consider that a best practice for the options is define a function using the `With` prefix, that returns a function returning a modified `testcontainers.Request` type. For that, the library already provides a `testcontainers.CustomizeRequestOption` type implementing the `testcontainers.RequestCustomizer` interface, and we encourage you to use this type for creating your own customizer functions.
+- At the same time, you could need to create your own container customizers for your module. Make sure they implement the `testcontainers.RequestCustomizer` interface. Defining your own customizer functions is useful when you need to transfer a certain state that is not present at the `testcontainers.Request` for the container, possibly using an intermediate Config struct.
+- The options will be passed to the `RunContainer` function as variadic arguments after the Go context, and they will be processed right after defining the initial `testcontainers.Request` struct using a for loop.
 
 ```golang
 // Config type represents an intermediate struct for transferring state from the options to the container
@@ -135,7 +132,7 @@ type Config struct {
 func RunContainer(ctx context.Context, opts ...container.RequestCustomizer) (*Container, error) {
     cfg := Config{}
 
-    req := container.ContainerRequest{
+    req := testcontainers.Request{
         Image:   "my-image",
         Started: true,
         ...
@@ -154,7 +151,7 @@ func RunContainer(ctx context.Context, opts ...container.RequestCustomizer) (*Co
     ...
     container, err := container.New(ctx, req)
     ...
-    moduleContainer := &Container{Container: container}
+    moduleContainer := &Container{DockerContainer: container}
     moduleContainer.initializeState(ctx, cfg)
     ...
     return moduleContainer, nil
@@ -165,12 +162,12 @@ type MyCustomizer struct {
     data string
 }
 // Customize method implementation
-func (c MyCustomizer) Customize(req *container.Request) container.Request {
+func (c MyCustomizer) Customize(req *testcontainers.Request) container.Request {
     req.ExposedPorts = append(req.ExposedPorts, "1234/tcp")
     return req
 }
 // WithMy function option to use the customizer
-func WithMy(data string) container.RequestCustomizer {
+func WithMy(data string) testcontainers.RequestCustomizer {
     return MyCustomizer{data: data}
 }
 ```

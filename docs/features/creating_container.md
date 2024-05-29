@@ -7,9 +7,9 @@ up with Testcontainers and integrate into your tests:
 * Log services (e.g. Logstash, Kibana)
 * Other services developed by your team/organization which are already dockerized
 
-## GenericContainer
+## New
 
-`testcontainers.GenericContainer` defines the container that should be run, similar to the `docker run` command.
+`testcontainers.New` defines the container that should be run, similar to the `docker run` command.
 
 The following test creates an NGINX container and validates that it returns 200 for the status code:
 
@@ -33,13 +33,13 @@ type nginxContainer struct {
 
 
 func setupNginx(ctx context.Context) (*nginxContainer, error) {
-	req := container.Request{
+	req := testcontainers.Request{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
 		Started:          true,
 	}
-	container, err := container.New(ctx, req)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func setupNginx(ctx context.Context) (*nginxContainer, error) {
 
 	uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 
-	return &nginxContainer{Container: container, URI: uri}, nil
+	return &nginxContainer{DockerContainer: container, URI: uri}, nil
 }
 
 func TestIntegrationNginxLatestReturn(t *testing.T) {
@@ -165,7 +165,7 @@ const (
 
 ctx := context.Background()
 
-n1, err := container.New(ctx, container.Request{
+n1, err := testcontainers.New(ctx, testcontainers.Request{
 	Image:        "nginx:1.17.6",
 	ExposedPorts: []string{"80/tcp"},
 	WaitingFor:   wait.ForListeningPort("80/tcp"),
@@ -184,7 +184,7 @@ if err != nil {
 	log.Fatal(err)
 }
 
-n2, err := container.New(ctx, container.Request{
+n2, err := testcontainers.New(ctx, testcontainers.Request{
 	Image:        "nginx:1.17.6",
 	ExposedPorts: []string{"80/tcp"},
 	WaitingFor:   wait.ForListeningPort("80/tcp"),
