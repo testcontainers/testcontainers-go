@@ -9,7 +9,6 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -31,27 +30,20 @@ var defaultWaitStrategies = wait.ForAll(
 	wait.ForLog("Successfully updated the policies on namespace public/default"),
 )
 
-type Container struct {
-	testcontainers.Container
-	LogConsumers []log.Consumer // Deprecated. Use the ContainerRequest instead. Needs to be exported to control the stop from the caller
+type PulsarContainer struct {
+	*testcontainers.DockerContainer
 }
 
-func (c *Container) BrokerURL(ctx context.Context) (string, error) {
+func (c *PulsarContainer) BrokerURL(ctx context.Context) (string, error) {
 	return c.resolveURL(ctx, defaultPulsarPort)
 }
 
-func (c *Container) HTTPServiceURL(ctx context.Context) (string, error) {
+func (c *PulsarContainer) HTTPServiceURL(ctx context.Context) (string, error) {
 	return c.resolveURL(ctx, defaultPulsarAdminPort)
 }
 
-func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, error) {
-	provider, err := testcontainers.NewDockerProvider()
-	if err != nil {
-		return "", err
-	}
-	defer provider.Close()
-
-	host, err := provider.DaemonHost(ctx)
+func (c *PulsarContainer) resolveURL(ctx context.Context, port nat.Port) (string, error) {
+	host, err := testcontainers.DaemonHost(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -72,7 +64,7 @@ func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, erro
 // WithFunctionsWorker enables the functions worker, which will override the default pulsar command
 // and add a waiting strategy for the functions worker
 func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Cmd = []string{"/bin/bash", "-c", defaultPulsarCmd}
 
 		ss := []wait.Strategy{
@@ -87,23 +79,9 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// Deprecated: use the testcontainers.WithLogConsumers functional option instead
-// WithLogConsumers allows to add log consumers to the container.
-// They will be automatically started and they will follow the container logs,
-// but it's a responsibility of the caller to stop them calling StopLogProducer
-func (c *Container) WithLogConsumers(ctx context.Context, consumer ...log.Consumer) {
-	if len(c.LogConsumers) > 0 {
-		// not handling the error because it will return an error if and only if the producer is already started
-		_ = c.StartLogProducer(ctx)
-	}
-	for _, lc := range c.LogConsumers {
-		c.FollowOutput(lc)
-	}
-}
-
 // WithPulsarEnv allows to use the native APIs and set each variable with PULSAR_PREFIX_ as prefix.
 func WithPulsarEnv(configVar string, configValue string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["PULSAR_PREFIX_"+configVar] = configValue
 
 		return nil
@@ -111,7 +89,7 @@ func WithPulsarEnv(configVar string, configValue string) testcontainers.Customiz
 }
 
 func WithTransactions() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		if err := WithPulsarEnv("transactionCoordinatorEnabled", "true")(req); err != nil {
 			return err
 		}
@@ -140,33 +118,29 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 //   - the log message "Successfully updated the policies on namespace public/default"
 //
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*PulsarContainer, error) {
+	req := testcontainers.Request{
 		Image:        defaultPulsarImage,
 		Env:          map[string]string{},
 		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
 		WaitingFor:   defaultWaitStrategies,
 		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, detaultPulsarCmdWithoutFunctionsWorker}, " ")},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started:      true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	c, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	c, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	pc := &Container{
-		Container: c,
+	pc := &PulsarContainer{
+		DockerContainer: c,
 	}
 
 	return pc, nil

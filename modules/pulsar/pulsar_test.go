@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 	testcontainerspulsar "github.com/testcontainers/testcontainers-go/modules/pulsar"
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 )
@@ -32,14 +33,14 @@ func TestPulsar(t *testing.T) {
 
 	tests := []struct {
 		name string
-		opts []testcontainers.ContainerCustomizer
+		opts []testcontainers.RequestCustomizer
 	}{
 		{
 			name: "default",
 		},
 		{
 			name: "with modifiers",
-			opts: []testcontainers.ContainerCustomizer{
+			opts: []testcontainers.RequestCustomizer{
 				testcontainers.WithImage("docker.io/apachepulsar/pulsar:2.10.2"),
 				// addPulsarEnv {
 				testcontainerspulsar.WithPulsarEnv("brokerDeduplicationEnabled", "true"),
@@ -63,7 +64,7 @@ func TestPulsar(t *testing.T) {
 		},
 		{
 			name: "with functions worker",
-			opts: []testcontainers.ContainerCustomizer{
+			opts: []testcontainers.RequestCustomizer{
 				// withFunctionsWorker {
 				testcontainerspulsar.WithFunctionsWorker(),
 				// }
@@ -71,7 +72,7 @@ func TestPulsar(t *testing.T) {
 		},
 		{
 			name: "with transactions",
-			opts: []testcontainers.ContainerCustomizer{
+			opts: []testcontainers.RequestCustomizer{
 				// withTransactions {
 				testcontainerspulsar.WithTransactions(),
 				// }
@@ -79,9 +80,9 @@ func TestPulsar(t *testing.T) {
 		},
 		{
 			name: "with log consumers",
-			opts: []testcontainers.ContainerCustomizer{
+			opts: []testcontainers.RequestCustomizer{
 				// withLogconsumers {
-				testcontainers.WithLogConsumers(&testcontainers.StdoutLogConsumer{}),
+				testcontainers.WithLogConsumers(&tclog.StdoutConsumer{}),
 				// }
 			},
 		},
