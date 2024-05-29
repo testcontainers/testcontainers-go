@@ -9,7 +9,7 @@ An image name substitutor converts a Docker image name, as may be specified in c
 _Testcontainers for Go_ exposes an interface to perform this operations: `ImageSubstitutor`, and a No-operation implementation to be used as reference for custom implementations:
 
 <!--codeinclude-->
-[Image Substitutor Interface](../../image/substitutor.go) inside_block:imageSubstitutor
+[Image Substitutor Interface](../../image/substitutors.go) inside_block:imageSubstitutor
 [Noop Image Substitutor](../../image/substitutors.go) inside_block:noopImageSubstitutor
 <!--/codeinclude-->
 
