@@ -22,14 +22,14 @@ const (
 
 // OpenSearchContainer represents the OpenSearch container type used in the module
 type OpenSearchContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	User     string
 	Password string
 }
 
 // RunContainer creates an instance of the OpenSearch container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OpenSearchContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*OpenSearchContainer, error) {
+	req := testcontainers.Request{
 		Image:        "opensearchproject/opensearch:2.11.1",
 		ExposedPorts: []string{defaultHTTPPort, "9600/tcp"},
 		Env: map[string]string{
@@ -53,11 +53,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				},
 			}
 		},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started: true,
 	}
 
 	// Gather all config options (defaults and then apply provided options)
@@ -66,25 +62,25 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		if apply, ok := opt.(Option); ok {
 			apply(settings)
 		}
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
 	// set credentials if they are provided, otherwise use the defaults
 	if settings.Username != "" {
-		genericContainerReq.Env["OPENSEARCH_USERNAME"] = settings.Username
+		req.Env["OPENSEARCH_USERNAME"] = settings.Username
 	}
 	if settings.Password != "" {
-		genericContainerReq.Env["OPENSEARCH_PASSWORD"] = settings.Password
+		req.Env["OPENSEARCH_PASSWORD"] = settings.Password
 	}
 
-	username := genericContainerReq.Env["OPENSEARCH_USERNAME"]
-	password := genericContainerReq.Env["OPENSEARCH_PASSWORD"]
+	username := req.Env["OPENSEARCH_USERNAME"]
+	password := req.Env["OPENSEARCH_PASSWORD"]
 
 	// the wat strategy does not support TLS at the moment,
 	// so we need to disable it in the strategy for now.
-	genericContainerReq.WaitingFor = wait.ForHTTP("/").
+	req.WaitingFor = wait.ForHTTP("/").
 		WithPort("9200").
 		WithTLS(false).
 		WithStartupTimeout(120*time.Second).
@@ -111,12 +107,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			return r.Tagline == "The OpenSearch Project: https://opensearch.org/"
 		})
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &OpenSearchContainer{Container: container, User: username, Password: password}, nil
+	return &OpenSearchContainer{DockerContainer: container, User: username, Password: password}, nil
 }
 
 // Address retrieves the address of the OpenSearch container.
