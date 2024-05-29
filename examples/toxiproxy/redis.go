@@ -8,11 +8,11 @@ import (
 )
 
 type redisContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 func setupRedis(ctx context.Context, network string, networkAlias []string) (*redisContainer, error) {
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image:        "redis:6",
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("* Ready to accept connections"),
@@ -22,14 +22,12 @@ func setupRedis(ctx context.Context, network string, networkAlias []string) (*re
 		NetworkAliases: map[string][]string{
 			network: networkAlias,
 		},
+		Started: true,
 	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &redisContainer{Container: container}, nil
+	return &redisContainer{DockerContainer: container}, nil
 }

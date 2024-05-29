@@ -10,20 +10,18 @@ import (
 )
 
 type nginxContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	URI string
 }
 
 func startContainer(ctx context.Context) (*nginxContainer, error) {
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
+		Started:      true,
 	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -40,5 +38,5 @@ func startContainer(ctx context.Context) (*nginxContainer, error) {
 
 	uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 
-	return &nginxContainer{Container: container, URI: uri}, nil
+	return &nginxContainer{DockerContainer: container, URI: uri}, nil
 }
