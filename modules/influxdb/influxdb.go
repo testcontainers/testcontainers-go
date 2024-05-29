@@ -15,13 +15,13 @@ const defaultImage = "influxdb:1.8"
 
 // }
 
-// InfluxDbContainer represents the MySQL container type used in the module
-type InfluxDbContainer struct {
+// Container represents the MySQL container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
 // RunContainer creates an instance of the InfluxDB container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*InfluxDbContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"8086/tcp", "8088/tcp"},
@@ -80,10 +80,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &InfluxDbContainer{container}, nil
+	return &Container{container}, nil
 }
 
-func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
+func (c *Container) MustConnectionUrl(ctx context.Context) string {
 	connectionString, err := c.ConnectionUrl(ctx)
 	if err != nil {
 		panic(err)
@@ -91,7 +91,7 @@ func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
 	return connectionString
 }
 
-func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context) (string, error) {
+func (c *Container) ConnectionUrl(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "8086/tcp")
 	if err != nil {
 		return "", err

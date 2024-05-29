@@ -11,13 +11,13 @@ import (
 // defaultImage is the default MockServer container image
 const defaultImage = "mockserver/mockserver:5.15.0"
 
-// MockServerContainer represents the MockServer container type used in the module
-type MockServerContainer struct {
+// Container represents the MockServer container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
 // RunContainer creates an instance of the MockServer container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MockServerContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"1080/tcp"},
@@ -40,11 +40,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &MockServerContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }
 
 // GetURL returns the URL of the MockServer container
-func (c *MockServerContainer) URL(ctx context.Context) (string, error) {
+func (c *Container) URL(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err

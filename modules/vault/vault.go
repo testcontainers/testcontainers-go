@@ -16,13 +16,13 @@ const (
 	defaultImageName = "hashicorp/vault:1.13.0"
 )
 
-// VaultContainer represents the vault container type used in the module
-type VaultContainer struct {
+// Container represents the vault container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
 // RunContainer creates an instance of the vault container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*VaultContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        defaultImageName,
 		ExposedPorts: []string{defaultPort + "/tcp"},
@@ -47,7 +47,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &VaultContainer{container}, nil
+	return &Container{container}, nil
 }
 
 // WithToken is a container option function that sets the root token for the Vault
@@ -77,7 +77,7 @@ func WithInitCommand(commands ...string) testcontainers.CustomizeRequestOption {
 
 // HttpHostAddress returns the http host address of Vault.
 // It returns a string with the format http://<host>:<port>
-func (v *VaultContainer) HttpHostAddress(ctx context.Context) (string, error) {
+func (v *Container) HttpHostAddress(ctx context.Context) (string, error) {
 	host, err := v.Host(ctx)
 	if err != nil {
 		return "", err

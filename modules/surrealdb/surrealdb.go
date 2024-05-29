@@ -9,13 +9,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// SurrealDBContainer represents the SurrealDB container type used in the module
-type SurrealDBContainer struct {
+// Container represents the SurrealDB container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
 // ConnectionString returns the connection string for the OpenLDAP container
-func (c *SurrealDBContainer) URL(ctx context.Context) (string, error) {
+func (c *Container) URL(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "8000/tcp")
 	if err != nil {
 		return "", err
@@ -80,7 +80,7 @@ func WithAllowAllCaps() testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the SurrealDB container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*SurrealDBContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image: "surrealdb/surrealdb:v1.1.1",
 		Env: map[string]string{
@@ -110,5 +110,5 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &SurrealDBContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }

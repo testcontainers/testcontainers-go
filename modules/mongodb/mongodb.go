@@ -11,15 +11,15 @@ import (
 // defaultImage is the default MongoDB container image
 const defaultImage = "mongo:6"
 
-// MongoDBContainer represents the MongoDB container type used in the module
-type MongoDBContainer struct {
+// Container represents the MongoDB container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	username string
 	password string
 }
 
 // RunContainer creates an instance of the MongoDB container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MongoDBContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"27017/tcp"},
@@ -48,9 +48,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	}
 
 	if username != "" && password != "" {
-		return &MongoDBContainer{DockerContainer: container, username: username, password: password}, nil
+		return &Container{DockerContainer: container, username: username, password: password}, nil
 	}
-	return &MongoDBContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }
 
 // WithUsername sets the initial username to be created when the container starts
@@ -100,7 +100,7 @@ func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 
 // ConnectionString returns the connection string for the MongoDB container.
 // If you provide a username and a password, the connection string will also include them.
-func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err

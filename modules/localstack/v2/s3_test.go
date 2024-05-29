@@ -26,7 +26,7 @@ const (
 )
 
 // awsSDKClientV2 {
-func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Client, error) {
+func s3Client(ctx context.Context, l *localstack.Container) (*s3.Client, error) {
 	mappedPort, err := l.MappedPort(ctx, nat.Port("4566/tcp"))
 	if err != nil {
 		return nil, err

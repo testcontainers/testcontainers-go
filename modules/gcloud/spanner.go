@@ -8,7 +8,7 @@ import (
 )
 
 // RunSpannerContainer creates an instance of the GCloud container type for Spanner
-func RunSpannerContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*GCloudContainer, error) {
+func RunSpannerContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        "gcr.io/cloud-spanner-emulator/emulator:1.4.0",
 		ExposedPorts: []string{"9010/tcp"},

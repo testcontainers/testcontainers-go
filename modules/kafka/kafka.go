@@ -30,14 +30,14 @@ echo '' > /etc/confluent/docker/ensure
 	// }
 )
 
-// KafkaContainer represents the Kafka container type used in the module
-type KafkaContainer struct {
+// Container represents the Kafka container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	ClusterID string
 }
 
 // RunContainer creates an instance of the Kafka container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*KafkaContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        "confluentinc/confluent-local:7.5.0",
 		ExposedPorts: []string{string(publicPort)},
@@ -118,7 +118,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &KafkaContainer{DockerContainer: container, ClusterID: clusterID}, nil
+	return &Container{DockerContainer: container, ClusterID: clusterID}, nil
 }
 
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
@@ -131,7 +131,7 @@ func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 
 // Brokers retrieves the broker connection strings from Kafka with only one entry,
 // defined by the exposed public port.
-func (kc *KafkaContainer) Brokers(ctx context.Context) ([]string, error) {
+func (kc *Container) Brokers(ctx context.Context) ([]string, error) {
 	host, err := kc.Host(ctx)
 	if err != nil {
 		return nil, err

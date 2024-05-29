@@ -27,13 +27,13 @@ const (
 	// }
 )
 
-// Neo4jContainer represents the Neo4j container type used in the module
-type Neo4jContainer struct {
+// Container represents the Neo4j container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
 // BoltUrl returns the bolt url for the Neo4j container, using the bolt port, in the format of neo4j://host:port
-func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
+func (c Container) BoltUrl(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err
@@ -50,7 +50,7 @@ func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
 }
 
 // RunContainer creates an instance of the Neo4j container type
-func RunContainer(ctx context.Context, options ...testcontainers.RequestCustomizer) (*Neo4jContainer, error) {
+func RunContainer(ctx context.Context, options ...testcontainers.RequestCustomizer) (*Container, error) {
 	httpPort, _ := nat.NewPort("tcp", defaultHttpPort)
 	req := testcontainers.Request{
 		Image: fmt.Sprintf("docker.io/%s:%s", defaultImageName, defaultTag),
@@ -95,7 +95,7 @@ func RunContainer(ctx context.Context, options ...testcontainers.RequestCustomiz
 		return nil, err
 	}
 
-	return &Neo4jContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }
 
 func isHttpOk() func(status int) bool {

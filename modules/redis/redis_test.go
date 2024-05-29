@@ -115,7 +115,7 @@ func TestRedisWithSnapshotting(t *testing.T) {
 	assertSetsGets(t, ctx, redisContainer, 10)
 }
 
-func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.RedisContainer, keyCount int) {
+func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.Container, keyCount int) {
 	// connectionString {
 	uri, err := redisContainer.ConnectionString(ctx)
 	// }

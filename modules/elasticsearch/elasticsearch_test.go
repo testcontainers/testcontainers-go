@@ -262,7 +262,7 @@ func TestElasticsearchOSSCannotuseWithPassword(t *testing.T) {
 // configureHTTPClient configures an HTTP client for the Elasticsearch container.
 // If no certificate bytes are available, the default HTTP client will be returned.
 // If certificate bytes are available, the client will be configured to use TLS with the certificate.
-func configureHTTPClient(esContainer *elasticsearch.ElasticsearchContainer) *http.Client {
+func configureHTTPClient(esContainer *elasticsearch.Container) *http.Client {
 	// createHTTPClient {
 	client := http.DefaultClient
 

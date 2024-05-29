@@ -161,7 +161,7 @@ func testBucketUsage(t *testing.T, bucket *gocb.Bucket) {
 	}
 }
 
-func connectCluster(ctx context.Context, container *tccouchbase.CouchbaseContainer) (*gocb.Cluster, error) {
+func connectCluster(ctx context.Context, container *tccouchbase.Container) (*gocb.Cluster, error) {
 	connectionString, err := container.ConnectionString(ctx)
 	if err != nil {
 		return nil, err

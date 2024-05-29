@@ -18,8 +18,8 @@ const (
 	defaultSnapshotName  = "migrated_template"
 )
 
-// PostgresContainer represents the postgres container type used in the module
-type PostgresContainer struct {
+// Container represents the postgres container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	dbName       string
 	user         string
@@ -28,7 +28,7 @@ type PostgresContainer struct {
 }
 
 // MustConnectionString panics if the address cannot be determined.
-func (c *PostgresContainer) MustConnectionString(ctx context.Context, args ...string) string {
+func (c *Container) MustConnectionString(ctx context.Context, args ...string) string {
 	addr, err := c.ConnectionString(ctx, args...)
 	if err != nil {
 		panic(err)
@@ -40,7 +40,7 @@ func (c *PostgresContainer) MustConnectionString(ctx context.Context, args ...st
 // obtaining the host and exposed port from the container. It also accepts a variadic list of extra arguments
 // which will be appended to the connection string. The format of the extra arguments is the same as the
 // connection string format, e.g. "connect_timeout=10" or "application_name=myapp"
-func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "5432/tcp")
 	if err != nil {
 		return "", err
@@ -131,7 +131,7 @@ func WithUsername(user string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the postgres container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*PostgresContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image: defaultPostgresImage,
 		Env: map[string]string{
@@ -159,7 +159,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	password := req.Env["POSTGRES_PASSWORD"]
 	dbName := req.Env["POSTGRES_DB"]
 
-	return &PostgresContainer{DockerContainer: container, dbName: dbName, password: password, user: user}, nil
+	return &Container{DockerContainer: container, dbName: dbName, password: password, user: user}, nil
 }
 
 type snapshotConfig struct {
@@ -182,7 +182,7 @@ func WithSnapshotName(name string) SnapshotOption {
 // the Restore method. By default, the snapshot will be created under a database called migrated_template, you can
 // customize the snapshot name with the options.
 // If a snapshot already exists under the given/default name, it will be overwritten with the new snapshot.
-func (c *PostgresContainer) Snapshot(ctx context.Context, opts ...SnapshotOption) error {
+func (c *Container) Snapshot(ctx context.Context, opts ...SnapshotOption) error {
 	config := &snapshotConfig{}
 	for _, opt := range opts {
 		config = opt(config)
@@ -230,7 +230,7 @@ func (c *PostgresContainer) Snapshot(ctx context.Context, opts ...SnapshotOption
 
 // Restore will restore the database to a specific snapshot. By default, it will restore the last snapshot taken on the
 // database by the Snapshot method. If a snapshot name is provided, it will instead try to restore the snapshot by name.
-func (c *PostgresContainer) Restore(ctx context.Context, opts ...SnapshotOption) error {
+func (c *Container) Restore(ctx context.Context, opts ...SnapshotOption) error {
 	config := &snapshotConfig{}
 	for _, opt := range opts {
 		config = opt(config)

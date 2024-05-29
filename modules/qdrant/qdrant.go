@@ -9,13 +9,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// QdrantContainer represents the Qdrant container type used in the module
-type QdrantContainer struct {
+// Container represents the Qdrant container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
 // RunContainer creates an instance of the Qdrant container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*QdrantContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        "qdrant/qdrant:v1.7.4",
 		ExposedPorts: []string{"6333/tcp", "6334/tcp"},
@@ -37,11 +37,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &QdrantContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }
 
 // RESTEndpoint returns the REST endpoint of the Qdrant container
-func (c *QdrantContainer) RESTEndpoint(ctx context.Context) (string, error) {
+func (c *Container) RESTEndpoint(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "6333/tcp")
 	if err != nil {
 		return "", fmt.Errorf("failed to get container port: %w", err)
@@ -56,7 +56,7 @@ func (c *QdrantContainer) RESTEndpoint(ctx context.Context) (string, error) {
 }
 
 // GRPCEndpoint returns the gRPC endpoint of the Qdrant container
-func (c *QdrantContainer) GRPCEndpoint(ctx context.Context) (string, error) {
+func (c *Container) GRPCEndpoint(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "6334/tcp")
 	if err != nil {
 		return "", fmt.Errorf("failed to get container port: %w", err)
@@ -71,7 +71,7 @@ func (c *QdrantContainer) GRPCEndpoint(ctx context.Context) (string, error) {
 }
 
 // WebUI returns the web UI endpoint of the Qdrant container
-func (c *QdrantContainer) WebUI(ctx context.Context) (string, error) {
+func (c *Container) WebUI(ctx context.Context) (string, error) {
 	s, err := c.RESTEndpoint(ctx)
 	if err != nil {
 		return "", err

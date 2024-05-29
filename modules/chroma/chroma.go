@@ -8,13 +8,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// ChromaContainer represents the Chroma container type used in the module
-type ChromaContainer struct {
+// Container represents the Chroma container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
 // RunContainer creates an instance of the Chroma container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*ChromaContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        "chromadb/chroma:0.4.24",
 		ExposedPorts: []string{"8000/tcp"},
@@ -39,11 +39,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &ChromaContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }
 
 // RESTEndpoint returns the REST endpoint of the Chroma container
-func (c *ChromaContainer) RESTEndpoint(ctx context.Context) (string, error) {
+func (c *Container) RESTEndpoint(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "8000/tcp")
 	if err != nil {
 		return "", fmt.Errorf("failed to get container port: %w", err)

@@ -16,8 +16,8 @@ const (
 	defaultPassword = "Strong@Passw0rd"
 )
 
-// MSSQLServerContainer represents the MSSQLServer container type used in the module
-type MSSQLServerContainer struct {
+// Container represents the MSSQLServer container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	password string
 	username string
@@ -43,7 +43,7 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the MSSQLServer container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MSSQLServerContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{defaultPort},
@@ -68,10 +68,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	username := defaultUsername
 	password := req.Env["MSSQL_SA_PASSWORD"]
 
-	return &MSSQLServerContainer{DockerContainer: container, password: password, username: username}, nil
+	return &Container{DockerContainer: container, password: password, username: username}, nil
 }
 
-func (c *MSSQLServerContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err

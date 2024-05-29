@@ -33,8 +33,8 @@ const (
 	// }
 )
 
-// ClickHouseContainer represents the ClickHouse container type used in the module
-type ClickHouseContainer struct {
+// Container represents the ClickHouse container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	DbName   string
 	User     string
@@ -43,7 +43,7 @@ type ClickHouseContainer struct {
 
 // ConnectionHost returns the host and port of the clickhouse container, using the default, native 9000 port, and
 // obtaining the host and exposed port from the container
-func (c *ClickHouseContainer) ConnectionHost(ctx context.Context) (string, error) {
+func (c *Container) ConnectionHost(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err
@@ -61,7 +61,7 @@ func (c *ClickHouseContainer) ConnectionHost(ctx context.Context) (string, error
 // obtaining the host and exposed port from the container. It also accepts a variadic list of extra arguments
 // which will be appended to the dsn string. The format of the extra arguments is the same as the
 // connection string format, e.g. "dial_timeout=300ms" or "skip_verify=false"
-func (c *ClickHouseContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	host, err := c.ConnectionHost(ctx)
 	if err != nil {
 		return "", err
@@ -217,7 +217,7 @@ func WithUsername(user string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the ClickHouse container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*ClickHouseContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image: defaultImage,
 		Env: map[string]string{
@@ -249,5 +249,5 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	password := req.Env["CLICKHOUSE_PASSWORD"]
 	dbName := req.Env["CLICKHOUSE_DB"]
 
-	return &ClickHouseContainer{DockerContainer: container, DbName: dbName, Password: password, User: user}, nil
+	return &Container{DockerContainer: container, DbName: dbName, Password: password, User: user}, nil
 }

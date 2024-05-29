@@ -23,14 +23,14 @@ const (
 	DefaultBaseImageOSS = "docker.elastic.co/elasticsearch/elasticsearch-oss"
 )
 
-// ElasticsearchContainer represents the Elasticsearch container type used in the module
-type ElasticsearchContainer struct {
+// Container represents the Elasticsearch container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	Settings Options
 }
 
 // RunContainer creates an instance of the Elasticsearch container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*ElasticsearchContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image: fmt.Sprintf("%s:%s", DefaultBaseImage, minimalImageVersion),
 		Env: map[string]string{
@@ -90,7 +90,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	esContainer := &ElasticsearchContainer{DockerContainer: container, Settings: *settings}
+	esContainer := &Container{DockerContainer: container, Settings: *settings}
 
 	address, err := configureAddress(ctx, esContainer)
 	if err != nil {
@@ -104,7 +104,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 
 // configureAddress sets the address of the Elasticsearch container.
 // If the certificate is set, it will use https as protocol, otherwise http.
-func configureAddress(ctx context.Context, c *ElasticsearchContainer) (string, error) {
+func configureAddress(ctx context.Context, c *Container) (string, error) {
 	containerPort, err := c.MappedPort(ctx, defaultHTTPPort+"/tcp")
 	if err != nil {
 		return "", err

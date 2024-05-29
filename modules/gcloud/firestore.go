@@ -9,7 +9,7 @@ import (
 )
 
 // RunFirestoreContainer creates an instance of the GCloud container type for Firestore
-func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*GCloudContainer, error) {
+func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
 		ExposedPorts: []string{"8080/tcp"},

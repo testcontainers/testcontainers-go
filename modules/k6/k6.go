@@ -18,8 +18,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// K6Container represents the K6 container type used in the module
-type K6Container struct {
+// Container represents the K6 container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
@@ -162,7 +162,7 @@ func WithCache() testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the K6 container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*K6Container, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:      "szkiba/k6x:v0.3.1",
 		Cmd:        []string{"run"},
@@ -181,5 +181,5 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &K6Container{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }

@@ -18,14 +18,14 @@ var embedEtcdConfigTpl string
 
 const embedEtcdContainerPath string = "/milvus/configs/embedEtcd.yaml"
 
-// MilvusContainer represents the Milvus container type used in the module
-type MilvusContainer struct {
+// Container represents the Milvus container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
 // ConnectionString returns the connection string for the milvus container, using the default 19530 port, and
 // obtaining the host and exposed port from the container.
-func (c *MilvusContainer) ConnectionString(ctx context.Context) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err
@@ -38,7 +38,7 @@ func (c *MilvusContainer) ConnectionString(ctx context.Context) (string, error) 
 }
 
 // RunContainer creates an instance of the Milvus container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MilvusContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        "milvusdb/milvus:v2.3.9",
 		ExposedPorts: []string{"19530/tcp", "9091/tcp", "2379/tcp"},
@@ -73,7 +73,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &MilvusContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }
 
 type embedEtcdConfigTplParams struct {

@@ -27,11 +27,11 @@ const (
 	LogLevelWarning LogLevel = "warning"
 )
 
-type RedisContainer struct {
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
-func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	mappedPort, err := c.MappedPort(ctx, "6379/tcp")
 	if err != nil {
 		return "", err
@@ -47,7 +47,7 @@ func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
 }
 
 // RunContainer creates an instance of the Redis container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*RedisContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"6379/tcp"},
@@ -66,7 +66,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &RedisContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }
 
 // WithConfigFile sets the config file to be used for the redis container, and sets the command to run the redis server

@@ -17,13 +17,13 @@ const (
 	DefaultBaseImage = "docker.io/hashicorp/consul:1.15"
 )
 
-// ConsulContainer represents the Consul container type used in the module.
-type ConsulContainer struct {
+// Container represents the Consul container type used in the module.
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
 // ApiEndpoint returns host:port for the HTTP API endpoint.
-func (c *ConsulContainer) ApiEndpoint(ctx context.Context) (string, error) {
+func (c *Container) ApiEndpoint(ctx context.Context) (string, error) {
 	mappedPort, err := c.MappedPort(ctx, defaultHttpApiPort)
 	if err != nil {
 		return "", err
@@ -62,7 +62,7 @@ func WithConfigFile(configPath string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the Consul container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*ConsulContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image: DefaultBaseImage,
 		ExposedPorts: []string{
@@ -89,5 +89,5 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &ConsulContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }

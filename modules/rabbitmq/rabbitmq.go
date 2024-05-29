@@ -30,15 +30,15 @@ const (
 //go:embed mounts/rabbitmq-testcontainers.conf.tpl
 var customConfigTpl string
 
-// RabbitMQContainer represents the RabbitMQ container type used in the module
-type RabbitMQContainer struct {
+// Container represents the RabbitMQ container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	AdminPassword string
 	AdminUsername string
 }
 
 // AmqpURL returns the URL for AMQP clients.
-func (c *RabbitMQContainer) AmqpURL(ctx context.Context) (string, error) {
+func (c *Container) AmqpURL(ctx context.Context) (string, error) {
 	endpoint, err := c.PortEndpoint(ctx, nat.Port(DefaultAMQPPort), "")
 	if err != nil {
 		return "", err
@@ -48,7 +48,7 @@ func (c *RabbitMQContainer) AmqpURL(ctx context.Context) (string, error) {
 }
 
 // AmqpURL returns the URL for AMQPS clients.
-func (c *RabbitMQContainer) AmqpsURL(ctx context.Context) (string, error) {
+func (c *Container) AmqpsURL(ctx context.Context) (string, error) {
 	endpoint, err := c.PortEndpoint(ctx, nat.Port(DefaultAMQPSPort), "")
 	if err != nil {
 		return "", err
@@ -58,17 +58,17 @@ func (c *RabbitMQContainer) AmqpsURL(ctx context.Context) (string, error) {
 }
 
 // HttpURL returns the URL for HTTP management.
-func (c *RabbitMQContainer) HttpURL(ctx context.Context) (string, error) {
+func (c *Container) HttpURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPPort), "http")
 }
 
 // HttpsURL returns the URL for HTTPS management.
-func (c *RabbitMQContainer) HttpsURL(ctx context.Context) (string, error) {
+func (c *Container) HttpsURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPSPort), "https")
 }
 
 // RunContainer creates an instance of the RabbitMQ container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*RabbitMQContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image: "rabbitmq:3.12.11-management-alpine",
 		Env: map[string]string{
@@ -128,7 +128,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	c := &RabbitMQContainer{
+	c := &Container{
 		DockerContainer: container,
 		AdminUsername:   settings.AdminUsername,
 		AdminPassword:   settings.AdminPassword,

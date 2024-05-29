@@ -17,14 +17,14 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// RegistryContainer represents the Registry container type used in the module
-type RegistryContainer struct {
+// Container represents the Registry container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	RegistryName string
 }
 
 // Address returns the address of the Registry container, using the HTTP protocol
-func (c *RegistryContainer) Address(ctx context.Context) (string, error) {
+func (c *Container) Address(ctx context.Context) (string, error) {
 	port, err := c.MappedPort(ctx, "5000")
 	if err != nil {
 		return "", err
@@ -59,7 +59,7 @@ func getEndpointWithAuth(ctx context.Context, imageRef string) (string, string, 
 // doing a HEAD request to get the image digest and then a DELETE request
 // to actually delete the image.
 // E.g. imageRef = "localhost:5000/alpine:latest"
-func (c *RegistryContainer) DeleteImage(ctx context.Context, imageRef string) error {
+func (c *Container) DeleteImage(ctx context.Context, imageRef string) error {
 	endpoint, image, imageAuth, err := getEndpointWithAuth(ctx, imageRef)
 	if err != nil {
 		return fmt.Errorf("failed to get image auth: %w", err)
@@ -100,7 +100,7 @@ func (c *RegistryContainer) DeleteImage(ctx context.Context, imageRef string) er
 // ImageExists checks if an image exists in the Registry container. It will use the v2 HTTP endpoint
 // of the Registry container to check if the image reference exists.
 // E.g. imageRef = "localhost:5000/alpine:latest"
-func (c *RegistryContainer) ImageExists(ctx context.Context, imageRef string) error {
+func (c *Container) ImageExists(ctx context.Context, imageRef string) error {
 	endpoint, _, imageAuth, err := getEndpointWithAuth(ctx, imageRef)
 	if err != nil {
 		return fmt.Errorf("failed to get image auth: %w", err)
@@ -122,7 +122,7 @@ func (c *RegistryContainer) ImageExists(ctx context.Context, imageRef string) er
 
 // PushImage pushes an image to the Registry container. It will use the internally stored RegistryName
 // to push the image to the container, and it will finally wait for the image to be pushed.
-func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
+func (c *Container) PushImage(ctx context.Context, ref string) error {
 	dockerCli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create Docker provider: %w", err)
@@ -155,7 +155,7 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 }
 
 // RunContainer creates an instance of the Registry container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*RegistryContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        "registry:2.8.3",
 		ExposedPorts: []string{"5000/tcp"},
@@ -181,7 +181,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	c := &RegistryContainer{DockerContainer: container}
+	c := &Container{DockerContainer: container}
 
 	address, err := c.Address(ctx)
 	if err != nil {

@@ -170,7 +170,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	})
 }
 
-func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Neo4jContainer {
+func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Container {
 	container, err := neo4j.RunContainer(ctx,
 		neo4j.WithAdminPassword(testPassword),
 		// withLabsPlugin {
@@ -184,7 +184,7 @@ func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Neo4jContainer {
 	return container
 }
 
-func createDriver(t *testing.T, ctx context.Context, container *neo4j.Neo4jContainer) neo.DriverWithContext {
+func createDriver(t *testing.T, ctx context.Context, container *neo4j.Container) neo.DriverWithContext {
 	// boltURL {
 	boltUrl, err := container.BoltUrl(ctx)
 	// }
@@ -203,7 +203,7 @@ func createDriver(t *testing.T, ctx context.Context, container *neo4j.Neo4jConta
 	return driver
 }
 
-func getContainerEnv(t *testing.T, ctx context.Context, container *neo4j.Neo4jContainer) string {
+func getContainerEnv(t *testing.T, ctx context.Context, container *neo4j.Container) string {
 	exec, reader, err := container.Exec(ctx, []string{"env"})
 	if err != nil {
 		t.Fatalf("expected env to successfully run but did not: %s", err)

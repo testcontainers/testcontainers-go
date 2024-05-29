@@ -202,7 +202,7 @@ func TestMariaDBWithScripts(t *testing.T) {
 	assertDataCanBeFetched(t, ctx, container)
 }
 
-func assertDataCanBeFetched(t *testing.T, ctx context.Context, container *mariadb.MariaDBContainer) {
+func assertDataCanBeFetched(t *testing.T, ctx context.Context, container *mariadb.Container) {
 	connectionString, err := container.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)

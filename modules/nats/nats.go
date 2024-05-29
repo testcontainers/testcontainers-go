@@ -14,15 +14,15 @@ const (
 	defaultMonitoringPort = "8222/tcp"
 )
 
-// NATSContainer represents the NATS container type used in the module
-type NATSContainer struct {
+// Container represents the NATS container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	User     string
 	Password string
 }
 
 // RunContainer creates an instance of the NATS container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*NATSContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        "nats:2.9",
 		ExposedPorts: []string{defaultClientPort, defaultRoutingPort, defaultMonitoringPort},
@@ -53,7 +53,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	natsContainer := NATSContainer{
+	natsContainer := Container{
 		DockerContainer: container,
 		User:            settings.CmdArgs["user"],
 		Password:        settings.CmdArgs["pass"],
@@ -62,7 +62,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	return &natsContainer, nil
 }
 
-func (c *NATSContainer) MustConnectionString(ctx context.Context, args ...string) string {
+func (c *Container) MustConnectionString(ctx context.Context, args ...string) string {
 	addr, err := c.ConnectionString(ctx, args...)
 	if err != nil {
 		panic(err)
@@ -71,7 +71,7 @@ func (c *NATSContainer) MustConnectionString(ctx context.Context, args ...string
 }
 
 // ConnectionString returns a connection string for the NATS container
-func (c *NATSContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	mappedPort, err := c.MappedPort(ctx, defaultClientPort)
 	if err != nil {
 		return "", err

@@ -14,8 +14,8 @@ const (
 	defaultImage    = "docker.io/minio/minio:RELEASE.2024-01-16T16-07-38Z"
 )
 
-// MinioContainer represents the Minio container type used in the module
-type MinioContainer struct {
+// Container represents the Minio container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	Username string
 	Password string
@@ -45,7 +45,7 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 
 // ConnectionString returns the connection string for the minio container, using the default 9000 port, and
 // obtaining the host and exposed port from the container.
-func (c *MinioContainer) ConnectionString(ctx context.Context) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err
@@ -58,7 +58,7 @@ func (c *MinioContainer) ConnectionString(ctx context.Context) (string, error) {
 }
 
 // RunContainer creates an instance of the Minio container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MinioContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"9000/tcp"},
@@ -88,5 +88,5 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &MinioContainer{DockerContainer: container, Username: username, Password: password}, nil
+	return &Container{DockerContainer: container, Username: username, Password: password}, nil
 }

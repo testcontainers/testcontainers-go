@@ -20,8 +20,8 @@ const (
 
 const defaultImage = "dolthub/dolt-sql-server:1.32.4"
 
-// DoltContainer represents the Dolt container type used in the module
-type DoltContainer struct {
+// Container represents the Dolt container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	username string
 	password string
@@ -41,7 +41,7 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the Dolt container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*DoltContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
@@ -84,14 +84,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	dc := &DoltContainer{container, username, password, database}
+	dc := &Container{container, username, password, database}
 
 	// dolthub/dolt-sql-server does not create user or database, so we do so here
 	err = dc.initialize(ctx, createUser)
 	return dc, err
 }
 
-func (c *DoltContainer) initialize(ctx context.Context, createUser bool) error {
+func (c *Container) initialize(ctx context.Context, createUser bool) error {
 	connectionString, err := c.initialConnectionString(ctx)
 	if err != nil {
 		return err
@@ -137,7 +137,7 @@ func (c *DoltContainer) initialize(ctx context.Context, createUser bool) error {
 	return nil
 }
 
-func (c *DoltContainer) initialConnectionString(ctx context.Context) (string, error) {
+func (c *Container) initialConnectionString(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "3306/tcp")
 	if err != nil {
 		return "", err
@@ -152,7 +152,7 @@ func (c *DoltContainer) initialConnectionString(ctx context.Context) (string, er
 	return connectionString, nil
 }
 
-func (c *DoltContainer) MustConnectionString(ctx context.Context, args ...string) string {
+func (c *Container) MustConnectionString(ctx context.Context, args ...string) string {
 	addr, err := c.ConnectionString(ctx, args...)
 	if err != nil {
 		panic(err)
@@ -160,7 +160,7 @@ func (c *DoltContainer) MustConnectionString(ctx context.Context, args ...string
 	return addr
 }
 
-func (c *DoltContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "3306/tcp")
 	if err != nil {
 		return "", err

@@ -11,14 +11,14 @@ import (
 
 const defaultProjectID = "test-project"
 
-type GCloudContainer struct {
+type Container struct {
 	*testcontainers.DockerContainer
 	Settings options
 	URI      string
 }
 
 // newGCloudContainer creates a new GCloud container, obtaining the URL to access the container from the specified port.
-func newGCloudContainer(ctx context.Context, port int, c *testcontainers.DockerContainer, settings options) (*GCloudContainer, error) {
+func newGCloudContainer(ctx context.Context, port int, c *testcontainers.DockerContainer, settings options) (*Container, error) {
 	mappedPort, err := c.MappedPort(ctx, nat.Port(fmt.Sprintf("%d/tcp", port)))
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func newGCloudContainer(ctx context.Context, port int, c *testcontainers.DockerC
 
 	uri := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
 
-	gCloudContainer := &GCloudContainer{
+	gCloudContainer := &Container{
 		DockerContainer: c,
 		Settings:        settings,
 		URI:             uri,

@@ -26,8 +26,8 @@ var (
 	defaultKubeConfigK3sPath = "/etc/rancher/k3s/k3s.yaml"
 )
 
-// K3sContainer represents the K3s container type used in the module
-type K3sContainer struct {
+// Container represents the K3s container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
@@ -50,7 +50,7 @@ func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the K3s container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*K3sContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	host, err := getContainerHost(ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &K3sContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }
 
 func getContainerHost(ctx context.Context, opts ...testcontainers.RequestCustomizer) (string, error) {
@@ -121,7 +121,7 @@ func getContainerHost(ctx context.Context, opts ...testcontainers.RequestCustomi
 }
 
 // GetKubeConfig returns the modified kubeconfig with server url
-func (c *K3sContainer) GetKubeConfig(ctx context.Context) ([]byte, error) {
+func (c *Container) GetKubeConfig(ctx context.Context) ([]byte, error) {
 	hostIP, err := c.Host(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get hostIP: %w", err)
@@ -184,7 +184,7 @@ func unmarshal(bytes []byte) (*KubeConfigValue, error) {
 }
 
 // LoadImages loads images into the k3s container.
-func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
+func (c *Container) LoadImages(ctx context.Context, images ...string) error {
 	// save image
 	imagesTar, err := os.CreateTemp(os.TempDir(), "images*.tar")
 	if err != nil {

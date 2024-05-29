@@ -30,19 +30,19 @@ var defaultWaitStrategies = wait.ForAll(
 	wait.ForLog("Successfully updated the policies on namespace public/default"),
 )
 
-type PulsarContainer struct {
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
-func (c *PulsarContainer) BrokerURL(ctx context.Context) (string, error) {
+func (c *Container) BrokerURL(ctx context.Context) (string, error) {
 	return c.resolveURL(ctx, defaultPulsarPort)
 }
 
-func (c *PulsarContainer) HTTPServiceURL(ctx context.Context) (string, error) {
+func (c *Container) HTTPServiceURL(ctx context.Context) (string, error) {
 	return c.resolveURL(ctx, defaultPulsarAdminPort)
 }
 
-func (c *PulsarContainer) resolveURL(ctx context.Context, port nat.Port) (string, error) {
+func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, error) {
 	host, err := testcontainers.DaemonHost(ctx)
 	if err != nil {
 		return "", err
@@ -118,7 +118,7 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 //   - the log message "Successfully updated the policies on namespace public/default"
 //
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*PulsarContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        defaultPulsarImage,
 		Env:          map[string]string{},
@@ -139,7 +139,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	pc := &PulsarContainer{
+	pc := &Container{
 		DockerContainer: c,
 	}
 

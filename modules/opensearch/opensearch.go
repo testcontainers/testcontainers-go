@@ -20,15 +20,15 @@ const (
 	defaultHTTPPort = "9200/tcp"
 )
 
-// OpenSearchContainer represents the OpenSearch container type used in the module
-type OpenSearchContainer struct {
+// Container represents the OpenSearch container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	User     string
 	Password string
 }
 
 // RunContainer creates an instance of the OpenSearch container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*OpenSearchContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        "opensearchproject/opensearch:2.11.1",
 		ExposedPorts: []string{defaultHTTPPort, "9600/tcp"},
@@ -112,12 +112,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &OpenSearchContainer{DockerContainer: container, User: username, Password: password}, nil
+	return &Container{DockerContainer: container, User: username, Password: password}, nil
 }
 
 // Address retrieves the address of the OpenSearch container.
 // It will use http as protocol, as TLS is not supported at the moment.
-func (c *OpenSearchContainer) Address(ctx context.Context) (string, error) {
+func (c *Container) Address(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, defaultHTTPPort)
 	if err != nil {
 		return "", err

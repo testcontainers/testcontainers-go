@@ -16,12 +16,13 @@ import (
 )
 
 func TestModule(t *testing.T) {
+	expectedContainerName := "Container"
+
 	tests := []struct {
-		name                  string
-		module                context.TestcontainersModule
-		expectedContainerName string
-		expectedEntrypoint    string
-		expectedTitle         string
+		name               string
+		module             context.TestcontainersModule
+		expectedEntrypoint string
+		expectedTitle      string
 	}{
 		{
 			name: "Module with title",
@@ -31,9 +32,8 @@ func TestModule(t *testing.T) {
 				Image:     "mongodb:latest",
 				TitleName: "MongoDB",
 			},
-			expectedContainerName: "MongoDBContainer",
-			expectedEntrypoint:    "RunContainer",
-			expectedTitle:         "MongoDB",
+			expectedEntrypoint: "RunContainer",
+			expectedTitle:      "MongoDB",
 		},
 		{
 			name: "Module without title",
@@ -42,9 +42,8 @@ func TestModule(t *testing.T) {
 				IsModule: true,
 				Image:    "mongodb:latest",
 			},
-			expectedContainerName: "MongodbContainer",
-			expectedEntrypoint:    "RunContainer",
-			expectedTitle:         "Mongodb",
+			expectedEntrypoint: "RunContainer",
+			expectedTitle:      "Mongodb",
 		},
 		{
 			name: "Example with title",
@@ -54,9 +53,8 @@ func TestModule(t *testing.T) {
 				Image:     "mongodb:latest",
 				TitleName: "MongoDB",
 			},
-			expectedContainerName: "mongoDBContainer",
-			expectedEntrypoint:    "runContainer",
-			expectedTitle:         "MongoDB",
+			expectedEntrypoint: "runContainer",
+			expectedTitle:      "MongoDB",
 		},
 		{
 			name: "Example without title",
@@ -65,9 +63,8 @@ func TestModule(t *testing.T) {
 				IsModule: false,
 				Image:    "mongodb:latest",
 			},
-			expectedContainerName: "mongodbContainer",
-			expectedEntrypoint:    "runContainer",
-			expectedTitle:         "Mongodb",
+			expectedEntrypoint: "runContainer",
+			expectedTitle:      "Mongodb",
 		},
 	}
 
@@ -77,7 +74,7 @@ func TestModule(t *testing.T) {
 
 			assert.Equal(t, "mongodb", module.Lower())
 			assert.Equal(t, test.expectedTitle, module.Title())
-			assert.Equal(t, test.expectedContainerName, module.ContainerName())
+			assert.Equal(t, expectedContainerName, module.ContainerName())
 			assert.Equal(t, test.expectedEntrypoint, module.Entrypoint())
 		})
 	}

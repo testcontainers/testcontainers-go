@@ -100,7 +100,7 @@ func TestOllama(t *testing.T) {
 // assertLoadedModel checks if the model is loaded in the container.
 // For that, it checks if the response of the /api/tags endpoint
 // contains the model name.
-func assertLoadedModel(t *testing.T, c *ollama.OllamaContainer) {
+func assertLoadedModel(t *testing.T, c *ollama.Container) {
 	url, err := c.ConnectionString(context.Background())
 	if err != nil {
 		t.Fatal(err)

@@ -16,14 +16,14 @@ const (
 	port = nat.Port("9042/tcp")
 )
 
-// CassandraContainer represents the Cassandra container type used in the module
-type CassandraContainer struct {
+// Container represents the Cassandra container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
 // ConnectionHost returns the host and port of the cassandra container, using the default, native 9000 port, and
 // obtaining the host and exposed port from the container
-func (c *CassandraContainer) ConnectionHost(ctx context.Context) (string, error) {
+func (c *Container) ConnectionHost(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err
@@ -75,7 +75,7 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the Cassandra container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*CassandraContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        "cassandra:4.1.3",
 		ExposedPorts: []string{string(port)},
@@ -108,5 +108,5 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &CassandraContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }

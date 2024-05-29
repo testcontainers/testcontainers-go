@@ -55,14 +55,14 @@ var initialServices = []Service{kv, query, search, index}
 
 type clusterInit func(context.Context) error
 
-// CouchbaseContainer represents the Couchbase container type used in the module
-type CouchbaseContainer struct {
+// Container represents the Couchbase container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	config *Config
 }
 
 // RunContainer creates an instance of the Couchbase container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*CouchbaseContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	config := &Config{
 		enabledServices:  make([]Service, 0),
 		username:         "Administrator",
@@ -112,7 +112,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	couchbaseContainer := CouchbaseContainer{container, config}
+	couchbaseContainer := Container{container, config}
 
 	if err = couchbaseContainer.initCluster(ctx); err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 
 // StartContainer creates an instance of the Couchbase container type
 // Deprecated: use RunContainer instead
-func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, error) {
+func StartContainer(ctx context.Context, opts ...Option) (*Container, error) {
 	config := &Config{
 		enabledServices:  []Service{kv, query, search, index},
 		username:         "Administrator",
@@ -156,7 +156,7 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 
 // ConnectionString returns the connection string to connect to the Couchbase container instance.
 // It returns a string with the format couchbase://<host>:<port>
-func (c *CouchbaseContainer) ConnectionString(ctx context.Context) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err
@@ -171,16 +171,16 @@ func (c *CouchbaseContainer) ConnectionString(ctx context.Context) (string, erro
 }
 
 // Username returns the username of the Couchbase administrator.
-func (c *CouchbaseContainer) Username() string {
+func (c *Container) Username() string {
 	return c.config.username
 }
 
 // Password returns the password of the Couchbase administrator.
-func (c *CouchbaseContainer) Password() string {
+func (c *Container) Password() string {
 	return c.config.password
 }
 
-func (c *CouchbaseContainer) initCluster(ctx context.Context) error {
+func (c *Container) initCluster(ctx context.Context) error {
 	clusterInitFunc := []clusterInit{
 		c.waitUntilNodeIsOnline,
 		c.initializeIsEnterprise,
@@ -206,7 +206,7 @@ func (c *CouchbaseContainer) initCluster(ctx context.Context) error {
 	return nil
 }
 
-func (c *CouchbaseContainer) waitUntilNodeIsOnline(ctx context.Context) error {
+func (c *Container) waitUntilNodeIsOnline(ctx context.Context) error {
 	return wait.ForHTTP("/pools").
 		WithPort(MGMT_PORT).
 		WithStatusCodeMatcher(func(status int) bool {
@@ -215,7 +215,7 @@ func (c *CouchbaseContainer) waitUntilNodeIsOnline(ctx context.Context) error {
 		WaitUntilReady(ctx, c)
 }
 
-func (c *CouchbaseContainer) initializeIsEnterprise(ctx context.Context) error {
+func (c *Container) initializeIsEnterprise(ctx context.Context) error {
 	response, err := c.doHttpRequest(ctx, MGMT_PORT, "/pools", http.MethodGet, nil, false)
 	if err != nil {
 		return err
@@ -235,7 +235,7 @@ func (c *CouchbaseContainer) initializeIsEnterprise(ctx context.Context) error {
 	return nil
 }
 
-func (c *CouchbaseContainer) renameNode(ctx context.Context) error {
+func (c *Container) renameNode(ctx context.Context) error {
 	hostname, err := c.getInternalIPAddress(ctx)
 	if err != nil {
 		return err
@@ -250,7 +250,7 @@ func (c *CouchbaseContainer) renameNode(ctx context.Context) error {
 	return err
 }
 
-func (c *CouchbaseContainer) initializeServices(ctx context.Context) error {
+func (c *Container) initializeServices(ctx context.Context) error {
 	body := map[string]string{
 		"services": c.getEnabledServices(),
 	}
@@ -259,7 +259,7 @@ func (c *CouchbaseContainer) initializeServices(ctx context.Context) error {
 	return err
 }
 
-func (c *CouchbaseContainer) setMemoryQuotas(ctx context.Context) error {
+func (c *Container) setMemoryQuotas(ctx context.Context) error {
 	body := map[string]string{}
 
 	for _, s := range c.config.enabledServices {
@@ -280,7 +280,7 @@ func (c *CouchbaseContainer) setMemoryQuotas(ctx context.Context) error {
 	return err
 }
 
-func (c *CouchbaseContainer) configureAdminUser(ctx context.Context) error {
+func (c *Container) configureAdminUser(ctx context.Context) error {
 	body := map[string]string{
 		"username": c.config.username,
 		"password": c.config.password,
@@ -292,7 +292,7 @@ func (c *CouchbaseContainer) configureAdminUser(ctx context.Context) error {
 	return err
 }
 
-func (c *CouchbaseContainer) configureExternalPorts(ctx context.Context) error {
+func (c *Container) configureExternalPorts(ctx context.Context) error {
 	host, _ := c.Host(ctx)
 	mgmt, _ := c.MappedPort(ctx, MGMT_PORT)
 	mgmtSSL, _ := c.MappedPort(ctx, MGMT_SSL_PORT)
@@ -351,7 +351,7 @@ func (c *CouchbaseContainer) configureExternalPorts(ctx context.Context) error {
 	return err
 }
 
-func (c *CouchbaseContainer) configureIndexer(ctx context.Context) error {
+func (c *Container) configureIndexer(ctx context.Context) error {
 	if c.config.isEnterprise {
 		if c.config.indexStorageMode == ForestDB {
 			c.config.indexStorageMode = MemoryOptimized
@@ -369,7 +369,7 @@ func (c *CouchbaseContainer) configureIndexer(ctx context.Context) error {
 	return err
 }
 
-func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) error {
+func (c *Container) waitUntilAllNodesAreHealthy(ctx context.Context) error {
 	var waitStrategy []wait.Strategy
 
 	waitStrategy = append(waitStrategy, wait.ForHTTP("/pools/default").
@@ -419,7 +419,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 	return wait.ForAll(waitStrategy...).WaitUntilReady(ctx, c)
 }
 
-func (c *CouchbaseContainer) createBuckets(ctx context.Context) error {
+func (c *Container) createBuckets(ctx context.Context) error {
 	for _, bucket := range c.config.buckets {
 		err := c.createBucket(ctx, bucket)
 		if err != nil {
@@ -459,7 +459,7 @@ func (c *CouchbaseContainer) createBuckets(ctx context.Context) error {
 	return nil
 }
 
-func (c *CouchbaseContainer) isPrimaryIndexOnline(ctx context.Context, bucket bucket) error {
+func (c *Container) isPrimaryIndexOnline(ctx context.Context, bucket bucket) error {
 	body := map[string]string{
 		"statement": "SELECT count(*) > 0 AS online FROM system:indexes where keyspace_id = \"" +
 			bucket.name +
@@ -483,7 +483,7 @@ func (c *CouchbaseContainer) isPrimaryIndexOnline(ctx context.Context, bucket bu
 	return err
 }
 
-func (c *CouchbaseContainer) createPrimaryIndex(ctx context.Context, bucket bucket) error {
+func (c *Container) createPrimaryIndex(ctx context.Context, bucket bucket) error {
 	body := map[string]string{
 		"statement": "CREATE PRIMARY INDEX on `" + bucket.name + "`",
 	}
@@ -493,7 +493,7 @@ func (c *CouchbaseContainer) createPrimaryIndex(ctx context.Context, bucket buck
 	return err
 }
 
-func (c *CouchbaseContainer) isQueryKeyspacePresent(ctx context.Context, bucket bucket) error {
+func (c *Container) isQueryKeyspacePresent(ctx context.Context, bucket bucket) error {
 	body := map[string]string{
 		"statement": "SELECT COUNT(*) > 0 as present FROM system:keyspaces WHERE name = \"" + bucket.name + "\"",
 	}
@@ -514,7 +514,7 @@ func (c *CouchbaseContainer) isQueryKeyspacePresent(ctx context.Context, bucket 
 	return err
 }
 
-func (c *CouchbaseContainer) waitForAllServicesEnabled(ctx context.Context, bucket bucket) error {
+func (c *Container) waitForAllServicesEnabled(ctx context.Context, bucket bucket) error {
 	err := wait.ForHTTP("/pools/default/b/"+bucket.name).
 		WithPort(MGMT_PORT).
 		WithBasicAuth(c.config.username, c.config.password).
@@ -533,7 +533,7 @@ func (c *CouchbaseContainer) waitForAllServicesEnabled(ctx context.Context, buck
 	return err
 }
 
-func (c *CouchbaseContainer) createBucket(ctx context.Context, bucket bucket) error {
+func (c *Container) createBucket(ctx context.Context, bucket bucket) error {
 	flushEnabled := "0"
 	if bucket.flushEnabled {
 		flushEnabled = "1"
@@ -550,7 +550,7 @@ func (c *CouchbaseContainer) createBucket(ctx context.Context, bucket bucket) er
 	return err
 }
 
-func (c *CouchbaseContainer) doHttpRequest(ctx context.Context, port, path, method string, body map[string]string, auth bool) ([]byte, error) {
+func (c *Container) doHttpRequest(ctx context.Context, port, path, method string, body map[string]string, auth bool) ([]byte, error) {
 	form := url.Values{}
 	for k, v := range body {
 		form.Set(k, v)
@@ -596,7 +596,7 @@ func (c *CouchbaseContainer) doHttpRequest(ctx context.Context, port, path, meth
 	return bytes, nil
 }
 
-func (c *CouchbaseContainer) getUrl(ctx context.Context, port, path string) (string, error) {
+func (c *Container) getUrl(ctx context.Context, port, path string) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err
@@ -610,7 +610,7 @@ func (c *CouchbaseContainer) getUrl(ctx context.Context, port, path string) (str
 	return fmt.Sprintf("http://%s:%d%s", host, mappedPort.Int(), path), nil
 }
 
-func (c *CouchbaseContainer) getInternalIPAddress(ctx context.Context) (string, error) {
+func (c *Container) getInternalIPAddress(ctx context.Context) (string, error) {
 	networks, err := c.ContainerIP(ctx)
 	if err != nil {
 		return "", err
@@ -619,7 +619,7 @@ func (c *CouchbaseContainer) getInternalIPAddress(ctx context.Context) (string, 
 	return networks, nil
 }
 
-func (c *CouchbaseContainer) getEnabledServices() string {
+func (c *Container) getEnabledServices() string {
 	identifiers := make([]string, len(c.config.enabledServices))
 	for i, v := range c.config.enabledServices {
 		identifiers[i] = v.identifier
@@ -628,7 +628,7 @@ func (c *CouchbaseContainer) getEnabledServices() string {
 	return strings.Join(identifiers, ",")
 }
 
-func (c *CouchbaseContainer) checkAllServicesEnabled(rawConfig []byte) bool {
+func (c *Container) checkAllServicesEnabled(rawConfig []byte) bool {
 	nodeExt := gjson.Get(string(rawConfig), "nodesExt")
 	if !nodeExt.Exists() {
 		return false

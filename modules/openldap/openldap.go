@@ -18,8 +18,8 @@ const (
 	defaultAdminDn  = "cn=admin,dc=example,dc=org"
 )
 
-// OpenLDAPContainer represents the OpenLDAP container type used in the module
-type OpenLDAPContainer struct {
+// Container represents the OpenLDAP container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	adminUsername string
 	adminPassword string
@@ -27,7 +27,7 @@ type OpenLDAPContainer struct {
 }
 
 // ConnectionString returns the connection string for the OpenLDAP container
-func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "1389/tcp")
 	if err != nil {
 		return "", err
@@ -43,7 +43,7 @@ func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, args ...string
 }
 
 // LoadLdif loads an ldif file into the OpenLDAP container
-func (c *OpenLDAPContainer) LoadLdif(ctx context.Context, ldif []byte) error {
+func (c *Container) LoadLdif(ctx context.Context, ldif []byte) error {
 	err := c.CopyToContainer(ctx, ldif, "/tmp/ldif.ldif", 0o644)
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func WithInitialLdif(ldif string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the OpenLDAP container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*OpenLDAPContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image: "bitnami/openldap:2.6.6",
 		Env: map[string]string{
@@ -155,7 +155,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &OpenLDAPContainer{
+	return &Container{
 		DockerContainer: container,
 		adminUsername:   req.Env["LDAP_ADMIN_USERNAME"],
 		adminPassword:   req.Env["LDAP_ADMIN_PASSWORD"],

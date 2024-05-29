@@ -15,13 +15,13 @@ const (
 	grpcPort = "50051/tcp"
 )
 
-// WeaviateContainer represents the Weaviate container type used in the module
-type WeaviateContainer struct {
+// Container represents the Weaviate container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
 // RunContainer creates an instance of the Weaviate container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*WeaviateContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        image,
 		Cmd:          []string{"--host", "0.0.0.0", "--scheme", "http", "--port", "8080"},
@@ -48,12 +48,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &WeaviateContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }
 
 // HttpHostAddress returns the schema and host of the Weaviate container.
 // At the moment, it only supports the http scheme.
-func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string, error) {
+func (c *Container) HttpHostAddress(ctx context.Context) (string, string, error) {
 	port, err := c.MappedPort(ctx, httpPort)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to get container port: %w", err)
@@ -69,7 +69,7 @@ func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string
 
 // GrpcHostAddress returns the gRPC host of the Weaviate container.
 // At the moment, it only supports unsecured gRPC connection.
-func (c *WeaviateContainer) GrpcHostAddress(ctx context.Context) (string, error) {
+func (c *Container) GrpcHostAddress(ctx context.Context) (string, error) {
 	port, err := c.MappedPort(ctx, grpcPort)
 	if err != nil {
 		return "", fmt.Errorf("failed to get container port: %w", err)

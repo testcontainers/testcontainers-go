@@ -33,14 +33,14 @@ const (
 	defaultStoreSize = "100%"
 )
 
-// CockroachDBContainer represents the CockroachDB container type used in the module
-type CockroachDBContainer struct {
+// Container represents the CockroachDB container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	opts options
 }
 
 // MustConnectionString panics if the address cannot be determined.
-func (c *CockroachDBContainer) MustConnectionString(ctx context.Context) string {
+func (c *Container) MustConnectionString(ctx context.Context) string {
 	addr, err := c.ConnectionString(ctx)
 	if err != nil {
 		panic(err)
@@ -49,7 +49,7 @@ func (c *CockroachDBContainer) MustConnectionString(ctx context.Context) string 
 }
 
 // ConnectionString returns the dial address to open a new connection to CockroachDB.
-func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	port, err := c.MappedPort(ctx, defaultSQLPort)
 	if err != nil {
 		return "", err
@@ -64,12 +64,12 @@ func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, er
 }
 
 // TLSConfig returns config necessary to connect to CockroachDB over TLS.
-func (c *CockroachDBContainer) TLSConfig() (*tls.Config, error) {
+func (c *Container) TLSConfig() (*tls.Config, error) {
 	return connTLS(c.opts)
 }
 
 // RunContainer creates an instance of the CockroachDB container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*CockroachDBContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	o := defaultOptions()
 	req := testcontainers.Request{
 		Image: defaultImage,
@@ -114,7 +114,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	if err != nil {
 		return nil, err
 	}
-	return &CockroachDBContainer{DockerContainer: container, opts: o}, nil
+	return &Container{DockerContainer: container, opts: o}, nil
 }
 
 type modiferFunc func(*testcontainers.Request, options) error

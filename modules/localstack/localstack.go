@@ -61,7 +61,7 @@ func isVersion2(image string) bool {
 
 // RunContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*LocalStackContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	dockerHost := testcontainers.ExtractDockerSocket()
 
 	req := testcontainers.Request{
@@ -102,7 +102,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	c := &LocalStackContainer{
+	c := &Container{
 		DockerContainer: container,
 	}
 	return c, nil

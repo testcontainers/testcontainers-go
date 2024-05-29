@@ -22,8 +22,8 @@ const defaultImage = "mysql:8.0.36"
 
 // }
 
-// MySQLContainer represents the MySQL container type used in the module
-type MySQLContainer struct {
+// Container represents the MySQL container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 	username string
 	password string
@@ -49,7 +49,7 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the MySQL container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MySQLContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
@@ -87,7 +87,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 
 	database := req.Env["MYSQL_DATABASE"]
 
-	return &MySQLContainer{
+	return &Container{
 		DockerContainer: container,
 		username:        username,
 		password:        password,
@@ -96,7 +96,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 }
 
 // MustConnectionString panics if the address cannot be determined.
-func (c *MySQLContainer) MustConnectionString(ctx context.Context, args ...string) string {
+func (c *Container) MustConnectionString(ctx context.Context, args ...string) string {
 	addr, err := c.ConnectionString(ctx, args...)
 	if err != nil {
 		panic(err)
@@ -104,7 +104,7 @@ func (c *MySQLContainer) MustConnectionString(ctx context.Context, args ...strin
 	return addr
 }
 
-func (c *MySQLContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "3306/tcp")
 	if err != nil {
 		return "", err

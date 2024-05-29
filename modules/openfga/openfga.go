@@ -11,26 +11,26 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// OpenFGAContainer represents the OpenFGA container type used in the module
-type OpenFGAContainer struct {
+// Container represents the OpenFGA container type used in the module
+type Container struct {
 	*testcontainers.DockerContainer
 }
 
 // GrpcEndpoint returns the gRPC endpoint for the OpenFGA container,
 // which uses the 8081/tcp port.
-func (c *OpenFGAContainer) GrpcEndpoint(ctx context.Context) (string, error) {
+func (c *Container) GrpcEndpoint(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, "8081/tcp", "http")
 }
 
 // HttpEndpoint returns the HTTP endpoint for the OpenFGA container,
 // which uses the 8080/tcp port.
-func (c *OpenFGAContainer) HttpEndpoint(ctx context.Context) (string, error) {
+func (c *Container) HttpEndpoint(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, "8080/tcp", "http")
 }
 
 // PlaygroundEndpoint returns the playground endpoint for the OpenFGA container,
 // which is the HTTP endpoint with the path /playground in the port 3000/tcp.
-func (c *OpenFGAContainer) PlaygroundEndpoint(ctx context.Context) (string, error) {
+func (c *Container) PlaygroundEndpoint(ctx context.Context) (string, error) {
 	endpoint, err := c.PortEndpoint(ctx, "3000/tcp", "http")
 	if err != nil {
 		return "", fmt.Errorf("failed to get playground endpoint: %w", err)
@@ -40,7 +40,7 @@ func (c *OpenFGAContainer) PlaygroundEndpoint(ctx context.Context) (string, erro
 }
 
 // RunContainer creates an instance of the OpenFGA container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*OpenFGAContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        "openfga/openfga:v1.5.0",
 		Cmd:          []string{"run"},
@@ -72,5 +72,5 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	return &OpenFGAContainer{DockerContainer: container}, nil
+	return &Container{DockerContainer: container}, nil
 }

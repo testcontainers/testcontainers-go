@@ -231,7 +231,7 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 	})
 }
 
-func conn(ctx context.Context, container *cockroachdb.CockroachDBContainer) (*pgx.Conn, error) {
+func conn(ctx context.Context, container *cockroachdb.Container) (*pgx.Conn, error) {
 	cfg, err := pgx.ParseConfig(container.MustConnectionString(ctx))
 	if err != nil {
 		return nil, err
