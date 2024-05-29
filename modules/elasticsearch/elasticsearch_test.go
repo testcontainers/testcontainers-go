@@ -35,7 +35,7 @@ func TestElasticsearch(t *testing.T) {
 	tests := []struct {
 		name               string
 		image              string
-		passwordCustomiser testcontainers.ContainerCustomizer
+		passwordCustomiser testcontainers.RequestCustomizer
 	}{
 		{
 			name:               "Elasticsearch 6 without password should allow access using unauthenticated HTTP requests",
@@ -73,7 +73,7 @@ func TestElasticsearch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 
-			opts := []testcontainers.ContainerCustomizer{testcontainers.WithImage(tt.image)}
+			opts := []testcontainers.RequestCustomizer{testcontainers.WithImage(tt.image)}
 
 			if tt.passwordCustomiser != nil {
 				opts = append(opts, tt.passwordCustomiser)

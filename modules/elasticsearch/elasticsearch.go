@@ -25,37 +25,36 @@ const (
 
 // ElasticsearchContainer represents the Elasticsearch container type used in the module
 type ElasticsearchContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	Settings Options
 }
 
 // RunContainer creates an instance of the Elasticsearch container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ElasticsearchContainer, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: fmt.Sprintf("%s:%s", DefaultBaseImage, minimalImageVersion),
-			Env: map[string]string{
-				"discovery.type": "single-node",
-				"cluster.routing.allocation.disk.threshold_enabled": "false",
-			},
-			ExposedPorts: []string{
-				defaultHTTPPort + "/tcp",
-				defaultTCPPort + "/tcp",
-			},
-			// regex that
-			//   matches 8.3 JSON logging with started message and some follow up content within the message field
-			//   matches 8.0 JSON logging with no whitespace between message field and content
-			//   matches 7.x JSON logging with whitespace between message field and content
-			//   matches 6.x text logging with node name in brackets and just a 'started' message till the end of the line
-			WaitingFor: wait.ForLog(`.*("message":\s?"started(\s|")?.*|]\sstarted\n)`).AsRegexp(),
-			LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
-				{
-					// the container needs a post create hook to set the default JVM options in a file
-					PostCreates: []testcontainers.ContainerHook{},
-					PostReadies: []testcontainers.ContainerHook{},
-				},
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*ElasticsearchContainer, error) {
+	req := testcontainers.Request{
+		Image: fmt.Sprintf("%s:%s", DefaultBaseImage, minimalImageVersion),
+		Env: map[string]string{
+			"discovery.type": "single-node",
+			"cluster.routing.allocation.disk.threshold_enabled": "false",
+		},
+		ExposedPorts: []string{
+			defaultHTTPPort + "/tcp",
+			defaultTCPPort + "/tcp",
+		},
+		// regex that
+		//   matches 8.3 JSON logging with started message and some follow up content within the message field
+		//   matches 8.0 JSON logging with no whitespace between message field and content
+		//   matches 7.x JSON logging with whitespace between message field and content
+		//   matches 6.x text logging with node name in brackets and just a 'started' message till the end of the line
+		WaitingFor: wait.ForLog(`.*("message":\s?"started(\s|")?.*|]\sstarted\n)`).AsRegexp(),
+		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+			{
+				// the container needs a post create hook to set the default JVM options in a file
+				PostCreates: []testcontainers.CreatedContainerHook{},
+				PostReadies: []testcontainers.StartedContainerHook{},
 			},
 		},
+
 		Started: true,
 	}
 
@@ -86,12 +85,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		req.LifecycleHooks[0].PostCreates = append(req.LifecycleHooks[0].PostCreates, configureJvmOpts)
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	esContainer := &ElasticsearchContainer{Container: container, Settings: *settings}
+	esContainer := &ElasticsearchContainer{DockerContainer: container, Settings: *settings}
 
 	address, err := configureAddress(ctx, esContainer)
 	if err != nil {
@@ -127,7 +126,7 @@ func configureAddress(ctx context.Context, c *ElasticsearchContainer) (string, e
 // configureCertificate transfers the certificate settings to the container request.
 // For that, it defines a post start hook that copies the certificate from the container to the host.
 // The certificate is only available since version 8, and will be located in a well-known location.
-func configureCertificate(settings *Options, req *testcontainers.GenericContainerRequest) error {
+func configureCertificate(settings *Options, req *testcontainers.Request) error {
 	if isAtLeastVersion(req.Image, 8) {
 		// These configuration keys explicitly disable CA generation.
 		// If any are set we skip the file retrieval.
@@ -147,7 +146,7 @@ func configureCertificate(settings *Options, req *testcontainers.GenericContaine
 		// The container needs a post ready hook to copy the certificate from the container to the host.
 		// This certificate is only available since version 8
 		req.LifecycleHooks[0].PostReadies = append(req.LifecycleHooks[0].PostReadies,
-			func(ctx context.Context, container testcontainers.Container) error {
+			func(ctx context.Context, container testcontainers.StartedContainer) error {
 				const defaultCaCertPath = "/usr/share/elasticsearch/config/certs/http_ca.crt"
 
 				readCloser, err := container.CopyFileFromContainer(ctx, defaultCaCertPath)
@@ -172,7 +171,7 @@ func configureCertificate(settings *Options, req *testcontainers.GenericContaine
 
 // configurePassword transfers the password settings to the container request.
 // If the password is not set, it will be set to "changeme" for Elasticsearch 8
-func configurePassword(settings *Options, req *testcontainers.GenericContainerRequest) error {
+func configurePassword(settings *Options, req *testcontainers.Request) error {
 	// set "changeme" as default password for Elasticsearch 8
 	if isAtLeastVersion(req.Image, 8) && settings.Password == "" {
 		WithPassword(defaultPassword)(settings)
@@ -199,7 +198,7 @@ func configurePassword(settings *Options, req *testcontainers.GenericContainerRe
 // configureJvmOpts sets the default memory of the Elasticsearch instance to 2GB.
 // This functions, which is only available since version 7, is called as a post create hook
 // for the container request.
-func configureJvmOpts(ctx context.Context, container testcontainers.Container) error {
+func configureJvmOpts(ctx context.Context, container testcontainers.CreatedContainer) error {
 	// Sets default memory of elasticsearch instance to 2GB
 	defaultJVMOpts := `-Xms2G
 -Xmx2G

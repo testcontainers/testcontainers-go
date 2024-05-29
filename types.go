@@ -26,6 +26,7 @@ type CreatedContainer interface {
 	Container // embed the Container interface, as the created container is a container
 
 	CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error
+	CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error)
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
 	GetContainerID() string
 	State(context.Context) (*types.ContainerState, error)
