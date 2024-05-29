@@ -12,13 +12,13 @@ import (
 const defaultProjectID = "test-project"
 
 type GCloudContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	Settings options
 	URI      string
 }
 
 // newGCloudContainer creates a new GCloud container, obtaining the URL to access the container from the specified port.
-func newGCloudContainer(ctx context.Context, port int, c testcontainers.Container, settings options) (*GCloudContainer, error) {
+func newGCloudContainer(ctx context.Context, port int, c *testcontainers.DockerContainer, settings options) (*GCloudContainer, error) {
 	mappedPort, err := c.MappedPort(ctx, nat.Port(fmt.Sprintf("%d/tcp", port)))
 	if err != nil {
 		return nil, err
@@ -32,9 +32,9 @@ func newGCloudContainer(ctx context.Context, port int, c testcontainers.Containe
 	uri := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
 
 	gCloudContainer := &GCloudContainer{
-		Container: c,
-		Settings:  settings,
-		URI:       uri,
+		DockerContainer: c,
+		Settings:        settings,
+		URI:             uri,
 	}
 
 	return gCloudContainer, nil
@@ -50,14 +50,14 @@ func defaultOptions() options {
 	}
 }
 
-// Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
-var _ testcontainers.ContainerCustomizer = (*Option)(nil)
+// Compiler check to ensure that Option implements the testcontainers.RequestCustomizer interface.
+var _ testcontainers.RequestCustomizer = (*Option)(nil)
 
 // Option is an option for the GCloud container.
 type Option func(*options)
 
-// Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
-func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
+// Customize is a NOOP. It's defined to satisfy the testcontainers.RequestCustomizer interface.
+func (o Option) Customize(*testcontainers.Request) error {
 	// NOOP to satisfy interface.
 	return nil
 }
@@ -70,7 +70,7 @@ func WithProjectID(projectID string) Option {
 }
 
 // applyOptions applies the options to the container request and returns the settings.
-func applyOptions(req *testcontainers.GenericContainerRequest, opts []testcontainers.ContainerCustomizer) (options, error) {
+func applyOptions(req *testcontainers.Request, opts []testcontainers.RequestCustomizer) (options, error) {
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {

@@ -9,14 +9,12 @@ import (
 )
 
 // RunFirestoreContainer creates an instance of the GCloud container type for Firestore
-func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
-			ExposedPorts: []string{"8080/tcp"},
-			WaitingFor:   wait.ForLog("running"),
-		},
-		Started: true,
+func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*GCloudContainer, error) {
+	req := testcontainers.Request{
+		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
+		ExposedPorts: []string{"8080/tcp"},
+		WaitingFor:   wait.ForLog("running"),
+		Started:      true,
 	}
 
 	settings, err := applyOptions(&req, opts)
@@ -30,7 +28,7 @@ func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.Container
 		"gcloud beta emulators firestore start --host-port 0.0.0.0:8080 " + fmt.Sprintf("--project=%s", settings.ProjectID),
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
