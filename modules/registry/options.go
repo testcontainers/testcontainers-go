@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 )
 
 const (
@@ -21,8 +20,8 @@ const (
 // REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY environment variable.
 // The dataPath must have the same structure as the registry data directory.
 func WithData(dataPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      dataPath,
 			ContainerFilePath: containerDataPath,
 		})
@@ -37,7 +36,7 @@ func WithData(dataPath string) testcontainers.CustomizeRequestOption {
 // in the /auth/htpasswd path. The container will be configured to use this file as
 // the htpasswd file, thanks to the REGISTRY_AUTH_HTPASSWD_PATH environment variable.
 func WithHtpasswd(credentials string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		tmpFile, err := os.Create(filepath.Join(os.TempDir(), "htpasswd"))
 		if err != nil {
 			tmpFile, err = os.Create(".")
@@ -61,8 +60,8 @@ func WithHtpasswd(credentials string) testcontainers.CustomizeRequestOption {
 // The container will be configured to use this file as the htpasswd file,
 // thanks to the REGISTRY_AUTH_HTPASSWD_PATH environment variable.
 func WithHtpasswdFile(htpasswdPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      htpasswdPath,
 			ContainerFilePath: containerHtpasswdPath,
 			FileMode:          0o644,

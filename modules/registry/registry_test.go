@@ -137,20 +137,18 @@ func TestRunContainer_authenticated(t *testing.T) {
 			"credsStore": "desktop"
 		}`)
 
-		redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context: filepath.Join("testdata", "redis"),
-					BuildArgs: map[string]*string{
-						"REGISTRY_PORT": &strPort,
-					},
-					PrintBuildLog: true,
+		redisC, err := testcontainers.New(context.Background(), testcontainers.Request{
+			FromDockerfile: testcontainers.FromDockerfile{
+				Context: filepath.Join("testdata", "redis"),
+				BuildArgs: map[string]*string{
+					"REGISTRY_PORT": &strPort,
 				},
-				AlwaysPullImage: true, // make sure the authentication takes place
-				ExposedPorts:    []string{"6379/tcp"},
-				WaitingFor:      wait.ForLog("Ready to accept connections"),
+				PrintBuildLog: true,
 			},
-			Started: true,
+			AlwaysPullImage: true, // make sure the authentication takes place
+			ExposedPorts:    []string{"6379/tcp"},
+			WaitingFor:      wait.ForLog("Ready to accept connections"),
+			Started:         true,
 		})
 		if err == nil {
 			tt.Fatalf("expected to fail to start container, but it did not")
@@ -183,20 +181,18 @@ func TestRunContainer_authenticated(t *testing.T) {
 		// The container should start because the authentication
 		// is correct.
 
-		redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context: filepath.Join("testdata", "redis"),
-					BuildArgs: map[string]*string{
-						"REGISTRY_PORT": &strPort,
-					},
-					PrintBuildLog: true,
+		redisC, err := testcontainers.New(context.Background(), testcontainers.Request{
+			FromDockerfile: testcontainers.FromDockerfile{
+				Context: filepath.Join("testdata", "redis"),
+				BuildArgs: map[string]*string{
+					"REGISTRY_PORT": &strPort,
 				},
-				AlwaysPullImage: true, // make sure the authentication takes place
-				ExposedPorts:    []string{"6379/tcp"},
-				WaitingFor:      wait.ForLog("Ready to accept connections"),
+				PrintBuildLog: true,
 			},
-			Started: true,
+			AlwaysPullImage: true, // make sure the authentication takes place
+			ExposedPorts:    []string{"6379/tcp"},
+			WaitingFor:      wait.ForLog("Ready to accept connections"),
+			Started:         true,
 		})
 		if err != nil {
 			tt.Fatalf("failed to start container: %s", err)
@@ -295,20 +291,18 @@ func TestRunContainer_wrongData(t *testing.T) {
 	// The container won't be able to start because the data
 	// directory is wrong.
 
-	redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context: filepath.Join("testdata", "redis"),
-				BuildArgs: map[string]*string{
-					"REGISTRY_PORT": &strPort,
-				},
-				PrintBuildLog: true,
+	redisC, err := testcontainers.New(context.Background(), testcontainers.Request{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context: filepath.Join("testdata", "redis"),
+			BuildArgs: map[string]*string{
+				"REGISTRY_PORT": &strPort,
 			},
-			AlwaysPullImage: true, // make sure the authentication takes place
-			ExposedPorts:    []string{"6379/tcp"},
-			WaitingFor:      wait.ForLog("Ready to accept connections"),
+			PrintBuildLog: true,
 		},
-		Started: true,
+		AlwaysPullImage: true, // make sure the authentication takes place
+		ExposedPorts:    []string{"6379/tcp"},
+		WaitingFor:      wait.ForLog("Ready to accept connections"),
+		Started:         true,
 	})
 	if err == nil {
 		t.Fatalf("expected to fail to start container, but it did not")

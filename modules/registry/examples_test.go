@@ -82,20 +82,18 @@ func ExampleRunContainer_withAuthentication() {
 	// build a custom redis image from the private registry,
 	// using RegistryName of the container as the registry.
 
-	redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context: filepath.Join("testdata", "redis"),
-				BuildArgs: map[string]*string{
-					"REGISTRY_PORT": &strPort,
-				},
-				PrintBuildLog: true,
+	redisC, err := testcontainers.New(context.Background(), testcontainers.Request{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context: filepath.Join("testdata", "redis"),
+			BuildArgs: map[string]*string{
+				"REGISTRY_PORT": &strPort,
 			},
-			AlwaysPullImage: true, // make sure the authentication takes place
-			ExposedPorts:    []string{"6379/tcp"},
-			WaitingFor:      wait.ForLog("Ready to accept connections"),
+			PrintBuildLog: true,
 		},
-		Started: true,
+		AlwaysPullImage: true, // make sure the authentication takes place
+		ExposedPorts:    []string{"6379/tcp"},
+		WaitingFor:      wait.ForLog("Ready to accept connections"),
+		Started:         true,
 	})
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err) // nolint:gocritic
@@ -169,22 +167,20 @@ func ExampleRunContainer_pushImage() {
 	repo := registryContainer.RegistryName + "/customredis"
 	tag := "v1.2.3"
 
-	redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context: filepath.Join("testdata", "redis"),
-				BuildArgs: map[string]*string{
-					"REGISTRY_PORT": &strPort,
-				},
-				Repo:          repo,
-				Tag:           tag,
-				PrintBuildLog: true,
+	redisC, err := testcontainers.New(context.Background(), testcontainers.Request{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context: filepath.Join("testdata", "redis"),
+			BuildArgs: map[string]*string{
+				"REGISTRY_PORT": &strPort,
 			},
-			AlwaysPullImage: true, // make sure the authentication takes place
-			ExposedPorts:    []string{"6379/tcp"},
-			WaitingFor:      wait.ForLog("Ready to accept connections"),
+			Repo:          repo,
+			Tag:           tag,
+			PrintBuildLog: true,
 		},
-		Started: true,
+		AlwaysPullImage: true, // make sure the authentication takes place
+		ExposedPorts:    []string{"6379/tcp"},
+		WaitingFor:      wait.ForLog("Ready to accept connections"),
+		Started:         true,
 	})
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err) // nolint:gocritic
@@ -217,13 +213,11 @@ func ExampleRunContainer_pushImage() {
 	}
 	// }
 
-	newRedisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        newImage,
-			ExposedPorts: []string{"6379/tcp"},
-			WaitingFor:   wait.ForLog("Ready to accept connections"),
-		},
-		Started: true,
+	newRedisC, err := testcontainers.New(context.Background(), testcontainers.Request{
+		Image:        newImage,
+		ExposedPorts: []string{"6379/tcp"},
+		WaitingFor:   wait.ForLog("Ready to accept connections"),
+		Started:      true,
 	})
 	if err != nil {
 		log.Fatalf("failed to start container from %s: %s", newImage, err) // nolint:gocritic
