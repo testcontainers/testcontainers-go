@@ -15,7 +15,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/influxdb"
 )
 
-func containerCleanup(t *testing.T, container testcontainers.Container) {
+func containerCleanup(t *testing.T, container testcontainers.StartedContainer) {
 	err := container.Terminate(context.Background())
 	require.NoError(t, err, "failed to terminate container")
 }

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -18,12 +17,12 @@ const defaultImage = "influxdb:1.8"
 
 // InfluxDbContainer represents the MySQL container type used in the module
 type InfluxDbContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // RunContainer creates an instance of the InfluxDB container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*InfluxDbContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*InfluxDbContainer, error) {
+	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"8086/tcp", "8088/tcp"},
 		Env: map[string]string{
@@ -35,21 +34,18 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"INFLUXDB_HTTP_AUTH_ENABLED":     "false",
 		},
 		WaitingFor: wait.ForListeningPort("8086/tcp"),
-	}
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started:    true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
 	hasInitDb := false
 
-	for _, f := range genericContainerReq.Files {
+	for _, f := range req.Files {
 		if f.ContainerFilePath == "/" && strings.HasSuffix(f.HostFilePath, "docker-entrypoint-initdb.d") {
 			// Init service in container will start influxdb, run scripts in docker-entrypoint-initdb.d and then
 			// terminate the influxdb server, followed by restart of influxdb.  This is tricky to wait for, and
@@ -57,29 +53,29 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			// "Open shard" which is the last thing that happens before the server is ready to accept connections.
 			// This is probably different for InfluxDB 2.x, but that is left as an exercise for the reader.
 			strategies := []wait.Strategy{
-				genericContainerReq.WaitingFor,
+				req.WaitingFor,
 				wait.ForLog("influxdb init process in progress..."),
 				wait.ForLog("Server shutdown completed"),
 				wait.ForLog("Opened shard"),
 			}
-			genericContainerReq.WaitingFor = wait.ForAll(strategies...)
+			req.WaitingFor = wait.ForAll(strategies...)
 			hasInitDb = true
 			break
 		}
 	}
 
 	if !hasInitDb {
-		if lastIndex := strings.LastIndex(genericContainerReq.Image, ":"); lastIndex != -1 {
-			tag := genericContainerReq.Image[lastIndex+1:]
+		if lastIndex := strings.LastIndex(req.Image, ":"); lastIndex != -1 {
+			tag := req.Image[lastIndex+1:]
 			if tag == "latest" || tag[0] == '2' {
-				genericContainerReq.WaitingFor = wait.ForLog(`Listening log_id=[0-9a-zA-Z_~]+ service=tcp-listener transport=http`).AsRegexp()
+				req.WaitingFor = wait.ForLog(`Listening log_id=[0-9a-zA-Z_~]+ service=tcp-listener transport=http`).AsRegexp()
 			}
 		} else {
-			genericContainerReq.WaitingFor = wait.ForLog("Listening for signals")
+			req.WaitingFor = wait.ForLog("Listening for signals")
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -110,29 +106,29 @@ func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context) (string, error) {
 }
 
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["INFLUXDB_USER"] = username
 		return nil
 	}
 }
 
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["INFLUXDB_PASSWORD"] = password
 		return nil
 	}
 }
 
 func WithDatabase(database string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["INFLUXDB_DATABASE"] = database
 		return nil
 	}
 }
 
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/influxdb/influxdb.conf",
 			FileMode:          0o755,
@@ -146,8 +142,8 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // The secPath is the path to the directory on the host machine.
 // The directory will be copied to the root of the container.
 func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		cf := testcontainers.ContainerFile{
 			HostFilePath:      path.Join(srcPath, "docker-entrypoint-initdb.d"),
 			ContainerFilePath: "/",
 			FileMode:          0o755,
