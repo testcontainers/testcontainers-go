@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -25,7 +24,7 @@ const defaultImage = "mariadb:11.0.3"
 
 // MariaDBContainer represents the MariaDB container type used in the module
 type MariaDBContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	username string
 	password string
 	database string
@@ -34,7 +33,7 @@ type MariaDBContainer struct {
 // WithDefaultCredentials applies the default credentials to the container request.
 // It will look up for MARIADB environment variables.
 func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		username := req.Env["MARIADB_USER"]
 		password := req.Env["MARIADB_PASSWORD"]
 		if strings.EqualFold(rootUser, username) {
@@ -57,7 +56,7 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 // the MARIADB_* equivalent variables are provided. MARIADB_* variants will always be
 // used in preference to MYSQL_* variants.
 func withMySQLEnvVars() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		// look up for MARIADB environment variables and apply the same to MYSQL
 		for k, v := range req.Env {
 			if strings.HasPrefix(k, "MARIADB_") {
@@ -72,7 +71,7 @@ func withMySQLEnvVars() testcontainers.CustomizeRequestOption {
 }
 
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["MARIADB_USER"] = username
 
 		return nil
@@ -80,7 +79,7 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 }
 
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["MARIADB_PASSWORD"] = password
 
 		return nil
@@ -88,7 +87,7 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 }
 
 func WithDatabase(database string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["MARIADB_DATABASE"] = database
 
 		return nil
@@ -96,8 +95,8 @@ func WithDatabase(database string) testcontainers.CustomizeRequestOption {
 }
 
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/mysql/conf.d/my.cnf",
 			FileMode:          0o755,
@@ -109,10 +108,10 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 }
 
 func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		var initScripts []tccontainer.ContainerFile
+	return func(req *testcontainers.Request) error {
+		var initScripts []testcontainers.ContainerFile
 		for _, script := range scripts {
-			cf := tccontainer.ContainerFile{
+			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,
 				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
 				FileMode:          0o755,
@@ -126,8 +125,8 @@ func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the MariaDB container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MariaDBContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MariaDBContainer, error) {
+	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
@@ -136,17 +135,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"MARIADB_DATABASE": defaultDatabaseName,
 		},
 		WaitingFor: wait.ForLog("port: 3306  mariadb.org binary distribution"),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started:    true,
 	}
 
 	opts = append(opts, WithDefaultCredentials())
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
@@ -154,7 +149,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	// Apply MySQL environment variables after user customization
 	// In future releases of MariaDB, they could remove the MYSQL_* environment variables
 	// at all. Then we can remove this customization.
-	if err := withMySQLEnvVars().Customize(&genericContainerReq); err != nil {
+	if err := withMySQLEnvVars().Customize(&req); err != nil {
 		return nil, err
 	}
 
@@ -168,14 +163,19 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("empty password can be used only with the root user")
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	database := req.Env["MARIADB_DATABASE"]
 
-	return &MariaDBContainer{container, username, password, database}, nil
+	return &MariaDBContainer{
+		DockerContainer: container,
+		username:        username,
+		password:        password,
+		database:        database,
+	}, nil
 }
 
 // MustConnectionString panics if the address cannot be determined.
