@@ -271,7 +271,7 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 	}
 }
 
-func assertEntity(t *testing.T, container testcontainers.Container, listCommand string, entities ...string) bool {
+func assertEntity(t *testing.T, container testcontainers.StartedContainer, listCommand string, entities ...string) bool {
 	t.Helper()
 
 	ctx := context.Background()
@@ -297,7 +297,7 @@ func assertEntity(t *testing.T, container testcontainers.Container, listCommand 
 	return true
 }
 
-func assertEntityWithVHost(t *testing.T, container testcontainers.Container, listCommand string, vhostID int, entities ...string) bool {
+func assertEntityWithVHost(t *testing.T, container testcontainers.StartedContainer, listCommand string, vhostID int, entities ...string) bool {
 	t.Helper()
 
 	ctx := context.Background()
@@ -326,7 +326,7 @@ func assertEntityWithVHost(t *testing.T, container testcontainers.Container, lis
 	return true
 }
 
-func assertPluginIsEnabled(t *testing.T, container testcontainers.Container, plugins ...string) bool {
+func assertPluginIsEnabled(t *testing.T, container testcontainers.StartedContainer, plugins ...string) bool {
 	t.Helper()
 
 	ctx := context.Background()

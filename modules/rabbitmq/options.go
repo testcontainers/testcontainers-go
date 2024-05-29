@@ -37,14 +37,14 @@ type SSLSettings struct {
 	VerificationDepth int
 }
 
-// Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
-var _ testcontainers.ContainerCustomizer = (*Option)(nil)
+// Compiler check to ensure that Option implements the testcontainers.RequestCustomizer interface.
+var _ testcontainers.RequestCustomizer = (*Option)(nil)
 
 // Option is an option for the RabbitMQ container.
 type Option func(*options)
 
-// Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
-func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
+// Customize is a NOOP. It's defined to satisfy the testcontainers.RequestCustomizer interface.
+func (o Option) Customize(*testcontainers.Request) error {
 	// NOOP to satisfy interface.
 	return nil
 }

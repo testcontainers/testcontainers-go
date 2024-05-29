@@ -13,7 +13,7 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -32,7 +32,7 @@ var customConfigTpl string
 
 // RabbitMQContainer represents the RabbitMQ container type used in the module
 type RabbitMQContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	AdminPassword string
 	AdminUsername string
 }
@@ -68,8 +68,8 @@ func (c *RabbitMQContainer) HttpsURL(ctx context.Context) (string, error) {
 }
 
 // RunContainer creates an instance of the RabbitMQ container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*RabbitMQContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*RabbitMQContainer, error) {
+	req := testcontainers.Request{
 		Image: "rabbitmq:3.12.11-management-alpine",
 		Env: map[string]string{
 			"RABBITMQ_DEFAULT_USER": defaultUser,
@@ -84,15 +84,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		WaitingFor: wait.ForLog(".*Server startup complete.*").AsRegexp().WithStartupTimeout(60 * time.Second),
 		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
 			{
-				PostStarts: []testcontainers.ContainerHook{},
+				PostStarts: []testcontainers.StartedContainerHook{},
 			},
 		},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Logger:           testcontainers.Logger,
-		Started:          true,
+		Logger:  tclog.StandardLogger(),
+		Started: true,
 	}
 
 	// Gather all config options (defaults and then apply provided options)
@@ -101,13 +97,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		if apply, ok := opt.(Option); ok {
 			apply(&settings)
 		}
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
 	if settings.SSLSettings != nil {
-		if err := applySSLSettings(settings.SSLSettings)(&genericContainerReq); err != nil {
+		if err := applySSLSettings(settings.SSLSettings)(&req); err != nil {
 			return nil, err
 		}
 	}
@@ -123,29 +119,29 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	if err := withConfig(tmpConfigFile)(&genericContainerReq); err != nil {
+	if err := withConfig(tmpConfigFile)(&req); err != nil {
 		return nil, err
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &RabbitMQContainer{
-		Container:     container,
-		AdminUsername: settings.AdminUsername,
-		AdminPassword: settings.AdminPassword,
+		DockerContainer: container,
+		AdminUsername:   settings.AdminUsername,
+		AdminPassword:   settings.AdminPassword,
 	}
 
 	return c, nil
 }
 
 func withConfig(hostPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["RABBITMQ_CONFIG_FILE"] = defaultCustomConfPath
 
-		req.Files = append(req.Files, tccontainer.ContainerFile{
+		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      hostPath,
 			ContainerFilePath: defaultCustomConfPath,
 			FileMode:          0o644,
@@ -163,18 +159,18 @@ func applySSLSettings(sslSettings *SSLSettings) testcontainers.CustomizeRequestO
 
 	const defaultPermission = 0o644
 
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      sslSettings.CACertFile,
 			ContainerFilePath: rabbitCaCertPath,
 			FileMode:          defaultPermission,
 		})
-		req.Files = append(req.Files, tccontainer.ContainerFile{
+		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      sslSettings.CertFile,
 			ContainerFilePath: rabbitCertPath,
 			FileMode:          defaultPermission,
 		})
-		req.Files = append(req.Files, tccontainer.ContainerFile{
+		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      sslSettings.KeyFile,
 			ContainerFilePath: rabbitKeyPath,
 			FileMode:          defaultPermission,

@@ -214,7 +214,7 @@ func ExampleRunContainer_withCustomConfigFile() {
 	// true
 }
 
-func assertPlugins(container testcontainers.Container, plugins ...string) bool {
+func assertPlugins(container testcontainers.StartedContainer, plugins ...string) bool {
 	ctx := context.Background()
 
 	for _, plugin := range plugins {
