@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -20,7 +19,7 @@ const (
 
 // ConsulContainer represents the Consul container type used in the module.
 type ConsulContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // ApiEndpoint returns host:port for the HTTP API endpoint.
@@ -41,7 +40,7 @@ func (c *ConsulContainer) ApiEndpoint(ctx context.Context) (string, error) {
 
 // WithConfigString takes in a JSON string of keys and values to define a configuration to be used by the instance.
 func WithConfigString(config string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["CONSUL_LOCAL_CONFIG"] = config
 
 		return nil
@@ -50,8 +49,8 @@ func WithConfigString(config string) testcontainers.CustomizeRequestOption {
 
 // WithConfigFile takes in a path to a JSON file to define a configuration to be used by the instance.
 func WithConfigFile(configPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		cf := testcontainers.ContainerFile{
 			HostFilePath:      configPath,
 			ContainerFilePath: "/consul/config/node.json",
 			FileMode:          0o755,
@@ -63,34 +62,32 @@ func WithConfigFile(configPath string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the Consul container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error) {
-	containerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: DefaultBaseImage,
-			ExposedPorts: []string{
-				defaultHttpApiPort + "/tcp",
-				defaultBrokerPort + "/tcp",
-				defaultBrokerPort + "/udp",
-			},
-			Env: map[string]string{},
-			WaitingFor: wait.ForAll(
-				wait.ForLog("Consul agent running!"),
-				wait.ForListeningPort(defaultHttpApiPort+"/tcp"),
-			),
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*ConsulContainer, error) {
+	req := testcontainers.Request{
+		Image: DefaultBaseImage,
+		ExposedPorts: []string{
+			defaultHttpApiPort + "/tcp",
+			defaultBrokerPort + "/tcp",
+			defaultBrokerPort + "/udp",
 		},
+		Env: map[string]string{},
+		WaitingFor: wait.ForAll(
+			wait.ForLog("Consul agent running!"),
+			wait.ForListeningPort(defaultHttpApiPort+"/tcp"),
+		),
 		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&containerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, containerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ConsulContainer{Container: container}, nil
+	return &ConsulContainer{DockerContainer: container}, nil
 }

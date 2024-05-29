@@ -18,21 +18,21 @@ func TestConsul(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name string
-		opts []testcontainers.ContainerCustomizer
+		opts []testcontainers.RequestCustomizer
 	}{
 		{
 			name: "Default",
-			opts: []testcontainers.ContainerCustomizer{},
+			opts: []testcontainers.RequestCustomizer{},
 		},
 		{
 			name: "WithConfigString",
-			opts: []testcontainers.ContainerCustomizer{
+			opts: []testcontainers.RequestCustomizer{
 				consul.WithConfigString(`{ "server":true }`),
 			},
 		},
 		{
 			name: "WithConfigFile",
-			opts: []testcontainers.ContainerCustomizer{
+			opts: []testcontainers.RequestCustomizer{
 				consul.WithConfigFile(filepath.Join("testdata", "config.json")),
 			},
 		},
