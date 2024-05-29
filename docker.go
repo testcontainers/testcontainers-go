@@ -43,6 +43,7 @@ type DockerContainer struct {
 	sessionID         string
 	terminationSignal chan bool
 	keepBuiltImage    bool
+	healthStatus      string // container health status, will default to healthStatusNone if no healthcheck is present
 	// log consumer fields
 	consumers []log.Consumer
 	// TODO: Remove locking and wait group once the deprecated StartLogProducer and
@@ -87,6 +88,11 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	_, err := container.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// the health status of the container, if any
+	if health := container.raw.State.Health; health != nil {
+		container.healthStatus = health.Status
 	}
 
 	return &container, nil

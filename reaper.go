@@ -17,47 +17,202 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
-	"github.com/testcontainers/testcontainers-go/internal/core/reaper"
+	tcreaper "github.com/testcontainers/testcontainers-go/internal/core/reaper"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const (
-	// Deprecated: it has been replaced by the internal core.LabelLang
-	TestcontainerLabel = "org.testcontainers.golang"
-	// Deprecated: it has been replaced by the internal core.LabelSessionID
-	TestcontainerLabelSessionID = TestcontainerLabel + ".sessionId"
-	// Deprecated: it has been replaced by the internal core.LabelReaper
-	TestcontainerLabelIsReaper = TestcontainerLabel + ".reaper"
-)
+func init() {
+	_, err := NewReaper(context.Background(), core.SessionID())
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize reaper: %v", err))
+	}
+}
 
 var (
-	// Deprecated: it has been replaced by an internal value
-	ReaperDefaultImage = config.ReaperDefaultImage
-	reaperInstance     *Reaper // We would like to create reaper only once
-	reaperMutex        sync.Mutex
-	reaperOnce         sync.Once
+	reaperInstance *Reaper // We would like to create reaper only once
+	reaperMutex    sync.Mutex
+	reaperOnce     sync.Once
 )
 
-// ReaperProvider represents a provider for the reaper to run itself with
-// The ContainerProvider interface should usually satisfy this as well, so it is pluggable
-type ReaperProvider interface {
-	RunContainer(ctx context.Context, req ContainerRequest) (Container, error)
-	Config() TestcontainersConfig
+// Reaper is used to start a sidecar container that cleans up resources
+type Reaper struct {
+	SessionID string
+	Endpoint  string
+	Container StartedContainer
 }
 
-// NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
-// Deprecated: it's not possible to create a reaper anymore. Compose module uses this method
-// to create a reaper for the compose stack.
-func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
-	return reuseOrCreateReaper(ctx, sessionID, provider)
+// newReaper creates a Reaper with a sessionID to identify containers.
+// Do not call this directly, use NewReaper instead.
+func newReaper(ctx context.Context, sessionID string) (*Reaper, error) {
+	dockerHostMount := core.ExtractDockerSocket(ctx)
+
+	reaper := &Reaper{
+		SessionID: sessionID,
+	}
+
+	listeningPort := nat.Port("8080/tcp")
+
+	tcConfig := config.Read()
+
+	req := Request{
+		Image:        config.ReaperDefaultImage,
+		ExposedPorts: []string{string(listeningPort)},
+		Labels:       core.DefaultLabels(sessionID),
+		Privileged:   tcConfig.RyukPrivileged,
+		WaitingFor:   wait.ForListeningPort(listeningPort),
+		Name:         reaperContainerNameFromSessionID(sessionID),
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.AutoRemove = true
+			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
+			hc.NetworkMode = container.NetworkMode(corenetwork.Bridge)
+		},
+		Env:     map[string]string{},
+		Started: true,
+	}
+	if to := tcConfig.RyukConnectionTimeout; to > time.Duration(0) {
+		req.Env["RYUK_CONNECTION_TIMEOUT"] = to.String()
+	}
+	if to := tcConfig.RyukReconnectionTimeout; to > time.Duration(0) {
+		req.Env["RYUK_RECONNECTION_TIMEOUT"] = to.String()
+	}
+	if tcConfig.RyukVerbose {
+		req.Env["RYUK_VERBOSE"] = "true"
+	}
+
+	// include reaper-specific labels to the reaper container
+	req.Labels[core.LabelReaper] = "true"
+	req.Labels[core.LabelRyuk] = "true"
+
+	// Attach reaper container to a requested network if it is specified
+	defaultNetwork, err := corenetwork.GetDefault(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Networks = append(req.Networks, defaultNetwork)
+
+	c, err := New(ctx, req)
+	if err != nil {
+		// We need to check whether the error is caused by a container with the same name
+		// already existing due to race conditions. We manually match the error message
+		// as we do not have any error types to check against.
+		if CreateFailDueToNameConflictRegex.MatchString(err.Error()) {
+			// Manually retrieve the already running reaper container. However, we need to
+			// use retries here as there are two possible race conditions that might lead to
+			// errors: In most cases, there is a small delay between container creation and
+			// actually being visible in list-requests. This means that creation might fail
+			// due to name conflicts, but when we list containers with this name, we do not
+			// get any results. In another case, the container might have simply died in the
+			// meantime and therefore cannot be found.
+			const timeout = 5 * time.Second
+			const cooldown = 100 * time.Millisecond
+			start := time.Now()
+			var reaperContainer *DockerContainer
+			for time.Since(start) < timeout {
+				reaperContainer, err = lookUpReaperContainer(ctx, sessionID)
+				if err == nil && reaperContainer != nil {
+					break
+				}
+				select {
+				case <-ctx.Done():
+				case <-time.After(cooldown):
+				}
+			}
+			if err != nil {
+				return nil, fmt.Errorf("look up reaper container due to name conflict failed: %w", err)
+			}
+			// If the reaper container was not found, it is most likely to have died in
+			// between as we can exclude any client errors because of the previous error
+			// check. Because the reaper should only die if it performed clean-ups, we can
+			// fail here as the reaper timeout needs to be increased, anyway.
+			if reaperContainer == nil {
+				return nil, fmt.Errorf("look up reaper container returned nil although creation failed due to name conflict")
+			}
+			reaperContainer.Printf("🔥 Reaper obtained from Docker for this test session %s", reaperContainer.ID)
+			reaper, err := reuseReaperContainer(ctx, sessionID, reaperContainer)
+			if err != nil {
+				return nil, err
+			}
+			return reaper, nil
+		}
+		return nil, err
+	}
+	reaper.Container = c
+
+	endpoint, err := c.PortEndpoint(ctx, "8080", "")
+	if err != nil {
+		return nil, err
+	}
+	reaper.Endpoint = endpoint
+
+	// update the reaper instance
+	tcreaper.InitReaper(reaper.Endpoint, reaper.SessionID)
+
+	return reaper, nil
 }
 
-// reaperContainerNameFromSessionID returns the container name that uniquely
-// identifies the container based on the session id.
-func reaperContainerNameFromSessionID(sessionID string) string {
-	// The session id is 64 characters, so we will not hit the limit of 128
-	// characters for container names.
-	return fmt.Sprintf("reaper_%s", sessionID)
+// NewReaper returns an existing Reaper instance if it exists and is running. Otherwise, a new Reaper instance
+// will be created with a sessionID to identify containers in the same test session/program.
+// In the case that the reaper is disabled, it will return nil.
+func NewReaper(ctx context.Context, sessionID string) (*Reaper, error) {
+	reaperMutex.Lock()
+	defer reaperMutex.Unlock()
+
+	cfg := config.Read()
+	if cfg.RyukDisabled {
+		// Ryuk is disabled, so we don't need to create a reaper
+		return nil, nil
+	}
+
+	// 1. if the reaper instance has been already created, return it
+	if reaperInstance != nil {
+		// Verify this instance is still running by checking state.
+		// Can't use Container.IsRunning because the bool is not updated when Reaper is terminated
+		state, err := reaperInstance.Container.State(ctx)
+		if err != nil {
+			if !errdefs.IsNotFound(err) {
+				return nil, err
+			}
+		} else if state.Running {
+			return reaperInstance, nil
+		}
+		// else: the reaper instance has been terminated, so we need to create a new one
+		reaperOnce = sync.Once{}
+	}
+
+	// 2. because the reaper instance has not been created yet, look for it in the Docker daemon, which
+	// will happen if the reaper container has been created in the same test session but in a different
+	// test process execution (e.g. when running tests in parallel), not having initialized the reaper
+	// instance yet.
+	reaperContainer, err := lookUpReaperContainer(context.Background(), sessionID)
+	if err == nil && reaperContainer != nil {
+		// The reaper container exists as a Docker container: re-use it
+		reaperContainer.Printf("🔥 Reaper obtained from Docker for this test session %s", reaperContainer.ID)
+		reaperInstance, err = reuseReaperContainer(ctx, sessionID, reaperContainer)
+		if err != nil {
+			return nil, err
+		}
+		return reaperInstance, nil
+	}
+
+	// 3. the reaper container does not exist in the Docker daemon: create it, and do it using the
+	// synchronization primitive to avoid multiple executions of this function to create the reaper
+	var reaperErr error
+	reaperOnce.Do(func() {
+		r, err := newReaper(ctx, sessionID)
+		if err != nil {
+			reaperErr = err
+			return
+		}
+
+		reaperInstance, reaperErr = r, nil
+	})
+	if reaperErr != nil {
+		reaperOnce = sync.Once{}
+		return nil, reaperErr
+	}
+
+	return reaperInstance, nil
 }
 
 // lookUpReaperContainer returns a DockerContainer type with the reaper container in the case
@@ -65,7 +220,7 @@ func reaperContainerNameFromSessionID(sessionID string) string {
 // It will perform a retry with exponential backoff to allow for the container to be started and
 // avoid potential false negatives.
 func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContainer, error) {
-	dockerClient, err := NewDockerClientWithOpts(ctx)
+	dockerClient, err := core.NewClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -137,73 +292,23 @@ func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContai
 	return reaperContainer, nil
 }
 
-// reuseOrCreateReaper returns an existing Reaper instance if it exists and is running. Otherwise, a new Reaper instance
-// will be created with a sessionID to identify containers in the same test session/program.
-func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
-	reaperMutex.Lock()
-	defer reaperMutex.Unlock()
-
-	// 1. if the reaper instance has been already created, return it
-	if reaperInstance != nil {
-		// Verify this instance is still running by checking state.
-		// Can't use Container.IsRunning because the bool is not updated when Reaper is terminated
-		state, err := reaperInstance.container.State(ctx)
-		if err != nil {
-			if !errdefs.IsNotFound(err) {
-				return nil, err
-			}
-		} else if state.Running {
-			return reaperInstance, nil
-		}
-		// else: the reaper instance has been terminated, so we need to create a new one
-		reaperOnce = sync.Once{}
-	}
-
-	// 2. because the reaper instance has not been created yet, look for it in the Docker daemon, which
-	// will happen if the reaper container has been created in the same test session but in a different
-	// test process execution (e.g. when running tests in parallel), not having initialized the reaper
-	// instance yet.
-	reaperContainer, err := lookUpReaperContainer(context.Background(), sessionID)
-	if err == nil && reaperContainer != nil {
-		// The reaper container exists as a Docker container: re-use it
-		Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", reaperContainer.ID)
-		reaperInstance, err = reuseReaperContainer(ctx, sessionID, provider, reaperContainer)
-		if err != nil {
-			return nil, err
-		}
-
-		return reaperInstance, nil
-	}
-
-	// 3. the reaper container does not exist in the Docker daemon: create it, and do it using the
-	// synchronization primitive to avoid multiple executions of this function to create the reaper
-	var reaperErr error
-	reaperOnce.Do(func() {
-		r, err := newReaper(ctx, sessionID, provider)
-		if err != nil {
-			reaperErr = err
-			return
-		}
-
-		reaperInstance, reaperErr = r, nil
-	})
-	if reaperErr != nil {
-		reaperOnce = sync.Once{}
-		return nil, reaperErr
-	}
-
-	return reaperInstance, nil
+// reaperContainerNameFromSessionID returns the container name that uniquely
+// identifies the container based on the session id.
+func reaperContainerNameFromSessionID(sessionID string) string {
+	// The session id is 64 characters, so we will not hit the limit of 128
+	// characters for container names.
+	return fmt.Sprintf("reaper_%s", sessionID)
 }
 
 // reuseReaperContainer constructs a Reaper from an already running reaper
 // DockerContainer.
-func reuseReaperContainer(ctx context.Context, sessionID string, provider ReaperProvider, reaperContainer *DockerContainer) (*Reaper, error) {
+func reuseReaperContainer(ctx context.Context, sessionID string, reaperContainer *DockerContainer) (*Reaper, error) {
 	endpoint, err := reaperContainer.PortEndpoint(ctx, "8080", "")
 	if err != nil {
 		return nil, err
 	}
 
-	Logger.Printf("⏳ Waiting for Reaper port to be ready")
+	reaperContainer.Printf("⏳ Waiting for Reaper port to be ready")
 
 	var containerJson *types.ContainerJSON
 
@@ -224,136 +329,8 @@ func reuseReaperContainer(ctx context.Context, sessionID string, provider Reaper
 	}
 
 	return &Reaper{
-		Provider:  provider,
 		SessionID: sessionID,
 		Endpoint:  endpoint,
-		container: reaperContainer,
+		Container: reaperContainer,
 	}, nil
-}
-
-// newReaper creates a Reaper with a sessionID to identify containers and a
-// provider to use. Do not call this directly, use reuseOrCreateReaper instead.
-func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
-	dockerHostMount := core.ExtractDockerSocket(ctx)
-
-	reaper := &Reaper{
-		Provider:  provider,
-		SessionID: sessionID,
-	}
-
-	listeningPort := nat.Port("8080/tcp")
-
-	tcConfig := provider.Config().Config
-
-	req := ContainerRequest{
-		Image:        config.ReaperDefaultImage,
-		ExposedPorts: []string{string(listeningPort)},
-		Labels:       core.DefaultLabels(sessionID),
-		Privileged:   tcConfig.RyukPrivileged,
-		WaitingFor:   wait.ForListeningPort(listeningPort),
-		Name:         reaperContainerNameFromSessionID(sessionID),
-		HostConfigModifier: func(hc *container.HostConfig) {
-			hc.AutoRemove = true
-			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
-			hc.NetworkMode = container.NetworkMode(corenetwork.Bridge)
-		},
-		Env: map[string]string{},
-	}
-	if to := tcConfig.RyukConnectionTimeout; to > time.Duration(0) {
-		req.Env["RYUK_CONNECTION_TIMEOUT"] = to.String()
-	}
-	if to := tcConfig.RyukReconnectionTimeout; to > time.Duration(0) {
-		req.Env["RYUK_RECONNECTION_TIMEOUT"] = to.String()
-	}
-	if tcConfig.RyukVerbose {
-		req.Env["RYUK_VERBOSE"] = "true"
-	}
-
-	// include reaper-specific labels to the reaper container
-	req.Labels[core.LabelReaper] = "true"
-	req.Labels[core.LabelRyuk] = "true"
-
-	// Attach reaper container to a requested network if it is specified
-	if p, ok := provider.(*DockerProvider); ok {
-		req.Networks = append(req.Networks, p.DefaultNetwork)
-	}
-
-	c, err := provider.RunContainer(ctx, req)
-	if err != nil {
-		// We need to check whether the error is caused by a container with the same name
-		// already existing due to race conditions. We manually match the error message
-		// as we do not have any error types to check against.
-		if createContainerFailDueToNameConflictRegex.MatchString(err.Error()) {
-			// Manually retrieve the already running reaper container. However, we need to
-			// use retries here as there are two possible race conditions that might lead to
-			// errors: In most cases, there is a small delay between container creation and
-			// actually being visible in list-requests. This means that creation might fail
-			// due to name conflicts, but when we list containers with this name, we do not
-			// get any results. In another case, the container might have simply died in the
-			// meantime and therefore cannot be found.
-			const timeout = 5 * time.Second
-			const cooldown = 100 * time.Millisecond
-			start := time.Now()
-			var reaperContainer *DockerContainer
-			for time.Since(start) < timeout {
-				reaperContainer, err = lookUpReaperContainer(ctx, sessionID)
-				if err == nil && reaperContainer != nil {
-					break
-				}
-				select {
-				case <-ctx.Done():
-				case <-time.After(cooldown):
-				}
-			}
-			if err != nil {
-				return nil, fmt.Errorf("look up reaper container due to name conflict failed: %w", err)
-			}
-			// If the reaper container was not found, it is most likely to have died in
-			// between as we can exclude any client errors because of the previous error
-			// check. Because the reaper should only die if it performed clean-ups, we can
-			// fail here as the reaper timeout needs to be increased, anyway.
-			if reaperContainer == nil {
-				return nil, fmt.Errorf("look up reaper container returned nil although creation failed due to name conflict")
-			}
-			Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", reaperContainer.ID)
-			reaper, err := reuseReaperContainer(ctx, sessionID, provider, reaperContainer)
-			if err != nil {
-				return nil, err
-			}
-			return reaper, nil
-		}
-		return nil, err
-	}
-	reaper.container = c
-
-	endpoint, err := c.PortEndpoint(ctx, "8080", "")
-	if err != nil {
-		return nil, err
-	}
-	reaper.Endpoint = endpoint
-
-	return reaper, nil
-}
-
-// Reaper is used to start a sidecar container that cleans up resources
-type Reaper struct {
-	Provider  ReaperProvider
-	SessionID string
-	Endpoint  string
-	container Container
-}
-
-// Deprecated: use reaper.Connect instead
-// Connect runs a goroutine which can be terminated by sending true into the returned channel
-func (r *Reaper) Connect() (chan bool, error) {
-	return reaper.Connect(r.Endpoint, r.SessionID)
-}
-
-// Labels returns the container labels to use so that this Reaper cleans them up
-// Deprecated: internally replaced by core.DefaultLabels(sessionID)
-func (r *Reaper) Labels() map[string]string {
-	return map[string]string{
-		core.LabelLang:      "go",
-		core.LabelSessionID: r.SessionID,
-	}
 }
