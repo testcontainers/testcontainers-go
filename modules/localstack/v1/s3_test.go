@@ -35,13 +35,7 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*sessio
 		return &session.Session{}, err
 	}
 
-	provider, err := testcontainers.NewDockerProvider()
-	if err != nil {
-		return &session.Session{}, err
-	}
-	defer provider.Close()
-
-	host, err := provider.DaemonHost(ctx)
+	host, err := testcontainers.DaemonHost(context.Background())
 	if err != nil {
 		return &session.Session{}, err
 	}
@@ -62,7 +56,7 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*sessio
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := localstack.RunContainer(ctx)
+	container, err := localstack.RunContainer(ctx, testcontainers.WithImage("localstack/localstack:2.3.0"))
 	require.NoError(t, err)
 
 	session, err := awsSession(ctx, container)

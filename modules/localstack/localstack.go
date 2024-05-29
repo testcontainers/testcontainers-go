@@ -10,7 +10,7 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/network"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -59,19 +59,12 @@ func isVersion2(image string) bool {
 	return true
 }
 
-// WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
-// on that network to the given alias.
-// Deprecated: use network.WithNetwork or network.WithNewNetwork instead
-func WithNetwork(networkName string, alias string) testcontainers.CustomizeRequestOption {
-	return network.WithNewNetwork(context.Background(), []string{alias})
-}
-
 // RunContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*LocalStackContainer, error) {
 	dockerHost := testcontainers.ExtractDockerSocket()
 
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image:        fmt.Sprintf("localstack/localstack:%s", defaultVersion),
 		WaitingFor:   wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120 * time.Second),
 		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
@@ -79,56 +72,43 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
 			hostConfig.Binds = []string{fmt.Sprintf("%s:/var/run/docker.sock", dockerHost)}
 		},
-	}
-
-	localStackReq := LocalStackContainerRequest{
-		GenericContainerRequest: testcontainers.GenericContainerRequest{
-			ContainerRequest: req,
-			Logger:           testcontainers.Logger,
-			Started:          true,
-		},
+		Started: true,
+		Logger:  tclog.StandardLogger(),
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&localStackReq.GenericContainerRequest); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	if isLegacyMode(localStackReq.Image) {
-		return nil, fmt.Errorf("version=%s. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0", localStackReq.Image)
+	if isLegacyMode(req.Image) {
+		return nil, fmt.Errorf("version=%s. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0", req.Image)
 	}
 
 	envVar := hostnameExternalEnvVar
-	if isVersion2(localStackReq.Image) {
+	if isVersion2(req.Image) {
 		envVar = localstackHostEnvVar
 	}
 
-	hostnameExternalReason, err := configureDockerHost(&localStackReq, envVar)
+	hostnameExternalReason, err := configureDockerHost(&req, envVar)
 	if err != nil {
 		return nil, err
 	}
-	localStackReq.GenericContainerRequest.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
+	req.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
 
-	container, err := testcontainers.GenericContainer(ctx, localStackReq.GenericContainerRequest)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &LocalStackContainer{
-		Container: container,
+		DockerContainer: container,
 	}
 	return c, nil
 }
 
-// Deprecated: use RunContainer instead
-// StartContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
-// - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
-func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOption) (*LocalStackContainer, error) {
-	return RunContainer(ctx, overrideReq)
-}
-
-func configureDockerHost(req *LocalStackContainerRequest, envVar string) (string, error) {
+func configureDockerHost(req *testcontainers.Request, envVar string) (string, error) {
 	reason := ""
 
 	if _, ok := req.Env[envVar]; ok {
@@ -144,13 +124,7 @@ func configureDockerHost(req *LocalStackContainerRequest, envVar string) (string
 		return "to match last network alias on container with non-default network", nil
 	}
 
-	dockerProvider, err := testcontainers.NewDockerProvider()
-	if err != nil {
-		return reason, err
-	}
-	defer dockerProvider.Close()
-
-	daemonHost, err := dockerProvider.DaemonHost(context.Background())
+	daemonHost, err := testcontainers.DaemonHost(context.Background())
 	if err != nil {
 		return reason, err
 	}

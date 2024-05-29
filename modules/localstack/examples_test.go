@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/localstack"
 	"github.com/testcontainers/testcontainers-go/network"
@@ -65,7 +64,7 @@ func ExampleRunContainer_withNetwork() {
 		ctx,
 		testcontainers.WithImage("localstack/localstack:0.13.0"),
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
-		network.WithNetwork([]string{nwName}, newNetwork),
+		testcontainers.WithNetwork([]string{nwName}, newNetwork),
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
@@ -132,13 +131,11 @@ func ExampleRunContainer_usingLambdas() {
 			"SERVICES":            "lambda",
 			"LAMBDA_DOCKER_FLAGS": flagsFn(),
 		}),
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Files: []tccontainer.ContainerFile{
-					{
-						HostFilePath:      filepath.Join("testdata", "function.zip"),
-						ContainerFilePath: "/tmp/function.zip",
-					},
+		testcontainers.CustomizeRequest(testcontainers.Request{
+			Files: []testcontainers.ContainerFile{
+				{
+					HostFilePath:      filepath.Join("testdata", "function.zip"),
+					ContainerFilePath: "/tmp/function.zip",
 				},
 			},
 		}),

@@ -16,14 +16,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func generateContainerRequest() *LocalStackContainerRequest {
-	return &LocalStackContainerRequest{
-		GenericContainerRequest: testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Env:          map[string]string{},
-				ExposedPorts: []string{},
-			},
-		},
+func generateContainerRequest() *testcontainers.Request {
+	return &testcontainers.Request{
+		Env:          map[string]string{},
+		ExposedPorts: []string{},
 	}
 }
 
@@ -63,12 +59,8 @@ func TestConfigureDockerHost(t *testing.T) {
 		})
 
 		t.Run("HOSTNAME_EXTERNAL matches the daemon host because there are no aliases", func(t *testing.T) {
-			dockerProvider, err := testcontainers.NewDockerProvider()
-			require.NoError(t, err)
-			defer dockerProvider.Close()
-
-			// because the daemon host could be a remote one, we need to get it from the provider
-			expectedDaemonHost, err := dockerProvider.DaemonHost(context.Background())
+			// because the daemon host could be a remote one, we need to get it from the client
+			expectedDaemonHost, err := testcontainers.DaemonHost(context.Background())
 			require.NoError(t, err)
 
 			req := generateContainerRequest()
@@ -161,7 +153,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 
 	localstack, err := RunContainer(
 		ctx,
-		network.WithNetwork([]string{"localstack"}, nw),
+		testcontainers.WithNetwork([]string{"localstack"}, nw),
 		testcontainers.WithImage("localstack/localstack:2.0.0"),
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
 	)
@@ -170,31 +162,29 @@ func TestStartV2WithNetwork(t *testing.T) {
 
 	networkName := nw.Name
 
-	cli, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:      "amazon/aws-cli:2.7.27",
-			Networks:   []string{networkName},
-			Entrypoint: []string{"tail"},
-			Cmd:        []string{"-f", "/dev/null"},
-			Env: map[string]string{
-				"AWS_ACCESS_KEY_ID":     "accesskey",
-				"AWS_SECRET_ACCESS_KEY": "secretkey",
-				"AWS_REGION":            "eu-west-1",
-			},
-			WaitingFor: wait.ForExec([]string{
-				"/usr/local/bin/aws", "sqs", "create-queue", "--queue-name", "baz", "--region", "eu-west-1",
-				"--endpoint-url", "http://localstack:4566", "--no-verify-ssl",
-			}).
-				WithStartupTimeout(time.Second * 10).
-				WithExitCodeMatcher(func(exitCode int) bool {
-					return exitCode == 0
-				}).
-				WithResponseMatcher(func(r io.Reader) bool {
-					respBytes, _ := io.ReadAll(r)
-					resp := string(respBytes)
-					return strings.Contains(resp, "http://localstack:4566")
-				}),
+	cli, err := testcontainers.New(ctx, testcontainers.Request{
+		Image:      "amazon/aws-cli:2.7.27",
+		Networks:   []string{networkName},
+		Entrypoint: []string{"tail"},
+		Cmd:        []string{"-f", "/dev/null"},
+		Env: map[string]string{
+			"AWS_ACCESS_KEY_ID":     "accesskey",
+			"AWS_SECRET_ACCESS_KEY": "secretkey",
+			"AWS_REGION":            "eu-west-1",
 		},
+		WaitingFor: wait.ForExec([]string{
+			"/usr/local/bin/aws", "sqs", "create-queue", "--queue-name", "baz", "--region", "eu-west-1",
+			"--endpoint-url", "http://localstack:4566", "--no-verify-ssl",
+		}).
+			WithStartupTimeout(time.Second * 10).
+			WithExitCodeMatcher(func(exitCode int) bool {
+				return exitCode == 0
+			}).
+			WithResponseMatcher(func(r io.Reader) bool {
+				respBytes, _ := io.ReadAll(r)
+				resp := string(respBytes)
+				return strings.Contains(resp, "http://localstack:4566")
+			}),
 		Started: true,
 	})
 	require.NoError(t, err)
