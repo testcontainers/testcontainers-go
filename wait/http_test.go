@@ -26,16 +26,14 @@ import (
 func ExampleHTTPStrategy() {
 	// waitForHTTPWithDefaultPort {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image:        "nginx:latest",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
+		Started:      true,
 	}
 
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.New(ctx, req)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -74,7 +72,7 @@ func ExampleHTTPStrategy_WithHeaders() {
 
 	// waitForHTTPHeaders {
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context: "testdata",
 		},
@@ -87,13 +85,11 @@ func ExampleHTTPStrategy_WithHeaders() {
 				return headers.Get("X-response-header") == "value"
 			},
 			),
+		Started: true,
 	}
 	// }
 
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.New(ctx, req)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -118,16 +114,14 @@ func ExampleHTTPStrategy_WithHeaders() {
 func ExampleHTTPStrategy_WithPort() {
 	// waitForHTTPWithPort {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image:        "nginx:latest",
 		ExposedPorts: []string{"8080/tcp", "80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithPort("80/tcp"),
+		Started:      true,
 	}
 
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.New(ctx, req)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -152,16 +146,14 @@ func ExampleHTTPStrategy_WithPort() {
 
 func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image:        "nginx:latest",
 		ExposedPorts: []string{"8080/tcp", "80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithForcedIPv4LocalHost(),
+		Started:      true,
 	}
 
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.New(ctx, req)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -186,16 +178,14 @@ func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
 func ExampleHTTPStrategy_WithBasicAuth() {
 	// waitForBasicAuth {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image:        "gogs/gogs:0.11.91",
 		ExposedPorts: []string{"3000/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithBasicAuth("username", "password"),
+		Started:      true,
 	}
 
-	gogs, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	gogs, err := testcontainers.New(ctx, req)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -239,7 +229,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	}
 
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
-	dockerReq := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context: filepath.Join(workdir, "testdata"),
 		},
@@ -252,10 +242,10 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 			}).
 			WithBasicAuth("admin", "admin").
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
+		Started: true,
 	}
 
-	container, err := testcontainers.GenericContainer(context.Background(),
-		testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
+	container, err := testcontainers.New(context.Background(), req)
 	if err != nil {
 		t.Error(err)
 		return
@@ -321,7 +311,7 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 	}
 
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
-	dockerReq := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context: filepath.Join(workdir, "testdata"),
 		},
@@ -333,10 +323,10 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 				data, _ := io.ReadAll(body)
 				return bytes.Equal(data, []byte("pong"))
 			}),
+		Started: true,
 	}
 
-	container, err := testcontainers.GenericContainer(context.Background(),
-		testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
+	container, err := testcontainers.New(context.Background(), req)
 	if err != nil {
 		t.Error(err)
 		return
@@ -404,7 +394,7 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 	// waitForHTTPStatusCode {
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
 	var i int
-	dockerReq := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context: filepath.Join(workdir, "testdata"),
 		},
@@ -420,11 +410,12 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 				return i > 1 && status == 200
 			}).
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
+		Started: true,
 	}
 	// }
 
 	ctx := context.Background()
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		t.Error(err)
 		return

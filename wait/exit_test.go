@@ -24,11 +24,6 @@ func (st exitStrategyTarget) Inspect(ctx context.Context) (*types.ContainerJSON,
 	return nil, nil
 }
 
-// Deprecated: use Inspect instead
-func (st exitStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
-	return nil, nil
-}
-
 func (st exitStrategyTarget) MappedPort(ctx context.Context, n nat.Port) (nat.Port, error) {
 	return n, nil
 }

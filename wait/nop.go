@@ -55,11 +55,6 @@ func (st NopStrategyTarget) Inspect(_ context.Context) (*types.ContainerJSON, er
 	return nil, nil
 }
 
-// Deprecated: use Inspect instead
-func (st NopStrategyTarget) Ports(_ context.Context) (nat.PortMap, error) {
-	return nil, nil
-}
-
 func (st NopStrategyTarget) MappedPort(_ context.Context, n nat.Port) (nat.Port, error) {
 	return n, nil
 }

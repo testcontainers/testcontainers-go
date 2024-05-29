@@ -31,16 +31,6 @@ func (st MockStrategyTarget) Inspect(ctx context.Context) (*types.ContainerJSON,
 	return st.InspectImpl(ctx)
 }
 
-// Deprecated: use Inspect instead
-func (st MockStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
-	inspect, err := st.InspectImpl(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return inspect.NetworkSettings.Ports, nil
-}
-
 func (st MockStrategyTarget) MappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
 	return st.MappedPortImpl(ctx, port)
 }

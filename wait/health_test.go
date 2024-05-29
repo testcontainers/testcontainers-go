@@ -25,11 +25,6 @@ func (st healthStrategyTarget) Inspect(ctx context.Context) (*types.ContainerJSO
 	return nil, nil
 }
 
-// Deprecated: use Inspect instead
-func (st healthStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
-	return nil, nil
-}
-
 func (st healthStrategyTarget) MappedPort(ctx context.Context, n nat.Port) (nat.Port, error) {
 	return n, nil
 }

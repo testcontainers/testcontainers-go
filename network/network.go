@@ -8,20 +8,23 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/google/uuid"
 
-	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/internal/config"
+	"github.com/testcontainers/testcontainers-go/internal/core"
+	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
+	"github.com/testcontainers/testcontainers-go/internal/core/reaper"
 )
 
-// New creates a new network with a random UUID name, calling the already existing GenericNetwork APIs.
+// New creates a new network with a random UUID name.
 // Those existing APIs are deprecated and will be removed in the future, so this function will
 // implement the new network APIs when they will be available.
 // By default, the network is created with the following options:
 // - Driver: bridge
 // - Labels: the Testcontainers for Go generic labels, to be managed by Ryuk. Please see the GenericLabels() function
 // And those options can be modified by the user, using the CreateModifier function field.
-func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.DockerNetwork, error) {
+func New(ctx context.Context, opts ...NetworkCustomizer) (*DockerNetwork, error) {
 	nc := types.NetworkCreate{
 		Driver: "bridge",
-		Labels: testcontainers.GenericLabels(),
+		Labels: core.DefaultLabels(core.SessionID()),
 	}
 
 	for _, opt := range opts {
@@ -30,8 +33,32 @@ func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.Docker
 		}
 	}
 
-	//nolint:staticcheck
-	netReq := testcontainers.NetworkRequest{
+	// Make sure that bridge network exists
+	// In case it is disabled we will create reaper_default network
+	if _, err := corenetwork.GetDefault(ctx); err != nil {
+		return nil, fmt.Errorf("default network not found: %w", err)
+	}
+
+	tcConfig := config.Read()
+
+	var err error
+	var termSignal chan bool
+
+	if !tcConfig.RyukDisabled {
+		termSignal, err = reaper.Connect()
+		if err != nil {
+			return nil, fmt.Errorf("%w: connecting to network reaper failed", err)
+		}
+	}
+
+	// Cleanup on error, otherwise set termSignal to nil before successful return.
+	defer func() {
+		if termSignal != nil {
+			termSignal <- true
+		}
+	}()
+
+	req := corenetwork.Request{
 		Driver:     nc.Driver,
 		Internal:   nc.Internal,
 		EnableIPv6: nc.EnableIPv6,
@@ -41,17 +68,22 @@ func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.Docker
 		IPAM:       nc.IPAM,
 	}
 
-	//nolint:staticcheck
-	n, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
-		NetworkRequest: netReq,
-	})
+	response, err := corenetwork.New(ctx, req)
 	if err != nil {
-		return nil, err
+		return &DockerNetwork{}, err
 	}
 
-	// Return a DockerNetwork struct instead of the Network interface,
-	// following the "accept interface, return struct" pattern.
-	return n.(*testcontainers.DockerNetwork), nil
+	n := &DockerNetwork{
+		ID:                response.ID,
+		Driver:            req.Driver,
+		Name:              req.Name,
+		terminationSignal: termSignal,
+	}
+
+	// Disable cleanup on success
+	termSignal = nil
+
+	return n, nil
 }
 
 // NetworkCustomizer is an interface that can be used to configure the network create request.
@@ -130,47 +162,6 @@ func WithLabels(labels map[string]string) CustomizeNetworkOption {
 func WithIPAM(ipam *network.IPAM) CustomizeNetworkOption {
 	return func(original *types.NetworkCreate) error {
 		original.IPAM = ipam
-
-		return nil
-	}
-}
-
-// WithNetwork reuses an already existing network, attaching the container to it.
-// Finally it sets the network alias on that network to the given alias.
-func WithNetwork(aliases []string, nw *testcontainers.DockerNetwork) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		networkName := nw.Name
-
-		// attaching to the network because it was created with success or it already existed.
-		req.Networks = append(req.Networks, networkName)
-
-		if req.NetworkAliases == nil {
-			req.NetworkAliases = make(map[string][]string)
-		}
-		req.NetworkAliases[networkName] = aliases
-
-		return nil
-	}
-}
-
-// WithNewNetwork creates a new network with random name and customizers, and attaches the container to it.
-// Finally it sets the network alias on that network to the given alias.
-func WithNewNetwork(ctx context.Context, aliases []string, opts ...NetworkCustomizer) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		newNetwork, err := New(ctx, opts...)
-		if err != nil {
-			return fmt.Errorf("new network: %w", err)
-		}
-
-		networkName := newNetwork.Name
-
-		// attaching to the network because it was created with success or it already existed.
-		req.Networks = append(req.Networks, networkName)
-
-		if req.NetworkAliases == nil {
-			req.NetworkAliases = make(map[string][]string)
-		}
-		req.NetworkAliases[networkName] = aliases
 
 		return nil
 	}

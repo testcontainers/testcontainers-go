@@ -20,15 +20,13 @@ import (
 
 func ExampleExecStrategy() {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image:      "localstack/localstack:latest",
 		WaitingFor: wait.ForExec([]string{"awslocal", "dynamodb", "list-tables"}),
+		Started:    true,
 	}
 
-	localstack, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	localstack, err := testcontainers.New(ctx, req)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -63,11 +61,6 @@ func (st mockExecTarget) Host(_ context.Context) (string, error) {
 }
 
 func (st mockExecTarget) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
-	return nil, errors.New("not implemented")
-}
-
-// Deprecated: use Inspect instead
-func (st mockExecTarget) Ports(ctx context.Context) (nat.PortMap, error) {
 	return nil, errors.New("not implemented")
 }
 
@@ -184,7 +177,7 @@ func TestExecStrategyWaitUntilReady_withExitCode(t *testing.T) {
 
 func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 	// waitForExecExitCodeResponse {
-	dockerReq := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image: "docker.io/nginx:latest",
 		WaitingFor: wait.ForExec([]string{"echo", "hello world!"}).
 			WithStartupTimeout(time.Second * 10).
@@ -195,11 +188,12 @@ func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 				data, _ := io.ReadAll(body)
 				return bytes.Equal(data, []byte("hello world!\n"))
 			}),
+		Started: true,
 	}
 	// }
 
 	ctx := context.Background()
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		t.Error(err)
 		return

@@ -26,7 +26,6 @@ type StrategyTimeout interface {
 type StrategyTarget interface {
 	Host(context.Context) (string, error)
 	Inspect(context.Context) (*types.ContainerJSON, error)
-	Ports(ctx context.Context) (nat.PortMap, error) // Deprecated: use Inspect instead
 	MappedPort(context.Context, nat.Port) (nat.Port, error)
 	Logs(context.Context) (io.ReadCloser, error)
 	Exec(context.Context, []string, ...exec.ProcessOption) (int, io.Reader, error)
