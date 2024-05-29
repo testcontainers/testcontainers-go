@@ -10,12 +10,12 @@ import (
 
 // ChromaContainer represents the Chroma container type used in the module
 type ChromaContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // RunContainer creates an instance of the Chroma container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*ChromaContainer, error) {
+	req := testcontainers.Request{
 		Image:        "chromadb/chroma:0.4.24",
 		ExposedPorts: []string{"8000/tcp"},
 		WaitingFor: wait.ForAll(
@@ -25,25 +25,21 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				return status == 200
 			}),
 		), // 5 seconds it's not enough for the container to start
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ChromaContainer{Container: container}, nil
+	return &ChromaContainer{DockerContainer: container}, nil
 }
 
 // RESTEndpoint returns the REST endpoint of the Chroma container
