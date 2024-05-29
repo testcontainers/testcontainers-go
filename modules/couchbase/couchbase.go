@@ -57,12 +57,12 @@ type clusterInit func(context.Context) error
 
 // CouchbaseContainer represents the Couchbase container type used in the module
 type CouchbaseContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	config *Config
 }
 
 // RunContainer creates an instance of the Couchbase container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CouchbaseContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*CouchbaseContainer, error) {
 	config := &Config{
 		enabledServices:  make([]Service, 0),
 		username:         "Administrator",
@@ -70,14 +70,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		indexStorageMode: MemoryOptimized,
 	}
 
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started:      true,
 	}
 
 	for _, srv := range initialServices {
@@ -85,7 +81,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 
@@ -111,7 +107,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +140,7 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 		opt(config)
 	}
 
-	customizers := []testcontainers.ContainerCustomizer{
+	customizers := []testcontainers.RequestCustomizer{
 		testcontainers.WithImage(config.imageName),
 		WithAdminCredentials(config.username, config.password),
 		WithIndexStorage(config.indexStorageMode),
@@ -665,7 +661,7 @@ type serviceCustomizer struct {
 	enabledService Service
 }
 
-func (c serviceCustomizer) Customize(req *testcontainers.GenericContainerRequest) error {
+func (c serviceCustomizer) Customize(req *testcontainers.Request) error {
 	for _, port := range c.enabledService.ports {
 		req.ExposedPorts = append(req.ExposedPorts, port+"/tcp")
 	}
