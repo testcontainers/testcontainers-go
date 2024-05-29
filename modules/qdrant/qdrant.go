@@ -11,37 +11,33 @@ import (
 
 // QdrantContainer represents the Qdrant container type used in the module
 type QdrantContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // RunContainer creates an instance of the Qdrant container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*QdrantContainer, error) {
+	req := testcontainers.Request{
 		Image:        "qdrant/qdrant:v1.7.4",
 		ExposedPorts: []string{"6333/tcp", "6334/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("6333/tcp").WithStartupTimeout(5*time.Second),
 			wait.ForListeningPort("6334/tcp").WithStartupTimeout(5*time.Second),
 		),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &QdrantContainer{Container: container}, nil
+	return &QdrantContainer{DockerContainer: container}, nil
 }
 
 // RESTEndpoint returns the REST endpoint of the Qdrant container
