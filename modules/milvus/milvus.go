@@ -20,7 +20,7 @@ const embedEtcdContainerPath string = "/milvus/configs/embedEtcd.yaml"
 
 // MilvusContainer represents the Milvus container type used in the module
 type MilvusContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // ConnectionString returns the connection string for the milvus container, using the default 19530 port, and
@@ -38,8 +38,8 @@ func (c *MilvusContainer) ConnectionString(ctx context.Context) (string, error) 
 }
 
 // RunContainer creates an instance of the Milvus container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MilvusContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MilvusContainer, error) {
+	req := testcontainers.Request{
 		Image:        "milvusdb/milvus:v2.3.9",
 		ExposedPorts: []string{"19530/tcp", "9091/tcp", "2379/tcp"},
 		Env: map[string]string{
@@ -52,32 +52,28 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		WaitingFor: wait.ForHTTP("/healthz").WithPort("9091").WithStartupTimeout(60 * time.Second).WithPollInterval(30 * time.Second),
 		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
 			{
-				PostCreates: []testcontainers.ContainerHook{
+				PostCreates: []testcontainers.CreatedContainerHook{
 					// Copy the default embed etcd config to container after it's created.
 					// Otherwise the milvus container will panic on startup.
 					createDefaultEmbedEtcdConfig,
 				},
 			},
 		},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &MilvusContainer{Container: container}, nil
+	return &MilvusContainer{DockerContainer: container}, nil
 }
 
 type embedEtcdConfigTplParams struct {
@@ -104,7 +100,7 @@ func renderEmbedEtcdConfig(port int) ([]byte, error) {
 
 // createDefaultEmbedEtcdConfig creates a default embed etcd config file,
 // using the default port 2379 as the advertised port. The file is then copied to the container.
-func createDefaultEmbedEtcdConfig(ctx context.Context, c testcontainers.Container) error {
+func createDefaultEmbedEtcdConfig(ctx context.Context, c testcontainers.CreatedContainer) error {
 	// Otherwise the milvus container will panic on startup.
 	defaultEmbedEtcdConfig, err := renderEmbedEtcdConfig(2379)
 	if err != nil {
