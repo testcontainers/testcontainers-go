@@ -23,7 +23,10 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/internal/core/reaper"
+	tclog "github.com/testcontainers/testcontainers-go/log"
+	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 	wait "github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -47,17 +50,6 @@ func RunServices(serviceNames ...string) StackUpOption {
 	return stackUpOptionFunc(func(o *stackUpOptions) {
 		o.Services = serviceNames
 	})
-}
-
-// Deprecated: will be removed in the next major release
-// IgnoreOrphans - Ignore legacy containers for services that are not defined in the project
-type IgnoreOrphans bool
-
-// Deprecated: will be removed in the next major release
-//
-//nolint:unused
-func (io IgnoreOrphans) applyToStackUp(co *api.CreateOptions, _ *api.StartOptions) {
-	co.IgnoreOrphans = bool(io)
 }
 
 // Recreate will recreate the containers that are already running
@@ -117,6 +109,24 @@ func (ri RemoveImages) applyToStackDown(o *stackDownOptions) {
 	case RemoveImagesLocal:
 		o.Images = "local"
 	}
+}
+
+type ComposeLoggerOption struct {
+	logger tclog.Logging
+}
+
+// WithLogger is a generic option that implements LocalDockerComposeOption
+// It replaces the global Logging implementation with a user defined one e.g. to aggregate logs from testcontainers
+// with the logs of specific test case
+func WithLogger(logger tclog.Logging) ComposeLoggerOption {
+	return ComposeLoggerOption{
+		logger: logger,
+	}
+}
+
+func (o ComposeLoggerOption) applyToComposeStack(opts *composeStackOptions) error {
+	opts.Logger = o.logger
+	return nil
 }
 
 type ComposeStackReaders []io.Reader
@@ -195,7 +205,7 @@ type dockerCompose struct {
 	temporaryConfigs map[string]bool
 
 	// used to set logger in DockerContainer
-	logger testcontainers.Logging
+	logger tclog.Logging
 
 	// wait strategies that are applied per service when starting the stack
 	// only one strategy can be added to a service, to use multiple use wait.ForAll(...)
@@ -209,7 +219,7 @@ type dockerCompose struct {
 	containers map[string]*testcontainers.DockerContainer
 
 	// cache for networks in the compose stack
-	networks map[string]*testcontainers.DockerNetwork
+	networks map[string]*tcnetwork.DockerNetwork
 
 	// docker/compose API service instance used to control the compose stack
 	composeService api.Service
@@ -330,7 +340,7 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 
 	if d.reaper != nil {
 		for _, n := range d.networks {
-			termSignal, err := reaper.Connect(d.reaper.Endpoint, d.reaper.SessionID)
+			termSignal, err := reaper.Connect()
 			if err != nil {
 				return fmt.Errorf("failed to connect to reaper: %w", err)
 			}
@@ -357,7 +367,7 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 			}
 
 			if d.reaper != nil {
-				termSignal, err := reaper.Connect(d.reaper.Endpoint, d.reaper.SessionID)
+				termSignal, err := reaper.Connect()
 				if err != nil {
 					return fmt.Errorf("failed to connect to reaper: %w", err)
 				}
@@ -468,14 +478,8 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 	}
 	container.SetLogger(d.logger)
 
-	dockerProvider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(d.logger))
-	if err != nil {
-		return nil, err
-	}
-
-	dockerProvider.SetClient(d.dockerClient)
-
-	container.SetProvider(dockerProvider)
+	// pass the Docker client to the downstream APIs
+	ctx = context.WithValue(ctx, core.ClientContextKey, d.dockerClient)
 
 	d.containers[svcName] = container
 
@@ -498,7 +502,7 @@ func (d *dockerCompose) lookupNetworks(ctx context.Context) error {
 	}
 
 	for _, n := range networks {
-		dn := &testcontainers.DockerNetwork{
+		dn := &tcnetwork.DockerNetwork{
 			ID:     n.ID,
 			Name:   n.Name,
 			Driver: n.Driver,
@@ -581,7 +585,7 @@ func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
 }
 
 func makeClient(*command.DockerCli) (client.APIClient, error) {
-	dockerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	dockerClient, err := core.NewClient(context.Background())
 	if err != nil {
 		return nil, err
 	}

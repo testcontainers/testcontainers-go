@@ -6,11 +6,13 @@ import (
 	"hash/fnv"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/compose/v2/pkg/api"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/google/uuid"
@@ -19,6 +21,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/config"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -218,7 +221,7 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerComposeWith(
 		WithStackFiles(path),
-		WithLogger(testcontainers.TestLogger(t)))
+		WithLogger(tclog.NewTestLogger(t)))
 	require.NoError(t, err, "NewDockerCompose()")
 
 	t.Cleanup(func() {
@@ -652,6 +655,53 @@ func TestDockerComposeApiWithWaitForShortLifespanService(t *testing.T) {
 	assert.Len(t, services, 2)
 	assert.Contains(t, services, "falafel")
 	assert.Contains(t, services, "tzatziki")
+}
+
+func assertContainerEnvironmentVariables(
+	tb testing.TB,
+	composeIdentifier, serviceName string,
+	present map[string]string,
+	absent map[string]string,
+) {
+	containerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	if err != nil {
+		tb.Fatalf("Failed to get provider: %v", err)
+	}
+
+	containers, err := containerClient.ContainerList(context.Background(), container.ListOptions{})
+	if err != nil {
+		tb.Fatalf("Failed to list containers: %v", err)
+	} else if len(containers) == 0 {
+		tb.Fatalf("container list empty")
+	}
+
+	containerNameRegexp := regexp.MustCompile(fmt.Sprintf(`^\/?%s(_|-)%s(_|-)\d$`, composeIdentifier, serviceName))
+	var containerID string
+containerLoop:
+	for i := range containers {
+		c := containers[i]
+		for j := range c.Names {
+			if containerNameRegexp.MatchString(c.Names[j]) {
+				containerID = c.ID
+				break containerLoop
+			}
+		}
+	}
+
+	details, err := containerClient.ContainerInspect(context.Background(), containerID)
+	if err != nil {
+		tb.Fatalf("Failed to inspect container: %v", err)
+	}
+
+	for k, v := range present {
+		keyVal := k + "=" + v
+		assert.Contains(tb, details.Config.Env, keyVal)
+	}
+
+	for k, v := range absent {
+		keyVal := k + "=" + v
+		assert.NotContains(tb, details.Config.Env, keyVal)
+	}
 }
 
 func testNameHash(name string) StackIdentifier {

@@ -22,24 +22,10 @@ func RenderComposeComplex(t *testing.T) (string, []int) {
 	return writeTemplate(t, "docker-compose-complex.yml", ports...), ports
 }
 
-func RenderComposeComplexForLocal(t *testing.T) (string, []int) {
-	t.Helper()
-
-	ports := []int{getFreePort(t), getFreePort(t)}
-
-	return writeTemplateWithSrvType(t, "docker-compose-complex.yml", "local", ports...), ports
-}
-
 func RenderComposeOverride(t *testing.T) string {
 	t.Helper()
 
 	return writeTemplate(t, "docker-compose-override.yml", getFreePort(t))
-}
-
-func RenderComposeOverrideForLocal(t *testing.T) string {
-	t.Helper()
-
-	return writeTemplateWithSrvType(t, "docker-compose-override.yml", "local", getFreePort(t))
 }
 
 func RenderComposePostgres(t *testing.T) string {
@@ -48,24 +34,11 @@ func RenderComposePostgres(t *testing.T) string {
 	return writeTemplate(t, "docker-compose-postgres.yml", getFreePort(t))
 }
 
-func RenderComposePostgresForLocal(t *testing.T) string {
-	t.Helper()
-
-	return writeTemplateWithSrvType(t, "docker-compose-postgres.yml", "local", getFreePort(t))
-}
-
 func RenderComposeSimple(t *testing.T) (string, []int) {
 	t.Helper()
 
 	ports := []int{getFreePort(t)}
 	return writeTemplate(t, "docker-compose-simple.yml", ports...), ports
-}
-
-func RenderComposeSimpleForLocal(t *testing.T) (string, []int) {
-	t.Helper()
-
-	ports := []int{getFreePort(t)}
-	return writeTemplateWithSrvType(t, "docker-compose-simple.yml", "local", ports...), ports
 }
 
 func RenderComposeWithBuild(t *testing.T) string {
@@ -80,34 +53,16 @@ func RenderComposeWithName(t *testing.T) string {
 	return writeTemplate(t, "docker-compose-container-name.yml", getFreePort(t))
 }
 
-func RenderComposeWithNameForLocal(t *testing.T) string {
-	t.Helper()
-
-	return writeTemplateWithSrvType(t, "docker-compose-container-name.yml", "local", getFreePort(t))
-}
-
 func RenderComposeWithoutExposedPorts(t *testing.T) string {
 	t.Helper()
 
 	return writeTemplate(t, "docker-compose-no-exposed-ports.yml")
 }
 
-func RenderComposeWithoutExposedPortsForLocal(t *testing.T) string {
-	t.Helper()
-
-	return writeTemplateWithSrvType(t, "docker-compose-no-exposed-ports.yml", "local")
-}
-
 func RenderComposeWithVolume(t *testing.T) string {
 	t.Helper()
 
 	return writeTemplate(t, "docker-compose-volume.yml", getFreePort(t))
-}
-
-func RenderComposeWithVolumeForLocal(t *testing.T) string {
-	t.Helper()
-
-	return writeTemplateWithSrvType(t, "docker-compose-volume.yml", "local", getFreePort(t))
 }
 
 // getFreePort asks the kernel for a free open port that is ready to use.

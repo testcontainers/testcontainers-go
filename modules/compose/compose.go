@@ -5,9 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path/filepath"
-	"runtime"
-	"strings"
 
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/cli/cli/command"
@@ -17,12 +14,10 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/testcontainers/testcontainers-go"
+	tcconfig "github.com/testcontainers/testcontainers-go/internal/config"
+	tclog "github.com/testcontainers/testcontainers-go/log"
+	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
-)
-
-const (
-	envProjectName = "COMPOSE_PROJECT_NAME"
-	envComposeFile = "COMPOSE_FILE"
 )
 
 var ErrNoStackConfigured = errors.New("no stack files configured")
@@ -31,7 +26,7 @@ type composeStackOptions struct {
 	Identifier     string
 	Paths          []string
 	temporaryPaths map[string]bool
-	Logger         testcontainers.Logging
+	Logger         tclog.Logging
 }
 
 type ComposeStackOption interface {
@@ -76,23 +71,6 @@ type ComposeStack interface {
 	ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error)
 }
 
-// Deprecated: DockerCompose is the old shell escape based API
-// use ComposeStack instead
-// DockerCompose defines the contract for running Docker Compose
-type DockerCompose interface {
-	Down() ExecError
-	Invoke() ExecError
-	WaitForService(string, wait.Strategy) DockerCompose
-	WithCommand([]string) DockerCompose
-	WithEnv(map[string]string) DockerCompose
-	WithExposedService(string, int, wait.Strategy) DockerCompose
-}
-
-type waitService struct {
-	service       string
-	publishedPort int
-}
-
 // WithRecreate defines the strategy to apply on existing containers. If any other value than
 // api.RecreateNever, api.RecreateForce or api.RecreateDiverged is provided, the default value
 // api.RecreateForce will be used.
@@ -124,7 +102,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 	composeOptions := composeStackOptions{
 		Identifier:     uuid.New().String(),
 		temporaryPaths: make(map[string]bool),
-		Logger:         testcontainers.Logger,
+		Logger:         tclog.StandardLogger(),
 	}
 
 	for i := range opts {
@@ -146,18 +124,12 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		return nil, err
 	}
 
-	reaperProvider, err := testcontainers.NewDockerProvider()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create reaper provider for compose: %w", err)
-	}
-
-	tcConfig := reaperProvider.Config()
+	tcConfig := tcconfig.Read()
 
 	var composeReaper *testcontainers.Reaper
 	if !tcConfig.RyukDisabled {
-		// NewReaper is deprecated: we need to find a way to create the reaper for compose
-		// bypassing the deprecation.
-		r, err := testcontainers.NewReaper(context.Background(), testcontainers.SessionID(), reaperProvider, "")
+		// Initialise the reaper for the compose module
+		r, err := testcontainers.NewReaper(context.Background(), testcontainers.SessionID())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create reaper for compose: %w", err)
 		}
@@ -174,55 +146,10 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		dockerClient:     dockerCli.Client(),
 		waitStrategies:   make(map[string]wait.Strategy),
 		containers:       make(map[string]*testcontainers.DockerContainer),
-		networks:         make(map[string]*testcontainers.DockerNetwork),
+		networks:         make(map[string]*tcnetwork.DockerNetwork),
 		sessionID:        testcontainers.SessionID(),
 		reaper:           composeReaper,
 	}
 
 	return composeAPI, nil
-}
-
-// Deprecated: NewLocalDockerCompose returns a DockerCompose compatible instance which is superseded
-// by ComposeStack use NewDockerCompose instead to get a ComposeStack compatible instance
-//
-// NewLocalDockerCompose returns an instance of the local Docker Compose, using an
-// array of Docker Compose file paths and an identifier for the Compose execution.
-//
-// It will iterate through the array adding '-f compose-file-path' flags to the local
-// Docker Compose execution. The identifier represents the name of the execution,
-// which will define the name of the underlying Docker network and the name of the
-// running Compose services.
-func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
-	dc := &LocalDockerCompose{
-		LocalDockerComposeOptions: &LocalDockerComposeOptions{
-			Logger: testcontainers.Logger,
-		},
-	}
-
-	for idx := range opts {
-		opts[idx].ApplyToLocalCompose(dc.LocalDockerComposeOptions)
-	}
-
-	dc.Executable = "docker"
-	if runtime.GOOS == "windows" {
-		dc.Executable = "docker.exe"
-	}
-
-	dc.composeSubcommand = "compose"
-	dc.ComposeFilePaths = filePaths
-
-	dc.absComposeFilePaths = make([]string, len(filePaths))
-	for i, cfp := range dc.ComposeFilePaths {
-		abs, _ := filepath.Abs(cfp)
-		dc.absComposeFilePaths[i] = abs
-	}
-
-	_ = dc.determineVersion()
-	_ = dc.validate()
-
-	dc.Identifier = strings.ToLower(identifier)
-	dc.waitStrategySupplied = false
-	dc.WaitStrategyMap = make(map[waitService]wait.Strategy)
-
-	return dc
 }
