@@ -17,7 +17,8 @@ const (
 
 // Container represents the Artemis container type used in the module.
 type Container struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
+
 	user     string
 	password string
 }
@@ -49,7 +50,7 @@ func (c *Container) ConsoleURL(ctx context.Context) (string, error) {
 
 // WithCredentials sets the administrator credentials. The default is artemis:artemis.
 func WithCredentials(user, password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["ARTEMIS_USER"] = user
 		req.Env["ARTEMIS_PASSWORD"] = password
 
@@ -59,7 +60,7 @@ func WithCredentials(user, password string) testcontainers.CustomizeRequestOptio
 
 // WithAnonymousLogin enables anonymous logins.
 func WithAnonymousLogin() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["ANONYMOUS_LOGIN"] = "true"
 
 		return nil
@@ -71,7 +72,7 @@ func WithAnonymousLogin() testcontainers.CustomizeRequestOption {
 // Setting this value will override the default.
 // See the documentation on `artemis create` for available options.
 func WithExtraArgs(args string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["EXTRA_ARGS"] = args
 
 		return nil
@@ -79,20 +80,18 @@ func WithExtraArgs(args string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the Artemis container type.
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.io/apache/activemq-artemis:2.30.0-alpine",
-			Env: map[string]string{
-				"ARTEMIS_USER":     "artemis",
-				"ARTEMIS_PASSWORD": "artemis",
-			},
-			ExposedPorts: []string{defaultBrokerPort, defaultHTTPPort},
-			WaitingFor: wait.ForAll(
-				wait.ForLog("Server is now live"),
-				wait.ForLog("REST API available"),
-			),
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+	req := testcontainers.Request{
+		Image: "docker.io/apache/activemq-artemis:2.30.0-alpine",
+		Env: map[string]string{
+			"ARTEMIS_USER":     "artemis",
+			"ARTEMIS_PASSWORD": "artemis",
 		},
+		ExposedPorts: []string{defaultBrokerPort, defaultHTTPPort},
+		WaitingFor: wait.ForAll(
+			wait.ForLog("Server is now live"),
+			wait.ForLog("REST API available"),
+		),
 		Started: true,
 	}
 
@@ -102,7 +101,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -110,5 +109,5 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	user := req.Env["ARTEMIS_USER"]
 	password := req.Env["ARTEMIS_PASSWORD"]
 
-	return &Container{Container: container, user: user, password: password}, nil
+	return &Container{DockerContainer: container, user: user, password: password}, nil
 }

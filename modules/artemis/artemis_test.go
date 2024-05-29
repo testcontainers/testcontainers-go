@@ -20,7 +20,7 @@ func TestArtemis(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		opts       []testcontainers.ContainerCustomizer
+		opts       []testcontainers.RequestCustomizer
 		user, pass string
 		hook       func(*testing.T, *artemis.Container)
 	}{
@@ -31,7 +31,7 @@ func TestArtemis(t *testing.T) {
 		},
 		{
 			name: "WithCredentials",
-			opts: []testcontainers.ContainerCustomizer{
+			opts: []testcontainers.RequestCustomizer{
 				// withCredentials {
 				artemis.WithCredentials("test", "test"),
 				// }
@@ -41,7 +41,7 @@ func TestArtemis(t *testing.T) {
 		},
 		{
 			name: "WithAnonymous",
-			opts: []testcontainers.ContainerCustomizer{
+			opts: []testcontainers.RequestCustomizer{
 				// withAnonymousLogin {
 				artemis.WithAnonymousLogin(),
 				// }
@@ -49,7 +49,7 @@ func TestArtemis(t *testing.T) {
 		},
 		{
 			name: "WithExtraArgs",
-			opts: []testcontainers.ContainerCustomizer{
+			opts: []testcontainers.RequestCustomizer{
 				// withExtraArgs {
 				artemis.WithExtraArgs("--http-host 0.0.0.0 --relax-jolokia --queues ArgsTestQueue"),
 				// }
