@@ -8,7 +8,6 @@ import (
 	"net"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -21,7 +20,7 @@ const (
 
 // OpenLDAPContainer represents the OpenLDAP container type used in the module
 type OpenLDAPContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	adminUsername string
 	adminPassword string
 	rootDn        string
@@ -64,7 +63,7 @@ func (c *OpenLDAPContainer) LoadLdif(ctx context.Context, ldif []byte) error {
 // It is used in conjunction with WithAdminPassword to set a username and its password.
 // It will create the specified user with admin power.
 func WithAdminUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["LDAP_ADMIN_USERNAME"] = username
 
 		return nil
@@ -75,7 +74,7 @@ func WithAdminUsername(username string) testcontainers.CustomizeRequestOption {
 // It is used in conjunction with WithAdminUsername to set a username and its password.
 // It will set the admin password for OpenLDAP.
 func WithAdminPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["LDAP_ADMIN_PASSWORD"] = password
 
 		return nil
@@ -84,7 +83,7 @@ func WithAdminPassword(password string) testcontainers.CustomizeRequestOption {
 
 // WithRoot sets the root of the OpenLDAP instance
 func WithRoot(root string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["LDAP_ROOT"] = root
 
 		return nil
@@ -93,16 +92,16 @@ func WithRoot(root string) testcontainers.CustomizeRequestOption {
 
 // WithInitialLdif sets the initial ldif file to be loaded into the OpenLDAP container
 func WithInitialLdif(ldif string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      ldif,
 			ContainerFilePath: "/initial_ldif.ldif",
 			FileMode:          0o644,
 		})
 
 		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
-			PostReadies: []testcontainers.ContainerHook{
-				func(ctx context.Context, container testcontainers.Container) error {
+			PostReadies: []testcontainers.StartedContainerHook{
+				func(ctx context.Context, container testcontainers.StartedContainer) error {
 					username := req.Env["LDAP_ADMIN_USERNAME"]
 					rootDn := req.Env["LDAP_ROOT"]
 					password := req.Env["LDAP_ADMIN_PASSWORD"]
@@ -124,8 +123,8 @@ func WithInitialLdif(ldif string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the OpenLDAP container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OpenLDAPContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*OpenLDAPContainer, error) {
+	req := testcontainers.Request{
 		Image: "bitnami/openldap:2.6.6",
 		Env: map[string]string{
 			"LDAP_ADMIN_USERNAME": defaultUser,
@@ -139,31 +138,27 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		),
 		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
 			{
-				PostReadies: []testcontainers.ContainerHook{},
+				PostReadies: []testcontainers.StartedContainerHook{},
 			},
 		},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	return &OpenLDAPContainer{
-		Container:     container,
-		adminUsername: req.Env["LDAP_ADMIN_USERNAME"],
-		adminPassword: req.Env["LDAP_ADMIN_PASSWORD"],
-		rootDn:        req.Env["LDAP_ROOT"],
+		DockerContainer: container,
+		adminUsername:   req.Env["LDAP_ADMIN_USERNAME"],
+		adminPassword:   req.Env["LDAP_ADMIN_PASSWORD"],
+		rootDn:          req.Env["LDAP_ROOT"],
 	}, nil
 }
