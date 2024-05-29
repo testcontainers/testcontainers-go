@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -29,7 +28,7 @@ const (
 )
 
 type RedisContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
@@ -48,30 +47,26 @@ func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
 }
 
 // RunContainer creates an instance of the Redis container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*RedisContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*RedisContainer, error) {
+	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("* Ready to accept connections"),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started:      true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &RedisContainer{Container: container}, nil
+	return &RedisContainer{DockerContainer: container}, nil
 }
 
 // WithConfigFile sets the config file to be used for the redis container, and sets the command to run the redis server
@@ -79,8 +74,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	const defaultConfigFile = "/usr/local/redis.conf"
 
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: defaultConfigFile,
 			FileMode:          0o755,
@@ -108,7 +103,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // WithLogLevel sets the log level for the redis server process
 // See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
 func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		processRedisServerArgs(req, []string{"--loglevel", string(level)})
 
 		return nil
@@ -127,13 +122,13 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 		seconds = 1
 	}
 
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		processRedisServerArgs(req, []string{"--save", fmt.Sprintf("%d", seconds), fmt.Sprintf("%d", changedKeys)})
 		return nil
 	}
 }
 
-func processRedisServerArgs(req *testcontainers.GenericContainerRequest, args []string) {
+func processRedisServerArgs(req *testcontainers.Request, args []string) {
 	if len(req.Cmd) == 0 {
 		req.Cmd = append([]string{redisServerProcess}, args...)
 		return

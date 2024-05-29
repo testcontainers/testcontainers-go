@@ -33,10 +33,8 @@ func TestWithConfigFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Cmd: tt.cmds,
-				},
+			req := &testcontainers.Request{
+				Cmd: tt.cmds,
 			}
 
 			err := WithConfigFile("redis.conf")(req)
@@ -72,10 +70,8 @@ func TestWithLogLevel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Cmd: tt.cmds,
-				},
+			req := &testcontainers.Request{
+				Cmd: tt.cmds,
 			}
 
 			err := WithLogLevel(LogLevelDebug)(req)
@@ -126,10 +122,8 @@ func TestWithSnapshotting(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Cmd: tt.cmds,
-				},
+			req := &testcontainers.Request{
+				Cmd: tt.cmds,
 			}
 
 			err := WithSnapshotting(tt.seconds, tt.changedKeys)(req)
