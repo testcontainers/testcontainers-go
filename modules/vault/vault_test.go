@@ -24,7 +24,7 @@ const (
 
 func TestVault(t *testing.T) {
 	ctx := context.Background()
-	opts := []testcontainers.ContainerCustomizer{
+	opts := []testcontainers.RequestCustomizer{
 		// WithImageName {
 		testcontainers.WithImage("hashicorp/vault:1.13.0"),
 		// }
