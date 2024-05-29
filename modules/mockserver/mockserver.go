@@ -13,38 +13,34 @@ const defaultImage = "mockserver/mockserver:5.15.0"
 
 // MockServerContainer represents the MockServer container type used in the module
 type MockServerContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // RunContainer creates an instance of the MockServer container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MockServerContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MockServerContainer, error) {
+	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"1080/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("started on port: 1080"),
 			wait.ForListeningPort("1080/tcp"),
 		),
-		Env: map[string]string{},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Env:     map[string]string{},
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &MockServerContainer{Container: container}, nil
+	return &MockServerContainer{DockerContainer: container}, nil
 }
 
 // GetURL returns the URL of the MockServer container
