@@ -1,6 +1,9 @@
 package log
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 const StoppedForOutOfSyncMessage = "Stopping log consumer: Headers out of sync"
 
@@ -35,3 +38,15 @@ func WithProductionTimeout(timeout time.Duration) ProductionOption {
 		c.WithLogProductionTimeout(timeout)
 	}
 }
+
+// exampleLogConsumer {
+
+// StdoutConsumer is a LogConsumer that prints the log to stdout
+type StdoutConsumer struct{}
+
+// Accept prints the log to stdout
+func (lc *StdoutConsumer) Accept(l Log) {
+	fmt.Print(string(l.Content))
+}
+
+// }

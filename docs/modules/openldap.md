@@ -25,11 +25,11 @@ go get github.com/testcontainers/testcontainers-go/modules/openldap
 The OpenLDAP module exposes one entrypoint function to create the OpenLDAP container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OpenLDAPContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*OpenLDAPContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options
 

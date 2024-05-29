@@ -20,22 +20,19 @@ const (
 	reusableContainerName = "my_test_reusable_container"
 )
 
-func TestGenericReusableContainer(t *testing.T) {
+func TestNewReusableContainer(t *testing.T) {
 	ctx := context.Background()
 
-	n1, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:        nginxAlpineImage,
-			ExposedPorts: []string{nginxDefaultPort},
-			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-			Name:         reusableContainerName,
-		},
-		Started: true,
+	n1, err := New(ctx, Request{
+		Image:        nginxAlpineImage,
+		ExposedPorts: []string{nginxDefaultPort},
+		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+		Name:         reusableContainerName,
+		Started:      true,
 	})
 	require.NoError(t, err)
 	require.True(t, n1.IsRunning())
-	terminateContainerOnEnd(t, ctx, n1)
+	TerminateContainerOnEnd(t, ctx, n1)
 
 	copiedFileName := "hello_copy.sh"
 	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
@@ -80,16 +77,13 @@ func TestGenericReusableContainer(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			n2, err := GenericContainer(ctx, GenericContainerRequest{
-				ProviderType: providerType,
-				ContainerRequest: ContainerRequest{
-					Image:        nginxAlpineImage,
-					ExposedPorts: []string{nginxDefaultPort},
-					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-					Name:         tc.containerName,
-				},
-				Started: true,
-				Reuse:   tc.reuseOption,
+			n2, err := New(ctx, Request{
+				Image:        nginxAlpineImage,
+				ExposedPorts: []string{nginxDefaultPort},
+				WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+				Name:         tc.containerName,
+				Started:      true,
+				Reuse:        tc.reuseOption,
 			})
 
 			require.NoError(t, tc.errorMatcher(err))
@@ -103,27 +97,24 @@ func TestGenericReusableContainer(t *testing.T) {
 	}
 }
 
-func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
+func TestNewContainerShouldReturnRefOnError(t *testing.T) {
 	// In this test, we are going to cancel the context to exit the `wait.Strategy`.
 	// We want to make sure that the GenericContainer call will still return a reference to the
 	// created container, so that we can Destroy it.
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:      nginxAlpineImage,
-			WaitingFor: wait.ForLog("this string should not be present in the logs"),
-		},
-		Started: true,
+	c, err := New(ctx, Request{
+		Image:      nginxAlpineImage,
+		WaitingFor: wait.ForLog("this string should not be present in the logs"),
+		Started:    true,
 	})
 	require.Error(t, err)
 	require.NotNil(t, c)
-	terminateContainerOnEnd(t, context.Background(), c)
+	TerminateContainerOnEnd(t, context.Background(), c)
 }
 
-func TestGenericReusableContainerInSubprocess(t *testing.T) {
+func TestNewReusableContainerInSubprocess(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(10)
 	for i := 0; i < 10; i++ {
@@ -161,16 +152,13 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 
 	ctx := context.Background()
 
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:        nginxDelayedImage,
-			ExposedPorts: []string{nginxDefaultPort},
-			WaitingFor:   wait.ForListeningPort(nginxDefaultPort), // default startupTimeout is 60s
-			Name:         reusableContainerName,
-		},
-		Started: true,
-		Reuse:   true,
+	nginxC, err := New(ctx, Request{
+		Image:        nginxDelayedImage,
+		ExposedPorts: []string{nginxDefaultPort},
+		WaitingFor:   wait.ForListeningPort(nginxDefaultPort), // default startupTimeout is 60s
+		Name:         reusableContainerName,
+		Started:      true,
+		Reuse:        true,
 	})
 	require.NoError(t, err)
 	require.True(t, nginxC.IsRunning())

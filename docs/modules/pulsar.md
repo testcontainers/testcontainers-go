@@ -31,11 +31,11 @@ Create a `Pulsar` container to use it in your tests:
 The Pulsar module exposes one entrypoint function to create the containerr, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options
 

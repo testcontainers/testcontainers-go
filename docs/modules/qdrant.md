@@ -25,11 +25,11 @@ go get github.com/testcontainers/testcontainers-go/modules/qdrant
 The Qdrant module exposes one entrypoint function to create the Qdrant container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*QdrantContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options
 

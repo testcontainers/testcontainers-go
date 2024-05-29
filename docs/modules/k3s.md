@@ -25,11 +25,11 @@ go get github.com/testcontainers/testcontainers-go/modules/k3s
 The K3s module exposes one entrypoint function to create the K3s container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*K3sContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 
 ### Container Ports

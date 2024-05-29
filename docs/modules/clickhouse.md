@@ -25,11 +25,11 @@ go get github.com/testcontainers/testcontainers-go/modules/clickhouse
 The ClickHouse module exposes one entrypoint function to create the ClickHouse container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ClickHouseContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*ClickHouseContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Ports
 

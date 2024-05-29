@@ -25,11 +25,11 @@ go get github.com/testcontainers/testcontainers-go/modules/registry
 The Registry module exposes one entrypoint function to create the Registry container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*RegistryContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*RegistryContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options
 

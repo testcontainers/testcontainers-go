@@ -12,27 +12,28 @@ import (
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/log"
+	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// ContainerCustomizer is an interface that can be used to configure the Testcontainers container
+// RequestCustomizer is an interface that can be used to configure the Testcontainers container
 // request. The passed request will be merged with the default one.
-type ContainerCustomizer interface {
-	Customize(req *GenericContainerRequest) error
+type RequestCustomizer interface {
+	Customize(req *Request) error
 }
 
 // CustomizeRequestOption is a type that can be used to configure the Testcontainers container request.
 // The passed request will be merged with the default one.
-type CustomizeRequestOption func(req *GenericContainerRequest) error
+type CustomizeRequestOption func(req *Request) error
 
-func (opt CustomizeRequestOption) Customize(req *GenericContainerRequest) error {
+func (opt CustomizeRequestOption) Customize(req *Request) error {
 	return opt(req)
 }
 
 // CustomizeRequest returns a function that can be used to merge the passed container request with the one that is used by the container.
 // Slices and Maps will be appended.
-func CustomizeRequest(src GenericContainerRequest) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) error {
+func CustomizeRequest(src Request) CustomizeRequestOption {
+	return func(req *Request) error {
 		if err := mergo.Merge(req, &src, mergo.WithOverride, mergo.WithAppendSlice); err != nil {
 			return fmt.Errorf("error merging container request, keeping the original one: %w", err)
 		}
@@ -43,7 +44,7 @@ func CustomizeRequest(src GenericContainerRequest) CustomizeRequestOption {
 
 // WithConfigModifier allows to override the default container config
 func WithConfigModifier(modifier func(config *container.Config)) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) error {
+	return func(req *Request) error {
 		req.ConfigModifier = modifier
 
 		return nil
@@ -52,7 +53,7 @@ func WithConfigModifier(modifier func(config *container.Config)) CustomizeReques
 
 // WithEndpointSettingsModifier allows to override the default endpoint settings
 func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) error {
+	return func(req *Request) error {
 		req.EnpointSettingsModifier = modifier
 
 		return nil
@@ -62,7 +63,7 @@ func WithEndpointSettingsModifier(modifier func(settings map[string]*network.End
 // WithEnv sets the environment variables for a container.
 // If the environment variable already exists, it will be overridden.
 func WithEnv(envs map[string]string) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) error {
+	return func(req *Request) error {
 		if req.Env == nil {
 			req.Env = map[string]string{}
 		}
@@ -77,7 +78,7 @@ func WithEnv(envs map[string]string) CustomizeRequestOption {
 
 // WithHostConfigModifier allows to override the default host config
 func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) error {
+	return func(req *Request) error {
 		req.HostConfigModifier = modifier
 
 		return nil
@@ -86,7 +87,7 @@ func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) Cus
 
 // WithHostPortAccess allows to expose the host ports to the container
 func WithHostPortAccess(ports ...int) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) error {
+	return func(req *Request) error {
 		if req.HostAccessPorts == nil {
 			req.HostAccessPorts = []int{}
 		}
@@ -98,20 +99,16 @@ func WithHostPortAccess(ports ...int) CustomizeRequestOption {
 
 // WithImage sets the image for a container
 func WithImage(image string) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) error {
+	return func(req *Request) error {
 		req.Image = image
 
 		return nil
 	}
 }
 
-// Deprecated: use image.Substitutor instead
-// ImageSubstitutor represents a way to substitute container image names
-type ImageSubstitutor = image.Substitutor
-
 // WithImageSubstitutors sets the image substitutors for a container
 func WithImageSubstitutors(fn ...image.Substitutor) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) error {
+	return func(req *Request) error {
 		req.ImageSubstitutors = fn
 
 		return nil
@@ -120,7 +117,7 @@ func WithImageSubstitutors(fn ...image.Substitutor) CustomizeRequestOption {
 
 // WithLogConsumers sets the log consumers for a container
 func WithLogConsumers(consumer ...log.Consumer) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) error {
+	return func(req *Request) error {
 		if req.LogConsumerCfg == nil {
 			req.LogConsumerCfg = &log.ConsumerConfig{}
 		}
@@ -174,13 +171,13 @@ func (r RawCommand) AsCommand() []string {
 // It will leverage the container lifecycle hooks to call the command right after the container
 // is started.
 func WithStartupCommand(execs ...Executable) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) error {
+	return func(req *Request) error {
 		startupCommandsHook := ContainerLifecycleHooks{
-			PostStarts: []ContainerHook{},
+			PostStarts: []StartedContainerHook{},
 		}
 
 		for _, exec := range execs {
-			execFn := func(ctx context.Context, c Container) error {
+			execFn := func(ctx context.Context, c StartedContainer) error {
 				_, _, err := c.Exec(ctx, exec.AsCommand(), exec.Options()...)
 				return err
 			}
@@ -198,11 +195,11 @@ func WithStartupCommand(execs ...Executable) CustomizeRequestOption {
 // It will leverage the container lifecycle hooks to call the command right after the container
 // is ready.
 func WithAfterReadyCommand(execs ...Executable) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) error {
-		postReadiesHook := []ContainerHook{}
+	return func(req *Request) error {
+		postReadiesHook := []StartedContainerHook{}
 
 		for _, exec := range execs {
-			execFn := func(ctx context.Context, c Container) error {
+			execFn := func(ctx context.Context, c StartedContainer) error {
 				_, _, err := c.Exec(ctx, exec.AsCommand(), exec.Options()...)
 				return err
 			}
@@ -225,8 +222,62 @@ func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
 
 // WithWaitStrategyAndDeadline sets the wait strategy for a container, including deadline
 func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Strategy) CustomizeRequestOption {
-	return func(req *GenericContainerRequest) error {
+	return func(req *Request) error {
 		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
+
+		return nil
+	}
+}
+
+// WithLogger sets the logger to be used for the container
+func WithLogger(logger log.Logging) CustomizeRequestOption {
+	return func(req *Request) error {
+		req.Logger = logger
+
+		return nil
+	}
+}
+
+// ----------------------------------------------------------------------------
+// Network Options
+// ----------------------------------------------------------------------------
+
+// WithNetwork reuses an already existing network, attaching the container to it.
+// Finally it sets the network alias on that network to the given alias.
+func WithNetwork(aliases []string, nw *tcnetwork.DockerNetwork) CustomizeRequestOption {
+	return func(req *Request) error {
+		networkName := nw.Name
+
+		// attaching to the network because it was created with success or it already existed.
+		req.Networks = append(req.Networks, networkName)
+
+		if req.NetworkAliases == nil {
+			req.NetworkAliases = make(map[string][]string)
+		}
+		req.NetworkAliases[networkName] = aliases
+
+		return nil
+	}
+}
+
+// WithNewNetwork creates a new network with random name and customizers, and attaches the container to it.
+// Finally it sets the network alias on that network to the given alias.
+func WithNewNetwork(ctx context.Context, aliases []string, opts ...tcnetwork.NetworkCustomizer) CustomizeRequestOption {
+	return func(req *Request) error {
+		newNetwork, err := tcnetwork.New(ctx, opts...)
+		if err != nil {
+			return fmt.Errorf("new network: %w", err)
+		}
+
+		networkName := newNetwork.Name
+
+		// attaching to the network because it was created with success or it already existed.
+		req.Networks = append(req.Networks, networkName)
+
+		if req.NetworkAliases == nil {
+			req.NetworkAliases = make(map[string][]string)
+		}
+		req.NetworkAliases[networkName] = aliases
 
 		return nil
 	}

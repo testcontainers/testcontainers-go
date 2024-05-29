@@ -62,7 +62,7 @@ func GetGatewayIP(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	nw, err := Get(ctx, defaultNetwork)
+	nw, err := GetByName(ctx, defaultNetwork)
 	if err != nil {
 		return "", err
 	}

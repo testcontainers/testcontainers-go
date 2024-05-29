@@ -80,16 +80,16 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 The GCloud module exposes one entrypoint function to create the different GCloud emulators, and each function receives two parameters:
 
 ```golang
-func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*BigQueryContainer, error)
-func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*BigTableContainer, error)
-func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DatastoreContainer, error)
-func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*FirestoreContainer, error)
-func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PubsubContainer, error)
-func RunSpannerContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*SpannerContainer, error)
+func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*BigQueryContainer, error)
+func RunBigTableContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*BigTableContainer, error)
+func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*DatastoreContainer, error)
+func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*FirestoreContainer, error)
+func RunPubsubContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*PubsubContainer, error)
+func RunSpannerContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*SpannerContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options
 

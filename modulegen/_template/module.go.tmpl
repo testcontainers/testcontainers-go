@@ -9,30 +9,26 @@ import (
 
 // {{ $containerName }} represents the {{ $title }} container type used in the module
 type {{ $containerName }} struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // {{ $entrypoint }} creates an instance of the {{ $title }} container type
-func {{ $entrypoint }}(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*{{ $containerName }}, error) {
-	req := testcontainers.ContainerRequest{
+func {{ $entrypoint }}(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*{{ $containerName }}, error) {
+	req := testcontainers.Request{
 		Image: "{{ .Image }}",
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
 		Started:          true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, fmt.Errorf("customize: %w", err)
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &{{ $containerName }}{Container: container}, nil
+	return &{{ $containerName }}{DockerContainer: container}, nil
 }

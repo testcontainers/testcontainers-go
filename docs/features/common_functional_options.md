@@ -152,10 +152,8 @@ This option will merge the customized request into the module's own `ContainerRe
 ```go
 container, err := RunContainer(ctx,
     /* Other module options */
-    testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-        ContainerRequest: testcontainers.ContainerRequest{
-            Cmd: []string{"-c", "log_statement=all"},
-        },
+    testcontainers.CustomizeRequest(container.Request{
+        Cmd: []string{"-c", "log_statement=all"},
     }),
 )
 ```

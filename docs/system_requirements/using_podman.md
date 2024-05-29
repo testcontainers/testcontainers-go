@@ -20,21 +20,19 @@ package some_test
 
 import (
     "testing"
-    tc "github.com/testcontainers/testcontainers-go"
+    tccontainer "github.com/testcontainers/testcontainers-go"
 )
 
 func TestSomething(t *testing.T) {
-    req := tc.GenericContainerRequest{
-        ProviderType: tc.ProviderPodman,
-        ContainerRequest: tc.ContainerRequest{
-            Image: "docker.io/nginx:alpine"
-        },
+    req := testcontainers.Request{
+        Image: "docker.io/nginx:alpine"
     }
 
     // ...
 }
 ```
 
+// TODO: support changing the default network for Podman
 The `ProviderPodman` configures the `DockerProvider` with the correct default network for Podman to ensure complex network scenarios are working as with Docker.
 
 ## Podman socket activation

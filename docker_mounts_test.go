@@ -8,12 +8,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	tcmount "github.com/testcontainers/testcontainers-go/mount"
 )
 
 func TestCreateContainerWithVolume(t *testing.T) {
 	// volumeMounts {
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image: "alpine",
 		Mounts: tcmount.ContainerMounts{
 			{
@@ -23,19 +24,17 @@ func TestCreateContainerWithVolume(t *testing.T) {
 				Target: "/data",
 			},
 		},
+		Started: true,
 	}
 	// }
 
 	ctx := context.Background()
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.New(ctx, req)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
+	testcontainers.TerminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created
-	client, err := testcontainers.NewDockerClientWithOpts(ctx)
+	client, err := core.NewClient(ctx)
 	require.NoError(t, err)
 	defer client.Close()
 
@@ -45,7 +44,7 @@ func TestCreateContainerWithVolume(t *testing.T) {
 }
 
 func TestMountsReceiveRyukLabels(t *testing.T) {
-	req := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image: "alpine",
 		Mounts: tcmount.ContainerMounts{
 			{
@@ -55,22 +54,20 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 				Target: "/data",
 			},
 		},
+		Started: true,
 	}
 
 	ctx := context.Background()
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.New(ctx, req)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
+	testcontainers.TerminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created with the expected labels
-	client, err := testcontainers.NewDockerClientWithOpts(ctx)
+	client, err := core.NewClient(ctx)
 	require.NoError(t, err)
 	defer client.Close()
 
 	volume, err := client.VolumeInspect(ctx, "app-data")
 	require.NoError(t, err)
-	assert.Equal(t, testcontainers.GenericLabels(), volume.Labels)
+	assert.Equal(t, core.DefaultLabels(core.SessionID()), volume.Labels)
 }

@@ -25,11 +25,11 @@ go get github.com/testcontainers/testcontainers-go/modules/couchbase
 The Couchbase module exposes one entrypoint function to create the Couchbase container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CouchbaseContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*CouchbaseContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 Once the container is started, it will perform the following operations, **in this particular order**:
 

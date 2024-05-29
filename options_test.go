@@ -10,42 +10,39 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func TestOverrideContainerRequest(t *testing.T) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Env: map[string]string{
-				"BAR": "BAR",
+func TestOverrideRequest(t *testing.T) {
+	req := testcontainers.Request{
+		Env: map[string]string{
+			"BAR": "BAR",
+		},
+		Image:        "foo",
+		ExposedPorts: []string{"12345/tcp"},
+		WaitingFor: wait.ForNop(
+			func(ctx context.Context, target wait.StrategyTarget) error {
+				return nil
 			},
-			Image:        "foo",
-			ExposedPorts: []string{"12345/tcp"},
-			WaitingFor: wait.ForNop(
-				func(ctx context.Context, target wait.StrategyTarget) error {
-					return nil
-				},
-			),
-			Networks: []string{"foo", "bar", "baaz"},
-			NetworkAliases: map[string][]string{
-				"foo": {"foo0", "foo1", "foo2", "foo3"},
-			},
+		),
+		Networks: []string{"foo", "bar", "baaz"},
+		NetworkAliases: map[string][]string{
+			"foo": {"foo0", "foo1", "foo2", "foo3"},
 		},
 	}
 
-	toBeMergedRequest := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Env: map[string]string{
-				"FOO": "FOO",
-			},
-			Image:        "bar",
-			ExposedPorts: []string{"67890/tcp"},
-			Networks:     []string{"foo1", "bar1"},
-			NetworkAliases: map[string][]string{
-				"foo1": {"bar"},
-			},
-			WaitingFor: wait.ForLog("foo"),
+	toBeMergedRequest := testcontainers.Request{
+		Env: map[string]string{
+			"FOO": "FOO",
 		},
+		Image:        "bar",
+		ExposedPorts: []string{"67890/tcp"},
+		Networks:     []string{"foo1", "bar1"},
+		NetworkAliases: map[string][]string{
+			"foo1": {"bar"},
+		},
+		WaitingFor: wait.ForLog("foo"),
 	}
 
 	// the toBeMergedRequest should be merged into the req
@@ -73,17 +70,15 @@ type msgsLogConsumer struct {
 }
 
 // Accept prints the log to stdout
-func (lc *msgsLogConsumer) Accept(l testcontainers.Log) {
+func (lc *msgsLogConsumer) Accept(l tclog.Log) {
 	lc.msgs = append(lc.msgs, string(l.Content))
 }
 
 func TestWithLogConsumers(t *testing.T) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:      "mysql:8.0.36",
-			WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
-		},
-		Started: true,
+	req := testcontainers.Request{
+		Image:      "mysql:8.0.36",
+		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
+		Started:    true,
 	}
 
 	lc := &msgsLogConsumer{}
@@ -91,7 +86,7 @@ func TestWithLogConsumers(t *testing.T) {
 	err := testcontainers.WithLogConsumers(lc)(&req)
 	require.NoError(t, err)
 
-	c, err := testcontainers.GenericContainer(context.Background(), req)
+	c, err := testcontainers.New(context.Background(), req)
 	// we expect an error because the MySQL environment variables are not set
 	// but this is expected because we just want to test the log consumer
 	require.Error(t, err)
@@ -104,12 +99,10 @@ func TestWithLogConsumers(t *testing.T) {
 }
 
 func TestWithStartupCommand(t *testing.T) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:      "alpine",
-			Entrypoint: []string{"tail", "-f", "/dev/null"},
-		},
-		Started: true,
+	req := testcontainers.Request{
+		Image:      "alpine",
+		Entrypoint: []string{"tail", "-f", "/dev/null"},
+		Started:    true,
 	}
 
 	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
@@ -120,7 +113,7 @@ func TestWithStartupCommand(t *testing.T) {
 	assert.Len(t, req.LifecycleHooks, 1)
 	assert.Len(t, req.LifecycleHooks[0].PostStarts, 1)
 
-	c, err := testcontainers.GenericContainer(context.Background(), req)
+	c, err := testcontainers.New(context.Background(), req)
 	require.NoError(t, err)
 	defer func() {
 		err = c.Terminate(context.Background())
@@ -136,12 +129,10 @@ func TestWithStartupCommand(t *testing.T) {
 }
 
 func TestWithAfterReadyCommand(t *testing.T) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:      "alpine",
-			Entrypoint: []string{"tail", "-f", "/dev/null"},
-		},
-		Started: true,
+	req := testcontainers.Request{
+		Image:      "alpine",
+		Entrypoint: []string{"tail", "-f", "/dev/null"},
+		Started:    true,
 	}
 
 	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
@@ -152,7 +143,7 @@ func TestWithAfterReadyCommand(t *testing.T) {
 	assert.Len(t, req.LifecycleHooks, 1)
 	assert.Len(t, req.LifecycleHooks[0].PostReadies, 1)
 
-	c, err := testcontainers.GenericContainer(context.Background(), req)
+	c, err := testcontainers.New(context.Background(), req)
 	require.NoError(t, err)
 	defer func() {
 		err = c.Terminate(context.Background())
@@ -169,15 +160,13 @@ func TestWithAfterReadyCommand(t *testing.T) {
 
 func TestWithEnv(t *testing.T) {
 	tests := map[string]struct {
-		req    *testcontainers.GenericContainerRequest
+		req    *testcontainers.Request
 		env    map[string]string
 		expect map[string]string
 	}{
 		"add": {
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Env: map[string]string{"KEY1": "VAL1"},
-				},
+			req: &testcontainers.Request{
+				Env: map[string]string{"KEY1": "VAL1"},
 			},
 			env: map[string]string{"KEY2": "VAL2"},
 			expect: map[string]string{
@@ -186,17 +175,15 @@ func TestWithEnv(t *testing.T) {
 			},
 		},
 		"add-nil": {
-			req:    &testcontainers.GenericContainerRequest{},
+			req:    &testcontainers.Request{},
 			env:    map[string]string{"KEY2": "VAL2"},
 			expect: map[string]string{"KEY2": "VAL2"},
 		},
 		"override": {
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Env: map[string]string{
-						"KEY1": "VAL1",
-						"KEY2": "VAL2",
-					},
+			req: &testcontainers.Request{
+				Env: map[string]string{
+					"KEY1": "VAL1",
+					"KEY2": "VAL2",
 				},
 			},
 			env: map[string]string{"KEY2": "VAL3"},
@@ -206,6 +193,7 @@ func TestWithEnv(t *testing.T) {
 			},
 		},
 	}
+
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			opt := testcontainers.WithEnv(tc.env)
@@ -218,27 +206,26 @@ func TestWithEnv(t *testing.T) {
 func TestWithHostPortAccess(t *testing.T) {
 	tests := []struct {
 		name      string
-		req       *testcontainers.GenericContainerRequest
+		req       *testcontainers.Request
 		hostPorts []int
 		expect    []int
 	}{
 		{
 			name: "add to existing",
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					HostAccessPorts: []int{1, 2},
-				},
+			req: &testcontainers.Request{
+				HostAccessPorts: []int{1, 2},
 			},
 			hostPorts: []int{3, 4},
 			expect:    []int{1, 2, 3, 4},
 		},
 		{
 			name:      "add to nil",
-			req:       &testcontainers.GenericContainerRequest{},
+			req:       &testcontainers.Request{},
 			hostPorts: []int{3, 4},
 			expect:    []int{3, 4},
 		},
 	}
+
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			opt := testcontainers.WithHostPortAccess(tc.hostPorts...)

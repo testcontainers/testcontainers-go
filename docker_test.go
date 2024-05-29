@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -18,38 +17,24 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/api/types/strslice"
+	"github.com/docker/docker/api/types/system"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-units"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
-	"github.com/testcontainers/testcontainers-go/image"
+	tcimage "github.com/testcontainers/testcontainers-go/image"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 	tcmount "github.com/testcontainers/testcontainers-go/mount"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
-
-const (
-	mysqlImage        = "docker.io/mysql:8.0.36"
-	nginxDelayedImage = "docker.io/menedev/delayed-nginx:1.15.2"
-	nginxImage        = "docker.io/nginx"
-	nginxAlpineImage  = "docker.io/nginx:alpine"
-	nginxDefaultPort  = "80/tcp"
-	nginxHighPort     = "8080/tcp"
-	daemonMaxVersion  = "1.41"
-)
-
-var providerType = ProviderDocker
-
-func init() {
-	if strings.Contains(os.Getenv("DOCKER_HOST"), "podman.sock") {
-		providerType = ProviderPodman
-	}
-}
 
 func TestContainerWithHostNetworkOptions(t *testing.T) {
 	if os.Getenv("XDG_RUNTIME_DIR") != "" {
@@ -64,31 +49,28 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gcr := GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			Files: []tccontainer.ContainerFile{
-				{
-					HostFilePath:      absPath,
-					ContainerFilePath: "/etc/nginx/conf.d/default.conf",
-				},
+	req := Request{
+		Image: nginxAlpineImage,
+		Files: []ContainerFile{
+			{
+				HostFilePath:      absPath,
+				ContainerFilePath: "/etc/nginx/conf.d/default.conf",
 			},
-			ExposedPorts: []string{
-				nginxHighPort,
-			},
-			Privileged: true,
-			WaitingFor: wait.ForListeningPort(nginxHighPort),
-			HostConfigModifier: func(hc *container.HostConfig) {
-				hc.NetworkMode = "host"
-			},
+		},
+		ExposedPorts: []string{
+			nginxHighPort,
+		},
+		Privileged: true,
+		WaitingFor: wait.ForListeningPort(nginxHighPort),
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.NetworkMode = "host"
 		},
 		Started: true,
 	}
 
-	nginxC, err := GenericContainer(ctx, gcr)
+	nginxC, err := New(ctx, req)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
+	TerminateContainerOnEnd(t, ctx, nginxC)
 
 	// host, err := nginxC.Host(ctx)
 	// if err != nil {
@@ -106,23 +88,21 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	}
 }
 
-func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testing.T) {
+func TestContainer_UseExposePortsFromImageConfigs(t *testing.T) {
 	ctx := context.Background()
-	gcr := GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			Image:      "nginx",
-			Privileged: true,
-			WaitingFor: wait.ForExposedPort(),
-		},
-		Started: true,
+	req := Request{
+		Image:      "nginx",
+		Privileged: true,
+		WaitingFor: wait.ForExposedPort(),
+		Started:    true,
 	}
 
-	nginxC, err := GenericContainer(ctx, gcr)
+	nginxC, err := New(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	terminateContainerOnEnd(t, ctx, nginxC)
+	TerminateContainerOnEnd(t, ctx, nginxC)
 
 	endpoint, err := nginxC.Endpoint(ctx, "http")
 	if err != nil {
@@ -150,24 +130,21 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	SkipIfDockerDesktop(t, ctx)
 	// }
 
-	gcr := GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:    nginxImage,
-			Networks: []string{"new-network"},
-			HostConfigModifier: func(hc *container.HostConfig) {
-				hc.NetworkMode = "host"
-			},
+	req := Request{
+		Image:    nginxImage,
+		Networks: []string{"new-network"},
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.NetworkMode = "host"
 		},
 		Started: true,
 	}
 
-	nginx, err := GenericContainer(ctx, gcr)
+	nginx, err := New(ctx, req)
 	if err != nil {
 		// Error when NetworkMode = host and Network = []string{"bridge"}
 		t.Logf("Can't use Network and NetworkMode together, %s\n", err)
 	}
-	terminateContainerOnEnd(t, ctx, nginx)
+	TerminateContainerOnEnd(t, ctx, nginx)
 }
 
 func TestContainerWithHostNetwork(t *testing.T) {
@@ -183,28 +160,25 @@ func TestContainerWithHostNetwork(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gcr := GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:      nginxAlpineImage,
-			WaitingFor: wait.ForListeningPort(nginxHighPort),
-			Files: []tccontainer.ContainerFile{
-				{
-					HostFilePath:      absPath,
-					ContainerFilePath: "/etc/nginx/conf.d/default.conf",
-				},
+	req := Request{
+		Image:      nginxAlpineImage,
+		WaitingFor: wait.ForListeningPort(nginxHighPort),
+		Files: []ContainerFile{
+			{
+				HostFilePath:      absPath,
+				ContainerFilePath: "/etc/nginx/conf.d/default.conf",
 			},
-			HostConfigModifier: func(hc *container.HostConfig) {
-				hc.NetworkMode = "host"
-			},
+		},
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.NetworkMode = "host"
 		},
 		Started: true,
 	}
 
-	nginxC, err := GenericContainer(ctx, gcr)
+	nginxC, err := New(ctx, req)
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
+	TerminateContainerOnEnd(t, ctx, nginxC)
 
 	portEndpoint, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
 	if err != nil {
@@ -230,18 +204,15 @@ func TestContainerWithHostNetwork(t *testing.T) {
 
 func TestContainerReturnItsContainerID(t *testing.T) {
 	ctx := context.Background()
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
+	nginxA, err := New(ctx, Request{
+		Image: nginxAlpineImage,
+		ExposedPorts: []string{
+			nginxDefaultPort,
 		},
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxA)
+	TerminateContainerOnEnd(t, ctx, nginxA)
 
 	if nginxA.GetContainerID() == "" {
 		t.Errorf("expected a containerID but we got an empty string.")
@@ -251,13 +222,10 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 func TestContainerTerminationResetsState(t *testing.T) {
 	ctx := context.Background()
 
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
+	nginxA, err := New(ctx, Request{
+		Image: nginxAlpineImage,
+		ExposedPorts: []string{
+			nginxDefaultPort,
 		},
 		Started: true,
 	})
@@ -279,14 +247,11 @@ func TestContainerTerminationResetsState(t *testing.T) {
 }
 
 func TestContainerStateAfterTermination(t *testing.T) {
-	createContainerFn := func(ctx context.Context) (Container, error) {
-		return GenericContainer(ctx, GenericContainerRequest{
-			ProviderType: providerType,
-			ContainerRequest: ContainerRequest{
-				Image: nginxAlpineImage,
-				ExposedPorts: []string{
-					nginxDefaultPort,
-				},
+	createContainerFn := func(ctx context.Context) (StartedContainer, error) {
+		return New(ctx, Request{
+			Image: nginxAlpineImage,
+			ExposedPorts: []string{
+				nginxDefaultPort,
 			},
 			Started: true,
 		})
@@ -339,19 +304,16 @@ func TestContainerStateAfterTermination(t *testing.T) {
 func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	t.Run("if not built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		dockerClient, err := NewDockerClientWithOpts(ctx)
+		dockerClient, err := core.NewClient(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 		defer dockerClient.Close()
 
-		ctr, err := GenericContainer(ctx, GenericContainerRequest{
-			ProviderType: providerType,
-			ContainerRequest: ContainerRequest{
-				Image: nginxAlpineImage,
-				ExposedPorts: []string{
-					nginxDefaultPort,
-				},
+		ctr, err := New(ctx, Request{
+			Image: nginxAlpineImage,
+			ExposedPorts: []string{
+				nginxDefaultPort,
 			},
 			Started: true,
 		})
@@ -370,23 +332,19 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 	t.Run("if built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		dockerClient, err := NewDockerClientWithOpts(ctx)
+		dockerClient, err := core.NewClient(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 		defer dockerClient.Close()
 
-		req := ContainerRequest{
+		ctr, err := New(ctx, Request{
 			FromDockerfile: FromDockerfile{
 				Context: filepath.Join(".", "testdata"),
 			},
 			ExposedPorts: []string{"6379/tcp"},
 			WaitingFor:   wait.ForLog("Ready to accept connections"),
-		}
-		ctr, err := GenericContainer(ctx, GenericContainerRequest{
-			ProviderType:     providerType,
-			ContainerRequest: req,
-			Started:          true,
+			Started:      true,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -412,34 +370,28 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	ctx := context.Background()
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
+	nginxA, err := New(ctx, Request{
+		Image: nginxAlpineImage,
+		ExposedPorts: []string{
+			nginxDefaultPort,
 		},
 		Started: true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxA)
+	TerminateContainerOnEnd(t, ctx, nginxA)
 
-	nginxB, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+	nginxB, err := New(ctx, Request{
+		Image: nginxAlpineImage,
+		ExposedPorts: []string{
+			nginxDefaultPort,
 		},
-		Started: true,
+		WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+		Started:    true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxB)
+	TerminateContainerOnEnd(t, ctx, nginxB)
 
 	endpointA, err := nginxA.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
@@ -473,20 +425,17 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 func TestContainerCreation(t *testing.T) {
 	ctx := context.Background()
 
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+	nginxC, err := New(ctx, Request{
+		Image: nginxAlpineImage,
+		ExposedPorts: []string{
+			nginxDefaultPort,
 		},
-		Started: true,
+		WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+		Started:    true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
+	TerminateContainerOnEnd(t, ctx, nginxC)
 
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
@@ -527,22 +476,19 @@ func TestContainerCreationWithName(t *testing.T) {
 	creationName := fmt.Sprintf("%s_%d", "test_container", time.Now().Unix())
 	expectedName := "/" + creationName // inspect adds '/' in the beginning
 
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
-			Name:       creationName,
-			Networks:   []string{"bridge"},
+	nginxC, err := New(ctx, Request{
+		Image: nginxAlpineImage,
+		ExposedPorts: []string{
+			nginxDefaultPort,
 		},
-		Started: true,
+		WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+		Name:       creationName,
+		Networks:   []string{"bridge"},
+		Started:    true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
+	TerminateContainerOnEnd(t, ctx, nginxC)
 
 	inspect, err := nginxC.Inspect(ctx)
 	if err != nil {
@@ -560,16 +506,10 @@ func TestContainerCreationWithName(t *testing.T) {
 	if len(networks) != 1 {
 		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
 	}
+
 	network := networks[0]
-	switch providerType {
-	case ProviderDocker:
-		if network != corenetwork.Bridge {
-			t.Errorf("Expected network name '%s'. Got '%s'.", corenetwork.Bridge, network)
-		}
-	case ProviderPodman:
-		if network != Podman {
-			t.Errorf("Expected network name '%s'. Got '%s'.", Podman, network)
-		}
+	if network != corenetwork.Bridge {
+		t.Errorf("Expected network name '%s'. Got '%s'.", corenetwork.Bridge, network)
 	}
 
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
@@ -590,20 +530,17 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 	ctx := context.Background()
 
 	// delayed-nginx will wait 2s before opening port
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxDelayedImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort), // default startupTimeout is 60s
+	nginxC, err := New(ctx, Request{
+		Image: nginxDelayedImage,
+		ExposedPorts: []string{
+			nginxDefaultPort,
 		},
-		Started: true,
+		WaitingFor: wait.ForListeningPort(nginxDefaultPort), // default startupTimeout is 60s
+		Started:    true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
+	TerminateContainerOnEnd(t, ctx, nginxC)
 
 	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	if err != nil {
@@ -623,19 +560,16 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 func TestContainerCreationTimesOut(t *testing.T) {
 	ctx := context.Background()
 	// delayed-nginx will wait 2s before opening port
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxDelayedImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort).WithStartupTimeout(1 * time.Second),
+	nginxC, err := New(ctx, Request{
+		Image: nginxDelayedImage,
+		ExposedPorts: []string{
+			nginxDefaultPort,
 		},
-		Started: true,
+		WaitingFor: wait.ForListeningPort(nginxDefaultPort).WithStartupTimeout(1 * time.Second),
+		Started:    true,
 	})
 
-	terminateContainerOnEnd(t, ctx, nginxC)
+	TerminateContainerOnEnd(t, ctx, nginxC)
 
 	if err == nil {
 		t.Error("Expected timeout")
@@ -645,20 +579,17 @@ func TestContainerCreationTimesOut(t *testing.T) {
 func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 	ctx := context.Background()
 
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-			WaitingFor: wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
+	nginxC, err := New(ctx, Request{
+		Image: nginxAlpineImage,
+		ExposedPorts: []string{
+			nginxDefaultPort,
 		},
-		Started: true,
+		WaitingFor: wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
+		Started:    true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
+	TerminateContainerOnEnd(t, ctx, nginxC)
 
 	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	if err != nil {
@@ -678,18 +609,15 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 	ctx := context.Background()
 	// delayed-nginx will wait 2s before opening port
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxDelayedImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-			WaitingFor: wait.ForHTTP("/").WithStartupTimeout(1 * time.Second),
+	nginxC, err := New(ctx, Request{
+		Image: nginxDelayedImage,
+		ExposedPorts: []string{
+			nginxDefaultPort,
 		},
-		Started: true,
+		WaitingFor: wait.ForHTTP("/").WithStartupTimeout(1 * time.Second),
+		Started:    true,
 	})
-	terminateContainerOnEnd(t, ctx, nginxC)
+	TerminateContainerOnEnd(t, ctx, nginxC)
 
 	if err == nil {
 		t.Error("Expected timeout")
@@ -698,7 +626,8 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 
 func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
+
+	c, err := New(ctx, Request{
 		Image:        mysqlImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
@@ -706,22 +635,19 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 			"MYSQL_DATABASE":      "database",
 		},
 		WaitingFor: wait.ForLog("test context timeout").WithStartupTimeout(1 * time.Second),
-	}
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
+		Started:    true,
 	})
 	if err == nil {
 		t.Error("Expected timeout")
 	}
 
-	terminateContainerOnEnd(t, ctx, c)
+	TerminateContainerOnEnd(t, ctx, c)
 }
 
 func TestContainerCreationWaitsForLog(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
+
+	mysqlC, err := New(ctx, Request{
 		Image:        mysqlImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
@@ -729,18 +655,14 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 			"MYSQL_DATABASE":      "database",
 		},
 		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
-	}
-	mysqlC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
+		Started:    true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, mysqlC)
+	TerminateContainerOnEnd(t, ctx, mysqlC)
 }
 
-func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
+func TestBuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	t.Log("getting ctx")
 	ctx := context.Background()
 
@@ -749,7 +671,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	// fromDockerfileWithBuildArgs {
 	ba := "build args value"
 
-	req := ContainerRequest{
+	req := Request{
 		FromDockerfile: FromDockerfile{
 			Context:    filepath.Join(".", "testdata"),
 			Dockerfile: "args.Dockerfile",
@@ -759,19 +681,14 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 		},
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
+		Started:      true,
 	}
 	// }
 
-	genContainerReq := GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, genContainerReq)
+	c, err := New(ctx, req)
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
+	TerminateContainerOnEnd(t, ctx, c)
 
 	ep, err := c.Endpoint(ctx, "http")
 	if err != nil {
@@ -793,7 +710,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	assert.Equal(t, ba, string(body))
 }
 
-func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
+func TestBuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	rescueStdout := os.Stderr
 	r, w, _ := os.Pipe()
 	os.Stderr = w
@@ -803,25 +720,20 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	t.Log("got ctx, creating container request")
 
 	// fromDockerfile {
-	req := ContainerRequest{
+	req := Request{
 		FromDockerfile: FromDockerfile{
 			Context:       filepath.Join(".", "testdata"),
 			Dockerfile:    "buildlog.Dockerfile",
 			PrintBuildLog: true,
 		},
+		Started: true,
 	}
 	// }
 
-	genContainerReq := GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, genContainerReq)
+	c, err := New(ctx, req)
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
+	TerminateContainerOnEnd(t, ctx, c)
 
 	_ = w.Close()
 	out, _ := io.ReadAll(r)
@@ -835,7 +747,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
+	req := Request{
 		Image:        mysqlImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
@@ -845,54 +757,45 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 		WaitingFor: wait.ForAll(
 			wait.ForLog("I love testcontainers-go"),
 			wait.ForListeningPort("3306/tcp"),
-		),
+		).WithDeadline(5 * time.Second),
+		Started: true,
 	}
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := New(ctx, req)
 	if err == nil {
 		t.Fatal("Expected timeout")
 	}
 
-	terminateContainerOnEnd(t, ctx, c)
+	TerminateContainerOnEnd(t, ctx, c)
 }
 
 func TestContainerCreationWaitingForHostPort(t *testing.T) {
 	ctx := context.Background()
 	// exposePorts {
-	req := ContainerRequest{
+	req := Request{
 		Image:        nginxAlpineImage,
 		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+		Started:      true,
 	}
 	// }
-	nginx, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
+	nginx, err := New(ctx, req)
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginx)
+	TerminateContainerOnEnd(t, ctx, nginx)
 }
 
 func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
+	req := Request{
 		Image:        nginxAlpineImage,
 		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+		Started:      true,
 	}
-	nginx, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
+	nginx, err := New(ctx, req)
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginx)
+	TerminateContainerOnEnd(t, ctx, nginx)
 }
 
 func TestCMD(t *testing.T) {
@@ -904,22 +807,19 @@ func TestCMD(t *testing.T) {
 
 	ctx := context.Background()
 
-	req := ContainerRequest{
+	req := Request{
 		Image: "docker.io/alpine",
 		WaitingFor: wait.ForAll(
 			wait.ForLog("command override!"),
 		),
-		Cmd: []string{"echo", "command override!"},
+		Cmd:     []string{"echo", "command override!"},
+		Started: true,
 	}
 
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := New(ctx, req)
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
+	TerminateContainerOnEnd(t, ctx, c)
 }
 
 func TestEntrypoint(t *testing.T) {
@@ -931,22 +831,19 @@ func TestEntrypoint(t *testing.T) {
 
 	ctx := context.Background()
 
-	req := ContainerRequest{
+	req := Request{
 		Image: "docker.io/alpine",
 		WaitingFor: wait.ForAll(
 			wait.ForLog("entrypoint override!"),
 		),
 		Entrypoint: []string{"echo", "entrypoint override!"},
+		Started:    true,
 	}
 
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := New(ctx, req)
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
+	TerminateContainerOnEnd(t, ctx, c)
 }
 
 func TestWorkingDir(t *testing.T) {
@@ -958,173 +855,20 @@ func TestWorkingDir(t *testing.T) {
 
 	ctx := context.Background()
 
-	req := ContainerRequest{
+	req := Request{
 		Image: "docker.io/alpine",
 		WaitingFor: wait.ForAll(
 			wait.ForLog("/var/tmp/test"),
 		),
 		Entrypoint: []string{"pwd"},
 		WorkingDir: "/var/tmp/test",
+		Started:    true,
 	}
 
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := New(ctx, req)
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
-}
-
-func ExampleDockerProvider_CreateContainer() {
-	ctx := context.Background()
-	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
-	}
-	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	defer func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
-		}
-	}()
-
-	state, err := nginxC.State(ctx)
-	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
-	}
-
-	fmt.Println(state.Running)
-
-	// Output:
-	// true
-}
-
-func ExampleContainer_Host() {
-	ctx := context.Background()
-	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
-	}
-	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	defer func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
-		}
-	}()
-	// containerHost {
-	ip, _ := nginxC.Host(ctx)
-	// }
-	println(ip)
-
-	state, err := nginxC.State(ctx)
-	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
-	}
-
-	fmt.Println(state.Running)
-
-	// Output:
-	// true
-}
-
-func ExampleContainer_Start() {
-	ctx := context.Background()
-	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
-	}
-	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-	})
-	defer func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
-		}
-	}()
-	_ = nginxC.Start(ctx)
-
-	state, err := nginxC.State(ctx)
-	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
-	}
-
-	fmt.Println(state.Running)
-
-	// Output:
-	// true
-}
-
-func ExampleContainer_Stop() {
-	ctx := context.Background()
-	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
-	}
-	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-	})
-	defer func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
-		}
-	}()
-	fmt.Println("Container has been started")
-	timeout := 10 * time.Second
-	err := nginxC.Stop(ctx, &timeout)
-	if err != nil {
-		log.Fatalf("failed to stop container: %s", err) // nolint:gocritic
-	}
-
-	fmt.Println("Container has been stopped")
-
-	// Output:
-	// Container has been started
-	// Container has been stopped
-}
-
-func ExampleContainer_MappedPort() {
-	ctx := context.Background()
-	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
-	}
-	nginxC, _ := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	defer func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
-		}
-	}()
-	// buildingAddresses {
-	ip, _ := nginxC.Host(ctx)
-	port, _ := nginxC.MappedPort(ctx, "80")
-	_, _ = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
-	// }
-
-	state, err := nginxC.State(ctx)
-	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
-	}
-
-	fmt.Println(state.Running)
-
-	// Output:
-	// true
+	TerminateContainerOnEnd(t, ctx, c)
 }
 
 func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
@@ -1139,21 +883,18 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 	volumeName := "volumeName"
 
 	// Create the container that writes into the mounted volume.
-	bashC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: "docker.io/bash",
-			Files: []tccontainer.ContainerFile{
-				{
-					HostFilePath:      absPath,
-					ContainerFilePath: "/hello.sh",
-				},
+	bashC, err := New(ctx, Request{
+		Image: "docker.io/bash",
+		Files: []ContainerFile{
+			{
+				HostFilePath:      absPath,
+				ContainerFilePath: "/hello.sh",
 			},
-			Mounts:     tcmount.Mounts(tcmount.VolumeMount(volumeName, "/data")),
-			Cmd:        []string{"bash", "/hello.sh"},
-			WaitingFor: wait.ForLog("done"),
 		},
-		Started: true,
+		Mounts:     tcmount.Mounts(tcmount.VolumeMount(volumeName, "/data")),
+		Cmd:        []string{"bash", "/hello.sh"},
+		WaitingFor: wait.ForLog("done"),
+		Started:    true,
 	})
 
 	require.NoError(t, err)
@@ -1162,20 +903,17 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 
 func TestContainerWithTmpFs(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
-		Image: "docker.io/busybox",
-		Cmd:   []string{"sleep", "10"},
-		Tmpfs: map[string]string{"/testtmpfs": "rw"},
+	req := Request{
+		Image:   "docker.io/busybox",
+		Cmd:     []string{"sleep", "10"},
+		Tmpfs:   map[string]string{"/testtmpfs": "rw"},
+		Started: true,
 	}
 
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
+	ctr, err := New(ctx, req)
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, ctr)
+	TerminateContainerOnEnd(t, ctx, ctr)
 
 	path := "/testtmpfs/test.file"
 
@@ -1219,10 +957,8 @@ func TestContainerWithTmpFs(t *testing.T) {
 
 func TestContainerNonExistentImage(t *testing.T) {
 	t.Run("if the image not found don't propagate the error", func(t *testing.T) {
-		_, err := GenericContainer(context.Background(), GenericContainerRequest{
-			ContainerRequest: ContainerRequest{
-				Image: "postgres:nonexistent-version",
-			},
+		_, err := New(context.Background(), Request{
+			Image:   "postgres:nonexistent-version",
 			Started: true,
 		})
 
@@ -1235,41 +971,32 @@ func TestContainerNonExistentImage(t *testing.T) {
 	t.Run("the context cancellation is propagated to container creation", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
-		c, err := GenericContainer(ctx, GenericContainerRequest{
-			ProviderType: providerType,
-			ContainerRequest: ContainerRequest{
-				Image:      "docker.io/postgres:12",
-				WaitingFor: wait.ForLog("log"),
-			},
-			Started: true,
+		c, err := New(ctx, Request{
+			Image:      "docker.io/postgres:12",
+			WaitingFor: wait.ForLog("log"),
+			Started:    true,
 		})
 		if !errors.Is(err, ctx.Err()) {
 			t.Fatalf("err should be a ctx cancelled error %v", err)
 		}
 
-		terminateContainerOnEnd(t, context.Background(), c) // use non-cancelled context
+		TerminateContainerOnEnd(t, context.Background(), c) // use non-cancelled context
 	})
 }
 
 func TestContainerCustomPlatformImage(t *testing.T) {
-	if providerType == ProviderPodman {
-		t.Skip("Incompatible Docker API version for Podman")
-	}
 	t.Run("error with a non-existent platform", func(t *testing.T) {
 		t.Parallel()
 		nonExistentPlatform := "windows/arm12"
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
-		c, err := GenericContainer(ctx, GenericContainerRequest{
-			ProviderType: providerType,
-			ContainerRequest: ContainerRequest{
-				Image:         "docker.io/redis:latest",
-				ImagePlatform: nonExistentPlatform,
-			},
-			Started: false,
+		c, err := New(ctx, Request{
+			Image:         "docker.io/redis:latest",
+			ImagePlatform: nonExistentPlatform,
+			Started:       false,
 		})
 
-		terminateContainerOnEnd(t, ctx, c)
+		TerminateContainerOnEnd(t, ctx, c)
 
 		require.Error(t, err)
 	})
@@ -1278,19 +1005,16 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
 
-		c, err := GenericContainer(ctx, GenericContainerRequest{
-			ProviderType: providerType,
-			ContainerRequest: ContainerRequest{
-				Image:         "docker.io/mysql:8.0.36",
-				ImagePlatform: "linux/amd64",
-			},
-			Started: false,
+		c, err := New(ctx, Request{
+			Image:         "docker.io/mysql:8.0.36",
+			ImagePlatform: "linux/amd64",
+			Started:       false,
 		})
 
 		require.NoError(t, err)
-		terminateContainerOnEnd(t, ctx, c)
+		TerminateContainerOnEnd(t, ctx, c)
 
-		dockerCli, err := NewDockerClientWithOpts(ctx)
+		dockerCli, err := core.NewClient(ctx)
 		require.NoError(t, err)
 		defer dockerCli.Close()
 
@@ -1308,19 +1032,16 @@ func TestContainerWithCustomHostname(t *testing.T) {
 	ctx := context.Background()
 	name := fmt.Sprintf("some-nginx-%s-%d", t.Name(), rand.Int())
 	hostname := fmt.Sprintf("my-nginx-%s-%d", t.Name(), rand.Int())
-	req := ContainerRequest{
+	req := Request{
 		Name:     name,
 		Image:    nginxImage,
 		Hostname: hostname,
+		Started:  true,
 	}
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
+	ctr, err := New(ctx, req)
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, ctr)
+	TerminateContainerOnEnd(t, ctx, ctr)
 
 	if actualHostname := readHostname(t, ctr.GetContainerID()); actualHostname != hostname {
 		t.Fatalf("expected hostname %s, got %s", hostname, actualHostname)
@@ -1328,14 +1049,12 @@ func TestContainerWithCustomHostname(t *testing.T) {
 }
 
 func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
-	ctr, err := GenericContainer(context.Background(), GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			Image: nginxImage,
-		},
+	ctr, err := New(context.Background(), Request{
+		Image:   nginxImage,
 		Started: true,
 	})
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, context.Background(), ctr)
+	TerminateContainerOnEnd(t, context.Background(), ctr)
 
 	inspect, err := ctr.Inspect(context.Background())
 	require.NoError(t, err)
@@ -1344,14 +1063,11 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 
 	require.NoError(t, ctr.Stop(context.Background(), nil))
 
-	// type assertion to ensure that the container is a DockerContainer
-	dc := ctr.(*DockerContainer)
-
-	assert.Nil(t, dc.raw)
+	assert.Nil(t, ctr.raw)
 }
 
 func readHostname(tb testing.TB, containerId string) string {
-	containerClient, err := NewDockerClientWithOpts(context.Background())
+	containerClient, err := core.NewClient(context.Background())
 	if err != nil {
 		tb.Fatalf("Failed to create Docker client: %v", err)
 	}
@@ -1365,357 +1081,7 @@ func readHostname(tb testing.TB, containerId string) string {
 	return containerDetails.Config.Hostname
 }
 
-func TestDockerContainerCopyFileToContainer(t *testing.T) {
-	ctx := context.Background()
-
-	tests := []struct {
-		name           string
-		copiedFileName string
-	}{
-		{
-			name:           "success copy",
-			copiedFileName: "/hello_copy.sh",
-		},
-		{
-			name:           "success copy with dir",
-			copiedFileName: "/test/hello_copy.sh",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-				ProviderType: providerType,
-				ContainerRequest: ContainerRequest{
-					Image:        nginxImage,
-					ExposedPorts: []string{nginxDefaultPort},
-					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-				},
-				Started: true,
-			})
-
-			require.NoError(t, err)
-			terminateContainerOnEnd(t, ctx, nginxC)
-
-			_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), tc.copiedFileName, 700)
-			c, _, err := nginxC.Exec(ctx, []string{"bash", tc.copiedFileName})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if c != 0 {
-				t.Fatalf("File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
-			}
-		})
-	}
-}
-
-func TestDockerContainerCopyDirToContainer(t *testing.T) {
-	ctx := context.Background()
-
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:        nginxImage,
-			ExposedPorts: []string{nginxDefaultPort},
-			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-		},
-		Started: true,
-	})
-
-	p := filepath.Join(".", "testdata", "Dokerfile")
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
-
-	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testdata/Dockerfile", 700)
-	require.Error(t, err) // copying a file using the directory method will raise an error
-
-	p = filepath.Join(".", "testdata")
-	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testdata", 700)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assertExtractedFiles(t, ctx, nginxC, p, "/tmp/testdata/")
-}
-
-func TestDockerCreateContainerWithFiles(t *testing.T) {
-	ctx := context.Background()
-	hostFileName := filepath.Join(".", "testdata", "hello.sh")
-	copiedFileName := "/hello_copy.sh"
-	tests := []struct {
-		name   string
-		files  []tccontainer.ContainerFile
-		errMsg string
-	}{
-		{
-			name: "success copy",
-			files: []tccontainer.ContainerFile{
-				{
-					HostFilePath:      hostFileName,
-					ContainerFilePath: copiedFileName,
-					FileMode:          700,
-				},
-			},
-		},
-		{
-			name: "host file not found",
-			files: []tccontainer.ContainerFile{
-				{
-					HostFilePath:      hostFileName + "123",
-					ContainerFilePath: copiedFileName,
-					FileMode:          700,
-				},
-			},
-			errMsg: "can't copy " +
-				hostFileName + "123 to container: open " + hostFileName + "123",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-				ContainerRequest: ContainerRequest{
-					Image:        "nginx:1.17.6",
-					ExposedPorts: []string{"80/tcp"},
-					WaitingFor:   wait.ForListeningPort("80/tcp"),
-					Files:        tc.files,
-				},
-				Started: false,
-			})
-			terminateContainerOnEnd(t, ctx, nginxC)
-
-			if err != nil {
-				require.Contains(t, err.Error(), tc.errMsg)
-			} else {
-				for _, f := range tc.files {
-					require.NoError(t, err)
-
-					hostFileData, err := os.ReadFile(f.HostFilePath)
-					require.NoError(t, err)
-
-					fd, err := nginxC.CopyFileFromContainer(ctx, f.ContainerFilePath)
-					require.NoError(t, err)
-					defer fd.Close()
-					containerFileData, err := io.ReadAll(fd)
-					require.NoError(t, err)
-
-					require.Equal(t, hostFileData, containerFileData)
-				}
-			}
-		})
-	}
-}
-
-func TestDockerCreateContainerWithDirs(t *testing.T) {
-	ctx := context.Background()
-	hostDirName := "testdata"
-
-	abs, err := filepath.Abs(filepath.Join(".", hostDirName))
-	require.NoError(t, err)
-
-	tests := []struct {
-		name     string
-		dir      tccontainer.ContainerFile
-		hasError bool
-	}{
-		{
-			name: "success copy directory with full path",
-			dir: tccontainer.ContainerFile{
-				HostFilePath:      abs,
-				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
-				FileMode:          700,
-			},
-			hasError: false,
-		},
-		{
-			name: "success copy directory",
-			dir: tccontainer.ContainerFile{
-				HostFilePath:      filepath.Join(".", hostDirName),
-				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
-				FileMode:          700,
-			},
-			hasError: false,
-		},
-		{
-			name: "host dir not found",
-			dir: tccontainer.ContainerFile{
-				HostFilePath:      filepath.Join(".", "testdata123"), // does not exist
-				ContainerFilePath: "/tmp/" + hostDirName,             // the parent dir must exist
-				FileMode:          700,
-			},
-			hasError: true,
-		},
-		{
-			name: "container dir not found",
-			dir: tccontainer.ContainerFile{
-				HostFilePath:      filepath.Join(".", hostDirName),
-				ContainerFilePath: "/parent-does-not-exist/testdata123", // does not exist
-				FileMode:          700,
-			},
-			hasError: true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-				ContainerRequest: ContainerRequest{
-					Image:        "nginx:1.17.6",
-					ExposedPorts: []string{"80/tcp"},
-					WaitingFor:   wait.ForListeningPort("80/tcp"),
-					Files:        []tccontainer.ContainerFile{tc.dir},
-				},
-				Started: false,
-			})
-			terminateContainerOnEnd(t, ctx, nginxC)
-
-			require.Equal(t, (err != nil), tc.hasError)
-			if err == nil {
-				dir := tc.dir
-
-				assertExtractedFiles(t, ctx, nginxC, dir.HostFilePath, dir.ContainerFilePath)
-			}
-		})
-	}
-}
-
-func TestDockerContainerCopyToContainer(t *testing.T) {
-	ctx := context.Background()
-
-	tests := []struct {
-		name           string
-		copiedFileName string
-	}{
-		{
-			name:           "success copy",
-			copiedFileName: "hello_copy.sh",
-		},
-		{
-			name:           "success copy with dir",
-			copiedFileName: "/test/hello_copy.sh",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-				ProviderType: providerType,
-				ContainerRequest: ContainerRequest{
-					Image:        nginxImage,
-					ExposedPorts: []string{nginxDefaultPort},
-					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-				},
-				Started: true,
-			})
-
-			require.NoError(t, err)
-			terminateContainerOnEnd(t, ctx, nginxC)
-
-			fileContent, err := os.ReadFile(filepath.Join(".", "testdata", "hello.sh"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			err = nginxC.CopyToContainer(ctx, fileContent, tc.copiedFileName, 700)
-			if err != nil {
-				t.Fatal(err)
-			}
-			c, _, err := nginxC.Exec(ctx, []string{"bash", tc.copiedFileName})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if c != 0 {
-				t.Fatalf("File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
-			}
-		})
-	}
-}
-
-func TestDockerContainerCopyFileFromContainer(t *testing.T) {
-	fileContent, err := os.ReadFile(filepath.Join(".", "testdata", "hello.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx := context.Background()
-
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:        nginxImage,
-			ExposedPorts: []string{nginxDefaultPort},
-			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-		},
-		Started: true,
-	})
-
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
-
-	copiedFileName := "hello_copy.sh"
-	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), "/"+copiedFileName, 700)
-	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
-	}
-
-	reader, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer reader.Close()
-
-	fileContentFromContainer, err := io.ReadAll(reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, fileContent, fileContentFromContainer)
-}
-
-func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
-	ctx := context.Background()
-
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:        nginxImage,
-			ExposedPorts: []string{nginxDefaultPort},
-			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-		},
-		Started: true,
-	})
-
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
-
-	copiedFileName := "hello_copy.sh"
-	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "empty.sh"), "/"+copiedFileName, 700)
-	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
-	}
-
-	reader, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer reader.Close()
-
-	fileContentFromContainer, err := io.ReadAll(reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Empty(t, fileContentFromContainer)
-}
-
 func TestDockerContainerResources(t *testing.T) {
-	if providerType == ProviderPodman {
-		t.Skip("Rootless Podman does not support setting rlimit")
-	}
 	if os.Getenv("XDG_RUNTIME_DIR") != "" {
 		t.Skip("Rootless Docker does not support setting rlimit")
 	}
@@ -1735,25 +1101,22 @@ func TestDockerContainerResources(t *testing.T) {
 		},
 	}
 
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:        nginxAlpineImage,
-			ExposedPorts: []string{nginxDefaultPort},
-			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-			HostConfigModifier: func(hc *container.HostConfig) {
-				hc.Resources = container.Resources{
-					Ulimits: expected,
-				}
-			},
+	nginxC, err := New(ctx, Request{
+		Image:        nginxAlpineImage,
+		ExposedPorts: []string{nginxDefaultPort},
+		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.Resources = container.Resources{
+				Ulimits: expected,
+			}
 		},
 		Started: true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxC)
+	TerminateContainerOnEnd(t, ctx, nginxC)
 
-	c, err := NewDockerClientWithOpts(ctx)
+	c, err := core.NewClient(ctx)
 	require.NoError(t, err)
 	defer c.Close()
 
@@ -1766,30 +1129,23 @@ func TestDockerContainerResources(t *testing.T) {
 }
 
 func TestContainerCapAdd(t *testing.T) {
-	if providerType == ProviderPodman {
-		t.Skip("Rootless Podman does not support setting cap-add/cap-drop")
-	}
-
 	ctx := context.Background()
 
 	expected := "IPC_LOCK"
 
-	nginx, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:        nginxAlpineImage,
-			ExposedPorts: []string{nginxDefaultPort},
-			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-			HostConfigModifier: func(hc *container.HostConfig) {
-				hc.CapAdd = []string{expected}
-			},
+	nginx, err := New(ctx, Request{
+		Image:        nginxAlpineImage,
+		ExposedPorts: []string{nginxDefaultPort},
+		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.CapAdd = []string{expected}
 		},
 		Started: true,
 	})
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginx)
+	TerminateContainerOnEnd(t, ctx, nginx)
 
-	dockerClient, err := NewDockerClientWithOpts(ctx)
+	dockerClient, err := core.NewClient(ctx)
 	require.NoError(t, err)
 	defer dockerClient.Close()
 
@@ -1802,7 +1158,7 @@ func TestContainerCapAdd(t *testing.T) {
 
 func TestContainerRunningCheckingStatusCode(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
+	req := Request{
 		Image:         "influxdb:1.8.10-alpine",
 		ExposedPorts:  []string{"8086/tcp"},
 		ImagePlatform: "linux/amd64", // influxdb doesn't provide an alpine+arm build (https://github.com/influxdata/influxdata-docker/issues/335)
@@ -1813,35 +1169,32 @@ func TestContainerRunningCheckingStatusCode(t *testing.T) {
 				},
 			),
 		),
+		Started: true,
 	}
 
-	influx, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	influx, err := New(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	terminateContainerOnEnd(t, ctx, influx)
+	TerminateContainerOnEnd(t, ctx, influx)
 }
 
 func TestContainerWithUserID(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
+
+	req := Request{
 		Image:      "docker.io/alpine:latest",
 		User:       "60125",
 		Cmd:        []string{"sh", "-c", "id -u"},
 		WaitingFor: wait.ForExit(),
+		Started:    true,
 	}
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
+
+	ctr, err := New(ctx, req)
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, ctr)
+	TerminateContainerOnEnd(t, ctx, ctr)
 
 	r, err := ctr.Logs(ctx)
 	if err != nil {
@@ -1858,19 +1211,16 @@ func TestContainerWithUserID(t *testing.T) {
 
 func TestContainerWithNoUserID(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
+	req := Request{
 		Image:      "docker.io/alpine:latest",
 		Cmd:        []string{"sh", "-c", "id -u"},
 		WaitingFor: wait.ForExit(),
+		Started:    true,
 	}
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
+	ctr, err := New(ctx, req)
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, ctr)
+	TerminateContainerOnEnd(t, ctx, ctr)
 
 	r, err := ctr.Logs(ctx)
 	if err != nil {
@@ -1885,155 +1235,60 @@ func TestContainerWithNoUserID(t *testing.T) {
 	assert.Equal(t, "0", actual)
 }
 
-func TestGetGatewayIP(t *testing.T) {
-	// When using docker compose with DinD mode, and using host port or http wait strategy
-	// It's need to invoke GetGatewayIP for get the host
-	provider, err := providerType.GetProvider(WithLogger(TestLogger(t)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer provider.Close()
-
-	ip, err := provider.(*DockerProvider).GetGatewayIP(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if ip == "" {
-		t.Fatal("could not get gateway ip")
-	}
-}
-
-func TestProviderHasConfig(t *testing.T) {
-	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer provider.Close()
-
-	assert.NotNil(t, provider.Config(), "expecting DockerProvider to provide the configuration")
-}
-
 func TestNetworkModeWithContainerReference(t *testing.T) {
 	ctx := context.Background()
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-		},
+	nginxA, err := New(ctx, Request{
+		Image:   nginxAlpineImage,
 		Started: true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxA)
+	TerminateContainerOnEnd(t, ctx, nginxA)
 
 	networkMode := fmt.Sprintf("container:%v", nginxA.GetContainerID())
-	nginxB, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			HostConfigModifier: func(hc *container.HostConfig) {
-				hc.NetworkMode = container.NetworkMode(networkMode)
-			},
+	nginxB, err := New(ctx, Request{
+		Image: nginxAlpineImage,
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.NetworkMode = container.NetworkMode(networkMode)
 		},
 		Started: true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxB)
+	TerminateContainerOnEnd(t, ctx, nginxB)
 }
 
-// creates a temporary dir in which the files will be extracted. Then it will compare the bytes of each file in the source with the bytes from the copied-from-container file
-func assertExtractedFiles(t *testing.T, ctx context.Context, container Container, hostFilePath string, containerFilePath string) {
-	// create all copied files into a temporary dir
-	tmpDir := t.TempDir()
-
-	// compare the bytes of each file in the source with the bytes from the copied-from-container file
-	srcFiles, err := os.ReadDir(hostFilePath)
-	require.NoError(t, err)
-
-	for _, srcFile := range srcFiles {
-		if srcFile.IsDir() {
-			continue
-		}
-		srcBytes, err := os.ReadFile(filepath.Join(hostFilePath, srcFile.Name()))
-		if err != nil {
-			require.NoError(t, err)
-		}
-
-		fp := filepath.Join(containerFilePath, srcFile.Name())
-		// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
-		// paths for the container files are using Linux path separators
-		fd, err := container.CopyFileFromContainer(ctx, fp)
-		require.NoError(t, err, "Path not found in container: %s", fp)
-		defer fd.Close()
-
-		targetPath := filepath.Join(tmpDir, srcFile.Name())
-		dst, err := os.Create(targetPath)
-		if err != nil {
-			require.NoError(t, err)
-		}
-		defer dst.Close()
-
-		_, err = io.Copy(dst, fd)
-		if err != nil {
-			require.NoError(t, err)
-		}
-
-		untarBytes, err := os.ReadFile(targetPath)
-		if err != nil {
-			require.NoError(t, err)
-		}
-		assert.Equal(t, srcBytes, untarBytes)
-	}
-}
-
-func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr Container) {
-	tb.Helper()
-	if ctr == nil {
-		return
-	}
-	tb.Cleanup(func() {
-		tb.Log("terminating container")
-		require.NoError(tb, ctr.Terminate(ctx))
-	})
-}
-
-func TestDockerProviderFindContainerByName(t *testing.T) {
+func TestFindContainerByName(t *testing.T) {
 	ctx := context.Background()
-	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
-	require.NoError(t, err)
-	defer provider.Close()
 
-	c1, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Name:       "test",
-			Image:      "nginx:1.17.6",
-			WaitingFor: wait.ForExposedPort(),
-		},
-		Started: true,
+	logger := tclog.NewTestLogger(t)
+
+	c1, err := New(ctx, Request{
+		Name:       "test",
+		Image:      "nginx:1.17.6",
+		Logger:     logger,
+		WaitingFor: wait.ForExposedPort(),
+		Started:    true,
 	})
 	require.NoError(t, err)
 
 	c1Inspect, err := c1.Inspect(ctx)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c1)
+	TerminateContainerOnEnd(t, ctx, c1)
 
 	c1Name := c1Inspect.Name
 
-	c2, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Name:       "test2",
-			Image:      "nginx:1.17.6",
-			WaitingFor: wait.ForExposedPort(),
-		},
-		Started: true,
+	c2, err := New(ctx, Request{
+		Name:       "test2",
+		Image:      "nginx:1.17.6",
+		Logger:     logger,
+		WaitingFor: wait.ForExposedPort(),
+		Started:    true,
 	})
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c2)
+	TerminateContainerOnEnd(t, ctx, c2)
 
-	c, err := provider.findContainerByName(ctx, "test")
+	c, err := findContainerByName(ctx, "test")
 	require.NoError(t, err)
 	require.NotNil(t, c)
 	assert.Contains(t, c.Names, c1Name)
@@ -2050,20 +1305,18 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Keep built image: %t", tt.keepBuiltImage), func(t *testing.T) {
 			ctx := context.Background()
+
 			// Set up CLI.
-			provider, err := NewDockerProvider()
-			require.NoError(t, err, "get docker provider should not fail")
-			defer func() { _ = provider.Close() }()
-			cli := provider.Client()
+			cli, err := core.NewClient(ctx)
+			require.NoError(t, err, "get docker client should not fail")
+			defer func() { _ = cli.Close() }()
+
 			// Create container.
-			c, err := GenericContainer(ctx, GenericContainerRequest{
-				ProviderType: providerType,
-				ContainerRequest: ContainerRequest{
-					FromDockerfile: FromDockerfile{
-						Context:    "testdata",
-						Dockerfile: "echo.Dockerfile",
-						KeepImage:  tt.keepBuiltImage,
-					},
+			c, err := New(ctx, Request{
+				FromDockerfile: FromDockerfile{
+					Context:    "testdata",
+					Dockerfile: "echo.Dockerfile",
+					KeepImage:  tt.keepBuiltImage,
 				},
 			})
 			require.NoError(t, err, "create container should not fail")
@@ -2095,33 +1348,68 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 	}
 }
 
-// errMockCli is a mock implementation of client.APIClient, which is handy for simulating
-// error returns in retry scenarios.
+// errMockCli is a mock implementation of client.APIClient and the client.SystemAPIClient,
+// which is handy for simulating error returns in retry scenarios.
 type errMockCli struct {
 	client.APIClient
 
+	logger             tclog.Logging
 	err                error
 	imageBuildCount    int
 	containerListCount int
 	imagePullCount     int
 }
 
-func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ types.ImageBuildOptions) (types.ImageBuildResponse, error) {
-	f.imageBuildCount++
-	return types.ImageBuildResponse{Body: io.NopCloser(&bytes.Buffer{})}, f.err
+func (m *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ types.ImageBuildOptions) (types.ImageBuildResponse, error) {
+	m.imageBuildCount++
+	return types.ImageBuildResponse{Body: io.NopCloser(&bytes.Buffer{})}, m.err
 }
 
-func (f *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) ([]types.Container, error) {
-	f.containerListCount++
-	return []types.Container{{}}, f.err
+func (m *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) ([]types.Container, error) {
+	m.containerListCount++
+	return []types.Container{{}}, m.err
 }
 
-func (f *errMockCli) ImagePull(_ context.Context, _ string, _ image.PullOptions) (io.ReadCloser, error) {
-	f.imagePullCount++
-	return io.NopCloser(&bytes.Buffer{}), f.err
+func (m *errMockCli) ImagePull(_ context.Context, _ string, _ image.PullOptions) (io.ReadCloser, error) {
+	m.imagePullCount++
+	return io.NopCloser(&bytes.Buffer{}), m.err
 }
 
-func (f *errMockCli) Close() error {
+func (m *errMockCli) Close() error {
+	return nil
+}
+
+type mockDockerClient struct {
+	client.APIClient
+}
+
+func newMockDockerClient(m *errMockCli) *core.DockerClient {
+	return core.NewMockDockerClient(&mockDockerClient{
+		APIClient: m,
+	})
+}
+
+func (m *mockDockerClient) Info(ctx context.Context) (system.Info, error) {
+	return system.Info{}, nil
+}
+
+func (m *mockDockerClient) Events(ctx context.Context, options types.EventsOptions) (<-chan events.Message, <-chan error) {
+	return nil, nil
+}
+
+func (m *mockDockerClient) RegistryLogin(ctx context.Context, auth registry.AuthConfig) (registry.AuthenticateOKBody, error) {
+	return registry.AuthenticateOKBody{}, nil
+}
+
+func (m *mockDockerClient) DiskUsage(ctx context.Context, options types.DiskUsageOptions) (types.DiskUsage, error) {
+	return types.DiskUsage{}, nil
+}
+
+func (m *mockDockerClient) Ping(ctx context.Context) (types.Ping, error) {
+	return types.Ping{}, nil
+}
+
+func (m *mockDockerClient) Close() error {
 	return nil
 }
 
@@ -2170,15 +1458,15 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := NewDockerProvider()
-			require.NoError(t, err)
 			m := &errMockCli{err: tt.errReturned}
-			p.client = m
+
+			// pass the mock client to the downstream API
+			ctx := context.WithValue(context.Background(), core.ClientContextKey, newMockDockerClient(m))
 
 			// give a chance to retry
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 			defer cancel()
-			_, _ = image.Build(ctx, &ContainerRequest{})
+			_, _ = image.Build(ctx, &Request{})
 
 			assert.Positive(t, m.imageBuildCount)
 			assert.Equal(t, tt.shouldRetry, m.imageBuildCount > 1)
@@ -2221,15 +1509,14 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := NewDockerProvider()
-			require.NoError(t, err)
 			m := &errMockCli{err: tt.errReturned}
-			p.client = m
+
+			ctx := context.WithValue(context.Background(), core.ClientContextKey, newMockDockerClient(m))
 
 			// give a chance to retry
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 			defer cancel()
-			_, _ = p.waitContainerCreation(ctx, "someID")
+			_, _ = waitContainerCreation(ctx, "someID")
 
 			assert.Positive(t, m.containerListCount)
 			assert.Equal(t, tt.shouldRetry, m.containerListCount > 1)
@@ -2282,15 +1569,14 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := NewDockerProvider()
-			require.NoError(t, err)
-			m := &errMockCli{err: tt.errReturned}
-			p.client = m
+			m := &errMockCli{err: tt.errReturned, logger: tclog.NewTestLogger(t)}
+
+			ctx := context.WithValue(context.Background(), core.ClientContextKey, newMockDockerClient(m))
 
 			// give a chance to retry
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 			defer cancel()
-			_ = p.attemptToPullImage(ctx, "someTag", image.PullOptions{})
+			_ = tcimage.Pull(ctx, "someTag", m.logger, image.PullOptions{})
 
 			assert.Positive(t, m.imagePullCount)
 			assert.Equal(t, tt.shouldRetry, m.imagePullCount > 1)

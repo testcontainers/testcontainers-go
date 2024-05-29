@@ -25,11 +25,11 @@ go get github.com/testcontainers/testcontainers-go/modules/cockroachdb
 The CockroachDB module exposes one entrypoint function to create the CockroachDB container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*CockroachDBContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 !!!warning
     When TLS is enabled there's a very small, unlikely chance that the underlying driver can panic when registering the driver as part of waiting for CockroachDB to be ready to accept connections. If this is repeatedly happening please open an issue.

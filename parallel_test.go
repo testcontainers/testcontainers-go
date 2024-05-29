@@ -15,28 +15,24 @@ import (
 func TestParallelContainers(t *testing.T) {
 	tests := []struct {
 		name      string
-		reqs      ParallelContainerRequest
+		reqs      ParallelRequest
 		resLen    int
 		expErrors int
 	}{
 		{
 			name: "running two containers (one error)",
-			reqs: ParallelContainerRequest{
+			reqs: ParallelRequest{
 				{
-					ContainerRequest: ContainerRequest{
-						Image: "nginx",
-						ExposedPorts: []string{
-							"10080/tcp",
-						},
+					Image: "nginx",
+					ExposedPorts: []string{
+						"10080/tcp",
 					},
 					Started: true,
 				},
 				{
-					ContainerRequest: ContainerRequest{
-						Image: "bad bad bad",
-						ExposedPorts: []string{
-							"10081/tcp",
-						},
+					Image: "bad bad bad",
+					ExposedPorts: []string{
+						"10081/tcp",
 					},
 					Started: true,
 				},
@@ -46,22 +42,18 @@ func TestParallelContainers(t *testing.T) {
 		},
 		{
 			name: "running two containers (all errors)",
-			reqs: ParallelContainerRequest{
+			reqs: ParallelRequest{
 				{
-					ContainerRequest: ContainerRequest{
-						Image: "bad bad bad",
-						ExposedPorts: []string{
-							"10081/tcp",
-						},
+					Image: "bad bad bad",
+					ExposedPorts: []string{
+						"10081/tcp",
 					},
 					Started: true,
 				},
 				{
-					ContainerRequest: ContainerRequest{
-						Image: "bad bad bad",
-						ExposedPorts: []string{
-							"10081/tcp",
-						},
+					Image: "bad bad bad",
+					ExposedPorts: []string{
+						"10081/tcp",
 					},
 					Started: true,
 				},
@@ -71,22 +63,18 @@ func TestParallelContainers(t *testing.T) {
 		},
 		{
 			name: "running two containers (success)",
-			reqs: ParallelContainerRequest{
+			reqs: ParallelRequest{
 				{
-					ContainerRequest: ContainerRequest{
-						Image: "nginx",
-						ExposedPorts: []string{
-							"10080/tcp",
-						},
+					Image: "nginx",
+					ExposedPorts: []string{
+						"10080/tcp",
 					},
 					Started: true,
 				},
 				{
-					ContainerRequest: ContainerRequest{
-						Image: "nginx",
-						ExposedPorts: []string{
-							"10081/tcp",
-						},
+					Image: "nginx",
+					ExposedPorts: []string{
+						"10081/tcp",
 					},
 					Started: true,
 				},
@@ -110,7 +98,7 @@ func TestParallelContainers(t *testing.T) {
 
 			for _, c := range res {
 				c := c
-				terminateContainerOnEnd(t, context.Background(), c)
+				TerminateContainerOnEnd(t, context.Background(), c)
 			}
 
 			if len(res) != tc.resLen {
@@ -130,25 +118,23 @@ func TestParallelContainersWithReuse(t *testing.T) {
 
 	natPort := fmt.Sprintf("%d/tcp", postgresPort)
 
-	req := GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			Image:        "postgis/postgis",
-			Name:         "test-postgres",
-			ExposedPorts: []string{natPort},
-			Env: map[string]string{
-				"POSTGRES_PASSWORD": postgresPassword,
-				"POSTGRES_USER":     postgresUser,
-				"POSTGRES_DATABASE": postgresDb,
-			},
-			WaitingFor: wait.ForLog("database system is ready to accept connections").
-				WithPollInterval(100 * time.Millisecond).
-				WithOccurrence(2),
+	req := Request{
+		Image:        "postgis/postgis",
+		Name:         "test-postgres",
+		ExposedPorts: []string{natPort},
+		Env: map[string]string{
+			"POSTGRES_PASSWORD": postgresPassword,
+			"POSTGRES_USER":     postgresUser,
+			"POSTGRES_DATABASE": postgresDb,
 		},
+		WaitingFor: wait.ForLog("database system is ready to accept connections").
+			WithPollInterval(100 * time.Millisecond).
+			WithOccurrence(2),
 		Started: true,
 		Reuse:   true,
 	}
 
-	parallelRequest := ParallelContainerRequest{
+	parallelRequest := ParallelRequest{
 		req,
 		req,
 		req,
@@ -163,5 +149,5 @@ func TestParallelContainersWithReuse(t *testing.T) {
 		t.Fatalf("expected errors: %d, got: %d\n", 0, len(e.Errors))
 	}
 	// Container is reused, only terminate first container
-	terminateContainerOnEnd(t, ctx, res[0])
+	TerminateContainerOnEnd(t, ctx, res[0])
 }

@@ -5,7 +5,6 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
-
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -18,8 +17,8 @@ func Create(
 	hostConfig *container.HostConfig,
 	networkingConfig *network.NetworkingConfig,
 	platform *ocispec.Platform,
-	containerName string) (container.CreateResponse, error) {
-
+	containerName string,
+) (container.CreateResponse, error) {
 	var resp container.CreateResponse // zero value
 	cli, err := core.NewClient(ctx)
 	if err != nil {

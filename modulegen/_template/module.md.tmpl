@@ -25,11 +25,11 @@ go get github.com/testcontainers/testcontainers-go/{{ ParentDir }}/{{ $lower }}
 The {{ $title }} module exposes one entrypoint function to create the {{ $title }} container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*{{ $title }}Container, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*{{ $title }}Container, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options
 

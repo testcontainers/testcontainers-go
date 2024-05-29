@@ -8,6 +8,7 @@ import (
 	"github.com/cpuguy83/dockercfg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 

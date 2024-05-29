@@ -73,7 +73,7 @@ The following is an example image substitutor implementation prepending the `doc
 <!--codeinclude-->
 [Image Substitutor Interface](../../image/substitutor.go) inside_block:imageSubstitutor
 [Docker prefix Image Substitutor](../../image/substitutors.go) inside_block:dockerImageSubstitutor
-[Applying the substitutor](../../container_test.go) inside_block:applyImageSubstitutors
+[Applying the substitutor](../../docker_examples_test.go) inside_block:applyImageSubstitutors
 <!--/codeinclude-->
 
 ## Images used by Testcontainers

@@ -25,11 +25,11 @@ go get github.com/testcontainers/testcontainers-go/modules/nats
 The NATS module exposes one entrypoint function to create the NATS container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*NATSContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*NATSContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options
 

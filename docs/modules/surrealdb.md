@@ -25,11 +25,11 @@ go get github.com/testcontainers/testcontainers-go/modules/surrealdb
 The SurrealDB module exposes one entrypoint function to create the SurrealDB container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*SurrealDBContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*SurrealDBContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options
 

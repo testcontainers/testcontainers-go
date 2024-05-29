@@ -16,7 +16,7 @@ as in the following example:
 <!--codeinclude-->
 [The LogConsumer Interface](../../log/consumer.go) inside_block:logConsumerInterface
 [The Log struct](../../log/log.go) inside_block:logStruct
-[Example LogConsumer](../../testing.go) inside_block:exampleLogConsumer
+[Example LogConsumer](../../log/consumer.go) inside_block:exampleLogConsumer
 <!--/codeinclude-->
 
 You can associate `LogConsumer`s in two manners:

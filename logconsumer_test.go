@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -30,12 +31,12 @@ type TestLogConsumer struct {
 	Done chan struct{}
 
 	// Accepted provides a blocking way of ensuring the logs messages have been consumed.
-	// This allows for proper synchronization during Test_StartStop in particular.
+	// This allows for proper synchronization during TestStartStop in particular.
 	// Please see func devNullAcceptorChan if you're not interested in this synchronization.
 	Accepted chan string
 }
 
-func (g *TestLogConsumer) Accept(l Log) {
+func (g *TestLogConsumer) Accept(l log.Log) {
 	s := string(l.Content)
 	if s == fmt.Sprintf("echo %s\n", lastMessage) {
 		close(g.Done)
@@ -66,7 +67,7 @@ func devNullAcceptorChan() chan string {
 	return c
 }
 
-func Test_LogConsumerGetsCalled(t *testing.T) {
+func TestLogConsumerGetsCalled(t *testing.T) {
 	ctx := context.Background()
 
 	g := TestLogConsumer{
@@ -75,7 +76,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	req := ContainerRequest{
+	req := Request{
 		FromDockerfile: FromDockerfile{
 			Context:    "./testdata/",
 			Dockerfile: "echoserver.Dockerfile",
@@ -85,14 +86,10 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 		LogConsumerCfg: &log.ConsumerConfig{
 			Consumers: []log.Consumer{&g},
 		},
+		Started: true,
 	}
 
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
+	c, err := New(ctx, req)
 	require.NoError(t, err)
 
 	ep, err := c.Endpoint(ctx, "http")
@@ -115,7 +112,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 
 	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
 
-	terminateContainerOnEnd(t, ctx, c)
+	TerminateContainerOnEnd(t, ctx, c)
 }
 
 type TestLogTypeConsumer struct {
@@ -123,7 +120,7 @@ type TestLogTypeConsumer struct {
 	Ack      chan bool
 }
 
-func (t *TestLogTypeConsumer) Accept(l Log) {
+func (t *TestLogTypeConsumer) Accept(l log.Log) {
 	if string(l.Content) == fmt.Sprintf("echo %s\n", lastMessage) {
 		t.Ack <- true
 		return
@@ -132,7 +129,7 @@ func (t *TestLogTypeConsumer) Accept(l Log) {
 	t.LogTypes[l.LogType] = string(l.Content)
 }
 
-func Test_ShouldRecognizeLogTypes(t *testing.T) {
+func TestShouldRecognizeLogTypes(t *testing.T) {
 	ctx := context.Background()
 
 	g := TestLogTypeConsumer{
@@ -140,7 +137,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 		Ack:      make(chan bool),
 	}
 
-	req := ContainerRequest{
+	req := Request{
 		FromDockerfile: FromDockerfile{
 			Context:    "./testdata/",
 			Dockerfile: "echoserver.Dockerfile",
@@ -150,16 +147,12 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 		LogConsumerCfg: &log.ConsumerConfig{
 			Consumers: []log.Consumer{&g},
 		},
+		Started: true,
 	}
 
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
+	c, err := New(ctx, req)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
+	TerminateContainerOnEnd(t, ctx, c)
 
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
@@ -181,7 +174,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	}, g.LogTypes)
 }
 
-func Test_MultipleLogConsumers(t *testing.T) {
+func TestMultipleLogConsumers(t *testing.T) {
 	ctx := context.Background()
 
 	first := TestLogConsumer{
@@ -195,7 +188,7 @@ func Test_MultipleLogConsumers(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	req := ContainerRequest{
+	req := Request{
 		FromDockerfile: FromDockerfile{
 			Context:    "./testdata/",
 			Dockerfile: "echoserver.Dockerfile",
@@ -205,14 +198,10 @@ func Test_MultipleLogConsumers(t *testing.T) {
 		LogConsumerCfg: &log.ConsumerConfig{
 			Consumers: []log.Consumer{&first, &second},
 		},
+		Started: true,
 	}
 
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
+	c, err := New(ctx, req)
 	require.NoError(t, err)
 
 	ep, err := c.Endpoint(ctx, "http")
@@ -241,27 +230,22 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		config.Reset()
 	})
 
-	if providerType == ProviderPodman {
-		t.Skip("Docker-in-Docker does not work with rootless Podman")
-	}
 	// First spin up a docker-in-docker container, then spin up an inner container within that dind container
 	// Logs are being read from the inner container via the dind container's tcp port, which can be briefly
 	// closed to test behaviour in connection-closed situations.
 	ctx := context.Background()
 
-	dind, err := GenericContainer(ctx, GenericContainerRequest{
-		Started: true,
-		ContainerRequest: ContainerRequest{
-			Image:        "docker.io/docker:dind",
-			ExposedPorts: []string{"2375/tcp"},
-			Env:          map[string]string{"DOCKER_TLS_CERTDIR": ""},
-			WaitingFor:   wait.ForListeningPort("2375/tcp"),
-			Privileged:   true,
-		},
+	dind, err := New(ctx, Request{
+		Started:      true,
+		Image:        "docker.io/docker:dind",
+		ExposedPorts: []string{"2375/tcp"},
+		Env:          map[string]string{"DOCKER_TLS_CERTDIR": ""},
+		WaitingFor:   wait.ForListeningPort("2375/tcp"),
+		Privileged:   true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, dind)
+	TerminateContainerOnEnd(t, ctx, dind)
 
 	var remoteDocker string
 
@@ -286,21 +270,14 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
 
-	client, err := NewDockerClientWithOpts(ctx, opts...)
+	dindCli, err := core.NewClient(ctx, opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer dindCli.Close()
 
-	provider := &DockerProvider{
-		client: client,
-		config: ReadConfig(),
-		DockerProviderOptions: &DockerProviderOptions{
-			GenericProviderOptions: &GenericProviderOptions{
-				Logger: TestLogger(t),
-			},
-		},
-	}
+	// Inject the client into the context for the downstream API calls
+	dindCtx := context.WithValue(ctx, core.ClientContextKey, dindCli)
 
 	consumer := TestLogConsumer{
 		msgs:     []string{},
@@ -308,7 +285,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	nginx, err := provider.CreateContainer(ctx, ContainerRequest{
+	nginx, err := newContainer(dindCtx, Request{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
 		LogConsumerCfg: &log.ConsumerConfig{
@@ -318,12 +295,12 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := nginx.Start(ctx); err != nil {
+	if err := nginx.Start(dindCtx); err != nil {
 		t.Fatal(err)
 	}
-	terminateContainerOnEnd(t, ctx, nginx)
+	TerminateContainerOnEnd(t, dindCtx, nginx)
 
-	port, err := nginx.MappedPort(ctx, "80/tcp")
+	port, err := nginx.MappedPort(dindCtx, "80/tcp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -333,7 +310,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	existingLogs := len(consumer.Msgs())
 
 	hitNginx := func() {
-		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + port.Port()})
+		i, _, err := dind.Exec(context.Background(), []string{"wget", "--spider", "localhost:" + port.Port()})
 		if err != nil || i > 0 {
 			t.Fatalf("Can't make request to nginx container from dind container")
 		}
@@ -352,11 +329,11 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		"-j", "REJECT", "--reject-with", "tcp-reset",
 	}
 	// Simulate a transient closed connection to the docker daemon
-	i, _, err := dind.Exec(ctx, append([]string{"iptables", "-A"}, iptableArgs...))
+	i, _, err := dind.Exec(context.Background(), append([]string{"iptables", "-A"}, iptableArgs...))
 	if err != nil || i > 0 {
 		t.Fatalf("Failed to close connection to dind daemon: i(%d), err %v", i, err)
 	}
-	i, _, err = dind.Exec(ctx, append([]string{"iptables", "-D"}, iptableArgs...))
+	i, _, err = dind.Exec(context.Background(), append([]string{"iptables", "-D"}, iptableArgs...))
 	if err != nil || i > 0 {
 		t.Fatalf("Failed to re-open connection to dind daemon: i(%d), err %v", i, err)
 	}
@@ -376,19 +353,18 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
+	req := Request{
 		Image:      "alpine:latest",
 		Cmd:        []string{"sh", "-c", "id -u"},
 		WaitingFor: wait.ForExit(),
+		Started:    true,
 	}
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	container, err := New(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	terminateContainerOnEnd(t, ctx, container)
+	TerminateContainerOnEnd(t, ctx, container)
+
 	r, err := container.Logs(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -410,7 +386,7 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 	}
 
 	// logConsumersAtRequest {
-	req := ContainerRequest{
+	req := Request{
 		FromDockerfile: FromDockerfile{
 			Context:    "./testdata/",
 			Dockerfile: "echoserver.Dockerfile",
@@ -421,15 +397,11 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 			Opts:      []log.ProductionOption{log.WithProductionTimeout(10 * time.Second)},
 			Consumers: []log.Consumer{&g},
 		},
+		Started: true,
 	}
 	// }
 
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
+	c, err := New(ctx, req)
 	require.NoError(t, err)
 
 	ep, err := c.Endpoint(ctx, "http")
@@ -451,10 +423,10 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 	}
 	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
 
-	terminateContainerOnEnd(t, ctx, c)
+	TerminateContainerOnEnd(t, ctx, c)
 }
 
-func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
+func TestStartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
 	ctx := context.Background()
 
 	g := TestLogConsumer{
@@ -463,7 +435,7 @@ func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	req := ContainerRequest{
+	req := Request{
 		FromDockerfile: FromDockerfile{
 			Context:    "./testdata/",
 			Dockerfile: "echoserver.Dockerfile",
@@ -474,19 +446,15 @@ func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
 			Opts:      []log.ProductionOption{log.WithProductionTimeout(4 * time.Second)},
 			Consumers: []log.Consumer{&g},
 		},
+		Started: true,
 	}
 
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
+	c, err := New(ctx, req)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
+	TerminateContainerOnEnd(t, ctx, c)
 }
 
-func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
+func TestStartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 	ctx := context.Background()
 
 	g := TestLogConsumer{
@@ -495,7 +463,7 @@ func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	req := ContainerRequest{
+	req := Request{
 		FromDockerfile: FromDockerfile{
 			Context:    "./testdata/",
 			Dockerfile: "echoserver.Dockerfile",
@@ -506,26 +474,21 @@ func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 			Opts:      []log.ProductionOption{log.WithProductionTimeout(61 * time.Second)},
 			Consumers: []log.Consumer{&g},
 		},
+		Started: true,
 	}
 
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
+	c, err := New(ctx, req)
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
 	// because the log production timeout is too high, the container should have already been terminated
-	// so no need to terminate it again with "terminateContainerOnEnd(t, ctx, c)"
-	dc := c.(*DockerContainer)
-	require.NoError(t, dc.stopLogProduction())
+	// so no need to terminate it again with "testcontainers.testcontainers.TerminateContainerOnEnd(t, ctx, c)"
+	require.NoError(t, c.StopLogProduction())
 
-	terminateContainerOnEnd(t, ctx, c)
+	TerminateContainerOnEnd(t, ctx, c)
 }
 
-func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
+func TestMultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	// Redirect stderr to a buffer
 	oldStderr := os.Stderr
 	r, w, _ := os.Pipe()
@@ -541,7 +504,7 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	containerReq1 := ContainerRequest{
+	containerReq1 := Request{
 		FromDockerfile: FromDockerfile{
 			Context:    "./testdata/",
 			Dockerfile: "echoserver.Dockerfile",
@@ -551,14 +514,10 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 		LogConsumerCfg: &log.ConsumerConfig{
 			Consumers: []log.Consumer{&first},
 		},
+		Started: true,
 	}
 
-	genericReq1 := GenericContainerRequest{
-		ContainerRequest: containerReq1,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, genericReq1)
+	c, err := New(ctx, containerReq1)
 	require.NoError(t, err)
 
 	ep1, err := c.Endpoint(ctx, "http")
@@ -576,7 +535,7 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	containerReq2 := ContainerRequest{
+	containerReq2 := Request{
 		FromDockerfile: FromDockerfile{
 			Context:    "./testdata/",
 			Dockerfile: "echoserver.Dockerfile",
@@ -586,14 +545,10 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 		LogConsumerCfg: &log.ConsumerConfig{
 			Consumers: []log.Consumer{&second},
 		},
+		Started: true,
 	}
 
-	genericReq2 := GenericContainerRequest{
-		ContainerRequest: containerReq2,
-		Started:          true,
-	}
-
-	c2, err := GenericContainer(ctx, genericReq2)
+	c2, err := New(ctx, containerReq2)
 	require.NoError(t, err)
 
 	ep2, err := c2.Endpoint(ctx, "http")

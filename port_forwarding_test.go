@@ -72,15 +72,13 @@ func TestExposeHostPorts(t *testing.T) {
 				})
 			}
 
-			req := testcontainers.GenericContainerRequest{
+			req := testcontainers.Request{
 				// hostAccessPorts {
-				ContainerRequest: testcontainers.ContainerRequest{
-					Image:           "alpine:3.17",
-					HostAccessPorts: freePorts,
-					Cmd:             []string{"top"},
-				},
+				Image:           "alpine:3.17",
+				HostAccessPorts: freePorts,
+				Cmd:             []string{"top"},
+				Started:         true,
 				// }
-				Started: true,
 			}
 
 			if tt.hasNetwork {
@@ -105,7 +103,7 @@ func TestExposeHostPorts(t *testing.T) {
 				defer cancel()
 			}
 
-			c, err := testcontainers.GenericContainer(ctx, req)
+			c, err := testcontainers.New(ctx, req)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -129,7 +127,7 @@ func TestExposeHostPorts(t *testing.T) {
 	}
 }
 
-func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, string) {
+func httpRequest(t *testing.T, c testcontainers.ReadyContainer, port int) (int, string) {
 	// wgetHostInternal {
 	code, reader, err := c.Exec(
 		context.Background(),
@@ -150,7 +148,7 @@ func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, strin
 	return code, string(bs)
 }
 
-func assertContainerHasHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
+func assertContainerHasHostAccess(t *testing.T, c testcontainers.ReadyContainer, ports ...int) {
 	for _, port := range ports {
 		code, response := httpRequest(t, c, port)
 		if code != 0 {
@@ -163,7 +161,7 @@ func assertContainerHasHostAccess(t *testing.T, c testcontainers.Container, port
 	}
 }
 
-func assertContainerHasNoHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
+func assertContainerHasNoHostAccess(t *testing.T, c testcontainers.ReadyContainer, ports ...int) {
 	for _, port := range ports {
 		_, response := httpRequest(t, c, port)
 

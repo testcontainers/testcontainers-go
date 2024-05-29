@@ -12,6 +12,7 @@ src/pip-delete-this-directory.txt
 
 TEST-*.xml
 
+coverage.out
 tcvenv
 
 **/go.work

@@ -35,13 +35,13 @@ However, in some CI environments they may instead be reachable on a different ho
 As such, Testcontainers provides a convenience function to obtain an address on which the container should be reachable from the host machine.
 
 <!--codeinclude-->
-[Getting the container host](../../docker_test.go) inside_block:containerHost
+[Getting the container host](../../docker_examples_test.go) inside_block:containerHost
 <!--/codeinclude-->
 
 It is normally advisable to use `Host` and `MappedPort` together when constructing addresses - for example:
 
 <!--codeinclude-->
-[Getting the container host and mapped port](../../docker_test.go) inside_block:buildingAddresses
+[Getting the container host and mapped port](../../docker_examples_test.go) inside_block:buildingAddresses
 <!--/codeinclude-->
 
 !!! info
@@ -113,5 +113,5 @@ Docker provides the ability for you to create custom networks and place containe
 For more information about how to create networks using _Testcontainers for Go_, please refer to the [How to create a network](./creating_networks.md) section.
 
 <!--codeinclude-->
-[Creating custom networks](../../network/network_test.go) inside_block:testNetworkAliases
+[Creating custom networks](../../network_test.go) inside_block:testNetworkAliases
 <!--/codeinclude-->

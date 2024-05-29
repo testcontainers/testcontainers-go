@@ -1,7 +1,6 @@
 package image
 
 import (
-	"context"
 	"testing"
 )
 
@@ -85,36 +84,5 @@ func TestPrependHubRegistrySubstitutor(t *testing.T) {
 				t.Errorf("expected registry.hub.docker.com/foo:latest, got %s", img)
 			}
 		})
-	})
-}
-
-func TestSubstituteBuiltImage(t *testing.T) {
-	req := GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			FromDockerfile: FromDockerfile{
-				Context:    "testdata",
-				Dockerfile: "echo.Dockerfile",
-				Tag:        "my-image",
-				Repo:       "my-repo",
-			},
-			ImageSubstitutors: []ImageSubstitutor{newPrependHubRegistry("my-registry")},
-		},
-		Started: false,
-	}
-
-	t.Run("should not use the properties prefix on built images", func(t *testing.T) {
-		c, err := GenericContainer(context.Background(), req)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		json, err := c.Inspect(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if json.Config.Image != "my-registry/my-repo:my-image" {
-			t.Errorf("expected my-registry/my-repo:my-image, got %s", json.Config.Image)
-		}
 	})
 }

@@ -27,15 +27,13 @@ import (
 
 func TestWithRedis(t *testing.T) {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
+	req := container.Request{
 		Image:        "redis:latest",
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("Ready to accept connections"),
-	}
-	redisC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
 		Started:          true,
-	})
+	}
+	redisC, err := container.New(ctx, req)
 	if err != nil {
 		log.Fatalf("Could not start redis: %s", err)
 	}
@@ -47,7 +45,7 @@ func TestWithRedis(t *testing.T) {
 }
 ```
 
-The `testcontainers.ContainerRequest` describes how the Docker container will
+The `testcontainers.Request` describes how the Docker container will
 look.
 
 * `Image` is the Docker image the container starts from.

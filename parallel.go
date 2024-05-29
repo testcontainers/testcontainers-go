@@ -10,7 +10,7 @@ const (
 	defaultWorkersCount = 8
 )
 
-type ParallelContainerRequest []GenericContainerRequest
+type ParallelRequest []Request
 
 // ParallelContainersOptions represents additional options for parallel running
 type ParallelContainersOptions struct {
@@ -19,7 +19,7 @@ type ParallelContainersOptions struct {
 
 // ParallelContainersRequestError represents error from parallel request
 type ParallelContainersRequestError struct {
-	Request GenericContainerRequest
+	Request Request
 	Error   error
 }
 
@@ -33,13 +33,13 @@ func (gpe ParallelContainersError) Error() string {
 
 func parallelContainersRunner(
 	ctx context.Context,
-	requests <-chan GenericContainerRequest,
+	requests <-chan Request,
 	errors chan<- ParallelContainersRequestError,
-	containers chan<- Container,
+	containers chan<- StartedContainer,
 	wg *sync.WaitGroup,
 ) {
 	for req := range requests {
-		c, err := GenericContainer(ctx, req)
+		c, err := New(ctx, req)
 		if err != nil {
 			errors <- ParallelContainersRequestError{
 				Request: req,
@@ -52,8 +52,8 @@ func parallelContainersRunner(
 	wg.Done()
 }
 
-// ParallelContainers creates a generic containers with parameters and run it in parallel mode
-func ParallelContainers(ctx context.Context, reqs ParallelContainerRequest, opt ParallelContainersOptions) ([]Container, error) {
+// ParallelContainers creates containers with parameters and run them in parallel mode
+func ParallelContainers(ctx context.Context, reqs ParallelRequest, opt ParallelContainersOptions) ([]StartedContainer, error) {
 	if opt.WorkersCount == 0 {
 		opt.WorkersCount = defaultWorkersCount
 	}
@@ -63,12 +63,12 @@ func ParallelContainers(ctx context.Context, reqs ParallelContainerRequest, opt 
 		tasksChanSize = len(reqs)
 	}
 
-	tasksChan := make(chan GenericContainerRequest, tasksChanSize)
+	tasksChan := make(chan Request, tasksChanSize)
 	errsChan := make(chan ParallelContainersRequestError)
-	resChan := make(chan Container)
+	resChan := make(chan StartedContainer)
 	waitRes := make(chan struct{})
 
-	containers := make([]Container, 0)
+	containers := make([]StartedContainer, 0)
 	errors := make([]ParallelContainersRequestError, 0)
 
 	wg := sync.WaitGroup{}

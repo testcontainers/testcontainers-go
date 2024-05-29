@@ -25,11 +25,11 @@ go get github.com/testcontainers/testcontainers-go/modules/inbucket
 The Inbucket module exposes one entrypoint function to create the Inbucket container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*InbucketContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*InbucketContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options
 

@@ -27,21 +27,19 @@ import (
 )
 
 type nginxContainer struct {
-	testcontainers.Container
+	*container.DockerContainer
 	URI string
 }
 
 
 func setupNginx(ctx context.Context) (*nginxContainer, error) {
-	req := testcontainers.ContainerRequest{
+	req := container.Request{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/"),
-	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
 		Started:          true,
-	})
+	}
+	container, err := container.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +139,7 @@ The aforementioned `GenericContainer` function and the `ContainerRequest` struct
 <!--/codeinclude-->
 
 !!!warning
-	The only special case where the modifiers are not applied last, is when there are no exposed ports in the container request and the container does not use a network mode from a container (e.g. `req.NetworkMode = container.NetworkMode("container:$CONTAINER_ID")`). In that case, _Testcontainers for Go_ will extract the ports from the underliying Docker image and export them.
+	The only special case where the modifiers are not applied last, is when there are no exposed ports in the container request and the container does not use a network mode from a container (e.g. `container.NetworkMode("container:$CONTAINER_ID")`). In that case, _Testcontainers for Go_ will extract the ports from the underliying Docker image and export them.
 
 ## Reusable container
 
@@ -167,13 +165,11 @@ const (
 
 ctx := context.Background()
 
-n1, err := GenericContainer(ctx, GenericContainerRequest{
-	ContainerRequest: ContainerRequest{
-		Image:        "nginx:1.17.6",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForListeningPort("80/tcp"),
-		Name:         reusableContainerName,
-	},
+n1, err := container.New(ctx, container.Request{
+	Image:        "nginx:1.17.6",
+	ExposedPorts: []string{"80/tcp"},
+	WaitingFor:   wait.ForListeningPort("80/tcp"),
+	Name:         reusableContainerName,
 	Started: true,
 })
 if err != nil {
@@ -188,13 +184,11 @@ if err != nil {
 	log.Fatal(err)
 }
 
-n2, err := GenericContainer(ctx, GenericContainerRequest{
-	ContainerRequest: ContainerRequest{
-		Image:        "nginx:1.17.6",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForListeningPort("80/tcp"),
-		Name:         reusableContainerName,
-    },
+n2, err := container.New(ctx, container.Request{
+	Image:        "nginx:1.17.6",
+	ExposedPorts: []string{"80/tcp"},
+	WaitingFor:   wait.ForListeningPort("80/tcp"),
+	Name:         reusableContainerName,
 	Started: true,
 	Reuse: true,
 })
@@ -229,9 +223,9 @@ import (
 func main() {
 	ctx := context.Background()
 
-	requests := testcontainers.ParallelContainerRequest{
+	requests := testcontainers.ParallelRequest{
 		{
-			ContainerRequest: testcontainers.ContainerRequest{
+			Request: testcontainers.Request{
 
 				Image: "nginx",
 				ExposedPorts: []string{
@@ -241,7 +235,7 @@ func main() {
 			Started: true,
 		},
 		{
-			ContainerRequest: testcontainers.ContainerRequest{
+			Request: testcontainers.Request{
 
 				Image: "nginx",
 				ExposedPorts: []string{

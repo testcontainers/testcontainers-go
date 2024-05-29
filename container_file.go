@@ -1,4 +1,4 @@
-package container
+package testcontainers
 
 import (
 	"archive/tar"

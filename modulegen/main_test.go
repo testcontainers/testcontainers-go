@@ -425,12 +425,15 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 	assert.Equal(t, "package "+lower, data[0])
 	assert.Equal(t, "// "+containerName+" represents the "+exampleName+" container type used in the module", data[9])
 	assert.Equal(t, "type "+containerName+" struct {", data[10])
+	assert.Equal(t, "\t*testcontainers.DockerContainer", data[11])
 	assert.Equal(t, "// "+entrypoint+" creates an instance of the "+exampleName+" container type", data[14])
-	assert.Equal(t, "func "+entrypoint+"(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*"+containerName+", error) {", data[15])
+	assert.Equal(t, "func "+entrypoint+"(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*"+containerName+", error) {", data[15])
+	assert.Equal(t, "\treq := testcontainers.Request{", data[16])
 	assert.Equal(t, "\t\tImage: \""+module.Image+"\",", data[17])
-	assert.Equal(t, "\t\tif err := opt.Customize(&genericContainerReq); err != nil {", data[26])
-	assert.Equal(t, "\t\t\treturn nil, fmt.Errorf(\"customize: %w\", err)", data[27])
-	assert.Equal(t, "\treturn &"+containerName+"{Container: container}, nil", data[36])
+	assert.Equal(t, "\t\tStarted:          true,", data[18])
+	assert.Equal(t, "\t\tif err := opt.Customize(&req); err != nil {", data[22])
+	assert.Equal(t, "\t\t\treturn nil, fmt.Errorf(\"customize: %w\", err)", data[23])
+	assert.Equal(t, "\treturn &"+containerName+"{DockerContainer: container}, nil", data[32])
 }
 
 // assert content GitHub workflow for the module

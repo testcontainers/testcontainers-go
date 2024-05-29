@@ -30,11 +30,11 @@ Use the `testcontainers.WithEnv` option when creating the `LocalStackContainer` 
 The LocalStack module exposes one single function to create the LocalStack container, and this function receives two parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error)
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*LocalStackContainer, error)
 ```
 
 - `context.Context`, the Go context.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+- `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options
 

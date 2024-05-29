@@ -37,7 +37,7 @@ var sshPassword = uuid.NewString()
 // 1. Create a new SSHD container.
 // 2. Expose the host ports to the container after the container is ready.
 // 3. Close the SSH sessions before killing the container.
-func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (ContainerLifecycleHooks, error) {
+func exposeHostPorts(ctx context.Context, req *Request, p ...int) (ContainerLifecycleHooks, error) {
 	var sshdConnectHook ContainerLifecycleHooks
 
 	if len(p) == 0 {
@@ -54,7 +54,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 		sshdFirstNetwork = req.Networks[1]
 	}
 
-	opts := []ContainerCustomizer{}
+	opts := []RequestCustomizer{}
 	if len(req.Networks) > 0 {
 		// get the first network of the container to connect the SSHD container to it.
 		nw, err := network.GetByName(ctx, sshdFirstNetwork)
@@ -62,18 +62,11 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 			return sshdConnectHook, fmt.Errorf("failed to get the network: %w", err)
 		}
 
-		dockerNw := DockerNetwork{
-			ID:   nw.ID,
-			Name: nw.Name,
-		}
-
 		// WithNetwork reuses an already existing network, attaching the container to it.
 		// Finally it sets the network alias on that network to the given alias.
 		// TODO: Using an anonymous function to avoid cyclic dependencies with the network package.
-		withNetwork := func(aliases []string, nw *DockerNetwork) CustomizeRequestOption {
-			return func(req *GenericContainerRequest) error {
-				networkName := nw.Name
-
+		withNetwork := func(aliases []string, networkName string) CustomizeRequestOption {
+			return func(req *Request) error {
 				// attaching to the network because it was created with success or it already existed.
 				req.Networks = append(req.Networks, networkName)
 
@@ -85,7 +78,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 			}
 		}
 
-		opts = append(opts, withNetwork([]string{HostInternal}, &dockerNw))
+		opts = append(opts, withNetwork([]string{HostInternal}, nw.Name))
 	}
 
 	// start the SSHD container with the provided options
@@ -131,13 +124,13 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 	// after the container is ready, create the SSH tunnel
 	// for each exposed port from the host.
 	sshdConnectHook = ContainerLifecycleHooks{
-		PostReadies: []ContainerHook{
-			func(ctx context.Context, c Container) error {
+		PostReadies: []StartedContainerHook{
+			func(ctx context.Context, c StartedContainer) error {
 				return sshdContainer.exposeHostPort(ctx, req.HostAccessPorts...)
 			},
 		},
-		PreTerminates: []ContainerHook{
-			func(ctx context.Context, _ Container) error {
+		PreTerminates: []StartedContainerHook{
+			func(ctx context.Context, _ StartedContainer) error {
 				// before killing the container, close the SSH sessions
 				return sshdContainer.Terminate(ctx)
 			},
@@ -148,15 +141,13 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 }
 
 // newSshdContainer creates a new SSHD container with the provided options.
-func newSshdContainer(ctx context.Context, opts ...ContainerCustomizer) (*sshdContainer, error) {
-	req := GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			Image:           sshdImage,
-			HostAccessPorts: []int{}, // empty list because it does not need any port
-			ExposedPorts:    []string{sshPort},
-			Env:             map[string]string{"PASSWORD": sshPassword},
-		},
-		Started: true,
+func newSshdContainer(ctx context.Context, opts ...RequestCustomizer) (*sshdContainer, error) {
+	req := Request{
+		Image:           sshdImage,
+		HostAccessPorts: []int{}, // empty list because it does not need any port
+		ExposedPorts:    []string{sshPort},
+		Env:             map[string]string{"PASSWORD": sshPassword},
+		Started:         true,
 	}
 
 	for _, opt := range opts {
@@ -165,14 +156,10 @@ func newSshdContainer(ctx context.Context, opts ...ContainerCustomizer) (*sshdCo
 		}
 	}
 
-	c, err := GenericContainer(ctx, req)
+	dc, err := New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-
-	// force a type assertion to return a concrete type,
-	// because GenericContainer returns a Container interface.
-	dc := c.(*DockerContainer)
 
 	sshd := &sshdContainer{
 		DockerContainer: dc,

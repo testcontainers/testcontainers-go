@@ -47,17 +47,14 @@ func TestExecWithOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			req := ContainerRequest{
-				Image: nginxAlpineImage,
+			req := Request{
+				Image:   nginxAlpineImage,
+				Started: true,
 			}
 
-			container, err := GenericContainer(ctx, GenericContainerRequest{
-				ContainerRequest: req,
-				Started:          true,
-			})
-
+			container, err := New(ctx, req)
 			require.NoError(t, err)
-			terminateContainerOnEnd(t, ctx, container)
+			TerminateContainerOnEnd(t, ctx, container)
 
 			// always append the multiplexed option for having the output
 			// in a readable format
@@ -80,17 +77,14 @@ func TestExecWithOptions(t *testing.T) {
 
 func TestExecWithMultiplexedResponse(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
-		Image: nginxAlpineImage,
+	req := Request{
+		Image:   nginxAlpineImage,
+		Started: true,
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-
+	container, err := New(ctx, req)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, container)
+	TerminateContainerOnEnd(t, ctx, container)
 
 	code, reader, err := container.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"}, tcexec.Multiplexed())
 	require.NoError(t, err)
@@ -108,17 +102,14 @@ func TestExecWithMultiplexedResponse(t *testing.T) {
 
 func TestExecWithNonMultiplexedResponse(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
-		Image: nginxAlpineImage,
+	req := Request{
+		Image:   nginxAlpineImage,
+		Started: true,
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-
+	container, err := New(ctx, req)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, container)
+	TerminateContainerOnEnd(t, ctx, container)
 
 	code, reader, err := container.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"})
 	require.NoError(t, err)
