@@ -35,7 +35,7 @@ const (
 
 // CockroachDBContainer represents the CockroachDB container type used in the module
 type CockroachDBContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	opts options
 }
 
@@ -69,21 +69,19 @@ func (c *CockroachDBContainer) TLSConfig() (*tls.Config, error) {
 }
 
 // RunContainer creates an instance of the CockroachDB container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*CockroachDBContainer, error) {
 	o := defaultOptions()
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: defaultImage,
-			ExposedPorts: []string{
-				defaultSQLPort,
-				defaultAdminPort,
-			},
-			LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
-				{
-					PreStarts: []testcontainers.ContainerHook{
-						func(ctx context.Context, container testcontainers.Container) error {
-							return addTLS(ctx, container, o)
-						},
+	req := testcontainers.Request{
+		Image: defaultImage,
+		ExposedPorts: []string{
+			defaultSQLPort,
+			defaultAdminPort,
+		},
+		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+			{
+				PreStarts: []testcontainers.CreatedContainerHook{
+					func(ctx context.Context, container testcontainers.CreatedContainer) error {
+						return addTLS(ctx, container, o)
 					},
 				},
 			},
@@ -112,16 +110,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return &CockroachDBContainer{Container: container, opts: o}, nil
+	return &CockroachDBContainer{DockerContainer: container, opts: o}, nil
 }
 
-type modiferFunc func(*testcontainers.GenericContainerRequest, options) error
+type modiferFunc func(*testcontainers.Request, options) error
 
-func addCmd(req *testcontainers.GenericContainerRequest, opts options) error {
+func addCmd(req *testcontainers.Request, opts options) error {
 	req.Cmd = []string{
 		"start-single-node",
 		"--store=type=mem,size=" + opts.StoreSize,
@@ -148,7 +146,7 @@ func addCmd(req *testcontainers.GenericContainerRequest, opts options) error {
 	return nil
 }
 
-func addEnvs(req *testcontainers.GenericContainerRequest, opts options) error {
+func addEnvs(req *testcontainers.Request, opts options) error {
 	if req.Env == nil {
 		req.Env = make(map[string]string)
 	}
@@ -159,7 +157,7 @@ func addEnvs(req *testcontainers.GenericContainerRequest, opts options) error {
 	return nil
 }
 
-func addWaitingFor(req *testcontainers.GenericContainerRequest, opts options) error {
+func addWaitingFor(req *testcontainers.Request, opts options) error {
 	var tlsConfig *tls.Config
 	if opts.TLS != nil {
 		cfg, err := connTLS(opts)
@@ -198,7 +196,7 @@ func addWaitingFor(req *testcontainers.GenericContainerRequest, opts options) er
 	return nil
 }
 
-func addTLS(ctx context.Context, container testcontainers.Container, opts options) error {
+func addTLS(ctx context.Context, container testcontainers.CreatedContainer, opts options) error {
 	if opts.TLS == nil {
 		return nil
 	}
