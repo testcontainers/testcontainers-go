@@ -228,13 +228,11 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 	// withZookeeper {
 	zkPort := nat.Port("2181/tcp")
 
-	zkcontainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			ExposedPorts: []string{zkPort.Port()},
-			Image:        "zookeeper:3.7",
-			WaitingFor:   wait.ForListeningPort(zkPort),
-		},
-		Started: true,
+	zkcontainer, err := testcontainers.New(ctx, testcontainers.Request{
+		ExposedPorts: []string{zkPort.Port()},
+		Image:        "zookeeper:3.7",
+		WaitingFor:   wait.ForListeningPort(zkPort),
+		Started:      true,
 	})
 	if err != nil {
 		t.Fatal(err)

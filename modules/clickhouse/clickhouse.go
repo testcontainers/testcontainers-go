@@ -13,7 +13,6 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -36,7 +35,7 @@ const (
 
 // ClickHouseContainer represents the ClickHouse container type used in the module
 type ClickHouseContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	DbName   string
 	User     string
 	Password string
@@ -102,7 +101,7 @@ func renderZookeeperConfig(settings ZookeeperOptions) ([]byte, error) {
 
 // WithZookeeper pass a config to connect clickhouse with zookeeper and make clickhouse as cluster
 func WithZookeeper(host, port string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		f, err := os.CreateTemp("", "clickhouse-tc-config-")
 		if err != nil {
 			return fmt.Errorf("temporary file: %w", err)
@@ -118,7 +117,7 @@ func WithZookeeper(host, port string) testcontainers.CustomizeRequestOption {
 		if _, err := f.Write(data); err != nil {
 			return fmt.Errorf("write zookeeper config: %w", err)
 		}
-		cf := tccontainer.ContainerFile{
+		cf := testcontainers.ContainerFile{
 			HostFilePath:      f.Name(),
 			ContainerFilePath: "/etc/clickhouse-server/config.d/zookeeper_config.xml",
 			FileMode:          0o755,
@@ -131,10 +130,10 @@ func WithZookeeper(host, port string) testcontainers.CustomizeRequestOption {
 
 // WithInitScripts sets the init scripts to be run when the container starts
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		initScripts := []tccontainer.ContainerFile{}
+	return func(req *testcontainers.Request) error {
+		initScripts := []testcontainers.ContainerFile{}
 		for _, script := range scripts {
-			cf := tccontainer.ContainerFile{
+			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,
 				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
 				FileMode:          0o755,
@@ -151,8 +150,8 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 // It will also set the "configFile" parameter to the path of the config file
 // as a command line argument to the container.
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/clickhouse-server/config.d/config.xml",
 			FileMode:          0o755,
@@ -167,8 +166,8 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // It will also set the "configFile" parameter to the path of the config file
 // as a command line argument to the container.
 func WithYamlConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		cf := testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/clickhouse-server/config.d/config.yaml",
 			FileMode:          0o755,
@@ -183,7 +182,7 @@ func WithYamlConfigFile(configFile string) testcontainers.CustomizeRequestOption
 // It can be used to define a different name for the default database that is created when the image is first started.
 // If it is not specified, then the default value("clickhouse") will be used.
 func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["CLICKHOUSE_DB"] = dbName
 
 		return nil
@@ -194,7 +193,7 @@ func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
 // It is required for you to use the ClickHouse image. It must not be empty or undefined.
 // This environment variable sets the password for ClickHouse.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["CLICKHOUSE_PASSWORD"] = password
 
 		return nil
@@ -206,7 +205,7 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 // It will create the specified user with superuser power.
 // If it is not specified, then the default user of clickhouse will be used.
 func WithUsername(user string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		if user == "" {
 			user = defaultUser
 		}
@@ -218,8 +217,8 @@ func WithUsername(user string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the ClickHouse container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ClickHouseContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*ClickHouseContainer, error) {
+	req := testcontainers.Request{
 		Image: defaultImage,
 		Env: map[string]string{
 			"CLICKHOUSE_USER":     defaultUser,
@@ -232,20 +231,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				return status == 200
 			}),
 		),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -254,5 +249,5 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	password := req.Env["CLICKHOUSE_PASSWORD"]
 	dbName := req.Env["CLICKHOUSE_DB"]
 
-	return &ClickHouseContainer{Container: container, DbName: dbName, Password: password, User: user}, nil
+	return &ClickHouseContainer{DockerContainer: container, DbName: dbName, Password: password, User: user}, nil
 }
