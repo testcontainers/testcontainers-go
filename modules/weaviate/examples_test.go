@@ -110,7 +110,7 @@ func ExampleRunContainer_connectWithClientWithModules() {
 		"BACKUP_FILESYSTEM_PATH": "/tmp/backups",
 	}
 
-	opts := []testcontainers.ContainerCustomizer{
+	opts := []testcontainers.RequestCustomizer{
 		testcontainers.WithImage("semitechnologies/weaviate:1.24.5"),
 		testcontainers.WithEnv(envs),
 	}

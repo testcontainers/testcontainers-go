@@ -17,12 +17,12 @@ const (
 
 // WeaviateContainer represents the Weaviate container type used in the module
 type WeaviateContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // RunContainer creates an instance of the Weaviate container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*WeaviateContainer, error) {
+	req := testcontainers.Request{
 		Image:        image,
 		Cmd:          []string{"--host", "0.0.0.0", "--scheme", "http", "--port", "8080"},
 		ExposedPorts: []string{httpPort, grpcPort},
@@ -34,25 +34,21 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			wait.ForListeningPort(httpPort).WithStartupTimeout(5*time.Second),
 			wait.ForListeningPort(grpcPort).WithStartupTimeout(5*time.Second),
 		),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &WeaviateContainer{Container: container}, nil
+	return &WeaviateContainer{DockerContainer: container}, nil
 }
 
 // HttpHostAddress returns the schema and host of the Weaviate container.
