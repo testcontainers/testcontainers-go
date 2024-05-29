@@ -13,7 +13,7 @@ import (
 
 // OpenFGAContainer represents the OpenFGA container type used in the module
 type OpenFGAContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // GrpcEndpoint returns the gRPC endpoint for the OpenFGA container,
@@ -40,8 +40,8 @@ func (c *OpenFGAContainer) PlaygroundEndpoint(ctx context.Context) (string, erro
 }
 
 // RunContainer creates an instance of the OpenFGA container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OpenFGAContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*OpenFGAContainer, error) {
+	req := testcontainers.Request{
 		Image:        "openfga/openfga:v1.5.0",
 		Cmd:          []string{"run"},
 		ExposedPorts: []string{"3000/tcp", "8080/tcp", "8081/tcp"},
@@ -58,23 +58,19 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				return status == http.StatusOK
 			}),
 		),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, fmt.Errorf("customize: %w", err)
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &OpenFGAContainer{Container: container}, nil
+	return &OpenFGAContainer{DockerContainer: container}, nil
 }
