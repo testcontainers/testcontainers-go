@@ -9,42 +9,36 @@ import (
 func TestConfigureQuorumVoters(t *testing.T) {
 	tests := []struct {
 		name           string
-		req            *testcontainers.GenericContainerRequest
+		req            *testcontainers.Request
 		expectedVoters string
 	}{
 		{
 			name: "voters on localhost",
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Env: map[string]string{},
-				},
+			req: &testcontainers.Request{
+				Env: map[string]string{},
 			},
 			expectedVoters: "1@localhost:9094",
 		},
 		{
 			name: "voters on first network alias of the first network",
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Env:      map[string]string{},
-					Networks: []string{"foo", "bar", "baaz"},
-					NetworkAliases: map[string][]string{
-						"foo":  {"foo0", "foo1", "foo2", "foo3"},
-						"bar":  {"bar0", "bar1", "bar2", "bar3"},
-						"baaz": {"baaz0", "baaz1", "baaz2", "baaz3"},
-					},
+			req: &testcontainers.Request{
+				Env:      map[string]string{},
+				Networks: []string{"foo", "bar", "baaz"},
+				NetworkAliases: map[string][]string{
+					"foo":  {"foo0", "foo1", "foo2", "foo3"},
+					"bar":  {"bar0", "bar1", "bar2", "bar3"},
+					"baaz": {"baaz0", "baaz1", "baaz2", "baaz3"},
 				},
 			},
 			expectedVoters: "1@foo0:9094",
 		},
 		{
 			name: "voters on localhost if alias but no networks",
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					NetworkAliases: map[string][]string{
-						"foo":  {"foo0", "foo1", "foo2", "foo3"},
-						"bar":  {"bar0", "bar1", "bar2", "bar3"},
-						"baaz": {"baaz0", "baaz1", "baaz2", "baaz3"},
-					},
+			req: &testcontainers.Request{
+				NetworkAliases: map[string][]string{
+					"foo":  {"foo0", "foo1", "foo2", "foo3"},
+					"bar":  {"bar0", "bar1", "bar2", "bar3"},
+					"baaz": {"baaz0", "baaz1", "baaz2", "baaz3"},
 				},
 			},
 			expectedVoters: "1@localhost:9094",
