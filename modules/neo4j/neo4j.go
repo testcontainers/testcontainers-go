@@ -8,6 +8,7 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -28,7 +29,7 @@ const (
 
 // Neo4jContainer represents the Neo4j container type used in the module
 type Neo4jContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 }
 
 // BoltUrl returns the bolt url for the Neo4j container, using the bolt port, in the format of neo4j://host:port
@@ -49,9 +50,9 @@ func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
 }
 
 // RunContainer creates an instance of the Neo4j container type
-func RunContainer(ctx context.Context, options ...testcontainers.ContainerCustomizer) (*Neo4jContainer, error) {
+func RunContainer(ctx context.Context, options ...testcontainers.RequestCustomizer) (*Neo4jContainer, error) {
 	httpPort, _ := nat.NewPort("tcp", defaultHttpPort)
-	request := testcontainers.ContainerRequest{
+	req := testcontainers.Request{
 		Image: fmt.Sprintf("docker.io/%s:%s", defaultImageName, defaultTag),
 		Env: map[string]string{
 			"NEO4J_AUTH": "none",
@@ -70,12 +71,8 @@ func RunContainer(ctx context.Context, options ...testcontainers.ContainerCustom
 				},
 			},
 		},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: request,
-		Logger:           testcontainers.Logger,
-		Started:          true,
+		Started: true,
+		Logger:  tclog.StandardLogger(),
 	}
 
 	if len(options) == 0 {
@@ -83,22 +80,22 @@ func RunContainer(ctx context.Context, options ...testcontainers.ContainerCustom
 	}
 
 	for _, option := range options {
-		if err := option.Customize(&genericContainerReq); err != nil {
+		if err := option.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	err := validate(&genericContainerReq)
+	err := validate(&req)
 	if err != nil {
 		return nil, err
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Neo4jContainer{Container: container}, nil
+	return &Neo4jContainer{DockerContainer: container}, nil
 }
 
 func isHttpOk() func(status int) bool {

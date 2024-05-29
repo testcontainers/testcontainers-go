@@ -32,7 +32,7 @@ func WithoutAuthentication() testcontainers.CustomizeRequestOption {
 // An empty string disables authentication.
 // The default password is "password".
 func WithAdminPassword(adminPassword string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		pwd := "none"
 		if adminPassword != "" {
 			pwd = fmt.Sprintf("neo4j/%s", adminPassword)
@@ -47,7 +47,7 @@ func WithAdminPassword(adminPassword string) testcontainers.CustomizeRequestOpti
 // WithLabsPlugin registers one or more Neo4jLabsPlugin for download and server startup.
 // There might be plugins not supported by your selected version of Neo4j.
 func WithLabsPlugin(plugins ...LabsPlugin) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		rawPluginValues := make([]string, len(plugins))
 		for i := 0; i < len(plugins); i++ {
 			rawPluginValues[i] = string(plugins[i])
@@ -68,7 +68,7 @@ func WithLabsPlugin(plugins ...LabsPlugin) testcontainers.CustomizeRequestOption
 // See WithNeo4jSettings to add multiple settings at once
 // Note: credentials must be configured with WithAdminPassword
 func WithNeo4jSetting(key, value string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		return addSetting(req, key, value)
 	}
 }
@@ -80,7 +80,7 @@ func WithNeo4jSetting(key, value string) testcontainers.CustomizeRequestOption {
 // See WithNeo4jSetting to add a single setting
 // Note: credentials must be configured with WithAdminPassword
 func WithNeo4jSettings(settings map[string]string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		for key, value := range settings {
 			if err := addSetting(req, key, value); err != nil {
 				return err
@@ -91,17 +91,7 @@ func WithNeo4jSettings(settings map[string]string) testcontainers.CustomizeReque
 	}
 }
 
-// WithLogger sets a custom logger to be used by the container
-// Consider calling this before other "With functions" as these may generate logs
-func WithLogger(logger testcontainers.Logging) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Logger = logger
-
-		return nil
-	}
-}
-
-func addSetting(req *testcontainers.GenericContainerRequest, key string, newVal string) error {
+func addSetting(req *testcontainers.Request, key string, newVal string) error {
 	normalizedKey := formatNeo4jConfig(key)
 	if oldVal, found := req.Env[normalizedKey]; found {
 		// make sure AUTH is not overwritten by a setting
@@ -117,7 +107,7 @@ func addSetting(req *testcontainers.GenericContainerRequest, key string, newVal 
 	return nil
 }
 
-func validate(req *testcontainers.GenericContainerRequest) error {
+func validate(req *testcontainers.Request) error {
 	if req.Logger == nil {
 		return errors.New("nil logger is not permitted")
 	}

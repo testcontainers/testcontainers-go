@@ -132,7 +132,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 		// withSettings {
 		logger := &inMemoryLogger{}
 		container, err := neo4j.RunContainer(ctx,
-			neo4j.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
+			testcontainers.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("some.key", "value1"),
 			neo4j.WithNeo4jSettings(map[string]string{"some.key": "value2"}),
@@ -159,7 +159,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	})
 
 	outer.Run("rejects nil logger", func(t *testing.T) {
-		container, err := neo4j.RunContainer(ctx, neo4j.WithLogger(nil))
+		container, err := neo4j.RunContainer(ctx, testcontainers.WithLogger(nil))
 
 		if container != nil {
 			t.Fatalf("container must not be created with nil logger")
