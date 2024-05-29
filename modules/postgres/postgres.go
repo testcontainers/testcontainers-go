@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
-	tccontainer "github.com/testcontainers/testcontainers-go/container"
 )
 
 const (
@@ -21,7 +20,7 @@ const (
 
 // PostgresContainer represents the postgres container type used in the module
 type PostgresContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	dbName       string
 	user         string
 	password     string
@@ -61,8 +60,8 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string
 // It will also set the "config_file" parameter to the path of the config file
 // as a command line argument to the container
 func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cfgFile := tccontainer.ContainerFile{
+	return func(req *testcontainers.Request) error {
+		cfgFile := testcontainers.ContainerFile{
 			HostFilePath:      cfg,
 			ContainerFilePath: "/etc/postgresql.conf",
 			FileMode:          0o755,
@@ -79,7 +78,7 @@ func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
 // It can be used to define a different name for the default database that is created when the image is first started.
 // If it is not specified, then the value of WithUser will be used.
 func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["POSTGRES_DB"] = dbName
 
 		return nil
@@ -88,10 +87,10 @@ func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
 
 // WithInitScripts sets the init scripts to be run when the container starts
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		initScripts := []tccontainer.ContainerFile{}
+	return func(req *testcontainers.Request) error {
+		initScripts := []testcontainers.ContainerFile{}
 		for _, script := range scripts {
-			cf := tccontainer.ContainerFile{
+			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,
 				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
 				FileMode:          0o755,
@@ -108,7 +107,7 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 // It is required for you to use the PostgreSQL image. It must not be empty or undefined.
 // This environment variable sets the superuser password for PostgreSQL.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["POSTGRES_PASSWORD"] = password
 
 		return nil
@@ -120,7 +119,7 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 // It will create the specified user with superuser power and a database with the same name.
 // If it is not specified, then the default user of postgres will be used.
 func WithUsername(user string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		if user == "" {
 			user = defaultUser
 		}
@@ -132,8 +131,8 @@ func WithUsername(user string) testcontainers.CustomizeRequestOption {
 }
 
 // RunContainer creates an instance of the postgres container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*PostgresContainer, error) {
+	req := testcontainers.Request{
 		Image: defaultPostgresImage,
 		Env: map[string]string{
 			"POSTGRES_USER":     defaultUser,
@@ -142,20 +141,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		},
 		ExposedPorts: []string{"5432/tcp"},
 		Cmd:          []string{"postgres", "-c", "fsync=off"},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started:      true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +159,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	password := req.Env["POSTGRES_PASSWORD"]
 	dbName := req.Env["POSTGRES_DB"]
 
-	return &PostgresContainer{Container: container, dbName: dbName, password: password, user: user}, nil
+	return &PostgresContainer{DockerContainer: container, dbName: dbName, password: password, user: user}, nil
 }
 
 type snapshotConfig struct {
