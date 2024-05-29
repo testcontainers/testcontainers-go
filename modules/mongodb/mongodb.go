@@ -13,30 +13,26 @@ const defaultImage = "mongo:6"
 
 // MongoDBContainer represents the MongoDB container type used in the module
 type MongoDBContainer struct {
-	testcontainers.Container
+	*testcontainers.DockerContainer
 	username string
 	password string
 }
 
 // RunContainer creates an instance of the MongoDB container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MongoDBContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MongoDBContainer, error) {
+	req := testcontainers.Request{
 		Image:        defaultImage,
 		ExposedPorts: []string{"27017/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("Waiting for connections"),
 			wait.ForListeningPort("27017/tcp"),
 		),
-		Env: map[string]string{},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Env:     map[string]string{},
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
@@ -46,22 +42,22 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("if you specify username or password, you must provide both of them")
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	if username != "" && password != "" {
-		return &MongoDBContainer{Container: container, username: username, password: password}, nil
+		return &MongoDBContainer{DockerContainer: container, username: username, password: password}, nil
 	}
-	return &MongoDBContainer{Container: container}, nil
+	return &MongoDBContainer{DockerContainer: container}, nil
 }
 
 // WithUsername sets the initial username to be created when the container starts
 // It is used in conjunction with WithPassword to set a username and its password.
 // It will create the specified user with superuser power.
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["MONGO_INITDB_ROOT_USERNAME"] = username
 
 		return nil
@@ -72,7 +68,7 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 // It is used in conjunction with WithUsername to set a username and its password.
 // It will set the superuser password for MongoDB.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Env["MONGO_INITDB_ROOT_PASSWORD"] = password
 
 		return nil
@@ -82,11 +78,11 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 // WithReplicaSet configures the container to run a single-node MongoDB replica set named "rs".
 // It will wait until the replica set is ready.
 func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+	return func(req *testcontainers.Request) error {
 		req.Cmd = append(req.Cmd, "--replSet", replSetName)
 		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
-			PostStarts: []testcontainers.ContainerHook{
-				func(ctx context.Context, c testcontainers.Container) error {
+			PostStarts: []testcontainers.StartedContainerHook{
+				func(ctx context.Context, c testcontainers.StartedContainer) error {
 					ip, err := c.ContainerIP(ctx)
 					if err != nil {
 						return err

@@ -40,6 +40,7 @@ type ReadyContainer interface {
 	Inspect(context.Context) (*types.ContainerJSON, error)
 	MappedPort(context.Context, nat.Port) (nat.Port, error)
 	PortEndpoint(context.Context, nat.Port, string) (string, error) // Alias for Host() + Port() methods
+	ContainerIP(context.Context) (string, error)
 	Logs(context.Context) (io.ReadCloser, error)
 	Exec(context.Context, []string, ...exec.ProcessOption) (int, io.Reader, error)
 	Stop(context.Context, *time.Duration) error
