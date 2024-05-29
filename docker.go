@@ -354,7 +354,7 @@ func (c *DockerContainer) GetImage() string {
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
 // You can use the "TC_HOST" env variable to set this yourself
 func (c *DockerContainer) Host(ctx context.Context) (string, error) {
-	host, err := daemonHost(ctx)
+	host, err := DaemonHost(ctx)
 	if err != nil {
 		return "", err
 	}

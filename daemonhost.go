@@ -10,7 +10,8 @@ import (
 	tcnetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
 )
 
-func daemonHost(ctx context.Context) (string, error) {
+// DaemonHost returns the host of the Docker daemon
+func DaemonHost(ctx context.Context) (string, error) {
 	var hostCache string
 
 	host, exists := os.LookupEnv("TC_HOST")

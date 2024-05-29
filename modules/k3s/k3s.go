@@ -111,14 +111,13 @@ func getContainerHost(ctx context.Context, opts ...testcontainers.RequestCustomi
 		logging = tclog.StandardLogger()
 	}
 
-	cli, err := testcontainers.NewDockerClientWithOpts(ctx)
+	daemonHost, err := testcontainers.DaemonHost(ctx)
 	if err != nil {
 		// Fall back to localhost.
 		return "localhost", nil
 	}
-	defer cli.Close()
 
-	return cli.DaemonHost(), nil
+	return daemonHost, nil
 }
 
 // GetKubeConfig returns the modified kubeconfig with server url
