@@ -13,7 +13,7 @@ func ExampleRunContainer() {
 	// runVearchContainer {
 	ctx := context.Background()
 
-	vearchContainer, err := vearch.RunContainer(ctx, testcontainers.WithImage("vearch/vearch:v1.7.4"))
+	vearchContainer, err := vearch.RunContainer(ctx, testcontainers.WithImage("vearch/vearch:latest"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
