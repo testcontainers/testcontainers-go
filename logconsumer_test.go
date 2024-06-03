@@ -277,7 +277,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	defer dindCli.Close()
 
 	// Inject the client into the context for the downstream API calls
-	dindCtx := context.WithValue(ctx, core.ClientContextKey, dindCli)
+	dindCtx := context.WithValue(ctx, ClientContextKey, dindCli)
 
 	consumer := TestLogConsumer{
 		msgs:     []string{},

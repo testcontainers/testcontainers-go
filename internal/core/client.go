@@ -110,11 +110,11 @@ func IsPermanentClientError(err error) bool {
 	return false
 }
 
-type contextKey string
+type ContextKey string
 
 const (
 	// ClientContextKey is the key used to store the docker client in the context
-	ClientContextKey contextKey = "testcontainers-docker-client"
+	ClientContextKey ContextKey = "testcontainers-docker-client"
 )
 
 // NewClient returns a new docker client extracting the docker host from the different alternatives

@@ -12,6 +12,14 @@ import (
 // It implements the SystemAPIClient interface in order to cache the docker info and reuse it.
 type DockerClient = core.DockerClient
 
+// ContextKey is the key used to store values in the context
+type ContextKey = core.ContextKey
+
+const (
+	// ClientContextKey is the key used to store a custom docker client in the context
+	ClientContextKey ContextKey = core.ClientContextKey
+)
+
 func NewDockerClientWithOpts(ctx context.Context, opt ...client.Opt) (*DockerClient, error) {
 	dockerClient, err := core.NewClient(ctx, opt...)
 	if err != nil {

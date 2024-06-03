@@ -1461,7 +1461,7 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			m := &errMockCli{err: tt.errReturned}
 
 			// pass the mock client to the downstream API
-			ctx := context.WithValue(context.Background(), core.ClientContextKey, newMockDockerClient(m))
+			ctx := context.WithValue(context.Background(), ClientContextKey, newMockDockerClient(m))
 
 			// give a chance to retry
 			ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
@@ -1511,7 +1511,7 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &errMockCli{err: tt.errReturned}
 
-			ctx := context.WithValue(context.Background(), core.ClientContextKey, newMockDockerClient(m))
+			ctx := context.WithValue(context.Background(), ClientContextKey, newMockDockerClient(m))
 
 			// give a chance to retry
 			ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
@@ -1571,7 +1571,7 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &errMockCli{err: tt.errReturned, logger: tclog.NewTestLogger(t)}
 
-			ctx := context.WithValue(context.Background(), core.ClientContextKey, newMockDockerClient(m))
+			ctx := context.WithValue(context.Background(), ClientContextKey, newMockDockerClient(m))
 
 			// give a chance to retry
 			ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
