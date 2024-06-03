@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/vearch
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Vearch container](../../modules/Vearch/examples_test.go) inside_block:runVearchContainer
+[Creating a Vearch container](../../modules/vearch/examples_test.go) inside_block:runVearchContainer
 <!--/codeinclude-->
 
 ## Module reference
