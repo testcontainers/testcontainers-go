@@ -172,7 +172,7 @@ func (r RawCommand) AsCommand() []string {
 // is started.
 func WithStartupCommand(execs ...Executable) CustomizeRequestOption {
 	return func(req *Request) error {
-		startupCommandsHook := ContainerLifecycleHooks{
+		startupCommandsHook := LifecycleHooks{
 			PostStarts: []StartedContainerHook{},
 		}
 
@@ -207,7 +207,7 @@ func WithAfterReadyCommand(execs ...Executable) CustomizeRequestOption {
 			postReadiesHook = append(postReadiesHook, execFn)
 		}
 
-		req.LifecycleHooks = append(req.LifecycleHooks, ContainerLifecycleHooks{
+		req.LifecycleHooks = append(req.LifecycleHooks, LifecycleHooks{
 			PostReadies: postReadiesHook,
 		})
 

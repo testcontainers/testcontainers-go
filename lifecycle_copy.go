@@ -8,8 +8,8 @@ import (
 
 // defaultCopyFileToContainerHook is a hook that will copy files to the container after it's created
 // but before it's started
-var defaultCopyFileToContainerHook = func(files []ContainerFile) ContainerLifecycleHooks {
-	return ContainerLifecycleHooks{
+var defaultCopyFileToContainerHook = func(files []ContainerFile) LifecycleHooks {
+	return LifecycleHooks{
 		PostCreates: []CreatedContainerHook{
 			// copy files to container after it's created
 			func(ctx context.Context, c CreatedContainer) error {

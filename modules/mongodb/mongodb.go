@@ -80,7 +80,7 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.Request) error {
 		req.Cmd = append(req.Cmd, "--replSet", replSetName)
-		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
+		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.LifecycleHooks{
 			PostStarts: []testcontainers.StartedContainerHook{
 				func(ctx context.Context, c testcontainers.StartedContainer) error {
 					ip, err := c.ContainerIP(ctx)

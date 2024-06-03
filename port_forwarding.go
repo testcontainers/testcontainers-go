@@ -37,8 +37,8 @@ var sshPassword = uuid.NewString()
 // 1. Create a new SSHD container.
 // 2. Expose the host ports to the container after the container is ready.
 // 3. Close the SSH sessions before killing the container.
-func exposeHostPorts(ctx context.Context, req *Request, p ...int) (ContainerLifecycleHooks, error) {
-	var sshdConnectHook ContainerLifecycleHooks
+func exposeHostPorts(ctx context.Context, req *Request, p ...int) (LifecycleHooks, error) {
+	var sshdConnectHook LifecycleHooks
 
 	if len(p) == 0 {
 		return sshdConnectHook, fmt.Errorf("no ports to expose")
@@ -123,7 +123,7 @@ func exposeHostPorts(ctx context.Context, req *Request, p ...int) (ContainerLife
 
 	// after the container is ready, create the SSH tunnel
 	// for each exposed port from the host.
-	sshdConnectHook = ContainerLifecycleHooks{
+	sshdConnectHook = LifecycleHooks{
 		PostReadies: []StartedContainerHook{
 			func(ctx context.Context, c StartedContainer) error {
 				return sshdContainer.exposeHostPort(ctx, req.HostAccessPorts...)

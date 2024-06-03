@@ -62,7 +62,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		Entrypoint: []string{"sh"},
 		// this CMD will wait for the starter script to be copied into the container and then execute it
 		Cmd: []string{"-c", "while [ ! -f " + starterScript + " ]; do sleep 0.1; done; bash " + starterScript},
-		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+		LifecycleHooks: []testcontainers.LifecycleHooks{
 			{
 				PostStarts: []testcontainers.StartedContainerHook{
 					// 1. copy the starter script into the container

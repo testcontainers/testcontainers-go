@@ -82,7 +82,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 			DefaultHTTPPort,
 		},
 		WaitingFor: wait.ForLog(".*Server startup complete.*").AsRegexp().WithStartupTimeout(60 * time.Second),
-		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+		LifecycleHooks: []testcontainers.LifecycleHooks{
 			{
 				PostStarts: []testcontainers.StartedContainerHook{},
 			},

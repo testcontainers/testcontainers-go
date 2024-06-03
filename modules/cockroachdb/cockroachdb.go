@@ -77,7 +77,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 			defaultSQLPort,
 			defaultAdminPort,
 		},
-		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+		LifecycleHooks: []testcontainers.LifecycleHooks{
 			{
 				PreStarts: []testcontainers.CreatedContainerHook{
 					func(ctx context.Context, container testcontainers.CreatedContainer) error {

@@ -7,12 +7,12 @@ import (
 )
 
 // DefaultLoggingHook is a hook that will log the container lifecycle events
-var DefaultLoggingHook = func(logger log.Logging) ContainerLifecycleHooks {
+var DefaultLoggingHook = func(logger log.Logging) LifecycleHooks {
 	shortContainerID := func(c CreatedContainer) string {
 		return c.GetContainerID()[:12]
 	}
 
-	return ContainerLifecycleHooks{
+	return LifecycleHooks{
 		PreCreates: []ContainerRequestHook{
 			func(ctx context.Context, req *Request) error {
 				logger.Printf("🐳 Creating container for image %s", req.Image)
@@ -71,8 +71,8 @@ var DefaultLoggingHook = func(logger log.Logging) ContainerLifecycleHooks {
 }
 
 // defaultLogConsumersHook is a hook that will start log consumers after the container is started
-var defaultLogConsumersHook = func(cfg *log.ConsumerConfig) ContainerLifecycleHooks {
-	return ContainerLifecycleHooks{
+var defaultLogConsumersHook = func(cfg *log.ConsumerConfig) LifecycleHooks {
+	return LifecycleHooks{
 		PostStarts: []StartedContainerHook{
 			// first post-start hook is to produce logs and start log consumers
 			func(ctx context.Context, c StartedContainer) error {

@@ -50,7 +50,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		},
 		Cmd:        []string{"milvus", "run", "standalone"},
 		WaitingFor: wait.ForHTTP("/healthz").WithPort("9091").WithStartupTimeout(60 * time.Second).WithPollInterval(30 * time.Second),
-		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+		LifecycleHooks: []testcontainers.LifecycleHooks{
 			{
 				PostCreates: []testcontainers.CreatedContainerHook{
 					// Copy the default embed etcd config to container after it's created.

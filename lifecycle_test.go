@@ -59,8 +59,8 @@ func TestCombineLifecycleHooks(t *testing.T) {
 		return startedHookFunc(prefix, "post", hook, lifecycleID, hookID)
 	}
 
-	lifecycleHookFunc := func(prefix string, lifecycleID int) ContainerLifecycleHooks {
-		return ContainerLifecycleHooks{
+	lifecycleHookFunc := func(prefix string, lifecycleID int) LifecycleHooks {
+		return LifecycleHooks{
 			PreCreates:     []ContainerRequestHook{preCreateFunc(prefix, "create", lifecycleID, 1), preCreateFunc(prefix, "create", lifecycleID, 2)},
 			PostCreates:    []CreatedContainerHook{postCreatedFunc(prefix, "create", lifecycleID, 1), postCreatedFunc(prefix, "create", lifecycleID, 2)},
 			PreStarts:      []CreatedContainerHook{preCreatedFunc(prefix, "start", lifecycleID, 1), preCreatedFunc(prefix, "start", lifecycleID, 2)},
@@ -73,8 +73,8 @@ func TestCombineLifecycleHooks(t *testing.T) {
 		}
 	}
 
-	defaultHooks := []ContainerLifecycleHooks{lifecycleHookFunc("default", 1), lifecycleHookFunc("default", 2)}
-	userDefinedHooks := []ContainerLifecycleHooks{lifecycleHookFunc("user-defined", 1), lifecycleHookFunc("user-defined", 2), lifecycleHookFunc("user-defined", 3)}
+	defaultHooks := []LifecycleHooks{lifecycleHookFunc("default", 1), lifecycleHookFunc("default", 2)}
+	userDefinedHooks := []LifecycleHooks{lifecycleHookFunc("user-defined", 1), lifecycleHookFunc("user-defined", 2), lifecycleHookFunc("user-defined", 3)}
 
 	hooks := combineContainerHooks(defaultHooks, userDefinedHooks)
 
@@ -174,7 +174,7 @@ func TestLifecycleHooks(t *testing.T) {
 	prints := []string{}
 	ctx := context.Background()
 	// reqWithLifecycleHooks {
-	lifecycleHooks := []ContainerLifecycleHooks{
+	lifecycleHooks := []LifecycleHooks{
 		{
 			PreCreates: []ContainerRequestHook{
 				func(ctx context.Context, req *Request) error {
@@ -327,7 +327,7 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 
 	req := Request{
 		Image: nginxAlpineImage,
-		LifecycleHooks: []ContainerLifecycleHooks{
+		LifecycleHooks: []LifecycleHooks{
 			DefaultLoggingHook(&dl),
 		},
 		Started: true,
@@ -358,7 +358,7 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 
 	req := Request{
 		Image: nginxAlpineImage,
-		LifecycleHooks: []ContainerLifecycleHooks{
+		LifecycleHooks: []LifecycleHooks{
 			DefaultLoggingHook(&dl),
 			DefaultLoggingHook(&dl),
 		},

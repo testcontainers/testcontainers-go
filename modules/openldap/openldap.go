@@ -99,7 +99,7 @@ func WithInitialLdif(ldif string) testcontainers.CustomizeRequestOption {
 			FileMode:          0o644,
 		})
 
-		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
+		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.LifecycleHooks{
 			PostReadies: []testcontainers.StartedContainerHook{
 				func(ctx context.Context, container testcontainers.StartedContainer) error {
 					username := req.Env["LDAP_ADMIN_USERNAME"]
@@ -136,7 +136,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 			wait.ForLog("** Starting slapd **"),
 			wait.ForListeningPort("1389/tcp"),
 		),
-		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+		LifecycleHooks: []testcontainers.LifecycleHooks{
 			{
 				PostReadies: []testcontainers.StartedContainerHook{},
 			},

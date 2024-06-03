@@ -39,7 +39,7 @@ type DockerContainer struct {
 	logger            log.Logging
 	Image             string
 	imageWasBuilt     bool
-	lifecycleHooks    []ContainerLifecycleHooks
+	lifecycleHooks    []LifecycleHooks
 	sessionID         string
 	terminationSignal chan bool
 	keepBuiltImage    bool
@@ -72,7 +72,7 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 
 	// TODO define a logger for the library
 	// container.logger = provider.Logger
-	container.lifecycleHooks = []ContainerLifecycleHooks{
+	container.lifecycleHooks = []LifecycleHooks{
 		DefaultLoggingHook(container.logger),
 	}
 
@@ -752,56 +752,56 @@ func (req Request) creatingHook(ctx context.Context) error {
 
 // createdHook is a hook that will be called after a container is created.
 func (c *DockerContainer) createdHook(ctx context.Context) error {
-	return c.applyCreatedLifecycleHooks(ctx, false, func(lifecycleHooks ContainerLifecycleHooks) []CreatedContainerHook {
+	return c.applyCreatedLifecycleHooks(ctx, false, func(lifecycleHooks LifecycleHooks) []CreatedContainerHook {
 		return lifecycleHooks.PostCreates
 	})
 }
 
 // startingHook is a hook that will be called before a container is started.
 func (c *DockerContainer) startingHook(ctx context.Context) error {
-	return c.applyCreatedLifecycleHooks(ctx, true, func(lifecycleHooks ContainerLifecycleHooks) []CreatedContainerHook {
+	return c.applyCreatedLifecycleHooks(ctx, true, func(lifecycleHooks LifecycleHooks) []CreatedContainerHook {
 		return lifecycleHooks.PreStarts
 	})
 }
 
 // startedHook is a hook that will be called after a container is started.
 func (c *DockerContainer) startedHook(ctx context.Context) error {
-	return c.applyStartedLifecycleHooks(ctx, true, func(lifecycleHooks ContainerLifecycleHooks) []StartedContainerHook {
+	return c.applyStartedLifecycleHooks(ctx, true, func(lifecycleHooks LifecycleHooks) []StartedContainerHook {
 		return lifecycleHooks.PostStarts
 	})
 }
 
 // readiedHook is a hook that will be called after a container is ready.
 func (c *DockerContainer) readiedHook(ctx context.Context) error {
-	return c.applyStartedLifecycleHooks(ctx, true, func(lifecycleHooks ContainerLifecycleHooks) []StartedContainerHook {
+	return c.applyStartedLifecycleHooks(ctx, true, func(lifecycleHooks LifecycleHooks) []StartedContainerHook {
 		return lifecycleHooks.PostReadies
 	})
 }
 
 // stoppingHook is a hook that will be called before a container is stopped.
 func (c *DockerContainer) stoppingHook(ctx context.Context) error {
-	return c.applyStartedLifecycleHooks(ctx, false, func(lifecycleHooks ContainerLifecycleHooks) []StartedContainerHook {
+	return c.applyStartedLifecycleHooks(ctx, false, func(lifecycleHooks LifecycleHooks) []StartedContainerHook {
 		return lifecycleHooks.PreStops
 	})
 }
 
 // stoppedHook is a hook that will be called after a container is stopped.
 func (c *DockerContainer) stoppedHook(ctx context.Context) error {
-	return c.applyStartedLifecycleHooks(ctx, false, func(lifecycleHooks ContainerLifecycleHooks) []StartedContainerHook {
+	return c.applyStartedLifecycleHooks(ctx, false, func(lifecycleHooks LifecycleHooks) []StartedContainerHook {
 		return lifecycleHooks.PostStops
 	})
 }
 
 // terminatingHook is a hook that will be called before a container is terminated.
 func (c *DockerContainer) terminatingHook(ctx context.Context) error {
-	return c.applyStartedLifecycleHooks(ctx, false, func(lifecycleHooks ContainerLifecycleHooks) []StartedContainerHook {
+	return c.applyStartedLifecycleHooks(ctx, false, func(lifecycleHooks LifecycleHooks) []StartedContainerHook {
 		return lifecycleHooks.PreTerminates
 	})
 }
 
 // terminatedHook is a hook that will be called after a container is terminated.
 func (c *DockerContainer) terminatedHook(ctx context.Context) error {
-	return c.applyStartedLifecycleHooks(ctx, false, func(lifecycleHooks ContainerLifecycleHooks) []StartedContainerHook {
+	return c.applyStartedLifecycleHooks(ctx, false, func(lifecycleHooks LifecycleHooks) []StartedContainerHook {
 		return lifecycleHooks.PostTerminates
 	})
 }

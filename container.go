@@ -250,7 +250,7 @@ func newContainer(ctx context.Context, req Request) (*DockerContainer, error) {
 	networkingConfig := &network.NetworkingConfig{}
 
 	// default hooks include logger hook and pre-create hook
-	defaultHooks := []ContainerLifecycleHooks{
+	defaultHooks := []LifecycleHooks{
 		DefaultLoggingHook(req.Logger),
 		defaultPreCreateHook(dockerInput, hostConfig, networkingConfig),
 		defaultCopyFileToContainerHook(req.Files),
@@ -272,7 +272,7 @@ func newContainer(ctx context.Context, req Request) (*DockerContainer, error) {
 		defaultHooks = append(defaultHooks, sshdForwardPortsHook)
 	}
 
-	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
+	req.LifecycleHooks = []LifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
 
 	err = req.creatingHook(ctx)
 	if err != nil {
@@ -361,7 +361,7 @@ func reuseOrCreateContainer(ctx context.Context, req Request) (*DockerContainer,
 	}
 
 	// default hooks include logger hook and pre-create hook
-	defaultHooks := []ContainerLifecycleHooks{
+	defaultHooks := []LifecycleHooks{
 		DefaultLoggingHook(req.Logger),
 		defaultReadinessHook(),
 		defaultLogConsumersHook(req.LogConsumerCfg),
@@ -374,7 +374,7 @@ func reuseOrCreateContainer(ctx context.Context, req Request) (*DockerContainer,
 		sessionID:         sessionID,
 		terminationSignal: termSignal,
 		logger:            req.Logger,
-		lifecycleHooks:    []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)},
+		lifecycleHooks:    []LifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)},
 	}
 
 	err = dc.startedHook(ctx)

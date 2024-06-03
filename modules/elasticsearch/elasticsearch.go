@@ -47,7 +47,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		//   matches 7.x JSON logging with whitespace between message field and content
 		//   matches 6.x text logging with node name in brackets and just a 'started' message till the end of the line
 		WaitingFor: wait.ForLog(`.*("message":\s?"started(\s|")?.*|]\sstarted\n)`).AsRegexp(),
-		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+		LifecycleHooks: []testcontainers.LifecycleHooks{
 			{
 				// the container needs a post create hook to set the default JVM options in a file
 				PostCreates: []testcontainers.CreatedContainerHook{},

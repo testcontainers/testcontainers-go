@@ -32,9 +32,9 @@ type CreatedContainerHook func(ctx context.Context, container CreatedContainer) 
 // For that, it will receive a Container, modify it and return an error if needed.
 type StartedContainerHook func(ctx context.Context, container StartedContainer) error
 
-// ContainerLifecycleHooks is a struct that contains all the hooks that can be used
+// LifecycleHooks is a struct that contains all the hooks that can be used
 // to modify the container lifecycle.
-type ContainerLifecycleHooks struct {
+type LifecycleHooks struct {
 	PreCreates     []ContainerRequestHook
 	PostCreates    []CreatedContainerHook
 	PreStarts      []CreatedContainerHook
@@ -47,7 +47,7 @@ type ContainerLifecycleHooks struct {
 }
 
 // Creating is a hook that will be called before a container is created.
-func (c ContainerLifecycleHooks) Creating(ctx context.Context) func(req *Request) error {
+func (c LifecycleHooks) Creating(ctx context.Context) func(req *Request) error {
 	return func(req *Request) error {
 		for _, hook := range c.PreCreates {
 			if err := hook(ctx, req); err != nil {
@@ -60,42 +60,42 @@ func (c ContainerLifecycleHooks) Creating(ctx context.Context) func(req *Request
 }
 
 // Created is a hook that will be called after a container is created
-func (c ContainerLifecycleHooks) Created(ctx context.Context) func(container CreatedContainer) error {
+func (c LifecycleHooks) Created(ctx context.Context) func(container CreatedContainer) error {
 	return createdContainerHookFn(ctx, c.PostCreates)
 }
 
 // Starting is a hook that will be called before a container is started
-func (c ContainerLifecycleHooks) Starting(ctx context.Context) func(container CreatedContainer) error {
+func (c LifecycleHooks) Starting(ctx context.Context) func(container CreatedContainer) error {
 	return createdContainerHookFn(ctx, c.PreStarts)
 }
 
 // Started is a hook that will be called after a container is started
-func (c ContainerLifecycleHooks) Started(ctx context.Context) func(container StartedContainer) error {
+func (c LifecycleHooks) Started(ctx context.Context) func(container StartedContainer) error {
 	return startedContainerHookFn(ctx, c.PostStarts)
 }
 
 // Readied is a hook that will be called after a container is ready
-func (c ContainerLifecycleHooks) Readied(ctx context.Context) func(container StartedContainer) error {
+func (c LifecycleHooks) Readied(ctx context.Context) func(container StartedContainer) error {
 	return startedContainerHookFn(ctx, c.PostReadies)
 }
 
 // Stopping is a hook that will be called before a container is stopped
-func (c ContainerLifecycleHooks) Stopping(ctx context.Context) func(container StartedContainer) error {
+func (c LifecycleHooks) Stopping(ctx context.Context) func(container StartedContainer) error {
 	return startedContainerHookFn(ctx, c.PreStops)
 }
 
 // Stopped is a hook that will be called after a container is stopped
-func (c ContainerLifecycleHooks) Stopped(ctx context.Context) func(container StartedContainer) error {
+func (c LifecycleHooks) Stopped(ctx context.Context) func(container StartedContainer) error {
 	return startedContainerHookFn(ctx, c.PostStops)
 }
 
 // Terminating is a hook that will be called before a container is terminated
-func (c ContainerLifecycleHooks) Terminating(ctx context.Context) func(container StartedContainer) error {
+func (c LifecycleHooks) Terminating(ctx context.Context) func(container StartedContainer) error {
 	return startedContainerHookFn(ctx, c.PreTerminates)
 }
 
 // Terminated is a hook that will be called after a container is terminated
-func (c ContainerLifecycleHooks) Terminated(ctx context.Context) func(container StartedContainer) error {
+func (c LifecycleHooks) Terminated(ctx context.Context) func(container StartedContainer) error {
 	return startedContainerHookFn(ctx, c.PostTerminates)
 }
 
@@ -105,7 +105,7 @@ func (c ContainerLifecycleHooks) Terminated(ctx context.Context) func(container 
 // appending or prepending them to the slice of hooks. The order of hooks is the following:
 // - for Pre-hooks, always run the default hooks first, then append the user-defined hooks
 // - for Post-hooks, always run the user-defined hooks first, then the default hooks
-func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHooks) ContainerLifecycleHooks {
+func combineContainerHooks(defaultHooks, userDefinedHooks []LifecycleHooks) LifecycleHooks {
 	preCreates := []ContainerRequestHook{}
 	postCreates := []CreatedContainerHook{}
 	preStarts := []CreatedContainerHook{}
@@ -147,7 +147,7 @@ func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHo
 		postTerminates = append(postTerminates, defaultHook.PostTerminates...)
 	}
 
-	return ContainerLifecycleHooks{
+	return LifecycleHooks{
 		PreCreates:     preCreates,
 		PostCreates:    postCreates,
 		PreStarts:      preStarts,
@@ -161,7 +161,7 @@ func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHo
 }
 
 // applyCreatedLifecycleHooks applies created lifecycle hooks reporting the container logs on error if logError is true.
-func (c *DockerContainer) applyCreatedLifecycleHooks(ctx context.Context, logError bool, hooks func(lifecycleHooks ContainerLifecycleHooks) []CreatedContainerHook) error {
+func (c *DockerContainer) applyCreatedLifecycleHooks(ctx context.Context, logError bool, hooks func(lifecycleHooks LifecycleHooks) []CreatedContainerHook) error {
 	errs := make([]error, len(c.lifecycleHooks))
 	for i, lifecycleHooks := range c.lifecycleHooks {
 		errs[i] = createdContainerHookFn(ctx, hooks(lifecycleHooks))(c)
@@ -179,7 +179,7 @@ func (c *DockerContainer) applyCreatedLifecycleHooks(ctx context.Context, logErr
 }
 
 // applyStartedLifecycleHooks applies started lifecycle hooks reporting the container logs on error if logError is true.
-func (c *DockerContainer) applyStartedLifecycleHooks(ctx context.Context, logError bool, hooks func(lifecycleHooks ContainerLifecycleHooks) []StartedContainerHook) error {
+func (c *DockerContainer) applyStartedLifecycleHooks(ctx context.Context, logError bool, hooks func(lifecycleHooks LifecycleHooks) []StartedContainerHook) error {
 	errs := make([]error, len(c.lifecycleHooks))
 	for i, lifecycleHooks := range c.lifecycleHooks {
 		errs[i] = startedContainerHookFn(ctx, hooks(lifecycleHooks))(c)

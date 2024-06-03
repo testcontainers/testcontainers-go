@@ -5,8 +5,8 @@ import (
 )
 
 // defaultReadinessHook is a hook that will wait for the container to be ready
-var defaultReadinessHook = func() ContainerLifecycleHooks {
-	return ContainerLifecycleHooks{
+var defaultReadinessHook = func() LifecycleHooks {
+	return LifecycleHooks{
 		PostStarts: []StartedContainerHook{
 			// wait for the container to be ready
 			func(ctx context.Context, c StartedContainer) error {
