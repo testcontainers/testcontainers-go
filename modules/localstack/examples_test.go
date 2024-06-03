@@ -15,7 +15,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/localstack"
-	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -53,7 +52,7 @@ func ExampleRunContainer_withNetwork() {
 	// localstackWithNetwork {
 	ctx := context.Background()
 
-	newNetwork, err := network.New(ctx)
+	newNetwork, err := testcontainers.NewNetwork(ctx)
 	if err != nil {
 		log.Fatalf("failed to create network: %s", err)
 	}

@@ -16,7 +16,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	tcconfig "github.com/testcontainers/testcontainers-go/internal/config"
 	tclog "github.com/testcontainers/testcontainers-go/log"
-	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -146,7 +145,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		dockerClient:     dockerCli.Client(),
 		waitStrategies:   make(map[string]wait.Strategy),
 		containers:       make(map[string]*testcontainers.DockerContainer),
-		networks:         make(map[string]*tcnetwork.DockerNetwork),
+		networks:         make(map[string]*testcontainers.DockerNetwork),
 		sessionID:        testcontainers.SessionID(),
 		reaper:           composeReaper,
 	}

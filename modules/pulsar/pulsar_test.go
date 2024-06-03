@@ -19,14 +19,13 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	tclog "github.com/testcontainers/testcontainers-go/log"
 	testcontainerspulsar "github.com/testcontainers/testcontainers-go/modules/pulsar"
-	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 )
 
 func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	nw, err := tcnetwork.New(ctx)
+	nw, err := testcontainers.NewNetwork(ctx)
 	require.NoError(t, err)
 
 	nwName := nw.Name

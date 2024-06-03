@@ -120,7 +120,7 @@ You could use this feature to run a custom script, or to run a command that is n
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
-By default, the container is started in the default Docker network. If you want to use an already existing Docker network you created in your code, you can use the `network.WithNetwork(aliases []string, nw *testcontainers.DockerNetwork)` option, which receives an alias as parameter and your network, attaching the container to it, and setting the network alias for that network.
+By default, the container is started in the default Docker network. If you want to use an already existing Docker network you created in your code, you can use the `testcontainers.WithNetwork(aliases []string, nw *testcontainers.DockerNetwork)` option, which receives an slice of aliases as parameter and your network, attaching the container to it, and setting the network aliases for that network.
 
 In the case you need to retrieve the network name, you can simply read it from the struct's `Name` field. E.g. `nw.Name`.
 
@@ -131,7 +131,7 @@ In the case you need to retrieve the network name, you can simply read it from t
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
-If you want to attach your containers to a throw-away network, you can use the `network.WithNewNetwork(ctx context.Context, aliases []string, opts ...network.NetworkCustomizer)` option, which receives an alias as parameter, creating the new network with a random name, attaching the container to it, and setting the network alias for that network.
+If you want to attach your containers to a throw-away network, you can use the `testcontainers.WithNewNetwork(ctx context.Context, aliases []string, opts ...network.Customizer)` option, which receives an slice of aliases as parameter, creating the new network with a random name, attaching the container to it, and setting the network aliases for that network.
 
 In the case you need to retrieve the network name, you can use the `Networks(ctx)` method of the `Container` interface, right after it's running, which returns a slice of strings with the names of the networks where the container is attached.
 

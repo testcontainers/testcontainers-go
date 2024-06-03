@@ -244,7 +244,7 @@ func WithLogger(logger log.Logging) CustomizeRequestOption {
 
 // WithNetwork reuses an already existing network, attaching the container to it.
 // Finally it sets the network alias on that network to the given alias.
-func WithNetwork(aliases []string, nw *tcnetwork.DockerNetwork) CustomizeRequestOption {
+func WithNetwork(aliases []string, nw *DockerNetwork) CustomizeRequestOption {
 	return func(req *Request) error {
 		networkName := nw.Name
 
@@ -262,9 +262,9 @@ func WithNetwork(aliases []string, nw *tcnetwork.DockerNetwork) CustomizeRequest
 
 // WithNewNetwork creates a new network with random name and customizers, and attaches the container to it.
 // Finally it sets the network alias on that network to the given alias.
-func WithNewNetwork(ctx context.Context, aliases []string, opts ...tcnetwork.NetworkCustomizer) CustomizeRequestOption {
+func WithNewNetwork(ctx context.Context, aliases []string, opts ...tcnetwork.Customizer) CustomizeRequestOption {
 	return func(req *Request) error {
-		newNetwork, err := tcnetwork.New(ctx, opts...)
+		newNetwork, err := NewNetwork(ctx, opts...)
 		if err != nil {
 			return fmt.Errorf("new network: %w", err)
 		}

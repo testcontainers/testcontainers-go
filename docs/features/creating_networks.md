@@ -10,7 +10,7 @@ For that, please import the `testcontainers/network` package.
 import "github.com/testcontainers/testcontainers-go/network"
 ```
 
-Then, you can create a network using the `network.New` function. This function receives a variadic list of options that can be used to configure the network.
+Then, you can create a network using the `testcontainers.NewNetwork` function. This function receives a variadic list of options that can be used to configure the network.
 
 - `WithAttachable()`
 - `WithCheckDuplicate()`

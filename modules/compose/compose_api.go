@@ -26,7 +26,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/internal/core/reaper"
 	tclog "github.com/testcontainers/testcontainers-go/log"
-	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 	wait "github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -219,7 +218,7 @@ type dockerCompose struct {
 	containers map[string]*testcontainers.DockerContainer
 
 	// cache for networks in the compose stack
-	networks map[string]*tcnetwork.DockerNetwork
+	networks map[string]*testcontainers.DockerNetwork
 
 	// docker/compose API service instance used to control the compose stack
 	composeService api.Service
@@ -502,7 +501,7 @@ func (d *dockerCompose) lookupNetworks(ctx context.Context) error {
 	}
 
 	for _, n := range networks {
-		dn := &tcnetwork.DockerNetwork{
+		dn := &testcontainers.DockerNetwork{
 			ID:     n.ID,
 			Name:   n.Name,
 			Driver: n.Driver,

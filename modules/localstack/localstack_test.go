@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -148,7 +147,7 @@ func TestStartWithoutOverride(t *testing.T) {
 func TestStartV2WithNetwork(t *testing.T) {
 	ctx := context.Background()
 
-	nw, err := network.New(ctx)
+	nw, err := testcontainers.NewNetwork(ctx)
 	require.NoError(t, err)
 
 	localstack, err := RunContainer(

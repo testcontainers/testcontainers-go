@@ -20,7 +20,6 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
-	"github.com/testcontainers/testcontainers-go/network"
 )
 
 func TestRedpanda(t *testing.T) {
@@ -463,7 +462,7 @@ func TestRedpandaListener_Simple(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Create network
-	rpNetwork, err := network.New(ctx)
+	rpNetwork, err := testcontainers.NewNetwork(ctx)
 	require.NoError(t, err)
 
 	// 2. Start Redpanda container
@@ -535,7 +534,7 @@ func TestRedpandaListener_InvalidPort(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Create network
-	RPNetwork, err := network.New(ctx)
+	RPNetwork, err := testcontainers.NewNetwork(ctx)
 	require.NoError(t, err)
 
 	// 2. Attempt Start Redpanda container

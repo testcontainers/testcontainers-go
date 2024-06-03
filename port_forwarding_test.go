@@ -11,7 +11,6 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
-	"github.com/testcontainers/testcontainers-go/network"
 )
 
 const (
@@ -82,7 +81,7 @@ func TestExposeHostPorts(t *testing.T) {
 			}
 
 			if tt.hasNetwork {
-				nw, err := network.New(context.Background())
+				nw, err := testcontainers.NewNetwork(context.Background())
 				if err != nil {
 					t.Fatal(err)
 				}
