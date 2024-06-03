@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go/exec"
@@ -58,10 +56,4 @@ type StartedContainer interface {
 	StartLogProduction(ctx context.Context, opts ...log.ProductionOption) error
 	StopLogProduction() error
 	WithLogProductionTimeout(timeout time.Duration)
-}
-
-// ContainerDefinition is the definition of a container that can be created.
-type ContainerDefinition interface {
-	GetImage() string
-	PreCreateContainerHook(ctx context.Context, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error
 }

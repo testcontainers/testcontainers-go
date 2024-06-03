@@ -180,10 +180,6 @@ func (r *Request) GetDockerfile() string {
 	return f
 }
 
-func (r *Request) GetImage() string {
-	return r.Image
-}
-
 // GetRepo returns the Repo label for image from the Request, defaults to UUID
 func (r *Request) GetRepo() string {
 	repo := r.FromDockerfile.Repo
@@ -204,7 +200,7 @@ func (r *Request) GetTag() string {
 	return strings.ToLower(t)
 }
 
-func (r *Request) PreCreateContainerHook(ctx context.Context, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
+func (r *Request) preCreateContainerHook(ctx context.Context, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
 	// prepare mounts
 	hostConfig.Mounts = r.Mounts.Prepare()
 

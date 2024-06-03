@@ -247,7 +247,7 @@ func newContainer(ctx context.Context, req Request) (*DockerContainer, error) {
 	// default hooks include logger hook and pre-create hook
 	defaultHooks := []ContainerLifecycleHooks{
 		DefaultLoggingHook(req.Logger),
-		defaultPreCreateHook(ctx, &req, dockerInput, hostConfig, networkingConfig),
+		defaultPreCreateHook(dockerInput, hostConfig, networkingConfig),
 		defaultCopyFileToContainerHook(req.Files),
 		defaultLogConsumersHook(req.LogConsumerCfg),
 		defaultReadinessHook(),

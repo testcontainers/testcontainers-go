@@ -14,8 +14,8 @@ var DefaultLoggingHook = func(logger log.Logging) ContainerLifecycleHooks {
 
 	return ContainerLifecycleHooks{
 		PreCreates: []ContainerRequestHook{
-			func(ctx context.Context, def ContainerDefinition) error {
-				logger.Printf("🐳 Creating container for image %s", def.GetImage())
+			func(ctx context.Context, req *Request) error {
+				logger.Printf("🐳 Creating container for image %s", req.Image)
 				return nil
 			},
 		},

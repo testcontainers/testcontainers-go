@@ -10,7 +10,7 @@ import (
 // using the different lifecycle hooks that are available:
 // - Creating
 // For that, it will receive a ContainerRequestHook, modify it and return an error if needed.
-type ContainerRequestHook func(ctx context.Context, def ContainerDefinition) error
+type ContainerRequestHook func(ctx context.Context, req *Request) error
 
 // CreatedContainerHook is a hook that will be called after a container is created
 // It can be used to modify the state of the container after it is created,
@@ -47,10 +47,10 @@ type ContainerLifecycleHooks struct {
 }
 
 // Creating is a hook that will be called before a container is created.
-func (c ContainerLifecycleHooks) Creating(ctx context.Context) func(def ContainerDefinition) error {
-	return func(def ContainerDefinition) error {
+func (c ContainerLifecycleHooks) Creating(ctx context.Context) func(req *Request) error {
+	return func(req *Request) error {
 		for _, hook := range c.PreCreates {
-			if err := hook(ctx, def); err != nil {
+			if err := hook(ctx, req); err != nil {
 				return err
 			}
 		}

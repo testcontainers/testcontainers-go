@@ -8,11 +8,11 @@ import (
 )
 
 // defaultPreCreateHook is a hook that will apply the default configuration to the container
-var defaultPreCreateHook = func(ctx context.Context, def ContainerDefinition, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) ContainerLifecycleHooks {
+var defaultPreCreateHook = func(dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PreCreates: []ContainerRequestHook{
-			func(ctx context.Context, def ContainerDefinition) error {
-				return def.PreCreateContainerHook(ctx, dockerInput, hostConfig, networkingConfig)
+			func(ctx context.Context, req *Request) error {
+				return req.preCreateContainerHook(ctx, dockerInput, hostConfig, networkingConfig)
 			},
 		},
 	}

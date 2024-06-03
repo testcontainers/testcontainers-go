@@ -8,35 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	tcmount "github.com/testcontainers/testcontainers-go/mount"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
-
-type mockContainerDefinition struct {
-	Image                   string
-	Networks                []string
-	NetworkAliases          map[string][]string
-	Mounts                  tcmount.ContainerMounts
-	ExposedPorts            []string
-	ConfigModifier          func(config *container.Config)
-	HostConfigModifier      func(hostConfig *container.HostConfig)
-	EnpointSettingsModifier func(endpointSettings map[string]*network.EndpointSettings)
-	LifecycleHooks          []ContainerLifecycleHooks
-}
-
-func (m mockContainerDefinition) GetImage() string {
-	return m.Image
-}
-
-func (m mockContainerDefinition) PreCreateContainerHook(ctx context.Context, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
-	return nil
-}
 
 // customLoggerImplementation {
 type inMemoryLogger struct {
@@ -52,8 +28,8 @@ func (l *inMemoryLogger) Printf(format string, args ...interface{}) {
 func TestCombineLifecycleHooks(t *testing.T) {
 	prints := []string{}
 
-	preCreateFunc := func(prefix string, hook string, lifecycleID int, hookID int) func(ctx context.Context, def ContainerDefinition) error {
-		return func(ctx context.Context, _ ContainerDefinition) error {
+	preCreateFunc := func(prefix string, hook string, lifecycleID int, hookID int) func(ctx context.Context, req *Request) error {
+		return func(ctx context.Context, _ *Request) error {
 			prints = append(prints, fmt.Sprintf("[%s] pre-%s hook %d.%d", prefix, hook, lifecycleID, hookID))
 			return nil
 		}
@@ -104,7 +80,7 @@ func TestCombineLifecycleHooks(t *testing.T) {
 
 	// call all the hooks in the right order, honouring the lifecycle
 
-	req := mockContainerDefinition{}
+	req := Request{}
 	err := hooks.Creating(context.Background())(&req)
 	require.NoError(t, err)
 
@@ -201,12 +177,12 @@ func TestLifecycleHooks(t *testing.T) {
 	lifecycleHooks := []ContainerLifecycleHooks{
 		{
 			PreCreates: []ContainerRequestHook{
-				func(ctx context.Context, def ContainerDefinition) error {
-					prints = append(prints, fmt.Sprintf("pre-create hook 1: %#v", def))
+				func(ctx context.Context, req *Request) error {
+					prints = append(prints, fmt.Sprintf("pre-create hook 1: %#v", req))
 					return nil
 				},
-				func(ctx context.Context, def ContainerDefinition) error {
-					prints = append(prints, fmt.Sprintf("pre-create hook 2: %#v", def))
+				func(ctx context.Context, req *Request) error {
+					prints = append(prints, fmt.Sprintf("pre-create hook 2: %#v", req))
 					return nil
 				},
 			},
@@ -294,14 +270,14 @@ func TestLifecycleHooks(t *testing.T) {
 	}
 	// }
 
-	def := mockContainerDefinition{
+	req := Request{
 		LifecycleHooks: lifecycleHooks,
 	}
 	startedContainer := &DockerContainer{}
 
 	for _, hook := range lifecycleHooks {
 		// TODO: instead of calling the hooks directly, we should create a Generic Container instead
-		err := hook.Creating(ctx)(def)
+		err := hook.Creating(ctx)(&req)
 		require.NoError(t, err)
 
 		err = hook.Created(ctx)(startedContainer)
