@@ -2,15 +2,15 @@ package testcontainers
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -18,102 +18,19 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
 	"github.com/testcontainers/testcontainers-go/internal/core/reaper"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// testSessionID the tests need to create a reaper in a different session, so that it does not interfere with other tests
-const testSessionID = "this-is-a-different-session-id"
+const (
+	// testSessionID the tests need to create a reaper in a different session, so that it does not interfere with other tests
+	testSessionID string = "this-is-a-different-session-id"
 
-type mockReaperProvider struct {
-	req               Request
-	hostConfig        *container.HostConfig
-	enpointSettings   map[string]*network.EndpointSettings
-	config            config.Config
-	initialReaper     *Reaper
-	initialReaperOnce sync.Once
-	t                 *testing.T
-}
-
-func newMockReaperProvider(t *testing.T) *mockReaperProvider {
-	m := &mockReaperProvider{
-		config:        config.Config{},
-		t:             t,
-		initialReaper: reaperInstance,
-		//nolint:govet
-		initialReaperOnce: reaperOnce,
-	}
-
-	// explicitly reset the reaperInstance to nil to start from a fresh state
-	reaperInstance = nil
-	reaperOnce = sync.Once{}
-	reaper.ResetReaper()
-
-	return m
-}
-
-var errExpected = errors.New("expected")
-
-func (m *mockReaperProvider) RestoreReaperState() {
-	m.t.Cleanup(func() {
-		reaperInstance = m.initialReaper
-		//nolint:govet
-		reaperOnce = m.initialReaperOnce
-	})
-}
-
-func (m *mockReaperProvider) RunContainer(ctx context.Context, req Request) (Container, error) {
-	m.req = req
-
-	m.hostConfig = &container.HostConfig{}
-	m.enpointSettings = map[string]*network.EndpointSettings{}
-
-	if req.HostConfigModifier != nil {
-		req.HostConfigModifier(m.hostConfig)
-	}
-
-	if req.EnpointSettingsModifier != nil {
-		req.EnpointSettingsModifier(m.enpointSettings)
-	}
-
-	// we're only interested in the request, so instead of mocking the Docker client
-	// we'll error out here
-	return nil, errExpected
-}
-
-func (m *mockReaperProvider) Config() config.Config {
-	return m.config
-}
-
-// createContainerRequest creates the expected request and allows for customization
-func createContainerRequest(customize func(Request) Request) Request {
-	req := Request{
-		Image:        config.ReaperDefaultImage,
-		ExposedPorts: []string{"8080/tcp"},
-		Labels:       core.DefaultLabels(testSessionID),
-		HostConfigModifier: func(hostConfig *container.HostConfig) {
-			hostConfig.Binds = []string{core.ExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
-		},
-		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
-		Env: map[string]string{
-			"RYUK_CONNECTION_TIMEOUT":   "1m0s",
-			"RYUK_RECONNECTION_TIMEOUT": "10s",
-		},
-	}
-
-	req.Labels[core.LabelReaper] = "true"
-	req.Labels[core.LabelRyuk] = "true"
-
-	if customize == nil {
-		return req
-	}
-
-	return customize(req)
-}
+	// testSessionFromTestProgram the tests need to create a reaper in a different session, so that it does not interfere with other tests
+	testSessionFromTestProgram string = "reusing-reaper-from-other-test-program-using-docker"
+)
 
 func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	config.Reset() // reset the config using the internal method to avoid the sync.Once
-	tcConfig := config.Read()
-	if !tcConfig.RyukDisabled {
+	if !config.Read().RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
 
@@ -143,8 +60,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 
 func TestContainerStartsWithTheReaper(t *testing.T) {
 	config.Reset() // reset the config using the internal method to avoid the sync.Once
-	tcConfig := config.Read()
-	if tcConfig.RyukDisabled {
+	if config.Read().RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
 
@@ -175,8 +91,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 
 func TestContainerStopWithReaper(t *testing.T) {
 	config.Reset() // reset the config using the internal method to avoid the sync.Once
-	tcConfig := config.Read()
-	if tcConfig.RyukDisabled {
+	if config.Read().RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
 
@@ -220,8 +135,7 @@ func TestContainerStopWithReaper(t *testing.T) {
 
 func TestContainerTerminationWithReaper(t *testing.T) {
 	config.Reset() // reset the config using the internal method to avoid the sync.Once
-	tcConfig := config.Read()
-	if tcConfig.RyukDisabled {
+	if config.Read().RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
 
@@ -257,9 +171,8 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
 	config.Reset() // reset the config using the internal method to avoid the sync.Once
-	tcConfig := config.Read()
-	if !tcConfig.RyukDisabled {
-		t.Skip("Ryuk is enabled, skipping test")
+	if config.Read().RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
 	}
 
 	ctx := context.Background()
@@ -444,19 +357,13 @@ func TestNewReaper(t *testing.T) {
 
 func TestReaperReusedIfHealthy(t *testing.T) {
 	config.Reset() // reset the config using the internal method to avoid the sync.Once
-	tcConfig := config.Read()
-	if tcConfig.RyukDisabled {
+	if config.Read().RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
-
-	testProvider := newMockReaperProvider(t)
-	t.Cleanup(testProvider.RestoreReaperState)
 
 	SkipIfContainerRuntimeIsNotHealthy(&testing.T{})
 
 	ctx := context.Background()
-	// As other integration tests run with the (shared) Reaper as well, re-use the instance to not interrupt other tests
-	wasReaperRunning := reaperInstance != nil
 
 	// because Ryuk is not disabled, the returned reaper is not nil
 	r, err := NewReaper(ctx, testSessionID)
@@ -475,10 +382,6 @@ func TestReaperReusedIfHealthy(t *testing.T) {
 		term <- true
 	}(terminate)
 	require.NoError(t, err, "connecting to Reaper should be successful")
-
-	if !wasReaperRunning {
-		TerminateContainerOnEnd(t, ctx, r.Container)
-	}
 }
 
 func TestRecreateReaperIfTerminated(t *testing.T) {
@@ -488,9 +391,6 @@ func TestRecreateReaperIfTerminated(t *testing.T) {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
 
-	mockProvider := newMockReaperProvider(t)
-	t.Cleanup(mockProvider.RestoreReaperState)
-
 	SkipIfContainerRuntimeIsNotHealthy(&testing.T{})
 
 	ctx := context.Background()
@@ -499,78 +399,59 @@ func TestRecreateReaperIfTerminated(t *testing.T) {
 	r, err := NewReaper(ctx, testSessionID)
 	require.NoError(t, err, "creating the Reaper should not error")
 
-	terminate, err := reaper.Connect()
-	require.NoError(t, err, "connecting to Reaper should be successful")
-	terminate <- true
-
 	// Wait for ryuk's default timeout (10s) + 1s to allow for a graceful shutdown/cleanup of the container.
 	time.Sleep(11 * time.Second)
+
+	reaperInstance = nil
+	reaperOnce = sync.Once{}
 
 	recreatedReaper, err := NewReaper(ctx, testSessionID)
 	require.NoError(t, err, "creating the Reaper should not error")
 	assert.NotEqual(t, r.Container.GetContainerID(), recreatedReaper.Container.GetContainerID(), "expected different container ID")
 
-	terminate, err = reaper.Connect()
-	defer func(term chan bool) {
-		term <- true
-	}(terminate)
-	require.NoError(t, err, "connecting to Reaper should be successful")
-	TerminateContainerOnEnd(t, ctx, recreatedReaper.Container)
-}
-
-func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
-	config.Reset() // reset the config using the internal method to avoid the sync.Once
-	tcConfig := config.Read()
-	if tcConfig.RyukDisabled {
-		t.Skip("Ryuk is disabled, skipping test")
-	}
-
-	mockProvider := &mockReaperProvider{
-		initialReaper: reaperInstance,
-		//nolint:govet
-		initialReaperOnce: reaperOnce,
-		t:                 t,
-	}
-	t.Cleanup(mockProvider.RestoreReaperState)
-
-	// explicitly set the reaperInstance to nil to simulate another test program in the same session accessing the same reaper
-	reaperInstance = nil
-	reaperOnce = sync.Once{}
-	reaper.ResetReaper()
-
-	SkipIfContainerRuntimeIsNotHealthy(&testing.T{})
-
-	ctx := context.Background()
-	// As other integration tests run with the (shared) Reaper as well, re-use the instance to not interrupt other tests
-	wasReaperRunning := reaperInstance != nil
-
-	// because Ryuk is not disabled, the returned reaper is not nil
-	r, err := NewReaper(ctx, testSessionID)
-	require.NoError(t, err, "creating the Reaper should not error")
-
-	// explicitly reset the reaperInstance to nil to simulate another test program in the same session accessing the same reaper
-	reaperInstance = nil
-	reaperOnce = sync.Once{}
-	reaper.ResetReaper()
-
-	// because Ryuk is not disabled, the returned reaper is not nil
-	reaperReused, err := NewReaper(ctx, testSessionID)
-	require.NoError(t, err, "reusing the Reaper should not error")
-	// assert that the internal state of both reaper instances is the same
-	assert.Equal(t, r.SessionID, reaperReused.SessionID, "expecting the same SessionID")
-	assert.Equal(t, r.Endpoint, reaperReused.Endpoint, "expecting the same reaper endpoint")
-	assert.Equal(t, r.Container.GetContainerID(), reaperReused.Container.GetContainerID(), "expecting the same container ID")
-	assert.Equal(t, r.SessionID, reaperReused.SessionID, "expecting the same session ID")
-
 	terminate, err := reaper.Connect()
 	defer func(term chan bool) {
 		term <- true
 	}(terminate)
 	require.NoError(t, err, "connecting to Reaper should be successful")
+}
 
-	if !wasReaperRunning {
-		TerminateContainerOnEnd(t, ctx, r.Container)
+func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	if config.Read().RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
 	}
+
+	occurrences := 5
+	// create different test calls in subprocesses, with the same session ID, as "go test ./..." does.
+	// The test will simply call NewReaper, which should return the same reaper container instance.
+	output := createReaperContainerInSubprocess(t, occurrences)
+
+	// check if reaper container is obtained from Docker the number of occurrences minus one times: the first time it's created
+	assert.Equal(t, occurrences-1, strings.Count(output, "🔥 Reaper obtained from this test session"), output)
+}
+
+func createReaperContainerInSubprocess(t *testing.T, occurrences int) string {
+	cmd := exec.Command(os.Args[0], "-test.run=TestHelperReaperFromOtherProgram", fmt.Sprintf("-test.count=%d", occurrences))
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(output))
+
+	return string(output)
+}
+
+// TestHelperContainerStarterProcess is a helper function
+// to start a container in a subprocess. It's not a real test.
+func TestHelperReaperFromOtherProgram(t *testing.T) {
+	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+		t.Skip("Skipping helper test function. It's not a real test")
+	}
+
+	ctx := context.Background()
+
+	_, err := NewReaper(ctx, testSessionFromTestProgram)
+	require.NoError(t, err, "creating the Reaper should not error")
 }
 
 // TestReaper_ReuseRunning tests whether reusing the reaper if using
@@ -601,13 +482,6 @@ func TestReaper_ReuseRunning(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			reaperContainer, err := lookUpReaperContainer(timeout, sessionID)
-			if err == nil && reaperContainer != nil {
-				// Found.
-				obtainedReaperContainerIDs[i] = reaperContainer.GetContainerID()
-				return
-			}
-			// Not found -> create.
 
 			// because Ryuk is not disabled, the returned reaper is not nil
 			createdReaper, err := NewReaper(timeout, sessionID)

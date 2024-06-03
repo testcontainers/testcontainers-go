@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
 
+	tcimage "github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
@@ -21,17 +22,14 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func init() {
-	_, err := NewReaper(context.Background(), core.SessionID())
-	if err != nil {
-		panic(fmt.Sprintf("failed to initialize reaper: %v", err))
-	}
-}
-
 var (
 	reaperInstance *Reaper // We would like to create reaper only once
 	reaperMutex    sync.Mutex
 	reaperOnce     sync.Once
+)
+
+const (
+	reaperListeningPort = nat.Port("8080/tcp")
 )
 
 // Reaper is used to start a sidecar container that cleans up resources
@@ -50,17 +48,19 @@ func newReaper(ctx context.Context, sessionID string) (*Reaper, error) {
 		SessionID: sessionID,
 	}
 
-	listeningPort := nat.Port("8080/tcp")
-
 	tcConfig := config.Read()
 
 	req := Request{
-		Image:        config.ReaperDefaultImage,
-		ExposedPorts: []string{string(listeningPort)},
-		Labels:       core.DefaultLabels(sessionID),
-		Privileged:   tcConfig.RyukPrivileged,
-		WaitingFor:   wait.ForListeningPort(listeningPort),
-		Name:         reaperContainerNameFromSessionID(sessionID),
+		Image:             config.ReaperDefaultImage,
+		ImageSubstitutors: []tcimage.Substitutor{tcimage.NewPrependHubRegistry(tcConfig.HubImageNamePrefix)},
+		ExposedPorts:      []string{string(reaperListeningPort)},
+		Labels:            core.DefaultLabels(sessionID),
+		Privileged:        tcConfig.RyukPrivileged,
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort(reaperListeningPort),
+			wait.ForLog("Started!"),
+		).WithDeadline(time.Second * 15),
+		Name: reaperContainerNameFromSessionID(sessionID),
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.AutoRemove = true
 			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
@@ -128,7 +128,7 @@ func newReaper(ctx context.Context, sessionID string) (*Reaper, error) {
 			if reaperContainer == nil {
 				return nil, fmt.Errorf("look up reaper container returned nil although creation failed due to name conflict")
 			}
-			reaperContainer.Printf("🔥 Reaper obtained from Docker for this test session %s", reaperContainer.ID)
+			reaperContainer.Printf("🔥 Reaper obtained from Docker for this test session %s", sessionID)
 			reaper, err := reuseReaperContainer(ctx, sessionID, reaperContainer)
 			if err != nil {
 				return nil, err
@@ -144,9 +144,6 @@ func newReaper(ctx context.Context, sessionID string) (*Reaper, error) {
 		return nil, err
 	}
 	reaper.Endpoint = endpoint
-
-	// update the reaper instance
-	tcreaper.InitReaper(reaper.Endpoint, reaper.SessionID)
 
 	return reaper, nil
 }
@@ -174,6 +171,7 @@ func NewReaper(ctx context.Context, sessionID string) (*Reaper, error) {
 				return nil, err
 			}
 		} else if state.Running {
+			reaperInstance.Container.Printf("🔥 Reaper obtained from this test session %s", sessionID)
 			return reaperInstance, nil
 		}
 		// else: the reaper instance has been terminated, so we need to create a new one
@@ -204,6 +202,9 @@ func NewReaper(ctx context.Context, sessionID string) (*Reaper, error) {
 			reaperErr = err
 			return
 		}
+
+		// update the reaper instance
+		tcreaper.InitReaper(r.Endpoint, r.SessionID)
 
 		reaperInstance, reaperErr = r, nil
 	})
@@ -303,7 +304,7 @@ func reaperContainerNameFromSessionID(sessionID string) string {
 // reuseReaperContainer constructs a Reaper from an already running reaper
 // DockerContainer.
 func reuseReaperContainer(ctx context.Context, sessionID string, reaperContainer *DockerContainer) (*Reaper, error) {
-	endpoint, err := reaperContainer.PortEndpoint(ctx, "8080", "")
+	endpoint, err := reaperContainer.PortEndpoint(ctx, reaperListeningPort, "http")
 	if err != nil {
 		return nil, err
 	}

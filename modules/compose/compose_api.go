@@ -313,6 +313,12 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		d.project.Services = filteredServices
 	}
 
+	// start the reaper before the compose stack to make sure it is ready to receive signals
+	_, err = testcontainers.NewReaper(context.Background(), core.SessionID())
+	if err != nil {
+		return fmt.Errorf("failed to create reaper: %w", err)
+	}
+
 	err = d.composeService.Up(ctx, d.project, api.UpOptions{
 		Create: api.CreateOptions{
 			Build: &api.BuildOptions{

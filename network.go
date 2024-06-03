@@ -45,9 +45,14 @@ func NewNetwork(ctx context.Context, opts ...tcnetwork.Customizer) (*DockerNetwo
 	var termSignal chan bool
 
 	if !tcConfig.RyukDisabled {
+		_, err := NewReaper(context.Background(), core.SessionID())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create reaper: %w", err)
+		}
+
 		termSignal, err = reaper.Connect()
 		if err != nil {
-			return nil, fmt.Errorf("%w: connecting to network reaper failed", err)
+			return nil, fmt.Errorf("failed to connect network to reaper: %w", err)
 		}
 	}
 

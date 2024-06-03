@@ -136,9 +136,14 @@ func newContainer(ctx context.Context, req Request) (*DockerContainer, error) {
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.HasSuffix(imageName, config.ReaperDefaultImage)
 	if !tcConfig.RyukDisabled && !isReaperContainer {
+		_, err := NewReaper(context.Background(), core.SessionID())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create reaper: %w", err)
+		}
+
 		termSignal, err = reaper.Connect()
 		if err != nil {
-			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
+			return nil, fmt.Errorf("failed to connect to reaper: %w", err)
 		}
 	}
 
@@ -344,9 +349,14 @@ func reuseOrCreateContainer(ctx context.Context, req Request) (*DockerContainer,
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
+		_, err := NewReaper(context.Background(), core.SessionID())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create reaper: %w", err)
+		}
+
 		termSignal, err = reaper.Connect()
 		if err != nil {
-			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
+			return nil, fmt.Errorf("failed to connect to reaper: %w", err)
 		}
 	}
 
