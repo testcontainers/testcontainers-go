@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/docker/compose/v2/pkg/api"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/volume"
@@ -153,6 +154,32 @@ func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
 		for key, label := range testcontainers.GenericLabels() {
 			assert.Contains(t, inspect.Config.Labels, key, "Label %s is not present in container %s", key, c.GetContainerID())
 			assert.Equal(t, label, inspect.Config.Labels[key], "Label %s value is not correct in container %s", key, c.GetContainerID())
+		}
+	}
+
+	networks := compose.project.Networks
+
+	// all the networks in the compose has the Testcontainers Labels
+	for _, nw := range networks {
+		inspect, err := compose.dockerClient.NetworkInspect(ctx, nw.Name, types.NetworkInspectOptions{})
+		require.NoError(t, err, "dockerClient.NetworkInspect()")
+
+		for key, label := range testcontainers.GenericLabels() {
+			assert.Contains(t, inspect.Labels, key, "Label %s is not present in volume %s", key, inspect.Name)
+			assert.Equal(t, label, inspect.Labels[key], "Label %s value is not correct in volume %s", key, inspect.Name)
+		}
+	}
+
+	volumes := compose.project.Volumes
+
+	// all the volumes in the compose has the Testcontainers Labels
+	for _, volume := range volumes {
+		inspect, err := compose.dockerClient.VolumeInspect(ctx, volume.Name)
+		require.NoError(t, err, "dockerClient.VolumeInspect()")
+
+		for key, label := range testcontainers.GenericLabels() {
+			assert.Contains(t, inspect.Labels, key, "Label %s is not present in volume %s", key, inspect.Name)
+			assert.Equal(t, label, inspect.Labels[key], "Label %s value is not correct in volume %s", key, inspect.Name)
 		}
 	}
 }

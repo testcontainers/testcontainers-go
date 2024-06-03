@@ -11,3 +11,6 @@ services:
       - MYSQL_ROOT_PASSWORD=my-secret-pw
     ports:
      - "{{ .Port_1 }}:3306"
+
+volumes:
+  mydata:
