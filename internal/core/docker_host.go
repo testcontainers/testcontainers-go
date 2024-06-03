@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 	"sync"
 
@@ -39,22 +38,6 @@ var (
 	dockerSocketPathCache string
 	dockerSocketPathOnce  sync.Once
 )
-
-// deprecated
-// see https://github.com/testcontainers/testcontainers-java/blob/main/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L46
-func DefaultGatewayIP() (string, error) {
-	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L27
-	cmd := exec.Command("sh", "-c", "ip route|awk '/default/ { print $3 }'")
-	stdout, err := cmd.Output()
-	if err != nil {
-		return "", errors.New("failed to detect docker host")
-	}
-	ip := strings.TrimSpace(string(stdout))
-	if len(ip) == 0 {
-		return "", errors.New("failed to parse default gateway IP")
-	}
-	return ip, nil
-}
 
 // ExtractDockerHost Extracts the docker host from the different alternatives, caching the result to avoid unnecessary
 // calculations. Use this function to get the actual Docker host. This function does not consider Windows containers at the moment.
