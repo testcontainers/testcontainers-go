@@ -1389,6 +1389,10 @@ func newMockDockerClient(m *errMockCli) *core.DockerClient {
 	})
 }
 
+func (m *mockDockerClient) ClientVersion() string {
+	return "mock-version"
+}
+
 func (m *mockDockerClient) Info(ctx context.Context) (system.Info, error) {
 	return system.Info{}, nil
 }
