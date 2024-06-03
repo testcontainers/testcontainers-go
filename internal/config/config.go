@@ -63,6 +63,34 @@ func Reset() {
 	tcConfigOnce = new(sync.Once)
 }
 
+// MustWrite writes the configuration to a file. If an error occurs, it panics,
+// so it should be used only for testing purposes.
+func (c *Config) MustWrite(output string) {
+	p := properties.NewProperties()
+
+	p.MustSet("docker.host", c.Host)
+	p.MustSet("docker.tls.verify", strconv.Itoa(c.TLSVerify))
+	p.MustSet("docker.cert.path", c.CertPath)
+	p.MustSet("hub.image.name.prefix", c.HubImageNamePrefix)
+	p.MustSet("ryuk.disabled", strconv.FormatBool(c.RyukDisabled))
+	p.MustSet("ryuk.container.privileged", strconv.FormatBool(c.RyukPrivileged))
+	p.MustSet("ryuk.reconnection.timeout", c.RyukReconnectionTimeout.String())
+	p.MustSet("ryuk.connection.timeout", c.RyukConnectionTimeout.String())
+	p.MustSet("ryuk.verbose", strconv.FormatBool(c.RyukVerbose))
+	p.MustSet("tc.host", c.TestcontainersHost)
+
+	f, err := os.Create(output)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	_, err = p.Write(f, properties.UTF8)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func read() Config {
 	config := Config{}
 
