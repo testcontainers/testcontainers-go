@@ -13,7 +13,7 @@ To understand how the Docker credential helpers work, please refer to the [offic
 !!! info
 	_Testcontainers for Go_ uses [https://github.com/cpuguy83/dockercfg](https://github.com/cpuguy83/dockercfg) to retrieve the authentication from the credential helpers.
 
-_Testcontainers for Go_ will automatically discover the credentials for a given Docker image from the Docker config, as described above. For that, it will extract the Docker registry from the image name, and for that registry will try to locate the authentication in the Docker config, returning an empty string if the registry is not found. As a consequence, all the fields to pass credentials to the container request will be deprecated.
+_Testcontainers for Go_ will automatically discover the credentials for a given Docker image from the Docker config, as described above. For that, it will extract the Docker registry from the image name, and for that registry will try to locate the authentication in the Docker config, returning an empty string if the registry is not found.
 
 ```go
 req := ContainerRequest{

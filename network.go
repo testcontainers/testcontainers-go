@@ -14,9 +14,7 @@ import (
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 )
 
-// New creates a new network with a random UUID name.
-// Those existing APIs are deprecated and will be removed in the future, so this function will
-// implement the new network APIs when they will be available.
+// NewNetwork creates a new network with a random UUID name.
 // By default, the network is created with the following options:
 // - Driver: bridge
 // - Labels: the Testcontainers for Go generic labels, to be managed by Ryuk. Please see the GenericLabels() function
