@@ -125,35 +125,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	return &couchbaseContainer, nil
 }
 
-// StartContainer creates an instance of the Couchbase container type
-// Deprecated: use RunContainer instead
-func StartContainer(ctx context.Context, opts ...Option) (*Container, error) {
-	config := &Config{
-		enabledServices:  []Service{kv, query, search, index},
-		username:         "Administrator",
-		password:         "password",
-		imageName:        "couchbase:6.5.1",
-		indexStorageMode: MemoryOptimized,
-	}
-
-	for _, opt := range opts {
-		opt(config)
-	}
-
-	customizers := []testcontainers.RequestCustomizer{
-		testcontainers.WithImage(config.imageName),
-		WithAdminCredentials(config.username, config.password),
-		WithIndexStorage(config.indexStorageMode),
-		WithBuckets(config.buckets...),
-	}
-
-	for _, srv := range config.enabledServices {
-		customizers = append(customizers, withService(srv))
-	}
-
-	return RunContainer(ctx, customizers...)
-}
-
 // ConnectionString returns the connection string to connect to the Couchbase container instance.
 // It returns a string with the format couchbase://<host>:<port>
 func (c *Container) ConnectionString(ctx context.Context) (string, error) {
