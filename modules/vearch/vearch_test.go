@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/vearch"
+	"github.com/testcontainers/testcontainers-go/modules/vearch"
 )
 
 func TestVearch(t *testing.T) {
