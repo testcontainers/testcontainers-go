@@ -80,20 +80,18 @@ var defaultLogConsumersHook = func(cfg *log.ConsumerConfig) LifecycleHooks {
 					return nil
 				}
 
-				for _, consumer := range cfg.Consumers {
-					c.FollowOutput(consumer)
-				}
-
-				if len(cfg.Consumers) > 0 {
+				if cfg.Consumer != nil {
+					c.FollowOutput(cfg.Consumer)
 					return c.StartLogProduction(ctx, cfg.Opts...)
 				}
+
 				return nil
 			},
 		},
 		PreTerminates: []StartedContainerHook{
 			// first pre-terminate hook is to stop the log production
 			func(ctx context.Context, c StartedContainer) error {
-				if cfg == nil || len(cfg.Consumers) == 0 {
+				if cfg == nil || cfg.Consumer == nil {
 					return nil
 				}
 

@@ -81,9 +81,10 @@ func TestWithLogConsumers(t *testing.T) {
 		Started:    true,
 	}
 
-	lc := &msgsLogConsumer{}
+	lc1 := &msgsLogConsumer{}
+	lc2 := &msgsLogConsumer{}
 
-	err := testcontainers.WithLogConsumers(lc)(&req)
+	err := testcontainers.WithLogConsumers(lc1, lc2)(&req)
 	require.NoError(t, err)
 
 	c, err := testcontainers.New(context.Background(), req)
@@ -95,7 +96,9 @@ func TestWithLogConsumers(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	assert.NotEmpty(t, lc.msgs)
+	assert.NotEmpty(t, lc1.msgs)
+	assert.NotEmpty(t, lc2.msgs)
+	assert.Equal(t, lc1.msgs, lc2.msgs)
 }
 
 func TestWithStartupCommand(t *testing.T) {

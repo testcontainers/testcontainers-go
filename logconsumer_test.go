@@ -84,7 +84,7 @@ func TestLogConsumerGetsCalled(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 		LogConsumerCfg: &log.ConsumerConfig{
-			Consumers: []log.Consumer{&g},
+			Consumer: &g,
 		},
 		Started: true,
 	}
@@ -145,7 +145,7 @@ func TestShouldRecognizeLogTypes(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 		LogConsumerCfg: &log.ConsumerConfig{
-			Consumers: []log.Consumer{&g},
+			Consumer: &g,
 		},
 		Started: true,
 	}
@@ -196,7 +196,9 @@ func TestMultipleLogConsumers(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 		LogConsumerCfg: &log.ConsumerConfig{
-			Consumers: []log.Consumer{&first, &second},
+			Consumer: &log.MultiConsumer{
+				Consumers: []log.Consumer{&first, &second},
+			},
 		},
 		Started: true,
 	}
@@ -289,7 +291,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
 		LogConsumerCfg: &log.ConsumerConfig{
-			Consumers: []log.Consumer{&consumer},
+			Consumer: &consumer,
 		},
 	})
 	if err != nil {
@@ -379,13 +381,13 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 
 func TestContainerLogsEnableAtStart(t *testing.T) {
 	ctx := context.Background()
+	// logConsumersAtRequest {
 	g := TestLogConsumer{
 		msgs:     []string{},
 		Done:     make(chan struct{}),
 		Accepted: devNullAcceptorChan(),
 	}
 
-	// logConsumersAtRequest {
 	req := Request{
 		FromDockerfile: FromDockerfile{
 			Context:    "./testdata/",
@@ -394,8 +396,8 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 		LogConsumerCfg: &log.ConsumerConfig{
-			Opts:      []log.ProductionOption{log.WithProductionTimeout(10 * time.Second)},
-			Consumers: []log.Consumer{&g},
+			Opts:     []log.ProductionOption{log.WithProductionTimeout(10 * time.Second)},
+			Consumer: &g,
 		},
 		Started: true,
 	}
@@ -443,8 +445,8 @@ func TestStartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 		LogConsumerCfg: &log.ConsumerConfig{
-			Opts:      []log.ProductionOption{log.WithProductionTimeout(4 * time.Second)},
-			Consumers: []log.Consumer{&g},
+			Opts:     []log.ProductionOption{log.WithProductionTimeout(4 * time.Second)},
+			Consumer: &g,
 		},
 		Started: true,
 	}
@@ -471,8 +473,8 @@ func TestStartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 		LogConsumerCfg: &log.ConsumerConfig{
-			Opts:      []log.ProductionOption{log.WithProductionTimeout(61 * time.Second)},
-			Consumers: []log.Consumer{&g},
+			Opts:     []log.ProductionOption{log.WithProductionTimeout(61 * time.Second)},
+			Consumer: &g,
 		},
 		Started: true,
 	}
@@ -512,7 +514,7 @@ func TestMultiContainerLogConsumer_CancelledContext(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 		LogConsumerCfg: &log.ConsumerConfig{
-			Consumers: []log.Consumer{&first},
+			Consumer: &first,
 		},
 		Started: true,
 	}
@@ -543,7 +545,7 @@ func TestMultiContainerLogConsumer_CancelledContext(t *testing.T) {
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("ready"),
 		LogConsumerCfg: &log.ConsumerConfig{
-			Consumers: []log.Consumer{&second},
+			Consumer: &second,
 		},
 		Started: true,
 	}

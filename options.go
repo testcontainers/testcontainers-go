@@ -122,7 +122,7 @@ func WithLogConsumers(consumer ...log.Consumer) CustomizeRequestOption {
 			req.LogConsumerCfg = &log.ConsumerConfig{}
 		}
 
-		req.LogConsumerCfg.Consumers = consumer
+		req.LogConsumerCfg.Consumer = &log.MultiConsumer{Consumers: consumer}
 		return nil
 	}
 }

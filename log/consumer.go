@@ -18,10 +18,25 @@ type Consumer interface {
 
 // }
 
+// multiLogConsumer {
+// MultiConsumer is a Consumer that can accept multiple Consumers
+type MultiConsumer struct {
+	Consumers []Consumer
+}
+
+// Accept sends the log to all the consumers
+func (mc *MultiConsumer) Accept(l Log) {
+	for _, c := range mc.Consumers {
+		c.Accept(l)
+	}
+}
+
+// }
+
 // ConsumerConfig is a configuration object for the producer/consumer pattern
 type ConsumerConfig struct {
-	Opts      []ProductionOption // options for the production of logs
-	Consumers []Consumer         // consumers for the logs
+	Opts     []ProductionOption // options for the production of logs
+	Consumer Consumer           // consumer for the logs
 }
 
 type OptionsContainer interface {

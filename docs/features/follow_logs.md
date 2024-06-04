@@ -30,6 +30,12 @@ This will represent the current way for associating `LogConsumer`s. You simply d
 [Passing LogConsumers](../../logconsumer_test.go) inside_block:logConsumersAtRequest
 <!--/codeinclude-->
 
+In order to provide multiple log consumers, you can use the `log.MultiConsumer` composite struct, which will forward logs to all of its consumers.
+
+<!--codeinclude-->
+[Composite Log Consumer](../../log/consumer.go) inside_block:multiLogConsumer
+<!--/codeinclude-->
+
 Please check that it's possible to configure the log production with an slice of functional options. These options must be of the `log.ProductionOption` type:
 
 ```go
