@@ -36,7 +36,6 @@ jobs:
         run: make test-unit
 
       - name: Create slack payload file
-        if: failure()
         run: |
           cat <<EOF > ./payload-slack-content.json
           {
@@ -47,7 +46,6 @@ jobs:
           }
 
       - name: Notify to Slack on failures
-        if: failure()
         id: slack
         uses: slackapi/slack-github-action@v1.26.0
         with:
