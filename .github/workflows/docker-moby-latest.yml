@@ -36,7 +36,6 @@ jobs:
         run: make test-unit
 
       - name: Notify to Slack on failures
-        if: failure()
         id: slack
         uses: slackapi/slack-github-action@v1.26.0
         with:
