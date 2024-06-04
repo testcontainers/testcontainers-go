@@ -40,7 +40,7 @@ jobs:
           cat <<EOF > ./payload-slack-content.json
           {
               "tc_project": "testcontainers-go",
-              "tc_github_action_url": "https://github.com/testcontainers/testcontainers-go/actions/runs/${GITHUB_RUN_ID}/job/${GITHUB_RUN_NUMBER}",
+              "tc_github_action_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}",
               "tc_github_action_status": "FAILED",
               "tc_slack_channel_id": "${{ secrets.SLACK_DOCKER_LATEST_CHANNEL_ID }}"
           }
