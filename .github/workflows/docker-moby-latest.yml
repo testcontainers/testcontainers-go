@@ -34,3 +34,19 @@ jobs:
       - name: go test
         timeout-minutes: 30
         run: make test-unit
+
+      - name: Notify to Slack on failures
+        if: failure()
+        id: slack
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          # This data can be any valid JSON from a previous step in the GitHub Action
+          payload: |
+            {
+              "tc_project": "testcontainers-go",
+              "tc_github_action_url": "https://github.com/testcontainers/testcontainers-go/actions/runs/${{ env.GITHUB_RUN_ID }}/job/${{ env.GITHUB_RUN_NUMBER }}",
+              "tc_github_action_status": "FAILED",
+              "tc_slack_channel_id": "${{ secrets.SLACK_DOCKER_LATEST_CHANNEL_ID }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DOCKER_LATEST_WEBHOOK }}
