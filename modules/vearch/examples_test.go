@@ -10,7 +10,6 @@ import (
 )
 
 func ExampleRunContainer() {
-	// runVearchContainer {
 	ctx := context.Background()
 
 	vearchContainer, err := vearch.RunContainer(ctx, testcontainers.WithImage("vearch/vearch:latest"))

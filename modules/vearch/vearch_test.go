@@ -2,6 +2,7 @@ package vearch_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -34,11 +35,12 @@ func TestVearch(t *testing.T) {
 
 		cli := &http.Client{}
 		resp, err := cli.Get(restEndpoint)
+		fmt.Println(resp, resp.Body)
 		if err != nil {
 			tt.Fatalf("failed to perform GET request: %s", err)
 		}
 		defer resp.Body.Close()
-
+		fmt.Println(resp.StatusCode, http.StatusOK)
 		if resp.StatusCode != http.StatusOK {
 			tt.Fatalf("unexpected status code: %d", resp.StatusCode)
 		}
