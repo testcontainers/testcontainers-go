@@ -9,14 +9,14 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// VearchContainer represents the Vearch container type used in the module
-type VearchContainer struct {
-	testcontainers.Container
+// Container represents the Vearch container type used in the module
+type Container struct {
+	*testcontainers.DockerContainer
 }
 
 // RunContainer creates an instance of the Vearch container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*VearchContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+	req := testcontainers.Request{
 		Image:        "vearch/vearch:3.5.1",
 		ExposedPorts: []string{"8817/tcp", "9001/tcp"},
 		Cmd:          []string{"-conf=/vearch/config.toml", "all"},
@@ -32,29 +32,25 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			wait.ForListeningPort("8817/tcp").WithStartupTimeout(5*time.Second),
 			wait.ForListeningPort("9001/tcp").WithStartupTimeout(5*time.Second),
 		),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started: true,
 	}
 
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &VearchContainer{Container: container}, nil
+	return &Container{DockerContainer: container}, nil
 }
 
 // RESTEndpoint returns the REST endpoint of the Vearch container
-func (c *VearchContainer) RESTEndpoint(ctx context.Context) (string, error) {
+func (c *Container) RESTEndpoint(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "8817/tcp")
 	if err != nil {
 		return "", fmt.Errorf("failed to get container port: %w", err)
