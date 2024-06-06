@@ -7,17 +7,9 @@ import (
 )
 
 var mountTypeMapping = map[Type]mount.Type{
-	TypeBind:   mount.TypeBind, // Deprecated, it will be removed in a future release
 	TypeVolume: mount.TypeVolume,
 	TypeTmpfs:  mount.TypeTmpfs,
 	TypePipe:   mount.TypeNamedPipe,
-}
-
-// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
-// BindMounter can optionally be implemented by mount sources
-// to support advanced scenarios based on mount.BindOptions
-type BindMounter interface {
-	GetBindOptions() *mount.BindOptions
 }
 
 // VolumeMounter can optionally be implemented by mount sources
@@ -30,30 +22,6 @@ type VolumeMounter interface {
 // to support advanced scenarios based on mount.TmpfsOptions
 type TmpfsMounter interface {
 	GetTmpfsOptions() *mount.TmpfsOptions
-}
-
-// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
-type DockerBindSource struct {
-	*mount.BindOptions
-
-	// HostPath is the path mounted into the container
-	// the same host path might be mounted to multiple locations within a single container
-	HostPath string
-}
-
-// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
-func (s DockerBindSource) Source() string {
-	return s.HostPath
-}
-
-// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
-func (DockerBindSource) Type() Type {
-	return TypeBind
-}
-
-// Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
-func (s DockerBindSource) GetBindOptions() *mount.BindOptions {
-	return s.BindOptions
 }
 
 type DockerVolumeSource struct {
@@ -112,8 +80,6 @@ func (m ContainerMounts) Prepare() []mount.Mount {
 			containerMount.VolumeOptions = typedMounter.GetVolumeOptions()
 		case TmpfsMounter:
 			containerMount.TmpfsOptions = typedMounter.GetTmpfsOptions()
-		case BindMounter:
-			// Logger.Printf("Mount type %s is not supported by Testcontainers for Go", m.Source.Type())
 		default:
 			// The provided source type has no custom options
 		}
