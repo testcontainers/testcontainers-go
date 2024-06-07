@@ -38,7 +38,7 @@ When starting the Vearch container, you can pass options in a variadic way to co
 #### Image
 
 If you need to set a different Vearch Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Vearch. E.g. `testcontainers.WithImage("vearch/vearch:latest")`.
+for Vearch. E.g. `testcontainers.WithImage("vearch/vearch:3.5.1")`.
 
 {% include "../features/common_functional_options.md" %}
 

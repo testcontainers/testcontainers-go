@@ -12,7 +12,7 @@ import (
 func TestVearch(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := vearch.RunContainer(ctx, testcontainers.WithImage("vearch/vearch:latest"))
+	container, err := vearch.RunContainer(ctx, testcontainers.WithImage("vearch/vearch:3.5.1"))
 	if err != nil {
 		t.Fatal(err)
 	}
