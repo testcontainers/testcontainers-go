@@ -82,7 +82,6 @@ func (c *RegistryContainer) DeleteImage(ctx context.Context, imageRef string) er
 			return false
 		}).
 		WaitUntilReady(ctx, c)
-
 	if err != nil {
 		return fmt.Errorf("failed to get image digest: %w", err)
 	}

@@ -96,7 +96,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // MustConnectionString panics if the address cannot be determined.
 func (c *MySQLContainer) MustConnectionString(ctx context.Context, args ...string) string {
-	addr, err := c.ConnectionString(ctx,args...)
+	addr, err := c.ConnectionString(ctx, args...)
 	if err != nil {
 		panic(err)
 	}

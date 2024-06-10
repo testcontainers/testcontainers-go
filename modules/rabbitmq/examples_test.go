@@ -92,7 +92,7 @@ func ExampleRunContainer_withSSL() {
 
 	tmpDir := os.TempDir()
 	certDirs := tmpDir + "/rabbitmq"
-	if err := os.MkdirAll(certDirs, 0755); err != nil {
+	if err := os.MkdirAll(certDirs, 0o755); err != nil {
 		log.Fatalf("failed to create temporary directory: %s", err)
 	}
 	defer os.RemoveAll(certDirs)

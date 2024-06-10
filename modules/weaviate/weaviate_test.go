@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"testing"
 
+	wvt "github.com/weaviate/weaviate-go-client/v4/weaviate"
+	wvtgrpc "github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/weaviate"
-	wvt "github.com/weaviate/weaviate-go-client/v4/weaviate"
-	wvtgrpc "github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
 )
 
 func TestWeaviate(t *testing.T) {

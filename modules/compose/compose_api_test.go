@@ -471,6 +471,7 @@ services:
 	require.True(t, os.IsNotExist(err), "File should be removed")
 	require.Nil(t, f, "File should be removed")
 }
+
 func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 	identifier := testNameHash(t.Name())
 
