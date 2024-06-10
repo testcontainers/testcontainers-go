@@ -185,6 +185,7 @@ func (c *MariaDBContainer) MustConnectionString(ctx context.Context, args ...str
 	}
 	return addr
 }
+
 func (c *MariaDBContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "3306/tcp")
 	if err != nil {
