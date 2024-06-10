@@ -725,7 +725,7 @@ func (c *DockerContainer) WaitUntilReady(ctx context.Context) error {
 
 	// if a Wait Strategy has been specified, wait before returning
 	c.Printf(
-		"🚧 Waiting for container id %s image: %s. Waiting for: %+v",
+		"⏳ Waiting for container id %s image: %s. Waiting for: %+v",
 		c.GetContainerID()[:12], c.GetImage(), c.WaitingFor,
 	)
 
