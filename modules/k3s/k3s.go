@@ -106,9 +106,8 @@ func getContainerHost(ctx context.Context, opts ...testcontainers.RequestCustomi
 		}
 	}
 
-	logging := req.Logger
-	if logging == nil {
-		logging = tclog.StandardLogger()
+	if req.Logger == nil {
+		req.Logger = tclog.StandardLogger()
 	}
 
 	daemonHost, err := testcontainers.DaemonHost(ctx)

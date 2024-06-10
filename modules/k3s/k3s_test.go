@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/docker/docker/api/types"
 	"github.com/testcontainers/testcontainers-go"
 	tcimage "github.com/testcontainers/testcontainers-go/image"
 	tclog "github.com/testcontainers/testcontainers-go/log"

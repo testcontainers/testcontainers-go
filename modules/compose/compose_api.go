@@ -484,6 +484,7 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 	container.SetLogger(d.logger)
 
 	// pass the Docker client to the downstream APIs
+	// nolint:ineffassign
 	ctx = context.WithValue(ctx, testcontainers.ClientContextKey, d.dockerClient)
 
 	d.containers[svcName] = container
