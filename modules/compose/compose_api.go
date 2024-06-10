@@ -135,12 +135,12 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) error {
 
 		bs, err := io.ReadAll(reader)
 		if err != nil {
-			fmt.Errorf("failed to read from reader: %w", err)
+			return fmt.Errorf("failed to read from reader: %w", err)
 		}
 
 		err = os.WriteFile(filepath.Join(tmp, name), bs, 0o644)
 		if err != nil {
-			fmt.Errorf("failed to write to temporary file: %w", err)
+			return fmt.Errorf("failed to write to temporary file: %w", err)
 		}
 
 		f[i] = filepath.Join(tmp, name)
