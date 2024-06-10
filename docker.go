@@ -25,10 +25,12 @@ import (
 )
 
 // Implement interfaces
-var _ Container = (Container)(nil)
-var _ Container = (CreatedContainer)(nil)
-var _ Container = (ReadyContainer)(nil)
-var _ Container = (StartedContainer)(nil)
+var (
+	_ Container = (Container)(nil)
+	_ Container = (CreatedContainer)(nil)
+	_ Container = (ReadyContainer)(nil)
+	_ Container = (StartedContainer)(nil)
+)
 
 // DockerContainer represents a container started using Docker
 type DockerContainer struct {

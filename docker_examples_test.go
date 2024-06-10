@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+
 	"github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"

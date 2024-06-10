@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
 )
