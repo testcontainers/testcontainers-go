@@ -11,7 +11,7 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-func TestwaitForSql_WithQuery(t *testing.T) {
+func TestWaitForSql_WithQuery(t *testing.T) {
 	t.Run("default query", func(t *testing.T) {
 		w := ForSQL("5432/tcp", "postgres", func(host string, port nat.Port) string {
 			return "fake-url"
