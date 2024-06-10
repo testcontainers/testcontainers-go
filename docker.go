@@ -86,6 +86,8 @@ type DockerContainer struct {
 	logProductionTimeout *time.Duration
 	logger               Logging
 	lifecycleHooks       []ContainerLifecycleHooks
+
+	healthStatus string // container health status, will default to healthStatusNone if no healthcheck is present
 }
 
 // SetLogger sets the logger for the container
@@ -1588,6 +1590,11 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	_, err = container.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// the health status of the container, if any
+	if health := container.raw.State.Health; health != nil {
+		container.healthStatus = health.Status
 	}
 
 	return &container, nil
