@@ -123,11 +123,12 @@ func Test_LoadImages(t *testing.T) {
 	})
 }
 
-func getTestPodState(ctx context.Context, k8s *kubernetes.Clientset) (state corev1.ContainerState, err error) {
+func getTestPodState(ctx context.Context, k8s *kubernetes.Clientset) (corev1.ContainerState, error) {
 	var pod *corev1.Pod
+	var err error
 	pod, err = k8s.CoreV1().Pods("default").Get(ctx, "test-pod", metav1.GetOptions{})
 	if err != nil || len(pod.Status.ContainerStatuses) == 0 {
-		return
+		return corev1.ContainerState{}, err
 	}
 	return pod.Status.ContainerStatuses[0].State, nil
 }
