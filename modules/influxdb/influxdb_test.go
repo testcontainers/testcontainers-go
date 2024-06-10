@@ -122,5 +122,5 @@ func TestWithConfigFile(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "1.8.10", version)
-	assert.Greater(t, ping, 0)
+	assert.Greater(t, ping, time.Duration(0))
 }
