@@ -1337,7 +1337,7 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 
 	assert.NotEmpty(t, inspect.ID)
 
-	container.Stop(context.Background(), nil)
+	require.NoError(t, container.Stop(context.Background(), nil))
 
 	// type assertion to ensure that the container is a DockerContainer
 	dc := container.(*DockerContainer)
