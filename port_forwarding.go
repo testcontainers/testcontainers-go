@@ -229,7 +229,7 @@ func (sshdC *sshdContainer) exposeHostPort(ctx context.Context, ports ...int) er
 		pw := NewPortForwarder(fmt.Sprintf("localhost:%s", sshdC.port), sshdC.sshConfig, port, port)
 		sshdC.portForwarders = append(sshdC.portForwarders, *pw)
 
-		go pw.Forward(ctx)
+		go pw.Forward(ctx) //nolint:errcheck // Nothing we can usefully do with the error
 	}
 
 	var err error

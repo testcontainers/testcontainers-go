@@ -63,7 +63,7 @@ func TestWithInitDb(t *testing.T) {
 	ctx := context.Background()
 	influxDbContainer, err := influxdb.RunContainer(ctx,
 		testcontainers.WithImage("influxdb:1.8.10"),
-		influxdb.WithInitDb(filepath.Join("testdata")),
+		influxdb.WithInitDb("testdata"),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -122,5 +122,5 @@ func TestWithConfigFile(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "1.8.10", version)
-	assert.True(t, ping > 0)
+	assert.Greater(t, ping, time.Duration(0))
 }

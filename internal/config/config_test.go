@@ -278,7 +278,7 @@ func TestReadTCConfig(t *testing.T) {
 				``,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT": "13s",
-					"TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT": "12s",
+					"TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT":   "12s",
 				},
 				Config{
 					RyukReconnectionTimeout: 13 * time.Second,
@@ -291,7 +291,7 @@ func TestReadTCConfig(t *testing.T) {
 	ryuk.reconnection.timeout=23s`,
 				map[string]string{
 					"TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT": "13s",
-					"TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT": "12s",
+					"TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT":   "12s",
 				},
 				Config{
 					RyukReconnectionTimeout: 13 * time.Second,
