@@ -40,7 +40,7 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleChromaContainer_connectWithClient() {
+func ExampleRunContainer_connectWithClient() {
 	// createClient {
 	ctx := context.Background()
 
@@ -78,7 +78,7 @@ func ExampleChromaContainer_connectWithClient() {
 	// <nil>
 }
 
-func ExampleChromaContainer_collections() {
+func ExampleRunContainer_collections() {
 	ctx := context.Background()
 
 	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"), testcontainers.WithEnv(map[string]string{"ALLOW_RESET": "true"}))

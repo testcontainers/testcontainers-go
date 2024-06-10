@@ -40,7 +40,7 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleMilvusContainer_collections() {
+func ExampleRunContainer_collections() {
 	// createCollections {
 	ctx := context.Background()
 

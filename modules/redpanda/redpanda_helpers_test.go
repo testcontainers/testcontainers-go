@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestisAtLeastVersion(t *testing.T) {
+func TestIsAtLeastVersion(t *testing.T) {
 	type args struct {
 		image string
 		major string
