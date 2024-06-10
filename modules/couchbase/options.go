@@ -9,7 +9,6 @@ type Config struct {
 	password         string
 	isEnterprise     bool
 	buckets          []bucket
-	imageName        string
 	indexStorageMode indexStorageMode
 }
 
