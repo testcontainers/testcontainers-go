@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types"
 	"math/rand"
 	"net"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/docker/docker/api/types"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/docker/docker/api/types/container"
@@ -118,14 +119,16 @@ func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContai
 			return err
 		}
 
-		// if a health status is present on the container, and the container is not healthy, error
-		if r.healthStatus != "" {
-			if r.healthStatus != types.Healthy && r.healthStatus != types.NoHealthcheck {
-				return fmt.Errorf("container %s is not healthy, wanted status=%s, got status=%s", resp[0].ID[:8], types.Healthy, r.healthStatus)
-			}
+		reaperContainer = r
+
+		if r.healthStatus == types.Healthy || r.healthStatus == types.NoHealthcheck {
+			return nil
 		}
 
-		reaperContainer = r
+		// if a health status is present on the container, and the container is healthy, error
+		if r.healthStatus != "" {
+			return fmt.Errorf("container %s is not healthy, wanted status=%s, got status=%s", resp[0].ID[:8], types.Healthy, r.healthStatus)
+		}
 
 		return nil
 	}, backoff.WithContext(exp, ctx))
