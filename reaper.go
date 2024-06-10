@@ -173,26 +173,6 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 			return nil, err
 		}
 
-		Logger.Printf("⏳ Waiting for Reaper port to be ready")
-
-		var containerJson *types.ContainerJSON
-
-		if containerJson, err = reaperContainer.Inspect(ctx); err != nil {
-			return nil, fmt.Errorf("failed to inspect reaper container %s: %w", reaperContainer.ID[:8], err)
-		}
-
-		if containerJson != nil && containerJson.NetworkSettings != nil {
-			for port := range containerJson.NetworkSettings.Ports {
-				err := wait.ForListeningPort(port).
-					WithPollInterval(100*time.Millisecond).
-					WaitUntilReady(ctx, reaperContainer)
-				if err != nil {
-					return nil, fmt.Errorf("failed waiting for reaper container %s port %s/%s to be ready: %w",
-						reaperContainer.ID[:8], port.Proto(), port.Port(), err)
-				}
-			}
-		}
-
 		return reaperInstance, nil
 	}
 
@@ -223,6 +203,27 @@ func reuseReaperContainer(ctx context.Context, sessionID string, provider Reaper
 	if err != nil {
 		return nil, err
 	}
+
+	Logger.Printf("⏳ Waiting for Reaper port to be ready")
+
+	var containerJson *types.ContainerJSON
+
+	if containerJson, err = reaperContainer.Inspect(ctx); err != nil {
+		return nil, fmt.Errorf("failed to inspect reaper container %s: %w", reaperContainer.ID[:8], err)
+	}
+
+	if containerJson != nil && containerJson.NetworkSettings != nil {
+		for port := range containerJson.NetworkSettings.Ports {
+			err := wait.ForListeningPort(port).
+				WithPollInterval(100*time.Millisecond).
+				WaitUntilReady(ctx, reaperContainer)
+			if err != nil {
+				return nil, fmt.Errorf("failed waiting for reaper container %s port %s/%s to be ready: %w",
+					reaperContainer.ID[:8], port.Proto(), port.Port(), err)
+			}
+		}
+	}
+
 	return &Reaper{
 		Provider:  provider,
 		SessionID: sessionID,
