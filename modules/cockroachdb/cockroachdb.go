@@ -190,7 +190,7 @@ func addWaitingFor(req *testcontainers.GenericContainerRequest, opts options) er
 	if req.WaitingFor == nil {
 		req.WaitingFor = defaultStrategy
 	} else {
-		req.WaitingFor = wait.ForAll(req.WaitingFor, sqlWait)
+		req.WaitingFor = wait.ForAll(req.WaitingFor, defaultStrategy)
 	}
 
 	return nil

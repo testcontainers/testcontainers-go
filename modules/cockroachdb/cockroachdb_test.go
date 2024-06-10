@@ -158,6 +158,7 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 		// This will never match a log statement
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*250, wait.ForLog("Won't Exist In Logs")))
 		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+
 		suite.Require().Error(err, contextDeadlineExceeded)
 		suite.T().Cleanup(func() {
 			if container != nil {
@@ -165,7 +166,6 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 				suite.Require().NoError(err)
 			}
 		})
-
 	})
 
 	suite.Run("Expected Failure To Run But Would Succeed ", func() {
@@ -174,6 +174,7 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 		// This will timeout as we didn't give enough time for intialization, but would have succeeded otherwise
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*20, wait.ForLog(nodeStartUpCompleted)))
 		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+
 		suite.Require().Error(err, contextDeadlineExceeded)
 		suite.T().Cleanup(func() {
 			if container != nil {
@@ -181,7 +182,6 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 				suite.Require().NoError(err)
 			}
 		})
-
 	})
 
 	suite.Run("Succeeds And Executes Commands", func() {
