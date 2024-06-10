@@ -134,7 +134,7 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 			output := createReuseContainerInSubprocess(t)
 
 			// check is reuse container with WaitingFor work correctly.
-			require.True(t, strings.Contains(output, "🚧 Waiting for container id"))
+			require.True(t, strings.Contains(output, "⏳ Waiting for container id"))
 			require.True(t, strings.Contains(output, "🔔 Container is ready"))
 		}()
 	}
