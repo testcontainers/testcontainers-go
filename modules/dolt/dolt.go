@@ -61,7 +61,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	opts = append(opts, WithDefaultCredentials())
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	createUser := true
