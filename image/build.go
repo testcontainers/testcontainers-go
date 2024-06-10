@@ -31,6 +31,9 @@ type BuildInfo interface {
 // Build will build and image from context and Dockerfile, then return the tag
 func Build(ctx context.Context, img BuildInfo) (string, error) {
 	buildOptions, err := img.BuildOptions()
+	if err != nil {
+		return "", err
+	}
 
 	cli, err := core.NewClient(ctx)
 	if err != nil {
