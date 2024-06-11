@@ -51,12 +51,9 @@ type DockerContainer struct {
 	// StopLogProducer have been removed and hence logging can only be started and
 	// stopped once.
 
-	// logProductionWaitGroup is used to signal when the log production has stopped.
-	// This allows stopLogProduction to safely set logProductionStop to nil.
-	// See simplification in https://go.dev/play/p/x0pOElF2Vjf
-	logProductionWaitGroup sync.WaitGroup
-
-	logProductionStop chan struct{}
+	// logProductionMutex protects logProductionStop channel so it can be started again.
+	logProductionMutex sync.Mutex
+	logProductionStop  chan struct{}
 
 	logProductionTimeout *time.Duration
 	logProductionError   chan error

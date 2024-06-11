@@ -37,7 +37,6 @@ func (c *DockerContainer) StartLogProduction(ctx context.Context, logConfig log.
 		}
 
 		c.logProductionStop = make(chan struct{})
-		c.logProductionWaitGroup.Add(1)
 	}
 
 	for _, opt := range logConfig.Opts {
@@ -64,7 +63,6 @@ func (c *DockerContainer) StartLogProduction(ctx context.Context, logConfig log.
 	go func() {
 		defer func() {
 			close(c.logProductionError)
-			c.logProductionWaitGroup.Done()
 		}()
 
 		since := ""
@@ -170,7 +168,7 @@ func (c *DockerContainer) StopLogProduction() error {
 	defer c.logProductionMutex.Unlock()
 	if c.logProductionStop != nil {
 		close(c.logProductionStop)
-		c.logProductionWaitGroup.Wait()
+
 		// Set c.logProductionStop to nil so that it can be started again.
 		c.logProductionStop = nil
 		return <-c.logProductionError
