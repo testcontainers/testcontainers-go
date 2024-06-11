@@ -10,7 +10,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -47,13 +46,7 @@ type DockerContainer struct {
 	keepBuiltImage    bool
 	healthStatus      string // container health status, will default to healthStatusNone if no healthcheck is present
 
-	// TODO: Remove locking and wait group once the deprecated StartLogProducer and
-	// StopLogProducer have been removed and hence logging can only be started and
-	// stopped once.
-
-	// logProductionMutex protects logProductionStop channel so it can be started again.
-	logProductionMutex sync.Mutex
-	logProductionStop  chan struct{}
+	logProductionStop chan struct{}
 
 	logProductionTimeout *time.Duration
 	logProductionError   chan error

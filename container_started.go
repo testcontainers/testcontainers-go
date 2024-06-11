@@ -29,9 +29,6 @@ func (c *DockerContainer) GetContainerID() string {
 // lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
 func (c *DockerContainer) StartLogProduction(ctx context.Context, logConfig log.ConsumerConfig) error {
 	{
-		c.logProductionMutex.Lock()
-		defer c.logProductionMutex.Unlock()
-
 		if c.logProductionStop != nil {
 			return errors.New("log production already started")
 		}
@@ -162,10 +159,6 @@ func (c *DockerContainer) GetLogProductionErrorChannel() <-chan error {
 // StopLogProduction will stop the concurrent process that is reading logs
 // and sending them to each added LogConsumer
 func (c *DockerContainer) StopLogProduction() error {
-	// TODO: Remove locking and wait group once StartLogProducer and StopLogProducer
-	// have been removed and hence logging can only be started / stopped once.
-	c.logProductionMutex.Lock()
-	defer c.logProductionMutex.Unlock()
 	if c.logProductionStop != nil {
 		close(c.logProductionStop)
 
