@@ -817,7 +817,10 @@ func (c *DockerContainer) StopLogProducer() error {
 // stopLogProduction will stop the concurrent process that is reading logs
 // and sending them to each added LogConsumer
 func (c *DockerContainer) stopLogProduction() error {
-	close(c.logProductionStop)
+	// close the channel to signal the log production to stop if it's not already closed
+	if c.logProductionStop != nil {
+		close(c.logProductionStop)
+	}
 
 	c.logProductionWaitGroup.Wait()
 
