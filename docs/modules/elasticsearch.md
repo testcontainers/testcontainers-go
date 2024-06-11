@@ -56,7 +56,7 @@ If you need to set a different password to request authorization when performing
 #### Skipping cert retrieval
 
 If you do not want to retrieve the Elasticsearch certificate, you can use the `WithoutCertRetrieval` option.
-This can be useful in some edge cases where the certificate to download from the container are not available.
+This can be useful in some edge cases where the certificate to download from the container is not available.
 
 <!--codeinclude-->
 [Skip Certificate Retrieval](../../modules/elasticsearch/examples_test.go) inside_block:withoutCertRetrieval
