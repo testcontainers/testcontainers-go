@@ -3,7 +3,6 @@ package cockroachdb_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"strings"
 	"testing"
@@ -149,7 +148,6 @@ func (suite *AuthNSuite) TestQuery() {
 
 // TestWithWaitStrategyAndDeadline covers a previous regression, container creation needs to fail to cover that path.
 func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
-	contextDeadlineExceeded := fmt.Errorf("failed to start container: context deadline exceeded")
 	nodeStartUpCompleted := "node startup completed"
 
 	suite.Run("Expected Failure To Run", func() {
@@ -159,7 +157,7 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*250, wait.ForLog("Won't Exist In Logs")))
 		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
 
-		suite.Require().Error(err, contextDeadlineExceeded)
+		suite.Require().ErrorIs(err, context.DeadlineExceeded)
 		suite.T().Cleanup(func() {
 			if container != nil {
 				err := container.Terminate(ctx)
@@ -175,7 +173,7 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*20, wait.ForLog(nodeStartUpCompleted)))
 		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
 
-		suite.Require().Error(err, contextDeadlineExceeded)
+		suite.Require().ErrorIs(err, context.DeadlineExceeded)
 		suite.T().Cleanup(func() {
 			if container != nil {
 				err := container.Terminate(ctx)
