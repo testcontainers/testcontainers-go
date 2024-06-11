@@ -72,12 +72,19 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 							return err
 						}
 
+						inspect, err := c.Inspect(ctx)
+						if err != nil {
+							return err
+						}
+
+						hostname := inspect.Config.Hostname
+
 						port, err := c.MappedPort(ctx, publicPort)
 						if err != nil {
 							return err
 						}
 
-						scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), host)
+						scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname)
 
 						return c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755)
 					},
@@ -96,7 +103,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	err := validateKRaftVersion(genericContainerReq.Image)
@@ -117,8 +126,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["CLUSTER_ID"] = clusterID
+
+		return nil
 	}
 }
 

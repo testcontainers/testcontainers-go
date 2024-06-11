@@ -90,7 +90,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		if apply, ok := opt.(Option); ok {
 			apply(&settings)
 		}
-		opt.Customize(&req)
+		if err := opt.Customize(&req); err != nil {
+			return nil, err
+		}
 	}
 
 	// 2.1. If the image is not at least v23.3, disable wasm transform
@@ -197,7 +199,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		wait.ForListeningPort(defaultKafkaAPIPort),
 		wait.ForLog("Successfully started Redpanda!").WithPollInterval(100*time.Millisecond)).
 		WaitUntilReady(ctx, container)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
 	}

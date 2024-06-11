@@ -44,8 +44,9 @@ var _ testcontainers.ContainerCustomizer = (*Option)(nil)
 type Option func(*options)
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
-func (o Option) Customize(*testcontainers.GenericContainerRequest) {
+func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	// NOOP to satisfy interface.
+	return nil
 }
 
 // WithAdminPassword sets the password for the default admin user

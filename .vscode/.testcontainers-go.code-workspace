@@ -170,6 +170,10 @@
             "path": "../modules/vault"
         },
         {
+            "name": "module / vearch",
+            "path": "../modules/vearch"
+        },
+        {
             "name": "module / weaviate",
             "path": "../modules/weaviate"
         },

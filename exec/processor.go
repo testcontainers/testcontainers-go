@@ -60,6 +60,8 @@ func WithEnv(env []string) ProcessOption {
 	})
 }
 
+// Multiplexed returns a [ProcessOption] that configures the command execution
+// to combine stdout and stderr into a single stream without Docker's multiplexing headers.
 func Multiplexed() ProcessOption {
 	return ProcessOptionFunc(func(opts *ProcessOptions) {
 		// returning fast to bypass those options with a nil reader,

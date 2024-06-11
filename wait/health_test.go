@@ -21,6 +21,11 @@ func (st healthStrategyTarget) Host(ctx context.Context) (string, error) {
 	return "", nil
 }
 
+func (st healthStrategyTarget) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+	return nil, nil
+}
+
+// Deprecated: use Inspect instead
 func (st healthStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
 	return nil, nil
 }

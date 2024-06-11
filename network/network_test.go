@@ -422,7 +422,8 @@ func TestWithNetwork(t *testing.T) {
 			ContainerRequest: testcontainers.ContainerRequest{},
 		}
 
-		network.WithNetwork([]string{"alias"}, nw)(&req)
+		err := network.WithNetwork([]string{"alias"}, nw)(&req)
+		require.NoError(t, err)
 
 		assert.Len(t, req.Networks, 1)
 		assert.Equal(t, networkName, req.Networks[0])
@@ -468,7 +469,8 @@ func TestWithSyntheticNetwork(t *testing.T) {
 		},
 	}
 
-	network.WithNetwork([]string{"alias"}, nw)(&req)
+	err := network.WithNetwork([]string{"alias"}, nw)(&req)
+	require.NoError(t, err)
 
 	assert.Len(t, req.Networks, 1)
 	assert.Equal(t, networkName, req.Networks[0])
@@ -502,11 +504,12 @@ func TestWithNewNetwork(t *testing.T) {
 		ContainerRequest: testcontainers.ContainerRequest{},
 	}
 
-	network.WithNewNetwork(context.Background(), []string{"alias"},
+	err := network.WithNewNetwork(context.Background(), []string{"alias"},
 		network.WithAttachable(),
 		network.WithInternal(),
 		network.WithLabels(map[string]string{"this-is-a-test": "value"}),
 	)(&req)
+	require.NoError(t, err)
 
 	assert.Len(t, req.Networks, 1)
 
@@ -549,11 +552,12 @@ func TestWithNewNetworkContextTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 
-	network.WithNewNetwork(ctx, []string{"alias"},
+	err := network.WithNewNetwork(ctx, []string{"alias"},
 		network.WithAttachable(),
 		network.WithInternal(),
 		network.WithLabels(map[string]string{"this-is-a-test": "value"}),
 	)(&req)
+	require.Error(t, err)
 
 	// we do not want to fail, just skip the network creation
 	assert.Empty(t, req.Networks)

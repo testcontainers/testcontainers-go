@@ -36,7 +36,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 	username := req.Env["MONGO_INITDB_ROOT_USERNAME"]
 	password := req.Env["MONGO_INITDB_ROOT_PASSWORD"]
@@ -59,8 +61,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 // It is used in conjunction with WithPassword to set a username and its password.
 // It will create the specified user with superuser power.
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["MONGO_INITDB_ROOT_USERNAME"] = username
+
+		return nil
 	}
 }
 
@@ -68,8 +72,33 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 // It is used in conjunction with WithUsername to set a username and its password.
 // It will set the superuser password for MongoDB.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["MONGO_INITDB_ROOT_PASSWORD"] = password
+
+		return nil
+	}
+}
+
+// WithReplicaSet configures the container to run a single-node MongoDB replica set named "rs".
+// It will wait until the replica set is ready.
+func WithReplicaSet() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Cmd = append(req.Cmd, "--replSet", "rs")
+		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
+			PostStarts: []testcontainers.ContainerHook{
+				func(ctx context.Context, c testcontainers.Container) error {
+					ip, err := c.ContainerIP(ctx)
+					if err != nil {
+						return err
+					}
+
+					cmd := eval("rs.initiate({ _id: 'rs', members: [ { _id: 0, host: '%s:27017' } ] })", ip)
+					return wait.ForExec(cmd).WaitUntilReady(ctx, c)
+				},
+			},
+		})
+
+		return nil
 	}
 }
 
@@ -88,4 +117,16 @@ func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error)
 		return fmt.Sprintf("mongodb://%s:%s@%s:%s", c.username, c.password, host, port.Port()), nil
 	}
 	return c.Endpoint(ctx, "mongodb")
+}
+
+// eval builds an mongosh|mongo eval command.
+func eval(command string, args ...any) []string {
+	command = "\"" + fmt.Sprintf(command, args...) + "\""
+
+	return []string{
+		"sh",
+		"-c",
+		// In previous versions, the binary "mongosh" was named "mongo".
+		"mongosh --quiet --eval " + command + " || mongo --quiet --eval " + command,
+	}
 }

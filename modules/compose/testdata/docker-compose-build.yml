@@ -1,11 +1,11 @@
 version: '3'
 services:
-  echo:
+  {{ .ServiceType }}-echo:
     build:
       dockerfile: echoserver.Dockerfile
     environment:
       FOO: "Hello, World!"
     ports:
       - target: 8080
-        published: 8080
+        published: {{ .Port_0 }}
         protocol: tcp

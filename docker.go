@@ -86,6 +86,8 @@ type DockerContainer struct {
 	logProductionTimeout *time.Duration
 	logger               Logging
 	lifecycleHooks       []ContainerLifecycleHooks
+
+	healthStatus string // container health status, will default to healthStatusNone if no healthcheck is present
 }
 
 // SetLogger sets the logger for the container
@@ -96,6 +98,11 @@ func (c *DockerContainer) SetLogger(logger Logging) {
 // SetProvider sets the provider for the container
 func (c *DockerContainer) SetProvider(provider *DockerProvider) {
 	c.provider = provider
+}
+
+// SetTerminationSignal sets the termination signal for the container
+func (c *DockerContainer) SetTerminationSignal(signal chan bool) {
+	c.terminationSignal = signal
 }
 
 func (c *DockerContainer) GetContainerID() string {
@@ -109,10 +116,12 @@ func (c *DockerContainer) IsRunning() bool {
 // Endpoint gets proto://host:port string for the first exposed port
 // Will returns just host:port if proto is ""
 func (c *DockerContainer) Endpoint(ctx context.Context, proto string) (string, error) {
-	ports, err := c.Ports(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return "", err
 	}
+
+	ports := inspect.NetworkSettings.Ports
 
 	// get first port
 	var firstPort nat.Port
@@ -156,19 +165,31 @@ func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 	return host, nil
 }
 
+// Inspect gets the raw container info, caching the result for subsequent calls
+func (c *DockerContainer) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+	if c.raw != nil {
+		return c.raw, nil
+	}
+
+	json, err := c.inspectRawContainer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return json, nil
+}
+
 // MappedPort gets externally mapped port for a container port
 func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return "", err
 	}
 	if inspect.ContainerJSONBase.HostConfig.NetworkMode == "host" {
 		return port, nil
 	}
-	ports, err := c.Ports(ctx)
-	if err != nil {
-		return "", err
-	}
+
+	ports := inspect.NetworkSettings.Ports
 
 	for k, p := range ports {
 		if k.Port() != port.Port() {
@@ -186,9 +207,10 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 	return "", errors.New("port not found")
 }
 
+// Deprecated: use c.Inspect(ctx).NetworkSettings.Ports instead.
 // Ports gets the exposed ports for the container.
 func (c *DockerContainer) Ports(ctx context.Context) (nat.PortMap, error) {
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -255,6 +277,7 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	defer c.provider.Close()
 
 	c.isRunning = false
+	c.raw = nil // invalidate the cache, as the container representation will change after stopping
 
 	err = c.stoppedHook(ctx)
 	if err != nil {
@@ -293,6 +316,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 	c.sessionID = ""
 	c.isRunning = false
+	c.raw = nil // invalidate the cache here too
 	return errors.Join(errs...)
 }
 
@@ -306,16 +330,6 @@ func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.Conta
 
 	c.raw = &inspect
 	return c.raw, nil
-}
-
-func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.ContainerJSON, error) {
-	defer c.provider.Close()
-	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &inspect, nil
 }
 
 // Logs will fetch both STDOUT and STDERR from the current container. Returns a
@@ -383,16 +397,18 @@ func (c *DockerContainer) followOutput(consumer LogConsumer) {
 	c.consumers = append(c.consumers, consumer)
 }
 
+// Deprecated: use c.Inspect(ctx).Name instead.
 // Name gets the name of the container.
 func (c *DockerContainer) Name(ctx context.Context) (string, error) {
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return "", err
 	}
 	return inspect.Name, nil
 }
 
-// State returns container's running state
+// State returns container's running state. This method does not use the cache
+// and always fetches the latest state from the Docker daemon.
 func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
 	inspect, err := c.inspectRawContainer(ctx)
 	if err != nil {
@@ -406,7 +422,7 @@ func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, err
 
 // Networks gets the names of the networks the container is attached to.
 func (c *DockerContainer) Networks(ctx context.Context) ([]string, error) {
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return []string{}, err
 	}
@@ -424,7 +440,7 @@ func (c *DockerContainer) Networks(ctx context.Context) ([]string, error) {
 
 // ContainerIP gets the IP address of the primary network within the container.
 func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -447,7 +463,7 @@ func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
 func (c *DockerContainer) ContainerIPs(ctx context.Context) ([]string, error) {
 	ips := make([]string, 0)
 
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -462,7 +478,7 @@ func (c *DockerContainer) ContainerIPs(ctx context.Context) ([]string, error) {
 
 // NetworkAliases gets the aliases of the container for the networks it is attached to.
 func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]string, error) {
-	inspect, err := c.inspectContainer(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return map[string][]string{}, err
 	}
@@ -478,6 +494,13 @@ func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]stri
 	return a, nil
 }
 
+// Exec executes a command in the current container.
+// It returns the exit status of the executed command, an [io.Reader] containing the combined
+// stdout and stderr, and any encountered error. Note that reading directly from the [io.Reader]
+// may result in unexpected bytes due to custom stream multiplexing headers.
+// Use [tcexec.Multiplexed] option to read the combined output without the multiplexing headers.
+// Alternatively, to separate the stdout and stderr from [io.Reader] and interpret these headers properly,
+// [github.com/docker/docker/pkg/stdcopy.StdCopy] from the Docker API should be used.
 func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
 	cli := c.provider.client
 
@@ -846,6 +869,10 @@ func (n *DockerNetwork) Remove(ctx context.Context) error {
 	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
+func (n *DockerNetwork) SetTerminationSignal(signal chan bool) {
+	n.terminationSignal = signal
+}
+
 // DockerProvider implements the ContainerProvider interface
 type DockerProvider struct {
 	*DockerProviderOptions
@@ -886,8 +913,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		resp, err = p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 		if err != nil {
 			buildError = errors.Join(buildError, err)
-			var enf errdefs.ErrNotFound
-			if errors.As(err, &enf) {
+			if isPermanentClientError(err) {
 				return backoff.Permanent(err)
 			}
 			Logger.Printf("Failed to build image: %s, will retry", err)
@@ -1088,6 +1114,20 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		defaultReadinessHook(),
 	}
 
+	// in the case the container needs to access a local port
+	// we need to forward the local port to the container
+	if len(req.HostAccessPorts) > 0 {
+		// a container lifecycle hook will be added, which will expose the host ports to the container
+		// using a SSHD server running in a container. The SSHD server will be started and will
+		// forward the host ports to the container ports.
+		sshdForwardPortsHook, err := exposeHostPorts(ctx, &req, req.HostAccessPorts...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to expose host ports: %w", err)
+		}
+
+		defaultHooks = append(defaultHooks, sshdForwardPortsHook)
+	}
+
 	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
 
 	err = req.creatingHook(ctx)
@@ -1166,6 +1206,9 @@ func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string)
 	return container, backoff.Retry(func() error {
 		c, err := p.findContainerByName(ctx, name)
 		if err != nil {
+			if !errdefs.IsNotFound(err) && isPermanentClientError(err) {
+				return backoff.Permanent(err)
+			}
 			return err
 		}
 
@@ -1266,8 +1309,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	err = backoff.Retry(func() error {
 		pull, err = p.client.ImagePull(ctx, tag, pullOpt)
 		if err != nil {
-			var enf errdefs.ErrNotFound
-			if errors.As(err, &enf) {
+			if isPermanentClientError(err) {
 				return backoff.Permanent(err)
 			}
 			Logger.Printf("Failed to pull image: %s, will retry", err)
@@ -1550,6 +1592,11 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 		return nil, err
 	}
 
+	// the health status of the container, if any
+	if health := container.raw.State.Health; health != nil {
+		container.healthStatus = health.Status
+	}
+
 	return &container, nil
 }
 
@@ -1602,4 +1649,21 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 // PullImage pulls image from registry
 func (p *DockerProvider) PullImage(ctx context.Context, image string) error {
 	return p.attemptToPullImage(ctx, image, types.ImagePullOptions{})
+}
+
+var permanentClientErrors = []func(error) bool{
+	errdefs.IsNotFound,
+	errdefs.IsInvalidParameter,
+	errdefs.IsUnauthorized,
+	errdefs.IsForbidden,
+	errdefs.IsNotImplemented,
+}
+
+func isPermanentClientError(err error) bool {
+	for _, isErrFn := range permanentClientErrors {
+		if isErrFn(err) {
+			return true
+		}
+	}
+	return false
 }
