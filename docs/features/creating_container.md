@@ -111,7 +111,7 @@ _Testcontainers for Go_ defines some default lifecycle hooks that are always exe
 Inside each group, the hooks will be executed in the order they were defined.
 
 !!!info
-	The default hooks are for logging (applied to all hooks), customising the Docker config (applied to the pre-create hook), copying files in to the container (applied to the post-create hook), adding log consumers (applied to the post-start and pre-terminate hooks), and running the wait strategies as a readiness check (applied to the post-start hook).
+	The default hooks are for logging (applied to all hooks), customising the Docker config (applied to the pre-create hook), copying files in to the container (applied to the post-create hook), adding a log consumer (applied to the post-start and pre-terminate hooks), and running the wait strategies as a readiness check (applied to the post-start hook).
 
 It's important to notice that the `Readiness` of a container is defined by the wait strategies defined for the container. **This hook will be executed right after the `PostStarts` hook**. If you want to add your own readiness checks, you can do it by adding a `PostReadies` hook to the container request, which will execute your own readiness check after the default ones. That said, the `PostStarts` hooks don't warrant that the container is ready, so you should not rely on that.
 

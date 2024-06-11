@@ -56,7 +56,7 @@ type Request struct {
 	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 	LifecycleHooks          []LifecycleHooks                           // define hooks to be executed during container lifecycle
-	LogConsumerCfg          *log.ConsumerConfig                        // define the configuration for the log producer and its log consumers to follow the logs
+	LogConsumerCfg          *log.ConsumerConfig                        // define the configuration for the log producer and its log consumer to follow the logs
 	Started                 bool                                       // flag to indicate if the container is started after created
 	Reuse                   bool                                       // Experimental. flag to indicate if the container should be reused
 }

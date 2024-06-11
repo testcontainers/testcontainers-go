@@ -27,7 +27,7 @@ func (c *DockerContainer) GetContainerID() string {
 // and that it cannot be cancelled earlier.
 // Use functional option WithLogProductionTimeout() to override default timeout. If it's
 // lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
-func (c *DockerContainer) StartLogProduction(ctx context.Context, opts ...log.ProductionOption) error {
+func (c *DockerContainer) StartLogProduction(ctx context.Context, logConfig log.ConsumerConfig) error {
 	{
 		c.logProductionMutex.Lock()
 		defer c.logProductionMutex.Unlock()
@@ -40,7 +40,7 @@ func (c *DockerContainer) StartLogProduction(ctx context.Context, opts ...log.Pr
 		c.logProductionWaitGroup.Add(1)
 	}
 
-	for _, opt := range opts {
+	for _, opt := range logConfig.Opts {
 		opt(c)
 	}
 
@@ -144,12 +144,10 @@ func (c *DockerContainer) StartLogProduction(ctx context.Context, opts ...log.Pr
 					_, _ = fmt.Fprintln(os.Stderr, log.StoppedForOutOfSyncMessage)
 					return
 				}
-				for _, c := range c.consumers {
-					c.Accept(log.Log{
-						LogType: logTypes[logType],
-						Content: b,
-					})
-				}
+				logConfig.Consumer.Accept(log.Log{
+					LogType: logTypes[logType],
+					Content: b,
+				})
 			}
 		}
 	}()

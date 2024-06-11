@@ -70,19 +70,18 @@ var DefaultLoggingHook = func(logger log.Logging) LifecycleHooks {
 	}
 }
 
-// defaultLogConsumersHook is a hook that will start log consumers after the container is started
+// defaultLogConsumersHook is a hook that will start log consumer after the container is started
 var defaultLogConsumersHook = func(cfg *log.ConsumerConfig) LifecycleHooks {
 	return LifecycleHooks{
 		PostStarts: []StartedContainerHook{
-			// first post-start hook is to produce logs and start log consumers
+			// first post-start hook is to produce logs and start log consumer
 			func(ctx context.Context, c StartedContainer) error {
 				if cfg == nil {
 					return nil
 				}
 
 				if cfg.Consumer != nil {
-					c.FollowOutput(cfg.Consumer)
-					return c.StartLogProduction(ctx, cfg.Opts...)
+					return c.StartLogProduction(ctx, *cfg)
 				}
 
 				return nil

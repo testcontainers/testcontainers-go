@@ -3,7 +3,7 @@
 The log-following functionality follows a producer-consumer model: the container produces logs, and your code consumes them.
 So if you wish to follow container logs, you have to do two things:
 
-1. set up log consumers.
+1. set up a log consumer.
 2. configure the log production of the container (e.g. timeout for the logs).
 
 As logs are written to either `stdout`, or `stderr` (`stdin` is not supported) they will be forwarded (produced) to any associated log consumer.
@@ -23,7 +23,7 @@ You can associate `LogConsumer`s as part of the `Request` struct.
 
 ## Passing the LogConsumers in the Request
 
-This will represent the current way for associating `LogConsumer`s. You simply define your consumers, and attach them as a slice to the `Request` in the
+This will represent the current way for associating `LogConsumer`s. You simply define your consumer, and attach them as a slice to the `Request` in the
 `LogConsumerCfg` field. See the following example, where `g` is an instance of a given `LogConsumer` struct.
 
 <!--codeinclude-->
@@ -44,7 +44,7 @@ type ProductionOption func(*DockerContainer)
 
 At the moment, _Testcontainers for Go_ exposes an option to set log production timeout, using the `WithProductionTimeout` function.
 
-_Testcontainers for Go_ will read this log producer/consumer configuration to automatically start producing logs if an only if the consumers slice contains at least one valid `LogConsumer`.
+_Testcontainers for Go_ will read this log producer/consumer configuration to automatically start producing logs if an only if the consumer is a valid `LogConsumer`.
 
 ## Stopping the Log Production
 

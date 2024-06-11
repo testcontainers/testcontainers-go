@@ -46,8 +46,7 @@ type DockerContainer struct {
 	terminationSignal chan bool
 	keepBuiltImage    bool
 	healthStatus      string // container health status, will default to healthStatusNone if no healthcheck is present
-	// log consumer fields
-	consumers []log.Consumer
+
 	// TODO: Remove locking and wait group once the deprecated StartLogProducer and
 	// StopLogProducer have been removed and hence logging can only be started and
 	// stopped once.
@@ -80,7 +79,6 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 
 	container.logger = log.StandardLogger() // assign the standard logger to the container
 	container.sessionID = core.SessionID()
-	container.consumers = []log.Consumer{}
 	container.isRunning = response.State == "running"
 
 	// the termination signal should be obtained from the reaper
@@ -341,12 +339,6 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 	}
 
 	return exitCode, processOptions.Reader, nil
-}
-
-// FollowOutput adds a LogConsumer to be sent logs from the container's
-// STDOUT and STDERR
-func (c *DockerContainer) FollowOutput(consumer log.Consumer) {
-	c.consumers = append(c.consumers, consumer)
 }
 
 func (c *DockerContainer) GetImage() string {

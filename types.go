@@ -52,8 +52,7 @@ type StartedContainer interface {
 	ReadyContainer // embed the ReadyContainer interface, as the started container is a ready container
 
 	// log consumer methods
-	FollowOutput(lc log.Consumer) // TODO: do not expose this method, so all the hooks need a concrete Docker container
-	StartLogProduction(ctx context.Context, opts ...log.ProductionOption) error
+	StartLogProduction(ctx context.Context, logConfig log.ConsumerConfig) error
 	StopLogProduction() error
 	WithLogProductionTimeout(timeout time.Duration)
 }

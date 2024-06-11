@@ -76,7 +76,7 @@ func TestHandler(t *testing.T) {
 }
 ```
 
-Please read the [Following Container Logs](/features/follow_logs) documentation for more information about creating log consumers.
+Please read the [Following Container Logs](/features/follow_logs) documentation for more information about creating a log consumer.
 
 #### Wait Strategies
 

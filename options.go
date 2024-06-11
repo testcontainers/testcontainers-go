@@ -115,7 +115,7 @@ func WithImageSubstitutors(fn ...image.Substitutor) CustomizeRequestOption {
 	}
 }
 
-// WithLogConsumers sets the log consumers for a container
+// WithLogConsumers sets the log consumer for a container
 func WithLogConsumers(consumer ...log.Consumer) CustomizeRequestOption {
 	return func(req *Request) error {
 		if req.LogConsumerCfg == nil {
