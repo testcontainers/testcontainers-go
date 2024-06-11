@@ -638,3 +638,58 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	// the multiple containers.
 	assert.False(t, strings.Contains(actual, logStoppedForOutOfSyncMessage))
 }
+
+type FooLogConsumer struct {
+	LogChannel chan string
+}
+
+func (c FooLogConsumer) Accept(rawLog Log) {
+	log := string(rawLog.Content)
+	c.LogChannel <- log
+}
+
+func NewFooLogConsumer() *FooLogConsumer {
+	return &FooLogConsumer{
+		LogChannel: make(chan string),
+	}
+}
+
+func TestRestartContainerWithLogConsumer(t *testing.T) {
+	logConsumer := NewFooLogConsumer()
+
+	ctx := context.Background()
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:           "hello-world",
+			AlwaysPullImage: true,
+			LogConsumerCfg: &LogConsumerConfig{
+				Consumers: []LogConsumer{logConsumer},
+			},
+		},
+		Started: false,
+	})
+	if err != nil {
+		t.Fatalf("Cant create container: %s", err.Error())
+	}
+
+	err = container.Start(ctx)
+	if err != nil {
+		t.Fatalf("Cant start container: %s", err.Error())
+	}
+
+	d := 30 * time.Second
+	err = container.Stop(ctx, &d)
+	if err != nil {
+		t.Fatalf("Cant stop container: %s", err.Error())
+	}
+	err = container.Start(ctx)
+	if err != nil {
+		t.Fatalf("Cant start container: %s", err.Error())
+	}
+
+	for s := range logConsumer.LogChannel {
+		if strings.Contains(s, "Hello from Docker!") {
+			break
+		}
+	}
+}

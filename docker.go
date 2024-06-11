@@ -77,11 +77,10 @@ type DockerContainer struct {
 
 	// logProductionWaitGroup is used to signal when the log production has stopped.
 	// This allows stopLogProduction to safely set logProductionStop to nil.
+	// See simplification in https://go.dev/play/p/x0pOElF2Vjf
 	logProductionWaitGroup sync.WaitGroup
 
-	// logProductionMutex protects logProductionStop channel so it can be started again.
-	logProductionMutex sync.Mutex
-	logProductionStop  chan struct{}
+	logProductionStop chan struct{}
 
 	logProductionTimeout *time.Duration
 	logger               Logging
@@ -696,17 +695,8 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProdu
 // Use functional option WithLogProductionTimeout() to override default timeout. If it's
 // lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
 func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogProductionOption) error {
-	{
-		c.logProductionMutex.Lock()
-		defer c.logProductionMutex.Unlock()
-
-		if c.logProductionStop != nil {
-			return errors.New("log production already started")
-		}
-
-		c.logProductionStop = make(chan struct{})
-		c.logProductionWaitGroup.Add(1)
-	}
+	c.logProductionStop = make(chan struct{})
+	c.logProductionWaitGroup.Add(1)
 
 	for _, opt := range opts {
 		opt(c)
@@ -827,18 +817,11 @@ func (c *DockerContainer) StopLogProducer() error {
 // stopLogProduction will stop the concurrent process that is reading logs
 // and sending them to each added LogConsumer
 func (c *DockerContainer) stopLogProduction() error {
-	// TODO: Remove locking and wait group once StartLogProducer and StopLogProducer
-	// have been removed and hence logging can only be started / stopped once.
-	c.logProductionMutex.Lock()
-	defer c.logProductionMutex.Unlock()
-	if c.logProductionStop != nil {
-		close(c.logProductionStop)
-		c.logProductionWaitGroup.Wait()
-		// Set c.logProductionStop to nil so that it can be started again.
-		c.logProductionStop = nil
-		return <-c.logProductionError
-	}
-	return nil
+	close(c.logProductionStop)
+
+	c.logProductionWaitGroup.Wait()
+
+	return <-c.logProductionError
 }
 
 // GetLogProductionErrorChannel exposes the only way for the consumer
