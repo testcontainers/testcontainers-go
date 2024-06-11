@@ -79,6 +79,29 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// WithReplicaSet configures the container to run a single-node MongoDB replica set named "rs".
+// It will wait until the replica set is ready.
+func WithReplicaSet() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Cmd = append(req.Cmd, "--replSet", "rs")
+		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
+			PostStarts: []testcontainers.ContainerHook{
+				func(ctx context.Context, c testcontainers.Container) error {
+					ip, err := c.ContainerIP(ctx)
+					if err != nil {
+						return err
+					}
+
+					cmd := eval("rs.initiate({ _id: 'rs', members: [ { _id: 0, host: '%s:27017' } ] })", ip)
+					return wait.ForExec(cmd).WaitUntilReady(ctx, c)
+				},
+			},
+		})
+
+		return nil
+	}
+}
+
 // ConnectionString returns the connection string for the MongoDB container.
 // If you provide a username and a password, the connection string will also include them.
 func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error) {
@@ -94,4 +117,16 @@ func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error)
 		return fmt.Sprintf("mongodb://%s:%s@%s:%s", c.username, c.password, host, port.Port()), nil
 	}
 	return c.Endpoint(ctx, "mongodb")
+}
+
+// eval builds an mongosh|mongo eval command.
+func eval(command string, args ...any) []string {
+	command = "\"" + fmt.Sprintf(command, args...) + "\""
+
+	return []string{
+		"sh",
+		"-c",
+		// In previous versions, the binary "mongosh" was named "mongo".
+		"mongosh --quiet --eval " + command + " || mongo --quiet --eval " + command,
+	}
 }

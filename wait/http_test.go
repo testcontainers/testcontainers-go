@@ -491,12 +491,18 @@ func TestHttpStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) 
 				OOMKilled: true,
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -539,12 +545,18 @@ func TestHttpStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 				ExitCode: 1,
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -586,12 +598,18 @@ func TestHttpStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *test
 				Status: "dead",
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -628,12 +646,18 @@ func TestHTTPStrategyFailsWhileRequestSendingDueToOOMKilledContainer(t *testing.
 				OOMKilled: true,
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -671,12 +695,18 @@ func TestHttpStrategyFailsWhileRequestSendingDueToExitedContainer(t *testing.T) 
 				ExitCode: 1,
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -713,12 +743,18 @@ func TestHttpStrategyFailsWhileRequestSendingDueToUnexpectedContainerStatus(t *t
 				Status: "dead",
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -761,8 +797,14 @@ func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
 				Running: true,
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{}, nil
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{},
+					},
+				},
+			}, nil
 		},
 	}
 
@@ -802,12 +844,18 @@ func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
 				Status:  "running",
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/udp": []nat.PortBinding{
-					{
-						HostIP:   "127.0.0.1",
-						HostPort: "49152",
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/udp": []nat.PortBinding{
+								{
+									HostIP:   "127.0.0.1",
+									HostPort: "49152",
+								},
+							},
+						},
 					},
 				},
 			}, nil
@@ -850,9 +898,15 @@ func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.
 				Status:  "running",
 			}, nil
 		},
-		PortsImpl: func(ctx context.Context) (nat.PortMap, error) {
-			return nat.PortMap{
-				"8080/tcp": []nat.PortBinding{},
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"8080/tcp": []nat.PortBinding{},
+						},
+					},
+				},
 			}, nil
 		},
 	}

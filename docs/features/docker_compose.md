@@ -173,7 +173,7 @@ further information.
 
 ## Usage of the `docker compose` binary
 
-_Node:_ this API is deprecated and superseded by `ComposeStack` which takes advantage of `compose` v2 being
+_Note:_ this API is deprecated and superseded by `ComposeStack` which takes advantage of `compose` v2 being
 implemented in Go as well by directly using the upstream project.
 
 You can override Testcontainers' default behaviour and make it use a

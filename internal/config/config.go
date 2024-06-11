@@ -87,6 +87,16 @@ func read() Config {
 			config.RyukVerbose = ryukVerboseEnv == "true"
 		}
 
+		ryukReconnectionTimeoutEnv := os.Getenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT")
+		if timeout, err := time.ParseDuration(ryukReconnectionTimeoutEnv); err == nil {
+			config.RyukReconnectionTimeout = timeout
+		}
+
+		ryukConnectionTimeoutEnv := os.Getenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT")
+		if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err == nil {
+			config.RyukConnectionTimeout = timeout
+		}
+
 		return config
 	}
 

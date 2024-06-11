@@ -126,7 +126,7 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) error {
 	for i, reader := range r {
 		tmp := os.TempDir()
 		tmp = filepath.Join(tmp, strconv.FormatInt(time.Now().UnixNano(), 10))
-		err := os.MkdirAll(tmp, 0755)
+		err := os.MkdirAll(tmp, 0o755)
 		if err != nil {
 			return fmt.Errorf("failed to create temporary directory: %w", err)
 		}
@@ -135,12 +135,12 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) error {
 
 		bs, err := io.ReadAll(reader)
 		if err != nil {
-			fmt.Errorf("failed to read from reader: %w", err)
+			return fmt.Errorf("failed to read from reader: %w", err)
 		}
 
-		err = os.WriteFile(filepath.Join(tmp, name), bs, 0644)
+		err = os.WriteFile(filepath.Join(tmp, name), bs, 0o644)
 		if err != nil {
-			fmt.Errorf("failed to write to temporary file: %w", err)
+			return fmt.Errorf("failed to write to temporary file: %w", err)
 		}
 
 		f[i] = filepath.Join(tmp, name)
@@ -370,6 +370,8 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 				}()
 			}
 
+			d.containersLock.Lock()
+			defer d.containersLock.Unlock()
 			d.containers[srv.Name] = dc
 
 			return nil
@@ -398,6 +400,8 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 			}
 
 			// cache all the containers on compose.up
+			d.containersLock.Lock()
+			defer d.containersLock.Unlock()
 			d.containers[svc] = target
 
 			return strategy.WaitUntilReady(errGrpCtx, target)
