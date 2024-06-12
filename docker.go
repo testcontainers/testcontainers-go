@@ -294,6 +294,10 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 	default:
 	}
 
+	defer func() {
+		close(c.logProductionStop)
+	}()
+
 	defer c.provider.client.Close()
 
 	errs := []error{
@@ -695,7 +699,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProdu
 // Use functional option WithLogProductionTimeout() to override default timeout. If it's
 // lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
 func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogProductionOption) error {
-	c.logProductionStop = make(chan struct{})
+	c.logProductionStop = make(chan struct{}, 1) // buffered channel to avoid blocking
 	c.logProductionWaitGroup.Add(1)
 
 	for _, opt := range opts {
@@ -817,10 +821,8 @@ func (c *DockerContainer) StopLogProducer() error {
 // stopLogProduction will stop the concurrent process that is reading logs
 // and sending them to each added LogConsumer
 func (c *DockerContainer) stopLogProduction() error {
-	// close the channel to signal the log production to stop if it's not already closed
-	if c.logProductionStop != nil {
-		close(c.logProductionStop)
-	}
+	// signal the log production to stop
+	c.logProductionStop <- struct{}{}
 
 	c.logProductionWaitGroup.Wait()
 
