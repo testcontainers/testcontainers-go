@@ -70,9 +70,9 @@ func getDockerHostIPs(host string) []HostIP {
 		return []HostIP{hip}
 	}
 
-	var hips = []HostIP{}
+	hips := []HostIP{}
 	for _, ip := range ips {
-		hips = append(hostIPs, newHostIP(ip.String()))
+		hips = append(hips, newHostIP(ip.String()))
 	}
 
 	return hips
