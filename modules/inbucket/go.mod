@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/inbucket/inbucket v2.0.0+incompatible
-	github.com/testcontainers/testcontainers-go v0.30.0
+	github.com/testcontainers/testcontainers-go v0.31.0
 )
 
 require (

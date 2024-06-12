@@ -82,7 +82,6 @@ func (c *RegistryContainer) DeleteImage(ctx context.Context, imageRef string) er
 			return false
 		}).
 		WaitUntilReady(ctx, c)
-
 	if err != nil {
 		return fmt.Errorf("failed to get image digest: %w", err)
 	}
@@ -177,7 +176,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
