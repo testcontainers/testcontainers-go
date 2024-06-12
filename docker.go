@@ -294,10 +294,6 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 	default:
 	}
 
-	defer func() {
-		close(c.logProductionStop)
-	}()
-
 	defer c.provider.client.Close()
 
 	errs := []error{
