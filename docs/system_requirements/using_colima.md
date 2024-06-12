@@ -26,6 +26,8 @@ default    Current DOCKER_HOST based configuration   unix:///var/run/docker.sock
 If you're using an older version of Colima or have other applications that are
 unaware of Docker context the following workaround is available:
 
+- Locate your Docker Socket, see: [Colima's FAQ - Docker Socket Location](https://github.com/abiosoft/colima/blob/main/docs/FAQ.md#docker-socket-location)
+
 - Create a symbolic link from the default Docker Socket to the expected location, and restart Colima with the `--network-address` flag.
 
 ```
@@ -33,8 +35,6 @@ unaware of Docker context the following workaround is available:
     colima stop
     colima start --network-address
 ```
-
-- Locate your Docker Socket, see: [Colima's FAQ - Docker Socket Location](https://github.com/abiosoft/colima/blob/main/docs/FAQ.md#docker-socket-location)
 
 - Set the `DOCKER_HOST` environment variable to match the located Docker Socket
 
