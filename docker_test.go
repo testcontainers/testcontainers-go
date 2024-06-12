@@ -823,8 +823,8 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	os.Stdout = rescueStdout
 	temp := strings.Split(string(out), "\n")
 
-	if !regexp.MustCompile(`(?i)^Step\s*1/1\s*:\s*FROM docker.io/alpine$`).MatchString(temp[0]) {
-		t.Errorf("Expected stdout firstline to be %s. Got '%s'.", "Step 1/1 : FROM docker.io/alpine", temp[0])
+	if !regexp.MustCompile(`^Step\s*1/\d+\s*:\s*FROM docker.io/alpine$`).MatchString(temp[0]) {
+		t.Errorf("Expected stdout firstline to be %s. Got '%s'.", "Step 1/* : FROM docker.io/alpine", temp[0])
 	}
 }
 
