@@ -375,6 +375,20 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 
 	// make sure the first tag is the one defined in the ContainerRequest
 	tag := fmt.Sprintf("%s:%s", c.GetRepo(), c.GetTag())
+
+	// apply substitutors to the built image
+	for _, is := range c.ImageSubstitutors {
+		modifiedTag, err := is.Substitute(tag)
+		if err != nil {
+			return buildOptions, fmt.Errorf("failed to substitute image %s with %s: %w", tag, is.Description(), err)
+		}
+
+		if modifiedTag != tag {
+			Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), tag, modifiedTag)
+			tag = modifiedTag
+		}
+	}
+
 	if len(buildOptions.Tags) > 0 {
 		// prepend the tag
 		buildOptions.Tags = append([]string{tag}, buildOptions.Tags...)
