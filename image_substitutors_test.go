@@ -1,16 +1,15 @@
-package testcontainers_test
+package testcontainers
 
 import (
 	"context"
 	"testing"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/image"
 )
 
 func TestSubstituteBuiltImage(t *testing.T) {
-	req := testcontainers.Request{
-		FromDockerfile: testcontainers.FromDockerfile{
+	req := Request{
+		FromDockerfile: FromDockerfile{
 			Context:    "testdata",
 			Dockerfile: "echo.Dockerfile",
 			Tag:        "my-image",
@@ -21,7 +20,7 @@ func TestSubstituteBuiltImage(t *testing.T) {
 	}
 
 	t.Run("should not use the properties prefix on built images", func(t *testing.T) {
-		c, err := testcontainers.New(context.Background(), req)
+		c, err := New(context.Background(), req)
 		if err != nil {
 			t.Fatal(err)
 		}
