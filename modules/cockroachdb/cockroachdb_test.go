@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cockroachdb"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestCockroach_Insecure(t *testing.T) {
@@ -142,6 +144,87 @@ func (suite *AuthNSuite) TestQuery() {
 	err = conn.QueryRow(ctx, "SELECT id FROM test").Scan(&id)
 	suite.Require().NoError(err)
 	suite.Equal(523123, id)
+}
+
+// TestWithWaitStrategyAndDeadline covers a previous regression, container creation needs to fail to cover that path.
+func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
+	nodeStartUpCompleted := "node startup completed"
+
+	suite.Run("Expected Failure To Run", func() {
+		ctx := context.Background()
+
+		// This will never match a log statement
+		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*250, wait.ForLog("Won't Exist In Logs")))
+		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+
+		suite.Require().ErrorIs(err, context.DeadlineExceeded)
+		suite.T().Cleanup(func() {
+			if container != nil {
+				err := container.Terminate(ctx)
+				suite.Require().NoError(err)
+			}
+		})
+	})
+
+	suite.Run("Expected Failure To Run But Would Succeed ", func() {
+		ctx := context.Background()
+
+		// This will timeout as we didn't give enough time for intialization, but would have succeeded otherwise
+		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*20, wait.ForLog(nodeStartUpCompleted)))
+		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+
+		suite.Require().ErrorIs(err, context.DeadlineExceeded)
+		suite.T().Cleanup(func() {
+			if container != nil {
+				err := container.Terminate(ctx)
+				suite.Require().NoError(err)
+			}
+		})
+	})
+
+	suite.Run("Succeeds And Executes Commands", func() {
+		ctx := context.Background()
+
+		// This will succeed
+		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Second*60, wait.ForLog(nodeStartUpCompleted)))
+		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		suite.Require().NoError(err)
+
+		conn, err := conn(ctx, container)
+		suite.Require().NoError(err)
+		defer conn.Close(ctx)
+
+		_, err = conn.Exec(ctx, "CREATE TABLE test (id INT PRIMARY KEY)")
+		suite.Require().NoError(err)
+		suite.T().Cleanup(func() {
+			if container != nil {
+				err := container.Terminate(ctx)
+				suite.Require().NoError(err)
+			}
+		})
+	})
+
+	suite.Run("Succeeds And Executes Commands Waiting on HTTP Endpoint", func() {
+		ctx := context.Background()
+
+		// This will succeed
+		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Second*60, wait.ForHTTP("/health").WithPort("8080/tcp")))
+		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		suite.Require().NoError(err)
+
+		conn, err := conn(ctx, container)
+		suite.Require().NoError(err)
+		defer conn.Close(ctx)
+
+		_, err = conn.Exec(ctx, "CREATE TABLE test (id INT PRIMARY KEY)")
+		suite.Require().NoError(err)
+		suite.T().Cleanup(func() {
+			if container != nil {
+				err := container.Terminate(ctx)
+				suite.Require().NoError(err)
+			}
+		})
+	})
 }
 
 func conn(ctx context.Context, container *cockroachdb.CockroachDBContainer) (*pgx.Conn, error) {

@@ -46,6 +46,7 @@ nav:
         - features/creating_networks.md
         - features/networking.md
         - features/tls.md
+        - features/test_session_semantics.md
         - features/garbage_collector.md
         - features/build_from_dockerfile.md
         - features/docker_auth.md
@@ -102,6 +103,7 @@ nav:
         - modules/registry.md
         - modules/surrealdb.md
         - modules/vault.md
+        - modules/vearch.md
         - modules/weaviate.md
     - Examples:
         - examples/index.md

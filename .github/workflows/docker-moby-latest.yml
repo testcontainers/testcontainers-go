@@ -1,0 +1,54 @@
+name: Tests against Latest Docker Moby
+
+on:
+  schedule:
+    # nightly build, at 23:59 CEST
+    - cron:  '59 23 * * *'
+
+jobs:
+  test_latest_moby:
+    name: "Core tests using latest moby/moby"
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Set up Go
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
+        with:
+            go-version-file: 'go.mod'
+            cache-dependency-path: 'go.sum'
+        id: go
+
+      - name: modVerify
+        run: go mod verify
+
+      - name: modTidy
+        run: go mod tidy
+
+      - name: Install Latest Docker
+        run: curl https://get.docker.com | CHANNEL=test sh
+
+      - name: go test
+        timeout-minutes: 30
+        run: make test-unit
+
+      - name: Create slack payload file
+        if: failure()
+        run: |
+          cat <<EOF > ./payload-slack-content.json
+          {
+              "tc_project": "testcontainers-go",
+              "tc_github_action_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}",
+              "tc_github_action_status": "FAILED",
+              "tc_slack_channel_id": "${{ secrets.SLACK_DOCKER_LATEST_CHANNEL_ID }}"
+          }
+
+      - name: Notify to Slack on failures
+        if: failure()
+        id: slack
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload-file-path: "./payload-slack-content.json"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DOCKER_LATEST_WEBHOOK }}
