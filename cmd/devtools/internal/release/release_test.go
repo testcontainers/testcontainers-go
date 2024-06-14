@@ -184,6 +184,27 @@ func TestRun(t *testing.T) {
 				}
 
 				// assert the tags for the library and all the modules exist
+				output, err = gitClient.ListTags()
+				if err != nil {
+					tt.Fatalf("Error listing git tags: %v", err)
+				}
+
+				if !strings.Contains(output, vNextDevelopmentVersion) {
+					tt.Errorf("Expected core version tag not found: %s", output)
+				}
+				for _, module := range modules {
+					moduleTag := fmt.Sprintf("%s/%s/%s", "modules", module, vNextDevelopmentVersion)
+					if !strings.Contains(output, moduleTag) {
+						tt.Errorf("Expected module version tag not found: %s", output)
+					}
+				}
+				for _, example := range examples {
+					exampleTag := fmt.Sprintf("%s/%s/%s", "examples", example, vNextDevelopmentVersion)
+					if !strings.Contains(output, exampleTag) {
+						tt.Errorf("Expected example version tag not found: %s", output)
+					}
+				}
+
 				// assert the next development version has been applied to the version.go file
 			}
 		})

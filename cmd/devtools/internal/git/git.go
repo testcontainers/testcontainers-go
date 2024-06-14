@@ -93,11 +93,23 @@ func (g *GitClient) Commit(msg string) error {
 	return g.Exec("commit", "-m", "'"+msg+"'")
 }
 
+func (g *GitClient) ListTags() (string, error) {
+	args := []string{
+		"tag", "--list", "--sort=-v:refname",
+	}
+
+	return g.ExecWithOutput(args...)
+}
+
 func (g *GitClient) Log() (string, error) {
 	args := []string{
 		"log", "--color", "--graph", `--pretty=format:'%h -%d %s'`, "--abbrev-commit",
 	}
 
+	return g.ExecWithOutput(args...)
+}
+
+func (g *GitClient) ExecWithOutput(args ...string) (string, error) {
 	if g.dryRun {
 		fmt.Printf("/bin/bash -c 'git %s'\n", strings.Join(args, " "))
 		return "", nil
@@ -108,7 +120,7 @@ func (g *GitClient) Log() (string, error) {
 	cmd := exec.Command("/bin/bash", bashArgs...)
 	cmd.Dir = g.ctx.RootDir
 
-	var outbuf, errbuf strings.Builder // or bytes.Buffer
+	var outbuf, errbuf strings.Builder
 	cmd.Stdout = &outbuf
 	cmd.Stderr = &errbuf
 
