@@ -8,7 +8,10 @@ require (
 	github.com/testcontainers/testcontainers-go v0.31.0
 )
 
-require golang.org/x/crypto v0.22.0 // indirect
+require (
+	github.com/moby/docker-image-spec v1.3.1 // indirect
+	golang.org/x/crypto v0.22.0 // indirect
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -20,7 +23,7 @@ require (
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
-	github.com/docker/docker v25.0.5+incompatible // indirect
+	github.com/docker/docker v26.1.4+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect

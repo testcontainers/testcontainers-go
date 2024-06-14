@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/ollama
 go 1.21
 
 require (
-	github.com/docker/docker v25.0.5+incompatible
+	github.com/docker/docker v26.1.4+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/testcontainers/testcontainers-go v0.31.0
 	github.com/tmc/langchaingo v0.1.5
@@ -31,6 +31,7 @@ require (
 	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/sys/user v0.1.0 // indirect
