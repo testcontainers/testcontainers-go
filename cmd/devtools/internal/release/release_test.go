@@ -135,7 +135,7 @@ func TestRun(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(tt *testing.T) {
-			//tt.Parallel()
+			tt.Parallel()
 
 			ctx := context.New(tt.TempDir())
 
@@ -206,6 +206,14 @@ func TestRun(t *testing.T) {
 				}
 
 				// assert the next development version has been applied to the version.go file
+				version, err := extractCurrentVersion(ctx)
+				if err != nil {
+					tt.Fatalf("Error extracting current version: %v", err)
+				}
+
+				if version != tc.args.expectedVersion {
+					tt.Errorf("Expected next development version not found: %s", version)
+				}
 			}
 		})
 	}
