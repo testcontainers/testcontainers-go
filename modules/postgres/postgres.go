@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"path/filepath"
 	"strings"
 
+	_ "embed"
+
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -17,6 +21,9 @@ const (
 	defaultPostgresImage = "docker.io/postgres:16-alpine"
 	defaultSnapshotName  = "migrated_template"
 )
+
+//go:embed resources/customEntrypoint.sh
+var embeddedCustomEntrypoint string
 
 // PostgresContainer represents the postgres container type used in the module
 type PostgresContainer struct {
@@ -180,6 +187,62 @@ func WithSnapshotName(name string) SnapshotOption {
 		cfg.snapshotName = name
 		return cfg
 	}
+}
+
+// WithSSLSettings configures the Postgres server to run with the provided CA Chain
+// This will not function if the corresponding postgres conf is not correctly configured.
+// Namely the paths below must match what is set in the conf file
+func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOption {
+	const postgresCaCertPath = "/tmp/data/ca_cert.pem"
+	const postgresCertPath = "/tmp/data/server.cert"
+	const postgresKeyPath = "/tmp/data/server.key"
+
+	const defaultPermission = 0o600
+
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      sslSettings.CACertFile,
+			ContainerFilePath: postgresCaCertPath,
+			FileMode:          defaultPermission,
+		})
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      sslSettings.CertFile,
+			ContainerFilePath: postgresCertPath,
+			FileMode:          defaultPermission,
+		})
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      sslSettings.KeyFile,
+			ContainerFilePath: postgresKeyPath,
+			FileMode:          defaultPermission,
+		})
+
+		expectedFiles := []string{sslSettings.CACertFile, sslSettings.CertFile, sslSettings.KeyFile}
+		for _, expectedFile := range expectedFiles {
+			_, err := os.Stat(expectedFile)
+			if err != nil {
+				return err
+			}
+		}
+
+		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForLog("database system is ready to accept connections"))
+
+		internalEntrypoint(req)
+		return nil
+	}
+}
+
+func internalEntrypoint(req *testcontainers.GenericContainerRequest) {
+	const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
+
+	reader := strings.NewReader(embeddedCustomEntrypoint)
+
+	req.Files = append(req.Files, testcontainers.ContainerFile{
+		Reader:            reader,
+		ContainerFilePath: entrypointPath,
+		FileMode:          0o666,
+	})
+
+	req.Entrypoint = []string{"sh", entrypointPath}
 }
 
 // Snapshot takes a snapshot of the current state of the database as a template, which can then be restored using
