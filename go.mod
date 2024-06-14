@@ -7,7 +7,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/containerd/containerd v1.7.15
 	github.com/cpuguy83/dockercfg v0.3.1
-	github.com/docker/docker v25.0.5+incompatible
+	github.com/docker/docker v26.1.4+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/docker/go-units v0.5.0
 	github.com/google/uuid v1.6.0
@@ -37,6 +37,7 @@ require (
 	github.com/klauspost/compress v1.16.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
+	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/sys/user v0.1.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
