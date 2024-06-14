@@ -3,6 +3,7 @@ package release
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -156,27 +157,14 @@ func hitGolangProxy(dryRun bool, modulePath string, moduleVersion string) error 
 	return nil
 }
 
-type inMemoryLogger struct {
-	logs string
-}
-
-func (l *inMemoryLogger) Accept(tcl testcontainers.Log) {
-	l.logs += string(tcl.Content)
-}
-
 func getSemverVersion(bumpType string, vVersion string) (string, error) {
-	logger := &inMemoryLogger{}
-
 	// get the next version from the bump type. It will use the semver-tool to bump the version
 	c, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:         semverDockerImage,
 			Cmd:           []string{"bump", bumpType, vVersion},
 			ImagePlatform: "linux/amd64",
-			LogConsumerCfg: &testcontainers.LogConsumerConfig{
-				Consumers: []testcontainers.LogConsumer{logger},
-			},
-			WaitingFor: wait.ForExit(),
+			WaitingFor:    wait.ForExit(),
 		},
 		Started: true,
 	})
@@ -190,8 +178,16 @@ func getSemverVersion(bumpType string, vVersion string) (string, error) {
 		}
 	}()
 
-	// the output of the semver-tool is the new version
-	newVersion := strings.TrimSpace(logger.logs)
+	r, err := c.Logs(context.Background())
+	if err != nil {
+		return "", err
+	}
 
-	return newVersion, nil
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return "", err
+	}
+
+	// the output of the semver-tool is the new version
+	return strings.TrimSpace(string(b)), nil
 }
