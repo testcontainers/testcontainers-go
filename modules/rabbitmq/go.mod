@@ -8,7 +8,11 @@ require (
 	github.com/testcontainers/testcontainers-go v0.31.0
 )
 
-require golang.org/x/crypto v0.22.0 // indirect
+require (
+	github.com/containerd/errdefs v0.1.0 // indirect
+	github.com/moby/docker-image-spec v1.3.1 // indirect
+	golang.org/x/crypto v0.22.0 // indirect
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -52,9 +56,7 @@ require (
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
-	golang.org/x/mod v0.16.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
