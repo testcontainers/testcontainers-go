@@ -10,4 +10,4 @@ lint-examples:
 
 .PHONY: tidy-examples
 tidy-examples:
-	@find . -type f -name Makefile -execdir make tools-tidy \;
+	@find . -type f -name Makefile -execdir make tidy \;
