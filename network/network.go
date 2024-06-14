@@ -32,14 +32,13 @@ func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.Docker
 
 	//nolint:staticcheck
 	netReq := testcontainers.NetworkRequest{
-		Driver:         nc.Driver,
-		CheckDuplicate: nc.CheckDuplicate,
-		Internal:       nc.Internal,
-		EnableIPv6:     nc.EnableIPv6,
-		Name:           uuid.NewString(),
-		Labels:         nc.Labels,
-		Attachable:     nc.Attachable,
-		IPAM:           nc.IPAM,
+		Driver:     nc.Driver,
+		Internal:   nc.Internal,
+		EnableIPv6: nc.EnableIPv6,
+		Name:       uuid.NewString(),
+		Labels:     nc.Labels,
+		Attachable: nc.Attachable,
+		IPAM:       nc.IPAM,
 	}
 
 	//nolint:staticcheck
@@ -79,6 +78,8 @@ func WithAttachable() CustomizeNetworkOption {
 }
 
 // WithCheckDuplicate allows to check if a network with the same name already exists.
+//
+// Deprecated: CheckDuplicate is deprecated since API v1.44, but it defaults to true when sent by the client package to older daemons.
 func WithCheckDuplicate() CustomizeNetworkOption {
 	return func(original *types.NetworkCreate) error {
 		//nolint:staticcheck

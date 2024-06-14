@@ -25,6 +25,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -307,7 +308,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 	}
 
 	if c.imageWasBuilt && !c.keepBuiltImage {
-		_, err := c.provider.client.ImageRemove(ctx, c.Image, types.ImageRemoveOptions{
+		_, err := c.provider.client.ImageRemove(ctx, c.Image, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
@@ -1070,7 +1071,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 
 		if shouldPullImage {
-			pullOpt := types.ImagePullOptions{
+			pullOpt := image.PullOptions{
 				Platform: req.ImagePlatform, // may be empty
 			}
 			if err := p.attemptToPullImage(ctx, imageName, pullOpt); err != nil {
@@ -1291,7 +1292,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 
 // attemptToPullImage tries to pull the image while respecting the ctx cancellations.
 // Besides, if the image cannot be pulled due to ErrorNotFound then no need to retry but terminate immediately.
-func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt types.ImagePullOptions) error {
+func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt image.PullOptions) error {
 	registry, imageAuth, err := DockerImageAuth(ctx, tag)
 	if err != nil {
 		p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, tag, err)
@@ -1429,13 +1430,12 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	tcConfig := p.Config().Config
 
 	nc := types.NetworkCreate{
-		Driver:         req.Driver,
-		CheckDuplicate: req.CheckDuplicate,
-		Internal:       req.Internal,
-		EnableIPv6:     req.EnableIPv6,
-		Attachable:     req.Attachable,
-		Labels:         req.Labels,
-		IPAM:           req.IPAM,
+		Driver:     req.Driver,
+		Internal:   req.Internal,
+		EnableIPv6: req.EnableIPv6,
+		Attachable: req.Attachable,
+		Labels:     req.Labels,
+		IPAM:       req.IPAM,
 	}
 
 	sessionID := core.SessionID()
@@ -1605,7 +1605,7 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 func (p *DockerProvider) ListImages(ctx context.Context) ([]ImageInfo, error) {
 	images := []ImageInfo{}
 
-	imageList, err := p.client.ImageList(ctx, types.ImageListOptions{})
+	imageList, err := p.client.ImageList(ctx, image.ListOptions{})
 	if err != nil {
 		return images, fmt.Errorf("listing images %w", err)
 	}
@@ -1647,8 +1647,8 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 }
 
 // PullImage pulls image from registry
-func (p *DockerProvider) PullImage(ctx context.Context, image string) error {
-	return p.attemptToPullImage(ctx, image, types.ImagePullOptions{})
+func (p *DockerProvider) PullImage(ctx context.Context, img string) error {
+	return p.attemptToPullImage(ctx, img, image.PullOptions{})
 }
 
 var permanentClientErrors = []func(error) bool{

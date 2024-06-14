@@ -30,7 +30,6 @@ func ExampleNew() {
 	ctx := context.Background()
 
 	net, err := network.New(ctx,
-		network.WithCheckDuplicate(),
 		network.WithAttachable(),
 		// Makes the network internal only, meaning the host machine cannot access it.
 		// Remove or use `network.WithDriver("bridge")` to change the network's mode.
@@ -116,7 +115,7 @@ func ExampleNew() {
 func TestContainerAttachedToNewNetwork(t *testing.T) {
 	ctx := context.Background()
 
-	newNetwork, err := network.New(ctx, network.WithCheckDuplicate())
+	newNetwork, err := network.New(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +191,7 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 func TestContainerIPs(t *testing.T) {
 	ctx := context.Background()
 
-	newNetwork, err := network.New(ctx, network.WithCheckDuplicate())
+	newNetwork, err := network.New(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -288,7 +287,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 func TestMultipleContainersInTheNewNetwork(t *testing.T) {
 	ctx := context.Background()
 
-	net, err := network.New(ctx, network.WithCheckDuplicate(), network.WithDriver("bridge"))
+	net, err := network.New(ctx, network.WithDriver("bridge"))
 	if err != nil {
 		t.Fatal("cannot create network")
 	}
@@ -361,7 +360,6 @@ func TestNew_withOptions(t *testing.T) {
 		},
 	}
 	net, err := network.New(ctx,
-		network.WithCheckDuplicate(),
 		network.WithIPAM(&ipamConfig),
 		network.WithAttachable(),
 		network.WithDriver("bridge"),
@@ -408,7 +406,7 @@ func TestNew_withOptions(t *testing.T) {
 
 func TestWithNetwork(t *testing.T) {
 	// first create the network to be reused
-	nw, err := network.New(context.Background(), network.WithCheckDuplicate(), network.WithLabels(map[string]string{"network-type": "unique"}))
+	nw, err := network.New(context.Background(), network.WithLabels(map[string]string{"network-type": "unique"}))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, nw.Remove(context.Background()))

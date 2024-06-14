@@ -16,7 +16,7 @@ import (
 func TestToxiproxy(t *testing.T) {
 	ctx := context.Background()
 
-	newNetwork, err := network.New(ctx, network.WithCheckDuplicate())
+	newNetwork, err := network.New(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -18,6 +18,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -2072,7 +2073,7 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			require.NoError(t, err, "inspect container should not fail")
 			containerImage := containerDetails.Image
 			t.Cleanup(func() {
-				_, _ = cli.ImageRemove(ctx, containerImage, types.ImageRemoveOptions{
+				_, _ = cli.ImageRemove(ctx, containerImage, image.RemoveOptions{
 					Force:         true,
 					PruneChildren: true,
 				})
@@ -2111,7 +2112,7 @@ func (f *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) (
 	return []types.Container{{}}, f.err
 }
 
-func (f *errMockCli) ImagePull(_ context.Context, _ string, _ types.ImagePullOptions) (io.ReadCloser, error) {
+func (f *errMockCli) ImagePull(_ context.Context, _ string, _ image.PullOptions) (io.ReadCloser, error) {
 	f.imagePullCount++
 	return io.NopCloser(&bytes.Buffer{}), f.err
 }
@@ -2285,7 +2286,7 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 			// give a chance to retry
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			_ = p.attemptToPullImage(ctx, "someTag", types.ImagePullOptions{})
+			_ = p.attemptToPullImage(ctx, "someTag", image.PullOptions{})
 
 			assert.Greater(t, m.imagePullCount, 0)
 			assert.Equal(t, tt.shouldRetry, m.imagePullCount > 1)

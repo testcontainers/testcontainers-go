@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/cpuguy83/dockercfg"
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -213,7 +213,7 @@ func removeImageFromLocalCache(t *testing.T, img string) {
 	}
 	defer testcontainersClient.Close()
 
-	_, err = testcontainersClient.ImageRemove(ctx, img, types.ImageRemoveOptions{
+	_, err = testcontainersClient.ImageRemove(ctx, img, image.RemoveOptions{
 		Force:         true,
 		PruneChildren: true,
 	})
