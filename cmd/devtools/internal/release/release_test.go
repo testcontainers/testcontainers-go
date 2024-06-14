@@ -1,7 +1,9 @@
 package release
 
 import (
+	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go/devtools/internal/context"
@@ -78,8 +80,9 @@ func TestRun(t *testing.T) {
 	rootCtx = context.New(filepath.Dir(filepath.Dir(rootCtx.RootDir)))
 
 	type args struct {
-		dryRun   bool
 		bumpType string
+		// the version we are going to put in the version.go file after the release
+		expectedVersion string
 	}
 	testCases := []struct {
 		name string
@@ -88,43 +91,43 @@ func TestRun(t *testing.T) {
 		{
 			name: "Test Major bump with Dry Run",
 			args: args{
-				dryRun:   true,
-				bumpType: "major",
+				bumpType:        "major",
+				expectedVersion: "1.0.0",
 			},
 		},
 		{
 			name: "Test Major bump without Dry Run",
 			args: args{
-				dryRun:   false,
-				bumpType: "major",
+				bumpType:        "major",
+				expectedVersion: "1.0.0",
 			},
 		},
 		{
 			name: "Test Minor bump with Dry Run",
 			args: args{
-				dryRun:   true,
-				bumpType: "minor",
+				bumpType:        "minor",
+				expectedVersion: "0.2.0",
 			},
 		},
 		{
 			name: "Test Minor bump without Dry Run",
 			args: args{
-				dryRun:   false,
-				bumpType: "minor",
+				bumpType:        "minor",
+				expectedVersion: "0.2.0",
 			},
 		},
 		{
 			name: "Test Patch bump with Dry Run",
 			args: args{
-				dryRun:   true,
-				bumpType: "patch",
+				bumpType:        "patch",
+				expectedVersion: "0.1.1",
 			},
 		},
 		{
 			name: "Test Patch bump without Dry Run",
 			args: args{
-				dryRun:   false,
-				bumpType: "patch",
+				bumpType:        "patch",
+				expectedVersion: "0.1.1",
 			},
 		},
 	}
@@ -132,37 +135,54 @@ func TestRun(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(tt *testing.T) {
-			tt.Parallel()
+			//tt.Parallel()
 
 			ctx := context.New(tt.TempDir())
 
-			releaser := NewTestReleaser(tc.args.dryRun, ctx.RootDir, tc.args.bumpType)
+			// create the releaser without dry-run, to perform the git operations in the temp directory
+			dryRun := false
+			releaser := NewTestReleaser(dryRun, ctx.RootDir, tc.args.bumpType)
 
+			// we perform the bump from this current version
 			initVersion := "0.0.1"
-			nextVersion := "0.1.0"
+			// the current next development version in the version.go file,
+			// which will receive the next development version after the bump
+			nextDevelopmentVersion := "0.1.0"
+			vNextDevelopmentVersion := fmt.Sprintf("v%s", nextDevelopmentVersion)
 
 			// initialise project files
-			initialiseProject(tt, ctx, rootCtx, initVersion, nextVersion)
+			initialiseProject(tt, ctx, rootCtx, initVersion, nextDevelopmentVersion)
 
 			// init the git repository for testing
-			gitClient := git.New(ctx, releaser.branch, tc.args.dryRun)
+			gitClient := git.New(ctx, releaser.branch, false)
 			if err := gitClient.InitRepository(); err != nil {
 				tt.Fatalf("Error initializing git repository: %v", err)
 			}
 
-			if !tc.args.dryRun {
-				// we need to force the pre-run so that the version file is created
-				if err := releaser.PreRun(ctx); err != nil {
-					tt.Fatalf("Pre() error = %v", err)
-				}
+			// we need to force the pre-run so that the version file is created
+			if err := releaser.PreRun(ctx); err != nil {
+				tt.Fatalf("Pre() error = %v", err)
 			}
 
 			if err := releaser.Run(ctx); err != nil {
 				tt.Errorf("Run() error = %v", err)
 			}
 
-			if !tc.args.dryRun {
-				// assert the commit has been produced
+			// because we are using a test release manager, the skipRemoteOps is set to true
+			if !dryRun {
+				// assert the commits has been produced
+				output, err := gitClient.Log()
+				if err != nil {
+					tt.Fatalf("Error getting git log: %v", err)
+				}
+
+				if !strings.Contains(output, fmt.Sprintf("chore: use new version (%s) in modules and examples", vNextDevelopmentVersion)) {
+					tt.Errorf("Expected new version commit message not found: %s", output)
+				}
+				if !strings.Contains(output, fmt.Sprintf("chore: prepare for next %s development version cycle (%s)", tc.args.bumpType, tc.args.expectedVersion)) {
+					tt.Errorf("Expected next development version commit message not found: %s", output)
+				}
+
 				// assert the tags for the library and all the modules exist
 				// assert the next development version has been applied to the version.go file
 			}

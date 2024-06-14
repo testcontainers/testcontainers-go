@@ -161,8 +161,8 @@ func createVersionFile(t *testing.T, ctx context.Context, version string) {
 	}
 }
 
-func initialiseProject(t *testing.T, ctx context.Context, rootCtx context.Context, initVersion string, nextVersion string) {
-	createVersionFile(t, ctx, nextVersion)
+func initialiseProject(t *testing.T, ctx context.Context, rootCtx context.Context, initVersion string, nextDevelopmentVersion string) {
+	createVersionFile(t, ctx, nextDevelopmentVersion)
 	createBumpFiles(t, ctx, initVersion)
 	createMarkdownFiles(t, ctx)
 	createModFile(t, ctx)

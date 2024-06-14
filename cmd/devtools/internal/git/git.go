@@ -93,6 +93,32 @@ func (g *GitClient) Commit(msg string) error {
 	return g.Exec("commit", "-m", "'"+msg+"'")
 }
 
+func (g *GitClient) Log() (string, error) {
+	args := []string{
+		"log", "--color", "--graph", `--pretty=format:'%h -%d %s'`, "--abbrev-commit",
+	}
+
+	if g.dryRun {
+		fmt.Printf("/bin/bash -c 'git %s'\n", strings.Join(args, " "))
+		return "", nil
+	}
+
+	bashArgs := []string{"-c", "git " + strings.Join(args, " ")}
+
+	cmd := exec.Command("/bin/bash", bashArgs...)
+	cmd.Dir = g.ctx.RootDir
+
+	var outbuf, errbuf strings.Builder // or bytes.Buffer
+	cmd.Stdout = &outbuf
+	cmd.Stderr = &errbuf
+
+	if err := cmd.Run(); err != nil {
+		return errbuf.String(), fmt.Errorf("bash -c 'git %s' failed: %w", bashArgs, err)
+	}
+
+	return outbuf.String(), nil
+}
+
 func (g *GitClient) PushTags() error {
 	return g.Exec("push", "origin", "--tags")
 }
