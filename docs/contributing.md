@@ -8,7 +8,7 @@
     * follow the style, naming and structure conventions of the rest of the project.
     * make commits atomic and easy to merge.
     * when updating documentation, please see [our guidance for documentation contributions](contributing_docs.md).
-    * when updating the `go.mod` file, please run `make tidy-all` to ensure all modules are updated. Please be aware that the lint stage could fail if this is not done.
+    * when updating the `go.mod` file, please run `make tidy-all` to ensure all modules are updated. It will run `golangci-lint` with the configuration set in the root directory of the project. Please be aware that the lint stage could fail if this is not done.
     * apply format running `make lint`
         * For examples: `make -C examples lint`
         * For modules: `make -C modules lint`
