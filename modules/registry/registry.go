@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/registry"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -135,7 +135,7 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 		return fmt.Errorf("failed to get image auth: %w", err)
 	}
 
-	pushOpts := types.ImagePushOptions{
+	pushOpts := image.PushOptions{
 		All: true,
 	}
 
