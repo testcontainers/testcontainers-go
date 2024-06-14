@@ -168,53 +168,52 @@ func TestRun(t *testing.T) {
 				tt.Errorf("Run() error = %v", err)
 			}
 
-			// because we are using a test release manager, the skipRemoteOps is set to true
-			if !dryRun {
-				// assert the commits has been produced
-				output, err := gitClient.Log()
-				if err != nil {
-					tt.Fatalf("Error getting git log: %v", err)
-				}
+			// assert the commits has been produced
+			output, err := gitClient.Log()
+			if err != nil {
+				tt.Fatalf("Error getting git log: %v", err)
+			}
 
-				if !strings.Contains(output, fmt.Sprintf("chore: use new version (%s) in modules and examples", vNextDevelopmentVersion)) {
-					tt.Errorf("Expected new version commit message not found: %s", output)
-				}
-				if !strings.Contains(output, fmt.Sprintf("chore: prepare for next %s development version cycle (%s)", tc.args.bumpType, tc.args.expectedVersion)) {
-					tt.Errorf("Expected next development version commit message not found: %s", output)
-				}
+			if !strings.Contains(output, fmt.Sprintf("chore: use new version (%s) in modules and examples", vNextDevelopmentVersion)) {
+				tt.Errorf("Expected new version commit message not found: %s", output)
+			}
+			if !strings.Contains(output, fmt.Sprintf("chore: prepare for next %s development version cycle (%s)", tc.args.bumpType, tc.args.expectedVersion)) {
+				tt.Errorf("Expected next development version commit message not found: %s", output)
+			}
 
-				// assert the tags for the library and all the modules exist
-				output, err = gitClient.ListTags()
-				if err != nil {
-					tt.Fatalf("Error listing git tags: %v", err)
-				}
+			// assert the tags for the library and all the modules exist
+			output, err = gitClient.ListTags()
+			if err != nil {
+				tt.Fatalf("Error listing git tags: %v", err)
+			}
 
-				if !strings.Contains(output, vNextDevelopmentVersion) {
-					tt.Errorf("Expected core version tag not found: %s", output)
-				}
-				for _, module := range modules {
-					moduleTag := fmt.Sprintf("%s/%s/%s", "modules", module, vNextDevelopmentVersion)
-					if !strings.Contains(output, moduleTag) {
-						tt.Errorf("Expected module version tag not found: %s", output)
-					}
-				}
-				for _, example := range examples {
-					exampleTag := fmt.Sprintf("%s/%s/%s", "examples", example, vNextDevelopmentVersion)
-					if !strings.Contains(output, exampleTag) {
-						tt.Errorf("Expected example version tag not found: %s", output)
-					}
-				}
-
-				// assert the next development version has been applied to the version.go file
-				version, err := extractCurrentVersion(ctx)
-				if err != nil {
-					tt.Fatalf("Error extracting current version: %v", err)
-				}
-
-				if version != tc.args.expectedVersion {
-					tt.Errorf("Expected next development version not found: %s", version)
+			if !strings.Contains(output, vNextDevelopmentVersion) {
+				tt.Errorf("Expected core version tag not found: %s", output)
+			}
+			for _, module := range modules {
+				moduleTag := fmt.Sprintf("%s/%s/%s", "modules", module, vNextDevelopmentVersion)
+				if !strings.Contains(output, moduleTag) {
+					tt.Errorf("Expected module version tag not found: %s", output)
 				}
 			}
+			for _, example := range examples {
+				exampleTag := fmt.Sprintf("%s/%s/%s", "examples", example, vNextDevelopmentVersion)
+				if !strings.Contains(output, exampleTag) {
+					tt.Errorf("Expected example version tag not found: %s", output)
+				}
+			}
+
+			// assert the next development version has been applied to the version.go file
+			version, err := extractCurrentVersion(ctx)
+			if err != nil {
+				tt.Fatalf("Error extracting current version: %v", err)
+			}
+
+			if version != tc.args.expectedVersion {
+				tt.Errorf("Expected next development version not found: %s", version)
+			}
+
+			// because we are using a test release manager, the skipRemoteOps is set to true
 		})
 	}
 }
