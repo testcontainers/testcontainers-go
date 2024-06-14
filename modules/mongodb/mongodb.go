@@ -92,7 +92,7 @@ func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 						return err
 					}
 
-					cmd := eval("rs.initiate({ _id: replSetName, members: [ { _id: 0, host: '%s:27017' } ] })", ip)
+					cmd := eval("rs.initiate({ _id: '%s', members: [ { _id: 0, host: '%s:27017' } ] })", replSetName, ip)
 					return wait.ForExec(cmd).WaitUntilReady(ctx, c)
 				},
 			},
