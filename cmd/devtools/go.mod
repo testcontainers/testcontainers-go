@@ -2,6 +2,8 @@ module github.com/testcontainers/testcontainers-go/devtools
 
 go 1.21
 
+replace github.com/testcontainers/testcontainers-go => ../../
+
 require (
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
