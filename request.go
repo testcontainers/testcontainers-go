@@ -118,6 +118,10 @@ func (r *Request) BuildOptions() (types.ImageBuildOptions, error) {
 		buildOptions.Tags = []string{tag}
 	}
 
+	if !r.ShouldKeepBuiltImage() {
+		buildOptions.Labels = core.DefaultLabels(core.SessionID())
+	}
+
 	return buildOptions, nil
 }
 
