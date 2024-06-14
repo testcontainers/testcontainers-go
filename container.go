@@ -396,6 +396,10 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 		buildOptions.Tags = []string{tag}
 	}
 
+	if !c.ShouldKeepBuiltImage() {
+		buildOptions.Labels = core.DefaultLabels(core.SessionID())
+	}
+
 	return buildOptions, nil
 }
 
