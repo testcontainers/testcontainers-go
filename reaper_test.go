@@ -309,6 +309,12 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 }
 
 func Test_NewReaper(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
 	type cases struct {
 		name   string
 		req    ContainerRequest
@@ -588,6 +594,12 @@ func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
 // already running for the same session id by returning its container instance
 // instead.
 func TestReaper_ReuseRunning(t *testing.T) {
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	if tcConfig.RyukDisabled {
+		t.Skip("Ryuk is disabled, skipping test")
+	}
+
 	const concurrency = 64
 
 	timeout, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
