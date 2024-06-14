@@ -117,7 +117,7 @@ func run(ctx devcontext.Context, branch string, bumpType string, dryRun bool, sk
 			}
 
 			for _, module := range modules {
-				modulePath := fmt.Sprintf("%s/%s", directory, module)
+				modulePath := fmt.Sprintf("%s/%s/%s", repository, directory, module)
 				if err := hitGolangProxy(dryRun, modulePath, releaseVersion); err != nil {
 					return fmt.Errorf("error hitting the golang proxy for the module: %w", err)
 				}
