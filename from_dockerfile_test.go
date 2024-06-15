@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,7 +43,7 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, types.ImageRemoveOptions{
+		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
@@ -77,7 +78,7 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, types.ImageRemoveOptions{
+		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
@@ -112,7 +113,7 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, types.ImageRemoveOptions{
+		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})

@@ -18,6 +18,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -334,13 +335,13 @@ func TestContainerStateAfterTermination(t *testing.T) {
 func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	t.Run("if not built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := NewDockerClientWithOpts(ctx)
+		dockerClient, err := NewDockerClientWithOpts(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer client.Close()
+		defer dockerClient.Close()
 
-		container, err := GenericContainer(ctx, GenericContainerRequest{
+		ctr, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
 				Image: nginxAlpineImage,
@@ -353,11 +354,11 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = container.Terminate(ctx)
+		err = ctr.Terminate(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, _, err = client.ImageInspectWithRaw(ctx, nginxAlpineImage)
+		_, _, err = dockerClient.ImageInspectWithRaw(ctx, nginxAlpineImage)
 		if err != nil {
 			t.Fatal("nginx image should not have been removed")
 		}
@@ -365,11 +366,11 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 	t.Run("if built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		client, err := NewDockerClientWithOpts(ctx)
+		dockerClient, err := NewDockerClientWithOpts(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer client.Close()
+		defer dockerClient.Close()
 
 		req := ContainerRequest{
 			FromDockerfile: FromDockerfile{
@@ -378,7 +379,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 			ExposedPorts: []string{"6379/tcp"},
 			WaitingFor:   wait.ForLog("Ready to accept connections"),
 		}
-		container, err := GenericContainer(ctx, GenericContainerRequest{
+		ctr, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType:     providerType,
 			ContainerRequest: req,
 			Started:          true,
@@ -386,19 +387,19 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		containerID := container.GetContainerID()
-		resp, err := client.ContainerInspect(ctx, containerID)
+		containerID := ctr.GetContainerID()
+		resp, err := dockerClient.ContainerInspect(ctx, containerID)
 		if err != nil {
 			t.Fatal(err)
 		}
 		imageID := resp.Config.Image
 
-		err = container.Terminate(ctx)
+		err = ctr.Terminate(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		_, _, err = client.ImageInspectWithRaw(ctx, imageID)
+		_, _, err = dockerClient.ImageInspectWithRaw(ctx, imageID)
 		if err == nil {
 			t.Fatal("custom built image should have been removed", err)
 		}
@@ -1163,19 +1164,19 @@ func TestContainerWithTmpFs(t *testing.T) {
 		Tmpfs: map[string]string{"/testtmpfs": "rw"},
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, container)
+	terminateContainerOnEnd(t, ctx, ctr)
 
 	path := "/testtmpfs/test.file"
 
 	// exec_reader_example {
-	c, reader, err := container.Exec(ctx, []string{"ls", path})
+	c, reader, err := ctr.Exec(ctx, []string{"ls", path})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1194,7 +1195,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 	// }
 
 	// exec_example {
-	c, _, err = container.Exec(ctx, []string{"touch", path})
+	c, _, err = ctr.Exec(ctx, []string{"touch", path})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1203,7 +1204,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 	}
 	// }
 
-	c, _, err = container.Exec(ctx, []string{"ls", path})
+	c, _, err = ctr.Exec(ctx, []string{"ls", path})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1308,39 +1309,39 @@ func TestContainerWithCustomHostname(t *testing.T) {
 		Image:    nginxImage,
 		Hostname: hostname,
 	}
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, container)
+	terminateContainerOnEnd(t, ctx, ctr)
 
-	if actualHostname := readHostname(t, container.GetContainerID()); actualHostname != hostname {
+	if actualHostname := readHostname(t, ctr.GetContainerID()); actualHostname != hostname {
 		t.Fatalf("expected hostname %s, got %s", hostname, actualHostname)
 	}
 }
 
 func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
-	container, err := GenericContainer(context.Background(), GenericContainerRequest{
+	ctr, err := GenericContainer(context.Background(), GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			Image: nginxImage,
 		},
 		Started: true,
 	})
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, context.Background(), container)
+	terminateContainerOnEnd(t, context.Background(), ctr)
 
-	inspect, err := container.Inspect(context.Background())
+	inspect, err := ctr.Inspect(context.Background())
 	require.NoError(t, err)
 
 	assert.NotEmpty(t, inspect.ID)
 
-	require.NoError(t, container.Stop(context.Background(), nil))
+	require.NoError(t, ctr.Stop(context.Background(), nil))
 
 	// type assertion to ensure that the container is a DockerContainer
-	dc := container.(*DockerContainer)
+	dc := ctr.(*DockerContainer)
 
 	assert.Nil(t, dc.raw)
 }
@@ -1829,16 +1830,16 @@ func TestContainerWithUserID(t *testing.T) {
 		Cmd:        []string{"sh", "-c", "id -u"},
 		WaitingFor: wait.ForExit(),
 	}
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, container)
+	terminateContainerOnEnd(t, ctx, ctr)
 
-	r, err := container.Logs(ctx)
+	r, err := ctr.Logs(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1858,16 +1859,16 @@ func TestContainerWithNoUserID(t *testing.T) {
 		Cmd:        []string{"sh", "-c", "id -u"},
 		WaitingFor: wait.ForExit(),
 	}
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
 
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, container)
+	terminateContainerOnEnd(t, ctx, ctr)
 
-	r, err := container.Logs(ctx)
+	r, err := ctr.Logs(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2072,7 +2073,7 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			require.NoError(t, err, "inspect container should not fail")
 			containerImage := containerDetails.Image
 			t.Cleanup(func() {
-				_, _ = cli.ImageRemove(ctx, containerImage, types.ImageRemoveOptions{
+				_, _ = cli.ImageRemove(ctx, containerImage, image.RemoveOptions{
 					Force:         true,
 					PruneChildren: true,
 				})
@@ -2111,7 +2112,7 @@ func (f *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) (
 	return []types.Container{{}}, f.err
 }
 
-func (f *errMockCli) ImagePull(_ context.Context, _ string, _ types.ImagePullOptions) (io.ReadCloser, error) {
+func (f *errMockCli) ImagePull(_ context.Context, _ string, _ image.PullOptions) (io.ReadCloser, error) {
 	f.imagePullCount++
 	return io.NopCloser(&bytes.Buffer{}), f.err
 }
@@ -2285,7 +2286,7 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 			// give a chance to retry
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			_ = p.attemptToPullImage(ctx, "someTag", types.ImagePullOptions{})
+			_ = p.attemptToPullImage(ctx, "someTag", image.PullOptions{})
 
 			assert.Greater(t, m.imagePullCount, 0)
 			assert.Equal(t, tt.shouldRetry, m.imagePullCount > 1)

@@ -25,6 +25,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -171,12 +172,12 @@ func (c *DockerContainer) Inspect(ctx context.Context) (*types.ContainerJSON, er
 		return c.raw, nil
 	}
 
-	json, err := c.inspectRawContainer(ctx)
+	jsonRaw, err := c.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return json, nil
+	return jsonRaw, nil
 }
 
 // MappedPort gets externally mapped port for a container port
@@ -307,7 +308,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 	}
 
 	if c.imageWasBuilt && !c.keepBuiltImage {
-		_, err := c.provider.client.ImageRemove(ctx, c.Image, types.ImageRemoveOptions{
+		_, err := c.provider.client.ImageRemove(ctx, c.Image, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
@@ -1056,7 +1057,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if req.AlwaysPullImage {
 			shouldPullImage = true // If requested always attempt to pull image
 		} else {
-			image, _, err := p.client.ImageInspectWithRaw(ctx, imageName)
+			img, _, err := p.client.ImageInspectWithRaw(ctx, imageName)
 			if err != nil {
 				if client.IsErrNotFound(err) {
 					shouldPullImage = true
@@ -1064,13 +1065,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 					return nil, err
 				}
 			}
-			if platform != nil && (image.Architecture != platform.Architecture || image.Os != platform.OS) {
+			if platform != nil && (img.Architecture != platform.Architecture || img.Os != platform.OS) {
 				shouldPullImage = true
 			}
 		}
 
 		if shouldPullImage {
-			pullOpt := types.ImagePullOptions{
+			pullOpt := image.PullOptions{
 				Platform: req.ImagePlatform, // may be empty
 			}
 			if err := p.attemptToPullImage(ctx, imageName, pullOpt); err != nil {
@@ -1202,8 +1203,8 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 }
 
 func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string) (*types.Container, error) {
-	var container *types.Container
-	return container, backoff.Retry(func() error {
+	var ctr *types.Container
+	return ctr, backoff.Retry(func() error {
 		c, err := p.findContainerByName(ctx, name)
 		if err != nil {
 			if !errdefs.IsNotFound(err) && isPermanentClientError(err) {
@@ -1216,7 +1217,7 @@ func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string)
 			return fmt.Errorf("container %s not found", name)
 		}
 
-		container = c
+		ctr = c
 		return nil
 	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 }
@@ -1291,7 +1292,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 
 // attemptToPullImage tries to pull the image while respecting the ctx cancellations.
 // Besides, if the image cannot be pulled due to ErrorNotFound then no need to retry but terminate immediately.
-func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt types.ImagePullOptions) error {
+func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt image.PullOptions) error {
 	registry, imageAuth, err := DockerImageAuth(ctx, tag)
 	if err != nil {
 		p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, tag, err)
@@ -1377,15 +1378,15 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 	}
 
 	// infer from Docker host
-	url, err := url.Parse(p.client.DaemonHost())
+	daemonURL, err := url.Parse(p.client.DaemonHost())
 	if err != nil {
 		return "", err
 	}
 	defer p.Close()
 
-	switch url.Scheme {
+	switch daemonURL.Scheme {
 	case "http", "https", "tcp":
-		p.hostCache = url.Hostname()
+		p.hostCache = daemonURL.Hostname()
 	case "unix", "npipe":
 		if core.InAContainer() {
 			ip, err := p.GetGatewayIP(ctx)
@@ -1429,13 +1430,12 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	tcConfig := p.Config().Config
 
 	nc := types.NetworkCreate{
-		Driver:         req.Driver,
-		CheckDuplicate: req.CheckDuplicate,
-		Internal:       req.Internal,
-		EnableIPv6:     req.EnableIPv6,
-		Attachable:     req.Attachable,
-		Labels:         req.Labels,
-		IPAM:           req.IPAM,
+		Driver:     req.Driver,
+		Internal:   req.Internal,
+		EnableIPv6: req.EnableIPv6,
+		Attachable: req.Attachable,
+		Labels:     req.Labels,
+		IPAM:       req.IPAM,
 	}
 
 	sessionID := core.SessionID()
@@ -1510,9 +1510,9 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	}
 
 	var ip string
-	for _, config := range nw.IPAM.Config {
-		if config.Gateway != "" {
-			ip = config.Gateway
+	for _, cfg := range nw.IPAM.Config {
+		if cfg.Gateway != "" {
+			ip = cfg.Gateway
 			break
 		}
 	}
@@ -1566,38 +1566,38 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 		return nil, err
 	}
 
-	container := DockerContainer{}
+	ctr := DockerContainer{}
 
-	container.ID = response.ID
-	container.WaitingFor = nil
-	container.Image = response.Image
-	container.imageWasBuilt = false
+	ctr.ID = response.ID
+	ctr.WaitingFor = nil
+	ctr.Image = response.Image
+	ctr.imageWasBuilt = false
 
-	container.logger = provider.Logger
-	container.lifecycleHooks = []ContainerLifecycleHooks{
-		DefaultLoggingHook(container.logger),
+	ctr.logger = provider.Logger
+	ctr.lifecycleHooks = []ContainerLifecycleHooks{
+		DefaultLoggingHook(ctr.logger),
 	}
-	container.provider = provider
+	ctr.provider = provider
 
-	container.sessionID = core.SessionID()
-	container.consumers = []LogConsumer{}
-	container.isRunning = response.State == "running"
+	ctr.sessionID = core.SessionID()
+	ctr.consumers = []LogConsumer{}
+	ctr.isRunning = response.State == "running"
 
 	// the termination signal should be obtained from the reaper
-	container.terminationSignal = nil
+	ctr.terminationSignal = nil
 
 	// populate the raw representation of the container
-	_, err = container.inspectRawContainer(ctx)
+	_, err = ctr.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// the health status of the container, if any
-	if health := container.raw.State.Health; health != nil {
-		container.healthStatus = health.Status
+	if health := ctr.raw.State.Health; health != nil {
+		ctr.healthStatus = health.Status
 	}
 
-	return &container, nil
+	return &ctr, nil
 }
 
 // ListImages list images from the provider. If an image has multiple Tags, each tag is reported
@@ -1605,7 +1605,7 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 func (p *DockerProvider) ListImages(ctx context.Context) ([]ImageInfo, error) {
 	images := []ImageInfo{}
 
-	imageList, err := p.client.ImageList(ctx, types.ImageListOptions{})
+	imageList, err := p.client.ImageList(ctx, image.ListOptions{})
 	if err != nil {
 		return images, fmt.Errorf("listing images %w", err)
 	}
@@ -1647,8 +1647,8 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 }
 
 // PullImage pulls image from registry
-func (p *DockerProvider) PullImage(ctx context.Context, image string) error {
-	return p.attemptToPullImage(ctx, image, types.ImagePullOptions{})
+func (p *DockerProvider) PullImage(ctx context.Context, img string) error {
+	return p.attemptToPullImage(ctx, img, image.PullOptions{})
 }
 
 var permanentClientErrors = []func(error) bool{
