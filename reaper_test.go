@@ -36,7 +36,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 
 	ctx := context.Background()
 
-	container, err := New(ctx, Request{
+	ctr, err := New(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -45,7 +45,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	TerminateContainerOnEnd(t, ctx, container)
+	TerminateContainerOnEnd(t, ctx, ctr)
 
 	sessionID := core.SessionID()
 

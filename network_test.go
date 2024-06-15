@@ -24,7 +24,6 @@ func ExampleNewNetwork() {
 	ctx := context.Background()
 
 	net, err := testcontainers.NewNetwork(ctx,
-		tcnetwork.WithCheckDuplicate(),
 		tcnetwork.WithAttachable(),
 		// Makes the network internal only, meaning the host machine cannot access it.
 		// Remove or use `network.WithDriver("bridge")` to change the network's mode.
@@ -97,7 +96,6 @@ func TestNewNetwork_withOptions(t *testing.T) {
 		},
 	}
 	net, err := testcontainers.NewNetwork(ctx,
-		tcnetwork.WithCheckDuplicate(),
 		tcnetwork.WithIPAM(&ipamConfig),
 		tcnetwork.WithAttachable(),
 		tcnetwork.WithDriver("bridge"),

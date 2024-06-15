@@ -10,7 +10,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 
-	"github.com/testcontainers/testcontainers-go/image"
+	tcimage "github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -248,9 +248,9 @@ func ExampleNew_withSubstitutors() {
 	ctx := context.Background()
 
 	// applyImageSubstitutors {
-	container, err := New(ctx, Request{
+	ctr, err := New(ctx, Request{
 		Image:             "alpine:latest",
-		ImageSubstitutors: []image.Substitutor{image.DockerSubstitutor{}},
+		ImageSubstitutors: []tcimage.Substitutor{tcimage.DockerSubstitutor{}},
 		Started:           true,
 	})
 	// }
@@ -259,13 +259,13 @@ func ExampleNew_withSubstitutors() {
 	}
 
 	defer func() {
-		err := container.Terminate(ctx)
+		err := ctr.Terminate(ctx)
 		if err != nil {
 			log.Fatalf("could not terminate container: %v", err)
 		}
 	}()
 
-	fmt.Println(container.Image)
+	fmt.Println(ctr.Image)
 
 	// Output: docker.io/alpine:latest
 }

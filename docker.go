@@ -14,6 +14,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/go-connections/nat"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -54,38 +55,38 @@ type DockerContainer struct {
 
 // containerFromDockerResponse builds a Docker container struct from the response of the Docker API
 func containerFromDockerResponse(ctx context.Context, response types.Container) (*DockerContainer, error) {
-	container := DockerContainer{}
+	ctr := DockerContainer{}
 
-	container.ID = response.ID
-	container.WaitingFor = nil
-	container.Image = response.Image
-	container.imageWasBuilt = false
+	ctr.ID = response.ID
+	ctr.WaitingFor = nil
+	ctr.Image = response.Image
+	ctr.imageWasBuilt = false
 
 	// TODO define a logger for the library
-	// container.logger = provider.Logger
-	container.lifecycleHooks = []LifecycleHooks{
-		DefaultLoggingHook(container.logger),
+	// ctr.logger = provider.Logger
+	ctr.lifecycleHooks = []LifecycleHooks{
+		DefaultLoggingHook(ctr.logger),
 	}
 
-	container.logger = log.StandardLogger() // assign the standard logger to the container
-	container.sessionID = core.SessionID()
-	container.isRunning = response.State == "running"
+	ctr.logger = log.StandardLogger() // assign the standard logger to the container
+	ctr.sessionID = core.SessionID()
+	ctr.isRunning = response.State == "running"
 
 	// the termination signal should be obtained from the reaper
-	container.terminationSignal = nil
+	ctr.terminationSignal = nil
 
 	// populate the raw representation of the container
-	_, err := container.inspectRawContainer(ctx)
+	_, err := ctr.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// the health status of the container, if any
-	if health := container.raw.State.Health; health != nil {
-		container.healthStatus = health.Status
+	if health := ctr.raw.State.Health; health != nil {
+		ctr.healthStatus = health.Status
 	}
 
-	return &container, nil
+	return &ctr, nil
 }
 
 // ContainerIP gets the IP address of the primary network within the container.
@@ -332,12 +333,12 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 }
 
 func (c *DockerContainer) GetImage() string {
-	json, err := c.inspectRawContainer(context.Background())
+	jsonRaw, err := c.inspectRawContainer(context.Background())
 	if err != nil {
 		return ""
 	}
 
-	return json.Config.Image
+	return jsonRaw.Config.Image
 }
 
 // Host gets host (ip or name) of the docker daemon where the container port is exposed
@@ -357,12 +358,12 @@ func (c *DockerContainer) Inspect(ctx context.Context) (*types.ContainerJSON, er
 		return c.raw, nil
 	}
 
-	json, err := c.inspectRawContainer(ctx)
+	jsonRaw, err := c.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return json, nil
+	return jsonRaw, nil
 }
 
 // update container raw info
@@ -682,7 +683,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 	}
 
 	if c.imageWasBuilt && !c.keepBuiltImage {
-		_, err := cli.ImageRemove(ctx, c.Image, types.ImageRemoveOptions{
+		_, err := cli.ImageRemove(ctx, c.Image, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})

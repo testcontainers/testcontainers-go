@@ -351,8 +351,8 @@ func (s errorSubstitutor) Description() string {
 }
 
 // Substitute returns the original image, but returns an error
-func (s errorSubstitutor) Substitute(image string) (string, error) {
-	return image, errSubstitution
+func (s errorSubstitutor) Substitute(img string) (string, error) {
+	return img, errSubstitution
 }
 
 func TestImageSubstitutors(t *testing.T) {
@@ -398,7 +398,7 @@ func TestImageSubstitutors(t *testing.T) {
 				Started:           true,
 			}
 
-			container, err := testcontainers.New(ctx, req)
+			ctr, err := testcontainers.New(ctx, req)
 			if test.expectedError != nil {
 				require.ErrorIs(t, err, test.expectedError)
 				return
@@ -408,10 +408,10 @@ func TestImageSubstitutors(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer func() {
-				testcontainers.TerminateContainerOnEnd(t, ctx, container)
+				testcontainers.TerminateContainerOnEnd(t, ctx, ctr)
 			}()
 
-			assert.Equal(t, test.expectedImage, container.Image)
+			assert.Equal(t, test.expectedImage, ctr.Image)
 		})
 	}
 }
@@ -431,18 +431,18 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 				WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 				Started:      true,
 			}
-			container, err := testcontainers.New(ctx, req)
+			ctr, err := testcontainers.New(ctx, req)
 			if err != nil {
 				t.Fatalf("could not start container: %v", err)
 			}
 			// mappedPort {
-			port, err := container.MappedPort(ctx, nginxDefaultPort)
+			port, err := ctr.MappedPort(ctx, nginxDefaultPort)
 			// }
 			if err != nil {
 				t.Fatalf("could not get mapped port: %v", err)
 			}
 
-			testcontainers.TerminateContainerOnEnd(t, ctx, container)
+			testcontainers.TerminateContainerOnEnd(t, ctx, ctr)
 
 			t.Logf("Parallel container [iteration_%d] listening on %d\n", i, port.Int())
 		})

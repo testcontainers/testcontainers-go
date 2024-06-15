@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 
 	"github.com/testcontainers/testcontainers-go/auth"
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -16,7 +16,7 @@ import (
 
 // Pull tries to pull the image while respecting the ctx cancellations.
 // Besides, if the image cannot be pulled due to ErrorNotFound then no need to retry but terminate immediately.
-func Pull(ctx context.Context, tag string, logger log.Logging, pullOpt types.ImagePullOptions) error {
+func Pull(ctx context.Context, tag string, logger log.Logging, pullOpt image.PullOptions) error {
 	registry, imageAuth, err := auth.ForDockerImage(ctx, tag)
 	if err != nil {
 		logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, tag, err)

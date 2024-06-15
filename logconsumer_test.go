@@ -361,13 +361,13 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 		WaitingFor: wait.ForExit(),
 		Started:    true,
 	}
-	container, err := New(ctx, req)
+	ctr, err := New(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	TerminateContainerOnEnd(t, ctx, container)
+	TerminateContainerOnEnd(t, ctx, ctr)
 
-	r, err := container.Logs(ctx)
+	r, err := ctr.Logs(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -21,7 +21,7 @@ import (
 func TestNewAttachedToNewNetwork(t *testing.T) {
 	ctx := context.Background()
 
-	newNetwork, err := testcontainers.NewNetwork(ctx, tcnetwork.WithCheckDuplicate())
+	newNetwork, err := testcontainers.NewNetwork(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func TestNewAttachedToNewNetwork(t *testing.T) {
 func TestContainerIPs(t *testing.T) {
 	ctx := context.Background()
 
-	newNetwork, err := testcontainers.NewNetwork(ctx, tcnetwork.WithCheckDuplicate())
+	newNetwork, err := testcontainers.NewNetwork(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +182,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 func TestMultipleContainersInTheNewNetwork(t *testing.T) {
 	ctx := context.Background()
 
-	net, err := testcontainers.NewNetwork(ctx, tcnetwork.WithCheckDuplicate(), tcnetwork.WithDriver("bridge"))
+	net, err := testcontainers.NewNetwork(ctx, tcnetwork.WithDriver("bridge"))
 	if err != nil {
 		t.Fatal("cannot create network")
 	}
@@ -235,7 +235,7 @@ func TestMultipleContainersInTheNewNetwork(t *testing.T) {
 
 func TestWithNetwork(t *testing.T) {
 	// first create the network to be reused
-	nw, err := testcontainers.NewNetwork(context.Background(), tcnetwork.WithCheckDuplicate(), tcnetwork.WithLabels(map[string]string{"network-type": "unique"}))
+	nw, err := testcontainers.NewNetwork(context.Background(), tcnetwork.WithLabels(map[string]string{"network-type": "unique"}))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, nw.Remove(context.Background()))

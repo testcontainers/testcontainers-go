@@ -405,14 +405,14 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 		Logger:     &arrayOfLinesLogger,
 	}
 
-	container, err := New(ctx, req)
+	ctr, err := New(ctx, req)
 	// it should fail because the waiting for condition is not met
 	if err == nil {
 		t.Fatal(err)
 	}
-	TerminateContainerOnEnd(t, ctx, container)
+	TerminateContainerOnEnd(t, ctx, ctr)
 
-	containerLogs, err := container.Logs(ctx)
+	containerLogs, err := ctr.Logs(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

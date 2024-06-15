@@ -62,14 +62,13 @@ func NewNetwork(ctx context.Context, opts ...tcnetwork.Customizer) (*DockerNetwo
 	}()
 
 	req := corenetwork.Request{
-		Driver:         nc.Driver,
-		CheckDuplicate: nc.CheckDuplicate, //nolint:staticcheck
-		Internal:       nc.Internal,
-		EnableIPv6:     nc.EnableIPv6,
-		Name:           uuid.NewString(),
-		Labels:         nc.Labels,
-		Attachable:     nc.Attachable,
-		IPAM:           nc.IPAM,
+		Driver:     nc.Driver,
+		Internal:   nc.Internal,
+		EnableIPv6: nc.EnableIPv6,
+		Name:       uuid.NewString(),
+		Labels:     nc.Labels,
+		Attachable: nc.Attachable,
+		IPAM:       nc.IPAM,
 	}
 
 	response, err := corenetwork.New(ctx, req)

@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 
 	"github.com/docker/docker/client"
@@ -200,7 +201,7 @@ func newContainer(ctx context.Context, req Request) (*DockerContainer, error) {
 		if req.AlwaysPullImage {
 			shouldPullImage = true // If requested always attempt to pull image
 		} else {
-			image, _, err := cli.ImageInspectWithRaw(ctx, imageName)
+			img, _, err := cli.ImageInspectWithRaw(ctx, imageName)
 			if err != nil {
 				if client.IsErrNotFound(err) {
 					shouldPullImage = true
@@ -208,13 +209,13 @@ func newContainer(ctx context.Context, req Request) (*DockerContainer, error) {
 					return nil, err
 				}
 			}
-			if platform != nil && (image.Architecture != platform.Architecture || image.Os != platform.OS) {
+			if platform != nil && (img.Architecture != platform.Architecture || img.Os != platform.OS) {
 				shouldPullImage = true
 			}
 		}
 
 		if shouldPullImage {
-			pullOpt := types.ImagePullOptions{
+			pullOpt := image.PullOptions{
 				Platform: req.ImagePlatform, // may be empty
 			}
 			if err := tcimage.Pull(ctx, imageName, req.Logger, pullOpt); err != nil {
@@ -393,8 +394,8 @@ func reuseOrCreateContainer(ctx context.Context, req Request) (*DockerContainer,
 }
 
 func waitContainerCreation(ctx context.Context, name string) (*types.Container, error) {
-	var container *types.Container
-	return container, backoff.Retry(func() error {
+	var ctr *types.Container
+	return ctr, backoff.Retry(func() error {
 		c, err := findContainerByName(ctx, name)
 		if err != nil {
 			if !errdefs.IsNotFound(err) && core.IsPermanentClientError(err) {
@@ -407,7 +408,7 @@ func waitContainerCreation(ctx context.Context, name string) (*types.Container, 
 			return fmt.Errorf("container %s not found", name)
 		}
 
-		container = c
+		ctr = c
 		return nil
 	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 }

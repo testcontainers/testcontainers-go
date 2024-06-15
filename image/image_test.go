@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	tclog "github.com/testcontainers/testcontainers-go/log"
@@ -17,7 +17,7 @@ func TestList(t *testing.T) {
 
 	imageName := "redis:latest"
 
-	err := Pull(context.Background(), imageName, tclog.StandardLogger(), types.ImagePullOptions{})
+	err := Pull(context.Background(), imageName, tclog.StandardLogger(), image.PullOptions{})
 	if err != nil {
 		t.Fatalf("pulling image %v", err)
 	}
@@ -46,7 +46,7 @@ func TestSave(t *testing.T) {
 
 	imageName := "redis:latest"
 
-	err := Pull(context.Background(), imageName, tclog.StandardLogger(), types.ImagePullOptions{})
+	err := Pull(context.Background(), imageName, tclog.StandardLogger(), image.PullOptions{})
 	if err != nil {
 		t.Fatalf("pulling image %v", err)
 	}

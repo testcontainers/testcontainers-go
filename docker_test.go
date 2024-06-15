@@ -304,7 +304,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	t.Run("if not built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		dockerClient, err := core.NewClient(ctx)
+		dockerClient, err := NewDockerClientWithOpts(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -332,7 +332,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 	t.Run("if built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
-		dockerClient, err := core.NewClient(ctx)
+		dockerClient, err := NewDockerClientWithOpts(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1470,7 +1470,7 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			// give a chance to retry
 			ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 			defer cancel()
-			_, _ = image.Build(ctx, &Request{})
+			_, _ = tcimage.Build(ctx, &Request{})
 
 			assert.Positive(t, m.imageBuildCount)
 			assert.Equal(t, tt.shouldRetry, m.imageBuildCount > 1)

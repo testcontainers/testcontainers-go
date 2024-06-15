@@ -21,8 +21,8 @@ const (
 	localstackHostEnvVar   = "LOCALSTACK_HOST"
 )
 
-func isLegacyMode(image string) bool {
-	parts := strings.Split(image, ":")
+func isLegacyMode(img string) bool {
+	parts := strings.Split(img, ":")
 	version := parts[len(parts)-1]
 
 	if version == "latest" {

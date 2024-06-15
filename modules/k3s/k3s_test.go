@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kwait "k8s.io/apimachinery/pkg/util/wait"
@@ -55,7 +55,7 @@ func TestLoadImages(t *testing.T) {
 	}
 
 	// ensure nginx image is available locally
-	err = tcimage.Pull(ctx, "nginx", tclog.NewTestLogger(t), types.ImagePullOptions{})
+	err = tcimage.Pull(ctx, "nginx", tclog.NewTestLogger(t), image.PullOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
@@ -21,7 +22,6 @@ import (
 	tcimage "github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	tcnetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
-	"github.com/testcontainers/testcontainers-go/log"
 	tclog "github.com/testcontainers/testcontainers-go/log"
 	tcmount "github.com/testcontainers/testcontainers-go/mount"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -29,7 +29,7 @@ import (
 
 type Request struct {
 	FromDockerfile
-	Logger                  log.Logging
+	Logger                  tclog.Logging
 	HostAccessPorts         []int
 	Image                   string
 	ImageSubstitutors       []tcimage.Substitutor
@@ -56,7 +56,7 @@ type Request struct {
 	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 	LifecycleHooks          []LifecycleHooks                           // define hooks to be executed during container lifecycle
-	LogConsumerCfg          *log.ConsumerConfig                        // define the configuration for the log producer and its log consumer to follow the logs
+	LogConsumerCfg          *tclog.ConsumerConfig                      // define the configuration for the log producer and its log consumer to follow the logs
 	Started                 bool                                       // flag to indicate if the container is started after created
 	Reuse                   bool                                       // Experimental. flag to indicate if the container should be reused
 }
@@ -267,21 +267,21 @@ func (r *Request) preCreateContainerHook(ctx context.Context, dockerInput *conta
 		}
 		defer cli.Close()
 
-		image, _, err := cli.ImageInspectWithRaw(ctx, dockerInput.Image)
+		img, _, err := cli.ImageInspectWithRaw(ctx, dockerInput.Image)
 		if err != nil && client.IsErrNotFound(err) {
 			// pull the image in order to have it available for inspection
-			if pullErr := tcimage.Pull(ctx, dockerInput.Image, tclog.StandardLogger(), types.ImagePullOptions{}); pullErr != nil {
+			if pullErr := tcimage.Pull(ctx, dockerInput.Image, tclog.StandardLogger(), image.PullOptions{}); pullErr != nil {
 				return fmt.Errorf("error pulling image %s: %w", dockerInput.Image, pullErr)
 			}
 
 			// try to inspect the image again
-			image, _, err = cli.ImageInspectWithRaw(ctx, dockerInput.Image)
+			img, _, err = cli.ImageInspectWithRaw(ctx, dockerInput.Image)
 		}
 		if err != nil {
 			return err
 		}
 
-		for p := range image.Config.ExposedPorts {
+		for p := range img.Config.ExposedPorts {
 			exposedPorts = append(exposedPorts, string(p))
 		}
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
@@ -20,7 +20,7 @@ func List(ctx context.Context) ([]Info, error) {
 	}
 	defer cli.Close()
 
-	imageList, err := cli.ImageList(ctx, types.ImageListOptions{})
+	imageList, err := cli.ImageList(ctx, image.ListOptions{})
 	if err != nil {
 		return images, fmt.Errorf("listing images %w", err)
 	}

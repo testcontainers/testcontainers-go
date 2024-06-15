@@ -29,6 +29,7 @@ func WithAttachable() CustomizeOption {
 }
 
 // WithCheckDuplicate allows to check if a network with the same name already exists.
+// Deprecated: CheckDuplicate is deprecated since API v1.44, but it defaults to true when sent by the client package to older daemons.
 func WithCheckDuplicate() CustomizeOption {
 	return func(original *types.NetworkCreate) error {
 		//nolint:staticcheck

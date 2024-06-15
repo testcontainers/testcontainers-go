@@ -25,13 +25,13 @@ func TestSubstituteBuiltImage(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		json, err := c.Inspect(context.Background())
+		jsonRaw, err := c.Inspect(context.Background())
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if json.Config.Image != "my-registry/my-repo:my-image" {
-			t.Errorf("expected my-registry/my-repo:my-image, got %s", json.Config.Image)
+		if jsonRaw.Config.Image != "my-registry/my-repo:my-image" {
+			t.Errorf("expected my-registry/my-repo:my-image, got %s", jsonRaw.Config.Image)
 		}
 	})
 }

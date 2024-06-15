@@ -30,7 +30,7 @@ func TestCopyFileInTheRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	container, err := testcontainers.New(ctx, testcontainers.Request{
+	ctr, err := testcontainers.New(ctx, testcontainers.Request{
 		Image: "docker.io/bash",
 		Files: []testcontainers.ContainerFile{
 			{
@@ -47,7 +47,7 @@ func TestCopyFileInTheRequest(t *testing.T) {
 	// }
 
 	require.NoError(t, err)
-	require.NoError(t, container.Terminate(ctx))
+	require.NoError(t, ctr.Terminate(ctx))
 }
 
 func TestCopyFileToRunningContainer(t *testing.T) {
@@ -65,7 +65,7 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	container, err := testcontainers.New(ctx, testcontainers.Request{
+	ctr, err := testcontainers.New(ctx, testcontainers.Request{
 		Image: "docker.io/bash:5.2.26",
 		Files: []testcontainers.ContainerFile{
 			{
@@ -81,16 +81,16 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = container.CopyFileToContainer(ctx, helloPath, "/scripts/hello.sh", 0o700)
+	err = ctr.CopyFileToContainer(ctx, helloPath, "/scripts/hello.sh", 0o700)
 	// }
 
 	require.NoError(t, err)
 
 	// Give some time to the wait script to catch the hello script being created
-	err = wait.ForLog("done").WithStartupTimeout(2*time.Second).WaitUntilReady(ctx, container)
+	err = wait.ForLog("done").WithStartupTimeout(2*time.Second).WaitUntilReady(ctx, ctr)
 	require.NoError(t, err)
 
-	require.NoError(t, container.Terminate(ctx))
+	require.NoError(t, ctr.Terminate(ctx))
 }
 
 func TestCopyDirectoryToContainer(t *testing.T) {
@@ -104,7 +104,7 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	container, err := testcontainers.New(ctx, testcontainers.Request{
+	ctr, err := testcontainers.New(ctx, testcontainers.Request{
 		Image: "docker.io/bash",
 		Files: []testcontainers.ContainerFile{
 			{
@@ -123,7 +123,7 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 	// }
 
 	require.NoError(t, err)
-	require.NoError(t, container.Terminate(ctx))
+	require.NoError(t, ctr.Terminate(ctx))
 }
 
 func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
@@ -140,7 +140,7 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	container, err := testcontainers.New(ctx, testcontainers.Request{
+	ctr, err := testcontainers.New(ctx, testcontainers.Request{
 		Image: "docker.io/bash",
 		Files: []testcontainers.ContainerFile{
 			{
@@ -157,20 +157,20 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 	}
 
 	// as the container is started, we can create the directory first
-	_, _, err = container.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
+	_, _, err = ctr.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// because the container path is a directory, it will use the copy dir method as fallback
-	err = container.CopyFileToContainer(ctx, dataDirectory, "/scripts", 0o700)
+	err = ctr.CopyFileToContainer(ctx, dataDirectory, "/scripts", 0o700)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// }
 
 	require.NoError(t, err)
-	require.NoError(t, container.Terminate(ctx))
+	require.NoError(t, ctr.Terminate(ctx))
 }
 
 func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
@@ -188,7 +188,7 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	container, err := testcontainers.New(ctx, testcontainers.Request{
+	ctr, err := testcontainers.New(ctx, testcontainers.Request{
 		Image: "docker.io/bash",
 		Files: []testcontainers.ContainerFile{
 			{
@@ -205,19 +205,19 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 	}
 
 	// as the container is started, we can create the directory first
-	_, _, err = container.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
+	_, _, err = ctr.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = container.CopyDirToContainer(ctx, dataDirectory, "/scripts", 0o700)
+	err = ctr.CopyDirToContainer(ctx, dataDirectory, "/scripts", 0o700)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// }
 
 	require.NoError(t, err)
-	require.NoError(t, container.Terminate(ctx))
+	require.NoError(t, ctr.Terminate(ctx))
 }
 
 func TestDockerContainerCopyFileToContainer(t *testing.T) {
