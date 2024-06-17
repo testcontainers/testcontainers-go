@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -46,6 +47,11 @@ type DockerContainer struct {
 	terminationSignal chan bool
 	keepBuiltImage    bool
 	healthStatus      string // container health status, will default to healthStatusNone if no healthcheck is present
+
+	// logProductionWaitGroup is used to signal when the log production has stopped.
+	// This allows stopLogProduction to safely set logProductionStop to nil.
+	// See simplification in https://go.dev/play/p/x0pOElF2Vjf
+	logProductionWaitGroup sync.WaitGroup
 
 	logProductionStop chan struct{}
 

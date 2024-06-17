@@ -28,13 +28,8 @@ func (c *DockerContainer) GetContainerID() string {
 // Use functional option WithLogProductionTimeout() to override default timeout. If it's
 // lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
 func (c *DockerContainer) StartLogProduction(ctx context.Context, logConfig log.ConsumerConfig) error {
-	{
-		if c.logProductionStop != nil {
-			return errors.New("log production already started")
-		}
-
-		c.logProductionStop = make(chan struct{})
-	}
+	c.logProductionStop = make(chan struct{}, 1) // buffered channel to avoid blocking
+	c.logProductionWaitGroup.Add(1)
 
 	for _, opt := range logConfig.Opts {
 		opt(c)
@@ -60,6 +55,7 @@ func (c *DockerContainer) StartLogProduction(ctx context.Context, logConfig log.
 	go func() {
 		defer func() {
 			close(c.logProductionError)
+			c.logProductionWaitGroup.Done()
 		}()
 
 		since := ""
@@ -159,14 +155,12 @@ func (c *DockerContainer) GetLogProductionErrorChannel() <-chan error {
 // StopLogProduction will stop the concurrent process that is reading logs
 // and sending them to each added LogConsumer
 func (c *DockerContainer) StopLogProduction() error {
-	if c.logProductionStop != nil {
-		close(c.logProductionStop)
+	// signal the log production to stop
+	c.logProductionStop <- struct{}{}
 
-		// Set c.logProductionStop to nil so that it can be started again.
-		c.logProductionStop = nil
-		return <-c.logProductionError
-	}
-	return nil
+	c.logProductionWaitGroup.Wait()
+
+	return <-c.logProductionError
 }
 
 func (c *DockerContainer) WithLogProductionTimeout(timeout time.Duration) {

@@ -601,7 +601,7 @@ type FooLogConsumer struct {
 	LogChannel chan string
 }
 
-func (c FooLogConsumer) Accept(rawLog Log) {
+func (c FooLogConsumer) Accept(rawLog log.Log) {
 	log := string(rawLog.Content)
 	c.LogChannel <- log
 }
@@ -616,13 +616,11 @@ func TestRestartContainerWithLogConsumer(t *testing.T) {
 	logConsumer := NewFooLogConsumer()
 
 	ctx := context.Background()
-	container, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			Image:           "hello-world",
-			AlwaysPullImage: true,
-			LogConsumerCfg: &LogConsumerConfig{
-				Consumers: []LogConsumer{logConsumer},
-			},
+	container, err := New(ctx, Request{
+		Image:           "hello-world",
+		AlwaysPullImage: true,
+		LogConsumerCfg: &log.ConsumerConfig{
+			Consumer: logConsumer,
 		},
 		Started: false,
 	})
