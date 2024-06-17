@@ -2176,7 +2176,7 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			defer cancel()
 			_, _ = p.BuildImage(ctx, &ContainerRequest{})
 
-			assert.Greater(t, m.imageBuildCount, 0)
+			assert.Positive(t, m.imageBuildCount)
 			assert.Equal(t, tt.shouldRetry, m.imageBuildCount > 1)
 		})
 	}
@@ -2227,7 +2227,7 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 			defer cancel()
 			_, _ = p.waitContainerCreation(ctx, "someID")
 
-			assert.Greater(t, m.containerListCount, 0)
+			assert.Positive(t, m.containerListCount)
 			assert.Equal(t, tt.shouldRetry, m.containerListCount > 1)
 		})
 	}
@@ -2288,7 +2288,7 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 			defer cancel()
 			_ = p.attemptToPullImage(ctx, "someTag", image.PullOptions{})
 
-			assert.Greater(t, m.imagePullCount, 0)
+			assert.Positive(t, m.imagePullCount)
 			assert.Equal(t, tt.shouldRetry, m.imagePullCount > 1)
 		})
 	}
