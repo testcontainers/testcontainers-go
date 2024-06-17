@@ -47,6 +47,6 @@ tools:
 .PHONY: test-tools
 test-tools: $(GOBIN)/gotestsum
 
-.PHONY: tools-tidy
-tools-tidy:
+.PHONY: tidy
+tidy:
 	go mod tidy

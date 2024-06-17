@@ -25,7 +25,7 @@ func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	nw, err := tcnetwork.New(ctx, tcnetwork.WithCheckDuplicate())
+	nw, err := tcnetwork.New(ctx)
 	require.NoError(t, err)
 
 	nwName := nw.Name

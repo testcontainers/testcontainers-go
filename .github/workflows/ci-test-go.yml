@@ -91,7 +91,7 @@ jobs:
 
       - name: modTidy
         working-directory: ./${{ inputs.project-directory }}
-        run: make tools-tidy
+        run: make tidy
 
       - name: ensure compilation
         working-directory: ./${{ inputs.project-directory }}

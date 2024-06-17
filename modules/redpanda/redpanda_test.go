@@ -463,7 +463,7 @@ func TestRedpandaListener_Simple(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Create network
-	rpNetwork, err := network.New(ctx, network.WithCheckDuplicate())
+	rpNetwork, err := network.New(ctx)
 	require.NoError(t, err)
 
 	// 2. Start Redpanda container
@@ -537,7 +537,7 @@ func TestRedpandaListener_InvalidPort(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Create network
-	RPNetwork, err := network.New(ctx, network.WithCheckDuplicate())
+	RPNetwork, err := network.New(ctx)
 	require.NoError(t, err)
 
 	// 2. Attempt Start Redpanda container

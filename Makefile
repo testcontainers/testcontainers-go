@@ -6,12 +6,13 @@ test-all: tools test-tools test-unit
 .PHONY: test-examples
 test-examples:
 	@echo "Running example tests..."
-	make -C examples test
+	$(MAKE) -C examples test
 
 .PHONY: tidy-all
 tidy-all:
-	make -C examples tidy-examples
-	make -C modules tidy-modules
+	$(MAKE) tidy
+	$(MAKE) -C examples tidy-examples
+	$(MAKE) -C modules tidy-modules
 
 ## -------------------------------------
 
