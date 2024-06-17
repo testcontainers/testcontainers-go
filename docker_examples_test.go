@@ -196,7 +196,6 @@ func ExampleNew_withNetwork() {
 	ctx := context.Background()
 
 	net, err := NewNetwork(ctx,
-		network.WithCheckDuplicate(),
 		network.WithAttachable(),
 		// Makes the network internal only, meaning the host machine cannot access it.
 		// Remove or use `network.WithDriver("bridge")` to change the network's mode.
