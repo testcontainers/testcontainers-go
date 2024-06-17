@@ -19,6 +19,10 @@ var ReleaseCmd = &cobra.Command{
 If the dry-run flag is set, it will be run in dry-run mode, which will print the commands that would be executed, without actually
 executing them.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := parseBumpType(bumpType); err != nil {
+			return err
+		}
+
 		ctx, err := context.GetRootContext()
 		if err != nil {
 			return err
@@ -38,5 +42,5 @@ executing them.`,
 
 func init() {
 	ReleaseCmd.Flags().BoolVarP(&dryRun, dryRunFlag, "d", false, "If true, the release will be a dry-run and no changes will be made to the repository")
-	ReleaseCmd.Flags().StringVarP(&bumpType, bumpTypeFlag, "B", "minor", "The type of bump to perform. Can be 'major', 'minor', or 'patch'. Default is 'minor'")
+	ReleaseCmd.Flags().StringVarP(&bumpType, bumpTypeFlag, "B", "minor", "The type of bump to perform. "+bumpTypeInfoMsg)
 }
