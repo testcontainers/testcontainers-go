@@ -5,7 +5,7 @@ name: Main pipeline
 on:
   push:
     branches:
-      - main
+      - v1
     paths-ignore:
       - '.vscode/**'
       - 'mkdocs.yml'
