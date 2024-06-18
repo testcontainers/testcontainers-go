@@ -139,7 +139,7 @@ func newReaper(ctx context.Context, sessionID string) (*Reaper, error) {
 	}
 	reaper.Container = c
 
-	endpoint, err := c.PortEndpoint(ctx, "8080", "")
+	endpoint, err := c.PortEndpoint(ctx, reaperListeningPort, "")
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +311,7 @@ func reaperContainerNameFromSessionID(sessionID string) string {
 // reuseReaperContainer constructs a Reaper from an already running reaper
 // DockerContainer.
 func reuseReaperContainer(ctx context.Context, sessionID string, reaperContainer *DockerContainer) (*Reaper, error) {
-	endpoint, err := reaperContainer.PortEndpoint(ctx, reaperListeningPort, "http")
+	endpoint, err := reaperContainer.PortEndpoint(ctx, reaperListeningPort, "")
 	if err != nil {
 		return nil, err
 	}
