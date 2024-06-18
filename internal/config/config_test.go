@@ -552,6 +552,14 @@ func TestMustWrite(t *testing.T) {
 		HubImageNamePrefix:      "registry.mycompany.com/mirror",
 	}
 
+	// variables that define the current configuration
+	t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
+	t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", "registry.mycompany.com/mirror")
+	t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
+	t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
+	t.Setenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT", "13s")
+	t.Setenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT", "12s")
+
 	tmpDir := t.TempDir()
 
 	c.MustWrite(tmpDir + "/.testcontainers.properties")
