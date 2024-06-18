@@ -19,9 +19,9 @@ var defaultRegistryFn = defaultRegistry
 // DockerForDockerImageImageAuth returns the auth config for the given Docker image, extracting first its Docker registry.
 // Finally, it will use the credential helpers to extract the information from the docker config file
 // for that registry, if it exists.
-func ForDockerImage(ctx context.Context, image string) (string, registry.AuthConfig, error) {
+func ForDockerImage(ctx context.Context, img string) (string, registry.AuthConfig, error) {
 	defaultRegistry := defaultRegistryFn(ctx)
-	reg := core.ExtractRegistry(image, defaultRegistry)
+	reg := core.ExtractRegistry(img, defaultRegistry)
 
 	cfgs, err := getDockerAuthConfigs()
 	if err != nil {

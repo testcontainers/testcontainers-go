@@ -40,8 +40,8 @@ func isLegacyMode(img string) bool {
 	return true
 }
 
-func isVersion2(image string) bool {
-	parts := strings.Split(image, ":")
+func isVersion2(img string) bool {
+	parts := strings.Split(img, ":")
 	version := parts[len(parts)-1]
 
 	if version == "latest" {

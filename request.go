@@ -133,8 +133,8 @@ func getAuthConfigsFromDockerfile(r *Request) map[string]registry.AuthConfig {
 	}
 
 	authConfigs := map[string]registry.AuthConfig{}
-	for _, image := range images {
-		registry, authConfig, err := auth.ForDockerImage(context.Background(), image)
+	for _, img := range images {
+		registry, authConfig, err := auth.ForDockerImage(context.Background(), img)
 		if err != nil {
 			continue
 		}

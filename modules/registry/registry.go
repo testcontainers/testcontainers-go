@@ -48,10 +48,10 @@ func getEndpointWithAuth(ctx context.Context, imageRef string) (string, string, 
 	}
 
 	imageWithoutRegistry := strings.TrimPrefix(imageRef, registry+"/")
-	image := strings.Split(imageWithoutRegistry, ":")[0]
+	img := strings.Split(imageWithoutRegistry, ":")[0]
 	tag := strings.Split(imageWithoutRegistry, ":")[1]
 
-	return fmt.Sprintf("/v2/%s/manifests/%s", image, tag), image, imageAuth, nil
+	return fmt.Sprintf("/v2/%s/manifests/%s", img, tag), img, imageAuth, nil
 }
 
 // DeleteImage deletes an image reference from the Registry container.
@@ -60,7 +60,7 @@ func getEndpointWithAuth(ctx context.Context, imageRef string) (string, string, 
 // to actually delete the image.
 // E.g. imageRef = "localhost:5000/alpine:latest"
 func (c *Container) DeleteImage(ctx context.Context, imageRef string) error {
-	endpoint, image, imageAuth, err := getEndpointWithAuth(ctx, imageRef)
+	endpoint, img, imageAuth, err := getEndpointWithAuth(ctx, imageRef)
 	if err != nil {
 		return fmt.Errorf("failed to get image auth: %w", err)
 	}
@@ -87,7 +87,7 @@ func (c *Container) DeleteImage(ctx context.Context, imageRef string) error {
 		return fmt.Errorf("failed to get image digest: %w", err)
 	}
 
-	deleteEndpoint := fmt.Sprintf("/v2/%s/manifests/%s", image, digest)
+	deleteEndpoint := fmt.Sprintf("/v2/%s/manifests/%s", img, digest)
 	return wait.ForHTTP(deleteEndpoint).
 		WithMethod(http.MethodDelete).
 		WithBasicAuth(imageAuth.Username, imageAuth.Password).

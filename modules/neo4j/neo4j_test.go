@@ -70,12 +70,12 @@ func TestNeo4jWithEnterpriseLicense(t *testing.T) {
 		"EnterpriseEdition": "docker.io/neo4j:4.4-enterprise",
 	}
 
-	for edition, image := range images {
-		edition, image := edition, image
+	for edition, img := range images {
+		edition, img := edition, img
 		t.Run(edition, func(t *testing.T) {
 			t.Parallel()
 			ctr, err := neo4j.RunContainer(ctx,
-				testcontainers.WithImage(image),
+				testcontainers.WithImage(img),
 				neo4j.WithAdminPassword(testPassword),
 				neo4j.WithAcceptCommercialLicenseAgreement(),
 			)

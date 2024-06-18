@@ -375,8 +375,8 @@ type listener struct {
 }
 
 // isAtLeastVersion returns true if the base image (without tag) is in a version or above
-func isAtLeastVersion(image, major string) bool {
-	parts := strings.Split(image, ":")
+func isAtLeastVersion(img, major string) bool {
+	parts := strings.Split(img, ":")
 	version := parts[len(parts)-1]
 
 	if version == "latest" {

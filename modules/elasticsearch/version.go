@@ -8,13 +8,13 @@ import (
 )
 
 // isOSS returns true if the base image (without tag) is an OSS image
-func isOSS(image string) bool {
-	return strings.HasPrefix(image, DefaultBaseImageOSS)
+func isOSS(img string) bool {
+	return strings.HasPrefix(img, DefaultBaseImageOSS)
 }
 
 // isAtLeastVersion returns true if the base image (without tag) is in a version or above
-func isAtLeastVersion(image string, major int) bool {
-	parts := strings.Split(image, ":")
+func isAtLeastVersion(img string, major int) bool {
+	parts := strings.Split(img, ":")
 	version := parts[len(parts)-1]
 
 	if version == "latest" {
