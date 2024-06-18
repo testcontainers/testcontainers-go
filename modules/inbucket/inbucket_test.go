@@ -13,27 +13,27 @@ import (
 func TestInbucket(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("inbucket/inbucket:sha-2d409bb"))
+	ctr, err := RunContainer(ctx, testcontainers.WithImage("inbucket/inbucket:sha-2d409bb"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// smtpConnection {
-	smtpUrl, err := container.SmtpConnection(ctx)
+	smtpUrl, err := ctr.SmtpConnection(ctx)
 	// }
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// webInterface {
-	webInterfaceUrl, err := container.WebInterface(ctx)
+	webInterfaceUrl, err := ctr.WebInterface(ctx)
 	// }
 	if err != nil {
 		t.Fatal(err)

@@ -30,7 +30,7 @@ func TestCouchbaseWithCommunityContainer(t *testing.T) {
 		WithFlushEnabled(false).
 		WithPrimaryIndex(true)
 
-	container, err := tccouchbase.RunContainer(ctx, testcontainers.WithImage(communityEdition), tccouchbase.WithBuckets(bucket))
+	ctr, err := tccouchbase.RunContainer(ctx, testcontainers.WithImage(communityEdition), tccouchbase.WithBuckets(bucket))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,12 +38,12 @@ func TestCouchbaseWithCommunityContainer(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	cluster, err := connectCluster(ctx, container)
+	cluster, err := connectCluster(ctx, ctr)
 	if err != nil {
 		t.Fatalf("could not connect couchbase: %s", err)
 	}
@@ -55,19 +55,19 @@ func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	container, err := tccouchbase.RunContainer(ctx, testcontainers.WithImage(enterpriseEdition), tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
+	ctr, err := tccouchbase.RunContainer(ctx, testcontainers.WithImage(enterpriseEdition), tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	cluster, err := connectCluster(ctx, container)
+	cluster, err := connectCluster(ctx, ctr)
 	if err != nil {
 		t.Fatalf("could not connect couchbase: %s", err)
 	}

@@ -19,21 +19,21 @@ import (
 func TestOllama(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := ollama.RunContainer(ctx, testcontainers.WithImage("ollama/ollama:0.1.25"))
+	ctr, err := ollama.RunContainer(ctx, testcontainers.WithImage("ollama/ollama:0.1.25"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	t.Run("ConnectionString", func(t *testing.T) {
 		// connectionString {
-		connectionStr, err := container.ConnectionString(ctx)
+		connectionStr, err := ctr.ConnectionString(ctx)
 		// }
 		if err != nil {
 			t.Fatal(err)
@@ -54,17 +54,17 @@ func TestOllama(t *testing.T) {
 	t.Run("Pull and Run Model", func(t *testing.T) {
 		model := "all-minilm"
 
-		_, _, err = container.Exec(context.Background(), []string{"ollama", "pull", model})
+		_, _, err = ctr.Exec(context.Background(), []string{"ollama", "pull", model})
 		if err != nil {
 			log.Fatalf("failed to pull model %s: %s", model, err)
 		}
 
-		_, _, err = container.Exec(context.Background(), []string{"ollama", "run", model})
+		_, _, err = ctr.Exec(context.Background(), []string{"ollama", "run", model})
 		if err != nil {
 			log.Fatalf("failed to run model %s: %s", model, err)
 		}
 
-		assertLoadedModel(t, container)
+		assertLoadedModel(t, ctr)
 	})
 
 	t.Run("Commit to image including model", func(t *testing.T) {
@@ -74,7 +74,7 @@ func TestOllama(t *testing.T) {
 		// Users can change the way this is generated, but it should be unique.
 		targetImage := fmt.Sprintf("%s-%s", ollama.DefaultOllamaImage, strings.ToLower(uuid.New().String()[:4]))
 
-		err := container.Commit(context.Background(), targetImage)
+		err := ctr.Commit(context.Background(), targetImage)
 		// }
 		if err != nil {
 			t.Fatal(err)

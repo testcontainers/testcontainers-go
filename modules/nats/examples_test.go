@@ -45,24 +45,24 @@ func ExampleRunContainer_connectWithCredentials() {
 	// natsConnect {
 	ctx := context.Background()
 
-	container, err := nats.RunContainer(ctx, nats.WithUsername("foo"), nats.WithPassword("bar"))
+	ctr, err := nats.RunContainer(ctx, nats.WithUsername("foo"), nats.WithPassword("bar"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
-	uri, err := container.ConnectionString(ctx)
+	uri, err := ctr.ConnectionString(ctx)
 	if err != nil {
 		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
 	}
 
-	nc, err := natsgo.Connect(uri, natsgo.UserInfo(container.User, container.Password))
+	nc, err := natsgo.Connect(uri, natsgo.UserInfo(ctr.User, ctr.Password))
 	if err != nil {
 		log.Fatalf("failed to connect to NATS: %s", err)
 	}

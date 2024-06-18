@@ -28,10 +28,10 @@ func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.RequestCu
 		"gcloud beta emulators firestore start --host-port 0.0.0.0:8080 " + fmt.Sprintf("--project=%s", settings.ProjectID),
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return newGCloudContainer(ctx, 8080, container, settings)
+	return newGCloudContainer(ctx, 8080, ctr, settings)
 }

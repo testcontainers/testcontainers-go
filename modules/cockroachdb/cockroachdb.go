@@ -80,8 +80,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		LifecycleHooks: []testcontainers.LifecycleHooks{
 			{
 				PreStarts: []testcontainers.CreatedContainerHook{
-					func(ctx context.Context, container testcontainers.CreatedContainer) error {
-						return addTLS(ctx, container, o)
+					func(ctx context.Context, ctr testcontainers.CreatedContainer) error {
+						return addTLS(ctx, ctr, o)
 					},
 				},
 			},
@@ -110,11 +110,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		}
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return &Container{DockerContainer: container, opts: o}, nil
+	return &Container{DockerContainer: ctr, opts: o}, nil
 }
 
 type modiferFunc func(*testcontainers.Request, options) error
@@ -196,7 +196,7 @@ func addWaitingFor(req *testcontainers.Request, opts options) error {
 	return nil
 }
 
-func addTLS(ctx context.Context, container testcontainers.CreatedContainer, opts options) error {
+func addTLS(ctx context.Context, ctr testcontainers.CreatedContainer, opts options) error {
 	if opts.TLS == nil {
 		return nil
 	}
@@ -213,7 +213,7 @@ func addTLS(ctx context.Context, container testcontainers.CreatedContainer, opts
 		"client.root.key": opts.TLS.ClientKey,
 	}
 	for filename, contents := range files {
-		if err := container.CopyToContainer(ctx, contents, filepath.Join(certsDir, filename), 0o600); err != nil {
+		if err := ctr.CopyToContainer(ctx, contents, filepath.Join(certsDir, filename), 0o600); err != nil {
 			return err
 		}
 	}

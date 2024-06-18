@@ -113,12 +113,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 
 	configureControllerQuorumVoters(&req)
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Container{DockerContainer: container, ClusterID: clusterID}, nil
+	return &Container{DockerContainer: ctr, ClusterID: clusterID}, nil
 }
 
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {

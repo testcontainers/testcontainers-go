@@ -184,7 +184,7 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
-			container, err := elasticsearch.RunContainer(
+			ctr, err := elasticsearch.RunContainer(
 				ctx,
 				testcontainers.WithImage(baseImage8),
 				testcontainers.WithEnv(map[string]string{
@@ -195,12 +195,12 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				if err := container.Terminate(ctx); err != nil {
+				if err := ctr.Terminate(ctx); err != nil {
 					t.Fatalf("failed to terminate container: %s", err)
 				}
 			})
 
-			if len(container.Settings.CACert) > 0 {
+			if len(ctr.Settings.CACert) > 0 {
 				t.Fatal("expected CA cert to be empty")
 			}
 		})
@@ -210,26 +210,26 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 func TestElasticsearch8WithoutCredentials(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := elasticsearch.RunContainer(ctx, testcontainers.WithImage(baseImage8))
+	ctr, err := elasticsearch.RunContainer(ctx, testcontainers.WithImage(baseImage8))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	httpClient := configureHTTPClient(container)
+	httpClient := configureHTTPClient(ctr)
 
-	req, err := http.NewRequest("GET", container.Settings.Address, nil)
+	req, err := http.NewRequest("GET", ctr.Settings.Address, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// elastic:changeme are the default credentials for Elasticsearch 8
-	req.SetBasicAuth(container.Settings.Username, container.Settings.Password)
+	req.SetBasicAuth(ctr.Settings.Username, ctr.Settings.Password)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {

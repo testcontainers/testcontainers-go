@@ -11,14 +11,14 @@ import (
 func Test{{ $title }}(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := {{ $lower }}.{{ $entrypoint }}(ctx, testcontainers.WithImage("{{ $image }}"))
+	ctr, err := {{ $lower }}.{{ $entrypoint }}(ctx, testcontainers.WithImage("{{ $image }}"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := conctrainer.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})

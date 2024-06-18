@@ -240,7 +240,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		}
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -249,5 +249,5 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	password := req.Env["CLICKHOUSE_PASSWORD"]
 	dbName := req.Env["CLICKHOUSE_DB"]
 
-	return &Container{DockerContainer: container, DbName: dbName, Password: password, User: user}, nil
+	return &Container{DockerContainer: ctr, DbName: dbName, Password: password, User: user}, nil
 }

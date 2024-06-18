@@ -16,21 +16,21 @@ import (
 func TestDolt(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := dolt.RunContainer(ctx)
+	ctr, err := dolt.RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// perform assertions
 	// connectionString {
-	connectionString, err := container.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
 	// }
 	if err != nil {
 		t.Fatal(err)
@@ -115,7 +115,7 @@ func TestDoltWithPrivateRemoteCloneUrl(t *testing.T) {
 func TestDoltWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := dolt.RunContainer(ctx,
+	ctr, err := dolt.RunContainer(ctx,
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("root"),
 		dolt.WithPassword(""))
@@ -125,13 +125,13 @@ func TestDoltWithRootUserAndEmptyPassword(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// perform assertions
-	connectionString := container.MustConnectionString(ctx)
+	connectionString := ctr.MustConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -155,7 +155,7 @@ func TestDoltWithRootUserAndEmptyPassword(t *testing.T) {
 func TestDoltWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := dolt.RunContainer(ctx,
+	ctr, err := dolt.RunContainer(ctx,
 		dolt.WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
@@ -163,13 +163,13 @@ func TestDoltWithScripts(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// perform assertions
-	connectionString := container.MustConnectionString(ctx)
+	connectionString := ctr.MustConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {

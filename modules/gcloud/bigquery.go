@@ -25,12 +25,12 @@ func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.RequestCus
 
 	req.Cmd = []string{"--project", settings.ProjectID}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	spannerContainer, err := newGCloudContainer(ctx, 9050, container, settings)
+	spannerContainer, err := newGCloudContainer(ctx, 9050, ctr, settings)
 	if err != nil {
 		return nil, err
 	}

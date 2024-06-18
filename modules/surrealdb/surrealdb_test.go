@@ -12,19 +12,19 @@ import (
 func TestSurrealDBSelect(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("surrealdb/surrealdb:v1.1.1"))
+	ctr, err := RunContainer(ctx, testcontainers.WithImage("surrealdb/surrealdb:v1.1.1"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	url, err := container.URL(ctx)
+	url, err := ctr.URL(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,20 +73,20 @@ func TestSurrealDBSelect(t *testing.T) {
 func TestSurrealDBWithAuth(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("surrealdb/surrealdb:v1.1.1"), WithAuthentication())
+	ctr, err := RunContainer(ctx, testcontainers.WithImage("surrealdb/surrealdb:v1.1.1"), WithAuthentication())
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// websocketURL {
-	url, err := container.URL(ctx)
+	url, err := ctr.URL(ctx)
 	// }
 	if err != nil {
 		t.Fatal(err)

@@ -90,12 +90,12 @@ func RunContainer(ctx context.Context, options ...testcontainers.RequestCustomiz
 		return nil, err
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Container{DockerContainer: container}, nil
+	return &Container{DockerContainer: ctr}, nil
 }
 
 func isHttpOk() func(status int) bool {

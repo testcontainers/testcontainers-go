@@ -83,10 +83,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, fmt.Errorf("username or password has not been set")
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Container{DockerContainer: container, Username: username, Password: password}, nil
+	return &Container{DockerContainer: ctr, Username: username, Password: password}, nil
 }

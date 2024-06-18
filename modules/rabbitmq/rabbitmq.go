@@ -123,13 +123,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &Container{
-		DockerContainer: container,
+		DockerContainer: ctr,
 		AdminUsername:   settings.AdminUsername,
 		AdminPassword:   settings.AdminPassword,
 	}

@@ -40,12 +40,12 @@ func TestConsul(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			container, err := consul.RunContainer(ctx, test.opts...)
+			ctr, err := consul.RunContainer(ctx, test.opts...)
 			require.NoError(t, err)
-			t.Cleanup(func() { require.NoError(t, container.Terminate(ctx), "failed to terminate container") })
+			t.Cleanup(func() { require.NoError(t, ctr.Terminate(ctx), "failed to terminate container") })
 
 			// Check if API is up
-			host, err := container.ApiEndpoint(ctx)
+			host, err := ctr.ApiEndpoint(ctx)
 			require.NoError(t, err)
 			assert.NotEmpty(t, len(host))
 

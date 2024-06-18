@@ -79,12 +79,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, fmt.Errorf("empty password can be used only with the root user")
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	dc := &Container{container, username, password, database}
+	dc := &Container{ctr, username, password, database}
 
 	// dolthub/dolt-sql-server does not create user or database, so we do so here
 	err = dc.initialize(ctx, createUser)

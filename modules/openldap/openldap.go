@@ -150,13 +150,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		}
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Container{
-		DockerContainer: container,
+		DockerContainer: ctr,
 		adminUsername:   req.Env["LDAP_ADMIN_USERNAME"],
 		adminPassword:   req.Env["LDAP_ADMIN_PASSWORD"],
 		rootDn:          req.Env["LDAP_ROOT"],

@@ -67,10 +67,10 @@ func s3Client(ctx context.Context, l *localstack.Container) (*s3.Client, error) 
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := localstack.RunContainer(ctx)
+	ctr, err := localstack.RunContainer(ctx)
 	require.NoError(t, err)
 
-	s3Client, err := s3Client(ctx, container)
+	s3Client, err := s3Client(ctx, ctr)
 	require.NoError(t, err)
 
 	t.Run("S3 operations", func(t *testing.T) {

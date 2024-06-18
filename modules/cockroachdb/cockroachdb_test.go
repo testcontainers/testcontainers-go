@@ -67,15 +67,15 @@ type AuthNSuite struct {
 func (suite *AuthNSuite) TestConnectionString() {
 	ctx := context.Background()
 
-	container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+	ctr, err := cockroachdb.RunContainer(ctx, suite.opts...)
 	suite.Require().NoError(err)
 
 	suite.T().Cleanup(func() {
-		err := container.Terminate(ctx)
+		err := ctr.Terminate(ctx)
 		suite.Require().NoError(err)
 	})
 
-	connStr, err := removePort(container.MustConnectionString(ctx))
+	connStr, err := removePort(ctr.MustConnectionString(ctx))
 	suite.Require().NoError(err)
 
 	suite.Equal(suite.url, connStr)
@@ -105,15 +105,15 @@ func (suite *AuthNSuite) TestPing() {
 			opts := suite.opts
 			opts = append(opts, input.opts...)
 
-			container, err := cockroachdb.RunContainer(ctx, opts...)
+			ctr, err := cockroachdb.RunContainer(ctx, opts...)
 			suite.Require().NoError(err)
 
 			suite.T().Cleanup(func() {
-				err := container.Terminate(ctx)
+				err := ctr.Terminate(ctx)
 				suite.Require().NoError(err)
 			})
 
-			conn, err := conn(ctx, container)
+			conn, err := conn(ctx, ctr)
 			suite.Require().NoError(err)
 			defer conn.Close(ctx)
 
@@ -126,15 +126,15 @@ func (suite *AuthNSuite) TestPing() {
 func (suite *AuthNSuite) TestQuery() {
 	ctx := context.Background()
 
-	container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+	ctr, err := cockroachdb.RunContainer(ctx, suite.opts...)
 	suite.Require().NoError(err)
 
 	suite.T().Cleanup(func() {
-		err := container.Terminate(ctx)
+		err := ctr.Terminate(ctx)
 		suite.Require().NoError(err)
 	})
 
-	conn, err := conn(ctx, container)
+	conn, err := conn(ctx, ctr)
 	suite.Require().NoError(err)
 	defer conn.Close(ctx)
 
@@ -159,12 +159,12 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 		// This will never match a log statement
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*250, wait.ForLog("Won't Exist In Logs")))
-		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		ctr, err := cockroachdb.RunContainer(ctx, suite.opts...)
 
 		suite.Require().ErrorIs(err, context.DeadlineExceeded)
 		suite.T().Cleanup(func() {
-			if container != nil {
-				err := container.Terminate(ctx)
+			if ctr != nil {
+				err := ctr.Terminate(ctx)
 				suite.Require().NoError(err)
 			}
 		})
@@ -175,12 +175,12 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 		// This will timeout as we didn't give enough time for intialization, but would have succeeded otherwise
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*20, wait.ForLog(nodeStartUpCompleted)))
-		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		ctr, err := cockroachdb.RunContainer(ctx, suite.opts...)
 
 		suite.Require().ErrorIs(err, context.DeadlineExceeded)
 		suite.T().Cleanup(func() {
-			if container != nil {
-				err := container.Terminate(ctx)
+			if ctr != nil {
+				err := ctr.Terminate(ctx)
 				suite.Require().NoError(err)
 			}
 		})
@@ -191,18 +191,18 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 		// This will succeed
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Second*60, wait.ForLog(nodeStartUpCompleted)))
-		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		ctr, err := cockroachdb.RunContainer(ctx, suite.opts...)
 		suite.Require().NoError(err)
 
-		conn, err := conn(ctx, container)
+		conn, err := conn(ctx, ctr)
 		suite.Require().NoError(err)
 		defer conn.Close(ctx)
 
 		_, err = conn.Exec(ctx, "CREATE TABLE test (id INT PRIMARY KEY)")
 		suite.Require().NoError(err)
 		suite.T().Cleanup(func() {
-			if container != nil {
-				err := container.Terminate(ctx)
+			if ctr != nil {
+				err := ctr.Terminate(ctx)
 				suite.Require().NoError(err)
 			}
 		})
@@ -213,31 +213,31 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 		// This will succeed
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Second*60, wait.ForHTTP("/health").WithPort("8080/tcp")))
-		container, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		ctr, err := cockroachdb.RunContainer(ctx, suite.opts...)
 		suite.Require().NoError(err)
 
-		conn, err := conn(ctx, container)
+		conn, err := conn(ctx, ctr)
 		suite.Require().NoError(err)
 		defer conn.Close(ctx)
 
 		_, err = conn.Exec(ctx, "CREATE TABLE test (id INT PRIMARY KEY)")
 		suite.Require().NoError(err)
 		suite.T().Cleanup(func() {
-			if container != nil {
-				err := container.Terminate(ctx)
+			if ctr != nil {
+				err := ctr.Terminate(ctx)
 				suite.Require().NoError(err)
 			}
 		})
 	})
 }
 
-func conn(ctx context.Context, container *cockroachdb.Container) (*pgx.Conn, error) {
-	cfg, err := pgx.ParseConfig(container.MustConnectionString(ctx))
+func conn(ctx context.Context, ctr *cockroachdb.Container) (*pgx.Conn, error) {
+	cfg, err := pgx.ParseConfig(ctr.MustConnectionString(ctx))
 	if err != nil {
 		return nil, err
 	}
 
-	tlsCfg, err := container.TLSConfig()
+	tlsCfg, err := ctr.TLSConfig()
 	switch {
 	case err != nil:
 		if !errors.Is(err, cockroachdb.ErrTLSNotEnabled) {

@@ -176,12 +176,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		}
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	c := &Container{DockerContainer: container}
+	c := &Container{DockerContainer: ctr}
 
 	address, err := c.Address(ctx)
 	if err != nil {

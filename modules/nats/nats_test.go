@@ -13,7 +13,7 @@ func TestNATS(t *testing.T) {
 	ctx := context.Background()
 
 	//  createNATSContainer {
-	container, err := tcnats.RunContainer(ctx)
+	ctr, err := tcnats.RunContainer(ctx)
 	//  }
 	if err != nil {
 		t.Fatal(err)
@@ -21,18 +21,18 @@ func TestNATS(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// connectionString {
-	uri, err := container.ConnectionString(ctx)
+	uri, err := ctr.ConnectionString(ctx)
 	// }
 	if err != nil {
 		t.Fatalf("failed to get connection string: %s", err)
 	}
-	mustUri := container.MustConnectionString(ctx)
+	mustUri := ctr.MustConnectionString(ctx)
 	if mustUri != uri {
 		t.Errorf("URI was not equal to MustUri")
 	}

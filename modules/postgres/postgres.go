@@ -150,7 +150,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		}
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	password := req.Env["POSTGRES_PASSWORD"]
 	dbName := req.Env["POSTGRES_DB"]
 
-	return &Container{DockerContainer: container, dbName: dbName, password: password, user: user}, nil
+	return &Container{DockerContainer: ctr, dbName: dbName, password: password, user: user}, nil
 }
 
 type snapshotConfig struct {

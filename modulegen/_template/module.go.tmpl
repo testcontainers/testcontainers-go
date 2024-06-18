@@ -25,10 +25,10 @@ func {{ $entrypoint }}(ctx context.Context, opts ...testcontainers.RequestCustom
 		}
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &{{ $containerName }}{DockerContainer: container}, nil
+	return &{{ $containerName }}{DockerContainer: ctr}, nil
 }

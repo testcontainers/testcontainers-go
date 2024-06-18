@@ -28,10 +28,10 @@ func RunBigTableContainer(ctx context.Context, opts ...testcontainers.RequestCus
 		"gcloud beta emulators bigtable start --host-port 0.0.0.0:9000 " + fmt.Sprintf("--project=%s", settings.ProjectID),
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return newGCloudContainer(ctx, 9000, container, settings)
+	return newGCloudContainer(ctx, 9000, ctr, settings)
 }

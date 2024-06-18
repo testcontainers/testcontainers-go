@@ -245,19 +245,19 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 		Started: true,
 	}
 
-	container, err := testcontainers.New(context.Background(), req)
+	ctr, err := testcontainers.New(context.Background(), req)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	defer container.Terminate(context.Background()) // nolint: errcheck
+	defer ctr.Terminate(context.Background()) // nolint: errcheck
 
-	host, err := container.Host(context.Background())
+	host, err := ctr.Host(context.Background())
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	port, err := container.MappedPort(context.Background(), "6443/tcp")
+	port, err := ctr.MappedPort(context.Background(), "6443/tcp")
 	if err != nil {
 		t.Error(err)
 		return
@@ -326,19 +326,19 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 		Started: true,
 	}
 
-	container, err := testcontainers.New(context.Background(), req)
+	ctr, err := testcontainers.New(context.Background(), req)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	defer container.Terminate(context.Background()) // nolint: errcheck
+	defer ctr.Terminate(context.Background()) // nolint: errcheck
 
-	host, err := container.Host(context.Background())
+	host, err := ctr.Host(context.Background())
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	port, err := container.MappedPort(context.Background(), "6443/tcp")
+	port, err := ctr.MappedPort(context.Background(), "6443/tcp")
 	if err != nil {
 		t.Error(err)
 		return
@@ -415,23 +415,23 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 	// }
 
 	ctx := context.Background()
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	host, err := container.Host(ctx)
+	host, err := ctr.Host(ctx)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	port, err := container.MappedPort(ctx, "6443/tcp")
+	port, err := ctr.MappedPort(ctx, "6443/tcp")
 	if err != nil {
 		t.Error(err)
 		return

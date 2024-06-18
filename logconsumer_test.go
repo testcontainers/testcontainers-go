@@ -616,7 +616,7 @@ func TestRestartContainerWithLogConsumer(t *testing.T) {
 	logConsumer := NewFooLogConsumer()
 
 	ctx := context.Background()
-	container, err := New(ctx, Request{
+	ctr, err := New(ctx, Request{
 		Image:           "hello-world",
 		AlwaysPullImage: true,
 		LogConsumerCfg: &log.ConsumerConfig{
@@ -628,17 +628,17 @@ func TestRestartContainerWithLogConsumer(t *testing.T) {
 		t.Fatalf("Cant create container: %s", err.Error())
 	}
 
-	err = container.Start(ctx)
+	err = ctr.Start(ctx)
 	if err != nil {
 		t.Fatalf("Cant start container: %s", err.Error())
 	}
 
 	d := 30 * time.Second
-	err = container.Stop(ctx, &d)
+	err = ctr.Stop(ctx, &d)
 	if err != nil {
 		t.Fatalf("Cant stop container: %s", err.Error())
 	}
-	err = container.Start(ctx)
+	err = ctr.Start(ctx)
 	if err != nil {
 		t.Fatalf("Cant start container: %s", err.Error())
 	}

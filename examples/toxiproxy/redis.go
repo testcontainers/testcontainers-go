@@ -24,10 +24,10 @@ func setupRedis(ctx context.Context, network string, networkAlias []string) (*re
 		},
 		Started: true,
 	}
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &redisContainer{DockerContainer: container}, nil
+	return &redisContainer{DockerContainer: ctr}, nil
 }

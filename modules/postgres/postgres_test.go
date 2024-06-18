@@ -64,7 +64,7 @@ func TestPostgres(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			container, err := postgres.RunContainer(ctx,
+			ctr, err := postgres.RunContainer(ctx,
 				testcontainers.WithImage(tt.image),
 				postgres.WithDatabase(dbname),
 				postgres.WithUsername(user),
@@ -77,24 +77,24 @@ func TestPostgres(t *testing.T) {
 
 			// Clean up the container after the test is complete
 			t.Cleanup(func() {
-				if err := container.Terminate(ctx); err != nil {
+				if err := ctr.Terminate(ctx); err != nil {
 					t.Fatalf("failed to terminate container: %s", err)
 				}
 			})
 
 			// connectionString {
 			// explicitly set sslmode=disable because the container is not configured to use TLS
-			connStr, err := container.ConnectionString(ctx, "sslmode=disable", "application_name=test")
+			connStr, err := ctr.ConnectionString(ctx, "sslmode=disable", "application_name=test")
 			// }
 			require.NoError(t, err)
 
-			mustConnStr := container.MustConnectionString(ctx, "sslmode=disable", "application_name=test")
+			mustConnStr := ctr.MustConnectionString(ctx, "sslmode=disable", "application_name=test")
 			if mustConnStr != connStr {
 				t.Errorf("ConnectionString was not equal to MustConnectionString")
 			}
 
 			// Ensure connection string is using generic format
-			id, err := container.MappedPort(ctx, "5432/tcp")
+			id, err := ctr.MappedPort(ctx, "5432/tcp")
 			require.NoError(t, err)
 			assert.Equal(t, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&application_name=test", user, password, "localhost", id.Port(), dbname), connStr)
 
@@ -124,7 +124,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	}
 
 	t.Run("default query", func(t *testing.T) {
-		container, err := postgres.RunContainer(
+		ctr, err := postgres.RunContainer(
 			ctx,
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
@@ -132,10 +132,10 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
 		)
 		require.NoError(t, err)
-		require.NotNil(t, container)
+		require.NotNil(t, ctr)
 	})
 	t.Run("custom query", func(t *testing.T) {
-		container, err := postgres.RunContainer(
+		ctr, err := postgres.RunContainer(
 			ctx,
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
@@ -143,10 +143,10 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
 		)
 		require.NoError(t, err)
-		require.NotNil(t, container)
+		require.NotNil(t, ctr)
 	})
 	t.Run("custom bad query", func(t *testing.T) {
-		container, err := postgres.RunContainer(
+		ctr, err := postgres.RunContainer(
 			ctx,
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
@@ -154,14 +154,14 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
 		)
 		require.Error(t, err)
-		require.Nil(t, container)
+		require.Nil(t, ctr)
 	})
 }
 
 func TestWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := postgres.RunContainer(ctx,
+	ctr, err := postgres.RunContainer(ctx,
 		postgres.WithConfigFile(filepath.Join("testdata", "my-postgres.conf")),
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
@@ -173,13 +173,13 @@ func TestWithConfigFile(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// explicitly set sslmode=disable because the container is not configured to use TLS
-	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
+	connStr, err := ctr.ConnectionString(ctx, "sslmode=disable")
 	require.NoError(t, err)
 
 	db, err := sql.Open("postgres", connStr)
@@ -191,7 +191,7 @@ func TestWithConfigFile(t *testing.T) {
 func TestWithInitScript(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := postgres.RunContainer(ctx,
+	ctr, err := postgres.RunContainer(ctx,
 		testcontainers.WithImage("docker.io/postgres:15.2-alpine"),
 		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		postgres.WithDatabase(dbname),
@@ -204,13 +204,13 @@ func TestWithInitScript(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// explicitly set sslmode=disable because the container is not configured to use TLS
-	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
+	connStr, err := ctr.ConnectionString(ctx, "sslmode=disable")
 	require.NoError(t, err)
 
 	db, err := sql.Open("postgres", connStr)
@@ -229,7 +229,7 @@ func TestSnapshot(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Start the postgres container and run any migrations on it
-	container, err := postgres.RunContainer(
+	ctr, err := postgres.RunContainer(
 		ctx,
 		testcontainers.WithImage("docker.io/postgres:16-alpine"),
 		postgres.WithDatabase(dbname),
@@ -245,25 +245,25 @@ func TestSnapshot(t *testing.T) {
 	}
 
 	// Run any migrations on the database
-	_, _, err = container.Exec(ctx, []string{"psql", "-U", user, "-d", dbname, "-c", "CREATE TABLE users (id SERIAL, name TEXT NOT NULL, age INT NOT NULL)"})
+	_, _, err = ctr.Exec(ctx, []string{"psql", "-U", user, "-d", dbname, "-c", "CREATE TABLE users (id SERIAL, name TEXT NOT NULL, age INT NOT NULL)"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// 2. Create a snapshot of the database to restore later
-	err = container.Snapshot(ctx, postgres.WithSnapshotName("test-snapshot"))
+	err = ctr.Snapshot(ctx, postgres.WithSnapshotName("test-snapshot"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	dbURL, err := container.ConnectionString(ctx)
+	dbURL, err := ctr.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -271,7 +271,7 @@ func TestSnapshot(t *testing.T) {
 	t.Run("Test inserting a user", func(t *testing.T) {
 		t.Cleanup(func() {
 			// 3. In each test, reset the DB to its snapshot state.
-			err = container.Restore(ctx)
+			err = ctr.Restore(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -306,7 +306,7 @@ func TestSnapshot(t *testing.T) {
 	// 4. Run as many tests as you need, they will each get a clean database
 	t.Run("Test querying empty DB", func(t *testing.T) {
 		t.Cleanup(func() {
-			err = container.Restore(ctx)
+			err = ctr.Restore(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -335,7 +335,7 @@ func TestSnapshotWithOverrides(t *testing.T) {
 	user := "other-user"
 	password := "other-password"
 
-	container, err := postgres.RunContainer(
+	ctr, err := postgres.RunContainer(
 		ctx,
 		testcontainers.WithImage("docker.io/postgres:16-alpine"),
 		postgres.WithDatabase(dbname),
@@ -350,35 +350,35 @@ func TestSnapshotWithOverrides(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, _, err = container.Exec(ctx, []string{"psql", "-U", user, "-d", dbname, "-c", "CREATE TABLE users (id SERIAL, name TEXT NOT NULL, age INT NOT NULL)"})
+	_, _, err = ctr.Exec(ctx, []string{"psql", "-U", user, "-d", dbname, "-c", "CREATE TABLE users (id SERIAL, name TEXT NOT NULL, age INT NOT NULL)"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = container.Snapshot(ctx, postgres.WithSnapshotName("other-snapshot"))
+	err = ctr.Snapshot(ctx, postgres.WithSnapshotName("other-snapshot"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	dbURL, err := container.ConnectionString(ctx)
+	dbURL, err := ctr.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("Test that the restore works when not using defaults", func(t *testing.T) {
-		_, _, err = container.Exec(ctx, []string{"psql", "-U", user, "-d", dbname, "-c", "INSERT INTO users(name, age) VALUES ('test', 42)"})
+		_, _, err = ctr.Exec(ctx, []string{"psql", "-U", user, "-d", dbname, "-c", "INSERT INTO users(name, age) VALUES ('test', 42)"})
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// Doing the restore before we connect since this resets the pgx connection
-		err = container.Restore(ctx)
+		err = ctr.Restore(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}

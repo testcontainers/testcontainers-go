@@ -21,22 +21,22 @@ func startContainer(ctx context.Context) (*nginxContainer, error) {
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 		Started:      true,
 	}
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	ip, err := container.Host(ctx)
+	ip, err := ctr.Host(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	mappedPort, err := container.MappedPort(ctx, "80")
+	mappedPort, err := ctr.MappedPort(ctx, "80")
 	if err != nil {
 		return nil, err
 	}
 
 	uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 
-	return &nginxContainer{DockerContainer: container, URI: uri}, nil
+	return &nginxContainer{DockerContainer: ctr, URI: uri}, nil
 }

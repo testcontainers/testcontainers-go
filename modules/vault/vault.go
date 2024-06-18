@@ -42,12 +42,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		}
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Container{container}, nil
+	return &Container{ctr}, nil
 }
 
 // WithToken is a container option function that sets the root token for the Vault

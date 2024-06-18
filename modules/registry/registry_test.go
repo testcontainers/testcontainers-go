@@ -13,19 +13,19 @@ import (
 )
 
 func TestRegistry_unauthenticated(t *testing.T) {
-	container, err := registry.RunContainer(context.Background(), testcontainers.WithImage("registry:2.8.3"))
+	ctr, err := registry.RunContainer(context.Background(), testcontainers.WithImage("registry:2.8.3"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(context.Background()); err != nil {
+		if err := ctr.Terminate(context.Background()); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	httpAddress, err := container.Address(context.Background())
+	httpAddress, err := ctr.Address(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

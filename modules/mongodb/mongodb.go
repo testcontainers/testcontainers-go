@@ -42,15 +42,15 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, fmt.Errorf("if you specify username or password, you must provide both of them")
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	if username != "" && password != "" {
-		return &Container{DockerContainer: container, username: username, password: password}, nil
+		return &Container{DockerContainer: ctr, username: username, password: password}, nil
 	}
-	return &Container{DockerContainer: container}, nil
+	return &Container{DockerContainer: ctr}, nil
 }
 
 // WithUsername sets the initial username to be created when the container starts

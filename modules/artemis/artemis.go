@@ -101,7 +101,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		}
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -109,5 +109,5 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	user := req.Env["ARTEMIS_USER"]
 	password := req.Env["ARTEMIS_PASSWORD"]
 
-	return &Container{DockerContainer: container, user: user, password: password}, nil
+	return &Container{DockerContainer: ctr, user: user, password: password}, nil
 }

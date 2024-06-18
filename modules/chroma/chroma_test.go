@@ -15,21 +15,21 @@ import (
 func TestChroma(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
+	ctr, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	t.Run("REST Endpoint retrieve docs site", func(tt *testing.T) {
 		// restEndpoint {
-		restEndpoint, err := container.RESTEndpoint(ctx)
+		restEndpoint, err := ctr.RESTEndpoint(ctx)
 		// }
 		if err != nil {
 			tt.Fatalf("failed to get REST endpoint: %s", err)
@@ -49,7 +49,7 @@ func TestChroma(t *testing.T) {
 
 	t.Run("GetClient", func(tt *testing.T) {
 		// restEndpoint {
-		endpoint, err := container.RESTEndpoint(context.Background())
+		endpoint, err := ctr.RESTEndpoint(context.Background())
 		if err != nil {
 			tt.Fatalf("failed to get REST endpoint: %s", err) // nolint:gocritic
 		}

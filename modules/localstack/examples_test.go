@@ -124,7 +124,7 @@ func ExampleRunContainer_usingLambdas() {
 	lambdaName := "localstack-lambda-url-example"
 
 	// withCustomContainerRequest {
-	container, err := localstack.RunContainer(ctx,
+	ctr, err := localstack.RunContainer(ctx,
 		testcontainers.WithImage("localstack/localstack:2.3.0"),
 		testcontainers.WithEnv(map[string]string{
 			"SERVICES":            "lambda",
@@ -144,7 +144,7 @@ func ExampleRunContainer_usingLambdas() {
 		log.Fatalf("failed to start container: %s", err)
 	}
 	defer func() {
-		err := container.Terminate(ctx)
+		err := ctr.Terminate(ctx)
 		if err != nil {
 			log.Fatalf("failed to terminate container: %s", err)
 		}
@@ -168,7 +168,7 @@ func ExampleRunContainer_usingLambdas() {
 		{"awslocal", "lambda", "wait", "function-active-v2", "--function-name", lambdaName},
 	}
 	for _, cmd := range lambdaCommands {
-		_, _, err := container.Exec(ctx, cmd)
+		_, _, err := ctr.Exec(ctx, cmd)
 		if err != nil {
 			log.Fatalf("failed to execute command %v: %s", cmd, err) // nolint:gocritic
 		}
@@ -178,7 +178,7 @@ func ExampleRunContainer_usingLambdas() {
 	cmd := []string{
 		"awslocal", "lambda", "list-function-url-configs", "--function-name", lambdaName,
 	}
-	_, reader, err := container.Exec(ctx, cmd, exec.Multiplexed())
+	_, reader, err := ctr.Exec(ctx, cmd, exec.Multiplexed())
 	if err != nil {
 		log.Fatalf("failed to execute command %v: %s", cmd, err)
 	}
@@ -214,7 +214,7 @@ func ExampleRunContainer_usingLambdas() {
 	functionURL := v.FunctionURLConfigs[0].FunctionURL
 	// replace the port with the one exposed by the container
 
-	mappedPort, err := container.MappedPort(ctx, "4566/tcp")
+	mappedPort, err := ctr.MappedPort(ctx, "4566/tcp")
 	if err != nil {
 		log.Fatalf("failed to get mapped port: %s", err)
 	}

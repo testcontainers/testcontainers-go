@@ -21,10 +21,10 @@ func RunSpannerContainer(ctx context.Context, opts ...testcontainers.RequestCust
 		return nil, err
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return newGCloudContainer(ctx, 9010, container, settings)
+	return newGCloudContainer(ctx, 9010, ctr, settings)
 }

@@ -16,7 +16,7 @@ import (
 func TestMinio(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := tcminio.RunContainer(ctx,
+	ctr, err := tcminio.RunContainer(ctx,
 		testcontainers.WithImage("minio/minio:RELEASE.2024-01-16T16-07-38Z"),
 		tcminio.WithUsername("thisismyuser"), tcminio.WithPassword("thisismypassword"))
 	if err != nil {
@@ -25,21 +25,21 @@ func TestMinio(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// perform assertions
 	// connectionString {
-	url, err := container.ConnectionString(ctx)
+	url, err := ctr.ConnectionString(ctx)
 	// }
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	minioClient, err := minio.New(url, &minio.Options{
-		Creds:  credentials.NewStaticV4(container.Username, container.Password, ""),
+		Creds:  credentials.NewStaticV4(ctr.Username, ctr.Password, ""),
 		Secure: false,
 	})
 	if err != nil {

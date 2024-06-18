@@ -109,16 +109,16 @@ func TestRunContainer(t *testing.T) {
 	for _, tt := range tests {
 		ctx := context.Background()
 
-		container, err := RunContainer(
+		ctr, err := RunContainer(
 			ctx,
 			testcontainers.WithImage(fmt.Sprintf("localstack/localstack:%s", tt.version)),
 		)
 
 		t.Run("Localstack:"+tt.version+" - multiple services exposed on same port", func(t *testing.T) {
 			require.NoError(t, err)
-			assert.NotNil(t, container)
+			assert.NotNil(t, ctr)
 
-			inspect, err := container.Inspect(ctx)
+			inspect, err := ctr.Inspect(ctx)
 			require.NoError(t, err)
 
 			rawPorts := inspect.NetworkSettings.Ports
@@ -139,9 +139,9 @@ func TestRunContainer(t *testing.T) {
 func TestStartWithoutOverride(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx)
+	ctr, err := RunContainer(ctx)
 	require.NoError(t, err)
-	assert.NotNil(t, container)
+	assert.NotNil(t, ctr)
 }
 
 func TestStartV2WithNetwork(t *testing.T) {

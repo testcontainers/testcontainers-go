@@ -48,13 +48,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		req.Cmd = append(req.Cmd, []string{"--" + k, v}...)
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	natsContainer := Container{
-		DockerContainer: container,
+		DockerContainer: ctr,
 		User:            settings.CmdArgs["user"],
 		Password:        settings.CmdArgs["pass"],
 	}

@@ -15,21 +15,21 @@ import (
 func TestQdrant(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := qdrant.RunContainer(ctx, testcontainers.WithImage("qdrant/qdrant:v1.7.4"))
+	ctr, err := qdrant.RunContainer(ctx, testcontainers.WithImage("qdrant/qdrant:v1.7.4"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	t.Run("REST Endpoint", func(tt *testing.T) {
 		// restEndpoint {
-		restEndpoint, err := container.RESTEndpoint(ctx)
+		restEndpoint, err := ctr.RESTEndpoint(ctx)
 		// }
 		if err != nil {
 			tt.Fatalf("failed to get REST endpoint: %s", err)
@@ -49,7 +49,7 @@ func TestQdrant(t *testing.T) {
 
 	t.Run("gRPC Endpoint", func(tt *testing.T) {
 		// gRPCEndpoint {
-		grpcEndpoint, err := container.GRPCEndpoint(ctx)
+		grpcEndpoint, err := ctr.GRPCEndpoint(ctx)
 		// }
 		if err != nil {
 			tt.Fatalf("failed to get REST endpoint: %s", err)
@@ -64,7 +64,7 @@ func TestQdrant(t *testing.T) {
 
 	t.Run("Web UI", func(tt *testing.T) {
 		// webUIEndpoint {
-		webUI, err := container.WebUI(ctx)
+		webUI, err := ctr.WebUI(ctx)
 		// }
 		if err != nil {
 			tt.Fatalf("failed to get REST endpoint: %s", err)

@@ -15,7 +15,7 @@ import (
 func TestMSSQLServer(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx,
+	ctr, err := mssql.RunContainer(ctx,
 		mssql.WithAcceptEULA(),
 	)
 	if err != nil {
@@ -24,13 +24,13 @@ func TestMSSQLServer(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// perform assertions
-	connectionString, err := container.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,13 +58,13 @@ func TestMSSQLServer(t *testing.T) {
 func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx, testcontainers.WithWaitStrategy(
+	ctr, err := mssql.RunContainer(ctx, testcontainers.WithWaitStrategy(
 		wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")))
 	if err != nil {
 		t.Fatalf("Expected a log to confirm missing EULA but got error: %s", err)
 	}
 
-	state, err := container.State(ctx)
+	state, err := ctr.State(ctx)
 	if err != nil {
 		t.Fatalf("failed to get container state: %s", err)
 	}
@@ -77,7 +77,7 @@ func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx,
+	ctr, err := mssql.RunContainer(ctx,
 		mssql.WithAcceptEULA(),
 	)
 	if err != nil {
@@ -86,13 +86,13 @@ func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// perform assertions
-	connectionString, err := container.ConnectionString(ctx, "encrypt=false", "TrustServerCertificate=true")
+	connectionString, err := ctr.ConnectionString(ctx, "encrypt=false", "TrustServerCertificate=true")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx,
+	ctr, err := mssql.RunContainer(ctx,
 		mssql.WithAcceptEULA(),
 		mssql.WithPassword("Strong@Passw0rd"),
 	)
@@ -130,13 +130,13 @@ func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// perform assertions
-	connectionString, err := container.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +156,7 @@ func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 func TestMSSQLServerWithInvalidPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx,
+	ctr, err := mssql.RunContainer(ctx,
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Password validation failed")),
 		mssql.WithAcceptEULA(),
@@ -171,7 +171,7 @@ func TestMSSQLServerWithInvalidPassword(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
@@ -180,7 +180,7 @@ func TestMSSQLServerWithInvalidPassword(t *testing.T) {
 func TestMSSQLServerWithAlternativeImage(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx,
+	ctr, err := mssql.RunContainer(ctx,
 		testcontainers.WithImage("mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04"),
 		mssql.WithAcceptEULA(),
 	)
@@ -190,13 +190,13 @@ func TestMSSQLServerWithAlternativeImage(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// perform assertions
-	connectionString, err := container.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

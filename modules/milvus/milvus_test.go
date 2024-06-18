@@ -13,21 +13,21 @@ import (
 func TestMilvus(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := milvus.RunContainer(ctx, testcontainers.WithImage("milvusdb/milvus:v2.3.9"))
+	ctr, err := milvus.RunContainer(ctx, testcontainers.WithImage("milvusdb/milvus:v2.3.9"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	t.Run("Connect to Milvus with gRPC", func(tt *testing.T) {
 		// connectionString {
-		connectionStr, err := container.ConnectionString(ctx)
+		connectionStr, err := ctr.ConnectionString(ctx)
 		// }
 		if err != nil {
 			tt.Fatal(err)

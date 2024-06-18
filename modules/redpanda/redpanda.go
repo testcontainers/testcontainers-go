@@ -164,19 +164,19 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		)
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	// 6. Get mapped port for the Kafka API, so that we can render and then mount
 	// the Redpanda config with the advertised Kafka address.
-	hostIP, err := container.Host(ctx)
+	hostIP, err := ctr.Host(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get container host: %w", err)
 	}
 
-	kafkaPort, err := container.MappedPort(ctx, nat.Port(defaultKafkaAPIPort))
+	kafkaPort, err := ctr.MappedPort(ctx, nat.Port(defaultKafkaAPIPort))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get mapped Kafka port: %w", err)
 	}
@@ -187,7 +187,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, fmt.Errorf("failed to render node config: %w", err)
 	}
 
-	err = container.CopyToContainer(ctx, nodeConfig, filepath.Join(redpandaDir, "redpanda.yaml"), 600)
+	err = ctr.CopyToContainer(ctx, nodeConfig, filepath.Join(redpandaDir, "redpanda.yaml"), 600)
 	if err != nil {
 		return nil, fmt.Errorf("failed to copy redpanda.yaml into container: %w", err)
 	}
@@ -196,7 +196,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	err = wait.ForAll(
 		wait.ForListeningPort(defaultKafkaAPIPort),
 		wait.ForLog("Successfully started Redpanda!").WithPollInterval(100*time.Millisecond)).
-		WaitUntilReady(ctx, container)
+		WaitUntilReady(ctx, ctr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
 	}
@@ -208,7 +208,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 
 	// 9. Create Redpanda Service Accounts if configured to do so.
 	if len(settings.ServiceAccounts) > 0 {
-		adminAPIPort, err := container.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
+		adminAPIPort, err := ctr.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get mapped Admin API port: %w", err)
 		}
@@ -242,7 +242,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		}
 	}
 
-	return &Container{DockerContainer: container, urlScheme: scheme}, nil
+	return &Container{DockerContainer: ctr, urlScheme: scheme}, nil
 }
 
 // KafkaSeedBroker returns the seed broker that should be used for connecting

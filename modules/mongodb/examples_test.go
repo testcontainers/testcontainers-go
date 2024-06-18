@@ -83,7 +83,7 @@ func ExampleRunContainer_connect() {
 func ExampleRunContainer_withCredentials() {
 	ctx := context.Background()
 
-	container, err := mongodb.RunContainer(ctx,
+	ctr, err := mongodb.RunContainer(ctx,
 		testcontainers.WithImage("mongo:6"),
 		mongodb.WithUsername("root"),
 		mongodb.WithPassword("password"),
@@ -95,12 +95,12 @@ func ExampleRunContainer_withCredentials() {
 
 	// Clean up the container
 	defer func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
-	connStr, err := container.ConnectionString(ctx)
+	connStr, err := ctr.ConnectionString(ctx)
 	if err != nil {
 		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
 	}

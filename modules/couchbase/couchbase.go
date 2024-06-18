@@ -107,12 +107,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		}
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	couchbaseContainer := Container{container, config}
+	couchbaseContainer := Container{ctr, config}
 
 	if err = couchbaseContainer.initCluster(ctx); err != nil {
 		return nil, err

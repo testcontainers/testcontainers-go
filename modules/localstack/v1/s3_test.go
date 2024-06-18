@@ -56,10 +56,10 @@ func awsSession(ctx context.Context, l *localstack.Container) (*session.Session,
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := localstack.RunContainer(ctx, testcontainers.WithImage("localstack/localstack:2.3.0"))
+	ctr, err := localstack.RunContainer(ctx, testcontainers.WithImage("localstack/localstack:2.3.0"))
 	require.NoError(t, err)
 
-	session, err := awsSession(ctx, container)
+	session, err := awsSession(ctx, ctr)
 	require.NoError(t, err)
 
 	s3Uploader := s3manager.NewUploader(session)

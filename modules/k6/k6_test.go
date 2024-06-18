@@ -62,19 +62,19 @@ func TestK6(t *testing.T) {
 				options = k6.WithRemoteTestScript(desc)
 			}
 
-			container, err := k6.RunContainer(ctx, k6.WithCache(), options)
+			ctr, err := k6.RunContainer(ctx, k6.WithCache(), options)
 			if err != nil {
 				t.Fatal(err)
 			}
 			// Clean up the container after the test is complete
 			t.Cleanup(func() {
-				if err := container.Terminate(ctx); err != nil {
+				if err := ctr.Terminate(ctx); err != nil {
 					t.Fatalf("failed to terminate container: %s", err)
 				}
 			})
 
 			// assert the result of the test
-			state, err := container.State(ctx)
+			state, err := ctr.State(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}

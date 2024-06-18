@@ -85,12 +85,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		req.LifecycleHooks[0].PostCreates = append(req.LifecycleHooks[0].PostCreates, configureJvmOpts)
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	esContainer := &Container{DockerContainer: container, Settings: *settings}
+	esContainer := &Container{DockerContainer: ctr, Settings: *settings}
 
 	address, err := configureAddress(ctx, esContainer)
 	if err != nil {

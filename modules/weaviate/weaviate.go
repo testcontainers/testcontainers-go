@@ -43,12 +43,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		}
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Container{DockerContainer: container}, nil
+	return &Container{DockerContainer: ctr}, nil
 }
 
 // HttpHostAddress returns the schema and host of the Weaviate container.

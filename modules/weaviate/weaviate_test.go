@@ -19,21 +19,21 @@ import (
 func TestWeaviate(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := weaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.24.5"))
+	ctr, err := weaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.24.5"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	t.Run("HttpHostAddress", func(tt *testing.T) {
 		// httpHostAddress {
-		schema, host, err := container.HttpHostAddress(ctx)
+		schema, host, err := ctr.HttpHostAddress(ctx)
 		// }
 		if err != nil {
 			t.Fatal(err)
@@ -53,7 +53,7 @@ func TestWeaviate(t *testing.T) {
 
 	t.Run("GrpcHostAddress", func(tt *testing.T) {
 		// gRPCHostAddress {
-		host, err := container.GrpcHostAddress(ctx)
+		host, err := ctr.GrpcHostAddress(ctx)
 		// }
 		if err != nil {
 			t.Fatal(err)
@@ -77,11 +77,11 @@ func TestWeaviate(t *testing.T) {
 	})
 
 	t.Run("Weaviate client", func(tt *testing.T) {
-		httpScheme, httpHost, err := container.HttpHostAddress(ctx)
+		httpScheme, httpHost, err := ctr.HttpHostAddress(ctx)
 		if err != nil {
 			tt.Fatal(err)
 		}
-		grpcHost, err := container.GrpcHostAddress(ctx)
+		grpcHost, err := ctr.GrpcHostAddress(ctx)
 		if err != nil {
 			tt.Fatal(err)
 		}

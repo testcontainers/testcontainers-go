@@ -56,20 +56,20 @@ func TestArtemis(t *testing.T) {
 			},
 			user: "artemis",
 			pass: "artemis",
-			hook: func(t *testing.T, container *artemis.Container) {
-				expectQueue(t, container, "ArgsTestQueue")
+			hook: func(t *testing.T, ctr *artemis.Container) {
+				expectQueue(t, ctr, "ArgsTestQueue")
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			container, err := artemis.RunContainer(ctx, test.opts...)
+			ctr, err := artemis.RunContainer(ctx, test.opts...)
 			require.NoError(t, err)
-			t.Cleanup(func() { require.NoError(t, container.Terminate(ctx), "failed to terminate container") })
+			t.Cleanup(func() { require.NoError(t, ctr.Terminate(ctx), "failed to terminate container") })
 
 			// consoleURL {
-			u, err := container.ConsoleURL(ctx)
+			u, err := ctr.ConsoleURL(ctx)
 			// }
 			require.NoError(t, err)
 
@@ -79,15 +79,15 @@ func TestArtemis(t *testing.T) {
 			assert.Equal(t, http.StatusOK, res.StatusCode, "failed to access console")
 
 			if test.user != "" {
-				assert.Equal(t, test.user, container.User(), "unexpected user")
+				assert.Equal(t, test.user, ctr.User(), "unexpected user")
 			}
 
 			if test.pass != "" {
-				assert.Equal(t, test.pass, container.Password(), "unexpected password")
+				assert.Equal(t, test.pass, ctr.Password(), "unexpected password")
 			}
 
 			// brokerEndpoint {
-			host, err := container.BrokerEndpoint(ctx)
+			host, err := ctr.BrokerEndpoint(ctx)
 			// }
 			require.NoError(t, err)
 
@@ -116,7 +116,7 @@ func TestArtemis(t *testing.T) {
 			}
 
 			if test.hook != nil {
-				test.hook(t, container)
+				test.hook(t, ctr)
 			}
 		})
 	}

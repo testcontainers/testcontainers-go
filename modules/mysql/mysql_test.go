@@ -15,26 +15,26 @@ import (
 func TestMySQL(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mysql.RunContainer(ctx)
+	ctr, err := mysql.RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// perform assertions
 	// connectionString {
-	connectionString, err := container.ConnectionString(ctx, "tls=skip-verify")
+	connectionString, err := ctr.ConnectionString(ctx, "tls=skip-verify")
 	// }
 	if err != nil {
 		t.Fatal(err)
 	}
-	mustConnectionString := container.MustConnectionString(ctx, "tls=skip-verify")
+	mustConnectionString := ctr.MustConnectionString(ctx, "tls=skip-verify")
 	if mustConnectionString != connectionString {
 		t.Errorf("ConnectionString was not equal to MustConnectionString")
 	}
@@ -73,7 +73,7 @@ func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mysql.RunContainer(ctx,
+	ctr, err := mysql.RunContainer(ctx,
 		mysql.WithDatabase("foo"),
 		mysql.WithUsername("root"),
 		mysql.WithPassword(""))
@@ -83,13 +83,13 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
+	connectionString, _ := ctr.ConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
@@ -113,7 +113,7 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 func TestMySQLWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mysql.RunContainer(ctx,
+	ctr, err := mysql.RunContainer(ctx,
 		mysql.WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
@@ -121,13 +121,13 @@ func TestMySQLWithScripts(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// perform assertions
-	connectionString, _ := container.ConnectionString(ctx)
+	connectionString, _ := ctr.ConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {

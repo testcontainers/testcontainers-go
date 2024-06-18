@@ -16,27 +16,27 @@ import (
 func TestMariaDB(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mariadb.RunContainer(ctx)
+	ctr, err := mariadb.RunContainer(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// connectionString {
 	// By default, MariaDB transmits data between the server and clients without encrypting it.
-	connectionString, err := container.ConnectionString(ctx, "tls=false")
+	connectionString, err := ctr.ConnectionString(ctx, "tls=false")
 	// }
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	mustConnectionString := container.MustConnectionString(ctx, "tls=false")
+	mustConnectionString := ctr.MustConnectionString(ctx, "tls=false")
 	if mustConnectionString != connectionString {
 		t.Errorf("ConnectionString was not equal to MustConnectionString")
 	}
@@ -75,7 +75,7 @@ func TestMariaDBWithNonRootUserAndEmptyPassword(t *testing.T) {
 func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mariadb.RunContainer(ctx,
+	ctr, err := mariadb.RunContainer(ctx,
 		mariadb.WithDatabase("foo"),
 		mariadb.WithUsername("root"),
 		mariadb.WithPassword(""))
@@ -85,12 +85,12 @@ func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	connectionString, err := container.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,25 +117,25 @@ func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 func TestMariaDBWithMySQLEnvVars(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mariadb.RunContainer(ctx, testcontainers.WithImage("mariadb:10.3.29"),
+	ctr, err := mariadb.RunContainer(ctx, testcontainers.WithImage("mariadb:10.3.29"),
 		mariadb.WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	assertDataCanBeFetched(t, ctx, container)
+	assertDataCanBeFetched(t, ctx, ctr)
 }
 
 func TestMariaDBWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mariadb.RunContainer(ctx, testcontainers.WithImage("mariadb:11.0.3"),
+	ctr, err := mariadb.RunContainer(ctx, testcontainers.WithImage("mariadb:11.0.3"),
 		mariadb.WithConfigFile(filepath.Join("testdata", "my.cnf")))
 	if err != nil {
 		t.Fatal(err)
@@ -143,12 +143,12 @@ func TestMariaDBWithConfigFile(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	connectionString, err := container.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,7 +186,7 @@ func TestMariaDBWithConfigFile(t *testing.T) {
 func TestMariaDBWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mariadb.RunContainer(ctx,
+	ctr, err := mariadb.RunContainer(ctx,
 		mariadb.WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
@@ -194,12 +194,12 @@ func TestMariaDBWithScripts(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	assertDataCanBeFetched(t, ctx, container)
+	assertDataCanBeFetched(t, ctx, ctr)
 }
 
 func assertDataCanBeFetched(t *testing.T, ctx context.Context, container *mariadb.Container) {

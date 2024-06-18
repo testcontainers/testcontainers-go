@@ -80,7 +80,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, fmt.Errorf("empty password can be used only with the root user")
 	}
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	database := req.Env["MYSQL_DATABASE"]
 
 	return &Container{
-		DockerContainer: container,
+		DockerContainer: ctr,
 		username:        username,
 		password:        password,
 		database:        database,

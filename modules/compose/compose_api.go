@@ -455,8 +455,8 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 	d.containersLock.Lock()
 	defer d.containersLock.Unlock()
 
-	if container, ok := d.containers[svcName]; ok {
-		return container, nil
+	if ctr, ok := d.containers[svcName]; ok {
+		return ctr, nil
 	}
 
 	listOptions := container.ListOptions{
@@ -477,19 +477,19 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 	}
 
 	containerInstance := containers[0]
-	container := &testcontainers.DockerContainer{
+	ctr := &testcontainers.DockerContainer{
 		ID:    containerInstance.ID,
 		Image: containerInstance.Image,
 	}
-	container.SetLogger(d.logger)
+	ctr.SetLogger(d.logger)
 
 	// pass the Docker client to the downstream APIs
 	// nolint:ineffassign
 	ctx = context.WithValue(ctx, testcontainers.ClientContextKey, d.dockerClient)
 
-	d.containers[svcName] = container
+	d.containers[svcName] = ctr
 
-	return container, nil
+	return ctr, nil
 }
 
 func (d *dockerCompose) lookupNetworks(ctx context.Context) error {

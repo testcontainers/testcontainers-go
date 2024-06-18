@@ -14,14 +14,14 @@ import (
 func TestOpenLDAP(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
+	ctr, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
@@ -30,7 +30,7 @@ func TestOpenLDAP(t *testing.T) {
 func TestOpenLDAPWithAdminUsernameAndPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := openldap.RunContainer(ctx,
+	ctr, err := openldap.RunContainer(ctx,
 		testcontainers.WithImage("bitnami/openldap:2.6.6"),
 		openldap.WithAdminUsername("openldap"),
 		openldap.WithAdminPassword("openldap"),
@@ -41,12 +41,12 @@ func TestOpenLDAPWithAdminUsernameAndPassword(t *testing.T) {
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	connectionString, err := container.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,20 +67,20 @@ func TestOpenLDAPWithAdminUsernameAndPassword(t *testing.T) {
 func TestOpenLDAPWithDifferentRoot(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"), openldap.WithRoot("dc=mydomain,dc=com"))
+	ctr, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"), openldap.WithRoot("dc=mydomain,dc=com"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	// connectionString {
-	connectionString, err := container.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
 	// }
 	if err != nil {
 		t.Fatal(err)
@@ -102,14 +102,14 @@ func TestOpenLDAPWithDifferentRoot(t *testing.T) {
 func TestOpenLDAPLoadLdif(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
+	ctr, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
@@ -125,13 +125,13 @@ mail: test.user@example.org
 userPassword: Password1
 `
 
-	err = container.LoadLdif(ctx, []byte(ldif))
+	err = ctr.LoadLdif(ctx, []byte(ldif))
 	// }
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	connectionString, err := container.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,19 +193,19 @@ userPassword: Password1
 		t.Fatal(err)
 	}
 
-	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"), openldap.WithInitialLdif(f.Name()))
+	ctr, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"), openldap.WithInitialLdif(f.Name()))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
-	connectionString, err := container.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

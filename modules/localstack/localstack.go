@@ -97,13 +97,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	}
 	req.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &Container{
-		DockerContainer: container,
+		DockerContainer: ctr,
 	}
 	return c, nil
 }

@@ -405,7 +405,7 @@ func assertModuleTestContent(t *testing.T, module context.TestcontainersModule, 
 	data := sanitiseContent(content)
 	assert.Equal(t, "package "+module.Lower()+"_test", data[0])
 	assert.Equal(t, "func Test"+module.Title()+"(t *testing.T) {", data[10])
-	assert.Equal(t, "\tcontainer, err := "+module.Lower()+"."+module.Entrypoint()+"(ctx, testcontainers.WithImage(\""+module.Image+"\"))", data[13])
+	assert.Equal(t, "\tctr, err := "+module.Lower()+"."+module.Entrypoint()+"(ctx, testcontainers.WithImage(\""+module.Image+"\"))", data[13])
 }
 
 // assert content module
@@ -430,7 +430,7 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 	assert.Equal(t, "\t\tStarted:          true,", data[18])
 	assert.Equal(t, "\t\tif err := opt.Customize(&req); err != nil {", data[22])
 	assert.Equal(t, "\t\t\treturn nil, fmt.Errorf(\"customize: %w\", err)", data[23])
-	assert.Equal(t, "\treturn &"+containerName+"{DockerContainer: container}, nil", data[32])
+	assert.Equal(t, "\treturn &"+containerName+"{DockerContainer: ctr}, nil", data[32])
 }
 
 // assert content GitHub workflow for the module

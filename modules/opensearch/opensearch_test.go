@@ -12,20 +12,20 @@ import (
 func TestOpenSearch(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := opensearch.RunContainer(ctx, testcontainers.WithImage("opensearchproject/opensearch:2.11.1"))
+	ctr, err := opensearch.RunContainer(ctx, testcontainers.WithImage("opensearchproject/opensearch:2.11.1"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
+		if err := ctr.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
 
 	t.Run("Connect to Address", func(t *testing.T) {
-		address, err := container.Address(ctx)
+		address, err := ctr.Address(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}

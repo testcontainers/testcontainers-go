@@ -107,12 +107,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 			return r.Tagline == "The OpenSearch Project: https://opensearch.org/"
 		})
 
-	container, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Container{DockerContainer: container, User: username, Password: password}, nil
+	return &Container{DockerContainer: ctr, User: username, Password: password}, nil
 }
 
 // Address retrieves the address of the OpenSearch container.

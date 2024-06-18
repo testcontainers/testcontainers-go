@@ -74,7 +74,7 @@ func TestNeo4jWithEnterpriseLicense(t *testing.T) {
 		edition, image := edition, image
 		t.Run(edition, func(t *testing.T) {
 			t.Parallel()
-			container, err := neo4j.RunContainer(ctx,
+			ctr, err := neo4j.RunContainer(ctx,
 				testcontainers.WithImage(image),
 				neo4j.WithAdminPassword(testPassword),
 				neo4j.WithAcceptCommercialLicenseAgreement(),
@@ -84,12 +84,12 @@ func TestNeo4jWithEnterpriseLicense(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				if err := container.Terminate(ctx); err != nil {
+				if err := ctr.Terminate(ctx); err != nil {
 					t.Fatalf("failed to terminate container: %s", err)
 				}
 			})
 
-			env := getContainerEnv(t, ctx, container)
+			env := getContainerEnv(t, ctx, ctr)
 
 			if !strings.Contains(env, "NEO4J_ACCEPT_LICENSE_AGREEMENT=yes") {
 				t.Fatal("expected to accept license agreement but did not")
@@ -104,26 +104,26 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	ctx := context.Background()
 
 	outer.Run("without authentication", func(t *testing.T) {
-		container, err := neo4j.RunContainer(ctx)
+		ctr, err := neo4j.RunContainer(ctx)
 		if err != nil {
 			t.Fatalf("expected env to successfully run but did not: %s", err)
 		}
 		t.Cleanup(func() {
-			if err := container.Terminate(ctx); err != nil {
+			if err := ctr.Terminate(ctx); err != nil {
 				outer.Fatalf("failed to terminate container: %s", err)
 			}
 		})
 	})
 
 	outer.Run("auth setting outside WithAdminPassword raises error", func(t *testing.T) {
-		container, err := neo4j.RunContainer(ctx,
+		ctr, err := neo4j.RunContainer(ctx,
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("AUTH", "neo4j/thisisgonnafail"),
 		)
 		if err == nil {
 			t.Fatalf("expected env to fail due to conflicting auth settings but did not")
 		}
-		if container != nil {
+		if ctr != nil {
 			t.Fatalf("container must not be created with conflicting auth settings")
 		}
 	})
@@ -131,7 +131,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	outer.Run("warns about overwrites of setting keys", func(t *testing.T) {
 		// withSettings {
 		logger := &inMemoryLogger{}
-		container, err := neo4j.RunContainer(ctx,
+		ctr, err := neo4j.RunContainer(ctx,
 			testcontainers.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("some.key", "value1"),
@@ -143,7 +143,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 			t.Fatalf("expected env to successfully run but did not: %s", err)
 		}
 		t.Cleanup(func() {
-			if err := container.Terminate(ctx); err != nil {
+			if err := ctr.Terminate(ctx); err != nil {
 				outer.Fatalf("failed to terminate container: %s", err)
 			}
 		})
@@ -153,15 +153,15 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 			!Contains(errorLogs, `setting "some.key" with value "value2" is now overwritten with value "value3"`+"\n") {
 			t.Fatalf("expected setting overwrites to be logged")
 		}
-		if !strings.Contains(getContainerEnv(t, ctx, container), "NEO4J_some_key=value3") {
+		if !strings.Contains(getContainerEnv(t, ctx, ctr), "NEO4J_some_key=value3") {
 			t.Fatalf("expected custom setting to be set with last value")
 		}
 	})
 
 	outer.Run("rejects nil logger", func(t *testing.T) {
-		container, err := neo4j.RunContainer(ctx, testcontainers.WithLogger(nil))
+		ctr, err := neo4j.RunContainer(ctx, testcontainers.WithLogger(nil))
 
-		if container != nil {
+		if ctr != nil {
 			t.Fatalf("container must not be created with nil logger")
 		}
 		if err == nil || err.Error() != "nil logger is not permitted" {
@@ -171,7 +171,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 }
 
 func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Container {
-	container, err := neo4j.RunContainer(ctx,
+	ctr, err := neo4j.RunContainer(ctx,
 		neo4j.WithAdminPassword(testPassword),
 		// withLabsPlugin {
 		neo4j.WithLabsPlugin(neo4j.Apoc),
@@ -181,7 +181,7 @@ func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Container {
 	if err != nil {
 		t.Fatalf("expected container to successfully initialize but did not: %s", err)
 	}
-	return container
+	return ctr
 }
 
 func createDriver(t *testing.T, ctx context.Context, container *neo4j.Container) neo.DriverWithContext {
