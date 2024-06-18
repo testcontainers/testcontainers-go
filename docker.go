@@ -517,7 +517,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 		return 0, nil, err
 	}
 
-	hijack, err := cli.ContainerExecAttach(ctx, response.ID, types.ExecStartCheck{})
+	hijack, err := cli.ContainerExecAttach(ctx, response.ID, container.ExecAttachOptions{})
 	if err != nil {
 		return 0, nil, err
 	}
@@ -606,7 +606,7 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 	// create the directory under its parent
 	parent := filepath.Dir(containerParentPath)
 
-	err = c.provider.client.CopyToContainer(ctx, c.ID, parent, buff, types.CopyToContainerOptions{})
+	err = c.provider.client.CopyToContainer(ctx, c.ID, parent, buff, container.CopyToContainerOptions{})
 	if err != nil {
 		return err
 	}
@@ -664,7 +664,7 @@ func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(
 		return err
 	}
 
-	err = c.provider.client.CopyToContainer(ctx, c.ID, "/", buffer, types.CopyToContainerOptions{})
+	err = c.provider.client.CopyToContainer(ctx, c.ID, "/", buffer, container.CopyToContainerOptions{})
 	if err != nil {
 		return err
 	}
@@ -1417,7 +1417,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	tcConfig := p.Config().Config
 
-	nc := types.NetworkCreate{
+	nc := network.CreateOptions{
 		Driver:     req.Driver,
 		Internal:   req.Internal,
 		EnableIPv6: req.EnableIPv6,
@@ -1472,12 +1472,12 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 }
 
 // GetNetwork returns the object representing the network identified by its name
-func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (types.NetworkResource, error) {
-	networkResource, err := p.client.NetworkInspect(ctx, req.Name, types.NetworkInspectOptions{
+func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (network.Inspect, error) {
+	networkResource, err := p.client.NetworkInspect(ctx, req.Name, network.InspectOptions{
 		Verbose: true,
 	})
 	if err != nil {
-		return types.NetworkResource{}, err
+		return network.Inspect{}, err
 	}
 
 	return networkResource, err
@@ -1513,7 +1513,7 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 
 func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APIClient) (string, error) {
 	// Get list of available networks
-	networkResources, err := cli.NetworkList(ctx, types.NetworkListOptions{})
+	networkResources, err := cli.NetworkList(ctx, network.ListOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -1534,7 +1534,7 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 
 	// Create a bridge network for the container communications
 	if !reaperNetworkExists {
-		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
+		_, err = cli.NetworkCreate(ctx, reaperNetwork, network.CreateOptions{
 			Driver:     Bridge,
 			Attachable: true,
 			Labels:     core.DefaultLabels(core.SessionID()),

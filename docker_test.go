@@ -22,7 +22,6 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
-	"github.com/docker/go-units"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -1718,7 +1717,7 @@ func TestDockerContainerResources(t *testing.T) {
 
 	ctx := context.Background()
 
-	expected := []*units.Ulimit{
+	expected := []*container.Ulimit{
 		{
 			Name: "memlock",
 			Hard: -1,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
 	"github.com/google/uuid"
 
@@ -19,7 +18,7 @@ import (
 // - Labels: the Testcontainers for Go generic labels, to be managed by Ryuk. Please see the GenericLabels() function
 // And those options can be modified by the user, using the CreateModifier function field.
 func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.DockerNetwork, error) {
-	nc := types.NetworkCreate{
+	nc := network.CreateOptions{
 		Driver: "bridge",
 		Labels: testcontainers.GenericLabels(),
 	}
@@ -56,21 +55,21 @@ func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.Docker
 
 // NetworkCustomizer is an interface that can be used to configure the network create request.
 type NetworkCustomizer interface {
-	Customize(req *types.NetworkCreate) error
+	Customize(req *network.CreateOptions) error
 }
 
 // CustomizeNetworkOption is a type that can be used to configure the network create request.
-type CustomizeNetworkOption func(req *types.NetworkCreate) error
+type CustomizeNetworkOption func(req *network.CreateOptions) error
 
 // Customize implements the NetworkCustomizer interface,
 // applying the option to the network create request.
-func (opt CustomizeNetworkOption) Customize(req *types.NetworkCreate) error {
+func (opt CustomizeNetworkOption) Customize(req *network.CreateOptions) error {
 	return opt(req)
 }
 
 // WithAttachable allows to set the network as attachable.
 func WithAttachable() CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) error {
+	return func(original *network.CreateOptions) error {
 		original.Attachable = true
 
 		return nil
@@ -81,14 +80,14 @@ func WithAttachable() CustomizeNetworkOption {
 //
 // Deprecated: CheckDuplicate is deprecated since API v1.44, but it defaults to true when sent by the client package to older daemons.
 func WithCheckDuplicate() CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) error {
+	return func(original *network.CreateOptions) error {
 		return nil
 	}
 }
 
 // WithDriver allows to override the default network driver, which is "bridge".
 func WithDriver(driver string) CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) error {
+	return func(original *network.CreateOptions) error {
 		original.Driver = driver
 
 		return nil
@@ -98,16 +97,16 @@ func WithDriver(driver string) CustomizeNetworkOption {
 // WithEnableIPv6 allows to set the network as IPv6 enabled.
 // Please use this option if and only if IPv6 is enabled on the Docker daemon.
 func WithEnableIPv6() CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) error {
-		original.EnableIPv6 = true
-
+	return func(original *network.CreateOptions) error {
+		enableIPv6 := true
+		original.EnableIPv6 = &enableIPv6
 		return nil
 	}
 }
 
 // WithInternal allows to set the network as internal.
 func WithInternal() CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) error {
+	return func(original *network.CreateOptions) error {
 		original.Internal = true
 
 		return nil
@@ -117,7 +116,7 @@ func WithInternal() CustomizeNetworkOption {
 // WithLabels allows to set the network labels, adding the new ones
 // to the default Testcontainers for Go labels.
 func WithLabels(labels map[string]string) CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) error {
+	return func(original *network.CreateOptions) error {
 		for k, v := range labels {
 			original.Labels[k] = v
 		}
@@ -128,7 +127,7 @@ func WithLabels(labels map[string]string) CustomizeNetworkOption {
 
 // WithIPAM allows to change the default IPAM configuration.
 func WithIPAM(ipam *network.IPAM) CustomizeNetworkOption {
-	return func(original *types.NetworkCreate) error {
+	return func(original *network.CreateOptions) error {
 		original.IPAM = ipam
 
 		return nil
