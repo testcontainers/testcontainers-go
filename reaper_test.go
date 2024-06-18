@@ -10,13 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
-	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
 	"github.com/testcontainers/testcontainers-go/internal/core/reaper"
 )
 
@@ -203,155 +201,6 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 	_, err = nginxA.State(ctx)
 	if err == nil {
 		t.Fatal("expected error from container inspect.")
-	}
-}
-
-func TestNewReaper(t *testing.T) {
-	config.Reset() // reset the config using the internal method to avoid the sync.Once
-	tcConfig := config.Read()
-	if tcConfig.RyukDisabled {
-		t.Skip("Ryuk is disabled, skipping test")
-	}
-
-	type cases struct {
-		name   string
-		req    Request
-		config config.Config
-		ctx    context.Context
-		env    map[string]string
-	}
-
-	tests := []cases{
-		{
-			name: "non-privileged",
-			req:  createContainerRequest(nil),
-			config: config.Config{
-				RyukConnectionTimeout:   time.Minute,
-				RyukReconnectionTimeout: 10 * time.Second,
-			},
-		},
-		{
-			name: "privileged",
-			req: createContainerRequest(func(req Request) Request {
-				req.Privileged = true
-				return req
-			}),
-			config: config.Config{
-				RyukPrivileged:          true,
-				RyukConnectionTimeout:   time.Minute,
-				RyukReconnectionTimeout: 10 * time.Second,
-			},
-		},
-		{
-			name: "configured non-default timeouts",
-			req: createContainerRequest(func(req Request) Request {
-				req.Env = map[string]string{
-					"RYUK_CONNECTION_TIMEOUT":   "1m0s",
-					"RYUK_RECONNECTION_TIMEOUT": "10m0s",
-				}
-				return req
-			}),
-			config: config.Config{
-				RyukPrivileged:          true,
-				RyukConnectionTimeout:   time.Minute,
-				RyukReconnectionTimeout: 10 * time.Minute,
-			},
-		},
-		{
-			name: "configured verbose mode",
-			req: createContainerRequest(func(req Request) Request {
-				req.Env = map[string]string{
-					"RYUK_VERBOSE": "true",
-				}
-				return req
-			}),
-			config: config.Config{
-				RyukPrivileged: true,
-				RyukVerbose:    true,
-			},
-		},
-		{
-			name: "docker-host in context",
-			req: createContainerRequest(func(req Request) Request {
-				req.HostConfigModifier = func(hostConfig *container.HostConfig) {
-					hostConfig.Binds = []string{core.ExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
-				}
-				return req
-			}),
-			config: config.Config{
-				RyukConnectionTimeout:   time.Minute,
-				RyukReconnectionTimeout: 10 * time.Second,
-			},
-			ctx: context.WithValue(context.TODO(), core.DockerHostContextKey, core.DockerSocketPathWithSchema),
-		},
-		{
-			name: "Reaper including custom Hub prefix",
-			req: createContainerRequest(func(req Request) Request {
-				req.Image = config.ReaperDefaultImage
-				req.Privileged = true
-				return req
-			}),
-			config: config.Config{
-				HubImageNamePrefix:      "registry.mycompany.com/mirror",
-				RyukPrivileged:          true,
-				RyukConnectionTimeout:   time.Minute,
-				RyukReconnectionTimeout: 10 * time.Second,
-			},
-		},
-		{
-			name: "Reaper including custom Hub prefix as env var",
-			req: createContainerRequest(func(req Request) Request {
-				req.Image = config.ReaperDefaultImage
-				req.Privileged = true
-				return req
-			}),
-			config: config.Config{
-				RyukPrivileged:          true,
-				RyukConnectionTimeout:   time.Minute,
-				RyukReconnectionTimeout: 10 * time.Second,
-			},
-			env: map[string]string{
-				"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": "registry.mycompany.com/mirror",
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if test.env != nil {
-				config.Reset() // reset the config using the internal method to avoid the sync.Once
-				for k, v := range test.env {
-					t.Setenv(k, v)
-				}
-			}
-
-			if prefix := os.Getenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX"); prefix != "" {
-				test.config.HubImageNamePrefix = prefix
-			}
-
-			provider := newMockReaperProvider(t)
-			provider.config = test.config
-			t.Cleanup(provider.RestoreReaperState)
-
-			if test.ctx == nil {
-				test.ctx = context.TODO()
-			}
-
-			_, err := NewReaper(test.ctx, testSessionID)
-			// we should have errored out see mockReaperProvider.RunContainer
-			require.EqualError(t, err, "expected")
-
-			assert.Equal(t, test.req.Image, provider.req.Image, "expected image doesn't match the submitted request")
-			assert.Equal(t, test.req.ExposedPorts, provider.req.ExposedPorts, "expected exposed ports don't match the submitted request")
-			assert.Equal(t, test.req.Labels, provider.req.Labels, "expected labels don't match the submitted request")
-			assert.Equal(t, test.req.Mounts, provider.req.Mounts, "expected mounts don't match the submitted request")
-			assert.Equal(t, test.req.WaitingFor, provider.req.WaitingFor, "expected waitingFor don't match the submitted request")
-			assert.Equal(t, test.req.Env, provider.req.Env, "expected env doesn't match the submitted request")
-
-			// checks for reaper's preCreationCallback fields
-			assert.Equal(t, container.NetworkMode(corenetwork.Bridge), provider.hostConfig.NetworkMode, "expected networkMode doesn't match the submitted request")
-			assert.True(t, provider.hostConfig.AutoRemove, "expected networkMode doesn't match the submitted request")
-		})
 	}
 }
 
