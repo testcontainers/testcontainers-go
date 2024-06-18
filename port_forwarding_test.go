@@ -109,11 +109,7 @@ func TestExposeHostPorts(t *testing.T) {
 			if err != nil {
 				tt.Fatal(err)
 			}
-			tt.Cleanup(func() {
-				if err := c.Terminate(context.Background()); err != nil {
-					tt.Fatal(err)
-				}
-			})
+			terminateContainerOnEnd(t, context.Background(), c)
 
 			if tc.hasHostAccess {
 				// create a container that has host access, which will
