@@ -171,7 +171,10 @@ func NewReaper(ctx context.Context, sessionID string) (*Reaper, error) {
 				return nil, err
 			}
 		} else if state.Running {
+			// update the reaper instance
+			tcreaper.InitReaper(reaperInstance.Endpoint, reaperInstance.SessionID)
 			reaperInstance.Container.Printf("🔥 Reaper obtained from this test session %s", sessionID)
+
 			return reaperInstance, nil
 		}
 		// else: the reaper instance has been terminated, so we need to create a new one
@@ -190,6 +193,10 @@ func NewReaper(ctx context.Context, sessionID string) (*Reaper, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// update the reaper instance
+		tcreaper.InitReaper(reaperInstance.Endpoint, reaperInstance.SessionID)
+
 		return reaperInstance, nil
 	}
 
