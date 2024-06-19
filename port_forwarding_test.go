@@ -107,7 +107,11 @@ func TestExposeHostPorts(t *testing.T) {
 				tt.Fatal(err)
 			}
 
-			terminateContainerOnEnd(t, context.Background(), c)
+			tt.Cleanup(func() {
+				if err := c.Terminate(context.Background()); err != nil {
+					tt.Fatal(err)
+				}
+			})
 			if tc.hasNetwork && nw != nil {
 				tt.Cleanup(func() {
 					if err := nw.Remove(context.Background()); err != nil {
