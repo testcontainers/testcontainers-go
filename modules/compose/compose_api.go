@@ -22,11 +22,11 @@ import (
 	"github.com/docker/docker/client"
 	"golang.org/x/sync/errgroup"
 
-	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/internal/core/reaper"
 	tclog "github.com/testcontainers/testcontainers-go/log"
-	wait "github.com/testcontainers/testcontainers-go/wait"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 type stackUpOptionFunc func(s *stackUpOptions)
@@ -159,7 +159,7 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) error {
 		o.temporaryPaths[f[i]] = true
 	}
 
-	o.Paths = f
+	o.Paths = append(o.Paths, f...)
 
 	return nil
 }
@@ -167,7 +167,7 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) error {
 type ComposeStackFiles []string
 
 func (f ComposeStackFiles) applyToComposeStack(o *composeStackOptions) error {
-	o.Paths = f
+	o.Paths = append(o.Paths, f...)
 	return nil
 }
 
