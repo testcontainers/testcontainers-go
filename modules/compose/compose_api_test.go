@@ -472,6 +472,53 @@ services:
 	require.Nil(t, f, "File should be removed")
 }
 
+func TestDockerComposeAPIWithStackReaderAndComposeFile(t *testing.T) {
+	identifier := testNameHash(t.Name())
+	simple, _ := RenderComposeSimple(t)
+	composeContent := `version: '3.7'
+services:
+  api-postgres:
+    image: docker.io/postgres:14
+    environment:
+      POSTGRES_PASSWORD: s3cr3t
+`
+
+	compose, err := NewDockerComposeWith(
+		identifier,
+		WithStackFiles(simple),
+		WithStackReaders(strings.NewReader(composeContent)),
+	)
+	require.NoError(t, err, "NewDockerCompose()")
+
+	t.Cleanup(func() {
+		require.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		WithEnv(map[string]string{
+			"bar": "BAR",
+			"foo": "FOO",
+		}).
+		Up(ctx, Wait(true))
+	require.NoError(t, err, "compose.Up()")
+
+	serviceNames := compose.Services()
+
+	assert.Len(t, serviceNames, 2)
+	assert.Contains(t, serviceNames, "api-nginx")
+	assert.Contains(t, serviceNames, "api-postgres")
+
+	present := map[string]string{
+		"bar": "BAR",
+		"foo": "FOO",
+	}
+	absent := map[string]string{}
+	assertContainerEnvironmentVariables(t, identifier.String(), "api-nginx", present, absent)
+}
+
 func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 	identifier := testNameHash(t.Name())
 
