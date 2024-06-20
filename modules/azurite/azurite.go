@@ -72,7 +72,7 @@ func (c *AzuriteContainer) MustServiceURL(ctx context.Context, srv Service) stri
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*AzuriteContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "mcr.microsoft.com/azure-storage/azurite:3.28.0",
-		ExposedPorts: []string{"10000/tcp", "10001/tcp", "10002/tcp"},
+		ExposedPorts: []string{BlobPort, QueuePort, TablePort},
 		Env:          map[string]string{},
 		Entrypoint:   []string{"azurite"},
 		Cmd:          []string{},
