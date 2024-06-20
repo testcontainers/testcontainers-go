@@ -90,6 +90,11 @@ func TestExposeHostPorts(t *testing.T) {
 				if err != nil {
 					tt.Fatal(err)
 				}
+				tt.Cleanup(func() {
+					if err := nw.Remove(context.Background()); err != nil {
+						tt.Fatal(err)
+					}
+				})
 
 				req.Networks = []string{nw.Name}
 				req.NetworkAliases = map[string][]string{nw.Name: {"myalpine"}}
@@ -106,19 +111,11 @@ func TestExposeHostPorts(t *testing.T) {
 			if err != nil {
 				tt.Fatal(err)
 			}
-
 			tt.Cleanup(func() {
 				if err := c.Terminate(context.Background()); err != nil {
 					tt.Fatal(err)
 				}
 			})
-			if tc.hasNetwork && nw != nil {
-				tt.Cleanup(func() {
-					if err := nw.Remove(context.Background()); err != nil {
-						tt.Fatal(err)
-					}
-				})
-			}
 
 			if tc.hasHostAccess {
 				// create a container that has host access, which will
