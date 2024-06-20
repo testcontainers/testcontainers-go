@@ -28,6 +28,7 @@ const (
 )
 
 var (
+	// waitStrategy {
 	// BasicWaitStrategies is a simple but reliable way to wait for postgres to start.
 	BasicWaitStrategies = testcontainers.WithWaitStrategy(
 		// First, we wait for the container to log readiness twice.
@@ -39,6 +40,7 @@ var (
 		// Without this, the tests will be flaky on those OSes!
 		wait.ForListeningPort("5432/tcp"),
 	)
+	// }
 )
 
 func TestPostgres(t *testing.T) {
