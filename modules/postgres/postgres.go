@@ -19,6 +19,10 @@ const (
 	defaultSnapshotName  = "migrated_template"
 )
 
+// SQLDriverName is passed to sql.Open() to connect to the database when making or restoring snapshots.
+// This can be set if your app imports a different postgres driver, f.ex. "pgx"
+var SQLDriverName = "postgres"
+
 // PostgresContainer represents the postgres container type used in the module
 type PostgresContainer struct {
 	testcontainers.Container
@@ -273,7 +277,7 @@ func (c *PostgresContainer) snapshotConnection(ctx context.Context) (*sql.Conn, 
 
 	// Try to use an actual postgres connection, if the driver is loaded
 	connStr := c2.MustConnectionString(ctx, "sslmode=disable")
-	pool, err := sql.Open("postgres", connStr)
+	pool, err := sql.Open(SQLDriverName, connStr)
 	if err != nil {
 		return nil, nil, fmt.Errorf("sql.Open for snapshot connection failed: %w", err)
 	}
