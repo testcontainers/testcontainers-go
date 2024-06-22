@@ -758,6 +758,8 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 			_, err := io.ReadFull(r, h)
 			if err != nil {
 				switch {
+				case err == io.EOF:
+					// No more logs coming
 				case errors.Is(err, net.ErrClosed):
 					now := time.Now()
 					since = fmt.Sprintf("%d.%09d", now.Unix(), int64(now.Nanosecond()))
