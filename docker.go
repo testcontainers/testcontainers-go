@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -756,8 +757,7 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 			h := make([]byte, 8)
 			_, err := io.ReadFull(r, h)
 			if err != nil {
-				// proper type matching requires https://go-review.googlesource.com/c/go/+/250357/ (go 1.16)
-				if strings.Contains(err.Error(), "use of closed network connection") {
+				if errors.Is(err, net.ErrClosed) {
 					now := time.Now()
 					since = fmt.Sprintf("%d.%09d", now.Unix(), int64(now.Nanosecond()))
 					goto BEGIN
