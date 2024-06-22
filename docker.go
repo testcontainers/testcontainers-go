@@ -757,17 +757,18 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 			h := make([]byte, 8)
 			_, err := io.ReadFull(r, h)
 			if err != nil {
-				if errors.Is(err, net.ErrClosed) {
+				switch {
+				case errors.Is(err, net.ErrClosed):
 					now := time.Now()
 					since = fmt.Sprintf("%d.%09d", now.Unix(), int64(now.Nanosecond()))
 					goto BEGIN
-				}
-				if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+				case errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled):
 					// Probably safe to continue here
 					continue
+				default:
+					_, _ = fmt.Fprintf(os.Stderr, "container log error: %+v. %s", err, logStoppedForOutOfSyncMessage)
+					// if we would continue here, the next header-read will result into random data...
 				}
-				_, _ = fmt.Fprintf(os.Stderr, "container log error: %+v. %s", err, logStoppedForOutOfSyncMessage)
-				// if we would continue here, the next header-read will result into random data...
 				return
 			}
 
