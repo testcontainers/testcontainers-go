@@ -49,7 +49,7 @@ Please read more about customizing images in the [Image name substitution](image
 1. Ryuk must be started as a privileged container. For that, you can set the `TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED` **environment variable**, or the  `ryuk.container.privileged` **property** to `true`.
 1. If your environment already implements automatic cleanup of containers after the execution,
 but does not allow starting privileged containers, you can turn off the Ryuk container by setting
-`TESTCONTAINERS_RYUK_DISABLED` **environment variable** to `true`.
+`TESTCONTAINERS_RYUK_DISABLED` **environment variable** , or the  `ryuk.disabled` **property** to `true`.
 1. You can specify the connection timeout for Ryuk by setting the `TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT` **environment variable**, or the `ryuk.connection.timeout` **property**. The default value is 1 minute.
 1. You can specify the reconnection timeout for Ryuk by setting the `TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT` **environment variable**, or the `ryuk.reconnection.timeout` **property**. The default value is 10 seconds.
 1. You can configure Ryuk to run in verbose mode by setting any of the `ryuk.verbose` **property** or the `TESTCONTAINERS_RYUK_VERBOSE` **environment variable**. The default value is `false`.

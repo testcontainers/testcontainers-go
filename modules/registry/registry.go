@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/registry"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -82,7 +82,6 @@ func (c *RegistryContainer) DeleteImage(ctx context.Context, imageRef string) er
 			return false
 		}).
 		WaitUntilReady(ctx, c)
-
 	if err != nil {
 		return fmt.Errorf("failed to get image digest: %w", err)
 	}
@@ -136,7 +135,7 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 		return fmt.Errorf("failed to get image auth: %w", err)
 	}
 
-	pushOpts := types.ImagePushOptions{
+	pushOpts := image.PushOptions{
 		All: true,
 	}
 
@@ -177,7 +176,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

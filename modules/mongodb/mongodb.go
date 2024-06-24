@@ -81,9 +81,9 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 
 // WithReplicaSet configures the container to run a single-node MongoDB replica set named "rs".
 // It will wait until the replica set is ready.
-func WithReplicaSet() testcontainers.CustomizeRequestOption {
+func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Cmd = append(req.Cmd, "--replSet", "rs")
+		req.Cmd = append(req.Cmd, "--replSet", replSetName)
 		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
 			PostStarts: []testcontainers.ContainerHook{
 				func(ctx context.Context, c testcontainers.Container) error {
@@ -92,7 +92,7 @@ func WithReplicaSet() testcontainers.CustomizeRequestOption {
 						return err
 					}
 
-					cmd := eval("rs.initiate({ _id: 'rs', members: [ { _id: 0, host: '%s:27017' } ] })", ip)
+					cmd := eval("rs.initiate({ _id: '%s', members: [ { _id: 0, host: '%s:27017' } ] })", replSetName, ip)
 					return wait.ForExec(cmd).WaitUntilReady(ctx, c)
 				},
 			},
