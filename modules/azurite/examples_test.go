@@ -71,7 +71,7 @@ func ExampleRunContainer_blobOperations() {
 	// using the built-in shared key credential type
 	cred, err := azblob.NewSharedKeyCredential(azurite.AccountName, azurite.AccountKey)
 	if err != nil {
-		log.Fatalf("failed to create shared key credential: %s", err)
+		log.Fatalf("failed to create shared key credential: %s", err) // nolint:gocritic
 	}
 
 	// create an azblob.Client for the specified storage account that uses the above credentials
@@ -79,7 +79,7 @@ func ExampleRunContainer_blobOperations() {
 
 	client, err := azblob.NewClientWithSharedKeyCredential(blobServiceURL, cred, nil)
 	if err != nil {
-		log.Fatalf("failed to create client: %s", err)
+		log.Fatalf("failed to create client: %s", err) // nolint:gocritic
 	}
 
 	// ===== 1. Create a container =====
@@ -108,7 +108,7 @@ func ExampleRunContainer_blobOperations() {
 	// Download the blob's contents and ensure that the download worked properly
 	blobDownloadResponse, err := client.DownloadStream(context.TODO(), containerName, blobName, nil)
 	if err != nil {
-		log.Fatalf("failed to download blob: %s", err)
+		log.Fatalf("failed to download blob: %s", err) // nolint:gocritic
 	}
 
 	// Use the bytes.Buffer object to read the downloaded data.
@@ -116,7 +116,7 @@ func ExampleRunContainer_blobOperations() {
 	reader := blobDownloadResponse.Body
 	downloadData, err := io.ReadAll(reader)
 	if err != nil {
-		log.Fatalf("failed to read downloaded data: %s", err)
+		log.Fatalf("failed to read downloaded data: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(string(downloadData))
@@ -183,7 +183,7 @@ func ExampleRunContainer_queueOperations() {
 	// using the built-in shared key credential type
 	cred, err := azqueue.NewSharedKeyCredential(azurite.AccountName, azurite.AccountKey)
 	if err != nil {
-		log.Fatalf("failed to create shared key credential: %s", err)
+		log.Fatalf("failed to create shared key credential: %s", err) // nolint:gocritic
 	}
 
 	// create an azqueue.Client for the specified storage account that uses the above credentials
@@ -255,7 +255,7 @@ func ExampleRunContainer_tableOperations() {
 	// using the built-in shared key credential type
 	cred, err := aztables.NewSharedKeyCredential(azurite.AccountName, azurite.AccountKey)
 	if err != nil {
-		log.Fatalf("failed to create shared key credential: %s", err)
+		log.Fatalf("failed to create shared key credential: %s", err) // nolint:gocritic
 	}
 
 	// create an aztables.Client for the specified storage account that uses the above credentials
