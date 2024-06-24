@@ -253,7 +253,9 @@ func (c *PostgresContainer) execCommandsSQL(ctx context.Context, cmds ...string)
 		testcontainers.Logger.Printf("Could not connect to database to restore snapshot, falling back to `docker exec psql`: %v", err)
 		return c.execCommandsFallback(ctx, cmds)
 	}
-	defer cleanup()
+	if cleanup != nil {
+		defer cleanup()
+	}
 	for _, cmd := range cmds {
 		if _, err := conn.ExecContext(ctx, cmd); err != nil {
 			return fmt.Errorf("could not execute restore command %s: %w", cmd, err)
