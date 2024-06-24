@@ -27,22 +27,6 @@ const (
 	password = "password"
 )
 
-var (
-	// waitStrategy {
-	// BasicWaitStrategies is a simple but reliable way to wait for postgres to start.
-	BasicWaitStrategies = testcontainers.WithWaitStrategy(
-		// First, we wait for the container to log readiness twice.
-		// This is because it will restart itself after the first startup.
-		wait.ForLog("database system is ready to accept connections").WithOccurrence(2),
-		// Then, we wait for docker to actually serve the port on localhost.
-		// For non-linux OSes like Mac and Windows, Docker or Rancher Desktop will have to start a separate proxy
-		// process that sometimes takes a little longer to initialize.
-		// Without this, the tests will be flaky on those OSes!
-		wait.ForListeningPort("5432/tcp"),
-	)
-	// }
-)
-
 func TestPostgres(t *testing.T) {
 	ctx := context.Background()
 
@@ -81,7 +65,7 @@ func TestPostgres(t *testing.T) {
 				postgres.WithDatabase(dbname),
 				postgres.WithUsername(user),
 				postgres.WithPassword(password),
-				BasicWaitStrategies,
+				postgres.BasicWaitStrategies(),
 			)
 			if err != nil {
 				t.Fatal(err)
@@ -178,7 +162,7 @@ func TestWithConfigFile(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		BasicWaitStrategies,
+		postgres.BasicWaitStrategies(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -209,7 +193,7 @@ func TestWithInitScript(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		BasicWaitStrategies,
+		postgres.BasicWaitStrategies(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -247,7 +231,7 @@ func TestSnapshot(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		BasicWaitStrategies,
+		postgres.BasicWaitStrategies(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -350,7 +334,7 @@ func TestSnapshotWithOverrides(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		BasicWaitStrategies,
+		postgres.BasicWaitStrategies(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -421,7 +405,7 @@ func TestSnapshotWithDockerExecFallback(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		BasicWaitStrategies,
+		postgres.BasicWaitStrategies(),
 	)
 	if err != nil {
 		t.Fatal(err)
