@@ -117,6 +117,8 @@ tests very modular, since they always run on a brand-new database.
 
 ### Snapshot/Restore with custom driver
 
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 The snapshot/restore feature tries to use the `postgres` driver with go's included `sql.DB` package to perform database operations.
 If the `postgres` driver is not installed, it will fall back to using `docker exec`, which works, but is slower.
 
