@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	image    = "semitechnologies/weaviate:1.24.6"
+	image    = "semitechnologies/weaviate:1.25.5"
 	httpPort = "8080/tcp"
 	grpcPort = "50051/tcp"
 )
@@ -33,6 +33,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort(httpPort).WithStartupTimeout(5*time.Second),
 			wait.ForListeningPort(grpcPort).WithStartupTimeout(5*time.Second),
+			wait.ForHTTP("/v1/.well-known/ready").WithPort(httpPort),
 		),
 	}
 
