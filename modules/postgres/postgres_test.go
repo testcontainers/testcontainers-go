@@ -12,7 +12,6 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/jackc/pgx/v5"
 	_ "github.com/lib/pq"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

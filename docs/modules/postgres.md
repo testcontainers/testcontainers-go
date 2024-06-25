@@ -98,7 +98,7 @@ The postgres module works best with these wait strategies.
 No default is supplied, so you need to set it explicitly.
 
 <!--codeinclude-->
-[Example Wait Strategies](../../modules/postgres/postgres_test.go) inside_block:waitStrategy
+[Example Wait Strategies](../../modules/postgres/wait_strategies.go) inside_block:waitStrategy
 <!--/codeinclude-->
 
 ### Using Snapshots
