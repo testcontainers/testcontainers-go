@@ -30,13 +30,13 @@ func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.RequestCus
 		return nil, err
 	}
 
-	spannerContainer, err := newGCloudContainer(ctx, 9050, ctr, settings)
+	bigQueryContainer, err := newGCloudContainer(ctx, 9050, ctr, settings)
 	if err != nil {
 		return nil, err
 	}
 
 	// always prepend http:// to the URI
-	spannerContainer.URI = "http://" + spannerContainer.URI
+	bigQueryContainer.URI = "http://" + bigQueryContainer.URI
 
-	return spannerContainer, nil
+	return bigQueryContainer, nil
 }

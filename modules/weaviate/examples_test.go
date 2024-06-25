@@ -111,7 +111,7 @@ func ExampleRunContainer_connectWithClientWithModules() {
 	}
 
 	opts := []testcontainers.RequestCustomizer{
-		testcontainers.WithImage("semitechnologies/weaviate:1.24.5"),
+		testcontainers.WithImage("semitechnologies/weaviate:1.25.5"),
 		testcontainers.WithEnv(envs),
 	}
 

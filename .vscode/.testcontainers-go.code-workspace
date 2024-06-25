@@ -18,6 +18,10 @@
             "path": "../modules/artemis"
         },
         {
+            "name": "module / azurite",
+            "path": "../modules/azurite"
+        },
+        {
             "name": "module / cassandra",
             "path": "../modules/cassandra"
         },
