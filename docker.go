@@ -70,7 +70,6 @@ type DockerContainer struct {
 	sessionID          string
 	terminationSignal  chan bool
 	consumers          []LogConsumer
-	raw                *types.ContainerJSON
 	logProductionError chan error
 
 	// TODO: Remove locking and wait group once the deprecated StartLogProducer and
@@ -166,12 +165,8 @@ func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 	return host, nil
 }
 
-// Inspect gets the raw container info, caching the result for subsequent calls
+// Inspect gets the raw container info
 func (c *DockerContainer) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
-	if c.raw != nil {
-		return c.raw, nil
-	}
-
 	jsonRaw, err := c.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
@@ -278,7 +273,6 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	defer c.provider.Close()
 
 	c.isRunning = false
-	c.raw = nil // invalidate the cache, as the container representation will change after stopping
 
 	err = c.stoppedHook(ctx)
 	if err != nil {
@@ -317,7 +311,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 	c.sessionID = ""
 	c.isRunning = false
-	c.raw = nil // invalidate the cache here too
+
 	return errors.Join(errs...)
 }
 
@@ -329,8 +323,7 @@ func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.Conta
 		return nil, err
 	}
 
-	c.raw = &inspect
-	return c.raw, nil
+	return &inspect, nil
 }
 
 // Logs will fetch both STDOUT and STDERR from the current container. Returns a
@@ -408,14 +401,10 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 	return inspect.Name, nil
 }
 
-// State returns container's running state. This method does not use the cache
-// and always fetches the latest state from the Docker daemon.
+// State returns container's running state.
 func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
 	inspect, err := c.inspectRawContainer(ctx)
 	if err != nil {
-		if c.raw != nil {
-			return c.raw.State, err
-		}
 		return nil, err
 	}
 	return inspect.State, nil
@@ -1574,13 +1563,13 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	ctr.terminationSignal = nil
 
 	// populate the raw representation of the container
-	_, err = ctr.inspectRawContainer(ctx)
+	jsonRaw, err := ctr.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// the health status of the container, if any
-	if health := ctr.raw.State.Health; health != nil {
+	if health := jsonRaw.State.Health; health != nil {
 		ctr.healthStatus = health.Status
 	}
 
