@@ -57,9 +57,10 @@ var createContainerFailDueToNameConflictRegex = regexp.MustCompile("Conflict. Th
 // DockerContainer represents a container started using Docker
 type DockerContainer struct {
 	// Container ID from Docker
-	ID         string
-	WaitingFor wait.Strategy
-	Image      string
+	ID           string
+	WaitingFor   wait.Strategy
+	Image        string
+	exposedPorts []string // a reference to the container's requested exposed ports. It allows checking they are ready before any wait strategy
 
 	isRunning     bool
 	imageWasBuilt bool
@@ -1150,6 +1151,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		imageWasBuilt:     req.ShouldBuildImage(),
 		keepBuiltImage:    req.ShouldKeepBuiltImage(),
 		sessionID:         core.SessionID(),
+		exposedPorts:      req.ExposedPorts,
 		provider:          p,
 		terminationSignal: termSignal,
 		logger:            p.Logger,
@@ -1253,6 +1255,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		WaitingFor:        req.WaitingFor,
 		Image:             c.Image,
 		sessionID:         sessionID,
+		exposedPorts:      req.ExposedPorts,
 		provider:          p,
 		terminationSignal: termSignal,
 		logger:            p.Logger,
