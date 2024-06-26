@@ -234,7 +234,6 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 
 					return nil
 				}, b)
-
 				if err != nil {
 					return fmt.Errorf("all exposed ports, %s, were not mapped in 5s: %w", dockerContainer.exposedPorts, err)
 				}
