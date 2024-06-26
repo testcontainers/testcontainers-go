@@ -27,13 +27,13 @@ const (
 	// }
 )
 
-// AzuriteContainer represents the Azurite container type used in the module
-type AzuriteContainer struct {
-	testcontainers.Container
+// Container represents the Azurite container type used in the module
+type Container struct {
+	*testcontainers.DockerContainer
 	Settings options
 }
 
-func (c *AzuriteContainer) ServiceURL(ctx context.Context, srv Service) (string, error) {
+func (c *Container) ServiceURL(ctx context.Context, srv Service) (string, error) {
 	hostname, err := c.Host(ctx)
 	if err != nil {
 		return "", err
@@ -59,7 +59,7 @@ func (c *AzuriteContainer) ServiceURL(ctx context.Context, srv Service) (string,
 	return fmt.Sprintf("http://%s:%d", hostname, mappedPort.Int()), nil
 }
 
-func (c *AzuriteContainer) MustServiceURL(ctx context.Context, srv Service) string {
+func (c *Container) MustServiceURL(ctx context.Context, srv Service) string {
 	url, err := c.ServiceURL(ctx, srv)
 	if err != nil {
 		panic(err)
@@ -69,24 +69,20 @@ func (c *AzuriteContainer) MustServiceURL(ctx context.Context, srv Service) stri
 }
 
 // RunContainer creates an instance of the Azurite container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*AzuriteContainer, error) {
-	req := testcontainers.ContainerRequest{
+func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+	req := testcontainers.Request{
 		Image:        "mcr.microsoft.com/azure-storage/azurite:3.28.0",
 		ExposedPorts: []string{BlobPort, QueuePort, TablePort},
 		Env:          map[string]string{},
 		Entrypoint:   []string{"azurite"},
 		Cmd:          []string{},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started:      true,
 	}
 
 	// 1. Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, err
 		}
 	}
@@ -98,26 +94,26 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		for _, srv := range enabledServices {
 			switch srv {
 			case BlobService:
-				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--blobHost", "0.0.0.0")
+				req.Cmd = append(req.Cmd, "--blobHost", "0.0.0.0")
 				waitingFor = append(waitingFor, wait.ForLog("Blob service is successfully listening"))
 			case QueueService:
-				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--queueHost", "0.0.0.0")
+				req.Cmd = append(req.Cmd, "--queueHost", "0.0.0.0")
 				waitingFor = append(waitingFor, wait.ForLog("Queue service is successfully listening"))
 			case TableService:
-				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--tableHost", "0.0.0.0")
+				req.Cmd = append(req.Cmd, "--tableHost", "0.0.0.0")
 				waitingFor = append(waitingFor, wait.ForLog("Table service is successfully listening"))
 			}
 		}
 
 		if len(waitingFor) > 0 {
-			genericContainerReq.WaitingFor = wait.ForAll(waitingFor...)
+			req.WaitingFor = wait.ForAll(waitingFor...)
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.New(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return &AzuriteContainer{Container: container, Settings: settings}, nil
+	return &Container{DockerContainer: ctr, Settings: settings}, nil
 }
