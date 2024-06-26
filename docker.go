@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -752,57 +753,59 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 				c.logProductionError <- r.Close()
 				return
 			default:
-				h := make([]byte, 8)
-				_, err := io.ReadFull(r, h)
-				if err != nil {
-					// proper type matching requires https://go-review.googlesource.com/c/go/+/250357/ (go 1.16)
-					if strings.Contains(err.Error(), "use of closed network connection") {
-						now := time.Now()
-						since = fmt.Sprintf("%d.%09d", now.Unix(), int64(now.Nanosecond()))
-						goto BEGIN
-					}
-					if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-						// Probably safe to continue here
-						continue
-					}
+			}
+			h := make([]byte, 8)
+			_, err := io.ReadFull(r, h)
+			if err != nil {
+				switch {
+				case err == io.EOF:
+					// No more logs coming
+				case errors.Is(err, net.ErrClosed):
+					now := time.Now()
+					since = fmt.Sprintf("%d.%09d", now.Unix(), int64(now.Nanosecond()))
+					goto BEGIN
+				case errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled):
+					// Probably safe to continue here
+					continue
+				default:
 					_, _ = fmt.Fprintf(os.Stderr, "container log error: %+v. %s", err, logStoppedForOutOfSyncMessage)
 					// if we would continue here, the next header-read will result into random data...
-					return
 				}
+				return
+			}
 
-				count := binary.BigEndian.Uint32(h[4:])
-				if count == 0 {
+			count := binary.BigEndian.Uint32(h[4:])
+			if count == 0 {
+				continue
+			}
+			logType := h[0]
+			if logType > 2 {
+				_, _ = fmt.Fprintf(os.Stderr, "received invalid log type: %d", logType)
+				// sometimes docker returns logType = 3 which is an undocumented log type, so treat it as stdout
+				logType = 1
+			}
+
+			// a map of the log type --> int representation in the header, notice the first is blank, this is stdin, but the go docker client doesn't allow following that in logs
+			logTypes := []string{"", StdoutLog, StderrLog}
+
+			b := make([]byte, count)
+			_, err = io.ReadFull(r, b)
+			if err != nil {
+				// TODO: add-logger: use logger to log out this error
+				_, _ = fmt.Fprintf(os.Stderr, "error occurred reading log with known length %s", err.Error())
+				if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+					// Probably safe to continue here
 					continue
 				}
-				logType := h[0]
-				if logType > 2 {
-					_, _ = fmt.Fprintf(os.Stderr, "received invalid log type: %d", logType)
-					// sometimes docker returns logType = 3 which is an undocumented log type, so treat it as stdout
-					logType = 1
-				}
-
-				// a map of the log type --> int representation in the header, notice the first is blank, this is stdin, but the go docker client doesn't allow following that in logs
-				logTypes := []string{"", StdoutLog, StderrLog}
-
-				b := make([]byte, count)
-				_, err = io.ReadFull(r, b)
-				if err != nil {
-					// TODO: add-logger: use logger to log out this error
-					_, _ = fmt.Fprintf(os.Stderr, "error occurred reading log with known length %s", err.Error())
-					if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-						// Probably safe to continue here
-						continue
-					}
-					// we can not continue here as the next read most likely will not be the next header
-					_, _ = fmt.Fprintln(os.Stderr, logStoppedForOutOfSyncMessage)
-					return
-				}
-				for _, c := range c.consumers {
-					c.Accept(Log{
-						LogType: logTypes[logType],
-						Content: b,
-					})
-				}
+				// we can not continue here as the next read most likely will not be the next header
+				_, _ = fmt.Fprintln(os.Stderr, logStoppedForOutOfSyncMessage)
+				return
+			}
+			for _, c := range c.consumers {
+				c.Accept(Log{
+					LogType: logTypes[logType],
+					Content: b,
+				})
 			}
 		}
 	}()
