@@ -894,6 +894,9 @@ var _ ContainerProvider = (*DockerProvider)(nil)
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
 	buildOptions, err := img.BuildOptions()
+	if err != nil {
+		return "", err
+	}
 
 	var buildError error
 	var resp types.ImageBuildResponse
