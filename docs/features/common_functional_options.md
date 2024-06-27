@@ -150,7 +150,7 @@ Please read the [Create containers: Advanced Settings](/features/creating_contai
 This option will merge the customized request into the module's own `ContainerRequest`.
 
 ```go
-container, err := New(ctx, "postgres:13-alpine",
+container, err := Run(ctx, "postgres:13-alpine",
     /* Other module options */
     testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
         ContainerRequest: testcontainers.ContainerRequest{
