@@ -146,7 +146,6 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 	}
 
 	customizers := []testcontainers.ContainerCustomizer{
-		testcontainers.WithImage(config.imageName),
 		WithAdminCredentials(config.username, config.password),
 		WithIndexStorage(config.indexStorageMode),
 		WithBuckets(config.buckets...),
@@ -156,7 +155,7 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 		customizers = append(customizers, withService(srv))
 	}
 
-	return RunContainer(ctx, customizers...)
+	return Run(ctx, config.imageName, customizers...)
 }
 
 // ConnectionString returns the connection string to connect to the Couchbase container instance.
