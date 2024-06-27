@@ -41,8 +41,8 @@ When starting the CockroachDB container, you can pass options in a variadic way 
 
 #### Image
 
-If you need to set a different CockroachDB Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for CockroachDB. E.g. `testcontainers.WithImage("cockroachdb/cockroach:latest-v23.1")`.
+If you need to set a different CockroachDB Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "cockroachdb/cockroach:latest-v23.1")`.
 
 {% include "../features/common_functional_options.md" %}
 

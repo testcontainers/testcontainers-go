@@ -38,8 +38,8 @@ When starting the SurrealDB container, you can pass options in a variadic way to
 
 #### Image
 
-If you need to set a different SurrealDB Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for SurrealDB. E.g. `testcontainers.WithImage("surrealdb/surrealdb:v1.1.1")`.
+If you need to set a different SurrealDB Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "surrealdb/surrealdb:v1.1.1")`.
 
 {% include "../features/common_functional_options.md" %}
 

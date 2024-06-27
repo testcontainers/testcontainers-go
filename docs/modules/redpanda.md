@@ -43,8 +43,8 @@ When starting the Redpanda container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different Redpanda Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Redpanda. E.g. `testcontainers.WithImage("docker.redpanda.com/redpandadata/redpanda:v23.1.7")`.
+If you need to set a different Redpanda Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "docker.redpanda.com/redpandadata/redpanda:v23.1.7")`.
 
 {% include "../features/common_functional_options.md" %}
 

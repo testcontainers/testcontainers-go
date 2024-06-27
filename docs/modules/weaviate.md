@@ -38,8 +38,8 @@ When starting the Weaviate container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different Weaviate Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Weaviate. E.g. `testcontainers.WithImage("semitechnologies/weaviate:1.23.9")`.
+If you need to set a different Weaviate Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "semitechnologies/weaviate:1.23.9")`.
 
 {% include "../features/common_functional_options.md" %}
 

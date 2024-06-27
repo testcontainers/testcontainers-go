@@ -43,8 +43,8 @@ When starting the MS SQL Server container, you can pass options in a variadic wa
 
 #### Image
 
-If you need to set a different MS SQL Server Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for MS SQL Server. E.g. `testcontainers.WithImage("mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04")`.
+If you need to set a different MS SQL Server Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04")`.
 
 #### End User License Agreement
 

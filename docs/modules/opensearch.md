@@ -38,8 +38,8 @@ When starting the OpenSearch container, you can pass options in a variadic way t
 
 #### Image
 
-If you need to set a different OpenSearch Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for OpenSearch. E.g. `testcontainers.WithImage("opensearchproject/opensearch:2.11.1")`.
+If you need to set a different OpenSearch Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "opensearchproject/opensearch:2.11.1")`.
 
 {% include "../features/common_functional_options.md" %}
 

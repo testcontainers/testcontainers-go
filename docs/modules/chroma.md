@@ -43,8 +43,8 @@ When starting the Chroma container, you can pass options in a variadic way to co
 
 #### Image
 
-If you need to set a different Chroma Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Chroma. E.g. `testcontainers.WithImage("chromadb/chroma:0.4.24")`.
+If you need to set a different Chroma Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "chromadb/chroma:0.4.24")`.
 
 {% include "../features/common_functional_options.md" %}
 

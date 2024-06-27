@@ -38,8 +38,8 @@ When starting the Cassandra container, you can pass options in a variadic way to
 
 #### Image
 
-If you need to set a different Cassandra Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Cassandra. E.g. `testcontainers.WithImage("cassandra:4.1.3")`.
+If you need to set a different Cassandra Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "cassandra:4.1.3")`.
 
 {% include "../features/common_functional_options.md" %}
 

@@ -38,8 +38,8 @@ When starting the OpenLDAP container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different OpenLDAP Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for OpenLDAP. E.g. `testcontainers.WithImage("bitnami/openldap:2.6.6")`.
+If you need to set a different OpenLDAP Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "bitnami/openldap:2.6.6")`.
 
 {% include "../features/common_functional_options.md" %}
 

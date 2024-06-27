@@ -38,8 +38,8 @@ When starting the Dolt container, you can pass options in a variadic way to conf
 
 #### Image
 
-If you need to set a different Dolt Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Dolt. E.g. `testcontainers.WithImage("dolthub/dolt-sql-server:1.32.4")`.
+If you need to set a different Dolt Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "dolthub/dolt-sql-server:1.32.4")`.
 
 {% include "../features/common_functional_options.md" %}
 

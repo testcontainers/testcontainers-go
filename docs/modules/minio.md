@@ -38,8 +38,8 @@ When starting the Minio container, you can pass options in a variadic way to con
 
 #### Image
 
-If you need to set a different Minio Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Minio. E.g. `testcontainers.WithImage("minio/minio:RELEASE.2024-01-16T16-07-38Z")`.
+If you need to set a different Minio Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "minio/minio:RELEASE.2024-01-16T16-07-38Z")`.
 
 {% include "../features/common_functional_options.md" %}
 

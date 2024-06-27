@@ -64,11 +64,8 @@ When starting the Vault container, you can pass options in a variadic way to con
 
 #### Image
 
-If you need to set a different Vault Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Vault. E.g. `testcontainers.WithImage("hashicorp/vault:1.13.0")`.
-
-!!!info
-    Default image name is `hashicorp/vault:1.13.0`.
+If you need to set a different Vault Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "hashicorp/vault:1.13.0")`.
 
 {% include "../features/common_functional_options.md" %}
 

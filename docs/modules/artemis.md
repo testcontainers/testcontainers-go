@@ -42,8 +42,8 @@ When starting the Artemis container, you can pass options in a variadic way to c
 
 #### Image
 
-If you need to set a different Artemis Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Artemis. E.g. `testcontainers.WithImage("docker.io/apache/activemq-artemis:2.30.0")`.
+If you need to set a different Artemis Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "docker.io/apache/activemq-artemis:2.30.0")`.
 
 {% include "../features/common_functional_options.md" %}
 

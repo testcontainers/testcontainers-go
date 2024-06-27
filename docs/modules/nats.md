@@ -38,8 +38,8 @@ When starting the NATS container, you can pass options in a variadic way to conf
 
 #### Image
 
-If you need to set a different NATS Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for NATS. E.g. `testcontainers.WithImage("nats:2.9")`.
+If you need to set a different NATS Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "nats:2.9")`.
 
 {% include "../features/common_functional_options.md" %}
 

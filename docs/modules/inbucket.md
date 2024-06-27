@@ -38,8 +38,8 @@ When starting the Inbucket container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different Inbucket Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Inbucket. E.g. `testcontainers.WithImage("inbucket/inbucket:sha-2d409bb")`.
+If you need to set a different Inbucket Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "inbucket/inbucket:sha-2d409bb")`.
 
 {% include "../features/common_functional_options.md" %}
 
