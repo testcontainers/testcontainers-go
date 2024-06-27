@@ -12,13 +12,6 @@ import (
 )
 
 const (
-	// defaultImage {
-	defaultImageName = "neo4j"
-	defaultTag       = "4.4"
-	// }
-)
-
-const (
 	// containerPorts {
 	defaultBoltPort  = "7687"
 	defaultHttpPort  = "7474"

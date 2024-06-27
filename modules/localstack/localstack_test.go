@@ -148,7 +148,7 @@ func TestRunContainer(t *testing.T) {
 func TestStartWithoutOverride(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx)
+	container, err := Run(ctx, "localstack/localstack:2.0.0")
 	require.NoError(t, err)
 	assert.NotNil(t, container)
 }
@@ -159,10 +159,10 @@ func TestStartV2WithNetwork(t *testing.T) {
 	nw, err := network.New(ctx)
 	require.NoError(t, err)
 
-	localstack, err := RunContainer(
+	localstack, err := Run(
 		ctx,
+		"localstack/localstack:2.0.0",
 		network.WithNetwork([]string{"localstack"}, nw),
-		testcontainers.WithImage("localstack/localstack:2.0.0"),
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
 	)
 	require.NoError(t, err)
