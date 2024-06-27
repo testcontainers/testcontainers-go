@@ -3,7 +3,6 @@ package testcontainers
 import (
 	"archive/tar"
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/binary"
@@ -928,8 +927,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 
 	// need to read the response from Docker, I think otherwise the image
 	// might not finish building before continuing to execute here
-	buf := new(bytes.Buffer)
-	_, err = buf.ReadFrom(resp.Body)
+	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
 		return "", err
 	}
