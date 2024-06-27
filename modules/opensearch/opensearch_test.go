@@ -5,14 +5,13 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/opensearch"
 )
 
 func TestOpenSearch(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := opensearch.RunContainer(ctx, testcontainers.WithImage("opensearchproject/opensearch:2.11.1"))
+	container, err := opensearch.Run(ctx, "opensearchproject/opensearch:2.11.1")
 	if err != nil {
 		t.Fatal(err)
 	}

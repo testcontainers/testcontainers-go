@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/postgres
 
 ## Module reference
 
-The Postgres module exposes one entrypoint function to create the Postgres container, and this function receives two parameters:
+The Postgres module exposes one entrypoint function to create the Postgres container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options

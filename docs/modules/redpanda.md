@@ -27,13 +27,14 @@ go get github.com/testcontainers/testcontainers-go/modules/redpanda
 
 ## Module reference
 
-The Redpanda module exposes one entrypoint function to create the Redpanda container, and this function receives two parameters:
+The Redpanda module exposes one entrypoint function to create the Redpanda container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*RedpandaContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RedpandaContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options

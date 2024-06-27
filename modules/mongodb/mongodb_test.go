@@ -15,38 +15,36 @@ import (
 func TestMongoDB(t *testing.T) {
 	type tests struct {
 		name string
+		img  string
 		opts []testcontainers.ContainerCustomizer
 	}
 	testCases := []tests{
 		{
 			name: "From Docker Hub",
-			opts: []testcontainers.ContainerCustomizer{
-				testcontainers.WithImage("mongo:6"),
-			},
+			img:  "mongo:6",
+			opts: []testcontainers.ContainerCustomizer{},
 		},
 		{
 			name: "Community Server",
-			opts: []testcontainers.ContainerCustomizer{
-				testcontainers.WithImage("mongodb/mongodb-community-server:7.0.2-ubi8"),
-			},
+			img:  "mongodb/mongodb-community-server:7.0.2-ubi8",
+			opts: []testcontainers.ContainerCustomizer{},
 		},
 		{
 			name: "Enterprise Server",
-			opts: []testcontainers.ContainerCustomizer{
-				testcontainers.WithImage("mongodb/mongodb-enterprise-server:7.0.0-ubi8"),
-			},
+			img:  "mongodb/mongodb-enterprise-server:7.0.0-ubi8",
+			opts: []testcontainers.ContainerCustomizer{},
 		},
 		{
 			name: "With Replica set and mongo:4",
+			img:  "mongo:4",
 			opts: []testcontainers.ContainerCustomizer{
-				testcontainers.WithImage("mongo:4"),
 				mongodb.WithReplicaSet("rs"),
 			},
 		},
 		{
 			name: "With Replica set and mongo:6",
+			img:  "mongo:6",
 			opts: []testcontainers.ContainerCustomizer{
-				testcontainers.WithImage("mongo:6"),
 				mongodb.WithReplicaSet("rs"),
 			},
 		},
@@ -59,7 +57,7 @@ func TestMongoDB(t *testing.T) {
 
 			ctx := context.Background()
 
-			mongodbContainer, err := mongodb.RunContainer(ctx, tc.opts...)
+			mongodbContainer, err := mongodb.Run(ctx, tc.img, tc.opts...)
 			if err != nil {
 				tt.Fatalf("failed to start container: %s", err)
 			}

@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/rabbitmq
 
 ## Module reference
 
-The RabbitMQ module exposes one entrypoint function to create the RabbitMQ container, and this function receives two parameters:
+The RabbitMQ module exposes one entrypoint function to create the RabbitMQ container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*RabbitMQContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RabbitMQContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options

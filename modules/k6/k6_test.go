@@ -62,7 +62,7 @@ func TestK6(t *testing.T) {
 				options = k6.WithRemoteTestScript(desc)
 			}
 
-			container, err := k6.RunContainer(ctx, k6.WithCache(), options)
+			container, err := k6.Run(ctx, "szkiba/k6x:v0.3.1", k6.WithCache(), options)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/mariadb
 
 ## Module reference
 
-The MariaDB module exposes one entrypoint function to create the MariaDB container, and this function receives two parameters:
+The MariaDB module exposes one entrypoint function to create the MariaDB container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MariaDBContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MariaDBContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options

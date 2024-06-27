@@ -95,6 +95,7 @@ func WithHostPortAccess(ports ...int) CustomizeRequestOption {
 	}
 }
 
+// Deprecated: the modules API forces passing the image as part of the signature of the Run function.
 // WithImage sets the image for a container
 func WithImage(image string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {

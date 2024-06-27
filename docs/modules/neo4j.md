@@ -24,13 +24,14 @@ Running Neo4j as a single-instance server, with the [APOC plugin](https://neo4j.
 
 ## Module Reference
 
-The Neo4j module exposes one entrypoint function to create the Neo4j container, and this function receives two parameters:
+The Neo4j module exposes one entrypoint function to create the Neo4j container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Neo4jContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Neo4jContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Ports

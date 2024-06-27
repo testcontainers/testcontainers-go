@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/elasticsearch
 
 ## Module reference
 
-The Elasticsearch module exposes one entrypoint function to create the Elasticsearch container, and this function receives two parameters:
+The Elasticsearch module exposes one entrypoint function to create the Elasticsearch container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ElasticsearchContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ElasticsearchContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -66,7 +67,7 @@ The Elasticsearch container exposes its settings in order to configure the clien
 [Create an HTTP client](../../modules/elasticsearch/elasticsearch_test.go) inside_block:createHTTPClient
 <!--/codeinclude-->
 
-The `esContainer` instance is obtained from the `elasticsearch.RunContainer` function.
+The `esContainer` instance is obtained from the `elasticsearch.New` function.
 
 In the case you configured the Elasticsearch container to set up a password, you'll need to add the `Authorization` header to the request. You can use the `SetBasicAuth` method from the HTTP request to generate the header value.
 

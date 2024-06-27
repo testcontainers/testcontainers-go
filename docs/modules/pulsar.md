@@ -28,13 +28,14 @@ Create a `Pulsar` container to use it in your tests:
 
 ## Module Reference
 
-The Pulsar module exposes one entrypoint function to create the containerr, and this function receives two parameters:
+The Pulsar module exposes one entrypoint function to create the containerr, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options

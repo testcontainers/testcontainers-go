@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/kafka
 
 ## Module reference
 
-The Kafka module exposes one entrypoint function to create the Kafka container, and this function receives two parameters:
+The Kafka module exposes one entrypoint function to create the Kafka container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options

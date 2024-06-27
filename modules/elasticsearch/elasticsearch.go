@@ -19,7 +19,9 @@ const (
 )
 
 const (
-	DefaultBaseImage    = "docker.elastic.co/elasticsearch/elasticsearch"
+	// Deprecated: it will be removed in the next major version
+	DefaultBaseImage = "docker.elastic.co/elasticsearch/elasticsearch"
+	// Deprecated: it will be removed in the next major version
 	DefaultBaseImageOSS = "docker.elastic.co/elasticsearch/elasticsearch-oss"
 )
 
@@ -29,11 +31,17 @@ type ElasticsearchContainer struct {
 	Settings Options
 }
 
-// RunContainer creates an instance of the Elasticsearch container type
+// Deprecated: use Run instead
+// RunContainer creates an instance of the Couchbase container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ElasticsearchContainer, error) {
+	return Run(ctx, "docker.elastic.co/elasticsearch/elasticsearch:7.9.2", opts...)
+}
+
+// Run creates an instance of the Elasticsearch container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ElasticsearchContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: fmt.Sprintf("%s:%s", DefaultBaseImage, minimalImageVersion),
+			Image: img,
 			Env: map[string]string{
 				"discovery.type": "single-node",
 				"cluster.routing.allocation.disk.threshold_enabled": "false",

@@ -27,13 +27,14 @@ go get github.com/testcontainers/testcontainers-go/modules/mssql
 
 ## Module reference
 
-The MS SQL Server module exposes one entrypoint function to create the MS SQL Server container, and this function receives two parameters:
+The MS SQL Server module exposes one entrypoint function to create the MS SQL Server container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MSSQLServerContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MSSQLServerContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options

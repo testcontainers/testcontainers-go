@@ -12,7 +12,7 @@ import (
 func TestSurrealDBSelect(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("surrealdb/surrealdb:v1.1.1"))
+	container, err := Run(ctx, "surrealdb/surrealdb:v1.1.1")
 	if err != nil {
 		t.Fatal(err)
 	}

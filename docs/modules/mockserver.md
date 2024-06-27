@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/mockserver
 
 ## Module reference
 
-The MockServer module exposes one entrypoint function to create the MockServer container, and this function receives two parameters:
+The MockServer module exposes one entrypoint function to create the MockServer container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MockServerContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MockServerContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options

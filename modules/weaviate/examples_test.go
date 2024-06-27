@@ -15,11 +15,11 @@ import (
 	tcweaviate "github.com/testcontainers/testcontainers-go/modules/weaviate"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runWeaviateContainer {
 	ctx := context.Background()
 
-	weaviateContainer, err := tcweaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.24.5"))
+	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.24.5")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -43,11 +43,11 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connectWithClient() {
+func ExampleRun_connectWithClient() {
 	// createClientNoModules {
 	ctx := context.Background()
 
-	weaviateContainer, err := tcweaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.23.9"))
+	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.23.9")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -94,7 +94,7 @@ func ExampleRunContainer_connectWithClient() {
 	// <nil>
 }
 
-func ExampleRunContainer_connectWithClientWithModules() {
+func ExampleRun_connectWithClientWithModules() {
 	// createClientAndModules {
 	ctx := context.Background()
 
@@ -111,11 +111,10 @@ func ExampleRunContainer_connectWithClientWithModules() {
 	}
 
 	opts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithImage("semitechnologies/weaviate:1.25.5"),
 		testcontainers.WithEnv(envs),
 	}
 
-	weaviateContainer, err := tcweaviate.RunContainer(ctx, opts...)
+	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.25.5", opts...)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

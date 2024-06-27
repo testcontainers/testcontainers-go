@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/dolt
 
 ## Module reference
 
-The Dolt module exposes one entrypoint function to create the Dolt container, and this function receives two parameters:
+The Dolt module exposes one entrypoint function to create the Dolt container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DoltContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DoltContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options

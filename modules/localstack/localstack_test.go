@@ -111,16 +111,16 @@ func TestRunContainer(t *testing.T) {
 	tests := []struct {
 		version string
 	}{
-		{defaultVersion},
+		{"1.4.0"},
 		{"2.0.0"},
 	}
 
 	for _, tt := range tests {
 		ctx := context.Background()
 
-		container, err := RunContainer(
+		container, err := Run(
 			ctx,
-			testcontainers.WithImage(fmt.Sprintf("localstack/localstack:%s", tt.version)),
+			fmt.Sprintf("localstack/localstack:%s", tt.version),
 		)
 
 		t.Run("Localstack:"+tt.version+" - multiple services exposed on same port", func(t *testing.T) {

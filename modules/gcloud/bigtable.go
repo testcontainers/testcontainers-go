@@ -8,11 +8,17 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// RunBigTableContainer creates an instance of the GCloud container type for BigTable
+// Deprecated: use RunBigTable instead
+// RunBigTableContainer creates an instance of the GCloud container type for BigTable.
 func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
+	return RunBigQuery(ctx, "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators", opts...)
+}
+
+// RunBigTable creates an instance of the GCloud container type for BigTable.
+func RunBigTable(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
+			Image:        img,
 			ExposedPorts: []string{"9000/tcp"},
 			WaitingFor:   wait.ForLog("running"),
 		},
