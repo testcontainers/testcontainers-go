@@ -7,9 +7,20 @@ on:
 
 jobs:
   test_latest_moby:
+    strategy:
+      matrix:
+        rootless-docker: [true, false]
     name: "Core tests using latest moby/moby"
     runs-on: 'ubuntu-latest'
     steps:
+      - name: Setup rootless Docker
+        if: ${{ matrix.rootless-docker }}
+        uses: ScribeMD/rootless-docker@6bd157a512c2fafa4e0243a8aa87d964eb890886  # v0.2.2
+
+      - name: Remove Docker root socket
+        if: ${{ matrix.rootless-docker }}
+        run: sudo rm -rf /var/run/docker.sock
+
       - name: Check out code into the Go module directory
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
