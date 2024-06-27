@@ -13,9 +13,9 @@ type {{ $containerName }} struct {
 }
 
 // {{ $entrypoint }} creates an instance of the {{ $title }} container type
-func {{ $entrypoint }}(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*{{ $containerName }}, error) {
+func {{ $entrypoint }}(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*{{ $containerName }}, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "{{ .Image }}",
+		Image: img,
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
