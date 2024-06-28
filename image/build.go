@@ -1,7 +1,6 @@
 package image
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -71,8 +70,7 @@ func Build(ctx context.Context, img BuildInfo) (string, error) {
 
 	// need to read the response from Docker, I think otherwise the image
 	// might not finish building before continuing to execute here
-	buf := new(bytes.Buffer)
-	_, err = buf.ReadFrom(resp.Body)
+	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
 		return "", err
 	}
