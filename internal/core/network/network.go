@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
@@ -19,17 +19,17 @@ const (
 )
 
 // Get returns a network by its ID.
-func Get(ctx context.Context, id string) (types.NetworkResource, error) {
+func Get(ctx context.Context, id string) (network.Inspect, error) {
 	return get(ctx, FilterByID, id)
 }
 
 // GetByName returns a network by its name.
-func GetByName(ctx context.Context, name string) (types.NetworkResource, error) {
+func GetByName(ctx context.Context, name string) (network.Inspect, error) {
 	return get(ctx, FilterByName, name)
 }
 
-func get(ctx context.Context, filter string, value string) (types.NetworkResource, error) {
-	var nw types.NetworkResource // initialize to the zero value
+func get(ctx context.Context, filter string, value string) (network.Inspect, error) {
+	var nw network.Inspect // initialize to the zero value
 
 	cli, err := core.NewClient(ctx)
 	if err != nil {
@@ -37,10 +37,9 @@ func get(ctx context.Context, filter string, value string) (types.NetworkResourc
 	}
 	defer cli.Close()
 
-	filters := filters.NewArgs()
-	filters.Add(filter, value)
-
-	list, err := cli.NetworkList(ctx, types.NetworkListOptions{Filters: filters})
+	list, err := cli.NetworkList(ctx, network.ListOptions{
+		Filters: filters.NewArgs(filters.Arg(filter, value)),
+	})
 	if err != nil {
 		return nw, fmt.Errorf("failed to list networks: %w", err)
 	}
