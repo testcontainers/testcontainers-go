@@ -82,7 +82,7 @@ func ExampleRunContainer_withAuthentication() {
 	// build a custom redis image from the private registry,
 	// using RegistryName of the container as the registry.
 
-	redisC, err := testcontainers.New(context.Background(), testcontainers.Request{
+	redisC, err := testcontainers.Run(context.Background(), testcontainers.Request{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context: filepath.Join("testdata", "redis"),
 			BuildArgs: map[string]*string{
@@ -167,7 +167,7 @@ func ExampleRunContainer_pushImage() {
 	repo := registryContainer.RegistryName + "/customredis"
 	tag := "v1.2.3"
 
-	redisC, err := testcontainers.New(context.Background(), testcontainers.Request{
+	redisC, err := testcontainers.Run(context.Background(), testcontainers.Request{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context: filepath.Join("testdata", "redis"),
 			BuildArgs: map[string]*string{
@@ -213,7 +213,7 @@ func ExampleRunContainer_pushImage() {
 	}
 	// }
 
-	newRedisC, err := testcontainers.New(context.Background(), testcontainers.Request{
+	newRedisC, err := testcontainers.Run(context.Background(), testcontainers.Request{
 		Image:        newImage,
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("Ready to accept connections"),

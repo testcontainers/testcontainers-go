@@ -123,7 +123,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, err
 	}
 
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

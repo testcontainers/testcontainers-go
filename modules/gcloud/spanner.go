@@ -21,7 +21,7 @@ func RunSpannerContainer(ctx context.Context, opts ...testcontainers.RequestCust
 		return nil, err
 	}
 
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

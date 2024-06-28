@@ -23,7 +23,7 @@ func ExampleNew() {
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 		Started:      true,
 	}
-	nginxC, _ := New(ctx, req)
+	nginxC, _ := Run(ctx, req)
 	defer func() {
 		if err := nginxC.Terminate(ctx); err != nil {
 			log.Fatalf("failed to terminate container: %s", err)
@@ -45,7 +45,7 @@ func ExampleNew_buildFromDockerfile() {
 	ctx := context.Background()
 
 	// buildFromDockerfileWithModifier {
-	c, err := New(ctx, Request{
+	c, err := Run(ctx, Request{
 		FromDockerfile: FromDockerfile{
 			Context:       "testdata",
 			Dockerfile:    "target.Dockerfile",
@@ -85,7 +85,7 @@ func ExampleNew_containerHost() {
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 		Started:      true,
 	}
-	nginxC, _ := New(ctx, req)
+	nginxC, _ := Run(ctx, req)
 	defer func() {
 		if err := nginxC.Terminate(ctx); err != nil {
 			log.Fatalf("failed to terminate container: %s", err)
@@ -114,7 +114,7 @@ func ExampleNew_containerStart() {
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
-	nginxC, _ := New(ctx, req)
+	nginxC, _ := Run(ctx, req)
 	defer func() {
 		if err := nginxC.Terminate(ctx); err != nil {
 			log.Fatalf("failed to terminate container: %s", err)
@@ -141,7 +141,7 @@ func ExampleNew_containerStop() {
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 		Started:      true,
 	}
-	nginxC, _ := New(ctx, req)
+	nginxC, _ := Run(ctx, req)
 	defer func() {
 		if err := nginxC.Terminate(ctx); err != nil {
 			log.Fatalf("failed to terminate container: %s", err)
@@ -169,7 +169,7 @@ func ExampleNew_mappedPort() {
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 		Started:      true,
 	}
-	nginxC, _ := New(ctx, req)
+	nginxC, _ := Run(ctx, req)
 	defer func() {
 		if err := nginxC.Terminate(ctx); err != nil {
 			log.Fatalf("failed to terminate container: %s", err)
@@ -215,7 +215,7 @@ func ExampleNew_withNetwork() {
 	networkName := net.Name
 	// }
 
-	nginxC, _ := New(ctx, Request{
+	nginxC, _ := Run(ctx, Request{
 		Image: "nginx:alpine",
 		ExposedPorts: []string{
 			"80/tcp",
@@ -247,7 +247,7 @@ func ExampleNew_withSubstitutors() {
 	ctx := context.Background()
 
 	// applyImageSubstitutors {
-	ctr, err := New(ctx, Request{
+	ctr, err := Run(ctx, Request{
 		Image:             "alpine:latest",
 		ImageSubstitutors: []tcimage.Substitutor{tcimage.DockerSubstitutor{}},
 		Started:           true,

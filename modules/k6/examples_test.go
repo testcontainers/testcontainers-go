@@ -25,7 +25,7 @@ func ExampleRunContainer() {
 		WaitingFor: wait.ForExposedPort(),
 		Started:    true,
 	}
-	httpbin, err := testcontainers.New(ctx, gcr)
+	httpbin, err := testcontainers.Run(ctx, gcr)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

@@ -156,7 +156,7 @@ func newSshdContainer(ctx context.Context, opts ...RequestCustomizer) (*sshdCont
 		}
 	}
 
-	dc, err := New(ctx, req)
+	dc, err := Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

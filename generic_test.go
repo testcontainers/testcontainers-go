@@ -23,7 +23,7 @@ const (
 func TestNewReusableContainer(t *testing.T) {
 	ctx := context.Background()
 
-	n1, err := New(ctx, Request{
+	n1, err := Run(ctx, Request{
 		Image:        nginxAlpineImage,
 		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
@@ -77,7 +77,7 @@ func TestNewReusableContainer(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			n2, err := New(ctx, Request{
+			n2, err := Run(ctx, Request{
 				Image:        nginxAlpineImage,
 				ExposedPorts: []string{nginxDefaultPort},
 				WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
@@ -104,7 +104,7 @@ func TestNewContainerShouldReturnRefOnError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	c, err := New(ctx, Request{
+	c, err := Run(ctx, Request{
 		Image:      nginxAlpineImage,
 		WaitingFor: wait.ForLog("this string should not be present in the logs"),
 		Started:    true,
@@ -152,7 +152,7 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 
 	ctx := context.Background()
 
-	nginxC, err := New(ctx, Request{
+	nginxC, err := Run(ctx, Request{
 		Image:        nginxDelayedImage,
 		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForListeningPort(nginxDefaultPort), // default startupTimeout is 60s

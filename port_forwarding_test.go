@@ -104,7 +104,7 @@ func TestExposeHostPorts(t *testing.T) {
 				defer cancel()
 			}
 
-			c, err := testcontainers.New(ctx, req)
+			c, err := testcontainers.Run(ctx, req)
 			if err != nil {
 				tt.Fatal(err)
 			}

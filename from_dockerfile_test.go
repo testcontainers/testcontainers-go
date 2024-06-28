@@ -21,7 +21,7 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 	// there are three targets: target0, target1 and target2.
 	for i := 0; i < 3; i++ {
 		ctx := context.Background()
-		c, err := New(ctx, Request{
+		c, err := Run(ctx, Request{
 			FromDockerfile: FromDockerfile{
 				Context:       "testdata",
 				Dockerfile:    "target.Dockerfile",
@@ -54,7 +54,7 @@ func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := New(ctx, Request{
+	_, err := Run(ctx, Request{
 		FromDockerfile: FromDockerfile{
 			Context:       "testdata",
 			Dockerfile:    "target.Dockerfile",

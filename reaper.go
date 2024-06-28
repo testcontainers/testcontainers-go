@@ -91,7 +91,7 @@ func newReaper(ctx context.Context, sessionID string) (*Reaper, error) {
 
 	req.Networks = append(req.Networks, defaultNetwork)
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 	if err != nil {
 		// We need to check whether the error is caused by a container with the same name
 		// already existing due to race conditions. We manually match the error message

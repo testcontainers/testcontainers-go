@@ -28,7 +28,7 @@ func RunPubsubContainer(ctx context.Context, opts ...testcontainers.RequestCusto
 		"gcloud beta emulators pubsub start --host-port 0.0.0.0:8085 " + fmt.Sprintf("--project=%s", settings.ProjectID),
 	}
 
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

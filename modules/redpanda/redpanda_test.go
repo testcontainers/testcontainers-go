@@ -477,7 +477,7 @@ func TestRedpandaListener_Simple(t *testing.T) {
 
 	// 3. Start KCat container
 	// withListenerKcat {
-	kcat, err := testcontainers.New(ctx, testcontainers.Request{
+	kcat, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image: "confluentinc/cp-kcat:7.4.1",
 		Networks: []string{
 			rpNetwork.Name,

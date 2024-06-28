@@ -33,7 +33,7 @@ func ExampleHTTPStrategy() {
 		Started:      true,
 	}
 
-	c, err := testcontainers.New(ctx, req)
+	c, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -89,7 +89,7 @@ func ExampleHTTPStrategy_WithHeaders() {
 	}
 	// }
 
-	c, err := testcontainers.New(ctx, req)
+	c, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -121,7 +121,7 @@ func ExampleHTTPStrategy_WithPort() {
 		Started:      true,
 	}
 
-	c, err := testcontainers.New(ctx, req)
+	c, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -153,7 +153,7 @@ func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
 		Started:      true,
 	}
 
-	c, err := testcontainers.New(ctx, req)
+	c, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -185,7 +185,7 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 		Started:      true,
 	}
 
-	gogs, err := testcontainers.New(ctx, req)
+	gogs, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -245,7 +245,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 		Started: true,
 	}
 
-	ctr, err := testcontainers.New(context.Background(), req)
+	ctr, err := testcontainers.Run(context.Background(), req)
 	if err != nil {
 		t.Error(err)
 		return
@@ -326,7 +326,7 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 		Started: true,
 	}
 
-	ctr, err := testcontainers.New(context.Background(), req)
+	ctr, err := testcontainers.Run(context.Background(), req)
 	if err != nil {
 		t.Error(err)
 		return
@@ -415,7 +415,7 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 	// }
 
 	ctx := context.Background()
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		t.Error(err)
 		return

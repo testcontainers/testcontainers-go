@@ -30,7 +30,7 @@ func TestCopyFileInTheRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctr, err := testcontainers.New(ctx, testcontainers.Request{
+	ctr, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image: "docker.io/bash",
 		Files: []testcontainers.ContainerFile{
 			{
@@ -65,7 +65,7 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctr, err := testcontainers.New(ctx, testcontainers.Request{
+	ctr, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image: "docker.io/bash:5.2.26",
 		Files: []testcontainers.ContainerFile{
 			{
@@ -104,7 +104,7 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctr, err := testcontainers.New(ctx, testcontainers.Request{
+	ctr, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image: "docker.io/bash",
 		Files: []testcontainers.ContainerFile{
 			{
@@ -140,7 +140,7 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctr, err := testcontainers.New(ctx, testcontainers.Request{
+	ctr, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image: "docker.io/bash",
 		Files: []testcontainers.ContainerFile{
 			{
@@ -188,7 +188,7 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctr, err := testcontainers.New(ctx, testcontainers.Request{
+	ctr, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image: "docker.io/bash",
 		Files: []testcontainers.ContainerFile{
 			{
@@ -239,7 +239,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			nginxC, err := testcontainers.New(ctx, testcontainers.Request{
+			nginxC, err := testcontainers.Run(ctx, testcontainers.Request{
 				Image:        nginxImage,
 				ExposedPorts: []string{nginxDefaultPort},
 				WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
@@ -264,7 +264,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 func TestDockerContainerCopyDirToContainer(t *testing.T) {
 	ctx := context.Background()
 
-	nginxC, err := testcontainers.New(ctx, testcontainers.Request{
+	nginxC, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image:        nginxImage,
 		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
@@ -322,7 +322,7 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			nginxC, err := testcontainers.New(ctx, testcontainers.Request{
+			nginxC, err := testcontainers.Run(ctx, testcontainers.Request{
 				Image:        "nginx:1.17.6",
 				ExposedPorts: []string{"80/tcp"},
 				WaitingFor:   wait.ForListeningPort("80/tcp"),
@@ -405,7 +405,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			nginxC, err := testcontainers.New(ctx, testcontainers.Request{
+			nginxC, err := testcontainers.Run(ctx, testcontainers.Request{
 				Image:        "nginx:1.17.6",
 				ExposedPorts: []string{"80/tcp"},
 				WaitingFor:   wait.ForListeningPort("80/tcp"),
@@ -443,7 +443,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			nginxC, err := testcontainers.New(ctx, testcontainers.Request{
+			nginxC, err := testcontainers.Run(ctx, testcontainers.Request{
 				Image:        nginxImage,
 				ExposedPorts: []string{nginxDefaultPort},
 				WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
@@ -479,7 +479,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	nginxC, err := testcontainers.New(ctx, testcontainers.Request{
+	nginxC, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image:        nginxImage,
 		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
@@ -515,7 +515,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 	ctx := context.Background()
 
-	nginxC, err := testcontainers.New(ctx, testcontainers.Request{
+	nginxC, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image:        nginxImage,
 		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),

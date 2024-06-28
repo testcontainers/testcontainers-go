@@ -47,7 +47,7 @@ func TestNewAttachedToNewNetwork(t *testing.T) {
 		Started: true,
 	}
 
-	nginx, err := testcontainers.New(ctx, req)
+	nginx, err := testcontainers.Run(ctx, req)
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, nginx.Terminate(ctx))
@@ -105,7 +105,7 @@ func TestContainerIPs(t *testing.T) {
 
 	networkName := newNetwork.Name
 
-	nginx, err := testcontainers.New(ctx, testcontainers.Request{
+	nginx, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -164,7 +164,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 		Started:  true,
 	}
 
-	nginx, err := testcontainers.New(ctx, req)
+	nginx, err := testcontainers.Run(ctx, req)
 
 	require.NoError(t, err)
 	defer func() {
@@ -198,7 +198,7 @@ func TestMultipleContainersInTheNewNetwork(t *testing.T) {
 		Started:  true,
 	}
 
-	c1, err := testcontainers.New(ctx, req1)
+	c1, err := testcontainers.Run(ctx, req1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -211,7 +211,7 @@ func TestMultipleContainersInTheNewNetwork(t *testing.T) {
 		Networks: []string{networkName},
 		Started:  true,
 	}
-	c2, err := testcontainers.New(ctx, req2)
+	c2, err := testcontainers.Run(ctx, req2)
 	if err != nil {
 		t.Fatal(err)
 		return
@@ -314,7 +314,7 @@ func TestWithSyntheticNetwork(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, resources) // no Docker network was created
 
-	c, err := testcontainers.New(context.Background(), req)
+	c, err := testcontainers.Run(context.Background(), req)
 	require.NoError(t, err)
 	assert.NotNil(t, c)
 	defer func() {

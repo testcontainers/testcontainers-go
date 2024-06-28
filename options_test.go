@@ -87,7 +87,7 @@ func TestWithLogConsumers(t *testing.T) {
 	err := testcontainers.WithLogConsumers(lc1, lc2)(&req)
 	require.NoError(t, err)
 
-	c, err := testcontainers.New(context.Background(), req)
+	c, err := testcontainers.Run(context.Background(), req)
 	// we expect an error because the MySQL environment variables are not set
 	// but this is expected because we just want to test the log consumer
 	require.Error(t, err)
@@ -116,7 +116,7 @@ func TestWithStartupCommand(t *testing.T) {
 	assert.Len(t, req.LifecycleHooks, 1)
 	assert.Len(t, req.LifecycleHooks[0].PostStarts, 1)
 
-	c, err := testcontainers.New(context.Background(), req)
+	c, err := testcontainers.Run(context.Background(), req)
 	require.NoError(t, err)
 	defer func() {
 		err = c.Terminate(context.Background())
@@ -146,7 +146,7 @@ func TestWithAfterReadyCommand(t *testing.T) {
 	assert.Len(t, req.LifecycleHooks, 1)
 	assert.Len(t, req.LifecycleHooks[0].PostReadies, 1)
 
-	c, err := testcontainers.New(context.Background(), req)
+	c, err := testcontainers.Run(context.Background(), req)
 	require.NoError(t, err)
 	defer func() {
 		err = c.Terminate(context.Background())

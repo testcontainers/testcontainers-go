@@ -89,7 +89,7 @@ func TestLogConsumerGetsCalled(t *testing.T) {
 		Started: true,
 	}
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 	require.NoError(t, err)
 
 	ep, err := c.Endpoint(ctx, "http")
@@ -150,7 +150,7 @@ func TestShouldRecognizeLogTypes(t *testing.T) {
 		Started: true,
 	}
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, c)
 
@@ -203,7 +203,7 @@ func TestMultipleLogConsumers(t *testing.T) {
 		Started: true,
 	}
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 	require.NoError(t, err)
 
 	ep, err := c.Endpoint(ctx, "http")
@@ -237,7 +237,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	// closed to test behaviour in connection-closed situations.
 	ctx := context.Background()
 
-	dind, err := New(ctx, Request{
+	dind, err := Run(ctx, Request{
 		Started:      true,
 		Image:        "docker.io/docker:dind",
 		ExposedPorts: []string{"2375/tcp"},
@@ -361,7 +361,7 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 		WaitingFor: wait.ForExit(),
 		Started:    true,
 	}
-	ctr, err := New(ctx, req)
+	ctr, err := Run(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -403,7 +403,7 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 	}
 	// }
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 	require.NoError(t, err)
 
 	ep, err := c.Endpoint(ctx, "http")
@@ -451,7 +451,7 @@ func TestStartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
 		Started: true,
 	}
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, c)
 }
@@ -479,7 +479,7 @@ func TestStartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 		Started: true,
 	}
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
@@ -519,7 +519,7 @@ func TestMultiContainerLogConsumer_CancelledContext(t *testing.T) {
 		Started: true,
 	}
 
-	c, err := New(ctx, containerReq1)
+	c, err := Run(ctx, containerReq1)
 	require.NoError(t, err)
 
 	ep1, err := c.Endpoint(ctx, "http")
@@ -550,7 +550,7 @@ func TestMultiContainerLogConsumer_CancelledContext(t *testing.T) {
 		Started: true,
 	}
 
-	c2, err := New(ctx, containerReq2)
+	c2, err := Run(ctx, containerReq2)
 	require.NoError(t, err)
 
 	ep2, err := c2.Endpoint(ctx, "http")
@@ -616,7 +616,7 @@ func TestRestartContainerWithLogConsumer(t *testing.T) {
 	logConsumer := NewFooLogConsumer()
 
 	ctx := context.Background()
-	ctr, err := New(ctx, Request{
+	ctr, err := Run(ctx, Request{
 		Image:           "hello-world",
 		AlwaysPullImage: true,
 		LogConsumerCfg: &log.ConsumerConfig{

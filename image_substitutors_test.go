@@ -20,7 +20,7 @@ func TestSubstituteBuiltImage(t *testing.T) {
 	}
 
 	t.Run("should not use the properties prefix on built images", func(t *testing.T) {
-		c, err := New(context.Background(), req)
+		c, err := Run(context.Background(), req)
 		if err != nil {
 			t.Fatal(err)
 		}

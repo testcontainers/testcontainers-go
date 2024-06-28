@@ -52,7 +52,7 @@ func TestExecWithOptions(t *testing.T) {
 				Started: true,
 			}
 
-			ctr, err := New(ctx, req)
+			ctr, err := Run(ctx, req)
 			require.NoError(t, err)
 			TerminateContainerOnEnd(t, ctx, ctr)
 
@@ -82,7 +82,7 @@ func TestExecWithMultiplexedResponse(t *testing.T) {
 		Started: true,
 	}
 
-	ctr, err := New(ctx, req)
+	ctr, err := Run(ctx, req)
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, ctr)
 
@@ -107,7 +107,7 @@ func TestExecWithNonMultiplexedResponse(t *testing.T) {
 		Started: true,
 	}
 
-	ctr, err := New(ctx, req)
+	ctr, err := Run(ctx, req)
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, ctr)
 

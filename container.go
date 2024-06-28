@@ -57,7 +57,7 @@ func findContainerByName(ctx context.Context, name string) (*types.Container, er
 	return nil, nil
 }
 
-func New(ctx context.Context, req Request) (*DockerContainer, error) {
+func Run(ctx context.Context, req Request) (*DockerContainer, error) {
 	if req.Reuse && req.Name == "" {
 		return nil, ErrReuseEmptyName
 	}

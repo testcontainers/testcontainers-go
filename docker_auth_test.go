@@ -26,7 +26,7 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 		Started:         true,
 	}
 
-	redisC, err := New(ctx, req)
+	redisC, err := Run(ctx, req)
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, redisC)
 }
@@ -75,7 +75,7 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 		Started:         true,
 	}
 
-	redisC, err := New(ctx, req)
+	redisC, err := Run(ctx, req)
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, redisC)
 }
@@ -105,7 +105,7 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 		Started:         true,
 	}
 
-	redisC, err := New(ctx, req)
+	redisC, err := Run(ctx, req)
 	require.Error(t, err)
 	TerminateContainerOnEnd(t, ctx, redisC)
 }
@@ -131,7 +131,7 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 		Started:         true,
 	}
 
-	redisContainer, err := New(ctx, req)
+	redisContainer, err := Run(ctx, req)
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, redisContainer)
 }
@@ -164,7 +164,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 		Started:    true,
 	}
 
-	registryC, err := New(ctx, req)
+	registryC, err := Run(ctx, req)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

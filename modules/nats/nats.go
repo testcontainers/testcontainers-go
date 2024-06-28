@@ -48,7 +48,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		req.Cmd = append(req.Cmd, []string{"--" + k, v}...)
 	}
 
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

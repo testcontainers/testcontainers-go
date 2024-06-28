@@ -21,7 +21,7 @@ func startContainer(ctx context.Context) (*nginxContainer, error) {
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 		Started:      true,
 	}
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

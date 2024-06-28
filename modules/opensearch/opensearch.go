@@ -107,7 +107,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 			return r.Tagline == "The OpenSearch Project: https://opensearch.org/"
 		})
 
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

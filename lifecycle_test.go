@@ -334,7 +334,7 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 	}
 	// }
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
@@ -365,7 +365,7 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 		Started: true,
 	}
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
@@ -405,7 +405,7 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 		Logger:     &arrayOfLinesLogger,
 	}
 
-	ctr, err := New(ctx, req)
+	ctr, err := Run(ctx, req)
 	// it should fail because the waiting for condition is not met
 	if err == nil {
 		t.Fatal(err)

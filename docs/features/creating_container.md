@@ -39,7 +39,7 @@ func setupNginx(ctx context.Context) (*nginxContainer, error) {
 		WaitingFor:   wait.ForHTTP("/"),
 		Started:          true,
 	}
-	container, err := testcontainers.New(ctx, req)
+	container, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ const (
 
 ctx := context.Background()
 
-n1, err := testcontainers.New(ctx, testcontainers.Request{
+n1, err := testcontainers.Run(ctx, testcontainers.Request{
 	Image:        "nginx:1.17.6",
 	ExposedPorts: []string{"80/tcp"},
 	WaitingFor:   wait.ForListeningPort("80/tcp"),
@@ -184,7 +184,7 @@ if err != nil {
 	log.Fatal(err)
 }
 
-n2, err := testcontainers.New(ctx, testcontainers.Request{
+n2, err := testcontainers.Run(ctx, testcontainers.Request{
 	Image:        "nginx:1.17.6",
 	ExposedPorts: []string{"80/tcp"},
 	WaitingFor:   wait.ForListeningPort("80/tcp"),

@@ -289,7 +289,7 @@ func TestBuildImageWithContexts(t *testing.T) {
 				Started:    true,
 			}
 
-			c, err := testcontainers.New(ctx, req)
+			c, err := testcontainers.Run(ctx, req)
 			switch {
 			case testCase.ExpectedError != nil && err != nil:
 				if testCase.ExpectedError.Error() != err.Error() {
@@ -315,7 +315,7 @@ func TestGetLogsFromFailedContainer(t *testing.T) {
 	}
 	// }
 
-	c, err := testcontainers.New(ctx, req)
+	c, err := testcontainers.Run(ctx, req)
 
 	if err != nil && err.Error() != "failed to start container: container exited with code 0" {
 		t.Fatal(err)
@@ -398,7 +398,7 @@ func TestImageSubstitutors(t *testing.T) {
 				Started:           true,
 			}
 
-			ctr, err := testcontainers.New(ctx, req)
+			ctr, err := testcontainers.Run(ctx, req)
 			if test.expectedError != nil {
 				require.ErrorIs(t, err, test.expectedError)
 				return
@@ -431,7 +431,7 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 				WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 				Started:      true,
 			}
-			ctr, err := testcontainers.New(ctx, req)
+			ctr, err := testcontainers.Run(ctx, req)
 			if err != nil {
 				t.Fatalf("could not start container: %v", err)
 			}

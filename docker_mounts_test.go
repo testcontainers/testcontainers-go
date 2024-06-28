@@ -29,7 +29,7 @@ func TestCreateContainerWithVolume(t *testing.T) {
 	// }
 
 	ctx := context.Background()
-	c, err := testcontainers.New(ctx, req)
+	c, err := testcontainers.Run(ctx, req)
 	require.NoError(t, err)
 	testcontainers.TerminateContainerOnEnd(t, ctx, c)
 
@@ -58,7 +58,7 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	c, err := testcontainers.New(ctx, req)
+	c, err := testcontainers.Run(ctx, req)
 	require.NoError(t, err)
 	testcontainers.TerminateContainerOnEnd(t, ctx, c)
 

@@ -39,7 +39,7 @@ func parallelContainersRunner(
 	wg *sync.WaitGroup,
 ) {
 	for req := range requests {
-		c, err := New(ctx, req)
+		c, err := Run(ctx, req)
 		if err != nil {
 			errors <- ParallelContainersRequestError{
 				Request: req,

@@ -137,7 +137,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 			"credsStore": "desktop"
 		}`)
 
-		redisC, err := testcontainers.New(context.Background(), testcontainers.Request{
+		redisC, err := testcontainers.Run(context.Background(), testcontainers.Request{
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context: filepath.Join("testdata", "redis"),
 				BuildArgs: map[string]*string{
@@ -181,7 +181,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 		// The container should start because the authentication
 		// is correct.
 
-		redisC, err := testcontainers.New(context.Background(), testcontainers.Request{
+		redisC, err := testcontainers.Run(context.Background(), testcontainers.Request{
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context: filepath.Join("testdata", "redis"),
 				BuildArgs: map[string]*string{
@@ -291,7 +291,7 @@ func TestRunContainer_wrongData(t *testing.T) {
 	// The container won't be able to start because the data
 	// directory is wrong.
 
-	redisC, err := testcontainers.New(context.Background(), testcontainers.Request{
+	redisC, err := testcontainers.Run(context.Background(), testcontainers.Request{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context: filepath.Join("testdata", "redis"),
 			BuildArgs: map[string]*string{

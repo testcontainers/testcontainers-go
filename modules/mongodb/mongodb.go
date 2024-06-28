@@ -42,7 +42,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, fmt.Errorf("if you specify username or password, you must provide both of them")
 	}
 
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

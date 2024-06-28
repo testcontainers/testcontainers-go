@@ -26,7 +26,7 @@ func ExampleExecStrategy() {
 		Started:    true,
 	}
 
-	localstack, err := testcontainers.New(ctx, req)
+	localstack, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -193,7 +193,7 @@ func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 	// }
 
 	ctx := context.Background()
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		t.Error(err)
 		return

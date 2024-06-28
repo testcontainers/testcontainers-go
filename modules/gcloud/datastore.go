@@ -28,7 +28,7 @@ func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.RequestCu
 		"gcloud beta emulators datastore start --host-port 0.0.0.0:8081 " + fmt.Sprintf("--project=%s", settings.ProjectID),
 	}
 
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

@@ -29,7 +29,7 @@ func startContainer(ctx context.Context, network string, networkAlias []string) 
 		Started: true,
 	}
 
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

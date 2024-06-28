@@ -34,7 +34,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 
 	ctx := context.Background()
 
-	ctr, err := New(ctx, Request{
+	ctr, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -64,7 +64,7 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 
 	ctx := context.Background()
 
-	c, err := New(ctx, Request{
+	c, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -95,7 +95,7 @@ func TestContainerStopWithReaper(t *testing.T) {
 
 	ctx := context.Background()
 
-	nginxA, err := New(ctx, Request{
+	nginxA, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -139,7 +139,7 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 
 	ctx := context.Background()
 
-	nginxA, err := New(ctx, Request{
+	nginxA, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -175,7 +175,7 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 
 	ctx := context.Background()
 
-	nginxA, err := New(ctx, Request{
+	nginxA, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,

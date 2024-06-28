@@ -68,7 +68,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 		Started: true,
 	}
 
-	nginxC, err := New(ctx, req)
+	nginxC, err := Run(ctx, req)
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, nginxC)
 
@@ -97,7 +97,7 @@ func TestContainer_UseExposePortsFromImageConfigs(t *testing.T) {
 		Started:    true,
 	}
 
-	nginxC, err := New(ctx, req)
+	nginxC, err := Run(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +139,7 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 		Started: true,
 	}
 
-	nginx, err := New(ctx, req)
+	nginx, err := Run(ctx, req)
 	if err != nil {
 		// Error when NetworkMode = host and Network = []string{"bridge"}
 		t.Logf("Can't use Network and NetworkMode together, %s\n", err)
@@ -175,7 +175,7 @@ func TestContainerWithHostNetwork(t *testing.T) {
 		Started: true,
 	}
 
-	nginxC, err := New(ctx, req)
+	nginxC, err := Run(ctx, req)
 
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, nginxC)
@@ -204,7 +204,7 @@ func TestContainerWithHostNetwork(t *testing.T) {
 
 func TestContainerReturnItsContainerID(t *testing.T) {
 	ctx := context.Background()
-	nginxA, err := New(ctx, Request{
+	nginxA, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -222,7 +222,7 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 func TestContainerTerminationResetsState(t *testing.T) {
 	ctx := context.Background()
 
-	nginxA, err := New(ctx, Request{
+	nginxA, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -248,7 +248,7 @@ func TestContainerTerminationResetsState(t *testing.T) {
 
 func TestContainerStateAfterTermination(t *testing.T) {
 	createContainerFn := func(ctx context.Context) (StartedContainer, error) {
-		return New(ctx, Request{
+		return Run(ctx, Request{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
 				nginxDefaultPort,
@@ -310,7 +310,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		}
 		defer dockerClient.Close()
 
-		ctr, err := New(ctx, Request{
+		ctr, err := Run(ctx, Request{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
 				nginxDefaultPort,
@@ -338,7 +338,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		}
 		defer dockerClient.Close()
 
-		ctr, err := New(ctx, Request{
+		ctr, err := Run(ctx, Request{
 			FromDockerfile: FromDockerfile{
 				Context: filepath.Join(".", "testdata"),
 			},
@@ -370,7 +370,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 
 func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	ctx := context.Background()
-	nginxA, err := New(ctx, Request{
+	nginxA, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -381,7 +381,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, nginxA)
 
-	nginxB, err := New(ctx, Request{
+	nginxB, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -425,7 +425,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 func TestContainerCreation(t *testing.T) {
 	ctx := context.Background()
 
-	nginxC, err := New(ctx, Request{
+	nginxC, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -476,7 +476,7 @@ func TestContainerCreationWithName(t *testing.T) {
 	creationName := fmt.Sprintf("%s_%d", "test_container", time.Now().Unix())
 	expectedName := "/" + creationName // inspect adds '/' in the beginning
 
-	nginxC, err := New(ctx, Request{
+	nginxC, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -530,7 +530,7 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 	ctx := context.Background()
 
 	// delayed-nginx will wait 2s before opening port
-	nginxC, err := New(ctx, Request{
+	nginxC, err := Run(ctx, Request{
 		Image: nginxDelayedImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -560,7 +560,7 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 func TestContainerCreationTimesOut(t *testing.T) {
 	ctx := context.Background()
 	// delayed-nginx will wait 2s before opening port
-	nginxC, err := New(ctx, Request{
+	nginxC, err := Run(ctx, Request{
 		Image: nginxDelayedImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -579,7 +579,7 @@ func TestContainerCreationTimesOut(t *testing.T) {
 func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 	ctx := context.Background()
 
-	nginxC, err := New(ctx, Request{
+	nginxC, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -609,7 +609,7 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 	ctx := context.Background()
 	// delayed-nginx will wait 2s before opening port
-	nginxC, err := New(ctx, Request{
+	nginxC, err := Run(ctx, Request{
 		Image: nginxDelayedImage,
 		ExposedPorts: []string{
 			nginxDefaultPort,
@@ -627,7 +627,7 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := New(ctx, Request{
+	c, err := Run(ctx, Request{
 		Image:        mysqlImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
@@ -647,7 +647,7 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 func TestContainerCreationWaitsForLog(t *testing.T) {
 	ctx := context.Background()
 
-	mysqlC, err := New(ctx, Request{
+	mysqlC, err := Run(ctx, Request{
 		Image:        mysqlImage,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
@@ -685,7 +685,7 @@ func TestBuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	}
 	// }
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, c)
@@ -730,7 +730,7 @@ func TestBuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	}
 	// }
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, c)
@@ -760,7 +760,7 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 		).WithDeadline(5 * time.Second),
 		Started: true,
 	}
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 	if err == nil {
 		t.Fatal("Expected timeout")
 	}
@@ -778,7 +778,7 @@ func TestContainerCreationWaitingForHostPort(t *testing.T) {
 		Started:      true,
 	}
 	// }
-	nginx, err := New(ctx, req)
+	nginx, err := Run(ctx, req)
 
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, nginx)
@@ -792,7 +792,7 @@ func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.
 		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
 		Started:      true,
 	}
-	nginx, err := New(ctx, req)
+	nginx, err := Run(ctx, req)
 
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, nginx)
@@ -816,7 +816,7 @@ func TestCMD(t *testing.T) {
 		Started: true,
 	}
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, c)
@@ -840,7 +840,7 @@ func TestEntrypoint(t *testing.T) {
 		Started:    true,
 	}
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, c)
@@ -865,7 +865,7 @@ func TestWorkingDir(t *testing.T) {
 		Started:    true,
 	}
 
-	c, err := New(ctx, req)
+	c, err := Run(ctx, req)
 
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, c)
@@ -883,7 +883,7 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 	volumeName := "volumeName"
 
 	// Create the container that writes into the mounted volume.
-	bashC, err := New(ctx, Request{
+	bashC, err := Run(ctx, Request{
 		Image: "docker.io/bash",
 		Files: []ContainerFile{
 			{
@@ -910,7 +910,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 		Started: true,
 	}
 
-	ctr, err := New(ctx, req)
+	ctr, err := Run(ctx, req)
 
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, ctr)
@@ -957,7 +957,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 
 func TestContainerNonExistentImage(t *testing.T) {
 	t.Run("if the image not found don't propagate the error", func(t *testing.T) {
-		_, err := New(context.Background(), Request{
+		_, err := Run(context.Background(), Request{
 			Image:   "postgres:nonexistent-version",
 			Started: true,
 		})
@@ -971,7 +971,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 	t.Run("the context cancellation is propagated to container creation", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
-		c, err := New(ctx, Request{
+		c, err := Run(ctx, Request{
 			Image:      "docker.io/postgres:12",
 			WaitingFor: wait.ForLog("log"),
 			Started:    true,
@@ -990,7 +990,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		nonExistentPlatform := "windows/arm12"
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
-		c, err := New(ctx, Request{
+		c, err := Run(ctx, Request{
 			Image:         "docker.io/redis:latest",
 			ImagePlatform: nonExistentPlatform,
 			Started:       false,
@@ -1005,7 +1005,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
 
-		c, err := New(ctx, Request{
+		c, err := Run(ctx, Request{
 			Image:         "docker.io/mysql:8.0.36",
 			ImagePlatform: "linux/amd64",
 			Started:       false,
@@ -1038,7 +1038,7 @@ func TestContainerWithCustomHostname(t *testing.T) {
 		Hostname: hostname,
 		Started:  true,
 	}
-	ctr, err := New(ctx, req)
+	ctr, err := Run(ctx, req)
 
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, ctr)
@@ -1049,7 +1049,7 @@ func TestContainerWithCustomHostname(t *testing.T) {
 }
 
 func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
-	ctr, err := New(context.Background(), Request{
+	ctr, err := Run(context.Background(), Request{
 		Image:   nginxImage,
 		Started: true,
 	})
@@ -1101,7 +1101,7 @@ func TestDockerContainerResources(t *testing.T) {
 		},
 	}
 
-	nginxC, err := New(ctx, Request{
+	nginxC, err := Run(ctx, Request{
 		Image:        nginxAlpineImage,
 		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
@@ -1133,7 +1133,7 @@ func TestContainerCapAdd(t *testing.T) {
 
 	expected := "IPC_LOCK"
 
-	nginx, err := New(ctx, Request{
+	nginx, err := Run(ctx, Request{
 		Image:        nginxAlpineImage,
 		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
@@ -1172,7 +1172,7 @@ func TestContainerRunningCheckingStatusCode(t *testing.T) {
 		Started: true,
 	}
 
-	influx, err := New(ctx, req)
+	influx, err := Run(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1191,7 +1191,7 @@ func TestContainerWithUserID(t *testing.T) {
 		Started:    true,
 	}
 
-	ctr, err := New(ctx, req)
+	ctr, err := Run(ctx, req)
 
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, ctr)
@@ -1217,7 +1217,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 		WaitingFor: wait.ForExit(),
 		Started:    true,
 	}
-	ctr, err := New(ctx, req)
+	ctr, err := Run(ctx, req)
 
 	require.NoError(t, err)
 	TerminateContainerOnEnd(t, ctx, ctr)
@@ -1237,7 +1237,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 
 func TestNetworkModeWithContainerReference(t *testing.T) {
 	ctx := context.Background()
-	nginxA, err := New(ctx, Request{
+	nginxA, err := Run(ctx, Request{
 		Image:   nginxAlpineImage,
 		Started: true,
 	})
@@ -1246,7 +1246,7 @@ func TestNetworkModeWithContainerReference(t *testing.T) {
 	TerminateContainerOnEnd(t, ctx, nginxA)
 
 	networkMode := fmt.Sprintf("container:%v", nginxA.GetContainerID())
-	nginxB, err := New(ctx, Request{
+	nginxB, err := Run(ctx, Request{
 		Image: nginxAlpineImage,
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.NetworkMode = container.NetworkMode(networkMode)
@@ -1263,7 +1263,7 @@ func TestFindContainerByName(t *testing.T) {
 
 	logger := tclog.NewTestLogger(t)
 
-	c1, err := New(ctx, Request{
+	c1, err := Run(ctx, Request{
 		Name:       "test",
 		Image:      "nginx:1.17.6",
 		Logger:     logger,
@@ -1278,7 +1278,7 @@ func TestFindContainerByName(t *testing.T) {
 
 	c1Name := c1Inspect.Name
 
-	c2, err := New(ctx, Request{
+	c2, err := Run(ctx, Request{
 		Name:       "test2",
 		Image:      "nginx:1.17.6",
 		Logger:     logger,
@@ -1312,7 +1312,7 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			defer func() { _ = cli.Close() }()
 
 			// Create container.
-			c, err := New(ctx, Request{
+			c, err := Run(ctx, Request{
 				FromDockerfile: FromDockerfile{
 					Context:    "testdata",
 					Dockerfile: "echo.Dockerfile",

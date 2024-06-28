@@ -113,7 +113,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 
 	configureControllerQuorumVoters(&req)
 
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

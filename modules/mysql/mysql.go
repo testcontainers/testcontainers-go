@@ -80,7 +80,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 		return nil, fmt.Errorf("empty password can be used only with the root user")
 	}
 
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}

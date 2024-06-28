@@ -161,7 +161,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 
 	networkName := nw.Name
 
-	cli, err := testcontainers.New(ctx, testcontainers.Request{
+	cli, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image:      "amazon/aws-cli:2.7.27",
 		Networks:   []string{networkName},
 		Entrypoint: []string{"tail"},

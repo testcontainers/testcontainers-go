@@ -25,7 +25,7 @@ func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.RequestCus
 
 	req.Cmd = []string{"--project", settings.ProjectID}
 
-	ctr, err := testcontainers.New(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}
