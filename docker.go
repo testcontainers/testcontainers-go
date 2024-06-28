@@ -349,7 +349,7 @@ func (c *DockerContainer) GetImage() string {
 
 // Host gets host (ip or name) of the docker daemon where the container port is exposed
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
-// You can use the "TC_HOST" env variable to set this yourself
+// You can use the "TESTCONTAINERS_HOST_OVERRIDE" env variable to set this yourself
 func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 	host, err := DaemonHost(ctx)
 	if err != nil {

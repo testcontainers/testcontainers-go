@@ -16,7 +16,7 @@ import (
 func DaemonHost(ctx context.Context) (string, error) {
 	var hostCache string
 
-	host, exists := os.LookupEnv("TC_HOST")
+	host, exists := os.LookupEnv("TESTCONTAINERS_HOST_OVERRIDE")
 	if exists {
 		hostCache = host
 		return hostCache, nil
