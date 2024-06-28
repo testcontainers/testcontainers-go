@@ -11,6 +11,7 @@ import (
 
 	"github.com/docker/go-connections/nat"
 	"github.com/jackc/pgx/v5"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -231,6 +232,7 @@ func TestSnapshot(t *testing.T) {
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
 		postgres.BasicWaitStrategies(),
+		postgres.WithSQLDriver("pgx"),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -391,12 +393,9 @@ func TestSnapshotWithOverrides(t *testing.T) {
 }
 
 func TestSnapshotWithDockerExecFallback(t *testing.T) {
-	// Tell the postgres module to use a driver that doesn't exist
-	// This will cause the module to fall back to using docker exec
-	postgres.SQLDriverName = "DoesNotExist"
-
 	ctx := context.Background()
 
+	// postgresWithSQLDriver {
 	// 1. Start the postgres container and run any migrations on it
 	ctr, err := postgres.RunContainer(
 		ctx,
@@ -405,7 +404,11 @@ func TestSnapshotWithDockerExecFallback(t *testing.T) {
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
 		postgres.BasicWaitStrategies(),
+		// Tell the postgres module to use a driver that doesn't exist
+		// This will cause the module to fall back to using docker exec
+		postgres.WithSQLDriver("DoesNotExist"),
 	)
+	// }
 	if err != nil {
 		t.Fatal(err)
 	}

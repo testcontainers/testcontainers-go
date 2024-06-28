@@ -122,7 +122,7 @@ tests very modular, since they always run on a brand-new database.
 The snapshot/restore feature tries to use the `postgres` driver with go's included `sql.DB` package to perform database operations.
 If the `postgres` driver is not installed, it will fall back to using `docker exec`, which works, but is slower.
 
-You can tell the module to use the database driver you have imported in your test package by setting `postgres.SQLDriverName` to your driver name.
+You can tell the module to use the database driver you have imported in your test package by setting `postgres.WithSQLDriver("name")` to your driver name.
 
 For example, if you use pgx, see the example below.
 
@@ -136,12 +136,10 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
-
-func init() {
-	postgres.SQLDriverName = "pgx"
-}
-
-func TestSomething(t *testing.T) {
-    // Your test code here, using postgres.RunContainer()
-}
 ```
+
+The above code snippet is importing the `pgx` driver and the _Testcontainers for Go_ Postgres module.
+
+<!--codeinclude-->
+[Snapshot/Restore with custom driver](../../modules/postgres/postgres_test.go) inside_block:snapshotAndReset
+<!--/codeinclude-->

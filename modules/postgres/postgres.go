@@ -19,10 +19,6 @@ const (
 	defaultSnapshotName  = "migrated_template"
 )
 
-// SQLDriverName is passed to sql.Open() to connect to the database when making or restoring snapshots.
-// This can be set if your app imports a different postgres driver, f.ex. "pgx"
-var SQLDriverName = "postgres"
-
 // PostgresContainer represents the postgres container type used in the module
 type PostgresContainer struct {
 	testcontainers.Container
@@ -30,6 +26,9 @@ type PostgresContainer struct {
 	user         string
 	password     string
 	snapshotName string
+	// sqlDriverName is passed to sql.Open() to connect to the database when making or restoring snapshots.
+	// This can be set if your app imports a different postgres driver, f.ex. "pgx"
+	sqlDriverName string
 }
 
 // MustConnectionString panics if the address cannot be determined.
@@ -153,7 +152,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		Started:          true,
 	}
 
+	// Gather all config options (defaults and then apply provided options)
+	settings := defaultOptions()
 	for _, opt := range opts {
+		if apply, ok := opt.(Option); ok {
+			apply(&settings)
+		}
 		if err := opt.Customize(&genericContainerReq); err != nil {
 			return nil, err
 		}
@@ -168,7 +172,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	password := req.Env["POSTGRES_PASSWORD"]
 	dbName := req.Env["POSTGRES_DB"]
 
-	return &PostgresContainer{Container: container, dbName: dbName, password: password, user: user}, nil
+	return &PostgresContainer{Container: container, dbName: dbName, password: password, user: user, sqlDriverName: settings.SQLDriverName}, nil
 }
 
 type snapshotConfig struct {
@@ -279,7 +283,7 @@ func (c *PostgresContainer) snapshotConnection(ctx context.Context) (*sql.Conn, 
 
 	// Try to use an actual postgres connection, if the driver is loaded
 	connStr := c2.MustConnectionString(ctx, "sslmode=disable")
-	pool, err := sql.Open(SQLDriverName, connStr)
+	pool, err := sql.Open(c.sqlDriverName, connStr)
 	if err != nil {
 		return nil, nil, fmt.Errorf("sql.Open for snapshot connection failed: %w", err)
 	}
