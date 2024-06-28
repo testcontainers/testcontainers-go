@@ -14,6 +14,10 @@ jobs:
     runs-on: 'ubuntu-latest'
     continue-on-error: true
     steps:
+      - name: Set the Docker Install type
+        run: |
+          echo "docker_install_type=${{ matrix.rootless-docker == true && 'Rootless' || 'Rootful' }}" >> "$GITHUB_ENV"
+
       - name: Setup rootless Docker
         if: ${{ matrix.rootless-docker }}
         uses: ScribeMD/rootless-docker@6bd157a512c2fafa4e0243a8aa87d964eb890886  # v0.2.2
@@ -51,6 +55,7 @@ jobs:
           cat <<EOF > ./payload-slack-content.json
           {
               "tc_project": "testcontainers-go",
+              "tc_docker_install_type": "${docker_install_type}",
               "tc_github_action_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}",
               "tc_github_action_status": "FAILED",
               "tc_slack_channel_id": "${{ secrets.SLACK_DOCKER_LATEST_CHANNEL_ID }}"
