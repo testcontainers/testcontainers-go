@@ -63,12 +63,12 @@ func ExampleRunContainer_withModel_llama2_http() {
 
 	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "pull", model})
 	if err != nil {
-		log.Fatalf("failed to pull model %s: %s", model, err)
+		log.Fatalf("failed to pull model %s: %s", model, err) // nolint:gocritic
 	}
 
 	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "run", model})
 	if err != nil {
-		log.Fatalf("failed to run model %s: %s", model, err)
+		log.Fatalf("failed to run model %s: %s", model, err) // nolint:gocritic
 	}
 
 	connectionStr, err := ollamaContainer.ConnectionString(ctx)
@@ -121,12 +121,12 @@ func ExampleRunContainer_withModel_llama2_langchain() {
 
 	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "pull", model})
 	if err != nil {
-		log.Fatalf("failed to pull model %s: %s", model, err)
+		log.Fatalf("failed to pull model %s: %s", model, err) // nolint:gocritic
 	}
 
 	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "run", model})
 	if err != nil {
-		log.Fatalf("failed to run model %s: %s", model, err)
+		log.Fatalf("failed to run model %s: %s", model, err) // nolint:gocritic
 	}
 
 	connectionStr, err := ollamaContainer.ConnectionString(ctx)

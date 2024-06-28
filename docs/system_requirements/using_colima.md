@@ -26,13 +26,21 @@ default    Current DOCKER_HOST based configuration   unix:///var/run/docker.sock
 If you're using an older version of Colima or have other applications that are
 unaware of Docker context the following workaround is available:
 
-1. Locate your Docker Socket, see: [Colima's FAQ - Docker Socket Location](https://github.com/abiosoft/colima/blob/main/docs/FAQ.md#docker-socket-location)
+- Locate your Docker Socket, see: [Colima's FAQ - Docker Socket Location](https://github.com/abiosoft/colima/blob/main/docs/FAQ.md#docker-socket-location)
 
-2. Set the `DOCKER_HOST` environment variable to match the located Docker Socket
+- Create a symbolic link from the default Docker Socket to the expected location, and restart Colima with the `--network-address` flag.
+
+```
+    sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+    colima stop
+    colima start --network-address
+```
+
+- Set the `DOCKER_HOST` environment variable to match the located Docker Socket
 
     * Example: `export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"`
 
-3. As of testcontainers-go v0.14.0 set `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE`
+- As of testcontainers-go v0.14.0 set `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE`
    to `/var/run/docker.sock` as the default value refers to your `DOCKER_HOST`
    environment variable.
 

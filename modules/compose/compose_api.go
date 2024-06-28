@@ -22,8 +22,8 @@ import (
 	"github.com/docker/docker/client"
 	"golang.org/x/sync/errgroup"
 
-	testcontainers "github.com/testcontainers/testcontainers-go"
-	wait "github.com/testcontainers/testcontainers-go/wait"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 type stackUpOptionFunc func(s *stackUpOptions)
@@ -126,7 +126,7 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) error {
 	for i, reader := range r {
 		tmp := os.TempDir()
 		tmp = filepath.Join(tmp, strconv.FormatInt(time.Now().UnixNano(), 10))
-		err := os.MkdirAll(tmp, 0755)
+		err := os.MkdirAll(tmp, 0o755)
 		if err != nil {
 			return fmt.Errorf("failed to create temporary directory: %w", err)
 		}
@@ -135,12 +135,12 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) error {
 
 		bs, err := io.ReadAll(reader)
 		if err != nil {
-			fmt.Errorf("failed to read from reader: %w", err)
+			return fmt.Errorf("failed to read from reader: %w", err)
 		}
 
-		err = os.WriteFile(filepath.Join(tmp, name), bs, 0644)
+		err = os.WriteFile(filepath.Join(tmp, name), bs, 0o644)
 		if err != nil {
-			fmt.Errorf("failed to write to temporary file: %w", err)
+			return fmt.Errorf("failed to write to temporary file: %w", err)
 		}
 
 		f[i] = filepath.Join(tmp, name)
@@ -149,7 +149,7 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) error {
 		o.temporaryPaths[f[i]] = true
 	}
 
-	o.Paths = f
+	o.Paths = append(o.Paths, f...)
 
 	return nil
 }
@@ -157,7 +157,7 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) error {
 type ComposeStackFiles []string
 
 func (f ComposeStackFiles) applyToComposeStack(o *composeStackOptions) error {
-	o.Paths = f
+	o.Paths = append(o.Paths, f...)
 	return nil
 }
 

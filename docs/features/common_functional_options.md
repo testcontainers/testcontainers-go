@@ -27,7 +27,7 @@ postgres, err = postgresModule.RunContainer(ctx, testcontainers.WithEnv(map[stri
 
 #### WithHostPortAccess
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.31.0"><span class="tc-version">:material-tag: v0.31.0</span></a>
 
 If you need to access a port that is already running in the host, you can use `testcontainers.WithHostPortAccess` for example:
 

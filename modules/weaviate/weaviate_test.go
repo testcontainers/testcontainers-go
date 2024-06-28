@@ -6,20 +6,20 @@ import (
 	"net/http"
 	"testing"
 
+	wvt "github.com/weaviate/weaviate-go-client/v4/weaviate"
+	wvtgrpc "github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/weaviate"
-	wvt "github.com/weaviate/weaviate-go-client/v4/weaviate"
-	wvtgrpc "github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
 )
 
 func TestWeaviate(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := weaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.24.5"))
+	container, err := weaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.25.5"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -47,7 +47,7 @@ func (c *OllamaContainer) Commit(ctx context.Context, targetImage string) error 
 		return err
 	}
 
-	list, err := cli.ImageList(ctx, types.ImageListOptions{Filters: filters.NewArgs(filters.Arg("reference", targetImage))})
+	list, err := cli.ImageList(ctx, image.ListOptions{Filters: filters.NewArgs(filters.Arg("reference", targetImage))})
 	if err != nil {
 		return fmt.Errorf("listing images %w", err)
 	}

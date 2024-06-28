@@ -205,7 +205,6 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestElasticsearch8WithoutCredentials(t *testing.T) {
