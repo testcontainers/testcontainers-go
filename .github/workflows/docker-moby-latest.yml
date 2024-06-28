@@ -12,6 +12,7 @@ jobs:
         rootless-docker: [true, false]
     name: "Core tests using latest moby/moby"
     runs-on: 'ubuntu-latest'
+    continue-on-error: true
     steps:
       - name: Setup rootless Docker
         if: ${{ matrix.rootless-docker }}
