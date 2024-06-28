@@ -134,7 +134,8 @@ type ContainerRequest struct {
 	Tmpfs                   map[string]string
 	RegistryCred            string // Deprecated: Testcontainers will detect registry credentials automatically
 	WaitingFor              wait.Strategy
-	Name                    string // for specifying container name
+	DependsOn               []ContainerDependency // specify other containers that must be running before starting this container.
+	Name                    string                // for specifying container name
 	Hostname                string
 	WorkingDir              string                                     // specify the working directory of the container
 	ExtraHosts              []string                                   // Deprecated: Use HostConfigModifier instead

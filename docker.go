@@ -59,6 +59,7 @@ type DockerContainer struct {
 	// Container ID from Docker
 	ID         string
 	WaitingFor wait.Strategy
+	DependsOn  []ContainerDependency
 	Image      string
 
 	isRunning     bool
@@ -1101,6 +1102,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		defaultCopyFileToContainerHook(req.Files),
 		defaultLogConsumersHook(req.LogConsumerCfg),
 		defaultReadinessHook(),
+		defaultDependencyHook(dockerInput),
 	}
 
 	// in the case the container needs to access a local port
@@ -1150,6 +1152,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	c := &DockerContainer{
 		ID:                resp.ID,
 		WaitingFor:        req.WaitingFor,
+		DependsOn:         req.DependsOn,
 		Image:             imageName,
 		imageWasBuilt:     req.ShouldBuildImage(),
 		keepBuiltImage:    req.ShouldKeepBuiltImage(),

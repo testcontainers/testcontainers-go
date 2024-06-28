@@ -164,3 +164,32 @@ The above example is updating the predefined command of the image, **appending**
 
 !!!info
     This can't be used to replace the command, only to append options.
+
+#### DependsOn Another Container
+
+If a container depends on another to function correctly, you can use `ContainerDependency`s to group the parent and
+dependent container together. Thereby making the dependent container accessible within the parent container. All
+dependencies listed in `ContainerRequest#DependsOn` will be started prior to the parent container.
+
+Seen below is a parent container that depends on a redis container. The environment variable `REDIS_NAME` will be
+injected into the parent container with the address of the redis container.
+```golang
+redisDep := testcontainers.NewContainerDependency(testcontainers.ContainerRequest{
+    Image: "docker.io/redis:latest",
+    /* Other options */
+}, "REDIS_NAME")
+
+container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+    ContainerRequest: testcontainers.ContainerRequest{
+        /* Other options */
+		Name: "my-web-app"
+        DependsOn: []*testcontainers.ContainerDependency{redisDep},
+    },
+    Started: true,
+})
+```
+
+If you need to access the `Container` struct of the dependent container, you can supply a callback function to
+`WithCallback` which be called with the dependent container once it is started.
+
+Named dependencies are automatically reused if the container is already running.
