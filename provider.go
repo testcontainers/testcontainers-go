@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
@@ -148,6 +149,6 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		DockerProviderOptions: o,
 		host:                  core.ExtractDockerHost(ctx),
 		client:                c,
-		config:                ReadConfig(),
+		config:                config.Read(),
 	}, nil
 }

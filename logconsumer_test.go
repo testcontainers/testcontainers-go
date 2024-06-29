@@ -293,7 +293,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	provider := &DockerProvider{
 		client: dockerClient,
-		config: ReadConfig(),
+		config: config.Read(),
 		DockerProviderOptions: &DockerProviderOptions{
 			GenericProviderOptions: &GenericProviderOptions{
 				Logger: TestLogger(t),
