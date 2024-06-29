@@ -144,16 +144,10 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		return nil, err
 	}
 
-	tcConfig := ReadConfig()
-
-	dockerHost := core.ExtractDockerHost(ctx)
-
-	p := &DockerProvider{
+	return &DockerProvider{
 		DockerProviderOptions: o,
-		host:                  dockerHost,
+		host:                  core.ExtractDockerHost(ctx),
 		client:                c,
-		config:                tcConfig,
-	}
-
-	return p, nil
+		config:                ReadConfig(),
+	}, nil
 }
