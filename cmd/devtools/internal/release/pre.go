@@ -27,6 +27,11 @@ func preRun(ctx context.Context, branch string, dryRun bool) error {
 
 	gitClient := git.New(ctx, branch, dryRun)
 
+	err = gitClient.HasOriginRemote()
+	if err != nil {
+		return err
+	}
+
 	err = gitClient.Exec("checkout", branch)
 	if err != nil {
 		return err

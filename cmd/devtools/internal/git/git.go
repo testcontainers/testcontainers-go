@@ -33,6 +33,7 @@ func New(ctx context.Context, branch string, dryRun bool) *GitClient {
 func (g *GitClient) InitRepository() error {
 	if g.dryRun {
 		fmt.Println("git init")
+		fmt.Println("git remote add origin git@github.com:testcontainers/testcontainers-go.git")
 		fmt.Println("git checkout -b " + g.defaultBranch)
 		fmt.Println("touch .keep")
 		fmt.Println("git add .keep")
@@ -41,6 +42,11 @@ func (g *GitClient) InitRepository() error {
 	}
 
 	if err := g.Exec("init"); err != nil {
+		return err
+	}
+
+	// URL is not real, just for testing purposes, but the name must be origin
+	if err := g.Exec("remote", "add", "origin", "git@testing-github.com:testcontainers/testcontainers-go.git"); err != nil {
 		return err
 	}
 
@@ -135,6 +141,31 @@ func (g *GitClient) PushTags() error {
 	return g.Exec("push", "origin", "--tags")
 }
 
+func (g *GitClient) remotes() (map[string]string, error) {
+	args := []string{
+		"remote", "-v",
+	}
+
+	lines, err := g.ExecWithOutput(args...)
+	if err != nil {
+		return nil, err
+	}
+
+	remotes := make(map[string]string)
+	for _, line := range strings.Split(lines, "\n") {
+		if line == "" {
+			continue
+		}
+
+		parts := strings.Fields(line)
+		if strings.EqualFold(parts[2], "(push)") || strings.EqualFold(parts[2], "(fetch)") {
+			remotes[parts[0]+"-"+parts[2]] = parts[1]
+		}
+	}
+
+	return remotes, nil
+}
+
 func (g *GitClient) Tag(tag string) error {
 	err := g.Exec("tag", "-d", tag)
 	if err != nil {
@@ -143,4 +174,29 @@ func (g *GitClient) Tag(tag string) error {
 	}
 
 	return g.Exec("tag", tag)
+}
+
+func (g *GitClient) HasOriginRemote() error {
+	remotes, err := g.remotes()
+	if err != nil {
+		return err
+	}
+
+	if g.dryRun {
+		// no errors in dry run
+		return nil
+	}
+
+	if len(remotes) == 0 {
+		return fmt.Errorf("no remotes found")
+	}
+
+	// verify the origin remote exists
+	if _, ok := remotes["origin-(push)"]; !ok {
+		if _, ok := remotes["origin-(fetch)"]; !ok {
+			return fmt.Errorf("origin remote not found")
+		}
+	}
+
+	return nil
 }
