@@ -66,7 +66,7 @@ func (g *GitClient) InitRepository() error {
 
 func (g *GitClient) Exec(args ...string) error {
 	if g.dryRun {
-		fmt.Printf("/bin/bash -c 'git %s'\n", strings.Join(args, " "))
+		fmt.Printf("Executing 'git %s'\n", strings.Join(args, " "))
 		return nil
 	}
 
@@ -111,7 +111,7 @@ func (g *GitClient) Log() (string, error) {
 
 func (g *GitClient) ExecWithOutput(args ...string) (string, error) {
 	if g.dryRun {
-		fmt.Printf("/bin/bash -c 'git %s'\n", strings.Join(args, " "))
+		fmt.Printf("Executing 'git %s'\n", strings.Join(args, " "))
 		return "", nil
 	}
 

@@ -91,9 +91,7 @@ func bumpVersion(ctx context.Context, dryRun bool, vVersion string) error {
 
 func replaceInFile(dryRun bool, regex bool, filePath string, old string, new string) error {
 	if dryRun {
-		fmt.Printf("sed \"s/%s/%s/g\" %s > %s.tmp\n", old, new, filePath, filePath)
-		fmt.Printf("mv %s.tmp %s\n", filePath, filePath)
-
+		fmt.Printf("Replacing '%s' with '%s' in file %s\n", old, new, filePath)
 		return nil
 	}
 

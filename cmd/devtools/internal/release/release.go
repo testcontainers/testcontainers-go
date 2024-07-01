@@ -136,7 +136,7 @@ func hitGolangProxy(proxyURL string, dryRun bool, modulePath string, moduleVersi
 	url := fmt.Sprintf("%s/%s/@v/%s.info", proxyURL, modulePath, moduleVersion)
 
 	if dryRun {
-		fmt.Printf("hitting the golang proxy: %s\n", url)
+		fmt.Printf("Hitting the Golang proxy: %s\n", url)
 		return nil
 	}
 
