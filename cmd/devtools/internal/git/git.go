@@ -14,6 +14,7 @@ type GitClient struct {
 	ctx           context.Context
 	defaultBranch string
 	dryRun        bool
+	origin        string
 }
 
 func New(ctx context.Context, branch string, dryRun bool) *GitClient {
@@ -25,6 +26,7 @@ func New(ctx context.Context, branch string, dryRun bool) *GitClient {
 		ctx:           ctx,
 		defaultBranch: branch,
 		dryRun:        dryRun,
+		origin:        "git@github.com:testcontainers/testcontainers-go.git",
 	}
 }
 
@@ -41,12 +43,15 @@ func (g *GitClient) InitRepository() error {
 		return nil
 	}
 
+	// set a fake origin for testing purposes
+	g.origin = "git@testing-github.com:testcontainers/testcontainers-go.git"
+
 	if err := g.Exec("init"); err != nil {
 		return err
 	}
 
 	// URL is not real, just for testing purposes, but the name must be origin
-	if err := g.Exec("remote", "add", "origin", "git@testing-github.com:testcontainers/testcontainers-go.git"); err != nil {
+	if err := g.Exec("remote", "add", "origin", g.origin); err != nil {
 		return err
 	}
 
@@ -192,10 +197,17 @@ func (g *GitClient) HasOriginRemote() error {
 	}
 
 	// verify the origin remote exists
-	if _, ok := remotes["origin-(push)"]; !ok {
-		if _, ok := remotes["origin-(fetch)"]; !ok {
-			return fmt.Errorf("origin remote not found")
-		}
+	var origin string
+	if orp, ok := remotes["origin-(push)"]; ok {
+		origin = orp
+	} else if orf, ok := remotes["origin-(fetch)"]; ok {
+		origin = orf
+	} else {
+		return fmt.Errorf("origin remote not found")
+	}
+
+	if origin != g.origin {
+		return fmt.Errorf("origin remote, %s, is not the expected one: %s", origin, g.origin)
 	}
 
 	return nil
