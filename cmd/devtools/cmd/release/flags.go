@@ -4,6 +4,7 @@ import "fmt"
 
 const (
 	bumpTypeFlag    string = "bump-type"
+	preReleaseFlag  string = "pre-release"
 	bumpTypeInfoMsg string = "Must be 'major', 'minor', 'patch' or 'prerel'"
 	dryRunFlag      string = "dry-run"
 )

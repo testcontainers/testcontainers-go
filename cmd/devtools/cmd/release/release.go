@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	bumpType string
-	dryRun   bool
+	bumpType   string
+	dryRun     bool
+	preRelease bool
 )
 
 var ReleaseCmd = &cobra.Command{
@@ -36,11 +37,16 @@ executing them.`,
 			return err
 		}
 
+		if preRelease {
+			return nil
+		}
+
 		return releaser.Run(ctx)
 	},
 }
 
 func init() {
 	ReleaseCmd.Flags().BoolVarP(&dryRun, dryRunFlag, "d", false, "If true, the release will be a dry-run and no changes will be made to the repository")
+	ReleaseCmd.Flags().BoolVarP(&preRelease, preReleaseFlag, "p", false, "If true, only the pre-release steps will be executed.")
 	ReleaseCmd.Flags().StringVarP(&bumpType, bumpTypeFlag, "B", "minor", "The type of bump to perform. "+bumpTypeInfoMsg)
 }
