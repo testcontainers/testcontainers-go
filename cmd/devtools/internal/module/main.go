@@ -65,7 +65,7 @@ func GenerateFiles(moduleDir string, moduleName string, funcMap template.FuncMap
 		templates = append(templates, "examples_test.go")
 	}
 
-	templatesPath := filepath.Join("_template")
+	templatesPath := "_template"
 	if tcModuleCtx.Context.RootDir != "" {
 		templatesPath = filepath.Join(tcModuleCtx.Context.RootDir, "cmd", "devtools", "_template")
 	}
