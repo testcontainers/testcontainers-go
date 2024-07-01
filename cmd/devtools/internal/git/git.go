@@ -77,7 +77,7 @@ func (g *GitClient) Exec(args ...string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("bash -c 'git %s' failed: %w", bashArgs, err)
+		return fmt.Errorf("bash '%s' failed: %w", bashArgs, err)
 	}
 
 	return nil
@@ -125,7 +125,7 @@ func (g *GitClient) ExecWithOutput(args ...string) (string, error) {
 	cmd.Stderr = &errbuf
 
 	if err := cmd.Run(); err != nil {
-		return errbuf.String(), fmt.Errorf("bash -c 'git %s' failed: %w", bashArgs, err)
+		return errbuf.String(), fmt.Errorf("bash '%s' failed: %w", bashArgs, err)
 	}
 
 	return outbuf.String(), nil
