@@ -20,7 +20,7 @@ const (
 )
 
 // run performs the release
-func run(ctx devcontext.Context, branch string, bumpType string, dryRun bool, skipRemoteOps bool) error {
+func run(ctx devcontext.Context, branch string, bumpType string, dryRun bool, skipRemoteOps bool, proxyURL string) error {
 	if bumpType == "" {
 		bumpType = "minor"
 	}
@@ -100,27 +100,29 @@ func run(ctx devcontext.Context, branch string, bumpType string, dryRun bool, sk
 	}
 
 	// for testing purposes, we can skip the remote operations, like pushing the tags
-	// and hitting the golang proxy to update the latest version for the core and the modules
 	if !skipRemoteOps {
 		if err := gitClient.PushTags(); err != nil {
 			return fmt.Errorf("error pushing tags: %w", err)
 		}
+	}
 
-		if err := hitGolangProxy(dryRun, repository, releaseVersion); err != nil {
-			return fmt.Errorf("error hitting the golang proxy for the core: %w", err)
+	// hitting the golang proxy to update the latest version for the core and the modules
+	// can be easily mocked in the tests
+
+	if err := hitGolangProxy(proxyURL, dryRun, repository, releaseVersion); err != nil {
+		return fmt.Errorf("error hitting the golang proxy for the core: %w", err)
+	}
+	for _, directory := range directories {
+		path := filepath.Join(ctx.RootDir, directory)
+		modules, err := getSubdirectories(path)
+		if err != nil {
+			return fmt.Errorf("error getting subdirectories: %w", err)
 		}
-		for _, directory := range directories {
-			path := filepath.Join(ctx.RootDir, directory)
-			modules, err := getSubdirectories(path)
-			if err != nil {
-				return fmt.Errorf("error getting subdirectories: %w", err)
-			}
 
-			for _, module := range modules {
-				modulePath := fmt.Sprintf("%s/%s/%s", repository, directory, module)
-				if err := hitGolangProxy(dryRun, modulePath, releaseVersion); err != nil {
-					return fmt.Errorf("error hitting the golang proxy for the module: %w", err)
-				}
+		for _, module := range modules {
+			modulePath := fmt.Sprintf("%s/%s/%s", repository, directory, module)
+			if err := hitGolangProxy(proxyURL, dryRun, modulePath, releaseVersion); err != nil {
+				return fmt.Errorf("error hitting the golang proxy for the module: %w", err)
 			}
 		}
 	}
@@ -130,8 +132,8 @@ func run(ctx devcontext.Context, branch string, bumpType string, dryRun bool, sk
 
 // hitGolangProxy hits the golang proxy to update the latest version
 // The URL has the following format: https://proxy.golang.org/${module_path}/@v/${module_version}.info
-func hitGolangProxy(dryRun bool, modulePath string, moduleVersion string) error {
-	url := fmt.Sprintf("https://proxy.golang.org/%s/@v/%s.info", modulePath, moduleVersion)
+func hitGolangProxy(proxyURL string, dryRun bool, modulePath string, moduleVersion string) error {
+	url := fmt.Sprintf("%s/%s/@v/%s.info", proxyURL, modulePath, moduleVersion)
 
 	if dryRun {
 		fmt.Printf("hitting the golang proxy: %s\n", url)

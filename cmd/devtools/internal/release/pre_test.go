@@ -56,7 +56,7 @@ func TestPre(t *testing.T) {
 
 			ctx := context.New(tt.TempDir())
 
-			releaser := NewTestReleaser(tc.args.dryRun, ctx.RootDir, "minor")
+			releaser := NewTestReleaser(tc.args.dryRun, ctx.RootDir, "minor", "")
 
 			initVersion := "0.0.1"
 			nextVersion := "0.1.0"

@@ -17,15 +17,17 @@ type testReleaser struct {
 	dryRun        bool
 	branch        string
 	bumpType      string
+	proxyURL      string
 	skipRemoteOps bool
 }
 
-func NewTestReleaser(dryRun bool, rootDir string, bumpType string) *testReleaser {
+func NewTestReleaser(dryRun bool, rootDir string, bumpType string, proxyURL string) *testReleaser {
 	return &testReleaser{
 		dryRun:        dryRun,
 		branch:        "main-" + filepath.Base(filepath.Dir(rootDir)),
 		bumpType:      bumpType,
 		skipRemoteOps: true,
+		proxyURL:      proxyURL,
 	}
 }
 
@@ -34,7 +36,7 @@ func (p *testReleaser) PreRun(ctx context.Context) error {
 }
 
 func (p *testReleaser) Run(ctx context.Context) error {
-	return run(ctx, p.branch, p.bumpType, p.dryRun, p.skipRemoteOps)
+	return run(ctx, p.branch, p.bumpType, p.dryRun, p.skipRemoteOps, p.proxyURL)
 }
 
 func createBumpFiles(t *testing.T, ctx context.Context, version string) {

@@ -4,10 +4,14 @@ go 1.21
 
 replace github.com/testcontainers/testcontainers-go => ../../
 
+// replaced until https://github.com/wiremock/wiremock-testcontainers-go/pull/40 is merged and released
+replace github.com/wiremock/wiremock-testcontainers-go => github.com/vaihtovirta/wiremock-testcontainers-go v0.0.0-20240613090946-2e101203e6a8
+
 require (
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.31.0
+	github.com/wiremock/wiremock-testcontainers-go v1.0.0-alpha-8
 	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
 	golang.org/x/mod v0.16.0
 	golang.org/x/text v0.14.0
@@ -58,6 +62,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
+	github.com/wiremock/go-wiremock v1.8.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
@@ -65,6 +70,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect

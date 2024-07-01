@@ -5,7 +5,8 @@ import (
 )
 
 const (
-	nonReleasedText = `Not available until the next release of testcontainers-go <a href=\"https://github.com/testcontainers/testcontainers-go\"><span class=\"tc-version\">:material-tag: main</span></a>`
+	golangProxy     string = "https://proxy.golang.org"
+	nonReleasedText string = `Not available until the next release of testcontainers-go <a href=\"https://github.com/testcontainers/testcontainers-go\"><span class=\"tc-version\">:material-tag: main</span></a>`
 )
 
 var directories = []string{"examples", "modules"}
@@ -40,7 +41,7 @@ func (p *dryRunReleaseManager) PreRun(ctx context.Context) error {
 
 func (p *dryRunReleaseManager) Run(ctx context.Context) error {
 	// dry run and skip remote operations
-	return run(ctx, p.branch, p.bumpType, true, true)
+	return run(ctx, p.branch, p.bumpType, true, true, golangProxy)
 }
 
 type releaseManager struct {
@@ -54,5 +55,5 @@ func (p *releaseManager) PreRun(ctx context.Context) error {
 
 func (p *releaseManager) Run(ctx context.Context) error {
 	// no dry run and execute remote operations
-	return run(ctx, p.branch, p.bumpType, false, false)
+	return run(ctx, p.branch, p.bumpType, false, false, golangProxy)
 }
