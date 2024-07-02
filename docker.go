@@ -889,20 +889,25 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 
 	var buildError error
 	var resp types.ImageBuildResponse
-	err = backoff.Retry(func() error {
-		resp, err = p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
-		if err != nil {
-			buildError = errors.Join(buildError, err)
-			if isPermanentClientError(err) {
-				return backoff.Permanent(err)
+	err = backoff.RetryNotify(
+		func() error {
+			resp, err = p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
+			if err != nil {
+				buildError = errors.Join(buildError, err)
+				if isPermanentClientError(err) {
+					return backoff.Permanent(err)
+				}
+				return err
 			}
-			Logger.Printf("Failed to build image: %s, will retry", err)
-			return err
-		}
-		defer p.Close()
+			defer p.Close()
 
-		return nil
-	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+			return nil
+		},
+		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
+		func(err error, duration time.Duration) {
+			p.Logger.Printf("Failed to build image: %s, will retry", err)
+		},
+	)
 	if err != nil {
 		return "", errors.Join(buildError, err)
 	}
@@ -1181,22 +1186,31 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 
 func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string) (*types.Container, error) {
 	var ctr *types.Container
-	return ctr, backoff.Retry(func() error {
-		c, err := p.findContainerByName(ctx, name)
-		if err != nil {
-			if !errdefs.IsNotFound(err) && isPermanentClientError(err) {
-				return backoff.Permanent(err)
+	return ctr, backoff.RetryNotify(
+		func() error {
+			c, err := p.findContainerByName(ctx, name)
+			if err != nil {
+				if !errdefs.IsNotFound(err) && isPermanentClientError(err) {
+					return backoff.Permanent(err)
+				}
+				return err
 			}
-			return err
-		}
 
-		if c == nil {
-			return fmt.Errorf("container %s not found", name)
-		}
+			if c == nil {
+				return errdefs.NotFound(fmt.Errorf("container %s not found", name))
+			}
 
-		ctr = c
-		return nil
-	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+			ctr = c
+			return nil
+		},
+		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
+		func(err error, duration time.Duration) {
+			if errdefs.IsNotFound(err) {
+				return
+			}
+			p.Logger.Printf("Waiting for container. Got an error: %v; Retrying in %d seconds", err, duration/time.Second)
+		},
+	)
 }
 
 func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
@@ -1283,19 +1297,24 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	}
 
 	var pull io.ReadCloser
-	err = backoff.Retry(func() error {
-		pull, err = p.client.ImagePull(ctx, tag, pullOpt)
-		if err != nil {
-			if isPermanentClientError(err) {
-				return backoff.Permanent(err)
+	err = backoff.RetryNotify(
+		func() error {
+			pull, err = p.client.ImagePull(ctx, tag, pullOpt)
+			if err != nil {
+				if isPermanentClientError(err) {
+					return backoff.Permanent(err)
+				}
+				return err
 			}
-			Logger.Printf("Failed to pull image: %s, will retry", err)
-			return err
-		}
-		defer p.Close()
+			defer p.Close()
 
-		return nil
-	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+			return nil
+		},
+		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
+		func(err error, duration time.Duration) {
+			p.Logger.Printf("Failed to pull image: %s, will retry", err)
+		},
+	)
 	if err != nil {
 		return err
 	}
