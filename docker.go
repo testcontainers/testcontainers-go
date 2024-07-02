@@ -3,7 +3,6 @@ package testcontainers
 import (
 	"archive/tar"
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/binary"
@@ -157,7 +156,7 @@ func (c *DockerContainer) PortEndpoint(ctx context.Context, port nat.Port, proto
 
 // Host gets host (ip or name) of the docker daemon where the container port is exposed
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
-// You can use the "TC_HOST" env variable to set this yourself
+// You can use the "TESTCONTAINERS_HOST_OVERRIDE" env variable to set this yourself
 func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 	host, err := c.provider.DaemonHost(ctx)
 	if err != nil {
@@ -518,7 +517,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 		return 0, nil, err
 	}
 
-	hijack, err := cli.ContainerExecAttach(ctx, response.ID, types.ExecStartCheck{})
+	hijack, err := cli.ContainerExecAttach(ctx, response.ID, container.ExecAttachOptions{})
 	if err != nil {
 		return 0, nil, err
 	}
@@ -607,7 +606,7 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 	// create the directory under its parent
 	parent := filepath.Dir(containerParentPath)
 
-	err = c.provider.client.CopyToContainer(ctx, c.ID, parent, buff, types.CopyToContainerOptions{})
+	err = c.provider.client.CopyToContainer(ctx, c.ID, parent, buff, container.CopyToContainerOptions{})
 	if err != nil {
 		return err
 	}
@@ -665,7 +664,7 @@ func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(
 		return err
 	}
 
-	err = c.provider.client.CopyToContainer(ctx, c.ID, "/", buffer, types.CopyToContainerOptions{})
+	err = c.provider.client.CopyToContainer(ctx, c.ID, "/", buffer, container.CopyToContainerOptions{})
 	if err != nil {
 		return err
 	}
@@ -894,6 +893,9 @@ var _ ContainerProvider = (*DockerProvider)(nil)
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
 	buildOptions, err := img.BuildOptions()
+	if err != nil {
+		return "", err
+	}
 
 	var buildError error
 	var resp types.ImageBuildResponse
@@ -925,8 +927,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 
 	// need to read the response from Docker, I think otherwise the image
 	// might not finish building before continuing to execute here
-	buf := new(bytes.Buffer)
-	_, err = buf.ReadFrom(resp.Body)
+	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -1348,7 +1349,7 @@ func (p *DockerProvider) Config() TestcontainersConfig {
 
 // DaemonHost gets the host or ip of the Docker daemon where ports are exposed on
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
-// You can use the "TC_HOST" env variable to set this yourself
+// You can use the "TESTCONTAINERS_HOST_OVERRIDE" env variable to set this yourself
 func (p *DockerProvider) DaemonHost(ctx context.Context) (string, error) {
 	return daemonHost(ctx, p)
 }
@@ -1358,7 +1359,7 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 		return p.hostCache, nil
 	}
 
-	host, exists := os.LookupEnv("TC_HOST")
+	host, exists := os.LookupEnv("TESTCONTAINERS_HOST_OVERRIDE")
 	if exists {
 		p.hostCache = host
 		return p.hostCache, nil
@@ -1416,7 +1417,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	tcConfig := p.Config().Config
 
-	nc := types.NetworkCreate{
+	nc := network.CreateOptions{
 		Driver:     req.Driver,
 		Internal:   req.Internal,
 		EnableIPv6: req.EnableIPv6,
@@ -1471,12 +1472,12 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 }
 
 // GetNetwork returns the object representing the network identified by its name
-func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (types.NetworkResource, error) {
-	networkResource, err := p.client.NetworkInspect(ctx, req.Name, types.NetworkInspectOptions{
+func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (network.Inspect, error) {
+	networkResource, err := p.client.NetworkInspect(ctx, req.Name, network.InspectOptions{
 		Verbose: true,
 	})
 	if err != nil {
-		return types.NetworkResource{}, err
+		return network.Inspect{}, err
 	}
 
 	return networkResource, err
@@ -1512,7 +1513,7 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 
 func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APIClient) (string, error) {
 	// Get list of available networks
-	networkResources, err := cli.NetworkList(ctx, types.NetworkListOptions{})
+	networkResources, err := cli.NetworkList(ctx, network.ListOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -1533,7 +1534,7 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 
 	// Create a bridge network for the container communications
 	if !reaperNetworkExists {
-		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
+		_, err = cli.NetworkCreate(ctx, reaperNetwork, network.CreateOptions{
 			Driver:     Bridge,
 			Attachable: true,
 			Labels:     core.DefaultLabels(core.SessionID()),
