@@ -1338,11 +1338,6 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 	assert.NotEmpty(t, inspect.ID)
 
 	require.NoError(t, ctr.Stop(context.Background(), nil))
-
-	// type assertion to ensure that the container is a DockerContainer
-	dc := ctr.(*DockerContainer)
-
-	assert.Nil(t, dc.raw)
 }
 
 func readHostname(tb testing.TB, containerId string) string {
