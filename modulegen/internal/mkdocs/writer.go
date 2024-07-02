@@ -31,6 +31,6 @@ func overrideData(data []byte) []byte {
 
 func setEmoji(content string, key string, value string) string {
 	old := "emoji_" + key + `: ""`
-	new := "emoji_" + key + ": !!python/name:materialx.emoji." + value
+	new := "emoji_" + key + ": !!python/name:material.extensions.emoji." + value
 	return strings.ReplaceAll(content, old, new)
 }
