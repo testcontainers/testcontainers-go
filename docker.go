@@ -36,7 +36,7 @@ var (
 // DockerContainer represents a container started using Docker
 type DockerContainer struct {
 	ID                string
-	raw               *types.ContainerJSON
+	exposedPorts      []string // a reference to the container's requested exposed ports. It allows checking they are ready before any wait strategy
 	isRunning         bool
 	WaitingFor        wait.Strategy
 	logger            log.Logging
@@ -82,17 +82,27 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	ctr.terminationSignal = nil
 
 	// populate the raw representation of the container
-	_, err := ctr.inspectRawContainer(ctx)
+	jsonRaw, err := ctr.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// the health status of the container, if any
-	if health := ctr.raw.State.Health; health != nil {
+	if health := jsonRaw.State.Health; health != nil {
 		ctr.healthStatus = health.Status
 	}
 
 	return &ctr, nil
+}
+
+// Inspect gets the raw container info
+func (c *DockerContainer) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+	jsonRaw, err := c.inspectRawContainer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonRaw, nil
 }
 
 // ContainerIP gets the IP address of the primary network within the container.
@@ -160,7 +170,7 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 	}
 	defer cli.Close()
 
-	err = cli.CopyToContainer(ctx, c.ID, parent, buff, types.CopyToContainerOptions{})
+	err = cli.CopyToContainer(ctx, c.ID, parent, buff, container.CopyToContainerOptions{})
 	if err != nil {
 		return err
 	}
@@ -252,7 +262,7 @@ func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(
 	}
 	defer cli.Close()
 
-	err = cli.CopyToContainer(ctx, c.ID, "/", buffer, types.CopyToContainerOptions{})
+	err = cli.CopyToContainer(ctx, c.ID, "/", buffer, container.CopyToContainerOptions{})
 	if err != nil {
 		return err
 	}
@@ -307,7 +317,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 		return 0, nil, err
 	}
 
-	hijack, err := cli.ContainerExecAttach(ctx, response.ID, types.ExecStartCheck{})
+	hijack, err := cli.ContainerExecAttach(ctx, response.ID, container.ExecAttachOptions{})
 	if err != nil {
 		return 0, nil, err
 	}
@@ -358,20 +368,6 @@ func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 	return host, nil
 }
 
-// Inspect gets the raw container info, caching the result for subsequent calls
-func (c *DockerContainer) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
-	if c.raw != nil {
-		return c.raw, nil
-	}
-
-	jsonRaw, err := c.inspectRawContainer(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return jsonRaw, nil
-}
-
 // update container raw info
 func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.ContainerJSON, error) {
 	cli, err := core.NewClient(ctx)
@@ -380,13 +376,12 @@ func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.Conta
 	}
 	defer cli.Close()
 
-	inspect, err := cli.ContainerInspect(ctx, c.ID)
+	jsonRaw, err := cli.ContainerInspect(ctx, c.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	c.raw = &inspect
-	return c.raw, nil
+	return &jsonRaw, nil
 }
 
 func (c *DockerContainer) IsRunning() bool {
@@ -614,9 +609,6 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
 	inspect, err := c.inspectRawContainer(ctx)
 	if err != nil {
-		if c.raw != nil {
-			return c.raw.State, err
-		}
 		return nil, err
 	}
 	return inspect.State, nil
@@ -655,7 +647,6 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	}
 
 	c.isRunning = false
-	c.raw = nil // invalidate the cache, as the container representation will change after stopping
 
 	err = c.stoppedHook(ctx)
 	if err != nil {
@@ -702,7 +693,6 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 	c.sessionID = ""
 	c.isRunning = false
-	c.raw = nil // invalidate the cache here too
 
 	return errors.Join(errs...)
 }

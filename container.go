@@ -345,10 +345,8 @@ func reuseOrCreateContainer(ctx context.Context, req Request) (*DockerContainer,
 
 	sessionID := core.SessionID()
 
-	tcConfig := config.Read()
-
 	var termSignal chan bool
-	if !tcConfig.RyukDisabled {
+	if !config.Read().RyukDisabled {
 		_, err := NewReaper(context.Background(), core.SessionID())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create reaper: %w", err)

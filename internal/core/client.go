@@ -36,7 +36,7 @@ type DockerClient struct {
 var _ client.SystemAPIClient = &DockerClient{}
 
 // Events returns a channel to listen to events that happen to the docker daemon.
-func (c *DockerClient) Events(ctx context.Context, options types.EventsOptions) (<-chan events.Message, <-chan error) {
+func (c *DockerClient) Events(ctx context.Context, options events.ListOptions) (<-chan events.Message, <-chan error) {
 	return c.APIClient.Events(ctx, options)
 }
 

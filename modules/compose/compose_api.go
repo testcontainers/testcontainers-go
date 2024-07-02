@@ -16,9 +16,9 @@ import (
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/compose/v2/pkg/api"
-	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	dockernetwork "github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"golang.org/x/sync/errgroup"
 
@@ -459,15 +459,13 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 		return ctr, nil
 	}
 
-	listOptions := container.ListOptions{
+	containers, err := d.dockerClient.ContainerList(ctx, container.ListOptions{
 		All: true,
 		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ServiceLabel, svcName)),
 		),
-	}
-
-	containers, err := d.dockerClient.ContainerList(ctx, listOptions)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -492,13 +490,11 @@ func (d *dockerCompose) lookupNetworks(ctx context.Context) error {
 	d.containersLock.Lock()
 	defer d.containersLock.Unlock()
 
-	listOptions := dockertypes.NetworkListOptions{
+	networks, err := d.dockerClient.NetworkList(ctx, dockernetwork.ListOptions{
 		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
 		),
-	}
-
-	networks, err := d.dockerClient.NetworkList(ctx, listOptions)
+	})
 	if err != nil {
 		return err
 	}

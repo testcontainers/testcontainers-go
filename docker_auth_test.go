@@ -51,16 +51,16 @@ func removeImageFromLocalCache(t *testing.T, img string) {
 }
 
 func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
+	mappedPort := prepareLocalRegistryWithAuth(t)
+
 	// using the same credentials as in the Docker Registry
 	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
 		"auths": {
-				"localhost:5001": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
+				"localhost:`+mappedPort+`": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
 		},
 		"credsStore": "desktop"
 	}`)
-
-	prepareLocalRegistryWithAuth(t)
 
 	ctx := context.Background()
 
@@ -68,6 +68,9 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 		FromDockerfile: FromDockerfile{
 			Context:    "./testdata",
 			Dockerfile: "auth.Dockerfile",
+			BuildArgs: map[string]*string{
+				"REGISTRY_PORT": &mappedPort,
+			},
 		},
 		AlwaysPullImage: true, // make sure the authentication takes place
 		ExposedPorts:    []string{"6379/tcp"},
@@ -81,16 +84,16 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 }
 
 func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *testing.T) {
+	mappedPort := prepareLocalRegistryWithAuth(t)
+
 	// using different credentials than in the Docker Registry
 	base64 := "Zm9vOmJhcg==" // foo:bar
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
 		"auths": {
-			"localhost:5001": { "username": "foo", "password": "bar", "auth": "`+base64+`" }
+			"localhost:`+mappedPort+`": { "username": "foo", "password": "bar", "auth": "`+base64+`" }
 		},
 		"credsStore": "desktop"
 	}`)
-
-	prepareLocalRegistryWithAuth(t)
 
 	ctx := context.Background()
 
@@ -98,6 +101,9 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 		FromDockerfile: FromDockerfile{
 			Context:    "./testdata",
 			Dockerfile: "auth.Dockerfile",
+			BuildArgs: map[string]*string{
+				"REGISTRY_PORT": &mappedPort,
+			},
 		},
 		AlwaysPullImage: true, // make sure the authentication takes place
 		ExposedPorts:    []string{"6379/tcp"},
@@ -111,20 +117,20 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 }
 
 func TestCreateContainerFromPrivateRegistry(t *testing.T) {
+	mappedPort := prepareLocalRegistryWithAuth(t)
+
 	// using the same credentials as in the Docker Registry
 	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
 	t.Setenv("DOCKER_AUTH_CONFIG", `{
 		"auths": {
-				"localhost:5001": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
+				"localhost:`+mappedPort+`": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
 		},
 		"credsStore": "desktop"
 	}`)
 
-	prepareLocalRegistryWithAuth(t)
-
 	ctx := context.Background()
 	req := Request{
-		Image:           "localhost:5001/redis:5.0-alpine",
+		Image:           "localhost:" + mappedPort + "/redis:5.0-alpine",
 		AlwaysPullImage: true, // make sure the authentication takes place
 		ExposedPorts:    []string{"6379/tcp"},
 		WaitingFor:      wait.ForLog("Ready to accept connections"),
@@ -136,14 +142,14 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 	TerminateContainerOnEnd(t, ctx, redisContainer)
 }
 
-func prepareLocalRegistryWithAuth(t *testing.T) {
+func prepareLocalRegistryWithAuth(t *testing.T) string {
 	ctx := context.Background()
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
 	req := Request{
 		Image:        "registry:2",
-		ExposedPorts: []string{"5001:5000/tcp"},
+		ExposedPorts: []string{"5000/tcp"},
 		Env: map[string]string{
 			"REGISTRY_AUTH":                             "htpasswd",
 			"REGISTRY_AUTH_HTPASSWD_REALM":              "Registry",
@@ -167,8 +173,13 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 	registryC, err := Run(ctx, req)
 	require.NoError(t, err)
 
+	mappedPort, err := registryC.MappedPort(ctx, "5000/tcp")
+	require.NoError(t, err)
+
+	mp := mappedPort.Port()
+
 	t.Cleanup(func() {
-		removeImageFromLocalCache(t, "localhost:5001/redis:5.0-alpine")
+		removeImageFromLocalCache(t, "localhost:"+mp+"/redis:5.0-alpine")
 	})
 	t.Cleanup(func() {
 		require.NoError(t, registryC.Terminate(context.Background()))
@@ -176,4 +187,6 @@ func prepareLocalRegistryWithAuth(t *testing.T) {
 
 	_, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
+
+	return mp
 }

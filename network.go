@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/network"
 	"github.com/google/uuid"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
@@ -20,7 +20,7 @@ import (
 // - Labels: the Testcontainers for Go generic labels, to be managed by Ryuk. Please see the GenericLabels() function
 // And those options can be modified by the user, using the CreateModifier function field.
 func NewNetwork(ctx context.Context, opts ...tcnetwork.Customizer) (*DockerNetwork, error) {
-	nc := types.NetworkCreate{
+	nc := network.CreateOptions{
 		Driver: "bridge",
 		Labels: core.DefaultLabels(core.SessionID()),
 	}
@@ -37,12 +37,10 @@ func NewNetwork(ctx context.Context, opts ...tcnetwork.Customizer) (*DockerNetwo
 		return nil, fmt.Errorf("default network not found: %w", err)
 	}
 
-	tcConfig := config.Read()
-
 	var err error
 	var termSignal chan bool
 
-	if !tcConfig.RyukDisabled {
+	if !config.Read().RyukDisabled {
 		_, err := NewReaper(context.Background(), core.SessionID())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create reaper: %w", err)

@@ -6,7 +6,6 @@ import (
 	"log"
 	"testing"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	dockernetwork "github.com/docker/docker/api/types/network"
 	"github.com/stretchr/testify/assert"
@@ -52,7 +51,7 @@ func ExampleNewNetwork() {
 	args := filters.NewArgs()
 	args.Add("name", networkName)
 
-	resources, err := client.NetworkList(context.Background(), types.NetworkListOptions{
+	resources, err := client.NetworkList(context.Background(), dockernetwork.ListOptions{
 		Filters: args,
 	})
 	if err != nil {

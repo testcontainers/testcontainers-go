@@ -215,8 +215,7 @@ func TestDockerComposeAPI_WithReaper(t *testing.T) {
 
 func TestDockerComposeAPI_WithoutReaper(t *testing.T) {
 	config.Reset() // reset the config using the internal method to avoid the sync.Once
-	tcConfig := config.Read()
-	if !tcConfig.RyukDisabled {
+	if !config.Read().RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
 

@@ -123,10 +123,8 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		return nil, err
 	}
 
-	tcConfig := tcconfig.Read()
-
 	var composeReaper *testcontainers.Reaper
-	if !tcConfig.RyukDisabled {
+	if !tcconfig.Read().RyukDisabled {
 		// Initialise the reaper for the compose module
 		r, err := testcontainers.NewReaper(context.Background(), testcontainers.SessionID())
 		if err != nil {

@@ -107,7 +107,6 @@ func (c *DockerContainer) StartLogProduction(ctx context.Context, logConfig log.
 				default:
 					_, _ = fmt.Fprintf(os.Stderr, "container log error: %+v. %s", err, log.StoppedForOutOfSyncMessage)
 					// if we would continue here, the next header-read will result into random data...
-					return
 				}
 				return
 			}

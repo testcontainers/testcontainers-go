@@ -5,14 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/network"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/core"
-	"github.com/testcontainers/testcontainers-go/network"
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -60,9 +59,9 @@ func TestNewAttachedToNewNetwork(t *testing.T) {
 	if len(networks) != 1 {
 		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
 	}
-	network := networks[0]
-	if network != networkName {
-		t.Errorf("Expected network name '%s'. Got '%s'.", networkName, network)
+	nw := networks[0]
+	if nw != networkName {
+		t.Errorf("Expected network name '%s'. Got '%s'.", networkName, nw)
 	}
 
 	networkAliases, err := nginx.NetworkAliases(ctx)
@@ -153,7 +152,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 		networks = append(networks, n.Name)
 	}
 
-	req := testcontainers.Request{
+	nginx, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image:        nginxAlpineImage,
 		ExposedPorts: []string{nginxDefaultPort},
 		WaitingFor: wait.ForAll(
@@ -162,9 +161,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 		),
 		Networks: networks,
 		Started:  true,
-	}
-
-	nginx, err := testcontainers.Run(ctx, req)
+	})
 
 	require.NoError(t, err)
 	defer func() {
@@ -192,13 +189,11 @@ func TestMultipleContainersInTheNewNetwork(t *testing.T) {
 
 	networkName := net.Name
 
-	req1 := testcontainers.Request{
+	c1, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image:    nginxAlpineImage,
 		Networks: []string{networkName},
 		Started:  true,
-	}
-
-	c1, err := testcontainers.Run(ctx, req1)
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,12 +201,11 @@ func TestMultipleContainersInTheNewNetwork(t *testing.T) {
 		require.NoError(t, c1.Terminate(ctx))
 	}()
 
-	req2 := testcontainers.Request{
+	c2, err := testcontainers.Run(ctx, testcontainers.Request{
 		Image:    nginxAlpineImage,
 		Networks: []string{networkName},
 		Started:  true,
-	}
-	c2, err := testcontainers.Run(ctx, req2)
+	})
 	if err != nil {
 		t.Fatal(err)
 		return
@@ -261,11 +255,8 @@ func TestWithNetwork(t *testing.T) {
 	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoError(t, err)
 
-	args := filters.NewArgs()
-	args.Add("name", networkName)
-
-	resources, err := client.NetworkList(context.Background(), types.NetworkListOptions{
-		Filters: args,
+	resources, err := client.NetworkList(context.Background(), network.ListOptions{
+		Filters: filters.NewArgs(filters.Arg("name", networkName)),
 	})
 	require.NoError(t, err)
 	assert.Len(t, resources, 1)
@@ -305,11 +296,8 @@ func TestWithSyntheticNetwork(t *testing.T) {
 	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoError(t, err)
 
-	args := filters.NewArgs()
-	args.Add("name", networkName)
-
-	resources, err := client.NetworkList(context.Background(), types.NetworkListOptions{
-		Filters: args,
+	resources, err := client.NetworkList(context.Background(), network.ListOptions{
+		Filters: filters.NewArgs(filters.Arg("name", networkName)),
 	})
 	require.NoError(t, err)
 	assert.Empty(t, resources) // no Docker network was created
@@ -342,11 +330,8 @@ func TestWithNewNetwork(t *testing.T) {
 	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoError(t, err)
 
-	args := filters.NewArgs()
-	args.Add("name", networkName)
-
-	resources, err := client.NetworkList(context.Background(), types.NetworkListOptions{
-		Filters: args,
+	resources, err := client.NetworkList(context.Background(), network.ListOptions{
+		Filters: filters.NewArgs(filters.Arg("name", networkName)),
 	})
 	require.NoError(t, err)
 	assert.Len(t, resources, 1)
@@ -372,9 +357,9 @@ func TestWithNewNetworkContextTimeout(t *testing.T) {
 	defer cancel()
 
 	err := testcontainers.WithNewNetwork(ctx, []string{"alias"},
-		network.WithAttachable(),
-		network.WithInternal(),
-		network.WithLabels(map[string]string{"this-is-a-test": "value"}),
+		tcnetwork.WithAttachable(),
+		tcnetwork.WithInternal(),
+		tcnetwork.WithLabels(map[string]string{"this-is-a-test": "value"}),
 	)(&req)
 	require.Error(t, err)
 

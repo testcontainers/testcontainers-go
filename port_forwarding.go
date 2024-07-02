@@ -24,7 +24,7 @@ const (
 	// using the SSHD container as a bridge.
 	HostInternal string = "host.testcontainers.internal"
 	user         string = "root"
-	sshPort             = "22"
+	sshPort             = "22/tcp"
 )
 
 // sshPassword is a random password generated for the SSHD container.

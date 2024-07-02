@@ -1,27 +1,26 @@
 package network
 
 import (
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
 )
 
 // Customizer is an interface that can be used to configure the network create request.
 type Customizer interface {
-	Customize(req *types.NetworkCreate) error
+	Customize(req *network.CreateOptions) error
 }
 
 // CustomizeOption is a type that can be used to configure the network create request.
-type CustomizeOption func(req *types.NetworkCreate) error
+type CustomizeOption func(req *network.CreateOptions) error
 
 // Customize implements the NetworkCustomizer interface,
 // applying the option to the network create request.
-func (opt CustomizeOption) Customize(req *types.NetworkCreate) error {
+func (opt CustomizeOption) Customize(req *network.CreateOptions) error {
 	return opt(req)
 }
 
 // WithAttachable allows to set the network as attachable.
 func WithAttachable() CustomizeOption {
-	return func(original *types.NetworkCreate) error {
+	return func(original *network.CreateOptions) error {
 		original.Attachable = true
 
 		return nil
@@ -30,7 +29,7 @@ func WithAttachable() CustomizeOption {
 
 // WithDriver allows to override the default network driver, which is "bridge".
 func WithDriver(driver string) CustomizeOption {
-	return func(original *types.NetworkCreate) error {
+	return func(original *network.CreateOptions) error {
 		original.Driver = driver
 
 		return nil
@@ -40,8 +39,9 @@ func WithDriver(driver string) CustomizeOption {
 // WithEnableIPv6 allows to set the network as IPv6 enabled.
 // Please use this option if and only if IPv6 is enabled on the Docker daemon.
 func WithEnableIPv6() CustomizeOption {
-	return func(original *types.NetworkCreate) error {
-		original.EnableIPv6 = true
+	return func(original *network.CreateOptions) error {
+		b := true
+		original.EnableIPv6 = &b
 
 		return nil
 	}
@@ -49,7 +49,7 @@ func WithEnableIPv6() CustomizeOption {
 
 // WithInternal allows to set the network as internal.
 func WithInternal() CustomizeOption {
-	return func(original *types.NetworkCreate) error {
+	return func(original *network.CreateOptions) error {
 		original.Internal = true
 
 		return nil
@@ -59,7 +59,7 @@ func WithInternal() CustomizeOption {
 // WithLabels allows to set the network labels, adding the new ones
 // to the default Testcontainers for Go labels.
 func WithLabels(labels map[string]string) CustomizeOption {
-	return func(original *types.NetworkCreate) error {
+	return func(original *network.CreateOptions) error {
 		for k, v := range labels {
 			original.Labels[k] = v
 		}
@@ -70,7 +70,7 @@ func WithLabels(labels map[string]string) CustomizeOption {
 
 // WithIPAM allows to change the default IPAM configuration.
 func WithIPAM(ipam *network.IPAM) CustomizeOption {
-	return func(original *types.NetworkCreate) error {
+	return func(original *network.CreateOptions) error {
 		original.IPAM = ipam
 
 		return nil

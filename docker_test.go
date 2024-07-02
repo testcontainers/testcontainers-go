@@ -24,7 +24,6 @@ import (
 	"github.com/docker/docker/api/types/system"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
-	"github.com/docker/go-units"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -1062,8 +1061,6 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 	assert.NotEmpty(t, inspect.ID)
 
 	require.NoError(t, ctr.Stop(context.Background(), nil))
-
-	assert.Nil(t, ctr.raw)
 }
 
 func readHostname(tb testing.TB, containerId string) string {
@@ -1088,7 +1085,7 @@ func TestDockerContainerResources(t *testing.T) {
 
 	ctx := context.Background()
 
-	expected := []*units.Ulimit{
+	expected := []*container.Ulimit{
 		{
 			Name: "memlock",
 			Hard: -1,
@@ -1397,7 +1394,7 @@ func (m *mockDockerClient) Info(ctx context.Context) (system.Info, error) {
 	return system.Info{}, nil
 }
 
-func (m *mockDockerClient) Events(ctx context.Context, options types.EventsOptions) (<-chan events.Message, <-chan error) {
+func (m *mockDockerClient) Events(ctx context.Context, options events.ListOptions) (<-chan events.Message, <-chan error) {
 	return nil, nil
 }
 
