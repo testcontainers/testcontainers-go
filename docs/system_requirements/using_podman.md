@@ -3,7 +3,7 @@
 _Testcontainers for Go_ supports the use of Podman (rootless or rootful) instead of Docker.
 
 In most scenarios no special setup is required in _Testcontainers for Go_.
-_Testcontainers for Go_ will automatically discover the socket based on the `DOCKER_HOST` or the `TC_HOST` environment variables.
+_Testcontainers for Go_ will automatically discover the socket based on the `DOCKER_HOST` environment variables.
 Alternatively you can configure the host with a `.testcontainers.properties` file.
 The discovered Docker host is taken into account when starting a reaper container.
 The discovered socket is used to detect the use of Podman.
