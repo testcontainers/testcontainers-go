@@ -31,6 +31,7 @@ type Config struct {
 	RyukReconnectionTimeout time.Duration `properties:"ryuk.reconnection.timeout,default=10s"`
 	RyukConnectionTimeout   time.Duration `properties:"ryuk.connection.timeout,default=1m"`
 	RyukVerbose             bool          `properties:"ryuk.verbose,default=false"`
+	RyukUserNs              bool          `properties:"ryuk.userns,default=false"`
 	TestcontainersHost      string        `properties:"tc.host,default="`
 }
 
@@ -85,6 +86,11 @@ func read() Config {
 		ryukVerboseEnv := os.Getenv("TESTCONTAINERS_RYUK_VERBOSE")
 		if parseBool(ryukVerboseEnv) {
 			config.RyukVerbose = ryukVerboseEnv == "true"
+		}
+
+		ryukUserNsEnv := os.Getenv("TESTCONTAINERS_RYUK_USER_NS")
+		if parseBool(ryukUserNsEnv) {
+			config.RyukUserNs = ryukUserNsEnv == "true"
 		}
 
 		ryukReconnectionTimeoutEnv := os.Getenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT")
