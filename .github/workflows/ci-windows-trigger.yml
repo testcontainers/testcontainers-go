@@ -11,7 +11,7 @@ jobs:
   windows-test-command-trigger:
     permissions:
       pull-requests: write  # for peter-evans/slash-command-dispatch to create PR reaction
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Trigger windows-test command
