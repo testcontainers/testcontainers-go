@@ -1898,16 +1898,6 @@ func TestGetGatewayIP(t *testing.T) {
 	}
 }
 
-func TestProviderHasConfig(t *testing.T) {
-	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer provider.Close()
-
-	assert.NotNil(t, provider.Config(), "expecting DockerProvider to provide the configuration")
-}
-
 func TestNetworkModeWithContainerReference(t *testing.T) {
 	ctx := context.Background()
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{

@@ -285,15 +285,15 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
 
-	client, err := NewDockerClientWithOpts(ctx, opts...)
+	dockerClient, err := NewDockerClientWithOpts(ctx, opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer dockerClient.Close()
 
 	provider := &DockerProvider{
-		client: client,
-		config: ReadConfig(),
+		client: dockerClient,
+		config: config.Read(),
 		DockerProviderOptions: &DockerProviderOptions{
 			GenericProviderOptions: &GenericProviderOptions{
 				Logger: TestLogger(t),

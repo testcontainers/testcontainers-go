@@ -866,7 +866,7 @@ type DockerProvider struct {
 	client    client.APIClient
 	host      string
 	hostCache string
-	config    TestcontainersConfig
+	config    config.Config
 }
 
 // Client gets the docker client used by the provider
@@ -982,12 +982,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		req.Labels = make(map[string]string)
 	}
 
-	tcConfig := p.Config().Config
-
 	var termSignal chan bool
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.HasSuffix(imageName, config.ReaperDefaultImage)
-	if !tcConfig.RyukDisabled && !isReaperContainer {
+	if !p.config.RyukDisabled && !isReaperContainer {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), core.SessionID(), p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
@@ -1010,7 +1008,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	// always append the hub substitutor after the user-defined ones
-	req.ImageSubstitutors = append(req.ImageSubstitutors, newPrependHubRegistry(tcConfig.HubImageNamePrefix))
+	req.ImageSubstitutors = append(req.ImageSubstitutors, newPrependHubRegistry(p.config.HubImageNamePrefix))
 
 	var platform *specs.Platform
 
@@ -1231,10 +1229,8 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 
 	sessionID := core.SessionID()
 
-	tcConfig := p.Config().Config
-
 	var termSignal chan bool
-	if !tcConfig.RyukDisabled {
+	if !p.config.RyukDisabled {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
@@ -1344,7 +1340,14 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 // Config provides the TestcontainersConfig read from $HOME/.testcontainers.properties or
 // the environment variables
 func (p *DockerProvider) Config() TestcontainersConfig {
-	return p.config
+	return TestcontainersConfig{
+		Host:           p.config.Host,
+		TLSVerify:      p.config.TLSVerify,
+		CertPath:       p.config.CertPath,
+		RyukDisabled:   p.config.RyukDisabled,
+		RyukPrivileged: p.config.RyukPrivileged,
+		Config:         p.config,
+	}
 }
 
 // DaemonHost gets the host or ip of the Docker daemon where ports are exposed on
@@ -1415,8 +1418,6 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		req.Labels = make(map[string]string)
 	}
 
-	tcConfig := p.Config().Config
-
 	nc := network.CreateOptions{
 		Driver:     req.Driver,
 		Internal:   req.Internal,
@@ -1429,7 +1430,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	sessionID := core.SessionID()
 
 	var termSignal chan bool
-	if !tcConfig.RyukDisabled {
+	if !p.config.RyukDisabled {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
