@@ -71,7 +71,7 @@ func TestPre(t *testing.T) {
 			}
 
 			if err := releaser.PreRun(ctx); err != nil {
-				tt.Errorf("Pre() error = %v", err)
+				tt.Fatalf("Pre() error = %v", err)
 			}
 
 			expectedVersion := nextVersion
