@@ -16,9 +16,9 @@ import (
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/compose/v2/pkg/api"
-	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	dockernetwork "github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"golang.org/x/sync/errgroup"
 
@@ -439,19 +439,17 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 	d.containersLock.Lock()
 	defer d.containersLock.Unlock()
 
-	if container, ok := d.containers[svcName]; ok {
-		return container, nil
+	if ctr, ok := d.containers[svcName]; ok {
+		return ctr, nil
 	}
 
-	listOptions := container.ListOptions{
+	containers, err := d.dockerClient.ContainerList(ctx, container.ListOptions{
 		All: true,
 		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ServiceLabel, svcName)),
 		),
-	}
-
-	containers, err := d.dockerClient.ContainerList(ctx, listOptions)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -461,11 +459,11 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 	}
 
 	containerInstance := containers[0]
-	container := &testcontainers.DockerContainer{
+	ctr := &testcontainers.DockerContainer{
 		ID:    containerInstance.ID,
 		Image: containerInstance.Image,
 	}
-	container.SetLogger(d.logger)
+	ctr.SetLogger(d.logger)
 
 	dockerProvider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(d.logger))
 	if err != nil {
@@ -474,24 +472,22 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 
 	dockerProvider.SetClient(d.dockerClient)
 
-	container.SetProvider(dockerProvider)
+	ctr.SetProvider(dockerProvider)
 
-	d.containers[svcName] = container
+	d.containers[svcName] = ctr
 
-	return container, nil
+	return ctr, nil
 }
 
 func (d *dockerCompose) lookupNetworks(ctx context.Context) error {
 	d.containersLock.Lock()
 	defer d.containersLock.Unlock()
 
-	listOptions := dockertypes.NetworkListOptions{
+	networks, err := d.dockerClient.NetworkList(ctx, dockernetwork.ListOptions{
 		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
 		),
-	}
-
-	networks, err := d.dockerClient.NetworkList(ctx, listOptions)
+	})
 	if err != nil {
 		return err
 	}

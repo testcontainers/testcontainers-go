@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/ollama
 go 1.21
 
 require (
-	github.com/docker/docker v26.1.4+incompatible
+	github.com/docker/docker v27.0.2+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/testcontainers/testcontainers-go v0.31.0
 	github.com/tmc/langchaingo v0.1.5
@@ -19,7 +19,7 @@ require (
 	github.com/containerd/errdefs v0.1.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
-	github.com/distribution/reference v0.5.0 // indirect
+	github.com/distribution/reference v0.6.0 // indirect
 	github.com/dlclark/regexp2 v1.8.1 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
