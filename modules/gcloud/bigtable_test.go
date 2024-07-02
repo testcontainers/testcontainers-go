@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
@@ -18,9 +17,9 @@ func ExampleRunBigTableContainer() {
 	// runBigTableContainer {
 	ctx := context.Background()
 
-	bigTableContainer, err := gcloud.RunBigTableContainer(
+	bigTableContainer, err := gcloud.RunBigTable(
 		ctx,
-		testcontainers.WithImage("gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators"),
+		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
 		gcloud.WithProjectID("bigtable-project"),
 	)
 	if err != nil {

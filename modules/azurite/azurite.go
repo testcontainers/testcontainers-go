@@ -68,10 +68,16 @@ func (c *AzuriteContainer) MustServiceURL(ctx context.Context, srv Service) stri
 	return url
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Azurite container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*AzuriteContainer, error) {
+	return Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.28.0", opts...)
+}
+
+// Run creates an instance of the Azurite container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*AzuriteContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "mcr.microsoft.com/azure-storage/azurite:3.28.0",
+		Image:        img,
 		ExposedPorts: []string{BlobPort, QueuePort, TablePort},
 		Env:          map[string]string{},
 		Entrypoint:   []string{"azurite"},

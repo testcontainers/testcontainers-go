@@ -62,7 +62,7 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*sessio
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := localstack.RunContainer(ctx)
+	container, err := localstack.Run(ctx, "localstack/localstack:1.4.0")
 	require.NoError(t, err)
 
 	session, err := awsSession(ctx, container)

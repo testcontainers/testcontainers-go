@@ -8,14 +8,13 @@ import (
 	chromago "github.com/amikos-tech/chroma-go"
 	"github.com/stretchr/testify/require"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/chroma"
 )
 
 func TestChroma(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
+	container, err := chroma.Run(ctx, "chromadb/chroma:0.4.24")
 	if err != nil {
 		t.Fatal(err)
 	}

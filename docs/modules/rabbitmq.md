@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/rabbitmq
 
 ## Module reference
 
-The RabbitMQ module exposes one entrypoint function to create the RabbitMQ container, and this function receives two parameters:
+The RabbitMQ module exposes one entrypoint function to create the RabbitMQ container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*RabbitMQContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RabbitMQContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -37,8 +38,8 @@ When starting the RabbitMQ container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different RabbitMQ Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for RabbitMQ. E.g. `testcontainers.WithImage("rabbitmq:3.7.25-management-alpine")`.
+If you need to set a different RabbitMQ Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "rabbitmq:3.7.25-management-alpine")`.
 
 !!!warning
     From [https://hub.docker.com/_/rabbitmq](https://hub.docker.com/_/rabbitmq): "As of RabbitMQ 3.9, all of the docker-specific variables listed below are deprecated and no longer used. Please use a configuration file instead; visit [rabbitmq.com/configure](https://rabbitmq.com/configure) to learn more about the configuration file. For a starting point, the 3.8 images will print out the config file it generated from supplied environment variables."

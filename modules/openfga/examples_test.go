@@ -17,11 +17,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/openfga"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runOpenFGAContainer {
 	ctx := context.Background()
 
-	openfgaContainer, err := openfga.RunContainer(ctx, testcontainers.WithImage("openfga/openfga:v1.5.0"))
+	openfgaContainer, err := openfga.Run(ctx, "openfga/openfga:v1.5.0")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -45,8 +45,8 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connectToPlayground() {
-	openfgaContainer, err := openfga.RunContainer(context.Background(), testcontainers.WithImage("openfga/openfga:v1.5.0"))
+func ExampleRun_connectToPlayground() {
+	openfgaContainer, err := openfga.Run(context.Background(), "openfga/openfga:v1.5.0")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -78,8 +78,8 @@ func ExampleRunContainer_connectToPlayground() {
 	// 200
 }
 
-func ExampleRunContainer_connectWithSDKClient() {
-	openfgaContainer, err := openfga.RunContainer(context.Background(), testcontainers.WithImage("openfga/openfga:v1.5.0"))
+func ExampleRun_connectWithSDKClient() {
+	openfgaContainer, err := openfga.Run(context.Background(), "openfga/openfga:v1.5.0")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -133,12 +133,12 @@ func ExampleRunContainer_connectWithSDKClient() {
 	// 1
 }
 
-func ExampleRunContainer_writeModel() {
+func ExampleRun_writeModel() {
 	// openFGAwriteModel {
 	secret := "openfga-secret"
-	openfgaContainer, err := openfga.RunContainer(
+	openfgaContainer, err := openfga.Run(
 		context.Background(),
-		testcontainers.WithImage("openfga/openfga:v1.5.0"),
+		"openfga/openfga:v1.5.0",
 		testcontainers.WithEnv(map[string]string{
 			"OPENFGA_LOG_LEVEL":            "warn",
 			"OPENFGA_AUTHN_METHOD":         "preshared",

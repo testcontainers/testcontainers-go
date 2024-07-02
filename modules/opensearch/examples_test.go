@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/opensearch"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runOpenSearchContainer {
 	ctx := context.Background()
 
-	opensearchContainer, err := opensearch.RunContainer(
+	opensearchContainer, err := opensearch.Run(
 		ctx,
-		testcontainers.WithImage("opensearchproject/opensearch:2.11.1"),
+		"opensearchproject/opensearch:2.11.1",
 		opensearch.WithUsername("new-username"),
 		opensearch.WithPassword("new-password"),
 	)

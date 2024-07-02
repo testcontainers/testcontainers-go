@@ -14,10 +14,16 @@ type QdrantContainer struct {
 	testcontainers.Container
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Qdrant container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error) {
+	return Run(ctx, "qdrant/qdrant:v1.7.4", opts...)
+}
+
+// Run creates an instance of the Qdrant container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "qdrant/qdrant:v1.7.4",
+		Image:        img,
 		ExposedPorts: []string{"6333/tcp", "6334/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("6333/tcp").WithStartupTimeout(5*time.Second),

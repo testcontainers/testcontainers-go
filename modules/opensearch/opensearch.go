@@ -27,10 +27,16 @@ type OpenSearchContainer struct {
 	Password string
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the OpenSearch container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OpenSearchContainer, error) {
+	return Run(ctx, "opensearchproject/opensearch:2.11.1", opts...)
+}
+
+// Run creates an instance of the OpenSearch container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OpenSearchContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "opensearchproject/opensearch:2.11.1",
+		Image:        img,
 		ExposedPorts: []string{defaultHTTPPort, "9600/tcp"},
 		Env: map[string]string{
 			"discovery.type":              "single-node",

@@ -9,11 +9,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/vault"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runVaultContainer {
 	ctx := context.Background()
 
-	vaultContainer, err := vault.RunContainer(ctx)
+	vaultContainer, err := vault.Run(ctx, "hashicorp/vault:1.13.0")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -37,11 +37,11 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_withToken() {
+func ExampleRun_withToken() {
 	// runVaultContainerWithToken {
 	ctx := context.Background()
 
-	vaultContainer, err := vault.RunContainer(ctx, vault.WithToken("MyToKeN"))
+	vaultContainer, err := vault.Run(ctx, "hashicorp/vault:1.13.0", vault.WithToken("MyToKeN"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -76,11 +76,11 @@ func ExampleRunContainer_withToken() {
 	// 0
 }
 
-func ExampleRunContainer_withInitCommand() {
+func ExampleRun_withInitCommand() {
 	// runVaultContainerWithInitCommand {
 	ctx := context.Background()
 
-	vaultContainer, err := vault.RunContainer(ctx, vault.WithToken("MyToKeN"), vault.WithInitCommand(
+	vaultContainer, err := vault.Run(ctx, "hashicorp/vault:1.13.0", vault.WithToken("MyToKeN"), vault.WithInitCommand(
 		"auth enable approle",                         // Enable the approle auth method
 		"secrets disable secret",                      // Disable the default secret engine
 		"secrets enable -version=1 -path=secret kv",   // Enable the kv secret engine at version 1

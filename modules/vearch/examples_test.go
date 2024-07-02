@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/vearch"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	ctx := context.Background()
 
-	vearchContainer, err := vearch.RunContainer(ctx, testcontainers.WithImage("vearch/vearch:3.5.1"))
+	vearchContainer, err := vearch.Run(ctx, "vearch/vearch:3.5.1")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

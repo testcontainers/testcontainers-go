@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/surrealdb"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runSurrealDBContainer {
 	ctx := context.Background()
 
-	surrealdbContainer, err := surrealdb.RunContainer(ctx, testcontainers.WithImage("surrealdb/surrealdb:v1.1.1"))
+	surrealdbContainer, err := surrealdb.Run(ctx, "surrealdb/surrealdb:v1.1.1")
 	if err != nil {
 		log.Fatal(err)
 	}

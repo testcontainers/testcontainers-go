@@ -13,7 +13,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
@@ -21,9 +20,9 @@ func ExampleRunBigQueryContainer() {
 	// runBigQueryContainer {
 	ctx := context.Background()
 
-	bigQueryContainer, err := gcloud.RunBigQueryContainer(
+	bigQueryContainer, err := gcloud.RunBigQuery(
 		ctx,
-		testcontainers.WithImage("ghcr.io/goccy/bigquery-emulator:0.4.3"),
+		"ghcr.io/goccy/bigquery-emulator:0.4.3",
 		gcloud.WithProjectID("bigquery-project"),
 	)
 	if err != nil {

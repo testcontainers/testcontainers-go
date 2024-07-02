@@ -22,9 +22,7 @@ func containerCleanup(t *testing.T, container testcontainers.Container) {
 
 func TestV1Container(t *testing.T) {
 	ctx := context.Background()
-	influxDbContainer, err := influxdb.RunContainer(ctx,
-		testcontainers.WithImage("influxdb:1.8.10"),
-	)
+	influxDbContainer, err := influxdb.Run(ctx, "influxdb:1.8.10")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		containerCleanup(t, influxDbContainer)
@@ -40,8 +38,8 @@ func TestV1Container(t *testing.T) {
 
 func TestV2Container(t *testing.T) {
 	ctx := context.Background()
-	influxDbContainer, err := influxdb.RunContainer(ctx,
-		testcontainers.WithImage("influxdb:2.7.5-alpine"),
+	influxDbContainer, err := influxdb.Run(ctx,
+		"influxdb:2.7.5-alpine",
 		influxdb.WithDatabase("foo"),
 		influxdb.WithUsername("root"),
 		influxdb.WithPassword("password"),
@@ -61,8 +59,8 @@ func TestV2Container(t *testing.T) {
 
 func TestWithInitDb(t *testing.T) {
 	ctx := context.Background()
-	influxDbContainer, err := influxdb.RunContainer(ctx,
-		testcontainers.WithImage("influxdb:1.8.10"),
+	influxDbContainer, err := influxdb.Run(ctx,
+		"influxdb:1.8.10",
 		influxdb.WithInitDb("testdata"),
 	)
 	require.NoError(t, err)
@@ -97,8 +95,8 @@ func TestWithInitDb(t *testing.T) {
 func TestWithConfigFile(t *testing.T) {
 	influxVersion := "1.8.10"
 
-	influxDbContainer, err := influxdb.RunContainer(context.Background(),
-		testcontainers.WithImage("influxdb:"+influxVersion),
+	influxDbContainer, err := influxdb.Run(context.Background(),
+		"influxdb:"+influxVersion,
 		influxdb.WithConfigFile(filepath.Join("testdata", "influxdb.conf")),
 	)
 	require.NoError(t, err)

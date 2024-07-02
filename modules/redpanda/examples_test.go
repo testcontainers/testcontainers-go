@@ -8,11 +8,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runRedpandaContainer {
 	ctx := context.Background()
 
-	redpandaContainer, err := redpanda.RunContainer(ctx,
+	redpandaContainer, err := redpanda.Run(ctx,
+		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
 		redpanda.WithEnableWasmTransform(),

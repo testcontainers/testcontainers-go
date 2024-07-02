@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/minio
 
 ## Module reference
 
-The Minio module exposes one entrypoint function to create the Minio container, and this function receives two parameters:
+The Minio module exposes one entrypoint function to create the Minio container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MinioContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MinioContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -37,8 +38,8 @@ When starting the Minio container, you can pass options in a variadic way to con
 
 #### Image
 
-If you need to set a different Minio Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Minio. E.g. `testcontainers.WithImage("minio/minio:RELEASE.2024-01-16T16-07-38Z")`.
+If you need to set a different Minio Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "minio/minio:RELEASE.2024-01-16T16-07-38Z")`.
 
 {% include "../features/common_functional_options.md" %}
 

@@ -9,15 +9,14 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 
-	"github.com/testcontainers/testcontainers-go"
 	tcminio "github.com/testcontainers/testcontainers-go/modules/minio"
 )
 
 func TestMinio(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := tcminio.RunContainer(ctx,
-		testcontainers.WithImage("minio/minio:RELEASE.2024-01-16T16-07-38Z"),
+	container, err := tcminio.Run(ctx,
+		"minio/minio:RELEASE.2024-01-16T16-07-38Z",
 		tcminio.WithUsername("thisismyuser"), tcminio.WithPassword("thisismypassword"))
 	if err != nil {
 		t.Fatal(err)

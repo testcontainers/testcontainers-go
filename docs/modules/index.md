@@ -46,8 +46,8 @@ We have provided a command line tool to generate the scaffolding for the code of
 - a Go module for the example, including:
     - go.mod and go.sum files, including the current version of _Testcontainer for Go_.
     - a Go package named after the module, in lowercase
-    - a Go file for the creation of the container, using a dedicated struct in which the image flag is set as Docker image.
-    - a Go test file for running a simple test for your container, consuming the above struct.
+    - a Go file for the creation of the container.
+    - a Go test file for running a simple test for your container, consuming the above struct and using the image flag as Docker image for the container.
     - a Go examples file for running the example in the docs site, also adding them to [https://pkg.go.dev](https://pkg.go.dev).
     - a Makefile to run the tests in a consistent manner
 - a markdown file in the docs/modules directory including the snippets for both the creation of the container and a simple test. By default, this generated file will contain all the documentation for the module, including:
@@ -72,7 +72,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 | Flag    | Short | Type   | Required | Description                                                                                                                                      |
 |---------|-------|--------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------|
 | --name  | -n    | string | Yes      | Name of the module, use camel-case when needed. Only alphanumerical characters are allowed (leading character must be a letter).                 |
-| --image | -i    | string | Yes      | Fully-qualified name of the Docker image to be used by the module (i.e. 'docker.io/org/project:tag')                                             |
+| --image | -i    | string | Yes      | Fully-qualified name of the Docker image to be used in the examples and tests (i.e. 'docker.io/org/project:tag')                                             |
 | --title | -t    | string | No       | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphanumerical characters are allowed (leading character must be a letter). |
 
 
@@ -101,10 +101,10 @@ go run . new module --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}
 We are going to propose a set of steps to follow when adding types and methods to the module:
 
 !!!warning
-    The `StartContainer` function will be eventually deprecated and replaced with `RunContainer`. We are keeping it in certain modules for backwards compatibility, but they will be removed in the future.
+    The `StartContainer` function will be eventually deprecated and replaced with `Run`. We are keeping it in certain modules for backwards compatibility, but they will be removed in the future.
 
 - Make sure a public `Container` type exists for the module. This type has to use composition to embed the `testcontainers.Container` type, promoting all the methods from it.
-- Make sure a `RunContainer` function exists and is public. This function is the entrypoint to the module and will define the initial values for a `testcontainers.GenericContainerRequest` struct, including the image, the default exposed ports, wait strategies, etc. Therefore, the function must initialise the container request with the default values.
+- Make sure a `Run` function exists and is public. This function is the entrypoint to the module and will define the initial values for a `testcontainers.GenericContainerRequest` struct, including the image in the function signature, the default exposed ports, wait strategies, etc. Therefore, the function must initialise the container request with the default values.
 - Define container options for the module leveraging the `testcontainers.ContainerCustomizer` interface, that has one single method: `Customize(req *GenericContainerRequest) error`.
 
 !!!warning
@@ -123,7 +123,7 @@ We are going to propose a set of steps to follow when adding types and methods t
 
 - We consider that a best practice for the options is define a function using the `With` prefix, that returns a function returning a modified `testcontainers.GenericContainerRequest` type. For that, the library already provides a `testcontainers.CustomizeRequestOption` type implementing the `ContainerCustomizer` interface, and we encourage you to use this type for creating your own customizer functions.
 - At the same time, you could need to create your own container customizers for your module. Make sure they implement the `testcontainers.ContainerCustomizer` interface. Defining your own customizer functions is useful when you need to transfer a certain state that is not present at the `ContainerRequest` for the container, possibly using an intermediate Config struct.
-- The options will be passed to the `RunContainer` function as variadic arguments after the Go context, and they will be processed right after defining the initial `testcontainers.GenericContainerRequest` struct using a for loop.
+- The options will be passed to the `Run` function as variadic arguments after the Go context, and they will be processed right after defining the initial `testcontainers.GenericContainerRequest` struct using a for loop.
 
 ```golang
 // Config type represents an intermediate struct for transferring state from the options to the container
@@ -131,12 +131,12 @@ type Config struct {
     data string
 }
 
-// RunContainer function is the entrypoint to the module
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+// Run function is the entrypoint to the module
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
     cfg := Config{}
 
     req := testcontainers.ContainerRequest{
-        Image: "my-image",
+        Image: img,
         ...
     }
     genericContainerReq := testcontainers.GenericContainerRequest{
@@ -191,7 +191,6 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {...}
 
 In order to simplify the creation of the container for a given module, `Testcontainers for Go` provides a set of `testcontainers.CustomizeRequestOption` functions to customize the container request for the module. These options are:
 
-- `testcontainers.WithImage`: a function that sets the image for the container request.
 - `testcontainers.WithImageSubstitutors`: a function that sets your own substitutions to the container images.
 - `testcontainers.WithEnv`: a function that sets the environment variables for the container request.
 - `testcontainers.WithHostPortAccess`: a function that enables the container to access a port that is already running in the host.

@@ -12,17 +12,16 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azurite"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runAzuriteContainer {
 	ctx := context.Background()
 
-	azuriteContainer, err := azurite.RunContainer(
+	azuriteContainer, err := azurite.Run(
 		ctx,
-		testcontainers.WithImage("mcr.microsoft.com/azure-storage/azurite:3.28.0"),
+		"mcr.microsoft.com/azure-storage/azurite:3.28.0",
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
@@ -49,13 +48,13 @@ func ExampleRunContainer() {
 
 // This example demonstrates how to create a container, upload a blob, list blobs, and delete the container.
 // Inspired by https://github.com/Azure/azure-sdk-for-go/blob/718000938221915fb2f3c7522d4fd09f7d74cafb/sdk/storage/azblob/examples_test.go#L36
-func ExampleRunContainer_blobOperations() {
+func ExampleRun_blobOperations() {
 	// blobOperations {
 	ctx := context.Background()
 
-	azuriteContainer, err := azurite.RunContainer(
+	azuriteContainer, err := azurite.Run(
 		ctx,
-		testcontainers.WithImage("mcr.microsoft.com/azure-storage/azurite:3.28.0"),
+		"mcr.microsoft.com/azure-storage/azurite:3.28.0",
 		azurite.WithInMemoryPersistence(64),
 	)
 	if err != nil {
@@ -161,13 +160,13 @@ func ExampleRunContainer_blobOperations() {
 
 // This example demonstrates how to create, list and delete queues.
 // Inspired by https://github.com/Azure/azure-sdk-for-go/blob/718000938221915fb2f3c7522d4fd09f7d74cafb/sdk/storage/azqueue/samples_test.go#L1
-func ExampleRunContainer_queueOperations() {
+func ExampleRun_queueOperations() {
 	// queueOperations {
 	ctx := context.Background()
 
-	azuriteContainer, err := azurite.RunContainer(
+	azuriteContainer, err := azurite.Run(
 		ctx,
-		testcontainers.WithImage("mcr.microsoft.com/azure-storage/azurite:3.28.0"),
+		"mcr.microsoft.com/azure-storage/azurite:3.28.0",
 		azurite.WithInMemoryPersistence(64),
 	)
 	if err != nil {
@@ -233,13 +232,13 @@ func ExampleRunContainer_queueOperations() {
 
 // This example demonstrates how to create, list and delete tables.
 // Inspired by https://github.com/Azure/azure-sdk-for-go/blob/718000938221915fb2f3c7522d4fd09f7d74cafb/sdk/data/aztables/example_test.go#L1
-func ExampleRunContainer_tableOperations() {
+func ExampleRun_tableOperations() {
 	// tableOperations {
 	ctx := context.Background()
 
-	azuriteContainer, err := azurite.RunContainer(
+	azuriteContainer, err := azurite.Run(
 		ctx,
-		testcontainers.WithImage("mcr.microsoft.com/azure-storage/azurite:3.28.0"),
+		"mcr.microsoft.com/azure-storage/azurite:3.28.0",
 		azurite.WithInMemoryPersistence(64),
 	)
 	if err != nil {

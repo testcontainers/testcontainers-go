@@ -8,16 +8,15 @@ import (
 
 	"github.com/gocql/gocql"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runCassandraContainer {
 	ctx := context.Background()
 
-	cassandraContainer, err := cassandra.RunContainer(ctx,
-		testcontainers.WithImage("cassandra:4.1.3"),
+	cassandraContainer, err := cassandra.Run(ctx,
+		"cassandra:4.1.3",
 		cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")),
 		cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")),
 	)

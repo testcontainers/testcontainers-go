@@ -66,10 +66,16 @@ func (c *RabbitMQContainer) HttpsURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPSPort), "https")
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the RabbitMQ container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*RabbitMQContainer, error) {
+	return Run(ctx, "rabbitmq:3.12.11-management-alpine", opts...)
+}
+
+// Run creates an instance of the RabbitMQ container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RabbitMQContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "rabbitmq:3.12.11-management-alpine",
+		Image: img,
 		Env: map[string]string{
 			"RABBITMQ_DEFAULT_USER": defaultUser,
 			"RABBITMQ_DEFAULT_PASS": defaultPassword,

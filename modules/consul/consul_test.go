@@ -40,7 +40,7 @@ func TestConsul(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			container, err := consul.RunContainer(ctx, test.opts...)
+			container, err := consul.Run(ctx, "docker.io/hashicorp/consul:1.15", test.opts...)
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, container.Terminate(ctx), "failed to terminate container") })
 

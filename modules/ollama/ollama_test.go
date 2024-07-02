@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/ollama"
 )
@@ -19,7 +18,7 @@ import (
 func TestOllama(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := ollama.RunContainer(ctx, testcontainers.WithImage("ollama/ollama:0.1.25"))
+	container, err := ollama.Run(ctx, "ollama/ollama:0.1.25")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,9 +79,9 @@ func TestOllama(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		newOllamaContainer, err := ollama.RunContainer(
+		newOllamaContainer, err := ollama.Run(
 			context.Background(),
-			testcontainers.WithImage(targetImage),
+			targetImage,
 		)
 		if err != nil {
 			t.Fatal(err)
@@ -131,9 +130,9 @@ func assertLoadedModel(t *testing.T, c *ollama.OllamaContainer) {
 func TestRunContainer_withModel_error(t *testing.T) {
 	ctx := context.Background()
 
-	ollamaContainer, err := ollama.RunContainer(
+	ollamaContainer, err := ollama.Run(
 		ctx,
-		testcontainers.WithImage("ollama/ollama:0.1.25"),
+		"ollama/ollama:0.1.25",
 	)
 	if err != nil {
 		t.Fatalf("expected error to be nil, got %s", err)

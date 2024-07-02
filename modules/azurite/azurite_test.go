@@ -4,14 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azurite"
 )
 
 func TestAzurite(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := azurite.RunContainer(ctx, testcontainers.WithImage("mcr.microsoft.com/azure-storage/azurite:3.23.0"))
+	container, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.23.0")
 	if err != nil {
 		t.Fatal(err)
 	}

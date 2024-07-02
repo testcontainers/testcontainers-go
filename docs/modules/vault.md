@@ -15,7 +15,7 @@ go get github.com/testcontainers/testcontainers-go/modules/vault
 ```
 
 ## Usage example
-The **RunContainer** function is the main entry point to create a new VaultContainer instance. 
+The **RunWithImage** function is the main entry point to create a new VaultContainer instance. 
 It takes a context and zero or more Option values to configure the container.
 
 <!--codeinclude-->
@@ -27,7 +27,7 @@ It takes a context and zero or more Option values to configure the container.
 [Use CLI to read data](../../modules/vault/vault_test.go) inside_block:containerCliRead
 <!--/codeinclude-->
 
-The `vaultContainer` is the container instance obtained from `RunContainer`.
+The `vaultContainer` is the container instance obtained from `RunWithImage`.
 
 ### Use HTTP API to read data from Vault container:
 <!--codeinclude-->
@@ -48,13 +48,14 @@ go get -u github.com/hashicorp/vault-client-go
 
 ## Module Reference
 
-The Vault module exposes one entrypoint function to create the containerr, and this function receives two parameters:
+The Vault module exposes one entrypoint function to create the containerr, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*VaultContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*VaultContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -63,15 +64,8 @@ When starting the Vault container, you can pass options in a variadic way to con
 
 #### Image
 
-If you need to set a different Vault Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Vault. E.g. `testcontainers.WithImage("hashicorp/vault:1.13.0")`.
-
-!!!info
-    Default image name is `hashicorp/vault:1.13.0`.
-
-<!--codeinclude-->
-[Set image name](../../modules/vault/vault_test.go) inside_block:WithImageName
-<!--/codeinclude-->
+If you need to set a different Vault Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "hashicorp/vault:1.13.0")`.
 
 {% include "../features/common_functional_options.md" %}
 

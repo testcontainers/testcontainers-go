@@ -14,10 +14,16 @@ type VearchContainer struct {
 	testcontainers.Container
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Vearch container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*VearchContainer, error) {
+	return Run(ctx, "vearch/vearch:3.5.1", opts...)
+}
+
+// Run creates an instance of the Vearch container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*VearchContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "vearch/vearch:3.5.1",
+		Image:        img,
 		ExposedPorts: []string{"8817/tcp", "9001/tcp"},
 		Cmd:          []string{"-conf=/vearch/config.toml", "all"},
 		Privileged:   true,

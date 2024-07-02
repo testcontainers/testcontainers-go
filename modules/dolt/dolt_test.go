@@ -16,7 +16,7 @@ import (
 func TestDolt(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := dolt.RunContainer(ctx)
+	container, err := dolt.Run(ctx, "dolthub/dolt-sql-server:1.32.4")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,8 @@ func TestDolt(t *testing.T) {
 func TestDoltWithNonRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := dolt.RunContainer(ctx,
+	_, err := dolt.Run(ctx,
+		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("test"),
 		dolt.WithPassword(""))
@@ -70,7 +71,8 @@ func TestDoltWithNonRootUserAndEmptyPassword(t *testing.T) {
 func TestDoltWithPublicRemoteCloneUrl(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := dolt.RunContainer(ctx,
+	_, err := dolt.Run(ctx,
+		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("test"),
 		dolt.WithPassword("test"),
@@ -99,7 +101,8 @@ func TestDoltWithPrivateRemoteCloneUrl(t *testing.T) {
 
 	filename := createTestCredsFile(t)
 	defer os.RemoveAll(filename)
-	_, err := dolt.RunContainer(ctx,
+	_, err := dolt.Run(ctx,
+		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("test"),
 		dolt.WithPassword("test"),
@@ -115,7 +118,8 @@ func TestDoltWithPrivateRemoteCloneUrl(t *testing.T) {
 func TestDoltWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := dolt.RunContainer(ctx,
+	container, err := dolt.Run(ctx,
+		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("root"),
 		dolt.WithPassword(""))
@@ -155,7 +159,8 @@ func TestDoltWithRootUserAndEmptyPassword(t *testing.T) {
 func TestDoltWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := dolt.RunContainer(ctx,
+	container, err := dolt.Run(ctx,
+		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)

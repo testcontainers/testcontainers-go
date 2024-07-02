@@ -22,7 +22,7 @@ Using the `WithImageSubstitutors` options, you could define your own substitutio
 If you need to either pass additional environment variables to a container or override them, you can use `testcontainers.WithEnv` for example:
 
 ```golang
-postgres, err = postgresModule.RunContainer(ctx, testcontainers.WithEnv(map[string]string{"POSTGRES_INITDB_ARGS": "--no-sync"}))
+postgres, err = postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithEnv(map[string]string{"POSTGRES_INITDB_ARGS": "--no-sync"}))
 ```
 
 #### WithHostPortAccess
@@ -32,7 +32,7 @@ postgres, err = postgresModule.RunContainer(ctx, testcontainers.WithEnv(map[stri
 If you need to access a port that is already running in the host, you can use `testcontainers.WithHostPortAccess` for example:
 
 ```golang
-postgres, err = postgresModule.RunContainer(ctx, testcontainers.WithHostPortAccess(8080))
+postgres, err = postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithHostPortAccess(8080))
 ```
 
 To understand more about this feature, please read the [Exposing host ports to the container](/features/networking/#exposing-host-ports-to-the-container) documentation.
@@ -70,7 +70,7 @@ useful context instead of appearing out of band.
 ```golang
 func TestHandler(t *testing.T) {
     logger := TestLogger(t)
-    _, err := postgresModule.RunContainer(ctx, testcontainers.WithLogger(logger))
+    _, err := postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithLogger(logger))
     require.NoError(t, err)
     // Do something with container.
 }
@@ -150,7 +150,7 @@ Please read the [Create containers: Advanced Settings](/features/creating_contai
 This option will merge the customized request into the module's own `ContainerRequest`.
 
 ```go
-container, err := RunContainer(ctx,
+container, err := Run(ctx, "postgres:13-alpine",
     /* Other module options */
     testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
         ContainerRequest: testcontainers.ContainerRequest{

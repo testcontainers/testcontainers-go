@@ -73,7 +73,7 @@ func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Clien
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := localstack.RunContainer(ctx)
+	container, err := localstack.Run(ctx, "localstack/localstack:1.4.0")
 	require.NoError(t, err)
 
 	s3Client, err := s3Client(ctx, container)

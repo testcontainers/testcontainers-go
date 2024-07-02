@@ -9,14 +9,13 @@ import (
 
 	es "github.com/elastic/go-elasticsearch/v8"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/elasticsearch"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runElasticsearchContainer {
 	ctx := context.Background()
-	elasticsearchContainer, err := elasticsearch.RunContainer(ctx, testcontainers.WithImage("docker.elastic.co/elasticsearch/elasticsearch:8.9.0"))
+	elasticsearchContainer, err := elasticsearch.Run(ctx, "docker.elastic.co/elasticsearch/elasticsearch:8.9.0")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -38,12 +37,12 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_withUsingPassword() {
+func ExampleRun_withUsingPassword() {
 	// usingPassword {
 	ctx := context.Background()
-	elasticsearchContainer, err := elasticsearch.RunContainer(
+	elasticsearchContainer, err := elasticsearch.Run(
 		ctx,
-		testcontainers.WithImage("docker.elastic.co/elasticsearch/elasticsearch:7.9.2"),
+		"docker.elastic.co/elasticsearch/elasticsearch:7.9.2",
 		elasticsearch.WithPassword("foo"),
 	)
 	if err != nil {
@@ -65,12 +64,12 @@ func ExampleRunContainer_withUsingPassword() {
 	// foo
 }
 
-func ExampleRunContainer_connectUsingElasticsearchClient() {
+func ExampleRun_connectUsingElasticsearchClient() {
 	// elasticsearchClient {
 	ctx := context.Background()
-	elasticsearchContainer, err := elasticsearch.RunContainer(
+	elasticsearchContainer, err := elasticsearch.Run(
 		ctx,
-		testcontainers.WithImage("docker.elastic.co/elasticsearch/elasticsearch:8.9.0"),
+		"docker.elastic.co/elasticsearch/elasticsearch:8.9.0",
 		elasticsearch.WithPassword("foo"),
 	)
 	if err != nil {

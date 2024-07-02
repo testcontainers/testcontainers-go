@@ -160,10 +160,16 @@ func WithCache() testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the K6 container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K6Container, error) {
+	return Run(ctx, "szkiba/k6x:v0.3.1", opts...)
+}
+
+// Run creates an instance of the K6 container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*K6Container, error) {
 	req := testcontainers.ContainerRequest{
-		Image:      "szkiba/k6x:v0.3.1",
+		Image:      img,
 		Cmd:        []string{"run"},
 		WaitingFor: wait.ForExit(),
 	}

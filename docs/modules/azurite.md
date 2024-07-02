@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/azurite
 
 ## Module reference
 
-The Azurite module exposes one entrypoint function to create the Azurite container, and this function receives two parameters:
+The Azurite module exposes one entrypoint function to create the Azurite container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*AzuriteContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*AzuriteContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Default Credentials
@@ -45,8 +46,8 @@ When starting the Azurite container, you can pass options in a variadic way to c
 
 #### Image
 
-If you need to set a different Azurite Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Azurite. E.g. `testcontainers.WithImage("mcr.microsoft.com/azure-storage/azurite:3.28.0")`.
+If you need to set a different Azurite Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "mcr.microsoft.com/azure-storage/azurite:3.28.0")`.
 
 {% include "../features/common_functional_options.md" %}
 

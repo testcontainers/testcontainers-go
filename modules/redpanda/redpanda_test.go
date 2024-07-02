@@ -26,7 +26,7 @@ import (
 func TestRedpanda(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := redpanda.RunContainer(ctx)
+	container, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3")
 	require.NoError(t, err)
 
 	// Clean up the container after the test is complete
@@ -82,7 +82,8 @@ func TestRedpanda(t *testing.T) {
 func TestRedpandaWithAuthentication(t *testing.T) {
 	ctx := context.Background()
 	// redpandaCreateContainer {
-	container, err := redpanda.RunContainer(ctx,
+	container, err := redpanda.Run(ctx,
+		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
 		redpanda.WithEnableWasmTransform(),
@@ -193,8 +194,8 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 	ctx := context.Background()
 	// redpandaCreateContainer {
 	// this would fail to start if we weren't ignoring wasm transforms for older versions
-	container, err := redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+	container, err := redpanda.Run(ctx,
+		"redpandadata/redpanda:v23.2.18",
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
 		redpanda.WithEnableWasmTransform(),
@@ -321,7 +322,7 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 func TestRedpandaProduceWithAutoCreateTopics(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := redpanda.RunContainer(ctx, redpanda.WithAutoCreateTopics())
+	container, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", redpanda.WithAutoCreateTopics())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -355,7 +356,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 
 	ctx := context.Background()
 
-	container, err := redpanda.RunContainer(ctx, redpanda.WithTLS(cert.Bytes, cert.KeyBytes))
+	container, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", redpanda.WithTLS(cert.Bytes, cert.KeyBytes))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -424,7 +425,8 @@ func TestRedpandaWithTLSAndSASL(t *testing.T) {
 
 	ctx := context.Background()
 
-	container, err := redpanda.RunContainer(ctx,
+	container, err := redpanda.Run(ctx,
+		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 		redpanda.WithTLS(cert.Bytes, cert.KeyBytes),
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
@@ -468,8 +470,8 @@ func TestRedpandaListener_Simple(t *testing.T) {
 
 	// 2. Start Redpanda container
 	// withListenerRP {
-	container, err := redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+	container, err := redpanda.Run(ctx,
+		"redpandadata/redpanda:v23.2.18",
 		network.WithNetwork([]string{"redpanda-host"}, rpNetwork),
 		redpanda.WithListener("redpanda:29092"), redpanda.WithAutoCreateTopics(),
 	)
@@ -541,8 +543,8 @@ func TestRedpandaListener_InvalidPort(t *testing.T) {
 	require.NoError(t, err)
 
 	// 2. Attempt Start Redpanda container
-	_, err = redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+	_, err = redpanda.Run(ctx,
+		"redpandadata/redpanda:v23.2.18",
 		redpanda.WithListener("redpanda:99092"),
 		network.WithNetwork([]string{"redpanda-host"}, RPNetwork),
 	)
@@ -562,8 +564,8 @@ func TestRedpandaListener_NoNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Attempt Start Redpanda container
-	_, err := redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+	_, err := redpanda.Run(ctx,
+		"redpandadata/redpanda:v23.2.18",
 		redpanda.WithListener("redpanda:99092"),
 	)
 

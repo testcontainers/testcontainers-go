@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	defaultPort      = "8200"
-	defaultImageName = "hashicorp/vault:1.13.0"
+	defaultPort = "8200"
 )
 
 // VaultContainer represents the vault container type used in the module
@@ -21,10 +20,16 @@ type VaultContainer struct {
 	testcontainers.Container
 }
 
-// RunContainer creates an instance of the vault container type
+// Deprecated: use Run instead
+// RunContainer creates an instance of the Vault container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*VaultContainer, error) {
+	return Run(ctx, "hashicorp/vault:1.13.0", opts...)
+}
+
+// Run creates an instance of the Vault container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*VaultContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        defaultImageName,
+		Image:        img,
 		ExposedPorts: []string{defaultPort + "/tcp"},
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.CapAdd = []string{"IPC_LOCK"}

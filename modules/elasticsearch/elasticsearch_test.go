@@ -73,13 +73,13 @@ func TestElasticsearch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 
-			opts := []testcontainers.ContainerCustomizer{testcontainers.WithImage(tt.image)}
+			opts := []testcontainers.ContainerCustomizer{}
 
 			if tt.passwordCustomiser != nil {
 				opts = append(opts, tt.passwordCustomiser)
 			}
 
-			esContainer, err := elasticsearch.RunContainer(ctx, opts...)
+			esContainer, err := elasticsearch.Run(ctx, tt.image, opts...)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -184,9 +184,9 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
-			container, err := elasticsearch.RunContainer(
+			container, err := elasticsearch.Run(
 				ctx,
-				testcontainers.WithImage(baseImage8),
+				baseImage8,
 				testcontainers.WithEnv(map[string]string{
 					test.configKey: "false",
 				}))
@@ -210,7 +210,7 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 func TestElasticsearch8WithoutCredentials(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := elasticsearch.RunContainer(ctx, testcontainers.WithImage(baseImage8))
+	container, err := elasticsearch.Run(ctx, baseImage8)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -253,7 +253,7 @@ func TestElasticsearchOSSCannotuseWithPassword(t *testing.T) {
 
 	ossImage := elasticsearch.DefaultBaseImageOSS + ":7.9.2"
 
-	_, err := elasticsearch.RunContainer(ctx, testcontainers.WithImage(ossImage), elasticsearch.WithPassword("foo"))
+	_, err := elasticsearch.Run(ctx, ossImage, elasticsearch.WithPassword("foo"))
 	if err == nil {
 		t.Fatal(err, "Should not be able to use WithPassword with OSS image.")
 	}

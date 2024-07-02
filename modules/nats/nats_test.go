@@ -13,7 +13,7 @@ func TestNATS(t *testing.T) {
 	ctx := context.Background()
 
 	//  createNATSContainer {
-	container, err := tcnats.RunContainer(ctx)
+	container, err := tcnats.Run(ctx, "nats:2.9")
 	//  }
 	if err != nil {
 		t.Fatal(err)

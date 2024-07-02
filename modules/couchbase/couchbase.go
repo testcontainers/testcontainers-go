@@ -45,11 +45,6 @@ const (
 	// }
 )
 
-// defaultImage {
-const defaultImage = "couchbase:6.5.1"
-
-// }
-
 // initialServices is the list of services that are enabled by default
 var initialServices = []Service{kv, query, search, index}
 
@@ -61,8 +56,14 @@ type CouchbaseContainer struct {
 	config *Config
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Couchbase container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CouchbaseContainer, error) {
+	return Run(ctx, "couchbase:6.5.1", opts...)
+}
+
+// Run creates an instance of the Couchbase container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CouchbaseContainer, error) {
 	config := &Config{
 		enabledServices:  make([]Service, 0),
 		username:         "Administrator",
@@ -71,7 +72,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	req := testcontainers.ContainerRequest{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"},
 	}
 
@@ -145,7 +146,6 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 	}
 
 	customizers := []testcontainers.ContainerCustomizer{
-		testcontainers.WithImage(config.imageName),
 		WithAdminCredentials(config.username, config.password),
 		WithIndexStorage(config.indexStorageMode),
 		WithBuckets(config.buckets...),
@@ -155,7 +155,7 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 		customizers = append(customizers, withService(srv))
 	}
 
-	return RunContainer(ctx, customizers...)
+	return Run(ctx, config.imageName, customizers...)
 }
 
 // ConnectionString returns the connection string to connect to the Couchbase container instance.

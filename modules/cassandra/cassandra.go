@@ -74,10 +74,16 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Cassandra container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CassandraContainer, error) {
+	return Run(ctx, "cassandra:4.1.3", opts...)
+}
+
+// Run creates an instance of the Cassandra container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CassandraContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "cassandra:4.1.3",
+		Image:        img,
 		ExposedPorts: []string{string(port)},
 		Env: map[string]string{
 			"CASSANDRA_SNITCH":          "GossipingPropertyFileSnitch",

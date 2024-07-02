@@ -20,7 +20,7 @@ type Test struct {
 func TestCassandra(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := cassandra.RunContainer(ctx)
+	container, err := cassandra.Run(ctx, "cassandra:4.1.3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func TestCassandra(t *testing.T) {
 func TestCassandraWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := cassandra.RunContainer(ctx, cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
+	container, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		ctx := context.Background()
 
 		// withInitScripts {
-		container, err := cassandra.RunContainer(ctx, cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
+		container, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
 		// }
 		if err != nil {
 			t.Fatal(err)
@@ -123,7 +123,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 	t.Run("with init bash script", func(t *testing.T) {
 		ctx := context.Background()
 
-		container, err := cassandra.RunContainer(ctx, cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
+		container, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
 		if err != nil {
 			t.Fatal(err)
 		}

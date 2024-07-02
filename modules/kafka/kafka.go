@@ -36,10 +36,16 @@ type KafkaContainer struct {
 	ClusterID string
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Kafka container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error) {
+	return Run(ctx, "confluentinc/confluent-local:7.5.0", opts...)
+}
+
+// Run creates an instance of the Kafka container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "confluentinc/confluent-local:7.5.0",
+		Image:        img,
 		ExposedPorts: []string{string(publicPort)},
 		Env: map[string]string{
 			// envVars {

@@ -5,14 +5,13 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/vearch"
 )
 
 func TestVearch(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := vearch.RunContainer(ctx, testcontainers.WithImage("vearch/vearch:3.5.1"))
+	container, err := vearch.Run(ctx, "vearch/vearch:3.5.1")
 	if err != nil {
 		t.Fatal(err)
 	}

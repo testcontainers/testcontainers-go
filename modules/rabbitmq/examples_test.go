@@ -15,12 +15,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/rabbitmq"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runRabbitMQContainer {
 	ctx := context.Background()
 
-	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
-		testcontainers.WithImage("rabbitmq:3.12.11-management-alpine"),
+	rabbitmqContainer, err := rabbitmq.Run(ctx,
+		"rabbitmq:3.12.11-management-alpine",
 		rabbitmq.WithAdminUsername("admin"),
 		rabbitmq.WithAdminPassword("password"),
 	)
@@ -47,11 +47,11 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connectUsingAmqp() {
+func ExampleRun_connectUsingAmqp() {
 	ctx := context.Background()
 
-	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
-		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
+	rabbitmqContainer, err := rabbitmq.Run(ctx,
+		"rabbitmq:3.7.25-management-alpine",
 		rabbitmq.WithAdminUsername("admin"),
 		rabbitmq.WithAdminPassword("password"),
 	)
@@ -86,7 +86,7 @@ func ExampleRunContainer_connectUsingAmqp() {
 	// false
 }
 
-func ExampleRunContainer_withSSL() {
+func ExampleRun_withSSL() {
 	// enableSSL {
 	ctx := context.Background()
 
@@ -128,8 +128,8 @@ func ExampleRunContainer_withSSL() {
 		VerificationDepth: 1,
 	}
 
-	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
-		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
+	rabbitmqContainer, err := rabbitmq.Run(ctx,
+		"rabbitmq:3.7.25-management-alpine",
 		rabbitmq.WithSSL(sslSettings),
 	)
 	if err != nil {
@@ -154,11 +154,11 @@ func ExampleRunContainer_withSSL() {
 	// true
 }
 
-func ExampleRunContainer_withPlugins() {
+func ExampleRun_withPlugins() {
 	ctx := context.Background()
 
-	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
-		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
+	rabbitmqContainer, err := rabbitmq.Run(ctx,
+		"rabbitmq:3.7.25-management-alpine",
 		// Multiple test implementations of the Executable interface, specific to RabbitMQ, exist in the types_test.go file.
 		// Please refer to them for more examples.
 		testcontainers.WithAfterReadyCommand(
@@ -182,11 +182,11 @@ func ExampleRunContainer_withPlugins() {
 	// true
 }
 
-func ExampleRunContainer_withCustomConfigFile() {
+func ExampleRun_withCustomConfigFile() {
 	ctx := context.Background()
 
-	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
-		testcontainers.WithImage("rabbitmq:3.7.25-management-alpine"),
+	rabbitmqContainer, err := rabbitmq.Run(ctx,
+		"rabbitmq:3.7.25-management-alpine",
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)

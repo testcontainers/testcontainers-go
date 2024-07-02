@@ -14,6 +14,7 @@ const (
 )
 
 const (
+	// Deprecated: it will be removed in the next major version.
 	DefaultBaseImage = "docker.io/hashicorp/consul:1.15"
 )
 
@@ -61,11 +62,17 @@ func WithConfigFile(configPath string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Consul container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error) {
+	return Run(ctx, "docker.io/hashicorp/consul:1.15", opts...)
+}
+
+// Run creates an instance of the Consul container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error) {
 	containerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: DefaultBaseImage,
+			Image: img,
 			ExposedPorts: []string{
 				defaultHttpApiPort + "/tcp",
 				defaultBrokerPort + "/tcp",

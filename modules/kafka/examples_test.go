@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runKafkaContainer {
 	ctx := context.Background()
 
-	kafkaContainer, err := kafka.RunContainer(ctx,
+	kafkaContainer, err := kafka.Run(ctx,
+		"confluentinc/confluent-local:7.5.0",
 		kafka.WithClusterID("test-cluster"),
-		testcontainers.WithImage("confluentinc/confluent-local:7.5.0"),
 	)
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)

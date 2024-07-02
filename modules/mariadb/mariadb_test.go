@@ -9,14 +9,13 @@ import (
 	// Import mysql into the scope of this package (required)
 	_ "github.com/go-sql-driver/mysql"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mariadb"
 )
 
 func TestMariaDB(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mariadb.RunContainer(ctx)
+	container, err := mariadb.Run(ctx, "mariadb:11.0.3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +62,8 @@ func TestMariaDB(t *testing.T) {
 func TestMariaDBWithNonRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := mariadb.RunContainer(ctx,
+	_, err := mariadb.Run(ctx,
+		"mariadb:11.0.3",
 		mariadb.WithDatabase("foo"),
 		mariadb.WithUsername("test"),
 		mariadb.WithPassword(""))
@@ -75,7 +75,8 @@ func TestMariaDBWithNonRootUserAndEmptyPassword(t *testing.T) {
 func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mariadb.RunContainer(ctx,
+	container, err := mariadb.Run(ctx,
+		"mariadb:11.0.3",
 		mariadb.WithDatabase("foo"),
 		mariadb.WithUsername("root"),
 		mariadb.WithPassword(""))
@@ -117,7 +118,7 @@ func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 func TestMariaDBWithMySQLEnvVars(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mariadb.RunContainer(ctx, testcontainers.WithImage("mariadb:10.3.29"),
+	container, err := mariadb.Run(ctx, "mariadb:10.3.29",
 		mariadb.WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)
@@ -135,7 +136,7 @@ func TestMariaDBWithMySQLEnvVars(t *testing.T) {
 func TestMariaDBWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mariadb.RunContainer(ctx, testcontainers.WithImage("mariadb:11.0.3"),
+	container, err := mariadb.Run(ctx, "mariadb:11.0.3",
 		mariadb.WithConfigFile(filepath.Join("testdata", "my.cnf")))
 	if err != nil {
 		t.Fatal(err)
@@ -186,7 +187,8 @@ func TestMariaDBWithConfigFile(t *testing.T) {
 func TestMariaDBWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mariadb.RunContainer(ctx,
+	container, err := mariadb.Run(ctx,
+		"mariadb:11.0.3",
 		mariadb.WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)

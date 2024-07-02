@@ -27,13 +27,14 @@ Use the `testcontainers.WithEnv` option when creating the `LocalStackContainer` 
 
 ## Module reference
 
-The LocalStack module exposes one single function to create the LocalStack container, and this function receives two parameters:
+The LocalStack module exposes one single function to create the LocalStack container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*LocalstackContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -42,7 +43,8 @@ When starting the Localstack container, you can pass options in a variadic way t
 
 #### Image
 
-By default, the image used is `localstack:1.4.0`.  If you need to use a different image, you can use `testcontainers.WithImage` option.
+If you need to set a different Localstack Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "localstack:1.4.0")`.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -54,7 +56,7 @@ It's possible to entirely override the default LocalStack container request:
 [Customize container request](../../modules/localstack/examples_test.go) inside_block:withCustomContainerRequest
 <!--/codeinclude-->
 
-With simply passing the `testcontainers.CustomizeRequest` functional option to the `RunContainer` function, you'll be able to configure the LocalStack container with your own needs, as this new container request will be merged with the original one.
+With simply passing the `testcontainers.CustomizeRequest` functional option to the `New` function, you'll be able to configure the LocalStack container with your own needs, as this new container request will be merged with the original one.
 
 In the above example you can check how it's possible to copy files that are needed by the tests. The `flagsFn` function is a helper function that converts Docker labels used by Ryuk to a string with the format requested by LocalStack.
 

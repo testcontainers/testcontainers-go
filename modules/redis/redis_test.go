@@ -11,14 +11,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
-	"github.com/testcontainers/testcontainers-go"
 	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 )
 
 func TestIntegrationSetGet(t *testing.T) {
 	ctx := context.Background()
 
-	redisContainer, err := tcredis.RunContainer(ctx)
+	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
@@ -32,7 +31,7 @@ func TestIntegrationSetGet(t *testing.T) {
 func TestRedisWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	redisContainer, err := tcredis.RunContainer(ctx, tcredis.WithConfigFile(filepath.Join("testdata", "redis7.conf")))
+	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7", tcredis.WithConfigFile(filepath.Join("testdata", "redis7.conf")))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
@@ -74,7 +73,7 @@ func TestRedisWithImage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			redisContainer, err := tcredis.RunContainer(ctx, testcontainers.WithImage(tt.image), tcredis.WithConfigFile(filepath.Join("testdata", "redis6.conf")))
+			redisContainer, err := tcredis.Run(ctx, tt.image, tcredis.WithConfigFile(filepath.Join("testdata", "redis6.conf")))
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				if err := redisContainer.Terminate(ctx); err != nil {
@@ -90,7 +89,7 @@ func TestRedisWithImage(t *testing.T) {
 func TestRedisWithLogLevel(t *testing.T) {
 	ctx := context.Background()
 
-	redisContainer, err := tcredis.RunContainer(ctx, tcredis.WithLogLevel(tcredis.LogLevelVerbose))
+	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7", tcredis.WithLogLevel(tcredis.LogLevelVerbose))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
@@ -104,7 +103,7 @@ func TestRedisWithLogLevel(t *testing.T) {
 func TestRedisWithSnapshotting(t *testing.T) {
 	ctx := context.Background()
 
-	redisContainer, err := tcredis.RunContainer(ctx, tcredis.WithSnapshotting(10, 1))
+	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7", tcredis.WithSnapshotting(10, 1))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {

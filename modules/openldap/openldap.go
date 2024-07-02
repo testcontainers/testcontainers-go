@@ -122,10 +122,16 @@ func WithInitialLdif(ldif string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the OpenLDAP container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OpenLDAPContainer, error) {
+	return Run(ctx, "bitnami/openldap:2.6.6", opts...)
+}
+
+// Run creates an instance of the OpenLDAP container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OpenLDAPContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "bitnami/openldap:2.6.6",
+		Image: img,
 		Env: map[string]string{
 			"LDAP_ADMIN_USERNAME": defaultUser,
 			"LDAP_ADMIN_PASSWORD": defaultPassword,

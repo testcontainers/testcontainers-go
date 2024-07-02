@@ -8,14 +8,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/qdrant"
 )
 
 func TestQdrant(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := qdrant.RunContainer(ctx, testcontainers.WithImage("qdrant/qdrant:v1.7.4"))
+	container, err := qdrant.Run(ctx, "qdrant/qdrant:v1.7.4")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -10,15 +10,14 @@ import (
 
 	client "github.com/BraspagDevelopers/mock-server-client"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mockserver"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runMockServerContainer {
 	ctx := context.Background()
 
-	mockserverContainer, err := mockserver.RunContainer(ctx, testcontainers.WithImage("mockserver/mockserver:5.15.0"))
+	mockserverContainer, err := mockserver.Run(ctx, "mockserver/mockserver:5.15.0")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -42,11 +41,11 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connect() {
+func ExampleRun_connect() {
 	// connectToMockServer {
 	ctx := context.Background()
 
-	mockserverContainer, err := mockserver.RunContainer(ctx, testcontainers.WithImage("mockserver/mockserver:5.15.0"))
+	mockserverContainer, err := mockserver.Run(ctx, "mockserver/mockserver:5.15.0")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

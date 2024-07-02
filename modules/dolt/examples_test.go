@@ -7,16 +7,15 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dolt"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runDoltContainer {
 	ctx := context.Background()
 
-	doltContainer, err := dolt.RunContainer(ctx,
-		testcontainers.WithImage("dolthub/dolt-sql-server:1.32.4"),
+	doltContainer, err := dolt.Run(ctx,
+		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithConfigFile(filepath.Join("testdata", "dolt_1_32_4.cnf")),
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("root"),
@@ -46,11 +45,11 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connect() {
+func ExampleRun_connect() {
 	ctx := context.Background()
 
-	doltContainer, err := dolt.RunContainer(ctx,
-		testcontainers.WithImage("dolthub/dolt-sql-server:1.32.4"),
+	doltContainer, err := dolt.Run(ctx,
+		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithConfigFile(filepath.Join("testdata", "dolt_1_32_4.cnf")),
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("bar"),

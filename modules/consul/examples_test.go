@@ -7,17 +7,14 @@ import (
 
 	capi "github.com/hashicorp/consul/api"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/consul"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runConsulContainer {
 	ctx := context.Background()
 
-	consulContainer, err := consul.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/hashicorp/consul:1.15"),
-	)
+	consulContainer, err := consul.Run(ctx, "docker.io/hashicorp/consul:1.15")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -41,13 +38,11 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connect() {
+func ExampleRun_connect() {
 	// connectConsul {
 	ctx := context.Background()
 
-	consulContainer, err := consul.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/hashicorp/consul:1.15"),
-	)
+	consulContainer, err := consul.Run(ctx, "docker.io/hashicorp/consul:1.15")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

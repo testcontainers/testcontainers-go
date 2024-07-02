@@ -5,17 +5,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/pulsar"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runPulsarContainer {
 	ctx := context.Background()
 
-	pulsarContainer, err := pulsar.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/apachepulsar/pulsar:2.10.2"),
-	)
+	pulsarContainer, err := pulsar.Run(ctx, "docker.io/apachepulsar/pulsar:2.10.2")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

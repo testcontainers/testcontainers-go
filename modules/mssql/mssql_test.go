@@ -15,7 +15,8 @@ import (
 func TestMSSQLServer(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx,
+	container, err := mssql.Run(ctx,
+		"mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04",
 		mssql.WithAcceptEULA(),
 	)
 	if err != nil {
@@ -58,8 +59,11 @@ func TestMSSQLServer(t *testing.T) {
 func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx, testcontainers.WithWaitStrategy(
-		wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")))
+	container, err := mssql.Run(ctx,
+		"mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04",
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")),
+	)
 	if err != nil {
 		t.Fatalf("Expected a log to confirm missing EULA but got error: %s", err)
 	}
@@ -77,7 +81,8 @@ func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx,
+	container, err := mssql.Run(ctx,
+		"mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04",
 		mssql.WithAcceptEULA(),
 	)
 	if err != nil {
@@ -120,7 +125,8 @@ func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx,
+	container, err := mssql.Run(ctx,
+		"mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04",
 		mssql.WithAcceptEULA(),
 		mssql.WithPassword("Strong@Passw0rd"),
 	)
@@ -156,7 +162,8 @@ func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 func TestMSSQLServerWithInvalidPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx,
+	container, err := mssql.Run(ctx,
+		"mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04",
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Password validation failed")),
 		mssql.WithAcceptEULA(),
@@ -180,8 +187,8 @@ func TestMSSQLServerWithInvalidPassword(t *testing.T) {
 func TestMSSQLServerWithAlternativeImage(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mssql.RunContainer(ctx,
-		testcontainers.WithImage("mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04"),
+	container, err := mssql.Run(ctx,
+		"mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04",
 		mssql.WithAcceptEULA(),
 	)
 	if err != nil {

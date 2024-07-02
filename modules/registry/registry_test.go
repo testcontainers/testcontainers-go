@@ -13,7 +13,7 @@ import (
 )
 
 func TestRegistry_unauthenticated(t *testing.T) {
-	container, err := registry.RunContainer(context.Background(), testcontainers.WithImage("registry:2.8.3"))
+	container, err := registry.Run(context.Background(), "registry:2.8.3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,9 +42,9 @@ func TestRegistry_unauthenticated(t *testing.T) {
 }
 
 func TestRunContainer_authenticated(t *testing.T) {
-	registryContainer, err := registry.RunContainer(
+	registryContainer, err := registry.Run(
 		context.Background(),
-		testcontainers.WithImage("registry:2.8.3"),
+		"registry:2.8.3",
 		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
 		registry.WithData(filepath.Join("testdata", "data")),
 	)
@@ -221,9 +221,9 @@ func TestRunContainer_authenticated(t *testing.T) {
 
 func TestRunContainer_authenticated_withCredentials(t *testing.T) {
 	// htpasswdString {
-	registryContainer, err := registry.RunContainer(
+	registryContainer, err := registry.Run(
 		context.Background(),
-		testcontainers.WithImage("registry:2.8.3"),
+		"registry:2.8.3",
 		registry.WithHtpasswd("testuser:$2y$05$tTymaYlWwJOqie.bcSUUN.I.kxmo1m5TLzYQ4/ejJ46UMXGtq78EO"),
 	)
 	// }
@@ -261,9 +261,9 @@ func TestRunContainer_authenticated_withCredentials(t *testing.T) {
 }
 
 func TestRunContainer_wrongData(t *testing.T) {
-	registryContainer, err := registry.RunContainer(
+	registryContainer, err := registry.Run(
 		context.Background(),
-		testcontainers.WithImage("registry:2.8.3"),
+		"registry:2.8.3",
 		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
 		registry.WithData(filepath.Join("testdata", "wrongdata")),
 	)

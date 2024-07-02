@@ -8,15 +8,14 @@ import (
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/milvus"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runMilvusContainer {
 	ctx := context.Background()
 
-	milvusContainer, err := milvus.RunContainer(ctx, testcontainers.WithImage("milvusdb/milvus:v2.3.9"))
+	milvusContainer, err := milvus.Run(ctx, "milvusdb/milvus:v2.3.9")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -44,7 +43,7 @@ func ExampleMilvusContainer_collections() {
 	// createCollections {
 	ctx := context.Background()
 
-	milvusContainer, err := milvus.RunContainer(ctx, testcontainers.WithImage("milvusdb/milvus:v2.3.9"))
+	milvusContainer, err := milvus.Run(ctx, "milvusdb/milvus:v2.3.9")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

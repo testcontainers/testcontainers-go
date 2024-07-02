@@ -14,11 +14,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runMongoDBContainer {
 	ctx := context.Background()
 
-	mongodbContainer, err := mongodb.RunContainer(ctx, testcontainers.WithImage("mongo:6"))
+	mongodbContainer, err := mongodb.Run(ctx, "mongo:6")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -42,11 +42,11 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connect() {
+func ExampleRun_connect() {
 	// connectToMongo {
 	ctx := context.Background()
 
-	mongodbContainer, err := mongodb.RunContainer(ctx, testcontainers.WithImage("mongo:6"))
+	mongodbContainer, err := mongodb.Run(ctx, "mongo:6")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -80,11 +80,11 @@ func ExampleRunContainer_connect() {
 	// test
 }
 
-func ExampleRunContainer_withCredentials() {
+func ExampleRun_withCredentials() {
 	ctx := context.Background()
 
-	container, err := mongodb.RunContainer(ctx,
-		testcontainers.WithImage("mongo:6"),
+	container, err := mongodb.Run(ctx,
+		"mongo:6",
 		mongodb.WithUsername("root"),
 		mongodb.WithPassword("password"),
 		testcontainers.WithWaitStrategy(wait.ForLog("Waiting for connections")),

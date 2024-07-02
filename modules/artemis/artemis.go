@@ -78,11 +78,17 @@ func WithExtraArgs(args string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead.
 // RunContainer creates an instance of the Artemis container type.
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	return Run(ctx, "docker.io/apache/activemq-artemis:2.30.0-alpine", opts...)
+}
+
+// Run creates an instance of the Artemis container type with a given image
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.io/apache/activemq-artemis:2.30.0-alpine",
+			Image: img,
 			Env: map[string]string{
 				"ARTEMIS_USER":     "artemis",
 				"ARTEMIS_PASSWORD": "artemis",

@@ -60,8 +60,8 @@ func TestPostgres(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			container, err := postgres.RunContainer(ctx,
-				testcontainers.WithImage(tt.image),
+			container, err := postgres.Run(ctx,
+				tt.image,
 				postgres.WithDatabase(dbname),
 				postgres.WithUsername(user),
 				postgres.WithPassword(password),
@@ -120,8 +120,9 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	}
 
 	t.Run("default query", func(t *testing.T) {
-		container, err := postgres.RunContainer(
+		container, err := postgres.Run(
 			ctx,
+			"docker.io/postgres:16-alpine",
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
@@ -131,8 +132,9 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 		require.NotNil(t, container)
 	})
 	t.Run("custom query", func(t *testing.T) {
-		container, err := postgres.RunContainer(
+		container, err := postgres.Run(
 			ctx,
+			"docker.io/postgres:16-alpine",
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
@@ -142,8 +144,9 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 		require.NotNil(t, container)
 	})
 	t.Run("custom bad query", func(t *testing.T) {
-		container, err := postgres.RunContainer(
+		container, err := postgres.Run(
 			ctx,
+			"docker.io/postgres:16-alpine",
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
@@ -157,7 +160,8 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 func TestWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := postgres.RunContainer(ctx,
+	container, err := postgres.Run(ctx,
+		"docker.io/postgres:16-alpine",
 		postgres.WithConfigFile(filepath.Join("testdata", "my-postgres.conf")),
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
@@ -187,8 +191,8 @@ func TestWithConfigFile(t *testing.T) {
 func TestWithInitScript(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := postgres.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/postgres:15.2-alpine"),
+	container, err := postgres.Run(ctx,
+		"docker.io/postgres:15.2-alpine",
 		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
@@ -225,9 +229,9 @@ func TestSnapshot(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Start the postgres container and run any migrations on it
-	container, err := postgres.RunContainer(
+	container, err := postgres.Run(
 		ctx,
-		testcontainers.WithImage("docker.io/postgres:16-alpine"),
+		"docker.io/postgres:16-alpine",
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
@@ -329,9 +333,9 @@ func TestSnapshotWithOverrides(t *testing.T) {
 	user := "other-user"
 	password := "other-password"
 
-	container, err := postgres.RunContainer(
+	container, err := postgres.Run(
 		ctx,
-		testcontainers.WithImage("docker.io/postgres:16-alpine"),
+		"docker.io/postgres:16-alpine",
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),

@@ -10,15 +10,14 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/qdrant"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runQdrantContainer {
 	ctx := context.Background()
 
-	qdrantContainer, err := qdrant.RunContainer(ctx, testcontainers.WithImage("qdrant/qdrant:v1.7.4"))
+	qdrantContainer, err := qdrant.Run(ctx, "qdrant/qdrant:v1.7.4")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -42,9 +41,9 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_createPoints() {
+func ExampleRun_createPoints() {
 	// fullExample {
-	qdrantContainer, err := qdrant.RunContainer(context.Background(), testcontainers.WithImage("qdrant/qdrant:v1.7.4"))
+	qdrantContainer, err := qdrant.Run(context.Background(), "qdrant/qdrant:v1.7.4")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
@@ -23,9 +22,9 @@ func ExampleRunSpannerContainer() {
 	// runSpannerContainer {
 	ctx := context.Background()
 
-	spannerContainer, err := gcloud.RunSpannerContainer(
+	spannerContainer, err := gcloud.RunSpanner(
 		ctx,
-		testcontainers.WithImage("gcr.io/cloud-spanner-emulator/emulator:1.4.0"),
+		"gcr.io/cloud-spanner-emulator/emulator:1.4.0",
 		gcloud.WithProjectID("spanner-project"),
 	)
 	if err != nil {

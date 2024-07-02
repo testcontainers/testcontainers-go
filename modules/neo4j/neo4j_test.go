@@ -9,7 +9,6 @@ import (
 
 	neo "github.com/neo4j/neo4j-go-driver/v5/neo4j"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 )
 
@@ -70,12 +69,12 @@ func TestNeo4jWithEnterpriseLicense(t *testing.T) {
 		"EnterpriseEdition": "docker.io/neo4j:4.4-enterprise",
 	}
 
-	for edition, image := range images {
-		edition, image := edition, image
+	for edition, img := range images {
+		edition, img := edition, img
 		t.Run(edition, func(t *testing.T) {
 			t.Parallel()
-			container, err := neo4j.RunContainer(ctx,
-				testcontainers.WithImage(image),
+			container, err := neo4j.Run(ctx,
+				img,
 				neo4j.WithAdminPassword(testPassword),
 				neo4j.WithAcceptCommercialLicenseAgreement(),
 			)
@@ -104,7 +103,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	ctx := context.Background()
 
 	outer.Run("without authentication", func(t *testing.T) {
-		container, err := neo4j.RunContainer(ctx)
+		container, err := neo4j.Run(ctx, "neo4j:4.4")
 		if err != nil {
 			t.Fatalf("expected env to successfully run but did not: %s", err)
 		}
@@ -116,7 +115,8 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	})
 
 	outer.Run("auth setting outside WithAdminPassword raises error", func(t *testing.T) {
-		container, err := neo4j.RunContainer(ctx,
+		container, err := neo4j.Run(ctx,
+			"neo4j:4.4",
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("AUTH", "neo4j/thisisgonnafail"),
 		)
@@ -131,7 +131,8 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	outer.Run("warns about overwrites of setting keys", func(t *testing.T) {
 		// withSettings {
 		logger := &inMemoryLogger{}
-		container, err := neo4j.RunContainer(ctx,
+		container, err := neo4j.Run(ctx,
+			"neo4j:4.4",
 			neo4j.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("some.key", "value1"),
@@ -159,7 +160,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	})
 
 	outer.Run("rejects nil logger", func(t *testing.T) {
-		container, err := neo4j.RunContainer(ctx, neo4j.WithLogger(nil))
+		container, err := neo4j.Run(ctx, "neo4j:4.4", neo4j.WithLogger(nil))
 
 		if container != nil {
 			t.Fatalf("container must not be created with nil logger")
@@ -171,7 +172,8 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 }
 
 func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Neo4jContainer {
-	container, err := neo4j.RunContainer(ctx,
+	container, err := neo4j.Run(ctx,
+		"neo4j:4.4",
 		neo4j.WithAdminPassword(testPassword),
 		// withLabsPlugin {
 		neo4j.WithLabsPlugin(neo4j.Apoc),

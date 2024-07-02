@@ -17,7 +17,7 @@ func TestKafka(t *testing.T) {
 
 	ctx := context.Background()
 
-	kafkaContainer, err := kafka.RunContainer(ctx, kafka.WithClusterID("kraftCluster"), testcontainers.WithImage("confluentinc/confluent-local:7.5.0"))
+	kafkaContainer, err := kafka.Run(ctx, "confluentinc/confluent-local:7.5.0", kafka.WithClusterID("kraftCluster"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestKafka(t *testing.T) {
 func TestKafka_invalidVersion(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := kafka.RunContainer(ctx, kafka.WithClusterID("kraftCluster"), testcontainers.WithImage("confluentinc/confluent-local:6.3.3"))
+	_, err := kafka.Run(ctx, "confluentinc/confluent-local:6.3.3", kafka.WithClusterID("kraftCluster"))
 	if err == nil {
 		t.Fatal(err)
 	}

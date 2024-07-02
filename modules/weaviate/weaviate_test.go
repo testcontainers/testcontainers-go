@@ -12,14 +12,13 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/weaviate"
 )
 
 func TestWeaviate(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := weaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.25.5"))
+	container, err := weaviate.Run(ctx, "semitechnologies/weaviate:1.25.5")
 	if err != nil {
 		t.Fatal(err)
 	}

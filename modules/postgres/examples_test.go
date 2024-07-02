@@ -12,7 +12,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runPostgresContainer {
 	ctx := context.Background()
 
@@ -20,8 +20,8 @@ func ExampleRunContainer() {
 	dbUser := "user"
 	dbPassword := "password"
 
-	postgresContainer, err := postgres.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/postgres:16-alpine"),
+	postgresContainer, err := postgres.Run(ctx,
+		"docker.io/postgres:16-alpine",
 		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		postgres.WithConfigFile(filepath.Join("testdata", "my-postgres.conf")),
 		postgres.WithDatabase(dbName),

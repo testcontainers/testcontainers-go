@@ -155,10 +155,16 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 	return c.ImageExists(ctx, ref)
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Registry container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*RegistryContainer, error) {
+	return Run(ctx, "registry:2.8.3", opts...)
+}
+
+// Run creates an instance of the Registry container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RegistryContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "registry:2.8.3",
+		Image:        img,
 		ExposedPorts: []string{"5000/tcp"},
 		Env: map[string]string{
 			// convenient for testing

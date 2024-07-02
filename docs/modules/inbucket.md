@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/inbucket
 
 ## Module reference
 
-The Inbucket module exposes one entrypoint function to create the Inbucket container, and this function receives two parameters:
+The Inbucket module exposes one entrypoint function to create the Inbucket container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*InbucketContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*InbucketContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -37,8 +38,8 @@ When starting the Inbucket container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different Inbucket Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Inbucket. E.g. `testcontainers.WithImage("inbucket/inbucket:sha-2d409bb")`.
+If you need to set a different Inbucket Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "inbucket/inbucket:sha-2d409bb")`.
 
 {% include "../features/common_functional_options.md" %}
 

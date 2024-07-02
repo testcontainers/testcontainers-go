@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/minio"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runMinioContainer {
 	ctx := context.Background()
 
-	minioContainer, err := minio.RunContainer(ctx, testcontainers.WithImage("minio/minio:RELEASE.2024-01-16T16-07-38Z"))
+	minioContainer, err := minio.Run(ctx, "minio/minio:RELEASE.2024-01-16T16-07-38Z")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

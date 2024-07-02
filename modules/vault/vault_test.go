@@ -25,9 +25,6 @@ const (
 func TestVault(t *testing.T) {
 	ctx := context.Background()
 	opts := []testcontainers.ContainerCustomizer{
-		// WithImageName {
-		testcontainers.WithImage("hashicorp/vault:1.13.0"),
-		// }
 		// WithToken {
 		testcontainervault.WithToken(token),
 		// }
@@ -37,7 +34,7 @@ func TestVault(t *testing.T) {
 		// }
 	}
 
-	vaultContainer, err := testcontainervault.RunContainer(ctx, opts...)
+	vaultContainer, err := testcontainervault.Run(ctx, "hashicorp/vault:1.13.0", opts...)
 	require.NoError(t, err)
 
 	// httpHostAddress {
