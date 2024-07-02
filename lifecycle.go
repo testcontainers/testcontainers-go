@@ -228,7 +228,16 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 						// having entries in exposedAndMappedPorts, where the key is the exposed port,
 						// and the value is the mapped port, means that the port has been already mapped.
 						if _, ok := exposedAndMappedPorts[portMap]; !ok {
-							return fmt.Errorf("port %s is not mapped yet", exposedPort)
+							// check if the port is mapped with the protocol (default is TCP)
+							if !strings.Contains(exposedPort, "/") {
+								portMap = nat.Port(fmt.Sprintf("%s/tcp", exposedPort))
+								if _, ok := exposedAndMappedPorts[portMap]; !ok {
+									return fmt.Errorf("port %s is not mapped yet", exposedPort)
+								}
+							} else {
+								return fmt.Errorf("port %s is not mapped yet", exposedPort)
+							}
+
 						}
 					}
 
