@@ -57,6 +57,11 @@ but does not allow starting privileged containers, you can turn off the Ryuk con
 !!!info
     For more information about Ryuk, see [Garbage Collector](garbage_collector.md).
 
+!!!warn
+    If using Ryuk and the Compose module, please increase the `ryuk.connection.timeout` to at least 5 minutes.
+    This is because the Compose module may take longer to start all the services. Besides, the `ryuk.reconnection.timeout`
+    should be increased to at least 30 seconds. For further information, please check [https://github.com/testcontainers/testcontainers-go/pull/2485](https://github.com/testcontainers/testcontainers-go/pull/2485).
+
 ## Docker host detection
 
 _Testcontainers for Go_ will attempt to detect the Docker environment and configure everything to work automatically.
