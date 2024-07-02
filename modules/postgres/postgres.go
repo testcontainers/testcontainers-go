@@ -275,10 +275,11 @@ func (c *PostgresContainer) execCommandsSQL(ctx context.Context, cmds ...string)
 func (c *PostgresContainer) snapshotConnection(ctx context.Context) (*sql.Conn, func(), error) {
 	// Connect to the database "postgres" instead of the app one
 	c2 := &PostgresContainer{
-		Container: c.Container,
-		dbName:    "postgres",
-		user:      c.user,
-		password:  c.password,
+		Container:     c.Container,
+		dbName:        "postgres",
+		user:          c.user,
+		password:      c.password,
+		sqlDriverName: c.sqlDriverName,
 	}
 
 	// Try to use an actual postgres connection, if the driver is loaded
