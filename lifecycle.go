@@ -237,7 +237,6 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 							} else {
 								return fmt.Errorf("port %s is not mapped yet", exposedPort)
 							}
-
 						}
 					}
 
