@@ -11,6 +11,7 @@ import (
 
 	"github.com/docker/go-connections/nat"
 	"github.com/jackc/pgx/v5"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,32 +33,27 @@ func TestPostgres(t *testing.T) {
 	tests := []struct {
 		name  string
 		image string
-		wait  wait.Strategy
 	}{
 		{
 			name:  "Postgres",
 			image: "docker.io/postgres:15.2-alpine",
-			wait:  wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5 * time.Second),
 		},
 		{
 			name: "Timescale",
 			// timescale {
 			image: "docker.io/timescale/timescaledb:2.1.0-pg11",
-			wait:  wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5 * time.Second),
 			// }
 		},
 		{
 			name: "Postgis",
 			// postgis {
 			image: "docker.io/postgis/postgis:12-3.0",
-			wait:  wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(30 * time.Second),
 			// }
 		},
 		{
 			name: "Pgvector",
 			// pgvector {
 			image: "docker.io/pgvector/pgvector:pg16",
-			wait:  wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(30 * time.Second),
 			// }
 		},
 	}
@@ -69,7 +65,7 @@ func TestPostgres(t *testing.T) {
 				postgres.WithDatabase(dbname),
 				postgres.WithUsername(user),
 				postgres.WithPassword(password),
-				testcontainers.WithWaitStrategy(tt.wait),
+				postgres.BasicWaitStrategies(),
 			)
 			if err != nil {
 				t.Fatal(err)
@@ -166,7 +162,7 @@ func TestWithConfigFile(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		postgres.BasicWaitStrategies(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -197,7 +193,7 @@ func TestWithInitScript(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		postgres.BasicWaitStrategies(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -235,10 +231,8 @@ func TestSnapshot(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(5*time.Second)),
+		postgres.BasicWaitStrategies(),
+		postgres.WithSQLDriver("pgx"),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -341,10 +335,7 @@ func TestSnapshotWithOverrides(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(5*time.Second)),
+		postgres.BasicWaitStrategies(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -399,4 +390,109 @@ func TestSnapshotWithOverrides(t *testing.T) {
 			t.Fatalf("Expected %d to equal `0`", count)
 		}
 	})
+}
+
+func TestSnapshotWithDockerExecFallback(t *testing.T) {
+	ctx := context.Background()
+
+	// postgresWithSQLDriver {
+	// 1. Start the postgres container and run any migrations on it
+	ctr, err := postgres.RunContainer(
+		ctx,
+		testcontainers.WithImage("docker.io/postgres:16-alpine"),
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		postgres.BasicWaitStrategies(),
+		// Tell the postgres module to use a driver that doesn't exist
+		// This will cause the module to fall back to using docker exec
+		postgres.WithSQLDriver("DoesNotExist"),
+	)
+	// }
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Run any migrations on the database
+	_, _, err = ctr.Exec(ctx, []string{"psql", "-U", user, "-d", dbname, "-c", "CREATE TABLE users (id SERIAL, name TEXT NOT NULL, age INT NOT NULL)"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// 2. Create a snapshot of the database to restore later
+	err = ctr.Snapshot(ctx, postgres.WithSnapshotName("test-snapshot"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Clean up the container after the test is complete
+	t.Cleanup(func() {
+		if err := ctr.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
+
+	dbURL, err := ctr.ConnectionString(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("Test inserting a user", func(t *testing.T) {
+		t.Cleanup(func() {
+			// 3. In each test, reset the DB to its snapshot state.
+			err := ctr.Restore(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		conn, err2 := pgx.Connect(context.Background(), dbURL)
+		if err2 != nil {
+			t.Fatal(err2)
+		}
+		defer conn.Close(context.Background())
+
+		_, err2 = conn.Exec(ctx, "INSERT INTO users(name, age) VALUES ($1, $2)", "test", 42)
+		if err2 != nil {
+			t.Fatal(err2)
+		}
+
+		var name string
+		var age int64
+		err2 = conn.QueryRow(context.Background(), "SELECT name, age FROM users LIMIT 1").Scan(&name, &age)
+		if err2 != nil {
+			t.Fatal(err2)
+		}
+
+		if name != "test" {
+			t.Fatalf("Expected %s to equal `test`", name)
+		}
+		if age != 42 {
+			t.Fatalf("Expected %d to equal `42`", age)
+		}
+	})
+
+	t.Run("Test querying empty DB", func(t *testing.T) {
+		// 4. Run as many tests as you need, they will each get a clean database
+		t.Cleanup(func() {
+			err := ctr.Restore(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		conn, err2 := pgx.Connect(context.Background(), dbURL)
+		if err2 != nil {
+			t.Fatal(err2)
+		}
+		defer conn.Close(context.Background())
+
+		var name string
+		var age int64
+		err2 = conn.QueryRow(context.Background(), "SELECT name, age FROM users LIMIT 1").Scan(&name, &age)
+		if !errors.Is(err2, pgx.ErrNoRows) {
+			t.Fatalf("Expected error to be a NoRows error, since the DB should be empty on every test. Got %s instead", err2)
+		}
+	})
+	// }
 }

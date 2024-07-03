@@ -92,6 +92,15 @@ It's possible to use the Postgres container with PGVector, Timescale or Postgis,
 
 ## Examples
 
+### Wait Strategies
+
+The postgres module works best with these wait strategies.
+No default is supplied, so you need to set it explicitly.
+
+<!--codeinclude-->
+[Example Wait Strategies](../../modules/postgres/wait_strategies.go) inside_block:waitStrategy
+<!--/codeinclude-->
+
 ### Using Snapshots
 This example shows the usage of the postgres module's Snapshot feature to give each test a clean database without having
 to recreate the database container on every test or run heavy scripts to clean your database. This makes the individual
@@ -102,7 +111,35 @@ tests very modular, since they always run on a brand-new database.
     The Snapshot logic requires dropping the connected database and using the system database to run commands, which will
     not work if the database for the container is set to `"postgres"`.
 
-
 <!--codeinclude-->
 [Test with a reusable Postgres container](../../modules/postgres/postgres_test.go) inside_block:snapshotAndReset
+<!--/codeinclude-->
+
+### Snapshot/Restore with custom driver
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The snapshot/restore feature tries to use the `postgres` driver with go's included `sql.DB` package to perform database operations.
+If the `postgres` driver is not installed, it will fall back to using `docker exec`, which works, but is slower.
+
+You can tell the module to use the database driver you have imported in your test package by setting `postgres.WithSQLDriver("name")` to your driver name.
+
+For example, if you use pgx, see the example below.
+
+```go
+package my_test
+
+import (
+	"testing"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
+)
+```
+
+The above code snippet is importing the `pgx` driver and the _Testcontainers for Go_ Postgres module.
+
+<!--codeinclude-->
+[Snapshot/Restore with custom driver](../../modules/postgres/postgres_test.go) inside_block:snapshotAndReset
 <!--/codeinclude-->
