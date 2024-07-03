@@ -151,10 +151,8 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		return nil, fmt.Errorf("failed to create reaper provider for compose: %w", err)
 	}
 
-	tcConfig := reaperProvider.Config()
-
 	var composeReaper *testcontainers.Reaper
-	if !tcConfig.RyukDisabled {
+	if !reaperProvider.Config().Config.RyukDisabled {
 		// NewReaper is deprecated: we need to find a way to create the reaper for compose
 		// bypassing the deprecation.
 		r, err := testcontainers.NewReaper(context.Background(), testcontainers.SessionID(), reaperProvider, "")

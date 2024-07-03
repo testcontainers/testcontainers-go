@@ -22,7 +22,6 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
-	"github.com/docker/go-units"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -1339,11 +1338,6 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 	assert.NotEmpty(t, inspect.ID)
 
 	require.NoError(t, ctr.Stop(context.Background(), nil))
-
-	// type assertion to ensure that the container is a DockerContainer
-	dc := ctr.(*DockerContainer)
-
-	assert.Nil(t, dc.raw)
 }
 
 func readHostname(tb testing.TB, containerId string) string {
@@ -1718,7 +1712,7 @@ func TestDockerContainerResources(t *testing.T) {
 
 	ctx := context.Background()
 
-	expected := []*units.Ulimit{
+	expected := []*container.Ulimit{
 		{
 			Name: "memlock",
 			Hard: -1,
@@ -1897,16 +1891,6 @@ func TestGetGatewayIP(t *testing.T) {
 	if ip == "" {
 		t.Fatal("could not get gateway ip")
 	}
-}
-
-func TestProviderHasConfig(t *testing.T) {
-	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer provider.Close()
-
-	assert.NotNil(t, provider.Config(), "expecting DockerProvider to provide the configuration")
 }
 
 func TestNetworkModeWithContainerReference(t *testing.T) {

@@ -20,6 +20,10 @@ Because `compose` v2 is implemented in Go it's possible for _Testcontainers for 
 use [`github.com/docker/compose`](https://github.com/docker/compose) directly and skip any process execution/_docker-compose-in-a-container_ scenario.
 The `ComposeStack` API exposes this variant of using `docker compose` in an easy way.
 
+Before using the Compose module, there is some configuration that needs to be applied first.
+It customizes the behaviour of the `Ryuk` container, which is used to clean up the resources created by the `docker compose` stack.
+Please refer to [the Ryuk configuration](../configuration/#customizing-ryuk-the-resource-reaper) for more information.
+
 ### Usage
 
 Use the convenience `NewDockerCompose(...)` constructor which creates a random identifier and takes a variable number

@@ -48,13 +48,13 @@ func TestExposeHostPorts(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			freePorts := make([]int, tt.numberOfPorts)
+	for _, tc := range tests {
+		t.Run(tc.name, func(tt *testing.T) {
+			freePorts := make([]int, tc.numberOfPorts)
 			for i := range freePorts {
 				freePort, err := getFreePort()
 				if err != nil {
-					t.Fatal(err)
+					tt.Fatal(err)
 				}
 
 				freePorts[i] = freePort
@@ -62,12 +62,12 @@ func TestExposeHostPorts(t *testing.T) {
 				// create an http server for each port
 				server, err := createHttpServer(freePort)
 				if err != nil {
-					t.Fatal(err)
+					tt.Fatal(err)
 				}
 				go func() {
 					_ = server.ListenAndServe()
 				}()
-				t.Cleanup(func() {
+				tt.Cleanup(func() {
 					server.Close()
 				})
 			}
@@ -83,14 +83,16 @@ func TestExposeHostPorts(t *testing.T) {
 				Started: true,
 			}
 
-			if tt.hasNetwork {
-				nw, err := network.New(context.Background())
+			var nw *testcontainers.DockerNetwork
+			if tc.hasNetwork {
+				var err error
+				nw, err = network.New(context.Background())
 				if err != nil {
-					t.Fatal(err)
+					tt.Fatal(err)
 				}
-				t.Cleanup(func() {
+				tt.Cleanup(func() {
 					if err := nw.Remove(context.Background()); err != nil {
-						t.Fatal(err)
+						tt.Fatal(err)
 					}
 				})
 
@@ -99,7 +101,7 @@ func TestExposeHostPorts(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			if !tt.hasHostAccess {
+			if !tc.hasHostAccess {
 				var cancel context.CancelFunc
 				ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
 				defer cancel()
@@ -107,23 +109,23 @@ func TestExposeHostPorts(t *testing.T) {
 
 			c, err := testcontainers.GenericContainer(ctx, req)
 			if err != nil {
-				t.Fatal(err)
+				tt.Fatal(err)
 			}
-			t.Cleanup(func() {
+			tt.Cleanup(func() {
 				if err := c.Terminate(context.Background()); err != nil {
-					t.Fatal(err)
+					tt.Fatal(err)
 				}
 			})
 
-			if tt.hasHostAccess {
+			if tc.hasHostAccess {
 				// create a container that has host access, which will
 				// automatically forward the port to the container
-				assertContainerHasHostAccess(t, c, freePorts...)
+				assertContainerHasHostAccess(tt, c, freePorts...)
 			} else {
 				// force cancellation because of timeout
 				time.Sleep(11 * time.Second)
 
-				assertContainerHasNoHostAccess(t, c, freePorts...)
+				assertContainerHasNoHostAccess(tt, c, freePorts...)
 			}
 		})
 	}
