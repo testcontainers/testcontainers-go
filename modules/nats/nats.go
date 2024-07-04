@@ -21,10 +21,16 @@ type NATSContainer struct {
 	Password string
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the NATS container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*NATSContainer, error) {
+	return Run(ctx, "nats:2.9", opts...)
+}
+
+// Run creates an instance of the NATS container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*NATSContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "nats:2.9",
+		Image:        img,
 		ExposedPorts: []string{defaultClientPort, defaultRoutingPort, defaultMonitoringPort},
 		Cmd:          []string{"-DV", "-js"},
 		WaitingFor:   wait.ForLog("Listening for client connections on 0.0.0.0:4222"),

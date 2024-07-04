@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/cockroachdb
 
 ## Module reference
 
-The CockroachDB module exposes one entrypoint function to create the CockroachDB container, and this function receives two parameters:
+The CockroachDB module exposes one entrypoint function to create the CockroachDB container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 !!!warning
@@ -40,8 +41,8 @@ When starting the CockroachDB container, you can pass options in a variadic way 
 
 #### Image
 
-If you need to set a different CockroachDB Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for CockroachDB. E.g. `testcontainers.WithImage("cockroachdb/cockroach:latest-v23.1")`.
+If you need to set a different CockroachDB Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "cockroachdb/cockroach:latest-v23.1")`.
 
 {% include "../features/common_functional_options.md" %}
 

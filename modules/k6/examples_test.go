@@ -11,7 +11,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runHTTPBin {
 	ctx := context.Background()
 
@@ -54,8 +54,9 @@ func ExampleRunContainer() {
 
 	// runK6Container {
 	// run the httpbin.js test scripts passing the IP address the httpbin container
-	k6, err := k6.RunContainer(
+	k6, err := k6.Run(
 		ctx,
+		"szkiba/k6x:v0.3.1",
 		k6.WithCache(),
 		k6.WithTestScript(absPath),
 		k6.SetEnvVar("HTTPBIN", httpbinIP),

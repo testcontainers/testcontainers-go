@@ -12,13 +12,6 @@ import (
 )
 
 const (
-	// defaultImage {
-	defaultImageName = "neo4j"
-	defaultTag       = "4.4"
-	// }
-)
-
-const (
 	// containerPorts {
 	defaultBoltPort  = "7687"
 	defaultHttpPort  = "7474"
@@ -48,11 +41,17 @@ func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
 	return fmt.Sprintf("neo4j://%s:%d", host, mappedPort.Int()), nil
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Neo4j container type
-func RunContainer(ctx context.Context, options ...testcontainers.ContainerCustomizer) (*Neo4jContainer, error) {
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Neo4jContainer, error) {
+	return Run(ctx, "neo4j:4.4", opts...)
+}
+
+// Run creates an instance of the Neo4j container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Neo4jContainer, error) {
 	httpPort, _ := nat.NewPort("tcp", defaultHttpPort)
 	request := testcontainers.ContainerRequest{
-		Image: fmt.Sprintf("docker.io/%s:%s", defaultImageName, defaultTag),
+		Image: img,
 		Env: map[string]string{
 			"NEO4J_AUTH": "none",
 		},
@@ -78,11 +77,11 @@ func RunContainer(ctx context.Context, options ...testcontainers.ContainerCustom
 		Started:          true,
 	}
 
-	if len(options) == 0 {
-		options = append(options, WithoutAuthentication())
+	if len(opts) == 0 {
+		opts = append(opts, WithoutAuthentication())
 	}
 
-	for _, option := range options {
+	for _, option := range opts {
 		if err := option.Customize(&genericContainerReq); err != nil {
 			return nil, err
 		}

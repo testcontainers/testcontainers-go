@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	defaultPulsarImage                     = "docker.io/apachepulsar/pulsar:2.10.2"
 	defaultPulsarPort                      = "6650/tcp"
 	defaultPulsarAdminPort                 = "8080/tcp"
 	defaultPulsarCmd                       = "/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone"
@@ -130,7 +129,13 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// RunContainer creates an instance of the Pulsar container type, being possible to pass a custom request and options
+// Deprecated: use Run instead
+// RunContainer creates an instance of the Pulsar container type
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	return Run(ctx, "docker.io/apachepulsar/pulsar:2.10.2", opts...)
+}
+
+// Run creates an instance of the Pulsar container type, being possible to pass a custom request and options
 // The created container will use the following defaults:
 // - image: docker.io/apachepulsar/pulsar:2.10.2
 // - exposed ports: 6650/tcp, 8080/tcp
@@ -139,9 +144,9 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 //   - the log message "Successfully updated the policies on namespace public/default"
 //
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        defaultPulsarImage,
+		Image:        img,
 		Env:          map[string]string{},
 		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
 		WaitingFor:   defaultWaitStrategies,

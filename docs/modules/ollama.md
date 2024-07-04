@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/ollama
 
 ## Module reference
 
-The Ollama module exposes one entrypoint function to create the Ollama container, and this function receives two parameters:
+The Ollama module exposes one entrypoint function to create the Ollama container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OllamaContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OllamaContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -37,8 +38,8 @@ When starting the Ollama container, you can pass options in a variadic way to co
 
 #### Image
 
-If you need to set a different Ollama Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Ollama. E.g. `testcontainers.WithImage("ollama/ollama:0.1.25")`.
+If you need to set a different Ollama Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "ollama/ollama:0.1.25")`.
 
 {% include "../features/common_functional_options.md" %}
 

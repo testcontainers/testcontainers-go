@@ -12,9 +12,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runRegistryContainer {
-	registryContainer, err := registry.RunContainer(context.Background(), testcontainers.WithImage("registry:2.8.3"))
+	registryContainer, err := registry.Run(context.Background(), "registry:2.8.3")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -38,11 +38,11 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_withAuthentication() {
+func ExampleRun_withAuthentication() {
 	// htpasswdFile {
-	registryContainer, err := registry.RunContainer(
+	registryContainer, err := registry.Run(
 		context.Background(),
-		testcontainers.WithImage("registry:2.8.3"),
+		"registry:2.8.3",
 		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
 		registry.WithData(filepath.Join("testdata", "data")),
 	)
@@ -117,10 +117,10 @@ func ExampleRunContainer_withAuthentication() {
 	// true
 }
 
-func ExampleRunContainer_pushImage() {
-	registryContainer, err := registry.RunContainer(
+func ExampleRun_pushImage() {
+	registryContainer, err := registry.Run(
 		context.Background(),
-		testcontainers.WithImage("registry:2.8.3"),
+		"registry:2.8.3",
 		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
 		registry.WithData(filepath.Join("testdata", "data")),
 	)

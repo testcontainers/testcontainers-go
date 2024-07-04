@@ -97,8 +97,8 @@ When starting any of the GCloud containers, you can pass options in a variadic w
 
 #### Image
 
-If you need to set a different GCloud Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for GCloud. E.g. `testcontainers.WithImage("gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
+If you need to set a different GCloud Docker image, you can set a valid Docker image as the second argument in the `RunXXX` function (`RunBigQuery, RunDatastore`, ...).
+E.g. `RunXXX(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
 {% include "../features/common_functional_options.md" %}
 

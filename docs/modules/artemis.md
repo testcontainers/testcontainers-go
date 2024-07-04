@@ -26,13 +26,14 @@ go get github.com/testcontainers/testcontainers-go/modules/artemis
 
 ## Module reference
 
-The Artemis module exposes one entrypoint function to create the Artemis container, and this function receives two parameters:
+The Artemis module exposes one entrypoint function to create the Artemis container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -41,8 +42,8 @@ When starting the Artemis container, you can pass options in a variadic way to c
 
 #### Image
 
-If you need to set a different Artemis Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Artemis. E.g. `testcontainers.WithImage("docker.io/apache/activemq-artemis:2.30.0")`.
+If you need to set a different Artemis Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "docker.io/apache/activemq-artemis:2.30.0")`.
 
 {% include "../features/common_functional_options.md" %}
 

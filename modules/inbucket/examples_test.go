@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/inbucket"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runInbucketContainer {
 	ctx := context.Background()
 
-	inbucketContainer, err := inbucket.RunContainer(ctx, testcontainers.WithImage("inbucket/inbucket:sha-2d409bb"))
+	inbucketContainer, err := inbucket.Run(ctx, "inbucket/inbucket:sha-2d409bb")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

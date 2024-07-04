@@ -6,14 +6,12 @@ import (
 	"testing"
 
 	"github.com/inbucket/inbucket/pkg/rest/client"
-
-	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestInbucket(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("inbucket/inbucket:sha-2d409bb"))
+	container, err := Run(ctx, "inbucket/inbucket:sha-2d409bb")
 	if err != nil {
 		t.Fatal(err)
 	}

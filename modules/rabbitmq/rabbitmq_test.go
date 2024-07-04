@@ -20,7 +20,7 @@ import (
 func TestRunContainer_connectUsingAmqp(t *testing.T) {
 	ctx := context.Background()
 
-	rabbitmqContainer, err := rabbitmq.RunContainer(ctx)
+	rabbitmqContainer, err := rabbitmq.Run(ctx, "rabbitmq:3.12.11-management-alpine")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 		VerificationDepth: 1,
 	}
 
-	rabbitmqContainer, err := rabbitmq.RunContainer(ctx, rabbitmq.WithSSL(sslSettings))
+	rabbitmqContainer, err := rabbitmq.Run(ctx, "rabbitmq:3.12.11-management-alpine", rabbitmq.WithSSL(sslSettings))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,8 +125,8 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 func TestRunContainer_withAllSettings(t *testing.T) {
 	ctx := context.Background()
 
-	rabbitmqContainer, err := rabbitmq.RunContainer(ctx,
-		testcontainers.WithImage("rabbitmq:3.12.11-management-alpine"),
+	rabbitmqContainer, err := rabbitmq.Run(ctx,
+		"rabbitmq:3.12.11-management-alpine",
 		// addVirtualHosts {
 		testcontainers.WithAfterReadyCommand(VirtualHost{Name: "vhost1"}),
 		testcontainers.WithAfterReadyCommand(VirtualHostLimit{VHost: "vhost1", Name: "max-connections", Value: 1}),

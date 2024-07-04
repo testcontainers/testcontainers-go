@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/k3s
 
 ## Module reference
 
-The K3s module exposes one entrypoint function to create the K3s container, and this function receives two parameters:
+The K3s module exposes one entrypoint function to create the K3s container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 
@@ -44,8 +45,8 @@ When starting the K3s container, you can pass options in a variadic way to confi
 
 #### Image
 
-If you need to set a different K3s Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for K3s. E.g. `testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1")`.
+If you need to set a different K3s Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "docker.io/rancher/k3s:v1.27.1-k3s1")`.
 
 {% include "../features/common_functional_options.md" %}
 

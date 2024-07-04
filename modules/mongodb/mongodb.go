@@ -8,9 +8,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// defaultImage is the default MongoDB container image
-const defaultImage = "mongo:6"
-
 // MongoDBContainer represents the MongoDB container type used in the module
 type MongoDBContainer struct {
 	testcontainers.Container
@@ -18,10 +15,16 @@ type MongoDBContainer struct {
 	password string
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the MongoDB container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MongoDBContainer, error) {
+	return Run(ctx, "mongo:6", opts...)
+}
+
+// Run creates an instance of the MongoDB container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MongoDBContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"27017/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("Waiting for connections"),

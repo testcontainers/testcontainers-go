@@ -47,15 +47,21 @@ func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the K3s container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error) {
+	return Run(ctx, "docker.io/rancher/k3s:v1.27.1-k3s1", opts...)
+}
+
+// Run creates an instance of the K3s container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error) {
 	host, err := getContainerHost(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	req := testcontainers.ContainerRequest{
-		Image: "docker.io/rancher/k3s:v1.27.1-k3s1",
+		Image: img,
 		ExposedPorts: []string{
 			defaultKubeSecurePort,
 			defaultRancherWebhookPort,

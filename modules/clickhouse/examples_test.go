@@ -9,11 +9,10 @@ import (
 
 	ch "github.com/ClickHouse/clickhouse-go/v2"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runClickHouseContainer {
 	ctx := context.Background()
 
@@ -21,8 +20,8 @@ func ExampleRunContainer() {
 	password := "password"
 	dbname := "testdb"
 
-	clickHouseContainer, err := clickhouse.RunContainer(ctx,
-		testcontainers.WithImage("clickhouse/clickhouse-server:23.3.8.21-alpine"),
+	clickHouseContainer, err := clickhouse.Run(ctx,
+		"clickhouse/clickhouse-server:23.3.8.21-alpine",
 		clickhouse.WithUsername(user),
 		clickhouse.WithPassword(password),
 		clickhouse.WithDatabase(dbname),

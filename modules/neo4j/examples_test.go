@@ -5,18 +5,17 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runNeo4jContainer {
 	ctx := context.Background()
 
 	testPassword := "letmein!"
 
-	neo4jContainer, err := neo4j.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/neo4j:4.4"),
+	neo4jContainer, err := neo4j.Run(ctx,
+		"docker.io/neo4j:4.4",
 		neo4j.WithAdminPassword(testPassword),
 		neo4j.WithLabsPlugin(neo4j.Apoc),
 		neo4j.WithNeo4jSetting("dbms.tx_log.rotation.size", "42M"),

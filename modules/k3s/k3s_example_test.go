@@ -9,17 +9,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/k3s"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runK3sContainer {
 	ctx := context.Background()
 
-	k3sContainer, err := k3s.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1"),
-	)
+	k3sContainer, err := k3s.Run(ctx, "docker.io/rancher/k3s:v1.27.1-k3s1")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

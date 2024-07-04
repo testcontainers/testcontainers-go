@@ -6,14 +6,13 @@ import (
 
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/milvus"
 )
 
 func TestMilvus(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := milvus.RunContainer(ctx, testcontainers.WithImage("milvusdb/milvus:v2.3.9"))
+	container, err := milvus.Run(ctx, "milvusdb/milvus:v2.3.9")
 	if err != nil {
 		t.Fatal(err)
 	}
