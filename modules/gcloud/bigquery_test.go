@@ -16,7 +16,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
-func ExampleRunBigQueryContainer() {
+func ExampleRunBigQuery() {
 	// runBigQueryContainer {
 	ctx := context.Background()
 

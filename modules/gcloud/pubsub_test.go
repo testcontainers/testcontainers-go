@@ -13,7 +13,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
-func ExampleRunPubsubContainer() {
+func ExampleRunPubsub() {
 	// runPubsubContainer {
 	ctx := context.Background()
 

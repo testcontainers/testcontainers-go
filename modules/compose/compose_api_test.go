@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/docker/compose/v2/pkg/api"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -161,7 +161,7 @@ func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
 
 	// all the networks in the compose has the Testcontainers Labels
 	for _, nw := range networks {
-		inspect, err := compose.dockerClient.NetworkInspect(ctx, nw.Name, types.NetworkInspectOptions{})
+		inspect, err := compose.dockerClient.NetworkInspect(ctx, nw.Name, network.InspectOptions{})
 		require.NoError(t, err, "dockerClient.NetworkInspect()")
 
 		for key, label := range testcontainers.GenericLabels() {

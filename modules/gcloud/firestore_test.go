@@ -23,7 +23,7 @@ func (ec emulatorCreds) RequireTransportSecurity() bool {
 	return false
 }
 
-func ExampleRunFirestoreContainer() {
+func ExampleRunFirestore() {
 	// runFirestoreContainer {
 	ctx := context.Background()
 

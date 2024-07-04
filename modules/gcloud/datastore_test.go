@@ -13,7 +13,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
-func ExampleRunDatastoreContainer() {
+func ExampleRunDatastore() {
 	// runDatastoreContainer {
 	ctx := context.Background()
 

@@ -71,7 +71,7 @@ func TestOllama(t *testing.T) {
 
 		// Defining the target image name based on the default image and a random string.
 		// Users can change the way this is generated, but it should be unique.
-		targetImage := fmt.Sprintf("%s-%s", ollama.DefaultOllamaImage, strings.ToLower(uuid.New().String()[:4]))
+		targetImage := fmt.Sprintf("ollama/ollama:0.1.25-%s", strings.ToLower(uuid.New().String()[:4]))
 
 		err := ctr.Commit(context.Background(), targetImage)
 		// }

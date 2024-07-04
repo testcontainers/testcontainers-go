@@ -13,7 +13,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
-func ExampleRunBigTableContainer() {
+func ExampleRunBigTable() {
 	// runBigTableContainer {
 	ctx := context.Background()
 

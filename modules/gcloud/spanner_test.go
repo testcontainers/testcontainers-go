@@ -18,7 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
-func ExampleRunSpannerContainer() {
+func ExampleRunSpanner() {
 	// runSpannerContainer {
 	ctx := context.Background()
 
