@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/client"
@@ -11,6 +12,20 @@ import (
 
 // Logger is the default log instance
 var Logger Logging = log.New(os.Stderr, "", log.LstdFlags)
+
+func init() {
+	verbose := false
+	for _, arg := range os.Args {
+		if strings.EqualFold(arg, "-test.v=true") || strings.EqualFold(arg, "-v") {
+			verbose = true
+			break
+		}
+	}
+
+	if !verbose {
+		Logger = &noopLogger{}
+	}
+}
 
 // Validate our types implement the required interfaces.
 var (
@@ -23,6 +38,13 @@ var (
 // Logging defines the Logger interface
 type Logging interface {
 	Printf(format string, v ...interface{})
+}
+
+type noopLogger struct{}
+
+// Printf implements Logging.
+func (n noopLogger) Printf(format string, v ...interface{}) {
+	// NOOP
 }
 
 // Deprecated: this function will be removed in a future release
