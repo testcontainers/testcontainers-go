@@ -8,20 +8,17 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// defaultImage is the default MongoDB container image
-const defaultImage = "mongo:6"
-
-// Container represents the MongoDB container type used in the module
+// MongoDBContainer represents the MongoDB container type used in the module
 type Container struct {
 	*testcontainers.DockerContainer
 	username string
 	password string
 }
 
-// RunContainer creates an instance of the MongoDB container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the MongoDB container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"27017/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("Waiting for connections"),

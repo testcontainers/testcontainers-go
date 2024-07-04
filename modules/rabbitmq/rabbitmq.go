@@ -67,10 +67,10 @@ func (c *Container) HttpsURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPSPort), "https")
 }
 
-// RunContainer creates an instance of the RabbitMQ container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the RabbitMQ container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image: "rabbitmq:3.12.11-management-alpine",
+		Image: img,
 		Env: map[string]string{
 			"RABBITMQ_DEFAULT_USER": defaultUser,
 			"RABBITMQ_DEFAULT_PASS": defaultPassword,

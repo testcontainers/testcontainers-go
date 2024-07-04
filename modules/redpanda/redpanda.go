@@ -52,8 +52,8 @@ type Container struct {
 	urlScheme string
 }
 
-// RunContainer creates an instance of the Redpanda container type.
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Redpanda container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	tmpDir, err := os.MkdirTemp("", "redpanda")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
@@ -63,7 +63,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	// 1. Create container request.
 	// Some (e.g. Image) may be overridden by providing an option argument to this function.
 	req := testcontainers.Request{
-		Image: "docker.redpanda.com/redpandadata/redpanda:v23.3.3",
+		Image: img,
 		User:  "root:root",
 		// Files: Will be added later after we've rendered our YAML templates.
 		ExposedPorts: []string{

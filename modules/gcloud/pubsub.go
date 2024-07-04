@@ -8,10 +8,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// RunPubsubContainer creates an instance of the GCloud container type for Pubsub
-func RunPubsubContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// RunPubsub creates an instance of the GCloud container type for Pubsub.
+func RunPubsub(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
+		Image:        img,
 		ExposedPorts: []string{"8085/tcp"},
 		WaitingFor:   wait.ForLog("started"),
 		Started:      true,

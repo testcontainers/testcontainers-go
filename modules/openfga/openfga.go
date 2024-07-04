@@ -39,10 +39,10 @@ func (c *Container) PlaygroundEndpoint(ctx context.Context) (string, error) {
 	return fmt.Sprintf("%s/playground", endpoint), nil
 }
 
-// RunContainer creates an instance of the OpenFGA container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the OpenFGA container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        "openfga/openfga:v1.5.0",
+		Image:        img,
 		Cmd:          []string{"run"},
 		ExposedPorts: []string{"3000/tcp", "8080/tcp", "8081/tcp"},
 		WaitingFor: wait.ForAll(

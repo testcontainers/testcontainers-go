@@ -30,7 +30,7 @@ type Test struct {
 func TestClickHouseDefaultConfig(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := clickhouse.RunContainer(ctx)
+	ctr, err := clickhouse.Run(ctx, "clickhouse/clickhouse-server:23.3.8.21-alpine")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +62,8 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 func TestClickHouseConnectionHost(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := clickhouse.RunContainer(ctx,
+	ctr, err := clickhouse.Run(ctx,
+		"clickhouse/clickhouse-server:23.3.8.21-alpine",
 		clickhouse.WithUsername(user),
 		clickhouse.WithPassword(password),
 		clickhouse.WithDatabase(dbname),
@@ -102,7 +103,12 @@ func TestClickHouseConnectionHost(t *testing.T) {
 func TestClickHouseDSN(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := clickhouse.RunContainer(ctx, clickhouse.WithUsername(user), clickhouse.WithPassword(password), clickhouse.WithDatabase(dbname))
+	ctr, err := clickhouse.Run(ctx,
+		"clickhouse/clickhouse-server:23.3.8.21-alpine",
+		clickhouse.WithUsername(user),
+		clickhouse.WithPassword(password),
+		clickhouse.WithDatabase(dbname),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +141,8 @@ func TestClickHouseWithInitScripts(t *testing.T) {
 	ctx := context.Background()
 
 	// withInitScripts {
-	ctr, err := clickhouse.RunContainer(ctx,
+	ctr, err := clickhouse.Run(ctx,
+		"clickhouse/clickhouse-server:23.3.8.21-alpine",
 		clickhouse.WithUsername(user),
 		clickhouse.WithPassword(password),
 		clickhouse.WithDatabase(dbname),
@@ -184,7 +191,8 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			ctr, err := clickhouse.RunContainer(ctx,
+			ctr, err := clickhouse.Run(ctx,
+				"clickhouse/clickhouse-server:23.3.8.21-alpine",
 				clickhouse.WithUsername(user),
 				clickhouse.WithPassword(""),
 				clickhouse.WithDatabase(dbname),
@@ -243,7 +251,8 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctr, err := clickhouse.RunContainer(ctx,
+	ctr, err := clickhouse.Run(ctx,
+		"clickhouse/clickhouse-server:23.3.8.21-alpine",
 		clickhouse.WithUsername(user),
 		clickhouse.WithPassword(password),
 		clickhouse.WithDatabase(dbname),

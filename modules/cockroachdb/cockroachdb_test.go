@@ -67,7 +67,7 @@ type AuthNSuite struct {
 func (suite *AuthNSuite) TestConnectionString() {
 	ctx := context.Background()
 
-	ctr, err := cockroachdb.RunContainer(ctx, suite.opts...)
+	ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
 	suite.Require().NoError(err)
 
 	suite.T().Cleanup(func() {
@@ -105,7 +105,7 @@ func (suite *AuthNSuite) TestPing() {
 			opts := suite.opts
 			opts = append(opts, input.opts...)
 
-			ctr, err := cockroachdb.RunContainer(ctx, opts...)
+			ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", opts...)
 			suite.Require().NoError(err)
 
 			suite.T().Cleanup(func() {
@@ -126,7 +126,7 @@ func (suite *AuthNSuite) TestPing() {
 func (suite *AuthNSuite) TestQuery() {
 	ctx := context.Background()
 
-	ctr, err := cockroachdb.RunContainer(ctx, suite.opts...)
+	ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
 	suite.Require().NoError(err)
 
 	suite.T().Cleanup(func() {
@@ -159,7 +159,7 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 		// This will never match a log statement
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*250, wait.ForLog("Won't Exist In Logs")))
-		ctr, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
 
 		suite.Require().ErrorIs(err, context.DeadlineExceeded)
 		suite.T().Cleanup(func() {
@@ -175,7 +175,7 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 		// This will timeout as we didn't give enough time for intialization, but would have succeeded otherwise
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*20, wait.ForLog(nodeStartUpCompleted)))
-		ctr, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
 
 		suite.Require().ErrorIs(err, context.DeadlineExceeded)
 		suite.T().Cleanup(func() {
@@ -191,7 +191,7 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 		// This will succeed
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Second*60, wait.ForLog(nodeStartUpCompleted)))
-		ctr, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
 		suite.Require().NoError(err)
 
 		conn, err := conn(ctx, ctr)
@@ -213,7 +213,7 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 		// This will succeed
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Second*60, wait.ForHTTP("/health").WithPort("8080/tcp")))
-		ctr, err := cockroachdb.RunContainer(ctx, suite.opts...)
+		ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
 		suite.Require().NoError(err)
 
 		conn, err := conn(ctx, ctr)

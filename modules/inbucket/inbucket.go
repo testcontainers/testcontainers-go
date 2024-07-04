@@ -47,10 +47,10 @@ func (c *Container) WebInterface(ctx context.Context) (string, error) {
 	return fmt.Sprintf("http://%s", net.JoinHostPort(host, containerPort.Port())), nil
 }
 
-// RunContainer creates an instance of the Inbucket container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Inbucket container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        "inbucket/inbucket:sha-2d409bb",
+		Image:        img,
 		ExposedPorts: []string{"2500/tcp", "9000/tcp"},
 		WaitingFor:   wait.ForLog("SMTP listening on tcp4"),
 		Started:      true,

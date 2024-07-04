@@ -9,7 +9,7 @@ import (
 
 // isOSS returns true if the base image (without tag) is an OSS image
 func isOSS(img string) bool {
-	return strings.HasPrefix(img, DefaultBaseImageOSS)
+	return strings.HasPrefix(img, "docker.elastic.co/elasticsearch/elasticsearch-oss")
 }
 
 // isAtLeastVersion returns true if the base image (without tag) is in a version or above

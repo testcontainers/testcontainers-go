@@ -27,10 +27,10 @@ type Container struct {
 	Password string
 }
 
-// RunContainer creates an instance of the OpenSearch container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the OpenSearch container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        "opensearchproject/opensearch:2.11.1",
+		Image:        img,
 		ExposedPorts: []string{defaultHTTPPort, "9600/tcp"},
 		Env: map[string]string{
 			"discovery.type":              "single-node",

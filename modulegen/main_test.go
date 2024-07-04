@@ -32,7 +32,7 @@ func TestModule(t *testing.T) {
 				Image:     "mongodb:latest",
 				TitleName: "MongoDB",
 			},
-			expectedEntrypoint: "RunContainer",
+			expectedEntrypoint: "Run",
 			expectedTitle:      "MongoDB",
 		},
 		{
@@ -42,7 +42,7 @@ func TestModule(t *testing.T) {
 				IsModule: true,
 				Image:    "mongodb:latest",
 			},
-			expectedEntrypoint: "RunContainer",
+			expectedEntrypoint: "Run",
 			expectedTitle:      "Mongodb",
 		},
 		{
@@ -53,7 +53,7 @@ func TestModule(t *testing.T) {
 				Image:     "mongodb:latest",
 				TitleName: "MongoDB",
 			},
-			expectedEntrypoint: "runContainer",
+			expectedEntrypoint: "run",
 			expectedTitle:      "MongoDB",
 		},
 		{
@@ -63,7 +63,7 @@ func TestModule(t *testing.T) {
 				IsModule: false,
 				Image:    "mongodb:latest",
 			},
-			expectedEntrypoint: "runContainer",
+			expectedEntrypoint: "run",
 			expectedTitle:      "Mongodb",
 		},
 	}
@@ -371,9 +371,10 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 	assert.Equal(t, "<!--codeinclude-->", data[18])
 	assert.Equal(t, "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/examples_test.go) inside_block:run"+title+"Container", data[19])
 	assert.Equal(t, "<!--/codeinclude-->", data[20])
-	assert.Equal(t, "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives two parameters:", data[24])
-	assert.True(t, strings.HasSuffix(data[27], "(*"+title+"Container, error)"))
-	assert.Equal(t, "for "+title+". E.g. `testcontainers.WithImage(\""+module.Image+"\")`.", data[40])
+	assert.Equal(t, "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives three parameters:", data[24])
+	assert.True(t, strings.HasSuffix(data[27], "(*Container, error)"))
+	assert.Equal(t, "If you need to set a different "+title+" Docker image, you can set a valid Docker image as the second argument in the `Run` function.", data[40])
+	assert.Equal(t, "E.g. `Run(context.Background(), \""+module.Image+"\")`.", data[41])
 }
 
 // assert content module test
@@ -387,14 +388,13 @@ func assertExamplesTestContent(t *testing.T, module context.TestcontainersModule
 
 	data := sanitiseContent(content)
 	assert.Equal(t, "package "+lower+"_test", data[0])
-	assert.Equal(t, "\t\"github.com/testcontainers/testcontainers-go\"", data[7])
-	assert.Equal(t, "\t\"github.com/testcontainers/testcontainers-go/modules/"+lower+"\"", data[8])
-	assert.Equal(t, "func Example"+entrypoint+"() {", data[11])
-	assert.Equal(t, "\t// run"+title+"Container {", data[12])
-	assert.Equal(t, "\t"+lower+"Container, err := "+lower+"."+entrypoint+"(ctx, testcontainers.WithImage(\""+module.Image+"\"))", data[15])
-	assert.Equal(t, "\tfmt.Println(state.Running)", data[33])
-	assert.Equal(t, "\t// Output:", data[35])
-	assert.Equal(t, "\t// true", data[36])
+	assert.Equal(t, "\t\"github.com/testcontainers/testcontainers-go/modules/"+lower+"\"", data[7])
+	assert.Equal(t, "func Example"+entrypoint+"() {", data[10])
+	assert.Equal(t, "\t// run"+title+"Container {", data[11])
+	assert.Equal(t, "\t"+lower+"Container, err := "+lower+"."+entrypoint+"(ctx, \""+module.Image+"\")", data[14])
+	assert.Equal(t, "\tfmt.Println(state.Running)", data[32])
+	assert.Equal(t, "\t// Output:", data[34])
+	assert.Equal(t, "\t// true", data[35])
 }
 
 // assert content module test
@@ -404,8 +404,8 @@ func assertModuleTestContent(t *testing.T, module context.TestcontainersModule, 
 
 	data := sanitiseContent(content)
 	assert.Equal(t, "package "+module.Lower()+"_test", data[0])
-	assert.Equal(t, "func Test"+module.Title()+"(t *testing.T) {", data[10])
-	assert.Equal(t, "\tctr, err := "+module.Lower()+"."+module.Entrypoint()+"(ctx, testcontainers.WithImage(\""+module.Image+"\"))", data[13])
+	assert.Equal(t, "func Test"+module.Title()+"(t *testing.T) {", data[9])
+	assert.Equal(t, "\tctr, err := "+module.Lower()+"."+module.Entrypoint()+"(ctx, \""+module.Image+"\")", data[12])
 }
 
 // assert content module
@@ -424,10 +424,8 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 	assert.Equal(t, "type "+containerName+" struct {", data[10])
 	assert.Equal(t, "\t*testcontainers.DockerContainer", data[11])
 	assert.Equal(t, "// "+entrypoint+" creates an instance of the "+exampleName+" container type", data[14])
-	assert.Equal(t, "func "+entrypoint+"(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*"+containerName+", error) {", data[15])
-	assert.Equal(t, "\treq := testcontainers.Request{", data[16])
-	assert.Equal(t, "\t\tImage: \""+module.Image+"\",", data[17])
-	assert.Equal(t, "\t\tStarted:          true,", data[18])
+	assert.Equal(t, "func "+entrypoint+"(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*"+containerName+", error) {", data[15])
+	assert.Equal(t, "\t\tImage: img,", data[17])
 	assert.Equal(t, "\t\tif err := opt.Customize(&req); err != nil {", data[22])
 	assert.Equal(t, "\t\t\treturn nil, fmt.Errorf(\"customize: %w\", err)", data[23])
 	assert.Equal(t, "\treturn &"+containerName+"{DockerContainer: ctr}, nil", data[32])

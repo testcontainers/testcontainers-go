@@ -8,18 +8,15 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// defaultImage is the default MockServer container image
-const defaultImage = "mockserver/mockserver:5.15.0"
-
-// Container represents the MockServer container type used in the module
+// MockServerContainer represents the MockServer container type used in the module
 type Container struct {
 	*testcontainers.DockerContainer
 }
 
-// RunContainer creates an instance of the MockServer container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the MockServer container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"1080/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("started on port: 1080"),

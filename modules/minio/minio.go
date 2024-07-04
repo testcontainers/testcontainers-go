@@ -11,7 +11,6 @@ import (
 const (
 	defaultUser     = "minioadmin"
 	defaultPassword = "minioadmin"
-	defaultImage    = "docker.io/minio/minio:RELEASE.2024-01-16T16-07-38Z"
 )
 
 // Container represents the Minio container type used in the module
@@ -57,10 +56,10 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	return fmt.Sprintf("%s:%s", host, port.Port()), nil
 }
 
-// RunContainer creates an instance of the Minio container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Minio container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"9000/tcp"},
 		WaitingFor:   wait.ForHTTP("/minio/health/live").WithPort("9000"),
 		Env: map[string]string{

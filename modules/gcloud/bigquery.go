@@ -8,11 +8,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// RunBigQueryContainer creates an instance of the GCloud container type for BigQuery.
+// RunBigQuery creates an instance of the GCloud container type for BigQuery.
 // The URI will always use http:// as the protocol.
-func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        "ghcr.io/goccy/bigquery-emulator:0.4.3",
+		Image:        img,
 		ExposedPorts: []string{"9050/tcp", "9060/tcp"},
 		WaitingFor:   wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort("9050/tcp").WithStartupTimeout(time.Second * 5),
 		Started:      true,

@@ -36,10 +36,10 @@ type Container struct {
 	ClusterID string
 }
 
-// RunContainer creates an instance of the Kafka container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Kafka container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        "confluentinc/confluent-local:7.5.0",
+		Image:        img,
 		ExposedPorts: []string{string(publicPort)},
 		Env: map[string]string{
 			// envVars {

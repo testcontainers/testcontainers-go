@@ -8,9 +8,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// defaultImage is the default image used for the redis container
-const defaultImage = "docker.io/redis:7"
-
 // redisServerProcess is the name of the redis server process
 const redisServerProcess = "redis-server"
 
@@ -46,10 +43,10 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	return uri, nil
 }
 
-// RunContainer creates an instance of the Redis container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Redis container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("* Ready to accept connections"),
 		Started:      true,

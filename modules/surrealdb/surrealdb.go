@@ -79,10 +79,10 @@ func WithAllowAllCaps() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// RunContainer creates an instance of the SurrealDB container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the SurrealDB container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image: "surrealdb/surrealdb:v1.1.1",
+		Image: img,
 		Env: map[string]string{
 			"SURREAL_USER":           "root",
 			"SURREAL_PASS":           "root",

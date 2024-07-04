@@ -17,11 +17,6 @@ const (
 	defaultDatabaseName = "test"
 )
 
-// defaultImage {
-const defaultImage = "mysql:8.0.36"
-
-// }
-
 // Container represents the MySQL container type used in the module
 type Container struct {
 	*testcontainers.DockerContainer
@@ -48,10 +43,10 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// RunContainer creates an instance of the MySQL container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the MySQL container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MYSQL_USER":     defaultUser,

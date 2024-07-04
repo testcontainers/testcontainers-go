@@ -10,20 +10,15 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// defaultImage {
-const defaultImage = "influxdb:1.8"
-
-// }
-
-// Container represents the MySQL container type used in the module
+// InfluxDbContainer represents the InfluxDb container type used in the module
 type Container struct {
 	*testcontainers.DockerContainer
 }
 
-// RunContainer creates an instance of the InfluxDB container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the InfluxDB container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"8086/tcp", "8088/tcp"},
 		Env: map[string]string{
 			"INFLUXDB_BIND_ADDRESS":          ":8088",

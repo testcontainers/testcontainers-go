@@ -14,10 +14,10 @@ type Container struct {
 	*testcontainers.DockerContainer
 }
 
-// RunContainer creates an instance of the Qdrant container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Qdrant container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        "qdrant/qdrant:v1.7.4",
+		Image:        img,
 		ExposedPorts: []string{"6333/tcp", "6334/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("6333/tcp").WithStartupTimeout(5*time.Second),

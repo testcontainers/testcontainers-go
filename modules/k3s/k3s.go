@@ -49,15 +49,15 @@ func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// RunContainer creates an instance of the K3s container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the K3s container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	host, err := getContainerHost(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	req := testcontainers.Request{
-		Image: "docker.io/rancher/k3s:v1.27.1-k3s1",
+		Image: img,
 		ExposedPorts: []string{
 			defaultKubeSecurePort,
 			defaultRancherWebhookPort,

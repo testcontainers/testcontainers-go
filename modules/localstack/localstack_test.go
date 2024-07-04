@@ -102,16 +102,16 @@ func TestRunContainer(t *testing.T) {
 	tests := []struct {
 		version string
 	}{
-		{defaultVersion},
+		{"1.4.0"},
 		{"2.0.0"},
 	}
 
 	for _, tt := range tests {
 		ctx := context.Background()
 
-		ctr, err := RunContainer(
+		ctr, err := Run(
 			ctx,
-			testcontainers.WithImage(fmt.Sprintf("localstack/localstack:%s", tt.version)),
+			fmt.Sprintf("localstack/localstack:%s", tt.version),
 		)
 
 		t.Run("Localstack:"+tt.version+" - multiple services exposed on same port", func(t *testing.T) {
@@ -139,7 +139,7 @@ func TestRunContainer(t *testing.T) {
 func TestStartWithoutOverride(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := RunContainer(ctx)
+	ctr, err := Run(ctx, "localstack/localstack:2.0.0")
 	require.NoError(t, err)
 	assert.NotNil(t, ctr)
 }
@@ -150,10 +150,10 @@ func TestStartV2WithNetwork(t *testing.T) {
 	nw, err := testcontainers.NewNetwork(ctx)
 	require.NoError(t, err)
 
-	localstack, err := RunContainer(
+	localstack, err := Run(
 		ctx,
+		"localstack/localstack:2.0.0",
 		testcontainers.WithNetwork([]string{"localstack"}, nw),
-		testcontainers.WithImage("localstack/localstack:2.0.0"),
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
 	)
 	require.NoError(t, err)

@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	image    = "semitechnologies/weaviate:1.25.5"
 	httpPort = "8080/tcp"
 	grpcPort = "50051/tcp"
 )
@@ -20,10 +19,10 @@ type Container struct {
 	*testcontainers.DockerContainer
 }
 
-// RunContainer creates an instance of the Weaviate container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Weaviate container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        image,
+		Image:        img,
 		Cmd:          []string{"--host", "0.0.0.0", "--scheme", "http", "--port", "8080"},
 		ExposedPorts: []string{httpPort, grpcPort},
 		Env: map[string]string{

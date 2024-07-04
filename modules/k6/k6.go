@@ -161,10 +161,10 @@ func WithCache() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// RunContainer creates an instance of the K6 container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the K6 container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:      "szkiba/k6x:v0.3.1",
+		Image:      img,
 		Cmd:        []string{"run"},
 		WaitingFor: wait.ForExit(),
 		Started:    true,

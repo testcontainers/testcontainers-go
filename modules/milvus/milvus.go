@@ -37,10 +37,10 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	return fmt.Sprintf("%s:%s", host, port.Port()), nil
 }
 
-// RunContainer creates an instance of the Milvus container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Milvus container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        "milvusdb/milvus:v2.3.9",
+		Image:        img,
 		ExposedPorts: []string{"19530/tcp", "9091/tcp", "2379/tcp"},
 		Env: map[string]string{
 			"ETCD_USE_EMBED":     "true",

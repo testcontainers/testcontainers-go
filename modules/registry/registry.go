@@ -154,10 +154,10 @@ func (c *Container) PushImage(ctx context.Context, ref string) error {
 	return c.ImageExists(ctx, ref)
 }
 
-// RunContainer creates an instance of the Registry container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Registry container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        "registry:2.8.3",
+		Image:        img,
 		ExposedPorts: []string{"5000/tcp"},
 		Env: map[string]string{
 			// convenient for testing

@@ -74,10 +74,10 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// RunContainer creates an instance of the Cassandra container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Cassandra container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        "cassandra:4.1.3",
+		Image:        img,
 		ExposedPorts: []string{string(port)},
 		Env: map[string]string{
 			"CASSANDRA_SNITCH":          "GossipingPropertyFileSnitch",

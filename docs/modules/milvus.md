@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/milvus
 
 ## Module reference
 
-The Milvus module exposes one entrypoint function to create the Milvus container, and this function receives two parameters:
+The Milvus module exposes one entrypoint function to create the Milvus container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MilvusContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -37,8 +38,8 @@ When starting the Milvus container, you can pass options in a variadic way to co
 
 #### Image
 
-If you need to set a different Milvus Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Milvus. E.g. `testcontainers.WithImage("milvusdb/milvus:v2.3.9")`.
+If you need to set a different Milvus Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "milvusdb/milvus:v2.3.9")`.
 
 {% include "../features/common_functional_options.md" %}
 

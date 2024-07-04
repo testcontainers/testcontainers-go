@@ -12,13 +12,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/nats"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runNATSContainer {
 	ctx := context.Background()
 
-	natsContainer, err := nats.RunContainer(ctx,
-		testcontainers.WithImage("nats:2.9"),
-	)
+	natsContainer, err := nats.Run(ctx, "nats:2.9")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -42,11 +40,11 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connectWithCredentials() {
+func ExampleRun_connectWithCredentials() {
 	// natsConnect {
 	ctx := context.Background()
 
-	ctr, err := nats.RunContainer(ctx, nats.WithUsername("foo"), nats.WithPassword("bar"))
+	ctr, err := nats.Run(ctx, "nats:2.9", nats.WithUsername("foo"), nats.WithPassword("bar"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -76,7 +74,7 @@ func ExampleRunContainer_connectWithCredentials() {
 	// true
 }
 
-func ExampleRunContainer_cluster() {
+func ExampleRun_cluster() {
 	ctx := context.Background()
 
 	nwr, err := testcontainers.NewNetwork(ctx)
@@ -85,7 +83,8 @@ func ExampleRunContainer_cluster() {
 	}
 
 	// withArguments {
-	natsContainer1, err := nats.RunContainer(ctx,
+	natsContainer1, err := nats.Run(ctx,
+		"nats:2.9",
 		testcontainers.WithNetwork([]string{"nats1"}, nwr),
 		nats.WithArgument("name", "nats1"),
 		nats.WithArgument("cluster_name", "c1"),
@@ -104,7 +103,8 @@ func ExampleRunContainer_cluster() {
 		}
 	}()
 
-	natsContainer2, err := nats.RunContainer(ctx,
+	natsContainer2, err := nats.Run(ctx,
+		"nats:2.9",
 		testcontainers.WithNetwork([]string{"nats2"}, nwr),
 		nats.WithArgument("name", "nats2"),
 		nats.WithArgument("cluster_name", "c1"),
@@ -122,7 +122,8 @@ func ExampleRunContainer_cluster() {
 		}
 	}()
 
-	natsContainer3, err := nats.RunContainer(ctx,
+	natsContainer3, err := nats.Run(ctx,
+		"nats:2.9",
 		testcontainers.WithNetwork([]string{"nats3"}, nwr),
 		nats.WithArgument("name", "nats3"),
 		nats.WithArgument("cluster_name", "c1"),

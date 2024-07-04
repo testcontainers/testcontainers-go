@@ -13,13 +13,6 @@ import (
 )
 
 const (
-	// defaultImage {
-	defaultImageName = "neo4j"
-	defaultTag       = "4.4"
-	// }
-)
-
-const (
 	// containerPorts {
 	defaultBoltPort  = "7687"
 	defaultHttpPort  = "7474"
@@ -49,11 +42,11 @@ func (c Container) BoltUrl(ctx context.Context) (string, error) {
 	return fmt.Sprintf("neo4j://%s:%d", host, mappedPort.Int()), nil
 }
 
-// RunContainer creates an instance of the Neo4j container type
-func RunContainer(ctx context.Context, options ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Neo4j container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	httpPort, _ := nat.NewPort("tcp", defaultHttpPort)
 	req := testcontainers.Request{
-		Image: fmt.Sprintf("docker.io/%s:%s", defaultImageName, defaultTag),
+		Image: img,
 		Env: map[string]string{
 			"NEO4J_AUTH": "none",
 		},
@@ -75,11 +68,11 @@ func RunContainer(ctx context.Context, options ...testcontainers.RequestCustomiz
 		Logger:  tclog.StandardLogger(),
 	}
 
-	if len(options) == 0 {
-		options = append(options, WithoutAuthentication())
+	if len(opts) == 0 {
+		opts = append(opts, WithoutAuthentication())
 	}
 
-	for _, option := range options {
+	for _, option := range opts {
 		if err := option.Customize(&req); err != nil {
 			return nil, err
 		}

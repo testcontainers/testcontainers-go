@@ -18,13 +18,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runLocalstackContainer {
 	ctx := context.Background()
 
-	localstackContainer, err := localstack.RunContainer(ctx,
-		testcontainers.WithImage("localstack/localstack:1.4.0"),
-	)
+	localstackContainer, err := localstack.Run(ctx, "localstack/localstack:1.4.0")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -48,7 +46,7 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_withNetwork() {
+func ExampleRun_withNetwork() {
 	// localstackWithNetwork {
 	ctx := context.Background()
 
@@ -59,9 +57,9 @@ func ExampleRunContainer_withNetwork() {
 
 	nwName := newNetwork.Name
 
-	localstackContainer, err := localstack.RunContainer(
+	localstackContainer, err := localstack.Run(
 		ctx,
-		testcontainers.WithImage("localstack/localstack:0.13.0"),
+		"localstack/localstack:0.13.0",
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
 		testcontainers.WithNetwork([]string{nwName}, newNetwork),
 	)
@@ -88,12 +86,12 @@ func ExampleRunContainer_withNetwork() {
 	// 1
 }
 
-func ExampleRunContainer_legacyMode() {
+func ExampleRun_legacyMode() {
 	ctx := context.Background()
 
-	_, err := localstack.RunContainer(
+	_, err := localstack.Run(
 		ctx,
-		testcontainers.WithImage("localstack/localstack:0.10.0"),
+		"localstack/localstack:0.10.0",
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
 		testcontainers.WithWaitStrategy(wait.ForLog("Ready.").WithStartupTimeout(5*time.Minute).WithOccurrence(1)),
 	)
@@ -107,7 +105,7 @@ func ExampleRunContainer_legacyMode() {
 	// version=localstack/localstack:0.10.0. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0
 }
 
-func ExampleRunContainer_usingLambdas() {
+func ExampleRun_usingLambdas() {
 	ctx := context.Background()
 
 	flagsFn := func() string {
@@ -124,8 +122,8 @@ func ExampleRunContainer_usingLambdas() {
 	lambdaName := "localstack-lambda-url-example"
 
 	// withCustomContainerRequest {
-	ctr, err := localstack.RunContainer(ctx,
-		testcontainers.WithImage("localstack/localstack:2.3.0"),
+	ctr, err := localstack.Run(ctx,
+		"localstack/localstack:2.3.0",
 		testcontainers.WithEnv(map[string]string{
 			"SERVICES":            "lambda",
 			"LAMBDA_DOCKER_FLAGS": flagsFn(),

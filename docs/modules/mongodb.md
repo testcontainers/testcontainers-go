@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/mongodb
 
 ## Module reference
 
-The MongoDB module exposes one entrypoint function to create the MongoDB container, and this function receives two parameters:
+The MongoDB module exposes one entrypoint function to create the MongoDB container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*MongoDBContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -37,8 +38,8 @@ When starting the MongoDB container, you can pass options in a variadic way to c
 
 #### Image
 
-If you need to set a different MongoDB Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for MongoDB. E.g. `testcontainers.WithImage("mongo:6")`.
+If you need to set a different MongoDB Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "mongo:6")`.
 
 #### WithUsername
 

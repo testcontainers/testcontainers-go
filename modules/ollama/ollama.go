@@ -14,8 +14,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const DefaultOllamaImage = "ollama/ollama:0.1.25"
-
 // Container represents the Ollama container type used in the module
 type Container struct {
 	*testcontainers.DockerContainer
@@ -71,10 +69,10 @@ func (c *Container) Commit(ctx context.Context, targetImage string) error {
 	return nil
 }
 
-// RunContainer creates an instance of the Ollama container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Ollama container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        DefaultOllamaImage,
+		Image:        img,
 		ExposedPorts: []string{"11434/tcp"},
 		WaitingFor:   wait.ForListeningPort("11434/tcp").WithStartupTimeout(60 * time.Second),
 		Started:      true,

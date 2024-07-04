@@ -68,10 +68,10 @@ func (c *Container) MustServiceURL(ctx context.Context, srv Service) string {
 	return url
 }
 
-// RunContainer creates an instance of the Azurite container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Azurite container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        "mcr.microsoft.com/azure-storage/azurite:3.28.0",
+		Image:        img,
 		ExposedPorts: []string{BlobPort, QueuePort, TablePort},
 		Env:          map[string]string{},
 		Entrypoint:   []string{"azurite"},

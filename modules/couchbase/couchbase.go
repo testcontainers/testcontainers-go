@@ -45,11 +45,6 @@ const (
 	// }
 )
 
-// defaultImage {
-const defaultImage = "couchbase:6.5.1"
-
-// }
-
 // initialServices is the list of services that are enabled by default
 var initialServices = []Service{kv, query, search, index}
 
@@ -61,8 +56,8 @@ type Container struct {
 	config *Config
 }
 
-// RunContainer creates an instance of the Couchbase container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Couchbase container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	config := &Config{
 		enabledServices:  make([]Service, 0),
 		username:         "Administrator",
@@ -71,7 +66,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 	}
 
 	req := testcontainers.Request{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"},
 		Started:      true,
 	}

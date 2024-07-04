@@ -18,21 +18,16 @@ const (
 	minimalImageVersion = "7.9.2"
 )
 
-const (
-	DefaultBaseImage    = "docker.elastic.co/elasticsearch/elasticsearch"
-	DefaultBaseImageOSS = "docker.elastic.co/elasticsearch/elasticsearch-oss"
-)
-
 // Container represents the Elasticsearch container type used in the module
 type Container struct {
 	*testcontainers.DockerContainer
 	Settings Options
 }
 
-// RunContainer creates an instance of the Elasticsearch container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Elasticsearch container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image: fmt.Sprintf("%s:%s", DefaultBaseImage, minimalImageVersion),
+		Image: img,
 		Env: map[string]string{
 			"discovery.type": "single-node",
 			"cluster.routing.allocation.disk.threshold_enabled": "false",
@@ -54,7 +49,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer)
 				PostReadies: []testcontainers.StartedContainerHook{},
 			},
 		},
-
 		Started: true,
 	}
 

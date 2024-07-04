@@ -26,7 +26,6 @@ const (
 	defaultSQLPort   = "26257/tcp"
 	defaultAdminPort = "8080/tcp"
 
-	defaultImage     = "cockroachdb/cockroach:latest-v23.1"
 	defaultUser      = "root"
 	defaultPassword  = ""
 	defaultDatabase  = "defaultdb"
@@ -68,11 +67,11 @@ func (c *Container) TLSConfig() (*tls.Config, error) {
 	return connTLS(c.opts)
 }
 
-// RunContainer creates an instance of the CockroachDB container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the CockroachDB container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	o := defaultOptions()
 	req := testcontainers.Request{
-		Image: defaultImage,
+		Image: img,
 		ExposedPorts: []string{
 			defaultSQLPort,
 			defaultAdminPort,

@@ -16,7 +16,6 @@ import (
 
 const (
 	defaultPort            = 4566
-	defaultVersion         = "1.4.0"
 	hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
 	localstackHostEnvVar   = "LOCALSTACK_HOST"
 )
@@ -59,13 +58,13 @@ func isVersion2(img string) bool {
 	return true
 }
 
-// RunContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
+// Run creates an instance of the LocalStack container type
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	dockerHost := testcontainers.ExtractDockerSocket()
 
 	req := testcontainers.Request{
-		Image:        fmt.Sprintf("localstack/localstack:%s", defaultVersion),
+		Image:        img,
 		WaitingFor:   wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120 * time.Second),
 		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
 		Env:          map[string]string{},

@@ -13,10 +13,6 @@ const (
 	defaultBrokerPort  = "8600"
 )
 
-const (
-	DefaultBaseImage = "docker.io/hashicorp/consul:1.15"
-)
-
 // Container represents the Consul container type used in the module.
 type Container struct {
 	*testcontainers.DockerContainer
@@ -61,10 +57,10 @@ func WithConfigFile(configPath string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// RunContainer creates an instance of the Consul container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Consul container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image: DefaultBaseImage,
+		Image: img,
 		ExposedPorts: []string{
 			defaultHttpApiPort + "/tcp",
 			defaultBrokerPort + "/tcp",

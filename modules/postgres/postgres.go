@@ -13,10 +13,9 @@ import (
 )
 
 const (
-	defaultUser          = "postgres"
-	defaultPassword      = "postgres"
-	defaultPostgresImage = "docker.io/postgres:16-alpine"
-	defaultSnapshotName  = "migrated_template"
+	defaultUser         = "postgres"
+	defaultPassword     = "postgres"
+	defaultSnapshotName = "migrated_template"
 )
 
 // Container represents the postgres container type used in the module
@@ -134,10 +133,10 @@ func WithUsername(user string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// RunContainer creates an instance of the postgres container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Postgres container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image: defaultPostgresImage,
+		Image: img,
 		Env: map[string]string{
 			"POSTGRES_USER":     defaultUser,
 			"POSTGRES_PASSWORD": defaultPassword,

@@ -74,8 +74,8 @@ func TestNeo4jWithEnterpriseLicense(t *testing.T) {
 		edition, img := edition, img
 		t.Run(edition, func(t *testing.T) {
 			t.Parallel()
-			ctr, err := neo4j.RunContainer(ctx,
-				testcontainers.WithImage(img),
+			ctr, err := neo4j.Run(ctx,
+				img,
 				neo4j.WithAdminPassword(testPassword),
 				neo4j.WithAcceptCommercialLicenseAgreement(),
 			)
@@ -104,7 +104,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	ctx := context.Background()
 
 	outer.Run("without authentication", func(t *testing.T) {
-		ctr, err := neo4j.RunContainer(ctx)
+		ctr, err := neo4j.Run(ctx, "neo4j:4.4")
 		if err != nil {
 			t.Fatalf("expected env to successfully run but did not: %s", err)
 		}
@@ -116,7 +116,8 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	})
 
 	outer.Run("auth setting outside WithAdminPassword raises error", func(t *testing.T) {
-		ctr, err := neo4j.RunContainer(ctx,
+		ctr, err := neo4j.Run(ctx,
+			"neo4j:4.4",
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("AUTH", "neo4j/thisisgonnafail"),
 		)
@@ -131,7 +132,8 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	outer.Run("warns about overwrites of setting keys", func(t *testing.T) {
 		// withSettings {
 		logger := &inMemoryLogger{}
-		ctr, err := neo4j.RunContainer(ctx,
+		ctr, err := neo4j.Run(ctx,
+			"neo4j:4.4",
 			testcontainers.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("some.key", "value1"),
@@ -159,7 +161,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	})
 
 	outer.Run("rejects nil logger", func(t *testing.T) {
-		ctr, err := neo4j.RunContainer(ctx, testcontainers.WithLogger(nil))
+		ctr, err := neo4j.Run(ctx, "neo4j:4.4", testcontainers.WithLogger(nil))
 
 		if ctr != nil {
 			t.Fatalf("container must not be created with nil logger")
@@ -171,7 +173,8 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 }
 
 func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Container {
-	ctr, err := neo4j.RunContainer(ctx,
+	ctr, err := neo4j.Run(ctx,
+		"neo4j:4.4",
 		neo4j.WithAdminPassword(testPassword),
 		// withLabsPlugin {
 		neo4j.WithLabsPlugin(neo4j.Apoc),

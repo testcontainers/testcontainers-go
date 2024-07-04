@@ -18,8 +18,6 @@ const (
 	defaultDatabaseName = "test"
 )
 
-const defaultImage = "dolthub/dolt-sql-server:1.32.4"
-
 // Container represents the Dolt container type used in the module
 type Container struct {
 	*testcontainers.DockerContainer
@@ -40,10 +38,10 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// RunContainer creates an instance of the Dolt container type
-func RunContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*Container, error) {
+// Run creates an instance of the Dolt container type
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"DOLT_USER":     defaultUser,
