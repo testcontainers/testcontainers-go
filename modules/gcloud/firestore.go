@@ -8,11 +8,17 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// RunFirestoreContainer creates an instance of the GCloud container type for Firestore
+// Deprecated: use RunFirestore instead
+// RunFirestoreContainer creates an instance of the GCloud container type for Firestore.
 func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
+	return RunFirestore(ctx, "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators", opts...)
+}
+
+// RunFirestore creates an instance of the GCloud container type for Firestore.
+func RunFirestore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
+			Image:        img,
 			ExposedPorts: []string{"8080/tcp"},
 			WaitingFor:   wait.ForLog("running"),
 		},

@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/kafka
 
 ## Module reference
 
-The Kafka module exposes one entrypoint function to create the Kafka container, and this function receives two parameters:
+The Kafka module exposes one entrypoint function to create the Kafka container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -37,8 +38,8 @@ When starting the Kafka container, you can pass options in a variadic way to con
 
 #### Image
 
-If you need to set a different Kafka Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Kafka. E.g. `testcontainers.WithImage("confluentinc/confluent-local:7.5.0")`.
+If you need to set a different Kafka Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "confluentinc/confluent-local:7.5.0")`.
 
 !!! warning
     The minimal required version of Kafka for KRaft mode is `confluentinc/confluent-local:7.4.0`. If you are using an image that

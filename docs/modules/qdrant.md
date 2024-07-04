@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/qdrant
 
 ## Module reference
 
-The Qdrant module exposes one entrypoint function to create the Qdrant container, and this function receives two parameters:
+The Qdrant module exposes one entrypoint function to create the Qdrant container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -37,8 +38,8 @@ When starting the Qdrant container, you can pass options in a variadic way to co
 
 #### Image
 
-If you need to set a different Qdrant Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Qdrant. E.g. `testcontainers.WithImage("qdrant/qdrant:v1.7.4")`.
+If you need to set a different Qdrant Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "qdrant/qdrant:v1.7.4")`.
 
 {% include "../features/common_functional_options.md" %}
 

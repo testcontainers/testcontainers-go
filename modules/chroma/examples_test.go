@@ -12,11 +12,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/chroma"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runChromaContainer {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
+	chromaContainer, err := chroma.Run(ctx, "chromadb/chroma:0.4.24")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -44,7 +44,7 @@ func ExampleChromaContainer_connectWithClient() {
 	// createClient {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"))
+	chromaContainer, err := chroma.Run(ctx, "chromadb/chroma:0.4.24")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -81,7 +81,7 @@ func ExampleChromaContainer_connectWithClient() {
 func ExampleChromaContainer_collections() {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.RunContainer(ctx, testcontainers.WithImage("chromadb/chroma:0.4.24"), testcontainers.WithEnv(map[string]string{"ALLOW_RESET": "true"}))
+	chromaContainer, err := chroma.Run(ctx, "chromadb/chroma:0.4.24", testcontainers.WithEnv(map[string]string{"ALLOW_RESET": "true"}))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

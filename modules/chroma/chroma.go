@@ -13,10 +13,16 @@ type ChromaContainer struct {
 	testcontainers.Container
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Chroma container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
+	return Run(ctx, "chromadb/chroma:0.4.24", opts...)
+}
+
+// Run creates an instance of the Chroma container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "chromadb/chroma:0.4.24",
+		Image:        img,
 		ExposedPorts: []string{"8000/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("8000/tcp"),

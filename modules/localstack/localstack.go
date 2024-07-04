@@ -16,7 +16,6 @@ import (
 
 const (
 	defaultPort            = 4566
-	defaultVersion         = "1.4.0"
 	hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
 	localstackHostEnvVar   = "LOCALSTACK_HOST"
 )
@@ -66,13 +65,19 @@ func WithNetwork(networkName string, alias string) testcontainers.CustomizeReque
 	return network.WithNewNetwork(context.Background(), []string{alias})
 }
 
-// RunContainer creates an instance of the LocalStack container type, being possible to pass a custom request and options:
-// - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
+// Deprecated: use Run instead
+// RunContainer creates an instance of the LocalStack container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error) {
+	return Run(ctx, "localstack/localstack:1.4.0", opts...)
+}
+
+// Run creates an instance of the LocalStack container type
+// - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error) {
 	dockerHost := testcontainers.ExtractDockerSocket()
 
 	req := testcontainers.ContainerRequest{
-		Image:        fmt.Sprintf("localstack/localstack:%s", defaultVersion),
+		Image:        img,
 		WaitingFor:   wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120 * time.Second),
 		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
 		Env:          map[string]string{},

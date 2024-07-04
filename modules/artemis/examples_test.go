@@ -7,16 +7,15 @@ import (
 
 	"github.com/go-stomp/stomp/v3"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/artemis"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runArtemisContainer {
 	ctx := context.Background()
 
-	artemisContainer, err := artemis.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/apache/activemq-artemis:2.30.0"),
+	artemisContainer, err := artemis.Run(ctx,
+		"docker.io/apache/activemq-artemis:2.30.0",
 		artemis.WithCredentials("test", "test"),
 	)
 	if err != nil {

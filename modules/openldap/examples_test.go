@@ -7,15 +7,14 @@ import (
 
 	"github.com/go-ldap/ldap/v3"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/openldap"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runOpenLDAPContainer {
 	ctx := context.Background()
 
-	openldapContainer, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
+	openldapContainer, err := openldap.Run(ctx, "bitnami/openldap:2.6.6")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -39,11 +38,11 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connect() {
+func ExampleRun_connect() {
 	// connectToOpenLdap {
 	ctx := context.Background()
 
-	openldapContainer, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
+	openldapContainer, err := openldap.Run(ctx, "bitnami/openldap:2.6.6")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

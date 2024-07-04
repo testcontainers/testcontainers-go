@@ -7,11 +7,10 @@ import (
 
 	"github.com/couchbase/gocb/v2"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/couchbase"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runCouchbaseContainer {
 	ctx := context.Background()
 
@@ -23,8 +22,8 @@ func ExampleRunContainer() {
 		WithFlushEnabled(false).
 		WithPrimaryIndex(true)
 
-	couchbaseContainer, err := couchbase.RunContainer(ctx,
-		testcontainers.WithImage("couchbase:community-7.1.1"),
+	couchbaseContainer, err := couchbase.Run(ctx,
+		"couchbase:community-7.1.1",
 		couchbase.WithAdminCredentials("testcontainers", "testcontainers.IS.cool!"),
 		couchbase.WithBuckets(bucket),
 	)

@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/couchbase
 
 ## Module Reference
 
-The Couchbase module exposes one entrypoint function to create the Couchbase container, and this function receives two parameters:
+The Couchbase module exposes one entrypoint function to create the Couchbase container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CouchbaseContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CouchbaseContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 Once the container is started, it will perform the following operations, **in this particular order**:
@@ -64,14 +65,8 @@ When starting the Couchbase container, you can pass options in a variadic way to
 
 #### Image
 
-If you need to set a different Couchbase Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Couchbase. E.g. `testcontainers.WithImage("docker.io/couchbase:6.5.1")`.
-
-By default, the container will use the following Docker image:
-
-<!--codeinclude-->
-[Default Docker image](../../modules/couchbase/couchbase.go) inside_block:defaultImage
-<!--/codeinclude-->
+If you need to set a different Couchbase Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "docker.io/couchbase:6.5.1")`.
 
 You can find the Docker images that are currently tested in this module, for the Enterprise and Community editions, in the following list:
 
@@ -84,7 +79,7 @@ You can find the Docker images that are currently tested in this module, for the
 #### Credentials
 
 If you need to change the default credentials for the admin user, you can use `WithAdminCredentials(user, password)` with a valid username and password.
-When the password has less than 6 characters, the container won't be created and the `RunContainer` function will throw an error.
+When the password has less than 6 characters, the container won't be created and the `New` function will throw an error.
 
 !!!info
 	In the case this optional function is not called, the default username is `Administrator` and the default password is `password`.

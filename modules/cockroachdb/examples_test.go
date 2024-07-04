@@ -9,11 +9,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/cockroachdb"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runCockroachDBContainer {
 	ctx := context.Background()
 
-	cockroachdbContainer, err := cockroachdb.RunContainer(ctx)
+	cockroachdbContainer, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

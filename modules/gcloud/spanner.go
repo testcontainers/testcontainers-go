@@ -7,11 +7,17 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// RunSpannerContainer creates an instance of the GCloud container type for Spanner
+// Deprecated: use RunSpanner instead
+// RunSpannerContainer creates an instance of the GCloud container type for Spanner.
 func RunSpannerContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
+	return RunSpanner(ctx, "gcr.io/cloud-spanner-emulator/emulator:1.4.0", opts...)
+}
+
+// RunSpanner creates an instance of the GCloud container type for Spanner.
+func RunSpanner(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "gcr.io/cloud-spanner-emulator/emulator:1.4.0",
+			Image:        img,
 			ExposedPorts: []string{"9010/tcp"},
 			WaitingFor:   wait.ForLog("Cloud Spanner emulator running"),
 		},

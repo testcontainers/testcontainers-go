@@ -22,13 +22,14 @@ go get github.com/testcontainers/testcontainers-go/modules/clickhouse
 
 ## Module reference
 
-The ClickHouse module exposes one entrypoint function to create the ClickHouse container, and this function receives two parameters:
+The ClickHouse module exposes one entrypoint function to create the ClickHouse container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ClickHouseContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ClickHouseContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Ports
@@ -45,8 +46,8 @@ When starting the ClickHouse container, you can pass options in a variadic way t
 
 #### Image
 
-If you need to set a different ClickHouse Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for ClickHouse. E.g. `testcontainers.WithImage("clickhouse/clickhouse-server:23.3.8.21-alpine")`.
+If you need to set a different ClickHouse Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "clickhouse/clickhouse-server:23.3.8.21-alpine")`.
 
 {% include "../features/common_functional_options.md" %}
 
