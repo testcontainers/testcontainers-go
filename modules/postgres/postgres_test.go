@@ -401,9 +401,9 @@ func TestSnapshotWithDockerExecFallback(t *testing.T) {
 
 	// postgresWithSQLDriver {
 	// 1. Start the postgres container and run any migrations on it
-	ctr, err := postgres.RunContainer(
+	ctr, err := postgres.Run(
 		ctx,
-		testcontainers.WithImage("docker.io/postgres:16-alpine"),
+		"docker.io/postgres:16-alpine",
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
