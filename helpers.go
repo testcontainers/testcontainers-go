@@ -63,7 +63,7 @@ func TerminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr CreatedCont
 		return
 	}
 	tb.Cleanup(func() {
-		if ctr == nil {
+		if ctr != nil {
 			tb.Log("terminating container")
 			require.NoError(tb, ctr.Terminate(ctx))
 		}
