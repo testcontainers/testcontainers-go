@@ -374,10 +374,10 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 	assert.Equal(t, "<!--codeinclude-->", data[18])
 	assert.Equal(t, "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/examples_test.go) inside_block:run"+title+"Container", data[19])
 	assert.Equal(t, "<!--/codeinclude-->", data[20])
-	assert.Equal(t, "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives three parameters:", data[24])
-	assert.True(t, strings.HasSuffix(data[27], "(*"+title+"Container, error)"))
-	assert.Equal(t, "If you need to set a different "+title+" Docker image, you can set a valid Docker image as the second argument in the `Run` function.", data[40])
-	assert.Equal(t, "E.g. `Run(context.Background(), \""+module.Image+"\")`.", data[41])
+	assert.Equal(t, "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives three parameters:", data[31])
+	assert.True(t, strings.HasSuffix(data[34], "(*"+title+"Container, error)"))
+	assert.Equal(t, "If you need to set a different "+title+" Docker image, you can set a valid Docker image as the second argument in the `Run` function.", data[47])
+	assert.Equal(t, "E.g. `Run(context.Background(), \""+module.Image+"\")`.", data[48])
 }
 
 // assert content module test

@@ -75,7 +75,14 @@ It's important to set the target string of the `grpc.Dial` method using the cont
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the Admin client example above.
 
-## Module reference
+## Module Reference
+
+### Run function
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+!!!info
+    The `RunXXXContainer(ctx, opts...)` functions are deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The GCloud module exposes one entrypoint function to create the different GCloud emulators, and each function receives three parameters:
 
@@ -91,11 +98,6 @@ func RunSpanner(ctx context.Context, img string, opts ...testcontainers.Containe
 - `context.Context`, the Go context.
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
-
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-!!!info
-    The `RunXXXContainer(ctx, opts...)` function are deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 ### Container Options
 
