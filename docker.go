@@ -882,13 +882,15 @@ var _ ContainerProvider = (*DockerProvider)(nil)
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
-	buildOptions, err := img.BuildOptions()
-	if err != nil {
-		return "", err
-	}
-
+	var buildOptions types.ImageBuildOptions
 	resp, err := backoff.RetryNotifyWithData(
 		func() (types.ImageBuildResponse, error) {
+			var err error
+			buildOptions, err = img.BuildOptions()
+			if err != nil {
+				return types.ImageBuildResponse{}, backoff.Permanent(err)
+			}
+
 			resp, err := p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 			if err != nil {
 				if isPermanentClientError(err) {
