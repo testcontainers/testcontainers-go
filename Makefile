@@ -14,7 +14,7 @@ tidy-all:
 	$(MAKE) -C examples tidy-examples
 	$(MAKE) -C modules tidy-modules
 
-## -------------------------------------
+## --------------------------------------
 
 TCENV=tcvenv
 PYTHONBIN=./$(TCENV)/bin

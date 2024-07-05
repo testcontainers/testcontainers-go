@@ -41,15 +41,6 @@ type Config struct {
 func Read() Config {
 	tcConfigOnce.Do(func() {
 		tcConfig = read()
-
-		if tcConfig.RyukDisabled {
-			ryukDisabledMessage := `
-**********************************************************************************************
-Ryuk has been disabled for the current execution. This can cause unexpected behavior in your environment.
-More on this: https://golang.testcontainers.org/features/garbage_collector/
-**********************************************************************************************`
-			fmt.Println(ryukDisabledMessage)
-		}
 	})
 
 	return tcConfig

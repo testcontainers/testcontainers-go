@@ -4,13 +4,39 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/client"
+
+	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
 // Logger is the default log instance
 var Logger Logging = log.New(os.Stderr, "", log.LstdFlags)
+
+func init() {
+	verbose := false
+	for _, arg := range os.Args {
+		if strings.EqualFold(arg, "-test.v=true") || strings.EqualFold(arg, "-v") {
+			verbose = true
+			break
+		}
+	}
+
+	if !verbose {
+		Logger = &noopLogger{}
+	}
+
+	if config.Read().RyukDisabled {
+		ryukDisabledMessage := `
+**********************************************************************************************
+Ryuk has been disabled for the current execution. This can cause unexpected behavior in your environment.
+More on this: https://golang.testcontainers.org/features/garbage_collector/
+**********************************************************************************************`
+		Logger.Printf(ryukDisabledMessage)
+	}
+}
 
 // Validate our types implement the required interfaces.
 var (
@@ -23,6 +49,13 @@ var (
 // Logging defines the Logger interface
 type Logging interface {
 	Printf(format string, v ...interface{})
+}
+
+type noopLogger struct{}
+
+// Printf implements Logging.
+func (n noopLogger) Printf(format string, v ...interface{}) {
+	// NOOP
 }
 
 // Deprecated: this function will be removed in a future release
