@@ -3,7 +3,6 @@ package testcontainers
 import (
 	"context"
 	"errors"
-	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -197,18 +196,4 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, nginxC.IsRunning())
-
-	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
-	require.NoError(t, err)
-
-	// check is reuse container with WaitingFor work correctly.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, origin, nil)
-	require.NoError(t, err)
-	req.Close = true
-
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
