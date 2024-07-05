@@ -79,7 +79,7 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunXXXContainer(ctx, opts...)` functions are deprecated and will be removed in the next major release of _Testcontainers for Go_.

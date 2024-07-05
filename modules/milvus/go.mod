@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/milvus-io/milvus-sdk-go/v2 v2.3.6
-	github.com/testcontainers/testcontainers-go v0.31.0
+	github.com/testcontainers/testcontainers-go v0.32.0
 )
 
 require (

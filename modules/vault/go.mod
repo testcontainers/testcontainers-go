@@ -6,7 +6,7 @@ require (
 	github.com/docker/docker v27.0.3+incompatible
 	github.com/hashicorp/vault-client-go v0.4.3
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.31.0
+	github.com/testcontainers/testcontainers-go v0.32.0
 	github.com/tidwall/gjson v1.17.1
 )
 
