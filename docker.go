@@ -882,26 +882,26 @@ var _ ContainerProvider = (*DockerProvider)(nil)
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
-	buildOptions, err := img.BuildOptions()
-	if err != nil {
-		return "", err
-	}
-
-	var buildError error
-	var resp types.ImageBuildResponse
-	err = backoff.RetryNotify(
-		func() error {
-			resp, err = p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
+	var buildOptions types.ImageBuildOptions
+	resp, err := backoff.RetryNotifyWithData(
+		func() (types.ImageBuildResponse, error) {
+			var err error
+			buildOptions, err = img.BuildOptions()
 			if err != nil {
-				buildError = errors.Join(buildError, err)
+				return types.ImageBuildResponse{}, backoff.Permanent(err)
+			}
+			defer tryClose(buildOptions.Context) // release resources in any case
+
+			resp, err := p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
+			if err != nil {
 				if isPermanentClientError(err) {
-					return backoff.Permanent(err)
+					return types.ImageBuildResponse{}, backoff.Permanent(err)
 				}
-				return err
+				return types.ImageBuildResponse{}, err
 			}
 			defer p.Close()
 
-			return nil
+			return resp, nil
 		},
 		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
 		func(err error, duration time.Duration) {
@@ -909,8 +909,9 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		},
 	)
 	if err != nil {
-		return "", errors.Join(buildError, err)
+		return "", err
 	}
+	defer resp.Body.Close()
 
 	if img.ShouldPrintBuildLog() {
 		termFd, isTerm := term.GetFdInfo(os.Stderr)
@@ -926,8 +927,6 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	if err != nil {
 		return "", err
 	}
-
-	_ = resp.Body.Close()
 
 	// the first tag is the one we want
 	return buildOptions.Tags[0], nil
@@ -1663,4 +1662,11 @@ func isPermanentClientError(err error) bool {
 		}
 	}
 	return false
+}
+
+func tryClose(r io.Reader) {
+	rc, ok := r.(io.Closer)
+	if ok {
+		_ = rc.Close()
+	}
 }
