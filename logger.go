@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/client"
+
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
