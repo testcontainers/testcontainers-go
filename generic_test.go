@@ -133,6 +133,7 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 			// create containers in subprocesses, as "go test ./..." does.
 			output := createReuseContainerInSubprocess(t)
 
+			t.Log(output)
 			// check is reuse container with WaitingFor work correctly.
 			require.True(t, strings.Contains(output, "⏳ Waiting for container id"))
 			require.True(t, strings.Contains(output, "🔔 Container is ready"))
@@ -143,8 +144,9 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 }
 
 func createReuseContainerInSubprocess(t *testing.T) string {
-	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess")
-	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+	// force verbosity in subprocesses, so that the output is printed
+	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess", "-test.v=true")
+	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
 
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, string(output))
