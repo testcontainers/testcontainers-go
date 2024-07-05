@@ -910,6 +910,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	if err != nil {
 		return "", err
 	}
+	defer resp.Body.Close()
 
 	if img.ShouldPrintBuildLog() {
 		termFd, isTerm := term.GetFdInfo(os.Stderr)
@@ -925,8 +926,6 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	if err != nil {
 		return "", err
 	}
-
-	_ = resp.Body.Close()
 
 	// the first tag is the one we want
 	return buildOptions.Tags[0], nil
