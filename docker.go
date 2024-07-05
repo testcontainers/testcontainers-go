@@ -890,6 +890,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 			if err != nil {
 				return types.ImageBuildResponse{}, backoff.Permanent(err)
 			}
+			defer tryClose(buildOptions.Context) // release resources in any case
 
 			resp, err := p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 			if err != nil {
@@ -1661,4 +1662,11 @@ func isPermanentClientError(err error) bool {
 		}
 	}
 	return false
+}
+
+func tryClose(r io.Reader) {
+	rc, ok := r.(io.Closer)
+	if ok {
+		_ = rc.Close()
+	}
 }
