@@ -887,19 +887,18 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		return "", err
 	}
 
-	var resp types.ImageBuildResponse
-	err = backoff.RetryNotify(
-		func() error {
-			resp, err = p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
+	resp, err := backoff.RetryNotifyWithData(
+		func() (types.ImageBuildResponse, error) {
+			resp, err := p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 			if err != nil {
 				if isPermanentClientError(err) {
-					return backoff.Permanent(err)
+					return types.ImageBuildResponse{}, backoff.Permanent(err)
 				}
-				return err
+				return types.ImageBuildResponse{}, err
 			}
 			defer p.Close()
 
-			return nil
+			return resp, nil
 		},
 		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
 		func(err error, duration time.Duration) {
