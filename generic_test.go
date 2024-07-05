@@ -176,6 +176,7 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, nginxC.IsRunning())
+	terminateContainerOnEnd(t, ctx, nginxC)
 
 	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
