@@ -37,9 +37,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
-!!!warning
-    When TLS is enabled there's a very small, unlikely chance that the underlying driver can panic when registering the driver as part of waiting for CockroachDB to be ready to accept connections. If this is repeatedly happening please open an issue.
-
 ### Container Options
 
 When starting the CockroachDB container, you can pass options in a variadic way to configure it.
@@ -69,6 +66,9 @@ Control the maximum amount of memory used for storage, by default this is 100% b
 Internally CockroachDB requires a client certificate for the user to connect with.
 
 A helper `cockroachdb.NewTLSConfig` exists to generate all of this for you.
+
+!!!warning
+    When TLS is enabled there's a very small, unlikely chance that the underlying driver can panic when registering the driver as part of waiting for CockroachDB to be ready to accept connections. If this is repeatedly happening please open an issue.
 
 ### Container Methods
 
