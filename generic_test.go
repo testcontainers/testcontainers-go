@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -22,6 +24,8 @@ const (
 
 func TestGenericReusableContainer(t *testing.T) {
 	ctx := context.Background()
+
+	reusableContainerName := reusableContainerName + "_" + time.Now().Format("20060102150405")
 
 	n1, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
@@ -141,6 +145,23 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 	}
 
 	wg.Wait()
+
+	cli, err := NewDockerClientWithOpts(context.Background())
+	require.NoError(t, err)
+
+	f := filters.NewArgs(filters.KeyValuePair{Key: "name", Value: reusableContainerName})
+
+	ctrs, err := cli.ContainerList(context.Background(), container.ListOptions{
+		All:     true,
+		Filters: f,
+	})
+	require.NoError(t, err)
+	require.Len(t, ctrs, 1)
+
+	nginxC, err := containerFromDockerResponse(context.Background(), ctrs[0])
+	require.NoError(t, err)
+
+	terminateContainerOnEnd(t, context.Background(), nginxC)
 }
 
 func createReuseContainerInSubprocess(t *testing.T) string {
@@ -176,7 +197,6 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, nginxC.IsRunning())
-	terminateContainerOnEnd(t, ctx, nginxC)
 
 	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
