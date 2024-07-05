@@ -22,6 +22,13 @@ go get github.com/testcontainers/testcontainers-go/modules/couchbase
 
 ## Module Reference
 
+### Run function
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
 The Couchbase module exposes one entrypoint function to create the Couchbase container, and this function receives three parameters:
 
 ```golang

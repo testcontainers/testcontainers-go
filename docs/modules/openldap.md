@@ -20,7 +20,14 @@ go get github.com/testcontainers/testcontainers-go/modules/openldap
 [Creating a OpenLDAP container](../../modules/openldap/examples_test.go) inside_block:runOpenLDAPContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
+
+### Run function
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The OpenLDAP module exposes one entrypoint function to create the OpenLDAP container, and this function receives three parameters:
 

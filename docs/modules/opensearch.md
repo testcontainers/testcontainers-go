@@ -20,7 +20,14 @@ go get github.com/testcontainers/testcontainers-go/modules/opensearch
 [Creating a OpenSearch container](../../modules/opensearch/examples_test.go) inside_block:runOpenSearchContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
+
+### Run function
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The OpenSearch module exposes one entrypoint function to create the OpenSearch container, and this function receives three parameters:
 
