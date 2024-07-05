@@ -77,19 +77,25 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 
 ## Module reference
 
-The GCloud module exposes one entrypoint function to create the different GCloud emulators, and each function receives two parameters:
+The GCloud module exposes one entrypoint function to create the different GCloud emulators, and each function receives three parameters:
 
 ```golang
-func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*BigQueryContainer, error)
-func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*BigTableContainer, error)
-func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DatastoreContainer, error)
-func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*FirestoreContainer, error)
-func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PubsubContainer, error)
-func RunSpannerContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*SpannerContainer, error)
+func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*BigQueryContainer, error)
+func RunBigTable(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*BigTableContainer, error)
+func RunDatastore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DatastoreContainer, error)
+func RunFirestore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*FirestoreContainer, error)
+func RunPubsub(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*PubsubContainer, error)
+func RunSpanner(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*SpannerContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+!!!info
+    The `RunXXXContainer(ctx, opts...)` function are deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 ### Container Options
 
