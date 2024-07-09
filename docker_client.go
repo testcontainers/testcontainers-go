@@ -70,8 +70,6 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
 	Logger.Printf(infoMessage, packagePath,
 		dockerInfo.ServerVersion, c.Client.ClientVersion(),
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
-		dockerHost,
-		core.GetDockerHostIPs(),
 		internal.Version,
 		dockerHost,
 		core.GetDockerHostIPs(),
