@@ -20,7 +20,14 @@ go get github.com/testcontainers/testcontainers-go/modules/k3s
 [Test for a K3s container](../../modules/k3s/k3s_test.go) inside_block:runK3sContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
+
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The K3s module exposes one entrypoint function to create the K3s container, and this function receives three parameters:
 
@@ -31,7 +38,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `context.Context`, the Go context.
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
-
 
 ### Container Ports
 These are the ports used by the K3s container:

@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/docker/docker v27.0.3+incompatible
 	github.com/google/uuid v1.6.0
-	github.com/testcontainers/testcontainers-go v0.31.0
+	github.com/testcontainers/testcontainers-go v0.32.0
 	github.com/tmc/langchaingo v0.1.5
 )
 

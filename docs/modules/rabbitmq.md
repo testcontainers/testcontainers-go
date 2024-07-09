@@ -20,7 +20,14 @@ go get github.com/testcontainers/testcontainers-go/modules/rabbitmq
 [Creating a RabbitMQ container](../../modules/rabbitmq/examples_test.go) inside_block:runRabbitMQContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
+
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The RabbitMQ module exposes one entrypoint function to create the RabbitMQ container, and this function receives three parameters:
 

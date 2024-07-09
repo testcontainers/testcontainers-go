@@ -75,20 +75,28 @@ It's important to set the target string of the `grpc.Dial` method using the cont
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the Admin client example above.
 
-## Module reference
+## Module Reference
 
-The GCloud module exposes one entrypoint function to create the different GCloud emulators, and each function receives two parameters:
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunXXXContainer(ctx, opts...)` functions are deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
+The GCloud module exposes one entrypoint function to create the different GCloud emulators, and each function receives three parameters:
 
 ```golang
-func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*BigQueryContainer, error)
-func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*BigTableContainer, error)
-func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DatastoreContainer, error)
-func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*FirestoreContainer, error)
-func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PubsubContainer, error)
-func RunSpannerContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*SpannerContainer, error)
+func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*BigQueryContainer, error)
+func RunBigTable(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*BigTableContainer, error)
+func RunDatastore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DatastoreContainer, error)
+func RunFirestore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*FirestoreContainer, error)
+func RunPubsub(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*PubsubContainer, error)
+func RunSpanner(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*SpannerContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options

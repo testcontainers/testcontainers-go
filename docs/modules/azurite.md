@@ -1,6 +1,6 @@
 # Azurite
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 ## Introduction
 
@@ -20,7 +20,14 @@ go get github.com/testcontainers/testcontainers-go/modules/azurite
 [Creating a Azurite container](../../modules/azurite/examples_test.go) inside_block:runAzuriteContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
+
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The Azurite module exposes one entrypoint function to create the Azurite container, and this function receives three parameters:
 
@@ -53,7 +60,7 @@ E.g. `Run(context.Background(), "mcr.microsoft.com/azure-storage/azurite:3.28.0"
 
 #### WithInMemoryPersistence
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 If you want to use in-memory persistence, you can use `WithInMemoryPersistence(megabytes float64)`. E.g. `azurite.WithInMemoryPersistence(64.0)`.
 
@@ -68,13 +75,13 @@ The Azurite container exposes the following methods:
 
 #### ServiceURL
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 Returns the service URL to connect to the Azurite container and an error, passing the Go context and the service name as parameters.
 
 #### MustServiceURL
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 Returns the service URL to connect to the Azurite container, passing the Go context and the service name as parameters. If an error occurs, it will panic.
 
