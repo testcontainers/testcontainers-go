@@ -54,7 +54,7 @@ func TestQdrant(t *testing.T) {
 			tt.Fatalf("failed to get REST endpoint: %s", err)
 		}
 
-		conn, err := grpc.Dial(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			t.Fatalf("did not connect: %v", err)
 		}
