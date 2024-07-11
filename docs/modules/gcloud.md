@@ -54,7 +54,7 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 [Obtaining a Firestore client](../../modules/gcloud/firestore_test.go) inside_block:firestoreClient
 <!--/codeinclude-->
 
-It's important to set the target string of the `grpc.Dial` method using the container's URI, as shown in the client example above.
+It's important to set the target string of the `grpc.NewClient` method using the container's URI, as shown in the client example above.
 
 ### Pubsub
 
@@ -63,7 +63,7 @@ It's important to set the target string of the `grpc.Dial` method using the cont
 [Obtaining a Pubsub client](../../modules/gcloud/pubsub_test.go) inside_block:pubsubClient
 <!--/codeinclude-->
 
-It's important to set the target string of the `grpc.Dial` method using the container's URI, as shown in the client example above.
+It's important to set the target string of the `grpc.NewClient` method using the container's URI, as shown in the client example above.
 
 ### Spanner
 
