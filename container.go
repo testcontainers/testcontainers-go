@@ -392,7 +392,10 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	}
 
 	if !c.ShouldKeepBuiltImage() {
-		buildOptions.Labels = core.DefaultLabels(core.SessionID())
+		err := core.MergeCustomLabels(buildOptions.Labels, core.DefaultLabels(core.SessionID()))
+		if err != nil {
+			panic(fmt.Errorf("Unable to merge custom labels"))
+		}
 	}
 
 	// Do this as late as possible to ensure we don't leak the context on error/panic.

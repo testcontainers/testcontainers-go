@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -487,6 +488,53 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 			t.Logf("Parallel container [iteration_%d] listening on %d\n", i, port.Int())
 		})
 	}
+}
+
+func TestLabelBuilding(t *testing.T) {
+	labels := core.DefaultLabels("session-id")
+	assert.NotNil(t, labels)
+	assert.Len(t, labels, 4)
+	goodCustomLabels := map[string]string{
+		"org.custom.label1": "foo",
+		"org.custom.label2": "bar",
+	}
+	err := core.MergeCustomLabels(goodCustomLabels, labels)
+	require.NoError(t, err)
+	assert.NotNil(t, goodCustomLabels)
+	assert.Contains(t, goodCustomLabels, core.LabelLang)
+	assert.Len(t, goodCustomLabels, 6)
+
+	badCustomLabels := map[string]string{
+		core.LabelLang:      "python",
+		core.LabelSessionID: "invalid",
+	}
+	err = core.MergeCustomLabels(badCustomLabels, labels)
+	require.Error(t, err)
+}
+
+func TestLabelsForContainer(t *testing.T) {
+	ctx := context.Background()
+
+	customLabel := "org.company.environment"
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:  "alpine:latest",
+			Labels: map[string]string{customLabel: "test"},
+		},
+	})
+	assert.NoError(t, err)
+
+	containerJson, err := container.Inspect(ctx)
+	require.NoError(t, err)
+	assert.Contains(t, containerJson.Config.Labels, core.LabelLang)
+	assert.Contains(t, containerJson.Config.Labels, customLabel)
+
+	defer func() {
+		err := container.Terminate(ctx)
+		if err != nil {
+			log.Fatalf("could not terminate container: %v", err)
+		}
+	}()
 }
 
 func ExampleGenericContainer_withSubstitutors() {
