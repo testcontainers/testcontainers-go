@@ -522,7 +522,7 @@ func TestLabelsForContainer(t *testing.T) {
 			Labels: map[string]string{customLabel: "test"},
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	containerJson, err := container.Inspect(ctx)
 	require.NoError(t, err)
