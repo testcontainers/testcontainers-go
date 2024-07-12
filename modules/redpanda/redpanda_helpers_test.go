@@ -3,7 +3,8 @@ package redpanda
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 )
 
 func Test_isAtLeastVersion(t *testing.T) {
@@ -50,7 +51,7 @@ func Test_isAtLeastVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, isAtLeastVersion(tt.args.image, tt.args.major), "isAtLeastVersion(%v, %v)", tt.args.image, tt.args.major)
+			assert.Check(t, is.Equal(tt.want, isAtLeastVersion(tt.args.image, tt.args.major)), "isAtLeastVersion(%v, %v)", tt.args.image, tt.args.major)
 		})
 	}
 }

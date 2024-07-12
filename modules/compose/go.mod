@@ -10,10 +10,10 @@ require (
 	github.com/docker/compose/v2 v2.28.1
 	github.com/docker/docker v27.0.3+incompatible
 	github.com/google/uuid v1.6.0
-	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.32.0
 	golang.org/x/sync v0.7.0
 	gopkg.in/yaml.v3 v3.0.1
+	gotest.tools/v3 v3.5.1
 )
 
 require (
@@ -143,6 +143,7 @@ require (
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
 	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/theupdateframework/notary v0.7.0 // indirect
 	github.com/tilt-dev/fsnotify v1.4.8-0.20220602155310-fff9c274a375 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect

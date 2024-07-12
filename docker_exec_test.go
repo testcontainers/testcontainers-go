@@ -7,7 +7,8 @@ import (
 	"testing"
 
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
@@ -56,7 +57,7 @@ func TestExecWithOptions(t *testing.T) {
 				Started:          true,
 			})
 
-			require.NoError(t, err)
+			assert.NilError(t, err)
 			terminateContainerOnEnd(t, ctx, container)
 
 			// always append the multiplexed option for having the output
@@ -64,16 +65,16 @@ func TestExecWithOptions(t *testing.T) {
 			tt.opts = append(tt.opts, tcexec.Multiplexed())
 
 			code, reader, err := container.Exec(ctx, tt.cmds, tt.opts...)
-			require.NoError(t, err)
-			require.Zero(t, code)
-			require.NotNil(t, reader)
+			assert.NilError(t, err)
+			assert.Equal(t, code, 0)
+			assert.Assert(t, reader != nil)
 
 			b, err := io.ReadAll(reader)
-			require.NoError(t, err)
-			require.NotNil(t, b)
+			assert.NilError(t, err)
+			assert.Assert(t, b != nil)
 
 			str := string(b)
-			require.Contains(t, str, tt.want)
+			assert.Assert(t, is.Contains(str, tt.want))
 		})
 	}
 }
@@ -89,21 +90,21 @@ func TestExecWithMultiplexedResponse(t *testing.T) {
 		Started:          true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, container)
 
 	code, reader, err := container.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"}, tcexec.Multiplexed())
-	require.NoError(t, err)
-	require.Zero(t, code)
-	require.NotNil(t, reader)
+	assert.NilError(t, err)
+	assert.Equal(t, code, 0)
+	assert.Assert(t, reader != nil)
 
 	b, err := io.ReadAll(reader)
-	require.NoError(t, err)
-	require.NotNil(t, b)
+	assert.NilError(t, err)
+	assert.Assert(t, b != nil)
 
 	str := string(b)
-	require.Contains(t, str, "stdout")
-	require.Contains(t, str, "stderr")
+	assert.Assert(t, is.Contains(str, "stdout"))
+	assert.Assert(t, is.Contains(str, "stderr"))
 }
 
 func TestExecWithNonMultiplexedResponse(t *testing.T) {
@@ -117,23 +118,23 @@ func TestExecWithNonMultiplexedResponse(t *testing.T) {
 		Started:          true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, container)
 
 	code, reader, err := container.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"})
-	require.NoError(t, err)
-	require.Zero(t, code)
-	require.NotNil(t, reader)
+	assert.NilError(t, err)
+	assert.Equal(t, code, 0)
+	assert.Assert(t, reader != nil)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
 	written, err := stdcopy.StdCopy(&stdout, &stderr, reader)
-	require.NoError(t, err)
-	require.NotZero(t, written)
-	require.NotNil(t, stdout)
-	require.NotNil(t, stderr)
+	assert.NilError(t, err)
+	assert.Assert(t, written != 0)
+	assert.Assert(t, stdout.String() != "")
+	assert.Assert(t, stderr.String() != "")
 
-	require.Equal(t, "stdout\n", stdout.String())
-	require.Equal(t, "stderr\n", stderr.String())
+	assert.Equal(t, "stdout\n", stdout.String())
+	assert.Equal(t, "stderr\n", stderr.String())
 }

@@ -13,8 +13,8 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -23,7 +23,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 	ctx := context.Background()
 
 	provider, err := NewDockerProvider()
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	defer provider.Close()
 
 	t.Run("No exposed ports", func(t *testing.T) {
@@ -71,60 +71,42 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		// assertions
 
-		assert.Equal(
-			t,
-			[]string{"a=b"},
-			inputConfig.Env,
-			"Docker config's env should be overwritten by the modifier",
-		)
-		assert.Equal(t,
-			nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}),
-			inputConfig.ExposedPorts,
-			"Docker config's exposed ports should be overwritten by the modifier",
-		)
-		assert.Equal(
-			t,
-			[]mount.Mount{
-				{
-					Type:   mount.TypeVolume,
-					Source: "appdata",
-					Target: "/data",
-					VolumeOptions: &mount.VolumeOptions{
-						Labels: GenericLabels(),
-					},
+		assert.Check(t, is.DeepEqual([]string{"a=b"},
+			inputConfig.Env), "Docker config's env should be overwritten by the modifier")
+
+		assert.Check(t, is.DeepEqual(nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}),
+			inputConfig.ExposedPorts), "Docker config's exposed ports should be overwritten by the modifier")
+
+		assert.Check(t, is.DeepEqual([]mount.Mount{
+			{
+				Type:   mount.TypeVolume,
+				Source: "appdata",
+				Target: "/data",
+				VolumeOptions: &mount.VolumeOptions{
+					Labels: GenericLabels(),
 				},
 			},
-			inputHostConfig.Mounts,
-			"Host config's mounts should be mapped to Docker types",
-		)
+		},
+			inputHostConfig.Mounts), "Host config's mounts should be mapped to Docker types")
 
-		assert.Equal(t, nat.PortMap{
+		assert.Check(t, is.DeepEqual(nat.PortMap{
 			"80/tcp": []nat.PortBinding{
 				{
 					HostIP:   "",
 					HostPort: "",
 				},
 			},
-		}, inputHostConfig.PortBindings,
-			"Host config's port bindings should be overwritten by the modifier",
-		)
+		}, inputHostConfig.PortBindings), "Host config's port bindings should be overwritten by the modifier")
 
-		assert.Equal(
-			t,
-			[]string{"b"},
-			inputNetworkingConfig.EndpointsConfig["a"].Aliases,
-			"Networking config's aliases should be overwritten by the modifier",
-		)
-		assert.Equal(
-			t,
-			[]string{"link1", "link2"},
-			inputNetworkingConfig.EndpointsConfig["a"].Links,
-			"Networking config's links should be overwritten by the modifier",
-		)
+		assert.Check(t, is.DeepEqual([]string{"b"},
+			inputNetworkingConfig.EndpointsConfig["a"].Aliases), "Networking config's aliases should be overwritten by the modifier")
+
+		assert.Check(t, is.DeepEqual([]string{"link1", "link2"},
+			inputNetworkingConfig.EndpointsConfig["a"].Links), "Networking config's links should be overwritten by the modifier")
 	})
 
 	t.Run("No exposed ports and network mode IsContainer", func(t *testing.T) {
@@ -151,21 +133,15 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		// assertions
 
-		assert.Equal(
-			t,
-			nat.PortSet(nat.PortSet{}),
-			inputConfig.ExposedPorts,
-			"Docker config's exposed ports should be empty",
-		)
-		assert.Equal(t,
-			nat.PortMap{},
-			inputHostConfig.PortBindings,
-			"Host config's portBinding should be empty",
-		)
+		assert.Check(t, is.DeepEqual(nat.PortSet(nat.PortSet{}),
+			inputConfig.ExposedPorts), "Docker config's exposed ports should be empty")
+
+		assert.Check(t, is.DeepEqual(nat.PortMap{},
+			inputHostConfig.PortBindings), "Host config's portBinding should be empty")
 	})
 
 	t.Run("Nil hostConfigModifier should apply default host config modifier", func(t *testing.T) {
@@ -192,16 +168,16 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		// assertions
 
-		assert.Equal(t, req.AutoRemove, inputHostConfig.AutoRemove, "Deprecated AutoRemove should come from the container request")
-		assert.Equal(t, strslice.StrSlice(req.CapAdd), inputHostConfig.CapAdd, "Deprecated CapAdd should come from the container request")
-		assert.Equal(t, strslice.StrSlice(req.CapDrop), inputHostConfig.CapDrop, "Deprecated CapDrop should come from the container request")
-		assert.Equal(t, req.Binds, inputHostConfig.Binds, "Deprecated Binds should come from the container request")
-		assert.Equal(t, req.ExtraHosts, inputHostConfig.ExtraHosts, "Deprecated ExtraHosts should come from the container request")
-		assert.Equal(t, req.Resources, inputHostConfig.Resources, "Deprecated Resources should come from the container request")
+		assert.Check(t, is.Equal(req.AutoRemove, inputHostConfig.AutoRemove), "Deprecated AutoRemove should come from the container request")
+		assert.Check(t, is.DeepEqual(strslice.StrSlice(req.CapAdd), inputHostConfig.CapAdd), "Deprecated CapAdd should come from the container request")
+		assert.Check(t, is.DeepEqual(strslice.StrSlice(req.CapDrop), inputHostConfig.CapDrop), "Deprecated CapDrop should come from the container request")
+		assert.Check(t, is.DeepEqual(req.Binds, inputHostConfig.Binds), "Deprecated Binds should come from the container request")
+		assert.Check(t, is.DeepEqual(req.ExtraHosts, inputHostConfig.ExtraHosts), "Deprecated ExtraHosts should come from the container request")
+		assert.Check(t, is.DeepEqual(req.Resources, inputHostConfig.Resources), "Deprecated Resources should come from the container request")
 	})
 
 	t.Run("Request contains more than one network including aliases", func(t *testing.T) {
@@ -209,7 +185,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		net, err := provider.CreateNetwork(ctx, NetworkRequest{
 			Name: networkName,
 		})
-		require.NoError(t, err)
+		assert.NilError(t, err)
 		defer func() {
 			err := net.Remove(ctx)
 			if err != nil {
@@ -220,7 +196,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		dockerNetwork, err := provider.GetNetwork(ctx, NetworkRequest{
 			Name: networkName,
 		})
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		req := ContainerRequest{
 			Image:    nginxAlpineImage, // alpine image does expose port 80
@@ -238,22 +214,15 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		// assertions
 
-		assert.Equal(
-			t,
-			req.NetworkAliases[networkName],
-			inputNetworkingConfig.EndpointsConfig[networkName].Aliases,
-			"Networking config's aliases should come from the container request",
-		)
-		assert.Equal(
-			t,
-			dockerNetwork.ID,
-			inputNetworkingConfig.EndpointsConfig[networkName].NetworkID,
-			"Networking config's network ID should be retrieved from Docker",
-		)
+		assert.Check(t, is.DeepEqual(req.NetworkAliases[networkName],
+			inputNetworkingConfig.EndpointsConfig[networkName].Aliases), "Networking config's aliases should come from the container request")
+
+		assert.Check(t, is.Equal(dockerNetwork.ID,
+			inputNetworkingConfig.EndpointsConfig[networkName].NetworkID), "Networking config's network ID should be retrieved from Docker")
 	})
 
 	t.Run("Request contains more than one network without aliases", func(t *testing.T) {
@@ -261,7 +230,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		net, err := provider.CreateNetwork(ctx, NetworkRequest{
 			Name: networkName,
 		})
-		require.NoError(t, err)
+		assert.NilError(t, err)
 		defer func() {
 			err := net.Remove(ctx)
 			if err != nil {
@@ -272,7 +241,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		dockerNetwork, err := provider.GetNetwork(ctx, NetworkRequest{
 			Name: networkName,
 		})
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		req := ContainerRequest{
 			Image:    nginxAlpineImage, // alpine image does expose port 80
@@ -287,21 +256,14 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		// assertions
 
-		assert.Empty(
-			t,
-			inputNetworkingConfig.EndpointsConfig[networkName].Aliases,
-			"Networking config's aliases should be empty",
-		)
-		assert.Equal(
-			t,
-			dockerNetwork.ID,
-			inputNetworkingConfig.EndpointsConfig[networkName].NetworkID,
-			"Networking config's network ID should be retrieved from Docker",
-		)
+		assert.Check(t, is.Len(inputNetworkingConfig.EndpointsConfig[networkName].Aliases, 0), "Networking config's aliases should be empty")
+
+		assert.Check(t, is.Equal(dockerNetwork.ID,
+			inputNetworkingConfig.EndpointsConfig[networkName].NetworkID), "Networking config's network ID should be retrieved from Docker")
 	})
 
 	t.Run("Request contains exposed port modifiers without protocol", func(t *testing.T) {
@@ -328,11 +290,11 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		// assertions
-		assert.Equal(t, "localhost", inputHostConfig.PortBindings["80/tcp"][0].HostIP)
-		assert.Equal(t, "8080", inputHostConfig.PortBindings["80/tcp"][0].HostPort)
+		assert.Check(t, is.Equal("localhost", inputHostConfig.PortBindings["80/tcp"][0].HostIP))
+		assert.Check(t, is.Equal("8080", inputHostConfig.PortBindings["80/tcp"][0].HostPort))
 	})
 
 	t.Run("Request contains exposed port modifiers with protocol", func(t *testing.T) {
@@ -359,11 +321,11 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
 		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		// assertions
-		assert.Equal(t, "localhost", inputHostConfig.PortBindings["80/tcp"][0].HostIP)
-		assert.Equal(t, "8080", inputHostConfig.PortBindings["80/tcp"][0].HostPort)
+		assert.Check(t, is.Equal("localhost", inputHostConfig.PortBindings["80/tcp"][0].HostIP))
+		assert.Check(t, is.Equal("8080", inputHostConfig.PortBindings["80/tcp"][0].HostPort))
 	})
 }
 
@@ -451,7 +413,7 @@ func TestMergePortBindings(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			res := mergePortBindings(c.arg.configPortMap, c.arg.parsedPortMap, c.arg.exposedPorts)
-			assert.Equal(t, c.expected, res)
+			assert.Check(t, is.DeepEqual(c.expected, res))
 		})
 	}
 }
@@ -584,18 +546,18 @@ func TestLifecycleHooks(t *testing.T) {
 				Reuse:            tt.reuse,
 				Started:          true,
 			})
-			require.NoError(t, err)
-			require.NotNil(t, c)
+			assert.NilError(t, err)
+			assert.Assert(t, c != nil)
 
 			duration := 1 * time.Second
 			err = c.Stop(ctx, &duration)
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			err = c.Start(ctx)
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			err = c.Terminate(ctx)
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			lifecycleHooksIsHonouredFn(t, ctx, prints)
 		})
@@ -631,20 +593,20 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.NoError(t, err)
-	require.NotNil(t, c)
+	assert.NilError(t, err)
+	assert.Assert(t, c != nil)
 
 	duration := 1 * time.Second
 	err = c.Stop(ctx, &duration)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	err = c.Start(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	err = c.Terminate(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
-	require.Len(t, dl.data, 12)
+	assert.Assert(t, is.Len(dl.data, 12))
 }
 
 func TestCombineLifecycleHooks(t *testing.T) {
@@ -692,26 +654,26 @@ func TestCombineLifecycleHooks(t *testing.T) {
 
 	req := ContainerRequest{}
 	err := hooks.Creating(context.Background())(req)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	c := &DockerContainer{}
 
 	err = hooks.Created(context.Background())(c)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	err = hooks.Starting(context.Background())(c)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	err = hooks.Started(context.Background())(c)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	err = hooks.Readied(context.Background())(c)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	err = hooks.Stopping(context.Background())(c)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	err = hooks.Stopped(context.Background())(c)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	err = hooks.Terminating(context.Background())(c)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	err = hooks.Terminated(context.Background())(c)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	// assertions
 
@@ -721,7 +683,7 @@ func TestCombineLifecycleHooks(t *testing.T) {
 
 	// There are 5 lifecycles (create, start, ready, stop, terminate),
 	// but ready has only half of the hooks (it only has post), so we have 90 hooks in total.
-	assert.Len(t, prints, 90)
+	assert.Check(t, is.Len(prints, 90))
 
 	// The order of the hooks is:
 	// - pre-X hooks: first default (2*2), then user-defined (3*2)
@@ -750,33 +712,33 @@ func TestCombineLifecycleHooks(t *testing.T) {
 
 		if hookType != "ready" {
 			// default pre-hooks: 4 hooks
-			assert.Equal(t, fmt.Sprintf("[default] pre-%s hook 1.1", hookType), prints[initialIndex])
-			assert.Equal(t, fmt.Sprintf("[default] pre-%s hook 1.2", hookType), prints[initialIndex+1])
-			assert.Equal(t, fmt.Sprintf("[default] pre-%s hook 2.1", hookType), prints[initialIndex+2])
-			assert.Equal(t, fmt.Sprintf("[default] pre-%s hook 2.2", hookType), prints[initialIndex+3])
+			assert.Check(t, is.Equal(fmt.Sprintf("[default] pre-%s hook 1.1", hookType), prints[initialIndex]))
+			assert.Check(t, is.Equal(fmt.Sprintf("[default] pre-%s hook 1.2", hookType), prints[initialIndex+1]))
+			assert.Check(t, is.Equal(fmt.Sprintf("[default] pre-%s hook 2.1", hookType), prints[initialIndex+2]))
+			assert.Check(t, is.Equal(fmt.Sprintf("[default] pre-%s hook 2.2", hookType), prints[initialIndex+3]))
 
 			// user-defined pre-hooks: 6 hooks
-			assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 1.1", hookType), prints[initialIndex+4])
-			assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 1.2", hookType), prints[initialIndex+5])
-			assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 2.1", hookType), prints[initialIndex+6])
-			assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 2.2", hookType), prints[initialIndex+7])
-			assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 3.1", hookType), prints[initialIndex+8])
-			assert.Equal(t, fmt.Sprintf("[user-defined] pre-%s hook 3.2", hookType), prints[initialIndex+9])
+			assert.Check(t, is.Equal(fmt.Sprintf("[user-defined] pre-%s hook 1.1", hookType), prints[initialIndex+4]))
+			assert.Check(t, is.Equal(fmt.Sprintf("[user-defined] pre-%s hook 1.2", hookType), prints[initialIndex+5]))
+			assert.Check(t, is.Equal(fmt.Sprintf("[user-defined] pre-%s hook 2.1", hookType), prints[initialIndex+6]))
+			assert.Check(t, is.Equal(fmt.Sprintf("[user-defined] pre-%s hook 2.2", hookType), prints[initialIndex+7]))
+			assert.Check(t, is.Equal(fmt.Sprintf("[user-defined] pre-%s hook 3.1", hookType), prints[initialIndex+8]))
+			assert.Check(t, is.Equal(fmt.Sprintf("[user-defined] pre-%s hook 3.2", hookType), prints[initialIndex+9]))
 		}
 
 		// user-defined post-hooks: 6 hooks
-		assert.Equal(t, fmt.Sprintf("[user-defined] post-%s hook 1.1", hookType), prints[initialIndex+10])
-		assert.Equal(t, fmt.Sprintf("[user-defined] post-%s hook 1.2", hookType), prints[initialIndex+11])
-		assert.Equal(t, fmt.Sprintf("[user-defined] post-%s hook 2.1", hookType), prints[initialIndex+12])
-		assert.Equal(t, fmt.Sprintf("[user-defined] post-%s hook 2.2", hookType), prints[initialIndex+13])
-		assert.Equal(t, fmt.Sprintf("[user-defined] post-%s hook 3.1", hookType), prints[initialIndex+14])
-		assert.Equal(t, fmt.Sprintf("[user-defined] post-%s hook 3.2", hookType), prints[initialIndex+15])
+		assert.Check(t, is.Equal(fmt.Sprintf("[user-defined] post-%s hook 1.1", hookType), prints[initialIndex+10]))
+		assert.Check(t, is.Equal(fmt.Sprintf("[user-defined] post-%s hook 1.2", hookType), prints[initialIndex+11]))
+		assert.Check(t, is.Equal(fmt.Sprintf("[user-defined] post-%s hook 2.1", hookType), prints[initialIndex+12]))
+		assert.Check(t, is.Equal(fmt.Sprintf("[user-defined] post-%s hook 2.2", hookType), prints[initialIndex+13]))
+		assert.Check(t, is.Equal(fmt.Sprintf("[user-defined] post-%s hook 3.1", hookType), prints[initialIndex+14]))
+		assert.Check(t, is.Equal(fmt.Sprintf("[user-defined] post-%s hook 3.2", hookType), prints[initialIndex+15]))
 
 		// default post-hooks: 4 hooks
-		assert.Equal(t, fmt.Sprintf("[default] post-%s hook 1.1", hookType), prints[initialIndex+16])
-		assert.Equal(t, fmt.Sprintf("[default] post-%s hook 1.2", hookType), prints[initialIndex+17])
-		assert.Equal(t, fmt.Sprintf("[default] post-%s hook 2.1", hookType), prints[initialIndex+18])
-		assert.Equal(t, fmt.Sprintf("[default] post-%s hook 2.2", hookType), prints[initialIndex+19])
+		assert.Check(t, is.Equal(fmt.Sprintf("[default] post-%s hook 1.1", hookType), prints[initialIndex+16]))
+		assert.Check(t, is.Equal(fmt.Sprintf("[default] post-%s hook 1.2", hookType), prints[initialIndex+17]))
+		assert.Check(t, is.Equal(fmt.Sprintf("[default] post-%s hook 2.1", hookType), prints[initialIndex+18]))
+		assert.Check(t, is.Equal(fmt.Sprintf("[default] post-%s hook 2.2", hookType), prints[initialIndex+19]))
 	}
 }
 
@@ -797,20 +759,20 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.NoError(t, err)
-	require.NotNil(t, c)
+	assert.NilError(t, err)
+	assert.Assert(t, c != nil)
 
 	duration := 1 * time.Second
 	err = c.Stop(ctx, &duration)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	err = c.Start(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	err = c.Terminate(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
-	require.Len(t, dl.data, 24)
+	assert.Assert(t, is.Len(dl.data, 24))
 }
 
 type linesTestLogger struct {
@@ -873,46 +835,46 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 				break
 			}
 		}
-		assert.True(t, found, "container log line not found in the output of the logger: %s", line)
+		assert.Check(t, found, "container log line not found in the output of the logger: %s", line)
 	}
 }
 
 func lifecycleHooksIsHonouredFn(t *testing.T, ctx context.Context, prints []string) {
-	require.Len(t, prints, 24)
+	assert.Assert(t, is.Len(prints, 24))
 
-	assert.True(t, strings.HasPrefix(prints[0], "pre-create hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[1], "pre-create hook 2: "))
+	assert.Check(t, strings.HasPrefix(prints[0], "pre-create hook 1: "))
+	assert.Check(t, strings.HasPrefix(prints[1], "pre-create hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[2], "post-create hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[3], "post-create hook 2: "))
+	assert.Check(t, strings.HasPrefix(prints[2], "post-create hook 1: "))
+	assert.Check(t, strings.HasPrefix(prints[3], "post-create hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[4], "pre-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[5], "pre-start hook 2: "))
+	assert.Check(t, strings.HasPrefix(prints[4], "pre-start hook 1: "))
+	assert.Check(t, strings.HasPrefix(prints[5], "pre-start hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[6], "post-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[7], "post-start hook 2: "))
+	assert.Check(t, strings.HasPrefix(prints[6], "post-start hook 1: "))
+	assert.Check(t, strings.HasPrefix(prints[7], "post-start hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[8], "post-ready hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[9], "post-ready hook 2: "))
+	assert.Check(t, strings.HasPrefix(prints[8], "post-ready hook 1: "))
+	assert.Check(t, strings.HasPrefix(prints[9], "post-ready hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[10], "pre-stop hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[11], "pre-stop hook 2: "))
+	assert.Check(t, strings.HasPrefix(prints[10], "pre-stop hook 1: "))
+	assert.Check(t, strings.HasPrefix(prints[11], "pre-stop hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[12], "post-stop hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[13], "post-stop hook 2: "))
+	assert.Check(t, strings.HasPrefix(prints[12], "post-stop hook 1: "))
+	assert.Check(t, strings.HasPrefix(prints[13], "post-stop hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[14], "pre-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[15], "pre-start hook 2: "))
+	assert.Check(t, strings.HasPrefix(prints[14], "pre-start hook 1: "))
+	assert.Check(t, strings.HasPrefix(prints[15], "pre-start hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[16], "post-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[17], "post-start hook 2: "))
+	assert.Check(t, strings.HasPrefix(prints[16], "post-start hook 1: "))
+	assert.Check(t, strings.HasPrefix(prints[17], "post-start hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[18], "post-ready hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[19], "post-ready hook 2: "))
+	assert.Check(t, strings.HasPrefix(prints[18], "post-ready hook 1: "))
+	assert.Check(t, strings.HasPrefix(prints[19], "post-ready hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[20], "pre-terminate hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[21], "pre-terminate hook 2: "))
+	assert.Check(t, strings.HasPrefix(prints[20], "pre-terminate hook 1: "))
+	assert.Check(t, strings.HasPrefix(prints[21], "pre-terminate hook 2: "))
 
-	assert.True(t, strings.HasPrefix(prints[22], "post-terminate hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[23], "post-terminate hook 2: "))
+	assert.Check(t, strings.HasPrefix(prints[22], "post-terminate hook 1: "))
+	assert.Check(t, strings.HasPrefix(prints[23], "post-terminate hook 2: "))
 }

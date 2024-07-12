@@ -5,7 +5,8 @@ package testcontainers
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 )
 
 func TestParseDockerIgnore(t *testing.T) {
@@ -36,8 +37,8 @@ func TestParseDockerIgnore(t *testing.T) {
 
 	for _, testCase := range testCases {
 		exists, excluded, err := parseDockerIgnore(testCase.filePath)
-		assert.Equal(t, testCase.exists, exists)
-		assert.Equal(t, testCase.expectedErr, err)
-		assert.Equal(t, testCase.expectedExcluded, excluded)
+		assert.Check(t, is.Equal(testCase.exists, exists))
+		assert.Check(t, is.DeepEqual(testCase.expectedErr, err))
+		assert.Check(t, is.DeepEqual(testCase.expectedExcluded, excluded))
 	}
 }

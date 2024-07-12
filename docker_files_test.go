@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -46,8 +46,8 @@ func TestCopyFileToContainer(t *testing.T) {
 	})
 	// }
 
-	require.NoError(t, err)
-	require.NoError(t, container.Terminate(ctx))
+	assert.NilError(t, err)
+	assert.NilError(t, container.Terminate(ctx))
 }
 
 func TestCopyFileToRunningContainer(t *testing.T) {
@@ -86,13 +86,13 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 	err = container.CopyFileToContainer(ctx, helloPath, "/scripts/hello.sh", 0o700)
 	// }
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	// Give some time to the wait script to catch the hello script being created
 	err = wait.ForLog("done").WithStartupTimeout(2*time.Second).WaitUntilReady(ctx, container)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
-	require.NoError(t, container.Terminate(ctx))
+	assert.NilError(t, container.Terminate(ctx))
 }
 
 func TestCopyDirectoryToContainer(t *testing.T) {
@@ -126,8 +126,8 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 	})
 	// }
 
-	require.NoError(t, err)
-	require.NoError(t, container.Terminate(ctx))
+	assert.NilError(t, err)
+	assert.NilError(t, container.Terminate(ctx))
 }
 
 func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
@@ -175,8 +175,8 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 	}
 	// }
 
-	require.NoError(t, err)
-	require.NoError(t, container.Terminate(ctx))
+	assert.NilError(t, err)
+	assert.NilError(t, container.Terminate(ctx))
 }
 
 func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
@@ -224,6 +224,6 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 	}
 	// }
 
-	require.NoError(t, err)
-	require.NoError(t, container.Terminate(ctx))
+	assert.NilError(t, err)
+	assert.NilError(t, container.Terminate(ctx))
 }

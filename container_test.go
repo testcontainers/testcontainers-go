@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -435,7 +435,7 @@ func TestImageSubstitutors(t *testing.T) {
 				Started:          true,
 			})
 			if test.expectedError != nil {
-				require.ErrorIs(t, err, test.expectedError)
+				assert.ErrorIs(t, err, test.expectedError)
 				return
 			}
 
@@ -449,7 +449,7 @@ func TestImageSubstitutors(t *testing.T) {
 			// enforce the concrete type, as GenericContainer returns an interface,
 			// which will be changed in future implementations of the library
 			dockerContainer := container.(*testcontainers.DockerContainer)
-			assert.Equal(t, test.expectedImage, dockerContainer.Image)
+			assert.Check(t, is.Equal(test.expectedImage, dockerContainer.Image))
 		})
 	}
 }

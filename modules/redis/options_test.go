@@ -3,7 +3,7 @@ package redis
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -40,9 +40,9 @@ func TestWithConfigFile(t *testing.T) {
 			}
 
 			err := WithConfigFile("redis.conf")(req)
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
-			require.Equal(t, tt.expectedCmds, req.Cmd)
+			assert.DeepEqual(t, tt.expectedCmds, req.Cmd)
 		})
 	}
 }
@@ -79,9 +79,9 @@ func TestWithLogLevel(t *testing.T) {
 			}
 
 			err := WithLogLevel(LogLevelDebug)(req)
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
-			require.Equal(t, tt.expectedCmds, req.Cmd)
+			assert.DeepEqual(t, tt.expectedCmds, req.Cmd)
 		})
 	}
 }
@@ -133,9 +133,9 @@ func TestWithSnapshotting(t *testing.T) {
 			}
 
 			err := WithSnapshotting(tt.seconds, tt.changedKeys)(req)
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
-			require.Equal(t, tt.expectedCmds, req.Cmd)
+			assert.DeepEqual(t, tt.expectedCmds, req.Cmd)
 		})
 	}
 }

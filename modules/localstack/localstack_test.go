@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/network"
@@ -42,8 +42,8 @@ func TestConfigureDockerHost(t *testing.T) {
 			req.Env[tt.envVar] = "foo"
 
 			reason, err := configureDockerHost(req, tt.envVar)
-			require.NoError(t, err)
-			assert.Equal(t, "explicitly as environment variable", reason)
+			assert.NilError(t, err)
+			assert.Check(t, is.Equal("explicitly as environment variable", reason))
 		})
 
 		t.Run("HOSTNAME_EXTERNAL matches the last network alias on a container with non-default network", func(t *testing.T) {
@@ -57,19 +57,19 @@ func TestConfigureDockerHost(t *testing.T) {
 			}
 
 			reason, err := configureDockerHost(req, tt.envVar)
-			require.NoError(t, err)
-			assert.Equal(t, "to match last network alias on container with non-default network", reason)
-			assert.Equal(t, "foo3", req.Env[tt.envVar])
+			assert.NilError(t, err)
+			assert.Check(t, is.Equal("to match last network alias on container with non-default network", reason))
+			assert.Check(t, is.Equal("foo3", req.Env[tt.envVar]))
 		})
 
 		t.Run("HOSTNAME_EXTERNAL matches the daemon host because there are no aliases", func(t *testing.T) {
 			dockerProvider, err := testcontainers.NewDockerProvider()
-			require.NoError(t, err)
+			assert.NilError(t, err)
 			defer dockerProvider.Close()
 
 			// because the daemon host could be a remote one, we need to get it from the provider
 			expectedDaemonHost, err := dockerProvider.DaemonHost(context.Background())
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			req := generateContainerRequest()
 
@@ -77,9 +77,9 @@ func TestConfigureDockerHost(t *testing.T) {
 			req.NetworkAliases = map[string][]string{}
 
 			reason, err := configureDockerHost(req, tt.envVar)
-			require.NoError(t, err)
-			assert.Equal(t, "to match host-routable address for container", reason)
-			assert.Equal(t, expectedDaemonHost, req.Env[tt.envVar])
+			assert.NilError(t, err)
+			assert.Check(t, is.Equal("to match host-routable address for container", reason))
+			assert.Check(t, is.Equal(expectedDaemonHost, req.Env[tt.envVar]))
 		})
 	}
 }
@@ -102,7 +102,7 @@ func TestIsLegacyMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
 			got := isLegacyMode(fmt.Sprintf("localstack/localstack:%s", tt.version))
-			assert.Equal(t, tt.want, got, "runInLegacyMode() = %v, want %v", got, tt.want)
+			assert.Check(t, is.Equal(tt.want, got), "runInLegacyMode() = %v, want %v", got, tt.want)
 		})
 	}
 }
@@ -124,11 +124,11 @@ func TestRunContainer(t *testing.T) {
 		)
 
 		t.Run("Localstack:"+tt.version+" - multiple services exposed on same port", func(t *testing.T) {
-			require.NoError(t, err)
-			assert.NotNil(t, container)
+			assert.NilError(t, err)
+			assert.Check(t, container != nil)
 
 			inspect, err := container.Inspect(ctx)
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			rawPorts := inspect.NetworkSettings.Ports
 
@@ -140,7 +140,7 @@ func TestRunContainer(t *testing.T) {
 				}
 			}
 
-			assert.Equal(t, 1, ports) // a single port is exposed
+			assert.Check(t, is.Equal(1, ports)) // a single port is exposed
 		})
 	}
 }
@@ -149,15 +149,15 @@ func TestStartWithoutOverride(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := Run(ctx, "localstack/localstack:2.0.0")
-	require.NoError(t, err)
-	assert.NotNil(t, container)
+	assert.NilError(t, err)
+	assert.Check(t, container != nil)
 }
 
 func TestStartV2WithNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	nw, err := network.New(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	localstack, err := Run(
 		ctx,
@@ -165,8 +165,8 @@ func TestStartV2WithNetwork(t *testing.T) {
 		network.WithNetwork([]string{"localstack"}, nw),
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
 	)
-	require.NoError(t, err)
-	assert.NotNil(t, localstack)
+	assert.NilError(t, err)
+	assert.Check(t, localstack != nil)
 
 	networkName := nw.Name
 
@@ -197,6 +197,6 @@ func TestStartV2WithNetwork(t *testing.T) {
 		},
 		Started: true,
 	})
-	require.NoError(t, err)
-	assert.NotNil(t, cli)
+	assert.NilError(t, err)
+	assert.Check(t, cli != nil)
 }

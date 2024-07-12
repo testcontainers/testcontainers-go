@@ -7,7 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 )
 
 const (
@@ -45,12 +46,12 @@ func TestReadConfig(t *testing.T) {
 			Host:         "", // docker socket is empty at the properties file
 		}
 
-		assert.Equal(t, expected, config)
+		assert.Check(t, is.DeepEqual(expected, config))
 
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "false")
 
 		config = Read()
-		assert.Equal(t, expected, config)
+		assert.Check(t, is.DeepEqual(expected, config))
 	})
 }
 
@@ -67,7 +68,7 @@ func TestReadTCConfig(t *testing.T) {
 
 		expected := Config{}
 
-		assert.Equal(t, expected, config)
+		assert.Check(t, is.DeepEqual(expected, config))
 	})
 
 	t.Run("HOME is not set - TESTCONTAINERS_ env is set", func(t *testing.T) {
@@ -90,7 +91,7 @@ func TestReadTCConfig(t *testing.T) {
 			RyukConnectionTimeout:   12 * time.Second,
 		}
 
-		assert.Equal(t, expected, config)
+		assert.Check(t, is.DeepEqual(expected, config))
 	})
 
 	t.Run("HOME does not contain TC props file", func(t *testing.T) {
@@ -102,7 +103,7 @@ func TestReadTCConfig(t *testing.T) {
 
 		expected := Config{}
 
-		assert.Equal(t, expected, config)
+		assert.Check(t, is.DeepEqual(expected, config))
 	})
 
 	t.Run("HOME does not contain TC props file - DOCKER_HOST env is set", func(t *testing.T) {
@@ -114,7 +115,7 @@ func TestReadTCConfig(t *testing.T) {
 		config := read()
 		expected := Config{} // the config does not read DOCKER_HOST, that's why it's empty
 
-		assert.Equal(t, expected, config)
+		assert.Check(t, is.DeepEqual(expected, config))
 	})
 
 	t.Run("HOME does not contain TC props file - TESTCONTAINERS_ env is set", func(t *testing.T) {
@@ -138,7 +139,7 @@ func TestReadTCConfig(t *testing.T) {
 			RyukConnectionTimeout:   12 * time.Second,
 		}
 
-		assert.Equal(t, expected, config)
+		assert.Check(t, is.DeepEqual(expected, config))
 	})
 
 	t.Run("HOME contains TC properties file", func(t *testing.T) {
@@ -532,7 +533,7 @@ func TestReadTCConfig(t *testing.T) {
 				//
 				config := read()
 
-				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
+				assert.Check(t, is.DeepEqual(tt.expected, config), "Configuration doesn't not match")
 			})
 		}
 	})

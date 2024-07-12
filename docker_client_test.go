@@ -2,27 +2,28 @@ package testcontainers
 
 import (
 	"context"
+	"reflect"
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 )
 
 func TestGetDockerInfo(t *testing.T) {
 	t.Run("works", func(t *testing.T) {
 		ctx := context.Background()
 		c, err := NewDockerClientWithOpts(ctx)
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		info, err := c.Info(ctx)
-		require.NoError(t, err)
-		require.NotNil(t, info)
+		assert.NilError(t, err)
+		assert.Check(t, !reflect.ValueOf(info).IsZero())
 	})
 
 	t.Run("is goroutine safe", func(t *testing.T) {
 		ctx := context.Background()
 		c, err := NewDockerClientWithOpts(ctx)
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		count := 1024
 		wg := sync.WaitGroup{}
@@ -32,8 +33,8 @@ func TestGetDockerInfo(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				info, err := c.Info(ctx)
-				require.NoError(t, err)
-				require.NotNil(t, info)
+				assert.NilError(t, err)
+				assert.Check(t, !reflect.ValueOf(info).IsZero())
 			}()
 		}
 		wg.Wait()

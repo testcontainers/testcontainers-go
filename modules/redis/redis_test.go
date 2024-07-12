@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 
 	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 )
@@ -18,7 +18,7 @@ func TestIntegrationSetGet(t *testing.T) {
 	ctx := context.Background()
 
 	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
@@ -32,7 +32,7 @@ func TestRedisWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7", tcredis.WithConfigFile(filepath.Join("testdata", "redis7.conf")))
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
@@ -74,7 +74,7 @@ func TestRedisWithImage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			redisContainer, err := tcredis.Run(ctx, tt.image, tcredis.WithConfigFile(filepath.Join("testdata", "redis6.conf")))
-			require.NoError(t, err)
+			assert.NilError(t, err)
 			t.Cleanup(func() {
 				if err := redisContainer.Terminate(ctx); err != nil {
 					t.Fatalf("failed to terminate container: %s", err)
@@ -90,7 +90,7 @@ func TestRedisWithLogLevel(t *testing.T) {
 	ctx := context.Background()
 
 	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7", tcredis.WithLogLevel(tcredis.LogLevelVerbose))
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
@@ -104,7 +104,7 @@ func TestRedisWithSnapshotting(t *testing.T) {
 	ctx := context.Background()
 
 	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7", tcredis.WithSnapshotting(10, 1))
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	t.Cleanup(func() {
 		if err := redisContainer.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
@@ -118,22 +118,22 @@ func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.R
 	// connectionString {
 	uri, err := redisContainer.ConnectionString(ctx)
 	// }
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	// You will likely want to wrap your Redis package of choice in an
 	// interface to aid in unit testing and limit lock-in throughout your
 	// codebase but that's out of scope for this example
 	options, err := redis.ParseURL(uri)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	client := redis.NewClient(options)
 	defer func(t *testing.T, ctx context.Context, client *redis.Client) {
-		require.NoError(t, flushRedis(ctx, *client))
+		assert.NilError(t, flushRedis(ctx, *client))
 	}(t, ctx, client)
 
 	t.Log("pinging redis")
 	pong, err := client.Ping(ctx).Result()
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	t.Log("received response from redis")
 
@@ -148,11 +148,11 @@ func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.R
 
 		ttl, _ := time.ParseDuration("2h")
 		err = client.Set(ctx, key, value, ttl).Err()
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		// Get data
 		savedValue, err := client.Get(ctx, key).Result()
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		if savedValue != value {
 			t.Fatalf("Expected value %s. Got %s.", savedValue, value)

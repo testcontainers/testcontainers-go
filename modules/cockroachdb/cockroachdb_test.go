@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gotest.tools/v3/assert"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cockroachdb"
@@ -44,7 +44,7 @@ func TestCockroach_Password(t *testing.T) {
 
 func TestCockroach_TLS(t *testing.T) {
 	tlsCfg, err := cockroachdb.NewTLSConfig()
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	suite.Run(t, &AuthNSuite{
 		url: "postgres://root@localhost:xxxxx/defaultdb?sslmode=verify-full",

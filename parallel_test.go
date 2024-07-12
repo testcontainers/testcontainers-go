@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -100,7 +100,7 @@ func TestParallelContainers(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			res, err := ParallelContainers(context.Background(), tc.reqs, ParallelContainersOptions{})
 			if err != nil {
-				require.NotZero(t, tc.expErrors)
+				assert.Assert(t, tc.expErrors != 0)
 				var e ParallelContainersError
 				errors.As(err, &e)
 				if len(e.Errors) != tc.expErrors {

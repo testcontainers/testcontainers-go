@@ -13,8 +13,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -82,7 +82,7 @@ func TestPostgres(t *testing.T) {
 			// explicitly set sslmode=disable because the container is not configured to use TLS
 			connStr, err := container.ConnectionString(ctx, "sslmode=disable", "application_name=test")
 			// }
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			mustConnStr := container.MustConnectionString(ctx, "sslmode=disable", "application_name=test")
 			if mustConnStr != connStr {
@@ -91,22 +91,22 @@ func TestPostgres(t *testing.T) {
 
 			// Ensure connection string is using generic format
 			id, err := container.MappedPort(ctx, "5432/tcp")
-			require.NoError(t, err)
-			assert.Equal(t, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&application_name=test", user, password, "localhost", id.Port(), dbname), connStr)
+			assert.NilError(t, err)
+			assert.Check(t, is.Equal(fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&application_name=test", user, password, "localhost", id.Port(), dbname), connStr))
 
 			// perform assertions
 			db, err := sql.Open("postgres", connStr)
-			require.NoError(t, err)
-			assert.NotNil(t, db)
+			assert.NilError(t, err)
+			assert.Check(t, db != nil)
 			defer db.Close()
 
 			result, err := db.Exec("CREATE TABLE IF NOT EXISTS test (id int, name varchar(255));")
-			require.NoError(t, err)
-			assert.NotNil(t, result)
+			assert.NilError(t, err)
+			assert.Check(t, result != nil)
 
 			result, err = db.Exec("INSERT INTO test (id, name) VALUES (1, 'test');")
-			require.NoError(t, err)
-			assert.NotNil(t, result)
+			assert.NilError(t, err)
+			assert.Check(t, result != nil)
 		})
 	}
 }
@@ -128,8 +128,8 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithPassword(password),
 			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
 		)
-		require.NoError(t, err)
-		require.NotNil(t, container)
+		assert.NilError(t, err)
+		assert.Assert(t, container != nil)
 	})
 	t.Run("custom query", func(t *testing.T) {
 		container, err := postgres.Run(
@@ -140,8 +140,8 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithPassword(password),
 			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
 		)
-		require.NoError(t, err)
-		require.NotNil(t, container)
+		assert.NilError(t, err)
+		assert.Assert(t, container != nil)
 	})
 	t.Run("custom bad query", func(t *testing.T) {
 		container, err := postgres.Run(
@@ -152,8 +152,8 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithPassword(password),
 			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
 		)
-		require.Error(t, err)
-		require.Nil(t, container)
+		assert.Assert(t, is.ErrorContains(err, ""))
+		assert.Assert(t, is.Nil(container))
 	})
 }
 
@@ -180,11 +180,11 @@ func TestWithConfigFile(t *testing.T) {
 
 	// explicitly set sslmode=disable because the container is not configured to use TLS
 	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	db, err := sql.Open("postgres", connStr)
-	require.NoError(t, err)
-	assert.NotNil(t, db)
+	assert.NilError(t, err)
+	assert.Check(t, db != nil)
 	defer db.Close()
 }
 
@@ -211,17 +211,17 @@ func TestWithInitScript(t *testing.T) {
 
 	// explicitly set sslmode=disable because the container is not configured to use TLS
 	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	db, err := sql.Open("postgres", connStr)
-	require.NoError(t, err)
-	assert.NotNil(t, db)
+	assert.NilError(t, err)
+	assert.Check(t, db != nil)
 	defer db.Close()
 
 	// database created in init script. See testdata/init-user-db.sh
 	result, err := db.Exec("SELECT * FROM testdb;")
-	require.NoError(t, err)
-	assert.NotNil(t, result)
+	assert.NilError(t, err)
+	assert.Check(t, result != nil)
 }
 
 func TestSnapshot(t *testing.T) {
