@@ -113,7 +113,7 @@ func (c *DockerContainer) IsRunning() bool {
 	return c.isRunning
 }
 
-// Endpoint gets proto://host:port string for the first exposed port
+// Endpoint gets proto://host:port string for the lowest numbered exposed port
 // Will returns just host:port if proto is ""
 func (c *DockerContainer) Endpoint(ctx context.Context, proto string) (string, error) {
 	inspect, err := c.Inspect(ctx)
@@ -121,16 +121,15 @@ func (c *DockerContainer) Endpoint(ctx context.Context, proto string) (string, e
 		return "", err
 	}
 
-	ports := inspect.NetworkSettings.Ports
-
-	// get first port
-	var firstPort nat.Port
-	for p := range ports {
-		firstPort = p
-		break
+	// Get lowest numbered bound port.
+	var lowestPort nat.Port
+	for port := range inspect.NetworkSettings.Ports {
+		if lowestPort == "" || port.Int() < lowestPort.Int() {
+			lowestPort = port
+		}
 	}
 
-	return c.PortEndpoint(ctx, firstPort, proto)
+	return c.PortEndpoint(ctx, lowestPort, proto)
 }
 
 // PortEndpoint gets proto://host:port string for the given exposed port
