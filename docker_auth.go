@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/url"
 	"os"
+	"sync"
 
 	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types/registry"
@@ -79,52 +80,76 @@ func defaultRegistry(ctx context.Context) string {
 	return info.IndexServerAddress
 }
 
+// authConfig represents the details of the auth config for a registry.
+type authConfig struct {
+	key string
+	cfg registry.AuthConfig
+}
+
 // getDockerAuthConfigs returns a map with the auth configs from the docker config file
 // using the registry as the key
-func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
+var getDockerAuthConfigs = sync.OnceValues(func() (map[string]registry.AuthConfig, error) {
 	cfg, err := getDockerConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	cfgs := map[string]registry.AuthConfig{}
+	results := make(chan authConfig, len(cfg.AuthConfigs)+len(cfg.CredentialHelpers))
+	var wg sync.WaitGroup
+	wg.Add(len(cfg.AuthConfigs) + len(cfg.CredentialHelpers))
 	for k, v := range cfg.AuthConfigs {
-		ac := registry.AuthConfig{
-			Auth:          v.Auth,
-			Email:         v.Email,
-			IdentityToken: v.IdentityToken,
-			Password:      v.Password,
-			RegistryToken: v.RegistryToken,
-			ServerAddress: v.ServerAddress,
-			Username:      v.Username,
-		}
+		go func(k string, v dockercfg.AuthConfig) {
+			defer wg.Done()
 
-		if v.Username == "" && v.Password == "" {
-			u, p, _ := dockercfg.GetRegistryCredentials(k)
-			ac.Username = u
-			ac.Password = p
-		}
+			ac := registry.AuthConfig{
+				Auth:          v.Auth,
+				Email:         v.Email,
+				IdentityToken: v.IdentityToken,
+				Password:      v.Password,
+				RegistryToken: v.RegistryToken,
+				ServerAddress: v.ServerAddress,
+				Username:      v.Username,
+			}
 
-		if v.Auth == "" {
-			ac.Auth = base64.StdEncoding.EncodeToString([]byte(ac.Username + ":" + ac.Password))
-		}
+			if v.Username == "" && v.Password == "" {
+				u, p, _ := dockercfg.GetRegistryCredentials(k)
+				ac.Username = u
+				ac.Password = p
+			}
 
-		cfgs[k] = ac
+			if v.Auth == "" {
+				ac.Auth = base64.StdEncoding.EncodeToString([]byte(ac.Username + ":" + ac.Password))
+			}
+			results <- authConfig{key: k, cfg: ac}
+		}(k, v)
 	}
 
 	// in the case where the auth field in the .docker/conf.json is empty, and the user has credential helpers registered
 	// the auth comes from there
 	for k := range cfg.CredentialHelpers {
-		ac := registry.AuthConfig{}
-		u, p, _ := dockercfg.GetRegistryCredentials(k)
-		ac.Username = u
-		ac.Password = p
+		go func(k string) {
+			defer wg.Done()
 
-		cfgs[k] = ac
+			ac := registry.AuthConfig{}
+			u, p, _ := dockercfg.GetRegistryCredentials(k)
+			ac.Username = u
+			ac.Password = p
+			results <- authConfig{key: k, cfg: ac}
+		}(k)
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for ac := range results {
+		cfgs[ac.key] = ac.cfg
 	}
 
 	return cfgs, nil
-}
+})
 
 // getDockerConfig returns the docker config file. It will internally check, in this particular order:
 // 1. the DOCKER_AUTH_CONFIG environment variable, unmarshalling it into a dockercfg.Config
