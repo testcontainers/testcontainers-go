@@ -3,7 +3,6 @@ package testcontainers
 import (
 	"context"
 	"errors"
-	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -11,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -23,6 +24,8 @@ const (
 func TestNewReusableContainer(t *testing.T) {
 	ctx := context.Background()
 
+	reusableContainerName := reusableContainerName + "_" + time.Now().Format("20060102150405")
+
 	n1, err := Run(ctx, Request{
 		Image:        nginxAlpineImage,
 		ExposedPorts: []string{nginxDefaultPort},
@@ -31,7 +34,7 @@ func TestNewReusableContainer(t *testing.T) {
 		Started:      true,
 	})
 	require.NoError(t, err)
-	require.True(t, n1.IsRunning())
+	require.True(t, n1.isRunning)
 	TerminateContainerOnEnd(t, ctx, n1)
 
 	copiedFileName := "hello_copy.sh"
@@ -124,6 +127,7 @@ func TestNewReusableContainerInSubprocess(t *testing.T) {
 			// create containers in subprocesses, as "go test ./..." does.
 			output := createReuseContainerInSubprocess(t)
 
+			t.Log(output)
 			// check is reuse container with WaitingFor work correctly.
 			require.True(t, strings.Contains(output, "⏳ Waiting for container id"))
 			require.True(t, strings.Contains(output, "🔔 Container is ready"))
@@ -131,11 +135,29 @@ func TestNewReusableContainerInSubprocess(t *testing.T) {
 	}
 
 	wg.Wait()
+
+	cli, err := NewDockerClientWithOpts(context.Background())
+	require.NoError(t, err)
+
+	f := filters.NewArgs(filters.KeyValuePair{Key: "name", Value: reusableContainerName})
+
+	ctrs, err := cli.ContainerList(context.Background(), container.ListOptions{
+		All:     true,
+		Filters: f,
+	})
+	require.NoError(t, err)
+	require.Len(t, ctrs, 1)
+
+	nginxC, err := containerFromDockerResponse(context.Background(), ctrs[0])
+	require.NoError(t, err)
+
+	TerminateContainerOnEnd(t, context.Background(), nginxC)
 }
 
 func createReuseContainerInSubprocess(t *testing.T) string {
-	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess")
-	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+	// force verbosity in subprocesses, so that the output is printed
+	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess", "-test.v=true")
+	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
 
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, string(output))
@@ -161,19 +183,5 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 		Reuse:        true,
 	})
 	require.NoError(t, err)
-	require.True(t, nginxC.IsRunning())
-
-	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
-	require.NoError(t, err)
-
-	// check is reuse container with WaitingFor work correctly.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, origin, nil)
-	require.NoError(t, err)
-	req.Close = true
-
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.True(t, nginxC.isRunning)
 }

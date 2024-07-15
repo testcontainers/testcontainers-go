@@ -59,9 +59,9 @@ func TestWeaviate(t *testing.T) {
 		}
 
 		var opts []grpc.DialOption
-		opts = append(opts, grpc.WithBlock())
+
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		conn, err := grpc.Dial(host, opts...)
+		conn, err := grpc.NewClient(host, opts...)
 		if err != nil {
 			tt.Fatalf("failed to dial connection: %v", err)
 		}

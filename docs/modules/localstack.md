@@ -25,7 +25,14 @@ Running LocalStack as a stand-in for multiple AWS services during a test:
 Environment variables listed in [Localstack's README](https://github.com/localstack/localstack#configurations) may be used to customize Localstack's configuration. 
 Use the `testcontainers.WithEnv` option when creating the `LocalStackContainer` to apply those variables.
 
-## Module reference
+## Module Reference
+
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The LocalStack module exposes one single function to create the LocalStack container, and this function receives three parameters:
 

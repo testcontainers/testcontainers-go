@@ -786,3 +786,10 @@ func (c *DockerContainer) terminatedHook(ctx context.Context) error {
 		return lifecycleHooks.PostTerminates
 	})
 }
+
+func tryClose(r io.Reader) {
+	rc, ok := r.(io.Closer)
+	if ok {
+		_ = rc.Close()
+	}
+}

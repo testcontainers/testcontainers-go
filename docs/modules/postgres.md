@@ -20,7 +20,14 @@ go get github.com/testcontainers/testcontainers-go/modules/postgres
 [Creating a Postgres container](../../modules/postgres/examples_test.go) inside_block:runPostgresContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
+
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The Postgres module exposes one entrypoint function to create the Postgres container, and this function receives three parameters:
 
@@ -118,7 +125,7 @@ tests very modular, since they always run on a brand-new database.
 
 ### Snapshot/Restore with custom driver
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 The snapshot/restore feature tries to use the `postgres` driver with go's included `sql.DB` package to perform database operations.
 If the `postgres` driver is not installed, it will fall back to using `docker exec`, which works, but is slower.

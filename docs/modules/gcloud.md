@@ -54,7 +54,7 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 [Obtaining a Firestore client](../../modules/gcloud/firestore_test.go) inside_block:firestoreClient
 <!--/codeinclude-->
 
-It's important to set the target string of the `grpc.Dial` method using the container's URI, as shown in the client example above.
+It's important to set the target string of the `grpc.NewClient` method using the container's URI, as shown in the client example above.
 
 ### Pubsub
 
@@ -63,7 +63,7 @@ It's important to set the target string of the `grpc.Dial` method using the cont
 [Obtaining a Pubsub client](../../modules/gcloud/pubsub_test.go) inside_block:pubsubClient
 <!--/codeinclude-->
 
-It's important to set the target string of the `grpc.Dial` method using the container's URI, as shown in the client example above.
+It's important to set the target string of the `grpc.NewClient` method using the container's URI, as shown in the client example above.
 
 ### Spanner
 
@@ -75,20 +75,28 @@ It's important to set the target string of the `grpc.Dial` method using the cont
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the Admin client example above.
 
-## Module reference
+## Module Reference
 
-The GCloud module exposes one entrypoint function to create the different GCloud emulators, and each function receives two parameters:
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunXXXContainer(ctx, opts...)` functions are deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
+The GCloud module exposes one entrypoint function to create the different GCloud emulators, and each function receives three parameters:
 
 ```golang
-func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*BigQueryContainer, error)
-func RunBigTableContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*BigTableContainer, error)
-func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*DatastoreContainer, error)
-func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*FirestoreContainer, error)
-func RunPubsubContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*PubsubContainer, error)
-func RunSpannerContainer(ctx context.Context, opts ...testcontainers.RequestCustomizer) (*SpannerContainer, error)
+func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*BigQueryContainer, error)
+func RunBigTable(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*BigTableContainer, error)
+func RunDatastore(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*DatastoreContainer, error)
+func RunFirestore(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*FirestoreContainer, error)
+func RunPubsub(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*PubsubContainer, error)
+func RunSpanner(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*SpannerContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.RequestCustomizer`, a variadic argument for passing options.
 
 ### Container Options

@@ -2,9 +2,9 @@ package image
 
 import (
 	"context"
-	"errors"
 	"io"
 	"os"
+	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/docker/docker/api/types"
@@ -29,10 +29,7 @@ type BuildInfo interface {
 
 // Build will build and image from context and Dockerfile, then return the tag
 func Build(ctx context.Context, img BuildInfo) (string, error) {
-	buildOptions, err := img.BuildOptions()
-	if err != nil {
-		return "", err
-	}
+	var buildOptions types.ImageBuildOptions
 
 	cli, err := core.NewClient(ctx)
 	if err != nil {
@@ -40,25 +37,35 @@ func Build(ctx context.Context, img BuildInfo) (string, error) {
 	}
 	defer cli.Close()
 
-	var buildError error
-	var resp types.ImageBuildResponse
-	err = backoff.Retry(func() error {
-		resp, err = cli.ImageBuild(ctx, buildOptions.Context, buildOptions)
-		if err != nil {
-			buildError = errors.Join(buildError, err)
-			if core.IsPermanentClientError(err) {
-				return backoff.Permanent(err)
+	resp, err := backoff.RetryNotifyWithData(
+		func() (types.ImageBuildResponse, error) {
+			var err error
+			buildOptions, err = img.BuildOptions()
+			if err != nil {
+				return types.ImageBuildResponse{}, backoff.Permanent(err)
+			}
+			defer tryClose(buildOptions.Context) // release resources in any case
+
+			resp, err := cli.ImageBuild(ctx, buildOptions.Context, buildOptions)
+			if err != nil {
+				if core.IsPermanentClientError(err) {
+					return types.ImageBuildResponse{}, backoff.Permanent(err)
+				}
+
+				img.Printf("Failed to build image: %s, will retry", err)
+				return types.ImageBuildResponse{}, err
 			}
 
-			img.Printf("Failed to build image: %s, will retry", err)
-			return err
-		}
-
-		return nil
-	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+			return resp, nil
+		}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
+		func(err error, duration time.Duration) {
+			img.Printf("Failed to build image: %s, will retry in %s", err, duration)
+		},
+	)
 	if err != nil {
-		return "", errors.Join(buildError, err)
+		return "", err
 	}
+	defer resp.Body.Close()
 
 	if img.ShouldPrintBuildLog() {
 		termFd, isTerm := term.GetFdInfo(os.Stderr)
@@ -75,8 +82,13 @@ func Build(ctx context.Context, img BuildInfo) (string, error) {
 		return "", err
 	}
 
-	_ = resp.Body.Close()
-
 	// the first tag is the one we want
 	return buildOptions.Tags[0], nil
+}
+
+func tryClose(r io.Reader) {
+	rc, ok := r.(io.Closer)
+	if ok {
+		_ = rc.Close()
+	}
 }

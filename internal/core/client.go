@@ -60,6 +60,7 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
   API Version: %v
   Operating System: %v
   Total Memory: %v MB
+  Testcontainers for Go Version: v%s
   Resolved Docker Host: %s
   Resolved Docker Socket Path: %s
   Test SessionID: %s
@@ -69,6 +70,7 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
 	c.logger.Printf(infoMessage, packagePath,
 		dockerInfo.ServerVersion, c.APIClient.ClientVersion(),
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
+		internal.Version,
 		ExtractDockerHost(ctx),
 		ExtractDockerSocket(ctx),
 		SessionID(),

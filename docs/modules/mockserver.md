@@ -20,7 +20,14 @@ go get github.com/testcontainers/testcontainers-go/modules/mockserver
 [Creating a MockServer container](../../modules/mockserver/examples_test.go) inside_block:runMockServerContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
+
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The MockServer module exposes one entrypoint function to create the MockServer container, and this function receives three parameters:
 

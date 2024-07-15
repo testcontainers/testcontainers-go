@@ -24,6 +24,13 @@ Running Neo4j as a single-instance server, with the [APOC plugin](https://neo4j.
 
 ## Module Reference
 
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
 The Neo4j module exposes one entrypoint function to create the Neo4j container, and this function receives three parameters:
 
 ```golang

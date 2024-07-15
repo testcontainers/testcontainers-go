@@ -20,7 +20,14 @@ go get github.com/testcontainers/testcontainers-go/modules/nats
 [Creating a NATS container](../../modules/nats/examples_test.go) inside_block:runNATSContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
+
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The NATS module exposes one entrypoint function to create the NATS container, and this function receives three parameters:
 

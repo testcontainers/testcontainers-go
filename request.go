@@ -78,12 +78,6 @@ func (r *Request) BuildOptions() (types.ImageBuildOptions, error) {
 	buildOptions.BuildArgs = r.GetBuildArgs()
 	buildOptions.Dockerfile = r.GetDockerfile()
 
-	buildContext, err := r.GetContext()
-	if err != nil {
-		return buildOptions, err
-	}
-	buildOptions.Context = buildContext
-
 	// Make sure the auth configs from the Dockerfile are set right after the user-defined build options.
 	authsFromDockerfile := getAuthConfigsFromDockerfile(r)
 
@@ -122,6 +116,13 @@ func (r *Request) BuildOptions() (types.ImageBuildOptions, error) {
 		buildOptions.Labels = core.DefaultLabels(core.SessionID())
 	}
 
+	// Do this as late as possible to ensure we don't leak the context on error/panic.
+	buildContext, err := r.GetContext()
+	if err != nil {
+		return buildOptions, err
+	}
+	buildOptions.Context = buildContext
+
 	return buildOptions, nil
 }
 
@@ -151,6 +152,7 @@ func (r *Request) GetBuildArgs() map[string]*string {
 }
 
 // GetContext retrieve the build context for the request
+// Must be closed when no longer needed.
 func (r *Request) GetContext() (io.Reader, error) {
 	var includes []string = []string{"."}
 
