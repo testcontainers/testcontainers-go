@@ -39,7 +39,7 @@ function main() {
 
 # This function reads the reaper.go file and extracts the current version.
 function extractCurrentVersion() {
-  cat "${REAPER_FILE}" | grep 'ReaperDefaultImage = ' | cut -d '=' -f 2 | cut -d '"' -f 1
+  cat "${REAPER_FILE}" | grep 'ReaperDefaultImage = ' | cut -d '=' -f 2
 }
 
 main "$@"
