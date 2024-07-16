@@ -223,16 +223,19 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 						}
 
 						exposedAndMappedPorts := jsonRaw.NetworkSettings.Ports
+						portMap, _, err := nat.ParsePortSpecs(dockerContainer.exposedPorts)
+						if err != nil {
+							return err
+						}
 
-						for _, exposedPort := range dockerContainer.exposedPorts {
-							portMap := nat.Port(exposedPort)
+						for exposedPort, _ := range portMap {
 							// having entries in exposedAndMappedPorts, where the key is the exposed port,
 							// and the value is the mapped port, means that the port has been already mapped.
-							if _, ok := exposedAndMappedPorts[portMap]; !ok {
+							if _, ok := exposedAndMappedPorts[exposedPort]; !ok {
 								// check if the port is mapped with the protocol (default is TCP)
-								if !strings.Contains(exposedPort, "/") {
-									portMap = nat.Port(fmt.Sprintf("%s/tcp", exposedPort))
-									if _, ok := exposedAndMappedPorts[portMap]; !ok {
+								if !strings.Contains(string(exposedPort), "/") {
+									exposedPort = nat.Port(fmt.Sprintf("%s/tcp", string(exposedPort)))
+									if _, ok := exposedAndMappedPorts[exposedPort]; !ok {
 										return fmt.Errorf("port %s is not mapped yet", exposedPort)
 									}
 								} else {
