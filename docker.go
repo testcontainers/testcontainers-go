@@ -887,14 +887,14 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 			var err error
 			buildOptions, err = img.BuildOptions()
 			if err != nil {
-				return types.ImageBuildResponse{}, backoff.Permanent(err)
+				return types.ImageBuildResponse{}, backoff.Permanent(fmt.Errorf("build options: %w", err))
 			}
 			defer tryClose(buildOptions.Context) // release resources in any case
 
 			resp, err := p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 			if err != nil {
 				if isPermanentClientError(err) {
-					return types.ImageBuildResponse{}, backoff.Permanent(err)
+					return types.ImageBuildResponse{}, backoff.Permanent(fmt.Errorf("build image: %w", err))
 				}
 				return types.ImageBuildResponse{}, err
 			}
@@ -908,30 +908,28 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		},
 	)
 	if err != nil {
-		return "", err
+		return "", err // Error is already wrapped.
 	}
 	defer resp.Body.Close()
 
+	output := io.Discard
 	if img.ShouldPrintBuildLog() {
-		termFd, isTerm := term.GetFdInfo(os.Stderr)
-		err = jsonmessage.DisplayJSONMessagesStream(resp.Body, os.Stderr, termFd, isTerm, nil)
-		if err != nil {
-			return "", err
-		}
+		output = os.Stderr
 	}
 
-	// need to read the response from Docker, I think otherwise the image
-	// might not finish building before continuing to execute here
-	_, err = io.Copy(io.Discard, resp.Body)
-	if err != nil {
-		return "", err
+	// Always process the output, even if it is not printed
+	// to ensure that errors during the build process are
+	// correctly handled.
+	termFd, isTerm := term.GetFdInfo(output)
+	if err = jsonmessage.DisplayJSONMessagesStream(resp.Body, output, termFd, isTerm, nil); err != nil {
+		return "", fmt.Errorf("build image: %w", err)
 	}
 
 	// the first tag is the one we want
 	return buildOptions.Tags[0], nil
 }
 
-// CreateContainer fulfills a request for a container without starting it
+// CreateContainer fulfils a request for a container without starting it
 func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	var err error
 
