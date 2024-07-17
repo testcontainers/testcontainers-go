@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	tcvalkey "github.com/testcontainers/testcontainers-go/modules/valkey"
+	"github.com/valkey-io/valkey-go"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -84,7 +84,7 @@ func TestValkeyWithLogLevel(t *testing.T) {
 	assertSetsGets(t, ctx, valkeyContainer, 10)
 }
 
-func TestRedisWithSnapshotting(t *testing.T) {
+func TestValkeyWithSnapshotting(t *testing.T) {
 	ctx := context.Background()
 
 	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5", tcvalkey.WithSnapshotting(10, 1))
@@ -107,22 +107,26 @@ func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey
 	// You will likely want to wrap your Valkey package of choice in an
 	// interface to aid in unit testing and limit lock-in throughout your
 	// codebase but that's out of scope for this example
-	options, err := redis.ParseURL(uri)
+	options, err := valkey.ParseURL(uri)
 	require.NoError(t, err)
 
-	client := redis.NewClient(options)
-	defer func(t *testing.T, ctx context.Context, client *redis.Client) {
+	client, err := valkey.NewClient(options)
+	require.NoError(t, err)
+	defer func(t *testing.T, ctx context.Context, client *valkey.Client) {
 		require.NoError(t, flushValkey(ctx, *client))
-	}(t, ctx, client)
+	}(t, ctx, &client)
 
 	t.Log("pinging valkey")
-	pong, err := client.Ping(ctx).Result()
-	require.NoError(t, err)
+	res := client.Do(ctx, client.B().Ping().Build())
+	require.NoError(t, res.Error())
 
 	t.Log("received response from valkey")
 
-	if pong != "PONG" {
-		t.Fatalf("received unexpected response from valkey: %s", pong)
+	msg, err := res.ToString()
+	require.NoError(t, err)
+
+	if msg != "PONG" {
+		t.Fatalf("received unexpected response from valkey: %s", res.String())
 	}
 
 	for i := 0; i < keyCount; i++ {
@@ -131,19 +135,23 @@ func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey
 		value := fmt.Sprintf("Cabbage Biscuits %d", i)
 
 		ttl, _ := time.ParseDuration("2h")
-		err = client.Set(ctx, key, value, ttl).Err()
+
+		err = client.Do(ctx, client.B().Set().Key(key).Value(value).Exat(time.Now().Add(ttl)).Build()).Error()
+		err = client.Do(ctx, client.B().Expire().Key(key).Seconds(int64(ttl.Seconds())).Build()).Error()
 		require.NoError(t, err)
 
 		// Get data
-		savedValue, err := client.Get(ctx, key).Result()
-		require.NoError(t, err)
+		resp := client.Do(ctx, client.B().Get().Key(key).Build())
+		require.NoError(t, resp.Error())
 
-		if savedValue != value {
-			t.Fatalf("Expected value %s. Got %s.", savedValue, value)
+		retVal, err := resp.ToString()
+		require.NoError(t, err)
+		if retVal != value {
+			t.Fatalf("Expected value %s. Got %s.", value, retVal)
 		}
 	}
 }
 
-func flushValkey(ctx context.Context, client redis.Client) error {
-	return client.FlushAll(ctx).Err()
+func flushValkey(ctx context.Context, client valkey.Client) error {
+	return client.Do(ctx, client.B().Flushall().Build()).Error()
 }
