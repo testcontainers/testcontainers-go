@@ -84,7 +84,7 @@ func TestDoltWithPublicRemoteCloneUrl(t *testing.T) {
 }
 
 func createTestCredsFile(t *testing.T) string {
-	file, err := os.CreateTemp(os.TempDir(), "prefix")
+	file, err := os.CreateTemp(t.TempDir(), "prefix")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,6 @@ func TestDoltWithPrivateRemoteCloneUrl(t *testing.T) {
 	ctx := context.Background()
 
 	filename := createTestCredsFile(t)
-	defer os.RemoveAll(filename)
 	_, err := dolt.Run(ctx,
 		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithDatabase("foo"),
