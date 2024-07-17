@@ -177,11 +177,10 @@ mail: test.user@example.org
 userPassword: Password1
 `
 
-	f, err := os.CreateTemp("", "test.ldif")
+	f, err := os.CreateTemp(t.TempDir(), "test.ldif")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(f.Name())
 
 	_, err = f.WriteString(ldif)
 	if err != nil {

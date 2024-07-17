@@ -47,7 +47,7 @@ func ExampleRunFirestoreContainer() {
 	// firestoreClient {
 	projectID := firestoreContainer.Settings.ProjectID
 
-	conn, err := grpc.Dial(firestoreContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(emulatorCreds{}))
+	conn, err := grpc.NewClient(firestoreContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(emulatorCreds{}))
 	if err != nil {
 		log.Fatalf("failed to dial: %v", err) // nolint:gocritic
 	}

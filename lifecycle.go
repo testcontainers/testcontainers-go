@@ -370,7 +370,15 @@ func (c *DockerContainer) applyLifecycleHooks(ctx context.Context, logError bool
 
 	if err := errors.Join(errs...); err != nil {
 		if logError {
-			c.printLogs(ctx, err)
+			select {
+			case <-ctx.Done():
+				// Context has timed out so need a new context to get logs.
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+				defer cancel()
+				c.printLogs(ctx, err)
+			default:
+				c.printLogs(ctx, err)
+			}
 		}
 
 		return err

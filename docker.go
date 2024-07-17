@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/containerd/containerd/platforms"
+	"github.com/containerd/platforms"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -1654,6 +1654,7 @@ var permanentClientErrors = []func(error) bool{
 	errdefs.IsUnauthorized,
 	errdefs.IsForbidden,
 	errdefs.IsNotImplemented,
+	errdefs.IsSystem,
 }
 
 func isPermanentClientError(err error) bool {

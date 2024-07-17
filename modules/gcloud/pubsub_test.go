@@ -37,7 +37,7 @@ func ExampleRunPubsubContainer() {
 	// pubsubClient {
 	projectID := pubsubContainer.Settings.ProjectID
 
-	conn, err := grpc.Dial(pubsubContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(pubsubContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to dial: %v", err) // nolint:gocritic
 	}
