@@ -8,6 +8,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// ValkeyContainer represents the Valkey container type used in the module
+type ValkeyContainer struct {
+	testcontainers.Container
+}
+
 // valkeyServerProcess is the name of the valkey server process
 const valkeyServerProcess = "valkey-server"
 
@@ -24,10 +29,7 @@ const (
 	LogLevelWarning LogLevel = "warning"
 )
 
-type ValkeyContainer struct {
-	testcontainers.Container
-}
-
+// ConnectionString returns the connection string for the Valkey container
 func (c *ValkeyContainer) ConnectionString(ctx context.Context) (string, error) {
 	mappedPort, err := c.MappedPort(ctx, "6379/tcp")
 	if err != nil {

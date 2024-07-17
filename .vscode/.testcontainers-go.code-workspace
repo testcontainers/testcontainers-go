@@ -170,6 +170,10 @@
             "path": "../modules/surrealdb"
         },
         {
+            "name": "module / valkey",
+            "path": "../modules/valkey"
+        },
+        {
             "name": "module / vault",
             "path": "../modules/vault"
         },
