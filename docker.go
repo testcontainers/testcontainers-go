@@ -1006,9 +1006,27 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	var platform *specs.Platform
 
+	defaultHooks := []ContainerLifecycleHooks{
+		DefaultLoggingHook(p.Logger),
+	}
+
+	origLifecycleHooks := req.LifecycleHooks
+	req.LifecycleHooks = []ContainerLifecycleHooks{
+		combineContainerHooks(defaultHooks, req.LifecycleHooks),
+	}
+
 	if req.ShouldBuildImage() {
+		if err = req.buildingHook(ctx); err != nil {
+			return nil, err
+		}
+
 		imageName, err = p.BuildImage(ctx, &req)
 		if err != nil {
+			return nil, err
+		}
+
+		req.Image = imageName
+		if err = req.builtHook(ctx); err != nil {
 			return nil, err
 		}
 	} else {
@@ -1087,13 +1105,12 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	networkingConfig := &network.NetworkingConfig{}
 
 	// default hooks include logger hook and pre-create hook
-	defaultHooks := []ContainerLifecycleHooks{
-		DefaultLoggingHook(p.Logger),
-		defaultPreCreateHook(ctx, p, req, dockerInput, hostConfig, networkingConfig),
+	defaultHooks = append(defaultHooks,
+		defaultPreCreateHook(p, dockerInput, hostConfig, networkingConfig),
 		defaultCopyFileToContainerHook(req.Files),
 		defaultLogConsumersHook(req.LogConsumerCfg),
 		defaultReadinessHook(),
-	}
+	)
 
 	// in the case the container needs to access a local port
 	// we need to forward the local port to the container
@@ -1109,7 +1126,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		defaultHooks = append(defaultHooks, sshdForwardPortsHook)
 	}
 
-	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
+	// Combine with the original LifecycleHooks to avoid duplicate logging hooks.
+	req.LifecycleHooks = []ContainerLifecycleHooks{
+		combineContainerHooks(defaultHooks, origLifecycleHooks),
+	}
 
 	err = req.creatingHook(ctx)
 	if err != nil {
