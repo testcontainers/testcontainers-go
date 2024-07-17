@@ -12,7 +12,7 @@ import (
 
 const (
 	// dockerImages {
-	enterpriseEdition = "couchbase:enterprise-7.1.3"
+	enterpriseEdition = "couchbase:enterprise-7.6.1"
 	communityEdition  = "couchbase:community-7.1.1"
 	// }
 )
@@ -54,7 +54,15 @@ func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	container, err := tccouchbase.Run(ctx, enterpriseEdition, tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
+	bucket := tccouchbase.NewBucket(bucketName).
+		WithQuota(100).
+		WithReplicas(0).
+		WithFlushEnabled(true).
+		WithPrimaryIndex(true)
+	container, err := tccouchbase.Run(ctx,
+		enterpriseEdition,
+		tccouchbase.WithBuckets(bucket),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
