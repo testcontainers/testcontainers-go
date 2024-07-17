@@ -20,6 +20,7 @@ go get github.com/testcontainers/testcontainers-go
 ```go
 import (
 	"context"
+	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -37,11 +38,11 @@ func TestWithRedis(t *testing.T) {
 		Started:          true,
 	})
 	if err != nil {
-		log.Fatalf("Could not start redis: %s", err)
+		t.Fatalf("Could not start redis: %s", err)
 	}
 	defer func() {
 		if err := redisC.Terminate(ctx); err != nil {
-			log.Fatalf("Could not stop redis: %s", err)
+			t.Fatalf("Could not stop redis: %s", err)
 		}
 	}()
 }
