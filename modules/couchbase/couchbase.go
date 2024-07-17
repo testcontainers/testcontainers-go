@@ -491,9 +491,14 @@ func (c *CouchbaseContainer) createPrimaryIndex(ctx context.Context, bucket buck
 	body := map[string]string{
 		"statement": "CREATE PRIMARY INDEX on `" + bucket.name + "`",
 	}
-
-	_, err := c.doHttpRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body, true)
-
+	err := backoff.Retry(func() error {
+		response, err := c.doHttpRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body, true)
+		firstError := gjson.Get(string(response), "errors.0.code").Int()
+		if firstError != 0 {
+			return errors.New("index creation failed")
+		}
+		return err
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 	return err
 }
 
