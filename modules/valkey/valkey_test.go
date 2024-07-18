@@ -3,14 +3,15 @@ package valkey_test
 import (
 	"context"
 	"fmt"
-	tcvalkey "github.com/testcontainers/testcontainers-go/modules/valkey"
-	"github.com/valkey-io/valkey-go"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"github.com/valkey-io/valkey-go"
+
+	tcvalkey "github.com/testcontainers/testcontainers-go/modules/valkey"
 )
 
 func TestIntegrationSetGet(t *testing.T) {
