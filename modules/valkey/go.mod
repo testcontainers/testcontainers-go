@@ -7,7 +7,6 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.32.0
 	github.com/valkey-io/valkey-go v1.0.41
-
 )
 
 replace github.com/testcontainers/testcontainers-go => ../..
