@@ -65,6 +65,11 @@ In the case you have a custom config file for Valkey, it's possible to copy that
 ### Container Methods
 
 The Valkey container exposes the following methods:
+
+#### ConnectionString
+
+This method returns the connection string to connect to the Valkey container, using the default `6379` port.
+
 <!--codeinclude-->
 [Get connection string](../../modules/valkey/valkey_test.go) inside_block:connectionString
 <!--/codeinclude-->
