@@ -1,18 +1,18 @@
-package grafana_test
+package grafanalgtm_test
 
 import (
 	"context"
 	"fmt"
 	"log"
 
-	"github.com/testcontainers/testcontainers-go/modules/grafana"
+	"github.com/testcontainers/testcontainers-go/modules/grafanalgtm"
 )
 
 func ExampleRun() {
 	// runGrafanaContainer {
 	ctx := context.Background()
 
-	grafanaContainer, err := grafana.Run(ctx, "grafana/otel-lgtm:0.6.0")
+	grafanaContainer, err := grafanalgtm.Run(ctx, "grafana/otel-lgtm:0.6.0")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

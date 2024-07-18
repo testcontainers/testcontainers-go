@@ -1,16 +1,16 @@
-package grafana_test
+package grafanalgtm_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/testcontainers/testcontainers-go/modules/grafana"
+	"github.com/testcontainers/testcontainers-go/modules/grafanalgtm"
 )
 
 func TestGrafana(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := grafana.Run(ctx, "grafana/otel-lgtm:0.6.0")
+	container, err := grafanalgtm.Run(ctx, "grafana/otel-lgtm:0.6.0")
 	if err != nil {
 		t.Fatal(err)
 	}

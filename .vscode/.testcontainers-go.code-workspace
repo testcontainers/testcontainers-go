@@ -62,8 +62,8 @@
             "path": "../modules/gcloud"
         },
         {
-            "name": "module / grafana",
-            "path": "../modules/grafana"
+            "name": "module / grafana-lgtm",
+            "path": "../modules/grafana-lgtm"
         },
         {
             "name": "module / inbucket",
