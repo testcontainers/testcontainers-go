@@ -76,6 +76,8 @@ func (ws *HTTPStrategy) WithStartupTimeout(timeout time.Duration) *HTTPStrategy 
 	return ws
 }
 
+// WithPort set the port to wait for.
+// Default is the lowest numbered port.
 func (ws *HTTPStrategy) WithPort(port nat.Port) *HTTPStrategy {
 	ws.Port = port
 	return ws
@@ -173,38 +175,43 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 
 	var mappedPort nat.Port
 	if ws.Port == "" {
-		var err error
-		var ports nat.PortMap
-		// we wait one polling interval before we grab the ports otherwise they might not be bound yet on startup
-		for err != nil || ports == nil {
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("%w: %w", ctx.Err(), err)
-			case <-time.After(ws.PollInterval):
-				if err := checkTarget(ctx, target); err != nil {
-					return err
-				}
-
-				inspect, err := target.Inspect(ctx)
-				if err != nil {
-					return err
-				}
-
-				ports = inspect.NetworkSettings.Ports
-			}
+		// We wait one polling interval before we grab the ports
+		// otherwise they might not be bound yet on startup.
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(ws.PollInterval):
+			// Port should now be bound so just continue.
 		}
 
-		for k, bindings := range ports {
-			if len(bindings) == 0 || k.Proto() != "tcp" {
+		if err := checkTarget(ctx, target); err != nil {
+			return err
+		}
+
+		inspect, err := target.Inspect(ctx)
+		if err != nil {
+			return err
+		}
+
+		// Find the lowest numbered exposed tcp port.
+		var lowestPort nat.Port
+		var hostPort string
+		for port, bindings := range inspect.NetworkSettings.Ports {
+			if len(bindings) == 0 || port.Proto() != "tcp" {
 				continue
 			}
-			mappedPort, _ = nat.NewPort(k.Proto(), bindings[0].HostPort)
-			break
+
+			if lowestPort == "" || port.Int() < lowestPort.Int() {
+				lowestPort = port
+				hostPort = bindings[0].HostPort
+			}
 		}
 
-		if mappedPort == "" {
+		if lowestPort == "" {
 			return errors.New("No exposed tcp ports or mapped ports - cannot wait for status")
 		}
+
+		mappedPort, _ = nat.NewPort(lowestPort.Proto(), hostPort)
 	} else {
 		mappedPort, err = target.MappedPort(ctx, ws.Port)
 
