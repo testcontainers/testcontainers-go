@@ -62,6 +62,10 @@
             "path": "../modules/gcloud"
         },
         {
+            "name": "module / grafana",
+            "path": "../modules/grafana"
+        },
+        {
             "name": "module / inbucket",
             "path": "../modules/inbucket"
         },
