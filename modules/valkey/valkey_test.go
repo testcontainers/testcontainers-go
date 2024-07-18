@@ -138,6 +138,8 @@ func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey
 		ttl, _ := time.ParseDuration("2h")
 
 		err = client.Do(ctx, client.B().Set().Key(key).Value(value).Exat(time.Now().Add(ttl)).Build()).Error()
+		require.NoError(t, err)
+
 		err = client.Do(ctx, client.B().Expire().Key(key).Seconds(int64(ttl.Seconds())).Build()).Error()
 		require.NoError(t, err)
 
