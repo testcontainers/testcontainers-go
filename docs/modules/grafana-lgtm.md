@@ -48,6 +48,10 @@ When starting the Grafana LGTM container, you can pass options in a variadic way
 If you need to set a different Grafana LGTM Docker image, you can set a valid Docker image as the second argument in the `Run` function.
 E.g. `Run(context.Background(), "grafana/otel-lgtm:0.6.0")`.
 
+#### Admin Credentials
+
+If you need to set different admin credentials in the Grafana LGTM container, you can set them using the `WithAdminCredentials(user, password)` option.
+
 {% include "../features/common_functional_options.md" %}
 
 ### Container Methods

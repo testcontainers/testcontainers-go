@@ -61,7 +61,7 @@ func ExampleRun() {
 func ExampleRun_otelCollector() {
 	ctx := context.Background()
 
-	ctr, err := grafanalgtm.Run(ctx, "grafana/otel-lgtm:0.6.0")
+	ctr, err := grafanalgtm.Run(ctx, "grafana/otel-lgtm:0.6.0", grafanalgtm.WithAdminCredentials("admin", "123456789"))
 	if err != nil {
 		golog.Fatalf("failed to start Grafana LGTM container: %s", err)
 	}

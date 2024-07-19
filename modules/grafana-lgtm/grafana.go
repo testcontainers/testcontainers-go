@@ -60,6 +60,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
+// WithAdminCredentials sets the admin credentials for the Grafana LGTM container
+func WithAdminCredentials(user, password string) testcontainers.ContainerCustomizer {
+	return testcontainers.WithEnv(map[string]string{
+		"GF_SECURITY_ADMIN_USER":     user,
+		"GF_SECURITY_ADMIN_PASSWORD": password,
+	})
+}
+
 // LokiEndpoint returns the Loki endpoint
 func (c *GrafanaLGTMContainer) LokiEndpoint(ctx context.Context) (string, error) {
 	url, err := baseEndpoint(ctx, c, LokiPort)
