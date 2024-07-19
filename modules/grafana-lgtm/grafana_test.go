@@ -29,7 +29,7 @@ func TestGrafanaLGTM(t *testing.T) {
 	// perform assertions
 
 	t.Run("container is running with right version", func(t *testing.T) {
-		healthURL, err := url.Parse(fmt.Sprintf("%s/api/health", grafanaLgtmContainer.MustHttpEndpoint(ctx)))
+		healthURL, err := url.Parse(fmt.Sprintf("http://%s/api/health", grafanaLgtmContainer.MustHttpEndpoint(ctx)))
 		if err != nil {
 			t.Fatal(err)
 		}
