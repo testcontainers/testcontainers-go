@@ -195,7 +195,7 @@ func setupOTelSDK(ctx context.Context, ctr *grafanalgtm.GrafanaLGTMContainer) (s
 
 	err = runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second))
 	if err != nil {
-		logger.ErrorContext(ctx, "otel runtime instrumentation failed:", err) // nolint:govet // this is a pattern in the OpenTelemetry Go SDK
+		logger.ErrorContext(ctx, "otel runtime instrumentation failed:", err) // nolint:all // this is a pattern in the OpenTelemetry Go SDK
 	}
 
 	return
