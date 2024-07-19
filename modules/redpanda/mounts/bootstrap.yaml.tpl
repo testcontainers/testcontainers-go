@@ -17,6 +17,8 @@ kafka_enable_authorization: true
 
 {{- if .EnableWasmTransform }}
 data_transforms_enabled: true
+data_transforms_per_function_memory_limit: 16777216
+data_transforms_per_core_memory_reservation: 33554432
 {{- end }}
 
 {{- if .AutoCreateTopics }}
