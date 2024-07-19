@@ -54,26 +54,44 @@ E.g. `Run(context.Background(), "grafana/otel-lgtm:0.6.0")`.
 
 The Grafana LGTM container exposes the following methods:
 
-#### GrafanaURL
+!!!info
+    All the endpoint methods return their endpoints in the format `<host>:<port>`, so please use them accordingly to configure your client.
 
-This method returns the HTTP URL to connect to Grafana, using the default `3000` port.
+#### Grafana Endpoint
 
-#### LokiURL
+The `HttpEndpoint(ctx)` method returns the HTTP endpoint to connect to Grafana, using the default `3000` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
 
-This method returns the HTTP URL to connect to Loki, using the default `3100` port.
+#### Loki Endpoint
 
-#### TempoURL
+The `LokiEndpoint(ctx)` method returns the HTTP endpoint to connect to Loki, using the default `3100` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
 
-This method returns the HTTP URL to connect to Tempo, using the default `3200` port.
+#### Tempo Endpoint
 
-#### Otel HTTP URL
+The `TempoEndpoint(ctx)` method returns the HTTP endpoint to connect to Tempo, using the default `3200` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
 
-This method returns the URL to connect to Otel using HTTP, using the default `4318` port.
+#### Otel HTTP Endpoint
 
-#### Otel gRPC URL
+The `OtelHTTPEndpoint(ctx)` method returns the endpoint to connect to Otel using HTTP, using the default `4318` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
 
-This method returns the URL to connect to Otel using gRPC, using the default `4317` port.
+#### Otel gRPC Endpoint
 
-#### Prometheus URL
+The `OtelGRPCEndpoint(ctx)` method returns the endpoint to connect to Otel using gRPC, using the default `4317` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
 
-This method returns the URL to connect to Prometheus, using the default `9090` port.
+#### Prometheus Endpoint
+
+The `PrometheusHttpEndpoint(ctx)` method returns the endpoint to connect to Prometheus, using the default `9090` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
+
+## Examples
+
+### Traces, Logs and Prometheus metrics for a simple Go process
+
+In this example, a simple application is created to generate traces, logs, and Prometheus metrics.
+The application sends data to Grafana LGTM, and the Otel SDK is used to send the data.
+The example demonstrates how to set up the Otel SDK and run the Grafana LGTM module,
+configuring the Otel library to send data to Grafana LGTM thanks to the endpoints provided by the Grafana LGTM container.
+
+<!--codeinclude-->
+[App sending Otel data](../../modules/grafana-lgtm/examples_test.go) inside_block:rollDiceApp
+[Setup Otel SDK](../../modules/grafana-lgtm/examples_test.go) inside_block:setupOTelSDK
+[Run the Grafana LGTM container](../../modules/grafana-lgtm/examples_test.go) inside_block:ExampleRun_otelCollector
+<!--/codeinclude-->

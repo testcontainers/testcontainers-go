@@ -2,21 +2,30 @@ package grafanalgtm_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
-	"net/http"
-	"os"
+	golog "log"
+	"log/slog"
+	"sync"
 	"time"
 
+	"math/rand"
+
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/log/global"
+	metricsapi "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/sdk/log"
+	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/testcontainers/testcontainers-go/modules/grafanalgtm"
 )
@@ -27,20 +36,20 @@ func ExampleRun() {
 
 	grafanaLgtmContainer, err := grafanalgtm.Run(ctx, "grafana/otel-lgtm:0.6.0")
 	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
+		golog.Fatalf("failed to start container: %s", err)
 	}
 
 	// Clean up the container
 	defer func() {
 		if err := grafanaLgtmContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+			golog.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
 		}
 	}()
 	// }
 
 	state, err := grafanaLgtmContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		golog.Fatalf("failed to get container state: %s", err) // nolint:gocritic
 	}
 
 	fmt.Println(state.Running)
@@ -54,100 +63,172 @@ func ExampleRun_otelCollector() {
 
 	ctr, err := grafanalgtm.Run(ctx, "grafana/otel-lgtm:0.6.0")
 	if err != nil {
-		log.Fatalf("failed to start Grafana LGTM container: %s", err)
+		golog.Fatalf("failed to start Grafana LGTM container: %s", err)
 	}
 	defer func() {
 		if err := ctr.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate Grafana LGTM container: %s", err)
+			golog.Fatalf("failed to terminate Grafana LGTM container: %s", err)
 		}
 	}()
 
-	// start otel tracing
-	if shutdown := retryInitTracer(ctr.MustOtlpGrpcURL(ctx)); shutdown != nil {
-		defer shutdown()
-	}
-
-	// add custom attributes and events to the span
-	_, span := otel.Tracer("GetServiceDetail").Start(ctx,
-		"spanMetricDao.GetServiceDetail",
-		trace.WithSpanKind(trace.SpanKindInternal))
-	defer span.End()
-
-	span.SetAttributes(attribute.String("controller", "books"))
-	span.AddEvent("event")
-
-	req, err := http.NewRequest(http.MethodGet, ctr.MustHttpURL(context.Background()), nil)
+	// Set up OpenTelemetry.
+	otelShutdown, err := setupOTelSDK(ctx, ctr)
 	if err != nil {
-		log.Fatalf("failed to create request: %s", err)
+		return
+	}
+	// Handle shutdown properly so nothing leaks.
+	defer func() {
+		err = errors.Join(err, otelShutdown(context.Background()))
+	}()
+
+	// roll dice 10000 times, concurrently
+	max := 10_000
+	wg := sync.WaitGroup{}
+	for i := 0; i < max; i++ {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			rolldice(ctx)
+		}()
 	}
 
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Fatalf("failed to send request: %s", err)
-	}
-	defer res.Body.Close()
-
-	fmt.Println(res.StatusCode)
+	wg.Wait()
 
 	// Output:
-	// 200
+	// shutdown errors: <nil>
 }
 
-var tracerExp *otlptrace.Exporter
+// setupOTelSDK bootstraps the OpenTelemetry pipeline.
+// If it does not return an error, make sure to call shutdown for proper cleanup.
+func setupOTelSDK(ctx context.Context, ctr *grafanalgtm.GrafanaLGTMContainer) (shutdown func(context.Context) error, err error) {
+	var shutdownFuncs []func(context.Context) error
 
-func retryInitTracer(otlpEndpoint string) func() {
-	var shutdown func()
-	go func() {
-		for {
-			// otel will reconnected and re-send spans when otel col recover. so, we don't need to re-init tracer exporter.
-			if tracerExp == nil {
-				shutdown = initTracer(otlpEndpoint)
-			} else {
-				break
-			}
-			time.Sleep(time.Minute * 5)
+	// shutdown calls cleanup functions registered via shutdownFuncs.
+	// The errors from the calls are joined.
+	// Each registered cleanup will be invoked once.
+	shutdown = func(ctx context.Context) error {
+		var err error
+		for _, fn := range shutdownFuncs {
+			err = errors.Join(err, fn(ctx))
 		}
-	}()
-
-	return shutdown
-}
-
-func initTracer(otlpEndpoint string) func() {
-	// temporarily set timeout to 10s
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	serviceName := "service_name"
-	os.Setenv("OTEL_SERVICE_NAME", serviceName)
-
-	otelAgentAddr := otlpEndpoint
-	os.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", otelAgentAddr)
-
-	log.Printf("OTLP Trace connect to: %s with service name: %s", otelAgentAddr, serviceName)
-
-	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure(), otlptracegrpc.WithDialOption())
-	if err != nil {
-		handleErr(err, "OTLP Trace gRPC Creation")
-		return nil
+		shutdownFuncs = nil
+		fmt.Println("shutdown errors:", err)
+		return err
 	}
 
-	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(traceExporter),
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
-		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL)))
+	// handleErr calls shutdown for cleanup and makes sure that all errors are returned.
+	handleErr := func(inErr error) {
+		err = errors.Join(inErr, shutdown(ctx))
+	}
 
+	prop := propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	)
+	otel.SetTextMapPropagator(prop)
+
+	otlpHttpEndpoint := ctr.MustOtlpHttpEndpoint(ctx)
+
+	traceExporter, err := otlptrace.New(ctx,
+		otlptracehttp.NewClient(
+			// adding schema to avoid this error:
+			// 2024/07/19 13:16:30 internal_logging.go:50: "msg"="otlptrace: parse endpoint url" "error"="parse \"127.0.0.1:33007\": first path segment in URL cannot contain colon" "url"="127.0.0.1:33007"
+			// it does not happen with the logs and metrics exporters
+			otlptracehttp.WithEndpointURL("http://"+otlpHttpEndpoint),
+			otlptracehttp.WithInsecure(),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	tracerProvider := trace.NewTracerProvider(trace.WithBatcher(traceExporter))
+	if err != nil {
+		handleErr(err)
+		return
+	}
+	shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
 	otel.SetTracerProvider(tracerProvider)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
-	tracerExp = traceExporter
-	return func() {
-		// Shutdown will flush any remaining spans and shut down the exporter.
-		handleErr(tracerProvider.Shutdown(ctx), "failed to shutdown TracerProvider")
-	}
-}
-
-func handleErr(err error, message string) {
+	metricExporter, err := otlpmetrichttp.New(ctx,
+		otlpmetrichttp.WithInsecure(),
+		otlpmetrichttp.WithEndpoint(otlpHttpEndpoint),
+	)
 	if err != nil {
-		log.Fatalf("%s: %v", message, err)
+		return nil, err
 	}
+
+	// The exporter embeds a default OpenTelemetry Reader and
+	// implements prometheus.Collector, allowing it to be used as
+	// both a Reader and Collector.
+	prometheusExporter, err := prometheus.New()
+	if err != nil {
+		return nil, err
+	}
+
+	meterProvider := metric.NewMeterProvider(
+		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
+		metric.WithReader(prometheusExporter),
+	)
+	if err != nil {
+		handleErr(err)
+		return
+	}
+	shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
+	otel.SetMeterProvider(meterProvider)
+
+	logExporter, err := otlploghttp.New(ctx,
+		otlploghttp.WithInsecure(),
+		otlploghttp.WithEndpoint(otlpHttpEndpoint),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	loggerProvider := log.NewLoggerProvider(log.WithProcessor(log.NewBatchProcessor(logExporter)))
+	if err != nil {
+		handleErr(err)
+		return
+	}
+	shutdownFuncs = append(shutdownFuncs, loggerProvider.Shutdown)
+	global.SetLoggerProvider(loggerProvider)
+
+	err = runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second))
+	if err != nil {
+		logger.ErrorContext(ctx, "otel runtime instrumentation failed:", err)
+	}
+
+	return
 }
+
+// rollDiceApp {
+const schemaName = "https://github.com/grafana/docker-otel-lgtm"
+
+var (
+	tracer = otel.Tracer(schemaName)
+	logger = otelslog.NewLogger(schemaName)
+	meter  = otel.Meter(schemaName)
+)
+
+func rolldice(ctx context.Context) {
+	ctx, span := tracer.Start(ctx, "roll")
+	defer span.End()
+
+	// 20-sided dice
+	roll := 1 + rand.Intn(20)
+	logger.InfoContext(ctx, fmt.Sprintf("Rolled a dice: %d\n", roll), slog.Int("result", roll))
+
+	opt := metricsapi.WithAttributes(
+		attribute.Key("sides").Int(roll),
+	)
+
+	// This is the equivalent of prometheus.NewCounterVec
+	counter, err := meter.Int64Counter("rolldice-counter", metricsapi.WithDescription("a 20-sided dice"))
+	if err != nil {
+		golog.Fatal(err)
+	}
+	counter.Add(ctx, int64(roll), opt)
+}
+
+// }
