@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 )
 
@@ -20,21 +21,21 @@ func ExampleRun() {
 		neo4j.WithLabsPlugin(neo4j.Apoc),
 		neo4j.WithNeo4jSetting("dbms.tx_log.rotation.size", "42M"),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := neo4jContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(neo4jContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := neo4jContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)

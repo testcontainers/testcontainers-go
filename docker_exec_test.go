@@ -51,19 +51,18 @@ func TestExecWithOptions(t *testing.T) {
 				Image: nginxAlpineImage,
 			}
 
-			container, err := GenericContainer(ctx, GenericContainerRequest{
+			ctr, err := GenericContainer(ctx, GenericContainerRequest{
 				ContainerRequest: req,
 				Started:          true,
 			})
-
+			CleanupContainer(t, ctr)
 			require.NoError(t, err)
-			terminateContainerOnEnd(t, ctx, container)
 
 			// always append the multiplexed option for having the output
 			// in a readable format
 			tt.opts = append(tt.opts, tcexec.Multiplexed())
 
-			code, reader, err := container.Exec(ctx, tt.cmds, tt.opts...)
+			code, reader, err := ctr.Exec(ctx, tt.cmds, tt.opts...)
 			require.NoError(t, err)
 			require.Zero(t, code)
 			require.NotNil(t, reader)
@@ -84,15 +83,14 @@ func TestExecWithMultiplexedResponse(t *testing.T) {
 		Image: nginxAlpineImage,
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-
+	CleanupContainer(t, ctr)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, container)
 
-	code, reader, err := container.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"}, tcexec.Multiplexed())
+	code, reader, err := ctr.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"}, tcexec.Multiplexed())
 	require.NoError(t, err)
 	require.Zero(t, code)
 	require.NotNil(t, reader)
@@ -112,15 +110,14 @@ func TestExecWithNonMultiplexedResponse(t *testing.T) {
 		Image: nginxAlpineImage,
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-
+	CleanupContainer(t, ctr)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, container)
 
-	code, reader, err := container.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"})
+	code, reader, err := ctr.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"})
 	require.NoError(t, err)
 	require.Zero(t, code)
 	require.NotNil(t, reader)

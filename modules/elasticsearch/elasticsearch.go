@@ -95,33 +95,32 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, req)
+	var esContainer *ElasticsearchContainer
+	if container != nil {
+		esContainer = &ElasticsearchContainer{Container: container, Settings: *settings}
+	}
 	if err != nil {
-		return nil, err
+		return esContainer, fmt.Errorf("generic container: %w", err)
 	}
 
-	esContainer := &ElasticsearchContainer{Container: container, Settings: *settings}
-
-	address, err := configureAddress(ctx, esContainer)
-	if err != nil {
-		return nil, err
+	if err := esContainer.configureAddress(ctx); err != nil {
+		return esContainer, fmt.Errorf("configure address: %w", err)
 	}
-
-	esContainer.Settings.Address = address
 
 	return esContainer, nil
 }
 
 // configureAddress sets the address of the Elasticsearch container.
 // If the certificate is set, it will use https as protocol, otherwise http.
-func configureAddress(ctx context.Context, c *ElasticsearchContainer) (string, error) {
+func (c *ElasticsearchContainer) configureAddress(ctx context.Context) error {
 	containerPort, err := c.MappedPort(ctx, defaultHTTPPort+"/tcp")
 	if err != nil {
-		return "", err
+		return fmt.Errorf("mapped port: %w", err)
 	}
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", err
+		return fmt.Errorf("host: %w", err)
 	}
 
 	proto := "http"
@@ -129,7 +128,9 @@ func configureAddress(ctx context.Context, c *ElasticsearchContainer) (string, e
 		proto = "https"
 	}
 
-	return fmt.Sprintf("%s://%s:%s", proto, host, containerPort.Port()), nil
+	c.Settings.Address = fmt.Sprintf("%s://%s:%s", proto, host, containerPort.Port())
+
+	return nil
 }
 
 // configureCertificate transfers the certificate settings to the container request.

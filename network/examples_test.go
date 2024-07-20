@@ -21,7 +21,7 @@ func ExampleNew() {
 	}
 	defer func() {
 		if err := net.Remove(ctx); err != nil {
-			log.Fatalf("failed to remove network: %s", err)
+			log.Printf("failed to remove network: %s", err)
 		}
 	}()
 	// }
@@ -62,7 +62,7 @@ func ExampleNew_withOptions() {
 	}
 	defer func() {
 		if err := net.Remove(ctx); err != nil {
-			log.Fatalf("failed to remove network: %s", err)
+			log.Printf("failed to remove network: %s", err)
 		}
 	}()
 	// }

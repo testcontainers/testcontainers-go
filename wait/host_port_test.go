@@ -10,6 +10,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/exec"
 )
@@ -152,14 +153,10 @@ func TestHostPortStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
+		require.Error(t, err)
 
 		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.Contains(t, err.Error(), expected)
 	}
 }
 
@@ -190,14 +187,10 @@ func TestHostPortStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T)
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
+		require.Error(t, err)
 
 		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.Contains(t, err.Error(), expected)
 	}
 }
 
@@ -227,14 +220,10 @@ func TestHostPortStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
+		require.Error(t, err)
 
 		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.Contains(t, err.Error(), expected)
 	}
 }
 
@@ -259,14 +248,10 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToOOMKilledContainer(t *te
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
+		require.Error(t, err)
 
 		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.Contains(t, err.Error(), expected)
 	}
 }
 
@@ -292,14 +277,10 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToExitedContainer(t *testi
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
+		require.Error(t, err)
 
 		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.Contains(t, err.Error(), expected)
 	}
 }
 
@@ -324,14 +305,10 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToUnexpectedContainerStatu
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
+		require.Error(t, err)
 
 		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.Contains(t, err.Error(), expected)
 	}
 }
 
@@ -375,14 +352,10 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToOOMKilledContainer(t *te
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
+		require.Error(t, err)
 
 		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.Contains(t, err.Error(), expected)
 	}
 }
 
@@ -427,14 +400,10 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testi
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
+		require.Error(t, err)
 
 		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.Contains(t, err.Error(), expected)
 	}
 }
 
@@ -478,14 +447,10 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatu
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
+		require.Error(t, err)
 
 		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.Contains(t, err.Error(), expected)
 	}
 }
 
@@ -540,7 +505,6 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
-	if err := wg.WaitUntilReady(context.Background(), target); err != nil {
-		t.Fatal(err)
-	}
+	err = wg.WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
 }

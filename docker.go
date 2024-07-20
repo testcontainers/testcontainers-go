@@ -259,9 +259,14 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 //
 // If the container is already stopped, the method is a no-op.
 func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) error {
+	// Note we can't check isRunning here because we allow external creation
+	// without exposing the ability to fully initialize the container state.
+	// See: https://github.com/testcontainers/testcontainers-go/issues/2667
+	// TODO: Add a check for isRunning when the above issue is resolved.
+
 	err := c.stoppingHook(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("stopping hook: %w", err)
 	}
 
 	var options container.StopOptions
@@ -272,22 +277,38 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	}
 
 	if err := c.provider.client.ContainerStop(ctx, c.ID, options); err != nil {
-		return err
+		return fmt.Errorf("container stop: %w", err)
 	}
+
 	defer c.provider.Close()
 
 	c.isRunning = false
 
 	err = c.stoppedHook(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("stopped hook: %w", err)
 	}
 
 	return nil
 }
 
-// Terminate is used to kill the container. It is usually triggered by as defer function.
+// Terminate calls stops and then removes the container including its volumes.
+// If its image was built it and all child images are also removed unless
+// the [FromDockerfile.KeepImage] on the [ContainerRequest] was set to true.
+//
+// The following hooks are called in order:
+//   - [ContainerLifecycleHooks.PreTerminates]
+//   - [ContainerLifecycleHooks.PostTerminates]
 func (c *DockerContainer) Terminate(ctx context.Context) error {
+	// ContainerRemove hardcodes stop timeout to 3 seconds which is too short
+	// to ensure that child containers are stopped so we manually call stop.
+	// TODO: make this configurable via a functional option.
+	timeout := 10 * time.Second
+	err := c.Stop(ctx, &timeout)
+	if err != nil && !isCleanupSafe(err) {
+		return fmt.Errorf("stop: %w", err)
+	}
+
 	select {
 	// close reaper if it was created
 	case c.terminationSignal <- true:
@@ -296,6 +317,8 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 	defer c.provider.client.Close()
 
+	// TODO: Handle errors from ContainerRemove more correctly, e.g. should we
+	// run the terminated hook?
 	errs := []error{
 		c.terminatingHook(ctx),
 		c.provider.client.ContainerRemove(ctx, c.GetContainerID(), container.RemoveOptions{

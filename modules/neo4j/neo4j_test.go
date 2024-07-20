@@ -8,7 +8,9 @@ import (
 	"testing"
 
 	neo "github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 )
 
@@ -19,16 +21,12 @@ func TestNeo4j(outer *testing.T) {
 
 	ctx := context.Background()
 
-	container := setupNeo4j(ctx, outer)
-
-	outer.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			outer.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	ctr, err := setupNeo4j(ctx)
+	testcontainers.CleanupContainer(outer, ctr)
+	require.NoError(outer, err)
 
 	outer.Run("connects via Bolt", func(t *testing.T) {
-		driver := createDriver(t, ctx, container)
+		driver := createDriver(t, ctx, ctr)
 
 		err := driver.VerifyConnectivity(ctx)
 		if err != nil {
@@ -37,7 +35,7 @@ func TestNeo4j(outer *testing.T) {
 	})
 
 	outer.Run("exercises APOC plugin", func(t *testing.T) {
-		driver := createDriver(t, ctx, container)
+		driver := createDriver(t, ctx, ctr)
 
 		result, err := neo.ExecuteQuery(ctx, driver,
 			"RETURN apoc.number.arabicToRoman(1986) AS output", nil,
@@ -51,7 +49,7 @@ func TestNeo4j(outer *testing.T) {
 	})
 
 	outer.Run("is configured with custom Neo4j settings", func(t *testing.T) {
-		env := getContainerEnv(t, ctx, container)
+		env := getContainerEnv(t, ctx, ctr)
 
 		if !strings.Contains(env, "NEO4J_dbms_tx__log_rotation_size=42M") {
 			t.Fatal("expected to custom setting to be exported but was not")
@@ -73,22 +71,15 @@ func TestNeo4jWithEnterpriseLicense(t *testing.T) {
 		edition, img := edition, img
 		t.Run(edition, func(t *testing.T) {
 			t.Parallel()
-			container, err := neo4j.Run(ctx,
+			ctr, err := neo4j.Run(ctx,
 				img,
 				neo4j.WithAdminPassword(testPassword),
 				neo4j.WithAcceptCommercialLicenseAgreement(),
 			)
-			if err != nil {
-				t.Fatalf("expected container to successfully initialize but did not: %s", err)
-			}
+			testcontainers.CleanupContainer(t, ctr)
+			require.NoError(t, err)
 
-			t.Cleanup(func() {
-				if err := container.Terminate(ctx); err != nil {
-					t.Fatalf("failed to terminate container: %s", err)
-				}
-			})
-
-			env := getContainerEnv(t, ctx, container)
+			env := getContainerEnv(t, ctx, ctr)
 
 			if !strings.Contains(env, "NEO4J_ACCEPT_LICENSE_AGREEMENT=yes") {
 				t.Fatal("expected to accept license agreement but did not")
@@ -103,27 +94,22 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	ctx := context.Background()
 
 	outer.Run("without authentication", func(t *testing.T) {
-		container, err := neo4j.Run(ctx, "neo4j:4.4")
-		if err != nil {
-			t.Fatalf("expected env to successfully run but did not: %s", err)
-		}
-		t.Cleanup(func() {
-			if err := container.Terminate(ctx); err != nil {
-				outer.Fatalf("failed to terminate container: %s", err)
-			}
-		})
+		ctr, err := neo4j.Run(ctx, "neo4j:4.4")
+		testcontainers.CleanupContainer(t, ctr)
+		require.NoError(t, err)
 	})
 
 	outer.Run("auth setting outside WithAdminPassword raises error", func(t *testing.T) {
-		container, err := neo4j.Run(ctx,
+		ctr, err := neo4j.Run(ctx,
 			"neo4j:4.4",
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("AUTH", "neo4j/thisisgonnafail"),
 		)
+		testcontainers.CleanupContainer(t, ctr)
 		if err == nil {
 			t.Fatalf("expected env to fail due to conflicting auth settings but did not")
 		}
-		if container != nil {
+		if ctr != nil {
 			t.Fatalf("container must not be created with conflicting auth settings")
 		}
 	})
@@ -131,7 +117,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	outer.Run("warns about overwrites of setting keys", func(t *testing.T) {
 		// withSettings {
 		logger := &inMemoryLogger{}
-		container, err := neo4j.Run(ctx,
+		ctr, err := neo4j.Run(ctx,
 			"neo4j:4.4",
 			neo4j.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
 			neo4j.WithAdminPassword(testPassword),
@@ -140,29 +126,23 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 			neo4j.WithNeo4jSetting("some.key", "value3"),
 		)
 		// }
-		if err != nil {
-			t.Fatalf("expected env to successfully run but did not: %s", err)
-		}
-		t.Cleanup(func() {
-			if err := container.Terminate(ctx); err != nil {
-				outer.Fatalf("failed to terminate container: %s", err)
-			}
-		})
+		testcontainers.CleanupContainer(t, ctr)
+		require.NoError(t, err)
 
 		errorLogs := logger.Logs()
 		if !Contains(errorLogs, `setting "some.key" with value "value1" is now overwritten with value "value2"`+"\n") ||
 			!Contains(errorLogs, `setting "some.key" with value "value2" is now overwritten with value "value3"`+"\n") {
 			t.Fatalf("expected setting overwrites to be logged")
 		}
-		if !strings.Contains(getContainerEnv(t, ctx, container), "NEO4J_some_key=value3") {
+		if !strings.Contains(getContainerEnv(t, ctx, ctr), "NEO4J_some_key=value3") {
 			t.Fatalf("expected custom setting to be set with last value")
 		}
 	})
 
 	outer.Run("rejects nil logger", func(t *testing.T) {
-		container, err := neo4j.Run(ctx, "neo4j:4.4", neo4j.WithLogger(nil))
-
-		if container != nil {
+		ctr, err := neo4j.Run(ctx, "neo4j:4.4", neo4j.WithLogger(nil))
+		testcontainers.CleanupContainer(t, ctr)
+		if ctr != nil {
 			t.Fatalf("container must not be created with nil logger")
 		}
 		if err == nil || err.Error() != "nil logger is not permitted" {
@@ -171,8 +151,8 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	})
 }
 
-func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Neo4jContainer {
-	container, err := neo4j.Run(ctx,
+func setupNeo4j(ctx context.Context) (*neo4j.Neo4jContainer, error) {
+	return neo4j.Run(ctx,
 		"neo4j:4.4",
 		neo4j.WithAdminPassword(testPassword),
 		// withLabsPlugin {
@@ -180,10 +160,6 @@ func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Neo4jContainer {
 		// }
 		neo4j.WithNeo4jSetting("dbms.tx_log.rotation.size", "42M"),
 	)
-	if err != nil {
-		t.Fatalf("expected container to successfully initialize but did not: %s", err)
-	}
-	return container
 }
 
 func createDriver(t *testing.T, ctx context.Context, container *neo4j.Neo4jContainer) neo.DriverWithContext {

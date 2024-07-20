@@ -113,21 +113,23 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	var couchbaseContainer *CouchbaseContainer
+	if container != nil {
+		couchbaseContainer = &CouchbaseContainer{container, config}
+	}
 	if err != nil {
-		return nil, err
+		return couchbaseContainer, err
 	}
 
-	couchbaseContainer := CouchbaseContainer{container, config}
-
 	if err = couchbaseContainer.initCluster(ctx); err != nil {
-		return nil, err
+		return couchbaseContainer, fmt.Errorf("init cluster: %w", err)
 	}
 
 	if err = couchbaseContainer.createBuckets(ctx); err != nil {
-		return nil, err
+		return couchbaseContainer, fmt.Errorf("create buckets: %w", err)
 	}
 
-	return &couchbaseContainer, nil
+	return couchbaseContainer, nil
 }
 
 // StartContainer creates an instance of the Couchbase container type
