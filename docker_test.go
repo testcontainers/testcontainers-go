@@ -1973,7 +1973,6 @@ func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr Container) 
 		return
 	}
 	tb.Cleanup(func() {
-		tb.Log("terminating container")
 		require.NoError(tb, ctr.Terminate(ctx))
 	})
 }
@@ -2142,6 +2141,11 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			shouldRetry: false,
 		},
 		{
+			name:        "no retry on system error",
+			errReturned: errdefs.System(errors.New("system error")),
+			shouldRetry: false,
+		},
+		{
 			name:        "retry on non-permanent error",
 			errReturned: errors.New("whoops"),
 			shouldRetry: true,
@@ -2158,7 +2162,16 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			// give a chance to retry
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			_, _ = p.BuildImage(ctx, &ContainerRequest{})
+			_, err = p.BuildImage(ctx, &ContainerRequest{
+				FromDockerfile: FromDockerfile{
+					Context: filepath.Join(".", "testdata", "retry"),
+				},
+			})
+			if tt.errReturned != nil {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 
 			assert.Positive(t, m.imageBuildCount)
 			assert.Equal(t, tt.shouldRetry, m.imageBuildCount > 1)
