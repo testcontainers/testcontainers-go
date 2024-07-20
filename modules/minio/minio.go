@@ -93,9 +93,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *MinioContainer
+	if container != nil {
+		c = &MinioContainer{Container: container, Username: username, Password: password}
 	}
 
-	return &MinioContainer{Container: container, Username: username, Password: password}, nil
+	return c, err
 }

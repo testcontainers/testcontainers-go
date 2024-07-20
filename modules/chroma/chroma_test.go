@@ -8,6 +8,7 @@ import (
 	chromago "github.com/amikos-tech/chroma-go"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/chroma"
 )
 
@@ -15,16 +16,8 @@ func TestChroma(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := chroma.Run(ctx, "chromadb/chroma:0.4.24")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.CleanupContainer(t, container)
+	require.NoError(t, err)
 
 	t.Run("REST Endpoint retrieve docs site", func(tt *testing.T) {
 		// restEndpoint {
@@ -50,7 +43,7 @@ func TestChroma(t *testing.T) {
 		// restEndpoint {
 		endpoint, err := container.RESTEndpoint(context.Background())
 		if err != nil {
-			tt.Fatalf("failed to get REST endpoint: %s", err) // nolint:gocritic
+			tt.Fatalf("failed to get REST endpoint: %s", err)
 		}
 		chromaClient, err := chromago.NewClient(endpoint)
 		// }

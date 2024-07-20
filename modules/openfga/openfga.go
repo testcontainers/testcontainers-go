@@ -78,9 +78,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *OpenFGAContainer
+	if container != nil {
+		c = &OpenFGAContainer{Container: container}
 	}
 
-	return &OpenFGAContainer{Container: container}, nil
+	return c, err
 }

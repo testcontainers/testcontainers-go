@@ -77,9 +77,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *InbucketContainer
+	if container != nil {
+		c = &InbucketContainer{Container: container}
 	}
 
-	return &InbucketContainer{Container: container}, nil
+	return c, err
 }

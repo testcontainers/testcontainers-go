@@ -133,17 +133,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *RabbitMQContainer
+	if container != nil {
+		c = &RabbitMQContainer{
+			Container:     container,
+			AdminUsername: settings.AdminUsername,
+			AdminPassword: settings.AdminPassword,
+		}
 	}
 
-	c := &RabbitMQContainer{
-		Container:     container,
-		AdminUsername: settings.AdminUsername,
-		AdminPassword: settings.AdminPassword,
-	}
-
-	return c, nil
+	return c, err
 }
 
 func withConfig(hostPath string) testcontainers.CustomizeRequestOption {

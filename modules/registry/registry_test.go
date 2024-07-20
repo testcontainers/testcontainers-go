@@ -16,7 +16,7 @@ import (
 func TestRegistry_unauthenticated(t *testing.T) {
 	ctx := context.Background()
 	container, err := registry.Run(ctx, registry.DefaultImage)
-	terminateContainerOnEnd(t, ctx, container)
+	testcontainers.CleanupContainer(t, container)
 	require.NoError(t, err)
 
 	httpAddress, err := container.Address(ctx)
@@ -37,7 +37,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
 		registry.WithData(filepath.Join("testdata", "data")),
 	)
-	terminateContainerOnEnd(t, ctx, registryContainer)
+	testcontainers.CleanupContainer(t, registryContainer)
 	require.NoError(t, err)
 
 	// httpAddress {
@@ -105,7 +105,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 			},
 			Started: true,
 		})
-		terminateContainerOnEnd(tt, ctx, redisC)
+		testcontainers.CleanupContainer(tt, redisC)
 		require.Error(tt, err)
 		require.Contains(tt, err.Error(), "unauthorized: authentication required")
 	})
@@ -132,7 +132,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 			},
 			Started: true,
 		})
-		terminateContainerOnEnd(tt, ctx, redisC)
+		testcontainers.CleanupContainer(tt, redisC)
 		require.NoError(tt, err)
 
 		state, err := redisC.State(context.Background())
@@ -150,7 +150,7 @@ func TestRunContainer_authenticated_withCredentials(t *testing.T) {
 		registry.WithHtpasswd("testuser:$2y$05$tTymaYlWwJOqie.bcSUUN.I.kxmo1m5TLzYQ4/ejJ46UMXGtq78EO"),
 	)
 	// }
-	terminateContainerOnEnd(t, ctx, registryContainer)
+	testcontainers.CleanupContainer(t, registryContainer)
 	require.NoError(t, err)
 
 	httpAddress, err := registryContainer.Address(ctx)
@@ -177,7 +177,7 @@ func TestRunContainer_wrongData(t *testing.T) {
 		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
 		registry.WithData(filepath.Join("testdata", "wrongdata")),
 	)
-	terminateContainerOnEnd(t, ctx, registryContainer)
+	testcontainers.CleanupContainer(t, registryContainer)
 	require.NoError(t, err)
 
 	registryHost, err := registryContainer.HostAddress(ctx)
@@ -204,7 +204,7 @@ func TestRunContainer_wrongData(t *testing.T) {
 		},
 		Started: true,
 	})
-	terminateContainerOnEnd(t, ctx, redisC)
+	testcontainers.CleanupContainer(t, redisC)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "manifest unknown")
 }
@@ -220,17 +220,4 @@ func setAuthConfig(t *testing.T, host, username, password string) string {
 	t.Setenv("DOCKER_AUTH_CONFIG", auth)
 
 	return creds
-}
-
-// terminateContainerOnEnd terminates the container when the test ends if it is not nil.
-func terminateContainerOnEnd(tb testing.TB, ctx context.Context, container testcontainers.Container) {
-	tb.Helper()
-
-	if container == nil {
-		return
-	}
-
-	tb.Cleanup(func() {
-		require.NoError(tb, container.Terminate(ctx))
-	})
 }

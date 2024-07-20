@@ -104,16 +104,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
-	clusterID := genericContainerReq.Env["CLUSTER_ID"]
-
 	configureControllerQuorumVoters(&genericContainerReq)
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *KafkaContainer
+	if container != nil {
+		c = &KafkaContainer{Container: container, ClusterID: genericContainerReq.Env["CLUSTER_ID"]}
 	}
 
-	return &KafkaContainer{Container: container, ClusterID: clusterID}, nil
+	return c, err
 }
 
 // copyStarterScript copies the starter script into the container.

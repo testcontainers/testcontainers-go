@@ -30,9 +30,10 @@ func {{ $entrypoint }}(ctx context.Context, img string, opts ...testcontainers.C
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *{{ $containerName }}
+	if container != nil {
+		c = &{{ $containerName }}{Container: container}
 	}
 
-	return &{{ $containerName }}{Container: container}, nil
+	return c, err
 }

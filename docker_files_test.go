@@ -45,9 +45,8 @@ func TestCopyFileToContainer(t *testing.T) {
 		Started: true,
 	})
 	// }
-
+	testcontainers.CleanupContainer(t, container)
 	require.NoError(t, err)
-	require.NoError(t, container.Terminate(ctx))
 }
 
 func TestCopyFileToRunningContainer(t *testing.T) {
@@ -79,9 +78,8 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 		},
 		Started: true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testcontainers.CleanupContainer(t, container)
+	require.NoError(t, err)
 
 	err = container.CopyFileToContainer(ctx, helloPath, "/scripts/hello.sh", 0o700)
 	// }
@@ -91,8 +89,6 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 	// Give some time to the wait script to catch the hello script being created
 	err = wait.ForLog("done").WithStartupTimeout(2*time.Second).WaitUntilReady(ctx, container)
 	require.NoError(t, err)
-
-	require.NoError(t, container.Terminate(ctx))
 }
 
 func TestCopyDirectoryToContainer(t *testing.T) {
@@ -125,9 +121,8 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 		Started: true,
 	})
 	// }
-
+	testcontainers.CleanupContainer(t, container)
 	require.NoError(t, err)
-	require.NoError(t, container.Terminate(ctx))
 }
 
 func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
@@ -158,25 +153,17 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 		},
 		Started: true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testcontainers.CleanupContainer(t, container)
+	require.NoError(t, err)
 
 	// as the container is started, we can create the directory first
 	_, _, err = container.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// because the container path is a directory, it will use the copy dir method as fallback
 	err = container.CopyFileToContainer(ctx, dataDirectory, "/scripts", 0o700)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// }
-
 	require.NoError(t, err)
-	require.NoError(t, container.Terminate(ctx))
+	// }
 }
 
 func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
@@ -208,22 +195,14 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 		},
 		Started: true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testcontainers.CleanupContainer(t, container)
+	require.NoError(t, err)
 
 	// as the container is started, we can create the directory first
 	_, _, err = container.Exec(ctx, []string{"mkdir", "-p", "/scripts"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	err = container.CopyDirToContainer(ctx, dataDirectory, "/scripts", 0o700)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// }
-
 	require.NoError(t, err)
-	require.NoError(t, container.Terminate(ctx))
+	// }
 }

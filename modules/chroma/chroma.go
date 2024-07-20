@@ -45,11 +45,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *ChromaContainer
+	if container != nil {
+		c = &ChromaContainer{Container: container}
 	}
 
-	return &ChromaContainer{Container: container}, nil
+	return c, err
 }
 
 // RESTEndpoint returns the REST endpoint of the Chroma container

@@ -5,15 +5,19 @@ go 1.21
 require (
 	github.com/docker/go-connections v0.5.0
 	github.com/rabbitmq/amqp091-go v1.9.0
+	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.32.0
 )
 
 require (
 	github.com/containerd/platforms v0.2.1 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (

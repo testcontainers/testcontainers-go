@@ -64,12 +64,8 @@ func (suite *AuthNSuite) TestConnectionString() {
 	ctx := context.Background()
 
 	container, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
+	testcontainers.CleanupContainer(suite.T(), container)
 	suite.Require().NoError(err)
-
-	suite.T().Cleanup(func() {
-		err := container.Terminate(ctx)
-		suite.Require().NoError(err)
-	})
 
 	connStr, err := removePort(container.MustConnectionString(ctx))
 	suite.Require().NoError(err)
@@ -102,12 +98,8 @@ func (suite *AuthNSuite) TestPing() {
 			opts = append(opts, input.opts...)
 
 			container, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", opts...)
+			testcontainers.CleanupContainer(suite.T(), container)
 			suite.Require().NoError(err)
-
-			suite.T().Cleanup(func() {
-				err := container.Terminate(ctx)
-				suite.Require().NoError(err)
-			})
 
 			conn, err := conn(ctx, container)
 			suite.Require().NoError(err)
@@ -123,12 +115,8 @@ func (suite *AuthNSuite) TestQuery() {
 	ctx := context.Background()
 
 	container, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
+	testcontainers.CleanupContainer(suite.T(), container)
 	suite.Require().NoError(err)
-
-	suite.T().Cleanup(func() {
-		err := container.Terminate(ctx)
-		suite.Require().NoError(err)
-	})
 
 	conn, err := conn(ctx, container)
 	suite.Require().NoError(err)
@@ -156,14 +144,8 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 		// This will never match a log statement
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*250, wait.ForLog("Won't Exist In Logs")))
 		container, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
-
+		testcontainers.CleanupContainer(suite.T(), container)
 		suite.Require().ErrorIs(err, context.DeadlineExceeded)
-		suite.T().Cleanup(func() {
-			if container != nil {
-				err := container.Terminate(ctx)
-				suite.Require().NoError(err)
-			}
-		})
 	})
 
 	suite.Run("Expected Failure To Run But Would Succeed ", func() {
@@ -172,14 +154,8 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 		// This will timeout as we didn't give enough time for intialization, but would have succeeded otherwise
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Millisecond*20, wait.ForLog(nodeStartUpCompleted)))
 		container, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
-
+		testcontainers.CleanupContainer(suite.T(), container)
 		suite.Require().ErrorIs(err, context.DeadlineExceeded)
-		suite.T().Cleanup(func() {
-			if container != nil {
-				err := container.Terminate(ctx)
-				suite.Require().NoError(err)
-			}
-		})
 	})
 
 	suite.Run("Succeeds And Executes Commands", func() {
@@ -188,6 +164,7 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 		// This will succeed
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Second*60, wait.ForLog(nodeStartUpCompleted)))
 		container, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
+		testcontainers.CleanupContainer(suite.T(), container)
 		suite.Require().NoError(err)
 
 		conn, err := conn(ctx, container)
@@ -196,12 +173,6 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 		_, err = conn.Exec(ctx, "CREATE TABLE test (id INT PRIMARY KEY)")
 		suite.Require().NoError(err)
-		suite.T().Cleanup(func() {
-			if container != nil {
-				err := container.Terminate(ctx)
-				suite.Require().NoError(err)
-			}
-		})
 	})
 
 	suite.Run("Succeeds And Executes Commands Waiting on HTTP Endpoint", func() {
@@ -210,6 +181,7 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 		// This will succeed
 		suite.opts = append(suite.opts, testcontainers.WithWaitStrategyAndDeadline(time.Second*60, wait.ForHTTP("/health").WithPort("8080/tcp")))
 		container, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
+		testcontainers.CleanupContainer(suite.T(), container)
 		suite.Require().NoError(err)
 
 		conn, err := conn(ctx, container)
@@ -218,12 +190,6 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 
 		_, err = conn.Exec(ctx, "CREATE TABLE test (id INT PRIMARY KEY)")
 		suite.Require().NoError(err)
-		suite.T().Cleanup(func() {
-			if container != nil {
-				err := container.Terminate(ctx)
-				suite.Require().NoError(err)
-			}
-		})
 	})
 }
 

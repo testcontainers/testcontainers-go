@@ -98,11 +98,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *K3sContainer
+	if container != nil {
+		c = &K3sContainer{Container: container}
 	}
 
-	return &K3sContainer{Container: container}, nil
+	return c, err
 }
 
 func getContainerHost(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (string, error) {

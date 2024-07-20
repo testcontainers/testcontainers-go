@@ -26,13 +26,10 @@ func TestImageList(t *testing.T) {
 	}
 
 	container, err := provider.CreateContainer(context.Background(), req)
+	CleanupContainer(t, container)
 	if err != nil {
 		t.Fatalf("creating test container %v", err)
 	}
-
-	defer func() {
-		_ = container.Terminate(context.Background())
-	}()
 
 	images, err := provider.ListImages(context.Background())
 	if err != nil {
@@ -70,13 +67,10 @@ func TestSaveImages(t *testing.T) {
 	}
 
 	container, err := provider.CreateContainer(context.Background(), req)
+	CleanupContainer(t, container)
 	if err != nil {
 		t.Fatalf("creating test container %v", err)
 	}
-
-	defer func() {
-		_ = container.Terminate(context.Background())
-	}()
 
 	output := filepath.Join(t.TempDir(), "images.tar")
 	err = provider.SaveImages(context.Background(), output, req.Image)

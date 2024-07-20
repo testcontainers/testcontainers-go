@@ -80,11 +80,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *InfluxDbContainer
+	if container != nil {
+		c = &InfluxDbContainer{Container: container}
 	}
 
-	return &InfluxDbContainer{container}, nil
+	return c, err
 }
 
 func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {

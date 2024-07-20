@@ -171,7 +171,7 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 	}
 
 	redisC, err := prepareRedisImage(ctx, req)
-	terminateContainerOnEnd(t, ctx, redisC)
+	CleanupContainer(t, redisC)
 	require.NoError(t, err)
 }
 
@@ -209,8 +209,7 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 			BuildArgs: map[string]*string{
 				"REGISTRY_HOST": &registryHost,
 			},
-			Repo:          "localhost",
-			PrintBuildLog: true,
+			Repo: "localhost",
 		},
 		AlwaysPullImage: true, // make sure the authentication takes place
 		ExposedPorts:    []string{"6379/tcp"},
@@ -218,7 +217,7 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 	}
 
 	redisC, err := prepareRedisImage(ctx, req)
-	terminateContainerOnEnd(t, ctx, redisC)
+	CleanupContainer(t, redisC)
 	require.NoError(t, err)
 }
 
@@ -244,7 +243,7 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 	}
 
 	redisC, err := prepareRedisImage(ctx, req)
-	terminateContainerOnEnd(t, ctx, redisC)
+	CleanupContainer(t, redisC)
 	require.Error(t, err)
 }
 
@@ -266,7 +265,7 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	terminateContainerOnEnd(t, ctx, redisContainer)
+	CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
 }
 
@@ -305,6 +304,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	}
 
 	registryC, err := GenericContainer(ctx, genContainerReq)
+	CleanupContainer(t, registryC)
 	require.NoError(t, err)
 
 	mappedPort, err := registryC.MappedPort(ctx, "5000/tcp")
@@ -316,9 +316,6 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 
 	t.Cleanup(func() {
 		removeImageFromLocalCache(t, addr+"/redis:5.0-alpine")
-	})
-	t.Cleanup(func() {
-		require.NoError(t, registryC.Terminate(context.Background()))
 	})
 
 	_, cancel := context.WithCancel(context.Background())

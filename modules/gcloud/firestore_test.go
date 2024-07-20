@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
@@ -32,16 +33,15 @@ func ExampleRunFirestoreContainer() {
 		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
 		gcloud.WithProjectID("firestore-project"),
 	)
-	if err != nil {
-		log.Fatalf("failed to run container: %v", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := firestoreContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %v", err)
+		if err := testcontainers.TerminateContainer(firestoreContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to run container: %v", err)
+		return
+	}
 	// }
 
 	// firestoreClient {
@@ -49,13 +49,15 @@ func ExampleRunFirestoreContainer() {
 
 	conn, err := grpc.NewClient(firestoreContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(emulatorCreds{}))
 	if err != nil {
-		log.Fatalf("failed to dial: %v", err) // nolint:gocritic
+		log.Printf("failed to dial: %v", err)
+		return
 	}
 
 	options := []option.ClientOption{option.WithGRPCConn(conn)}
 	client, err := firestore.NewClient(ctx, projectID, options...)
 	if err != nil {
-		log.Fatalf("failed to create client: %v", err)
+		log.Printf("failed to create client: %v", err)
+		return
 	}
 	defer client.Close()
 	// }
@@ -74,17 +76,20 @@ func ExampleRunFirestoreContainer() {
 	}
 	_, err = docRef.Create(ctx, data)
 	if err != nil {
-		log.Fatalf("failed to create document: %v", err)
+		log.Printf("failed to create document: %v", err)
+		return
 	}
 
 	docsnap, err := docRef.Get(ctx)
 	if err != nil {
-		log.Fatalf("failed to get document: %v", err)
+		log.Printf("failed to get document: %v", err)
+		return
 	}
 
 	var saved Person
 	if err := docsnap.DataTo(&saved); err != nil {
-		log.Fatalf("failed to convert data: %v", err)
+		log.Printf("failed to convert data: %v", err)
+		return
 	}
 
 	fmt.Println(saved.Firstname, saved.Lastname)

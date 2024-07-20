@@ -121,9 +121,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *AzuriteContainer
+	if container != nil {
+		c = &AzuriteContainer{Container: container, Settings: settings}
 	}
 
-	return &AzuriteContainer{Container: container, Settings: settings}, nil
+	return c, err
 }
