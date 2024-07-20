@@ -28,9 +28,15 @@ type HostPortStrategy struct {
 	// all WaitStrategies should have a startupTimeout to avoid waiting infinitely
 	timeout      *time.Duration
 	PollInterval time.Duration
+
+	// SkipInternalCheck is a flag to skip the internal check, which is useful when
+	// a shell is not available in the container or when the container doesn't bind
+	// the port internally until additional conditions are met.
+	SkipInternalCheck bool
 }
 
-// NewHostPortStrategy constructs a default host port strategy
+// NewHostPortStrategy constructs a default host port strategy that waits for the given
+// port to be exposed. The default startup timeout is 60 seconds.
 func NewHostPortStrategy(port nat.Port) *HostPortStrategy {
 	return &HostPortStrategy{
 		Port:         port,
@@ -38,18 +44,28 @@ func NewHostPortStrategy(port nat.Port) *HostPortStrategy {
 	}
 }
 
+// ForExposedPortOnly returns a host port strategy that waits for the given port
+// to be exposed only, it does not wait for the port to be bound inside the container.
+func ForExposedPortOnly(port nat.Port) *HostPortStrategy {
+	hps := NewHostPortStrategy(port)
+	hps.SkipInternalCheck = true
+
+	return hps
+}
+
 // fluent builders for each property
 // since go has neither covariance nor generics, the return type must be the type of the concrete implementation
 // this is true for all properties, even the "shared" ones like startupTimeout
 
-// ForListeningPort is a helper similar to those in Wait.java
-// https://github.com/testcontainers/testcontainers-java/blob/1d85a3834bd937f80aad3a4cec249c027f31aeb4/core/src/main/java/org/testcontainers/containers/wait/strategy/Wait.java
+// ForListeningPort returns a host port strategy that waits for the given port
+// to be exposed and bound internally the container.
+// Alias for `NewHostPortStrategy(port)`.
 func ForListeningPort(port nat.Port) *HostPortStrategy {
 	return NewHostPortStrategy(port)
 }
 
-// ForExposedPort constructs an exposed port strategy. Alias for `NewHostPortStrategy("")`.
-// This strategy waits for the first port exposed in the Docker container.
+// ForExposedPort returns a host port strategy that waits for the first port
+// to be exposed and bound internally the container.
 func ForExposedPort() *HostPortStrategy {
 	return NewHostPortStrategy("")
 }
@@ -130,6 +146,10 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		return err
 	}
 
+	if hp.SkipInternalCheck {
+		return nil
+	}
+
 	err = internalCheck(ctx, internalPort, target)
 	if err != nil && errors.Is(errShellNotExecutable, err) {
 		log.Println("Shell not executable in container, only external port check will be performed")
@@ -164,12 +184,11 @@ func externalCheck(ctx context.Context, ipAddress string, port nat.Port, target 
 				}
 			}
 			return err
-		} else {
-			_ = conn.Close()
-			break
 		}
+
+		conn.Close()
+		return nil
 	}
-	return nil
 }
 
 func internalCheck(ctx context.Context, internalPort nat.Port, target StrategyTarget) error {
