@@ -148,7 +148,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 	type TestCase struct {
 		Name               string
 		ContextPath        string
-		ContextArchive     func() (io.Reader, error)
+		ContextArchive     func() (io.ReadSeeker, error)
 		ExpectedEchoOutput string
 		Dockerfile         string
 		ExpectedError      string
@@ -158,7 +158,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 		{
 			Name: "test build from context archive",
 			// fromDockerfileWithContextArchive {
-			ContextArchive: func() (io.Reader, error) {
+			ContextArchive: func() (io.ReadSeeker, error) {
 				var buf bytes.Buffer
 				tarWriter := tar.NewWriter(&buf)
 				files := []struct {
@@ -203,7 +203,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 		},
 		{
 			Name: "test build from context archive and be able to use files in it",
-			ContextArchive: func() (io.Reader, error) {
+			ContextArchive: func() (io.ReadSeeker, error) {
 				var buf bytes.Buffer
 				tarWriter := tar.NewWriter(&buf)
 				files := []struct {
@@ -256,14 +256,14 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			ContextPath:        "./testdata",
 			Dockerfile:         "echo.Dockerfile",
 			ExpectedEchoOutput: "this is from the echo test Dockerfile",
-			ContextArchive: func() (io.Reader, error) {
+			ContextArchive: func() (io.ReadSeeker, error) {
 				return nil, nil
 			},
 		},
 		{
 			Name:        "it should error if neither a context nor a context archive are specified",
 			ContextPath: "",
-			ContextArchive: func() (io.Reader, error) {
+			ContextArchive: func() (io.ReadSeeker, error) {
 				return nil, nil
 			},
 			ExpectedError: "create container: you must specify either a build context or an image",
@@ -276,9 +276,8 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 			a, err := testCase.ContextArchive()
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
+
 			req := testcontainers.ContainerRequest{
 				FromDockerfile: testcontainers.FromDockerfile{
 					ContextArchive: a,

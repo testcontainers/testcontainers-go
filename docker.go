@@ -1100,7 +1100,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		// forward the host ports to the container ports.
 		sshdForwardPortsHook, err := exposeHostPorts(ctx, &req, req.HostAccessPorts...)
 		if err != nil {
-			return nil, fmt.Errorf("failed to expose host ports: %w", err)
+			return nil, fmt.Errorf("expose host ports: %w", err)
 		}
 
 		defaultHooks = append(defaultHooks, sshdForwardPortsHook)
@@ -1278,12 +1278,12 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt image.PullOptions) error {
 	registry, imageAuth, err := DockerImageAuth(ctx, tag)
 	if err != nil {
-		p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, tag, err)
+		p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is: %s", registry, tag, err)
 	} else {
 		// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
 		encodedJSON, err := json.Marshal(imageAuth)
 		if err != nil {
-			p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", tag, err)
+			p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is: %s", tag, err)
 		} else {
 			pullOpt.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 		}
