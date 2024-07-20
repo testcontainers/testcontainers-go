@@ -2,7 +2,6 @@ package mongodb_test
 
 import (
 	"context"
-	"log"
 	"testing"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -73,14 +72,17 @@ func TestMongoDB(t *testing.T) {
 				tt.Fatalf("failed to get connection string: %s", err)
 			}
 
-			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint))
+			// Force direct connection to the container to avoid the replica set
+			// connection string that is returned by the container itself when
+			// using the replica set option.
+			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint+"/?connect=direct"))
 			if err != nil {
 				tt.Fatalf("failed to connect to MongoDB: %s", err)
 			}
 
 			err = mongoClient.Ping(ctx, nil)
 			if err != nil {
-				log.Fatalf("failed to ping MongoDB: %s", err)
+				tt.Fatalf("failed to ping MongoDB: %s", err)
 			}
 
 			if mongoClient.Database("test").Name() != "test" {
