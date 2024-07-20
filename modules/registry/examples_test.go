@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -40,8 +39,9 @@ func ExampleRun() {
 
 func ExampleRun_withAuthentication() {
 	// htpasswdFile {
+	ctx := context.Background()
 	registryContainer, err := registry.Run(
-		context.Background(),
+		ctx,
 		"registry:2.8.3",
 		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
 		registry.WithData(filepath.Join("testdata", "data")),
@@ -51,33 +51,21 @@ func ExampleRun_withAuthentication() {
 		log.Fatalf("failed to start container: %s", err)
 	}
 	defer func() {
-		if err := registryContainer.Terminate(context.Background()); err != nil {
+		if err := registryContainer.Terminate(ctx); err != nil {
 			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
 		}
 	}()
 
-	registryPort, err := registryContainer.MappedPort(context.Background(), "5000/tcp")
+	registryHost, err := registryContainer.HostAddress(ctx)
 	if err != nil {
-		log.Fatalf("failed to get mapped port: %s", err) // nolint:gocritic
+		log.Fatalf("failed to get host: %s", err) // nolint:gocritic
 	}
-	strPort := registryPort.Port()
 
-	previousAuthConfig := os.Getenv("DOCKER_AUTH_CONFIG")
-
-	// make sure the Docker Auth credentials are set
-	// using the same as in the Docker Registry
-	// testuser:testpassword
-	os.Setenv("DOCKER_AUTH_CONFIG", `{
-		"auths": {
-			"localhost:`+strPort+`": { "username": "testuser", "password": "testpassword", "auth": "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" }
-		},
-		"credsStore": "desktop"
-	}`)
-	defer func() {
-		// reset the original state after the example.
-		os.Unsetenv("DOCKER_AUTH_CONFIG")
-		os.Setenv("DOCKER_AUTH_CONFIG", previousAuthConfig)
-	}()
+	cleanup, err := registry.SetDockerAuthConfig(registryHost, "testuser", "testpassword")
+	if err != nil {
+		log.Fatalf("failed to set docker auth config: %s", err) // nolint:gocritic
+	}
+	defer cleanup()
 
 	// build a custom redis image from the private registry,
 	// using RegistryName of the container as the registry.
@@ -87,7 +75,7 @@ func ExampleRun_withAuthentication() {
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context: filepath.Join("testdata", "redis"),
 				BuildArgs: map[string]*string{
-					"REGISTRY_PORT": &strPort,
+					"REGISTRY_HOST": &registryHost,
 				},
 				PrintBuildLog: true,
 			},
@@ -118,9 +106,10 @@ func ExampleRun_withAuthentication() {
 }
 
 func ExampleRun_pushImage() {
+	ctx := context.Background()
 	registryContainer, err := registry.Run(
-		context.Background(),
-		"registry:2.8.3",
+		ctx,
+		registry.DefaultImage,
 		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
 		registry.WithData(filepath.Join("testdata", "data")),
 	)
@@ -128,37 +117,27 @@ func ExampleRun_pushImage() {
 		log.Fatalf("failed to start container: %s", err)
 	}
 	defer func() {
-		if err := registryContainer.Terminate(context.Background()); err != nil {
+		if err := registryContainer.Terminate(ctx); err != nil {
 			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
 		}
 	}()
 
-	registryPort, err := registryContainer.MappedPort(context.Background(), "5000/tcp")
+	registryHost, err := registryContainer.HostAddress(ctx)
 	if err != nil {
-		log.Fatalf("failed to get mapped port: %s", err) // nolint:gocritic
+		log.Fatalf("failed to get host: %s", err) // nolint:gocritic
 	}
-	strPort := registryPort.Port()
 
-	previousAuthConfig := os.Getenv("DOCKER_AUTH_CONFIG")
-
-	// make sure the Docker Auth credentials are set
-	// using the same as in the Docker Registry
-	// testuser:testpassword
 	// Besides, we are also setting the authentication
 	// for both the registry and localhost to make sure
 	// the image is pushed to the private registry.
-	os.Setenv("DOCKER_AUTH_CONFIG", `{
-		"auths": {
-			"localhost:`+strPort+`": { "username": "testuser", "password": "testpassword", "auth": "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" },
-			"`+registryContainer.RegistryName+`": { "username": "testuser", "password": "testpassword", "auth": "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" }
-		},
-		"credsStore": "desktop"
-	}`)
-	defer func() {
-		// reset the original state after the example.
-		os.Unsetenv("DOCKER_AUTH_CONFIG")
-		os.Setenv("DOCKER_AUTH_CONFIG", previousAuthConfig)
-	}()
+	cleanup, err := registry.SetDockerAuthConfig(
+		registryHost, "testuser", "testpassword",
+		registryContainer.RegistryName, "testuser", "testpassword",
+	)
+	if err != nil {
+		log.Fatalf("failed to set docker auth config: %s", err) // nolint:gocritic
+	}
+	defer cleanup()
 
 	// build a custom redis image from the private registry,
 	// using RegistryName of the container as the registry.
@@ -174,7 +153,7 @@ func ExampleRun_pushImage() {
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context: filepath.Join("testdata", "redis"),
 				BuildArgs: map[string]*string{
-					"REGISTRY_PORT": &strPort,
+					"REGISTRY_HOST": &registryHost,
 				},
 				Repo:          repo,
 				Tag:           tag,
