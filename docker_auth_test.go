@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -198,7 +200,7 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 		WaitingFor:      wait.ForLog("Ready to accept connections"),
 	}
 
-	redisC, err := prepareRedisImage(ctx, req, t)
+	redisC, err := prepareRedisImage(ctx, req)
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, redisC)
 }
@@ -249,7 +251,7 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 		WaitingFor:      wait.ForLog("Ready to accept connections"),
 	}
 
-	redisC, err := prepareRedisImage(ctx, req, t)
+	redisC, err := prepareRedisImage(ctx, req)
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, redisC)
 }
@@ -281,7 +283,7 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 		WaitingFor:      wait.ForLog("Ready to accept connections"),
 	}
 
-	redisC, err := prepareRedisImage(ctx, req, t)
+	redisC, err := prepareRedisImage(ctx, req)
 	require.Error(t, err)
 	terminateContainerOnEnd(t, ctx, redisC)
 }
@@ -369,7 +371,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	return mp
 }
 
-func prepareRedisImage(ctx context.Context, req ContainerRequest, t *testing.T) (Container, error) {
+func prepareRedisImage(ctx context.Context, req ContainerRequest) (Container, error) {
 	genContainerReq := GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
@@ -379,4 +381,33 @@ func prepareRedisImage(ctx context.Context, req ContainerRequest, t *testing.T) 
 	redisC, err := GenericContainer(ctx, genContainerReq)
 
 	return redisC, err
+}
+
+//go:embed testdata/.docker/config.json
+var dockerConfig string
+
+func Test_getDockerAuthConfigs(t *testing.T) {
+	t.Run("file", func(t *testing.T) {
+		got, err := getDockerAuthConfigs()
+		require.NoError(t, err)
+		require.NotNil(t, got)
+	})
+
+	t.Run("env", func(t *testing.T) {
+		t.Setenv("DOCKER_AUTH_CONFIG", dockerConfig)
+
+		got, err := getDockerAuthConfigs()
+		require.NoError(t, err)
+
+		// We can only check the keys as the values are not deterministic.
+		expected := map[string]registry.AuthConfig{
+			"https://index.docker.io/v1/": {},
+			"https://example.com":         {},
+			"https://my.private.registry": {},
+		}
+		for k := range got {
+			got[k] = registry.AuthConfig{}
+		}
+		require.Equal(t, expected, got)
+	})
 }
