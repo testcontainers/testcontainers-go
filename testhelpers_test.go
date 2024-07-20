@@ -20,7 +20,6 @@ func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr testcontain
 		return
 	}
 	tb.Cleanup(func() {
-		tb.Log("terminating container")
 		require.NoError(tb, ctr.Terminate(ctx))
 	})
 }
