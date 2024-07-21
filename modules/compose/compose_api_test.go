@@ -435,7 +435,7 @@ func TestDockerComposeAPIComplex(t *testing.T) {
 func TestDockerComposeAPIWithStackReader(t *testing.T) {
 	identifier := testNameHash(t.Name())
 
-	composeContent := `version: '3.7'
+	composeContent := `
 services:
   api-nginx:
     image: docker.io/nginx:stable-alpine
@@ -475,7 +475,7 @@ services:
 func TestDockerComposeAPIWithStackReaderAndComposeFile(t *testing.T) {
 	identifier := testNameHash(t.Name())
 	simple, _ := RenderComposeSimple(t)
-	composeContent := `version: '3.7'
+	composeContent := `
 services:
   api-postgres:
     image: docker.io/postgres:14
