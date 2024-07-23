@@ -307,14 +307,26 @@ func execute(
 		cmd.Env = append(cmd.Env, key+"="+value)
 	}
 
-	stdoutIn, _ := cmd.StdoutPipe()
-	stderrIn, _ := cmd.StderrPipe()
+	stdoutIn, err := cmd.StdoutPipe()
+	if err != nil {
+		return ExecError{
+			Command: cmd.Args,
+			Error:   fmt.Errorf("stdout: %w", err),
+		}
+	}
+
+	stderrIn, err := cmd.StderrPipe()
+	if err != nil {
+		return ExecError{
+			Command: cmd.Args,
+			Error:   fmt.Errorf("stderr: %w", err),
+		}
+	}
 
 	stdout := newCapturingPassThroughWriter(os.Stdout)
 	stderr := newCapturingPassThroughWriter(os.Stderr)
 
-	err := cmd.Start()
-	if err != nil {
+	if err = cmd.Start(); err != nil {
 		execCmd := []string{"Starting command", dirContext, binary}
 		execCmd = append(execCmd, args...)
 
