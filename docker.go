@@ -244,15 +244,20 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop will stop an already started container
+// Stop stops the container.
 //
-// In case the container fails to stop
-// gracefully within a time frame specified by the timeout argument,
-// it is forcefully terminated (killed).
+// In case the container fails to stop gracefully within a time frame specified
+// by the timeout argument, it is forcefully terminated (killed).
 //
 // If the timeout is nil, the container's StopTimeout value is used, if set,
 // otherwise the engine default. A negative timeout value can be specified,
 // meaning no timeout, i.e. no forceful termination is performed.
+//
+// All hooks are called in the following order:
+//   - [ContainerLifecycleHooks.PreStops]
+//   - [ContainerLifecycleHooks.PostStops]
+//
+// If the container is already stopped, the method is a no-op.
 func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) error {
 	err := c.stoppingHook(ctx)
 	if err != nil {
