@@ -115,7 +115,7 @@ var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
 }
 
 // defaultPreCreateHook is a hook that will apply the default configuration to the container
-var defaultPreCreateHook = func(ctx context.Context, p *DockerProvider, req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) ContainerLifecycleHooks {
+var defaultPreCreateHook = func(p *DockerProvider, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PreCreates: []ContainerRequestHook{
 			func(ctx context.Context, req ContainerRequest) error {
