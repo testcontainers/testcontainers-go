@@ -460,7 +460,7 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	}
 
 	if !c.ShouldKeepBuiltImage() {
-		buildOptions.Labels = core.DefaultLabels(core.SessionID())
+		buildOptions.Labels = GenericLabels()
 	}
 
 	// Do this as late as possible to ensure we don't leak the context on error/panic.
