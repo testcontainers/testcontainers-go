@@ -126,9 +126,7 @@ func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
 					Labels: make(map[string]string),
 				}
 			}
-			for k, v := range GenericLabels() {
-				containerMount.VolumeOptions.Labels[k] = v
-			}
+			AddGenericLabels(containerMount.VolumeOptions.Labels)
 		}
 
 		mounts = append(mounts, containerMount)
