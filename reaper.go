@@ -1,13 +1,16 @@
 package testcontainers
 
 import (
-	"bufio"
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"math/rand"
+	"io"
 	"net"
+	"os"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -34,9 +37,23 @@ const (
 var (
 	// Deprecated: it has been replaced by an internal value
 	ReaperDefaultImage = config.ReaperDefaultImage
-	reaperInstance     *Reaper // We would like to create reaper only once
-	reaperMutex        sync.Mutex
-	reaperOnce         sync.Once
+
+	// defaultReaperPort is the default port that the reaper listens on if not
+	// overridden by the RYUK_PORT environment variable.
+	defaultReaperPort = nat.Port("8080/tcp")
+
+	// errReaperNotFound is returned when no reaper container is found.
+	errReaperNotFound = errors.New("reaper not found")
+
+	// errReaperDisabled is returned if a reaper is requested but the
+	// config has it disabled.
+	errReaperDisabled = errors.New("reaper disabled")
+
+	// spawner is the singleton instance of reaperSpawner.
+	spawner = &reaperSpawner{}
+
+	// reaperAck is the expected response from the reaper container.
+	reaperAck = []byte("ACK\n")
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
@@ -47,10 +64,18 @@ type ReaperProvider interface {
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
-// Deprecated: it's not possible to create a reaper anymore. Compose module uses this method
+// Deprecated: it's not possible to create a reaper any more. Compose module uses this method
 // to create a reaper for the compose stack.
+//
+// The caller must call Connect at least once on the returned Reaper and use the returned
+// result otherwise the reaper will be kept open until the process exits.
 func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
-	return reuseOrCreateReaper(ctx, sessionID, provider)
+	reaper, err := spawner.reaper(ctx, sessionID, provider)
+	if err != nil {
+		return nil, fmt.Errorf("reaper: %w", err)
+	}
+
+	return reaper, nil
 }
 
 // reaperContainerNameFromSessionID returns the container name that uniquely
@@ -61,31 +86,80 @@ func reaperContainerNameFromSessionID(sessionID string) string {
 	return fmt.Sprintf("reaper_%s", sessionID)
 }
 
-// lookUpReaperContainer returns a DockerContainer type with the reaper container in the case
-// it's found in the running state, and including the labels for sessionID, reaper, and ryuk.
-// It will perform a retry with exponential backoff to allow for the container to be started and
-// avoid potential false negatives.
-func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContainer, error) {
-	dockerClient, err := NewDockerClientWithOpts(ctx)
-	if err != nil {
-		return nil, err
+// reaperSpawner is a singleton that manages the reaper container.
+type reaperSpawner struct {
+	instance *Reaper
+	mtx      sync.Mutex
+}
+
+// port returns the port that a new reaper should listens on.
+func (r *reaperSpawner) port() nat.Port {
+	if port := os.Getenv("RYUK_PORT"); port != "" {
+		natPort, err := nat.NewPort("tcp", port)
+		if err != nil {
+			panic(fmt.Sprintf("invalid RYUK_PORT value %q: %s", port, err))
+		}
+		return natPort
 	}
-	defer dockerClient.Close()
 
-	// the backoff will take at most 5 seconds to find the reaper container
-	// doing each attempt every 100ms
-	exp := backoff.NewExponentialBackOff()
+	return defaultReaperPort
+}
 
-	// we want random intervals between 100ms and 500ms for concurrent executions
+// backoff returns a backoff policy for the reaper spawner.
+// It will take at most 20 seconds, doing each attempt every 100ms - 250ms.
+func (r *reaperSpawner) backoff() *backoff.ExponentialBackOff {
+	// We want random intervals between 100ms and 250ms for concurrent executions
 	// to not be synchronized: it could be the case that multiple executions of this
 	// function happen at the same time (specifically when called from a different test
 	// process execution), and we want to avoid that they all try to find the reaper
 	// container at the same time.
-	exp.InitialInterval = time.Duration(rand.Intn(5)*100) * time.Millisecond
-	exp.RandomizationFactor = rand.Float64() * 0.5
-	exp.Multiplier = rand.Float64() * 2.0
-	exp.MaxInterval = 5.0 * time.Second  // max interval between attempts
-	exp.MaxElapsedTime = 1 * time.Minute // max time to keep trying
+	b := &backoff.ExponentialBackOff{
+		InitialInterval:     time.Millisecond * 100,
+		RandomizationFactor: backoff.DefaultRandomizationFactor,
+		Multiplier:          backoff.DefaultMultiplier,
+		// Adjust MaxInterval to compensate for randomization factor which can be added to
+		// returned interval so we have a maximum of 250ms.
+		MaxInterval:    time.Duration(float64(time.Millisecond*250) * backoff.DefaultRandomizationFactor),
+		MaxElapsedTime: time.Second * 20,
+		Stop:           backoff.Stop,
+		Clock:          backoff.SystemClock,
+	}
+	b.Reset()
+
+	return b
+}
+
+// cleanup terminates the reaper container if set.
+func (r *reaperSpawner) cleanup() error {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	return r.cleanupLocked()
+}
+
+// cleanupLocked terminates the reaper container if set.
+// It must be called with the lock held.
+func (r *reaperSpawner) cleanupLocked() error {
+	if r.instance == nil {
+		return nil
+	}
+
+	err := TerminateContainer(r.instance.container)
+	r.instance = nil
+
+	return err
+}
+
+// lookupContainer returns a DockerContainer type with the reaper container in the case
+// it's found in the running state, and including the labels for sessionID, reaper, and ryuk.
+// It will perform a retry with exponential backoff to allow for the container to be started and
+// avoid potential false negatives.
+func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (*DockerContainer, error) {
+	dockerClient, err := NewDockerClientWithOpts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("new client: %w", err)
+	}
+	defer dockerClient.Close()
 
 	opts := container.ListOptions{
 		All: true,
@@ -97,159 +171,212 @@ func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContai
 		),
 	}
 
-	return backoff.RetryNotifyWithData(
+	return backoff.RetryWithData(
 		func() (*DockerContainer, error) {
 			resp, err := dockerClient.ContainerList(ctx, opts)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("container list: %w", err)
 			}
 
 			if len(resp) == 0 {
-				// reaper container not found in the running state: do not look for it again
-				return nil, nil
+				// No reaper container not found.
+				return nil, backoff.Permanent(errReaperNotFound)
 			}
 
 			if len(resp) > 1 {
-				return nil, fmt.Errorf("not possible to have multiple reaper containers found for session ID %s", sessionID)
+				return nil, fmt.Errorf("multiple reaper containers found for session ID %s", sessionID)
 			}
 
-			r, err := containerFromDockerResponse(ctx, resp[0])
+			container := resp[0]
+			r, err := containerFromDockerResponse(ctx, container)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("from docker: %w", err)
 			}
 
-			if r.healthStatus == types.Healthy || r.healthStatus == types.NoHealthcheck {
+			switch {
+			case r.healthStatus == types.Healthy,
+				r.healthStatus == types.NoHealthcheck:
 				return r, nil
-			}
-
-			// if a health status is present on the container, and the container is healthy, error
-			if r.healthStatus != "" {
-				return nil, fmt.Errorf("container %s is not healthy, wanted status=%s, got status=%s", resp[0].ID[:8], types.Healthy, r.healthStatus)
+			case r.healthStatus != "":
+				return nil, fmt.Errorf("container not healthy: %s", r.healthStatus)
 			}
 
 			return r, nil
 		},
-		backoff.WithContext(exp, ctx),
-		func(err error, duration time.Duration) {
-			Logger.Printf("Error looking up reaper container, will retry: %v", err)
-		},
+		backoff.WithContext(r.backoff(), ctx),
 	)
 }
 
-// reuseOrCreateReaper returns an existing Reaper instance if it exists and is running. Otherwise, a new Reaper instance
-// will be created with a sessionID to identify containers in the same test session/program.
-func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
-	reaperMutex.Lock()
-	defer reaperMutex.Unlock()
-
-	// 1. if the reaper instance has been already created, return it
-	if reaperInstance != nil {
-		// Verify this instance is still running by checking state.
-		// Can't use Container.IsRunning because the bool is not updated when Reaper is terminated
-		state, err := reaperInstance.container.State(ctx)
-		if err != nil {
-			if !errdefs.IsNotFound(err) {
-				return nil, err
-			}
-		} else if state.Running {
-			return reaperInstance, nil
-		}
-		// else: the reaper instance has been terminated, so we need to create a new one
-		reaperOnce = sync.Once{}
+// isRunning returns an error if the container is not running.
+func (r *reaperSpawner) isRunning(ctx context.Context, ctr Container) error {
+	state, err := ctr.State(ctx)
+	if err != nil {
+		return fmt.Errorf("container state: %w", err)
 	}
 
-	// 2. because the reaper instance has not been created yet, look for it in the Docker daemon, which
-	// will happen if the reaper container has been created in the same test session but in a different
-	// test process execution (e.g. when running tests in parallel), not having initialized the reaper
-	// instance yet.
-	reaperContainer, err := lookUpReaperContainer(context.Background(), sessionID)
-	if err == nil && reaperContainer != nil {
-		// The reaper container exists as a Docker container: re-use it
-		Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", reaperContainer.ID)
-		reaperInstance, err = reuseReaperContainer(ctx, sessionID, provider, reaperContainer)
+	if !state.Running {
+		// Use NotFound error to indicate the container is not running
+		// and should be recreated.
+		return errdefs.NotFound(fmt.Errorf("container state: %s", state.Status))
+	}
+
+	return nil
+}
+
+// retryError returns a permanent error if the error is not considered retryable.
+func (r *reaperSpawner) retryError(err error) error {
+	var timeout interface {
+		Timeout() bool
+	}
+	switch {
+	case isCleanupSafe(err),
+		createContainerFailDueToNameConflictRegex.MatchString(err.Error()),
+		errors.Is(err, syscall.ECONNREFUSED),
+		errors.Is(err, syscall.ECONNRESET),
+		errors.Is(err, syscall.ECONNABORTED),
+		errors.Is(err, syscall.ETIMEDOUT),
+		errors.Is(err, os.ErrDeadlineExceeded),
+		errors.As(err, &timeout) && timeout.Timeout(),
+		errors.Is(err, context.DeadlineExceeded),
+		errors.Is(err, context.Canceled):
+		// Retryable error.
+		return err
+	default:
+		return backoff.Permanent(err)
+	}
+}
+
+// reaper returns an existing Reaper instance if it exists and is running, otherwise
+// a new Reaper instance will be created with a sessionID to identify containers in
+// the same test session/program. If connect is true, the reaper will be connected
+// to the reaper container.
+// Returns an error if config.RyukDisabled is true.
+//
+// Safe for concurrent calls.
+func (r *reaperSpawner) reaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
+	if config.Read().RyukDisabled {
+		return nil, errReaperDisabled
+	}
+
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	return backoff.RetryWithData(
+		r.retryLocked(ctx, sessionID, provider),
+		backoff.WithContext(r.backoff(), ctx),
+	)
+}
+
+// retryLocked returns a function that can be used to create or reuse a reaper container.
+// If connect is true, the reaper will be connected to the reaper container.
+// It must be called with the lock held.
+func (r *reaperSpawner) retryLocked(ctx context.Context, sessionID string, provider ReaperProvider) func() (*Reaper, error) {
+	return func() (reaper *Reaper, err error) { //nolint:nonamedreturns // Needed for deferred error check.
+		reaper, err = r.reuseOrCreate(ctx, sessionID, provider)
+		// Ensure that the reaper is terminated if an error occurred.
+		defer func() {
+			if err != nil {
+				if reaper != nil {
+					err = errors.Join(err, TerminateContainer(reaper.container))
+				}
+				err = r.retryError(errors.Join(err, r.cleanupLocked()))
+			}
+		}()
 		if err != nil {
 			return nil, err
 		}
 
-		return reaperInstance, nil
-	}
-
-	// 3. the reaper container does not exist in the Docker daemon: create it, and do it using the
-	// synchronization primitive to avoid multiple executions of this function to create the reaper
-	var reaperErr error
-	reaperOnce.Do(func() {
-		r, err := newReaper(ctx, sessionID, provider)
-		if err != nil {
-			reaperErr = err
-			return
+		if err = r.isRunning(ctx, reaper.container); err != nil {
+			return nil, err
 		}
 
-		reaperInstance, reaperErr = r, nil
-	})
-	if reaperErr != nil {
-		reaperOnce = sync.Once{}
-		return nil, reaperErr
-	}
+		// Check we can still connect.
+		termSignal, err := reaper.connect(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("connect: %w", err)
+		}
 
-	return reaperInstance, nil
+		reaper.setOrSignal(termSignal)
+
+		r.instance = reaper
+
+		return reaper, nil
+	}
 }
 
-// reuseReaperContainer constructs a Reaper from an already running reaper
-// DockerContainer.
-func reuseReaperContainer(ctx context.Context, sessionID string, provider ReaperProvider, reaperContainer *DockerContainer) (*Reaper, error) {
-	endpoint, err := reaperContainer.PortEndpoint(ctx, "8080", "")
+// reuseOrCreate returns an existing Reaper instance if it exists, otherwise a new Reaper instance.
+func (r *reaperSpawner) reuseOrCreate(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
+	if r.instance != nil {
+		// We already have an associated reaper.
+		return r.instance, nil
+	}
+
+	// Look for an existing reaper created in the same test session but in a
+	// different test process execution e.g. when running tests in parallel.
+	container, err := r.lookupContainer(context.Background(), sessionID)
 	if err != nil {
-		return nil, err
-	}
-
-	Logger.Printf("⏳ Waiting for Reaper port to be ready")
-
-	var containerJson *types.ContainerJSON
-
-	if containerJson, err = reaperContainer.Inspect(ctx); err != nil {
-		return nil, fmt.Errorf("failed to inspect reaper container %s: %w", reaperContainer.ID[:8], err)
-	}
-
-	if containerJson != nil && containerJson.NetworkSettings != nil {
-		for port := range containerJson.NetworkSettings.Ports {
-			err := wait.ForListeningPort(port).
-				WithPollInterval(100*time.Millisecond).
-				WaitUntilReady(ctx, reaperContainer)
-			if err != nil {
-				return nil, fmt.Errorf("failed waiting for reaper container %s port %s/%s to be ready: %w",
-					reaperContainer.ID[:8], port.Proto(), port.Port(), err)
-			}
+		if !errors.Is(err, errReaperNotFound) {
+			return nil, fmt.Errorf("look up container: %w", err)
 		}
+
+		// The reaper container was not found, continue to create a new one.
+		reaper, err := r.newReaper(ctx, sessionID, provider)
+		if err != nil {
+			return nil, fmt.Errorf("new reaper: %w", err)
+		}
+
+		return reaper, nil
 	}
+
+	// A reaper container exists re-use it.
+	reaper, err := r.fromContainer(ctx, sessionID, provider, container)
+	if err != nil {
+		return nil, fmt.Errorf("from container %q: %w", container.ID[:8], err)
+	}
+
+	return reaper, nil
+}
+
+// fromContainer constructs a Reaper from an already running reaper DockerContainer.
+func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, provider ReaperProvider, dockerContainer *DockerContainer) (*Reaper, error) {
+	Logger.Printf("⏳ Waiting for Reaper %q to be ready", dockerContainer.ID[:8])
+
+	// Reusing an existing container so we determine the port from the container's exposed ports.
+	if err := wait.ForExposedPort().
+		WithPollInterval(100*time.Millisecond).
+		SkipInternalCheck().
+		WaitUntilReady(ctx, dockerContainer); err != nil {
+		return nil, fmt.Errorf("wait for reaper %s: %w", dockerContainer.ID[:8], err)
+	}
+
+	endpoint, err := dockerContainer.Endpoint(ctx, "")
+	if err != nil {
+		return nil, fmt.Errorf("port endpoint: %w", err)
+	}
+
+	Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", dockerContainer.ID[:8])
 
 	return &Reaper{
 		Provider:  provider,
 		SessionID: sessionID,
 		Endpoint:  endpoint,
-		container: reaperContainer,
+		container: dockerContainer,
 	}, nil
 }
 
-// newReaper creates a Reaper with a sessionID to identify containers and a
-// provider to use. Do not call this directly, use reuseOrCreateReaper instead.
-func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
+// newReaper creates a connected Reaper with a sessionID to identify containers
+// and a provider to use.
+func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (reaper *Reaper, err error) { //nolint:nonamedreturns // Needed for deferred error check.
 	dockerHostMount := core.MustExtractDockerSocket(ctx)
 
-	reaper := &Reaper{
-		Provider:  provider,
-		SessionID: sessionID,
-	}
-
-	listeningPort := nat.Port("8080/tcp")
-
+	port := r.port()
 	tcConfig := provider.Config().Config
-
 	req := ContainerRequest{
 		Image:        config.ReaperDefaultImage,
-		ExposedPorts: []string{string(listeningPort)},
+		ExposedPorts: []string{string(port)},
 		Labels:       core.DefaultLabels(sessionID),
 		Privileged:   tcConfig.RyukPrivileged,
-		WaitingFor:   wait.ForListeningPort(listeningPort),
+		WaitingFor:   wait.ForListeningPort(port),
 		Name:         reaperContainerNameFromSessionID(sessionID),
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.AutoRemove = true
@@ -268,9 +395,10 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 		req.Env["RYUK_VERBOSE"] = "true"
 	}
 
-	// include reaper-specific labels to the reaper container
+	// Setup reaper-specific labels for the reaper container.
 	req.Labels[core.LabelReaper] = "true"
 	req.Labels[core.LabelRyuk] = "true"
+	delete(req.Labels, core.LabelReap)
 
 	// Attach reaper container to a requested network if it is specified
 	if p, ok := provider.(*DockerProvider); ok {
@@ -278,123 +406,158 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 	}
 
 	c, err := provider.RunContainer(ctx, req)
-	if err != nil {
-		// We need to check whether the error is caused by a container with the same name
-		// already existing due to race conditions. We manually match the error message
-		// as we do not have any error types to check against.
-		if createContainerFailDueToNameConflictRegex.MatchString(err.Error()) {
-			// Manually retrieve the already running reaper container. However, we need to
-			// use retries here as there are two possible race conditions that might lead to
-			// errors: In most cases, there is a small delay between container creation and
-			// actually being visible in list-requests. This means that creation might fail
-			// due to name conflicts, but when we list containers with this name, we do not
-			// get any results. In another case, the container might have simply died in the
-			// meantime and therefore cannot be found.
-			const timeout = 5 * time.Second
-			const cooldown = 100 * time.Millisecond
-			start := time.Now()
-			var reaperContainer *DockerContainer
-			for time.Since(start) < timeout {
-				reaperContainer, err = lookUpReaperContainer(ctx, sessionID)
-				if err == nil && reaperContainer != nil {
-					break
-				}
-				select {
-				case <-ctx.Done():
-				case <-time.After(cooldown):
-				}
-			}
-			if err != nil {
-				return nil, fmt.Errorf("look up reaper container due to name conflict failed: %w", err)
-			}
-			// If the reaper container was not found, it is most likely to have died in
-			// between as we can exclude any client errors because of the previous error
-			// check. Because the reaper should only die if it performed clean-ups, we can
-			// fail here as the reaper timeout needs to be increased, anyway.
-			if reaperContainer == nil {
-				return nil, fmt.Errorf("look up reaper container returned nil although creation failed due to name conflict")
-			}
-			Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", reaperContainer.ID)
-			reaper, err := reuseReaperContainer(ctx, sessionID, provider, reaperContainer)
-			if err != nil {
-				return nil, err
-			}
-			return reaper, nil
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, TerminateContainer(c))
 		}
-		return nil, err
-	}
-	reaper.container = c
-
-	endpoint, err := c.PortEndpoint(ctx, "8080", "")
+	}()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("run container: %w", err)
 	}
-	reaper.Endpoint = endpoint
 
-	return reaper, nil
+	endpoint, err := c.PortEndpoint(ctx, port, "")
+	if err != nil {
+		return nil, fmt.Errorf("port endpoint: %w", err)
+	}
+
+	return &Reaper{
+		Provider:  provider,
+		SessionID: sessionID,
+		Endpoint:  endpoint,
+		container: c,
+	}, nil
 }
 
 // Reaper is used to start a sidecar container that cleans up resources
 type Reaper struct {
-	Provider  ReaperProvider
-	SessionID string
-	Endpoint  string
-	container Container
+	Provider   ReaperProvider
+	SessionID  string
+	Endpoint   string
+	container  Container
+	mtx        sync.Mutex // Protects termSignal.
+	termSignal chan bool
 }
 
-// Connect runs a goroutine which can be terminated by sending true into the returned channel
+// Connect connects to the reaper container and sends the labels to it
+// so that it can clean up the containers with the same labels.
+//
+// It returns a channel that can be closed to terminate the connection.
+// Returns an error if config.RyukDisabled is true.
 func (r *Reaper) Connect() (chan bool, error) {
-	conn, err := net.DialTimeout("tcp", r.Endpoint, 10*time.Second)
+	if config.Read().RyukDisabled {
+		return nil, errReaperDisabled
+	}
+
+	if termSignal := r.useTermSignal(); termSignal != nil {
+		return termSignal, nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	return r.connect(ctx)
+}
+
+// close signals the connection to close if needed.
+// Safe for concurrent calls.
+func (r *Reaper) close() {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	if r.termSignal != nil {
+		r.termSignal <- true
+		r.termSignal = nil
+	}
+}
+
+// setOrSignal sets the reapers termSignal field if nil
+// otherwise consumes by sending true to it.
+// Safe for concurrent calls.
+func (r *Reaper) setOrSignal(termSignal chan bool) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	if r.termSignal != nil {
+		// Already have an existing connection, close the new one.
+		termSignal <- true
+		return
+	}
+
+	// First or new unused termSignal, assign for caller to reuse.
+	r.termSignal = termSignal
+}
+
+// useTermSignal if termSignal is not nil returns it
+// and sets it to nil, otherwise returns nil.
+//
+// Safe for concurrent calls.
+func (r *Reaper) useTermSignal() chan bool {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	if r.termSignal == nil {
+		return nil
+	}
+
+	// Use existing connection.
+	term := r.termSignal
+	r.termSignal = nil
+
+	return term
+}
+
+// connect connects to the reaper container and sends the labels to it
+// so that it can clean up the containers with the same labels.
+//
+// It returns a channel that can be sent true to terminate the connection.
+// Returns an error if config.RyukDisabled is true.
+func (r *Reaper) connect(ctx context.Context) (chan bool, error) {
+	var d net.Dialer
+	conn, err := d.DialContext(ctx, "tcp", r.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("%w: Connecting to Ryuk on %s failed", err, r.Endpoint)
+		return nil, fmt.Errorf("dial reaper %s: %w", r.Endpoint, err)
 	}
 
 	terminationSignal := make(chan bool)
-	go func(conn net.Conn) {
-		sock := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+	go func() {
 		defer conn.Close()
-
-		labelFilters := []string{}
-		for l, v := range core.DefaultLabels(r.SessionID) {
-			labelFilters = append(labelFilters, fmt.Sprintf("label=%s=%s", l, v))
+		if err := r.handshake(conn); err != nil {
+			Logger.Printf("Reaper handshake failed: %s", err)
 		}
-
-		retryLimit := 3
-		for retryLimit > 0 {
-			retryLimit--
-
-			if _, err := sock.WriteString(strings.Join(labelFilters, "&")); err != nil {
-				continue
-			}
-
-			if _, err := sock.WriteString("\n"); err != nil {
-				continue
-			}
-
-			if err := sock.Flush(); err != nil {
-				continue
-			}
-
-			resp, err := sock.ReadString('\n')
-			if err != nil {
-				continue
-			}
-
-			if resp == "ACK\n" {
-				break
-			}
-		}
-
 		<-terminationSignal
-	}(conn)
+	}()
 	return terminationSignal, nil
+}
+
+// handshake sends the labels to the reaper container and reads the ACK.
+func (r *Reaper) handshake(conn net.Conn) error {
+	labels := core.DefaultLabels(r.SessionID)
+	labelFilters := make([]string, 0, len(labels))
+	for l, v := range labels {
+		labelFilters = append(labelFilters, fmt.Sprintf("label=%s=%s", l, v))
+	}
+
+	filters := []byte(strings.Join(labelFilters, "&") + "\n")
+	buf := make([]byte, 4)
+	if _, err := conn.Write(filters); err != nil {
+		return fmt.Errorf("writing filters: %w", err)
+	}
+
+	n, err := io.ReadFull(conn, buf)
+	if err != nil {
+		return fmt.Errorf("read ack: %w", err)
+	}
+
+	if !bytes.Equal(reaperAck, buf[:n]) {
+		// We have received the ACK so all done.
+		return fmt.Errorf("unexpected reaper response: %s", buf[:n])
+	}
+
+	return nil
 }
 
 // Labels returns the container labels to use so that this Reaper cleans them up
 // Deprecated: internally replaced by core.DefaultLabels(sessionID)
 func (r *Reaper) Labels() map[string]string {
-	return map[string]string{
-		core.LabelLang:      "go",
-		core.LabelSessionID: r.SessionID,
-	}
+	return GenericLabels()
 }

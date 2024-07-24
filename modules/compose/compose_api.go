@@ -2,6 +2,7 @@ package compose
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -228,9 +229,6 @@ type dockerCompose struct {
 
 	// sessionID is used to identify the reaper session
 	sessionID string
-
-	// reaper is used to clean up containers after the stack is stopped
-	reaper *testcontainers.Reaper
 }
 
 func (d *dockerCompose) ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
@@ -269,11 +267,9 @@ func (d *dockerCompose) Down(ctx context.Context, opts ...StackDownOption) error
 	return d.composeService.Down(ctx, d.name, options.DownOptions)
 }
 
-func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
+func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err error) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
-
-	var err error
 
 	d.project, err = d.compileProject(ctx)
 	if err != nil {
@@ -329,27 +325,61 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		return err
 	}
 
-	if d.reaper != nil {
-		for _, n := range d.networks {
-			termSignal, err := d.reaper.Connect()
-			if err != nil {
-				return fmt.Errorf("failed to connect to reaper: %w", err)
-			}
-			n.SetTerminationSignal(termSignal)
+	provider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(d.logger))
+	if err != nil {
+		return fmt.Errorf("new docker provider: %w", err)
+	}
 
-			// Cleanup on error, otherwise set termSignal to nil before successful return.
-			defer func() {
-				if termSignal != nil {
+	var termSignals []chan bool
+	var reaper *testcontainers.Reaper
+	if !provider.Config().Config.RyukDisabled {
+		// NewReaper is deprecated: we need to find a way to create the reaper for compose
+		// bypassing the deprecation.
+		reaper, err = testcontainers.NewReaper(ctx, testcontainers.SessionID(), provider, "")
+		if err != nil {
+			return fmt.Errorf("create reaper: %w", err)
+		}
+
+		// Cleanup on error, otherwise set termSignal to nil before successful return.
+		defer func() {
+			if len(termSignals) == 0 {
+				// Need to call Connect at least once to ensure the initial
+				// connection is cleaned up.
+				termSignal, errc := reaper.Connect()
+				if errc != nil {
+					err = errors.Join(err, fmt.Errorf("reaper connect: %w", errc))
+				} else {
 					termSignal <- true
 				}
-			}()
+			}
+
+			if err == nil {
+				// No need to cleanup.
+				return
+			}
+
+			for _, ts := range termSignals {
+				ts <- true
+			}
+		}()
+
+		// Connect to the reaper and set the termination signal for each network.
+		for _, n := range d.networks {
+			termSignal, err := reaper.Connect()
+			if err != nil {
+				return fmt.Errorf("reaper connect: %w", err)
+			}
+
+			n.SetTerminationSignal(termSignal)
+			termSignals = append(termSignals, termSignal)
 		}
 	}
 
 	errGrpContainers, errGrpCtx := errgroup.WithContext(ctx)
 
+	// Lookup the containers for each service and connect them
+	// to the reaper if needed.
 	for _, srv := range d.project.Services {
-		// we are going to connect each container to the reaper
 		srv := srv
 		errGrpContainers.Go(func() error {
 			dc, err := d.lookupContainer(errGrpCtx, srv.Name)
@@ -357,19 +387,14 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 				return err
 			}
 
-			if d.reaper != nil {
-				termSignal, err := d.reaper.Connect()
+			if reaper != nil {
+				termSignal, err := reaper.Connect()
 				if err != nil {
-					return fmt.Errorf("failed to connect to reaper: %w", err)
+					return fmt.Errorf("reaper connect: %w", err)
 				}
-				dc.SetTerminationSignal(termSignal)
 
-				// Cleanup on error, otherwise set termSignal to nil before successful return.
-				defer func() {
-					if termSignal != nil {
-						termSignal <- true
-					}
-				}()
+				dc.SetTerminationSignal(termSignal)
+				termSignals = append(termSignals, termSignal)
 			}
 
 			return nil
@@ -401,7 +426,11 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		})
 	}
 
-	return errGrpWait.Wait()
+	if err := errGrpWait.Wait(); err != nil {
+		return fmt.Errorf("wait for services: %w", err)
+	}
+
+	return nil
 }
 
 func (d *dockerCompose) WaitForService(s string, strategy wait.Strategy) ComposeStack {
@@ -486,6 +515,9 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 	return ctr, nil
 }
 
+// lookupNetworks is used to retrieve the networks that are part of the compose stack.
+//
+// Safe for concurrent calls.
 func (d *dockerCompose) lookupNetworks(ctx context.Context) error {
 	networks, err := d.dockerClient.NetworkList(ctx, dockernetwork.ListOptions{
 		Filters: filters.NewArgs(
@@ -543,9 +575,7 @@ func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, err
 			api.OneoffLabel:      "False", // default, will be overridden by `run` command
 		}
 
-		for k, label := range testcontainers.GenericLabels() {
-			s.CustomLabels[k] = label
-		}
+		testcontainers.AddGenericLabels(s.CustomLabels)
 
 		for i, envFile := range compiledOptions.EnvFiles {
 			// add a label for each env file, indexed by its position
@@ -562,9 +592,7 @@ func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, err
 			api.VersionLabel: api.ComposeVersion,
 		}
 
-		for k, label := range testcontainers.GenericLabels() {
-			n.Labels[k] = label
-		}
+		testcontainers.AddGenericLabels(n.Labels)
 
 		proj.Networks[key] = n
 	}
