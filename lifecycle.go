@@ -232,10 +232,10 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 								if !strings.Contains(exposedPort, "/") {
 									portMap = nat.Port(fmt.Sprintf("%s/tcp", exposedPort))
 									if _, ok := exposedAndMappedPorts[portMap]; !ok {
-										return fmt.Errorf("port %s is not mapped yet", exposedPort)
+										return fmt.Errorf("port %s is not mapped yet, have: %v", exposedPort, exposedAndMappedPorts)
 									}
 								} else {
-									return fmt.Errorf("port %s is not mapped yet", exposedPort)
+									return fmt.Errorf("port %s is not mapped yet, have: %v", exposedPort, exposedAndMappedPorts)
 								}
 							}
 						}
@@ -248,7 +248,7 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 					},
 				)
 				if err != nil {
-					return fmt.Errorf("all exposed ports, %s, were not mapped in 5s: %w", dockerContainer.exposedPorts, err)
+					return fmt.Errorf("not all exposed ports %s were mapped in %s: %w", dockerContainer.exposedPorts, b.MaxElapsedTime, err)
 				}
 
 				return nil

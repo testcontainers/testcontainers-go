@@ -29,9 +29,7 @@ func ExampleNew() {
 
 	net, err := network.New(ctx,
 		network.WithAttachable(),
-		// Makes the network internal only, meaning the host machine cannot access it.
-		// Remove or use `network.WithDriver("bridge")` to change the network's mode.
-		network.WithInternal(),
+		network.WithDriver("bridge"),
 		network.WithLabels(map[string]string{"this-is-a-test": "value"}),
 	)
 	if err != nil {
@@ -105,7 +103,7 @@ func ExampleNew() {
 	// Output:
 	// 1
 	// true
-	// true
+	// false
 	// value
 	// true
 }
