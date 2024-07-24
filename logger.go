@@ -1,7 +1,9 @@
 package testcontainers
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -114,4 +116,14 @@ type testLogger struct {
 func (t testLogger) Printf(format string, v ...interface{}) {
 	t.Helper()
 	t.Logf(format, v...)
+}
+
+// bufLogger is a Logging implementation that writes to a bytes.Buffer.
+type bufLogger struct {
+	bytes.Buffer
+}
+
+// Printf implements Logging.
+func (l *bufLogger) Printf(format string, v ...any) {
+	fmt.Fprintf(l, format, v...)
 }

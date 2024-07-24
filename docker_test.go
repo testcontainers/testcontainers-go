@@ -240,18 +240,23 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 	}
 }
 
+type logger struct {
+	t *testing.T
+}
+
+func (l *logger) Accept(log Log) {
+	l.t.Log(log.LogType + ": " + strings.TrimSpace(string(log.Content)))
+}
+
 func TestContainerTerminationResetsState(t *testing.T) {
 	ctx := context.Background()
 
-<<<<<<< HEAD
-=======
 	oldDebugPrintln := debugPrintln
 	debugPrintln = t.Log
 	t.Cleanup(func() {
 		debugPrintln = oldDebugPrintln
 	})
 
->>>>>>> c47b4abb (chore: increase timeout values)
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -259,13 +264,18 @@ func TestContainerTerminationResetsState(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
+			LogConsumerCfg: &LogConsumerConfig{
+				Consumers: []LogConsumer{&logger{t: t}},
+			},
 		},
 		Started: true,
 	})
 	CleanupContainer(t, nginxA)
 	require.NoError(t, err)
+	t.Logf("started: %s", nginxA.GetContainerID())
 
 	err = nginxA.Terminate(ctx)
+	t.Logf("terminated: %s, %v", nginxA.GetContainerID(), err)
 	require.NoError(t, err)
 	require.Empty(t, nginxA.SessionID())
 
@@ -282,6 +292,9 @@ func TestContainerStateAfterTermination(t *testing.T) {
 				Image: nginxAlpineImage,
 				ExposedPorts: []string{
 					nginxDefaultPort,
+				},
+				LogConsumerCfg: &LogConsumerConfig{
+					Consumers: []LogConsumer{&logger{t: t}},
 				},
 			},
 			Started: true,

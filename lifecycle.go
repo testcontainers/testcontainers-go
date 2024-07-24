@@ -169,6 +169,7 @@ var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHoo
 			// See combineContainerHooks for the order of execution.
 			func(ctx context.Context, c Container) error {
 				if cfg == nil || len(cfg.Consumers) == 0 {
+					debugPrintln("XXX: PostStarts - no consumers", c.GetContainerID())
 					return nil
 				}
 
@@ -178,6 +179,7 @@ var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHoo
 					dockerContainer.followOutput(consumer)
 				}
 
+				debugPrintln("XXX: PostStarts - consumers:", len(dockerContainer.consumers), c.GetContainerID())
 				return dockerContainer.startLogProduction(ctx, cfg.Opts...)
 			},
 		},
@@ -186,11 +188,12 @@ var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHoo
 			// See combineContainerHooks for the order of execution.
 			func(ctx context.Context, c Container) error {
 				if cfg == nil || len(cfg.Consumers) == 0 {
+					debugPrintln("XXX: PostStops - no consumers", c.GetContainerID())
 					return nil
 				}
 
 				dockerContainer := c.(*DockerContainer)
-
+				debugPrintln("XXX: PostStops - consumers:", len(dockerContainer.consumers), c.GetContainerID())
 				return dockerContainer.stopLogProduction()
 			},
 		},
