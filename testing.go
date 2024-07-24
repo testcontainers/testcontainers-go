@@ -3,11 +3,16 @@ package testcontainers
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/docker/docker/errdefs"
 	"github.com/stretchr/testify/require"
 )
+
+// errAlreadyInProgress is a regular expression that matches the error for a container
+// removal that is already in progress.
+var errAlreadyInProgress = regexp.MustCompile(`removal of container .* is already in progress`)
 
 // SkipIfProviderIsNotHealthy is a utility function capable of skipping tests
 // if the provider is not healthy, or running at all.
@@ -67,7 +72,7 @@ func CleanupContainer(tb testing.TB, container Container, options ...TerminateOp
 	tb.Helper()
 
 	tb.Cleanup(func() {
-		noErrorOrNotFound(tb, TerminateContainer(container, options...))
+		noErrorOrIgnored(tb, TerminateContainer(container, options...))
 	})
 }
 
@@ -79,15 +84,16 @@ func CleanupNetwork(tb testing.TB, network Network) {
 	tb.Helper()
 
 	tb.Cleanup(func() {
-		noErrorOrNotFound(tb, network.Remove(context.Background()))
+		noErrorOrIgnored(tb, network.Remove(context.Background()))
 	})
 }
 
-// noErrorOrNotFound is a helper function that checks if the error is nil or a not found error.
-func noErrorOrNotFound(tb testing.TB, err error) {
+// noErrorOrIgnored is a helper function that checks if the error is nil or an error
+// we can ignore.
+func noErrorOrIgnored(tb testing.TB, err error) {
 	tb.Helper()
 
-	if isNilOrNotFound(err) {
+	if isCleanupSafe(err) {
 		return
 	}
 
@@ -109,8 +115,12 @@ type unwrapErrs interface {
 	Unwrap() []error
 }
 
-// isNilOrNotFound reports whether all errors in err's tree are either nil or implement [errdefs.ErrNotFound].
-func isNilOrNotFound(err error) bool {
+// isCleanupSafe reports whether all errors in err's tree are one of the
+// following, so can safely be ignored:
+//   - nil
+//   - not found
+//   - already in progress
+func isCleanupSafe(err error) bool {
 	if err == nil {
 		return true
 	}
@@ -118,13 +128,19 @@ func isNilOrNotFound(err error) bool {
 	switch x := err.(type) { //nolint:errorlint // We need to check for interfaces.
 	case errdefs.ErrNotFound:
 		return true
+	case errdefs.ErrConflict:
+		// Terminating a container that is already terminating.
+		if errAlreadyInProgress.MatchString(err.Error()) {
+			return true
+		}
+		return false
 	case causer:
-		return isNilOrNotFound(x.Cause())
+		return isCleanupSafe(x.Cause())
 	case wrapErr:
-		return isNilOrNotFound(x.Unwrap())
+		return isCleanupSafe(x.Unwrap())
 	case unwrapErrs:
 		for _, e := range x.Unwrap() {
-			if !isNilOrNotFound(e) {
+			if !isCleanupSafe(e) {
 				return false
 			}
 		}

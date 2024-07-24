@@ -308,7 +308,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 	// TODO: make this configurable via a functional option.
 	timeout := 10 * time.Second
 	err := c.Stop(ctx, &timeout)
-	if err != nil && !isNilOrNotFound(err) {
+	if err != nil && !isCleanupSafe(err) {
 		return fmt.Errorf("stop: %w", err)
 	}
 

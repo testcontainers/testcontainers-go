@@ -64,7 +64,7 @@ func TerminateContainer(container Container, options ...TerminateOption) error {
 
 	// TODO: Add a timeout when terminate supports it.
 	err := container.Terminate(c.ctx)
-	if !isNilOrNotFound(err) {
+	if !isCleanupSafe(err) {
 		return fmt.Errorf("terminate: %w", err)
 	}
 

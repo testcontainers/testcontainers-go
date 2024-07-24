@@ -80,7 +80,7 @@ func Test_isNotFound(t *testing.T) {
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			require.Equal(t, tc.want, isNilOrNotFound(tc.err))
+			require.Equal(t, tc.want, isCleanupSafe(tc.err))
 		})
 	}
 }
