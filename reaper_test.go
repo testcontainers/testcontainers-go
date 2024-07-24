@@ -467,7 +467,7 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 	testProvider := newMockReaperProvider(t)
 	t.Cleanup(testProvider.RestoreReaperState)
 
-	SkipIfProviderIsNotHealthy(&testing.T{})
+	SkipIfProviderIsNotHealthy(t)
 
 	ctx := context.Background()
 	// As other integration tests run with the (shared) Reaper as well, re-use the instance to not interrupt other tests
@@ -507,7 +507,7 @@ func Test_RecreateReaperIfTerminated(t *testing.T) {
 	mockProvider := newMockReaperProvider(t)
 	t.Cleanup(mockProvider.RestoreReaperState)
 
-	SkipIfProviderIsNotHealthy(&testing.T{})
+	SkipIfProviderIsNotHealthy(t)
 
 	provider, _ := ProviderDocker.GetProvider()
 	ctx := context.Background()
@@ -552,7 +552,7 @@ func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
 	reaperInstance = nil
 	reaperOnce = sync.Once{}
 
-	SkipIfProviderIsNotHealthy(&testing.T{})
+	SkipIfProviderIsNotHealthy(t)
 
 	ctx := context.Background()
 	// As other integration tests run with the (shared) Reaper as well, re-use the instance to not interrupt other tests
