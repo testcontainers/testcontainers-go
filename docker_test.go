@@ -251,12 +251,6 @@ func (l *logger) Accept(log Log) {
 func TestContainerTerminationResetsState(t *testing.T) {
 	ctx := context.Background()
 
-	oldDebugPrintln := debugPrintln
-	debugPrintln = t.Log
-	t.Cleanup(func() {
-		debugPrintln = oldDebugPrintln
-	})
-
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
@@ -272,10 +266,8 @@ func TestContainerTerminationResetsState(t *testing.T) {
 	})
 	CleanupContainer(t, nginxA)
 	require.NoError(t, err)
-	t.Logf("started: %s", nginxA.GetContainerID())
 
 	err = nginxA.Terminate(ctx)
-	t.Logf("terminated: %s, %v", nginxA.GetContainerID(), err)
 	require.NoError(t, err)
 	require.Empty(t, nginxA.SessionID())
 

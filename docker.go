@@ -268,10 +268,8 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	// without exposing the ability to fully initialize the container state.
 	// See: https://github.com/testcontainers/testcontainers-go/issues/2667
 	// TODO: Add a check for isRunning when the above issue is resolved.
-	debugPrintln("XXX: DockerContainer.Stop", c.ID)
 	err := c.stoppingHook(ctx)
 	if err != nil {
-		debugPrintln("XXX: DockerContainer.Stop stoppingHook error:", err, c.ID)
 		return fmt.Errorf("stopping hook: %w", err)
 	}
 
@@ -282,9 +280,7 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 		options.Timeout = &timeoutSeconds
 	}
 
-	debugPrintln("XXX: DockerContainer.Stop ContainerStop", c.ID)
 	if err := c.provider.client.ContainerStop(ctx, c.ID, options); err != nil {
-		debugPrintln("XXX: DockerContainer.Stop ContainerStop error:", err)
 		return fmt.Errorf("container stop: %w", err)
 	}
 
@@ -297,10 +293,8 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 
 	err = c.stoppedHook(ctx)
 	if err != nil {
-		debugPrintln("XXX: DockerContainer.Stop stoppedHook error:", err, c.ID)
 		return fmt.Errorf("stopped hook: %w", err)
 	}
-	debugPrintln("XXX: DockerContainer.Stop done", c.ID)
 
 	return nil
 }
@@ -316,7 +310,6 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 	// ContainerRemove hardcodes stop timeout to 3 seconds which is too short
 	// to ensure that child containers are stopped so we manually call stop.
 	// TODO: make this configurable via a functional option.
-	debugPrintln("XXX: DockerContainer.Terminate", c.ID)
 	timeout := 10 * time.Second
 	err := c.Stop(ctx, &timeout)
 	if err != nil && !isCleanupSafe(err) {
@@ -754,7 +747,6 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProdu
 // Use functional option WithLogProductionTimeout() to override default timeout. If it's
 // lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
 func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogProductionOption) error {
-	debugPrintln("XXX: DockerContainer.startLogProduction", c.ID)
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -790,9 +782,6 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 //   - A fatal error occurs
 //   - No more logs are available
 func (c *DockerContainer) logProducer(stdout, stderr io.Writer) error {
-	debugPrintln("XXX: DockerContainer.startLogProduction go", c.ID)
-	defer debugPrintln("XXX: DockerContainer.startLogProduction done", c.ID)
-
 	// Clean up idle client connections.
 	defer c.provider.Close()
 
@@ -808,7 +797,6 @@ func (c *DockerContainer) logProducer(stdout, stderr io.Writer) error {
 		defer cancel()
 
 		err := c.copyLogs(timeoutCtx, options, stdout, stderr)
-		debugPrintln("XXX: DockerContainer.logProducerSince:", err, c.ID)
 		switch {
 		case err == nil:
 			// No more logs available.
@@ -822,7 +810,6 @@ func (c *DockerContainer) logProducer(stdout, stderr io.Writer) error {
 			// Unexpected error, retry.
 			Logger.Printf("Unexpected error reading logs: %v", err)
 		}
-		debugPrintln("XXX: DockerContainer.logProducerAll:", err, c.ID)
 
 		// Retry from the last log received.
 		now := time.Now()
@@ -834,13 +821,11 @@ func (c *DockerContainer) logProducer(stdout, stderr io.Writer) error {
 func (c *DockerContainer) copyLogs(ctx context.Context, options container.LogsOptions, stdout, stderr io.Writer) error {
 	rc, err := c.provider.client.ContainerLogs(ctx, c.GetContainerID(), options)
 	if err != nil {
-		debugPrintln("XXX: DockerContainer.startLogProduction ContainerLogs:", err)
 		return fmt.Errorf("container logs: %w", err)
 	}
 	defer rc.Close()
 
 	if _, err = stdcopy.StdCopy(stdout, stderr, rc); err != nil {
-		debugPrintln("XXX: DockerContainer.startLogProduction stdcopy.StdCopy:", err)
 		return fmt.Errorf("stdcopy: %w", err)
 	}
 
@@ -852,14 +837,9 @@ func (c *DockerContainer) StopLogProducer() error {
 	return c.stopLogProduction()
 }
 
-// debugPrintln is a function that can be overridden for debugging purposes.
-var debugPrintln = func(a ...any) {}
-
 // stopLogProduction will stop the concurrent process that is reading logs
 // and sending them to each added LogConsumer
 func (c *DockerContainer) stopLogProduction() error {
-	debugPrintln("XXX: DockerContainer.stopLogProduction", c.ID)
-
 	if c.logProductionCancel == nil {
 		return nil
 	}
@@ -867,10 +847,7 @@ func (c *DockerContainer) stopLogProduction() error {
 	// Signal the log production to stop.
 	c.logProductionCancel(errLogProductionStop)
 
-	debugPrintln("XXX: DockerContainer.stopLogProduction signalled", c.ID)
-
 	if err := context.Cause(c.logProductionCtx); err != nil {
-		debugPrintln("XXX: DockerContainer.stopLogProduction err:", err, c.ID)
 		switch {
 		case errors.Is(err, errLogProductionStop):
 			// Log production was stopped.
@@ -884,7 +861,6 @@ func (c *DockerContainer) stopLogProduction() error {
 		}
 	}
 
-	debugPrintln("XXX: DockerContainer.stopLogProduction done", c.ID)
 	return nil
 }
 
