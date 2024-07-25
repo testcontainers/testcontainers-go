@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -25,6 +27,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -245,11 +249,136 @@ type logger struct {
 }
 
 func (l *logger) Accept(log Log) {
-	l.t.Log(log.LogType + ": " + strings.TrimSpace(string(log.Content)))
+	l.t.Log(time.Now().Format(time.RFC3339Nano) + ": " + log.LogType + ": " + strings.TrimSpace(string(log.Content)))
+}
+
+func (l *logger) Write(p []byte) (int, error) {
+	l.t.Log(time.Now().Format(time.RFC3339Nano) + ": " + strings.TrimSpace(string(p)))
+	return len(p), nil
+}
+
+var debugEnabledTime time.Time
+
+func debugTest(t *testing.T) {
+	t.Helper()
+	config.Reset()
+	t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
+	// t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
+
+	oldDebugPrintln := debugPrintln
+	debugPrintln = func(a ...any) {
+		t.Log(append([]any{time.Now().Format(time.RFC3339Nano)}, a...)...)
+	}
+	t.Cleanup(func() {
+		debugPrintln = oldDebugPrintln
+		config.Reset()
+	})
+
+	// Stream reaper logs
+	container, err := spawner.lookupContainer(context.Background(), core.SessionID())
+	if err != nil {
+		t.Logf("look up container: %s", err)
+		return
+	}
+
+	log := &logger{t: t}
+	timeout := time.Hour
+	container.logProductionTimeout = &timeout
+	container.logProductionCtx, container.logProductionCancel = context.WithCancelCause(context.Background())
+	t.Cleanup(func() {
+		container.logProductionCancel(errLogProductionStop)
+	})
+
+	go func() {
+		if err := container.logProducer(log, log); err != nil {
+			t.Logf("error running logProducer: %s", err)
+		}
+	}()
+
+	dockerDebugging(t, true)
+
+	t.Cleanup(func() {
+		dockerDebugging(t, false)
+	})
+}
+
+// dockerDebugging enables or disables Docker debug logging.
+func dockerDebugging(t *testing.T, enable bool) {
+	t.Helper()
+
+	t.Log("Docker debug logging:", enable)
+
+	const file = "/etc/docker/daemon.json"
+	data, err := os.ReadFile(file)
+	if err != nil {
+		t.Logf("error reading daemon.json: %s", err)
+		return
+	}
+
+	t.Logf("daemon.json: %s", string(data))
+
+	cfg := make(map[string]any)
+	err = json.Unmarshal(data, &cfg)
+	if err != nil {
+		t.Logf("error unmarshalling daemon.json: %s", err)
+		return
+	}
+
+	cfg["debug"] = enable
+
+	data, err = json.Marshal(cfg)
+	if err != nil {
+		t.Logf("error marshalling daemon.json: %s", err)
+		return
+	}
+
+	t.Logf("daemon.json: %s", string(data))
+
+	f, err := os.CreateTemp("", "")
+	if err != nil {
+		t.Logf("error writing daemon.json: %s", err)
+		return
+	}
+
+	defer os.Remove(f.Name())
+
+	if _, err := f.Write(data); err != nil {
+		t.Logf("error writing daemon.json: %s", err)
+		return
+	}
+
+	cmd := exec.CommandContext(context.Background(), "sudo", "cp", f.Name(), file)
+	log, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("error restarting docker: %s, %s", err, log)
+		return
+	}
+
+	if enable {
+		debugEnabledTime = time.Now()
+	}
+	cmd = exec.CommandContext(context.Background(), "sudo", "systemctl", "reload-or-restart", "docker")
+	log, err = cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("error reloading docker: %s, %s", err, log)
+		cmd = exec.CommandContext(context.Background(), "journalctl", "-xeu", "docker.service")
+		log, err = cmd.CombinedOutput()
+		if err != nil {
+			t.Logf("error running journalctl: %s, %s", err, log)
+			return
+		}
+		t.Logf("docker journalctl: %s", log)
+		return
+	}
+
+	t.Logf("docker reloaded: %s", log)
 }
 
 func TestContainerTerminationResetsState(t *testing.T) {
 	ctx := context.Background()
+
+	// Does this fix the flaky test?
+	debugTest(t)
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
@@ -266,8 +395,14 @@ func TestContainerTerminationResetsState(t *testing.T) {
 	})
 	CleanupContainer(t, nginxA)
 	require.NoError(t, err)
+	t.Logf("started: %s", nginxA.GetContainerID())
+
+	t.Cleanup(func() {
+		debugContainer(t, nginxA)
+	})
 
 	err = nginxA.Terminate(ctx)
+	t.Logf("terminated: %s, %v", nginxA.GetContainerID(), err)
 	require.NoError(t, err)
 	require.Empty(t, nginxA.SessionID())
 
@@ -276,8 +411,62 @@ func TestContainerTerminationResetsState(t *testing.T) {
 	require.Nil(t, inspect)
 }
 
+func debugContainer(t *testing.T, container Container) {
+	t.Helper()
+
+	// Docker events.
+	time.Sleep(time.Second) // Events are not immediately available.
+	cmd := exec.CommandContext(context.Background(),
+		"docker", "events",
+		"--filter", "type=container",
+		"--filter", "container="+container.GetContainerID(),
+		"--since", "10m",
+		"--until", "0s",
+	)
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("error running docker events: %s", err)
+	} else {
+		t.Logf("docker events: %s", stdoutStderr)
+	}
+
+	// Docker version.
+	cmd = exec.CommandContext(context.Background(), "docker", "version")
+	stdoutStderr, err = cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("error running docker version: %s", err)
+	} else {
+		t.Logf("docker version: %s", stdoutStderr)
+	}
+
+	// Docker info.
+	cmd = exec.CommandContext(context.Background(), "docker", "info")
+	stdoutStderr, err = cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("error running docker info: %s", err)
+	} else {
+		t.Logf("docker info: %s", stdoutStderr)
+	}
+
+	// Docker logs.
+	if debugEnabledTime.IsZero() {
+		t.Log("debugEnabledTime is zero, skipping journalctl")
+	} else {
+		cmd = exec.CommandContext(context.Background(),
+			"journalctl", "-xu", "docker.service",
+			"--since", debugEnabledTime.Format("2006-01-02 15:04:05"),
+		)
+		stdoutStderr, err = cmd.CombinedOutput()
+		if err != nil {
+			t.Logf("error running journalctl: %s, %s", err, stdoutStderr)
+		} else {
+			t.Logf("docker journalctl: %s", stdoutStderr)
+		}
+	}
+}
+
 func TestContainerStateAfterTermination(t *testing.T) {
-	createContainerFn := func(ctx context.Context) (Container, error) {
+	createContainerFn := func(ctx context.Context, t *testing.T) (Container, error) {
 		return GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
@@ -293,11 +482,17 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		})
 	}
 
+	// Does this fix the flaky test?
+	debugTest(t)
+
 	t.Run("Nil State after termination", func(t *testing.T) {
 		ctx := context.Background()
-		nginx, err := createContainerFn(ctx)
+		nginx, err := createContainerFn(ctx, t)
 		CleanupContainer(t, nginx)
 		require.NoError(t, err)
+		t.Cleanup(func() {
+			debugContainer(t, nginx)
+		})
 
 		// terminate the container before the raw state is set
 		err = nginx.Terminate(ctx)
@@ -311,9 +506,12 @@ func TestContainerStateAfterTermination(t *testing.T) {
 
 	t.Run("Nil State after termination if raw as already set", func(t *testing.T) {
 		ctx := context.Background()
-		nginx, err := createContainerFn(ctx)
+		nginx, err := createContainerFn(ctx, t)
 		CleanupContainer(t, nginx)
 		require.NoError(t, err)
+		t.Cleanup(func() {
+			debugContainer(t, nginx)
+		})
 
 		state, err := nginx.State(ctx)
 		require.NoError(t, err, "unexpected error from container inspect before container termination.")
@@ -330,6 +528,9 @@ func TestContainerStateAfterTermination(t *testing.T) {
 }
 
 func TestContainerTerminationRemovesDockerImage(t *testing.T) {
+	// Does this fix the flaky test?
+	debugTest(t)
+
 	t.Run("if not built from Dockerfile", func(t *testing.T) {
 		ctx := context.Background()
 		dockerClient, err := NewDockerClientWithOpts(ctx)
@@ -345,11 +546,17 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 				ExposedPorts: []string{
 					nginxDefaultPort,
 				},
+				LogConsumerCfg: &LogConsumerConfig{
+					Consumers: []LogConsumer{&logger{t: t}},
+				},
 			},
 			Started: true,
 		})
 		CleanupContainer(t, ctr)
 		require.NoError(t, err)
+		t.Cleanup(func() {
+			debugContainer(t, ctr)
+		})
 
 		err = ctr.Terminate(ctx)
 		require.NoError(t, err)
@@ -374,6 +581,9 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 			},
 			ExposedPorts: []string{"6379/tcp"},
 			WaitingFor:   wait.ForLog("Ready to accept connections"),
+			LogConsumerCfg: &LogConsumerConfig{
+				Consumers: []LogConsumer{&logger{t: t}},
+			},
 		}
 		ctr, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType:     providerType,
@@ -390,6 +600,9 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 			t.Fatal(err)
 		}
 		imageID := resp.Config.Image
+		t.Cleanup(func() {
+			debugContainer(t, ctr)
+		})
 
 		err = ctr.Terminate(ctx)
 		if err != nil {
