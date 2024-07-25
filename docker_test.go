@@ -243,6 +243,15 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 func TestContainerTerminationResetsState(t *testing.T) {
 	ctx := context.Background()
 
+<<<<<<< HEAD
+=======
+	oldDebugPrintln := debugPrintln
+	debugPrintln = t.Log
+	t.Cleanup(func() {
+		debugPrintln = oldDebugPrintln
+	})
+
+>>>>>>> c47b4abb (chore: increase timeout values)
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{

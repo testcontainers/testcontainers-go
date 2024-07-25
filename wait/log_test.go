@@ -29,7 +29,7 @@ func TestWaitForLog(t *testing.T) {
 		target := NopStrategyTarget{
 			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
 		}
-		wg := NewLogStrategy("docker").WithStartupTimeout(100 * time.Microsecond)
+		wg := NewLogStrategy("docker").WithStartupTimeout(100 * time.Millisecond)
 		err := wg.WaitUntilReady(context.Background(), target)
 		require.NoError(t, err)
 	})
@@ -40,7 +40,7 @@ func TestWaitForLog(t *testing.T) {
 		}
 
 		// get all words that start with "ip", end with "m" and has a whitespace before the "ip"
-		wg := NewLogStrategy(`\sip[\w]+m`).WithStartupTimeout(100 * time.Microsecond).AsRegexp()
+		wg := NewLogStrategy(`\sip[\w]+m`).WithStartupTimeout(100 * time.Millisecond).AsRegexp()
 		err := wg.WaitUntilReady(context.Background(), target)
 		require.NoError(t, err)
 	})
@@ -52,7 +52,7 @@ func TestWaitWithExactNumberOfOccurrences(t *testing.T) {
 			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker\n\rdocker"))),
 		}
 		wg := NewLogStrategy("docker").
-			WithStartupTimeout(100 * time.Microsecond).
+			WithStartupTimeout(100 * time.Millisecond).
 			WithOccurrence(2)
 		err := wg.WaitUntilReady(context.Background(), target)
 		require.NoError(t, err)
@@ -66,7 +66,7 @@ func TestWaitWithExactNumberOfOccurrences(t *testing.T) {
 		// get texts from "ip" to the next "m".
 		// there are three occurrences of this pattern in the string:
 		// one "ipsum mauris" and two "ipsum dolor sit am"
-		wg := NewLogStrategy(`ip(.*)m`).WithStartupTimeout(100 * time.Microsecond).AsRegexp().WithOccurrence(3)
+		wg := NewLogStrategy(`ip(.*)m`).WithStartupTimeout(100 * time.Millisecond).AsRegexp().WithOccurrence(3)
 		err := wg.WaitUntilReady(context.Background(), target)
 		require.NoError(t, err)
 	})
@@ -91,7 +91,7 @@ func TestWaitWithExactNumberOfOccurrencesButItWillNeverHappen(t *testing.T) {
 
 		// get texts from "ip" to the next "m".
 		// there are only three occurrences matching
-		wg := NewLogStrategy(`do(.*)ck.+`).WithStartupTimeout(100 * time.Microsecond).AsRegexp().WithOccurrence(4)
+		wg := NewLogStrategy(`do(.*)ck.+`).WithStartupTimeout(100 * time.Millisecond).AsRegexp().WithOccurrence(4)
 		err := wg.WaitUntilReady(context.Background(), target)
 		require.Error(t, err)
 	})
@@ -116,7 +116,7 @@ func TestWaitShouldFailWithExactNumberOfOccurrences(t *testing.T) {
 
 		// get "Maecenas".
 		// there are only one occurrence matching
-		wg := NewLogStrategy(`^Mae[\w]?enas\s`).WithStartupTimeout(100 * time.Microsecond).AsRegexp().WithOccurrence(2)
+		wg := NewLogStrategy(`^Mae[\w]?enas\s`).WithStartupTimeout(100 * time.Millisecond).AsRegexp().WithOccurrence(2)
 		err := wg.WaitUntilReady(context.Background(), target)
 		require.Error(t, err)
 	})
