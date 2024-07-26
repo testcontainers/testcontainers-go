@@ -457,78 +457,64 @@ func TestMergePortBindings(t *testing.T) {
 }
 
 func TestPortMappingCheck(t *testing.T) {
-	makePortMap := func(ports []string) nat.PortMap {
+	makePortMap := func(ports ...string) nat.PortMap {
 		out := make(nat.PortMap)
 		for _, port := range ports {
 			// We don't care about the actual binding in this test
-			out[nat.Port(port)] = make([]nat.PortBinding, 0)
+			out[nat.Port(port)] = nil
 		}
 		return out
 	}
 
-	tests := []struct {
-		name                  string
+	tests := map[string]struct {
 		exposedAndMappedPorts nat.PortMap
 		exposedPorts          []string
 		expectError           bool
 	}{
-		{
-			name:                  "No protocol given",
-			exposedAndMappedPorts: makePortMap([]string{"1024/tcp"}),
+		"no-protocol": {
+			exposedAndMappedPorts: makePortMap("1024/tcp"),
 			exposedPorts:          []string{"1024"},
-			expectError:           false,
 		},
-		{
-			name:                  "Protocol given",
-			exposedAndMappedPorts: makePortMap([]string{"1024/tcp"}),
+		"protocol": {
+			exposedAndMappedPorts: makePortMap("1024/tcp"),
 			exposedPorts:          []string{"1024/tcp"},
-			expectError:           false,
 		},
-		{
-			name:                  "Protocol and target port given",
-			exposedAndMappedPorts: makePortMap([]string{"1024/tcp"}),
+		"protocol-target-port": {
+			exposedAndMappedPorts: makePortMap("1024/tcp"),
 			exposedPorts:          []string{"1024:1024/tcp"},
-			expectError:           false,
 		},
-		{
-			name:                  "Only target port given, no protocol",
-			exposedAndMappedPorts: makePortMap([]string{"1024/tcp"}),
+		"target-port": {
+			exposedAndMappedPorts: makePortMap("1024/tcp"),
 			exposedPorts:          []string{"1024:1024"},
-			expectError:           false,
 		},
-		{
-			name:                  "Multiple ports with different variations",
-			exposedAndMappedPorts: makePortMap([]string{"1024/tcp", "1025/tcp", "1026/tcp"}),
+		"multiple-ports": {
+			exposedAndMappedPorts: makePortMap("1024/tcp", "1025/tcp", "1026/tcp"),
 			exposedPorts:          []string{"1024", "25:1025/tcp", "1026:1026"},
-			expectError:           false,
 		},
-		{
-			name:                  "No ports mapped yet",
-			exposedAndMappedPorts: makePortMap([]string{}),
+		"no-mapped-ports": {
+			exposedAndMappedPorts: makePortMap(),
 			exposedPorts:          []string{"1024"},
 			expectError:           true,
 		},
-		{
-			name:                  "The wrong port has been mapped",
-			exposedAndMappedPorts: makePortMap([]string{"1023/tcp"}),
+		"wrong-mapped-port": {
+			exposedAndMappedPorts: makePortMap("1023/tcp"),
 			exposedPorts:          []string{"1024"},
 			expectError:           true,
 		},
-		{
-			name:                  "A subset of ports have been mapped",
-			exposedAndMappedPorts: makePortMap([]string{"1024/tcp", "1025/tcp"}),
+		"subset-mapped-ports": {
+			exposedAndMappedPorts: makePortMap("1024/tcp", "1025/tcp"),
 			exposedPorts:          []string{"1024", "1025", "1026"},
 			expectError:           true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			err := checkPortsMapped(tt.exposedAndMappedPorts, tt.exposedPorts)
 			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
+				require.Error(t, err)
+				return
 			}
+			require.NoError(t, err)
 		})
 	}
 }
