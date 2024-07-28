@@ -257,6 +257,9 @@ func (d *dockerCompose) Down(ctx context.Context, opts ...StackDownOption) error
 	return d.composeService.Down(ctx, d.name, options.DownOptions)
 }
 
+// debugPrintln is a function that can be overridden for debugging purposes.
+var debugPrintln = func(a ...any) {}
+
 func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err error) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -348,6 +351,7 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 				return
 			}
 
+			debugPrintln("XXX: Triggering cleanup", len(termSignals))
 			for _, ts := range termSignals {
 				ts <- true
 			}

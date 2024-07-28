@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -26,6 +27,7 @@ func ExampleExecStrategy() {
 		WaitingFor: wait.ForExec([]string{"awslocal", "dynamodb", "list-tables"}),
 	}
 
+	start := time.Now()
 	localstack, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
@@ -36,6 +38,28 @@ func ExampleExecStrategy() {
 		}
 	}()
 	if err != nil {
+		// TODO: remove this debugging code
+		output, err2 := exec.Command("docker", "ps", "-a").Output()
+		if err2 != nil {
+			log.Printf("failed to run docker ps -a: %s, %s", err2, output)
+		} else {
+			log.Printf("docker ps: %s", output)
+		}
+
+		time.Sleep(time.Second) // Events are not immediately available.
+		output, err2 = exec.CommandContext(context.Background(),
+			"docker", "events",
+			"--filter", "type=container",
+			"--filter", "container="+localstack.GetContainerID(),
+			"--since", start.Format("2006-01-02 15:04:05"),
+			"--until", "0s",
+		).Output()
+		if err2 != nil {
+			log.Printf("failed to run docker events: %s, %s", err2, output)
+		} else {
+			log.Printf("docker events: %s", output)
+		}
+
 		log.Printf("failed to start container: %s", err)
 		return
 	}
