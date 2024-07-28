@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -28,6 +30,19 @@ func ExampleExecStrategy() {
 	}
 
 	start := time.Now()
+
+	// TODO: remove, trying without reaper.
+	oldDisabled := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
+	oldVerbose := os.Getenv("TESTCONTAINERS_RYUK_VERBOSE")
+	config.Reset()
+	os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
+	os.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
+	defer func() {
+		config.Reset()
+		os.Setenv("TESTCONTAINERS_RYUK_DISABLED", oldDisabled)
+		os.Setenv("TESTCONTAINERS_RYUK_VERBOSE", oldVerbose)
+	}()
+
 	localstack, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
