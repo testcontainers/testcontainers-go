@@ -508,12 +508,12 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 
 	response, err := cli.ContainerExecCreate(ctx, c.ID, processOptions.ExecConfig)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("container exec create: %w", err)
 	}
 
 	hijack, err := cli.ContainerExecAttach(ctx, response.ID, container.ExecAttachOptions{})
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("container exec attach: %w", err)
 	}
 
 	processOptions.Reader = hijack.Reader
@@ -528,7 +528,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 	for {
 		execResp, err := cli.ContainerExecInspect(ctx, response.ID)
 		if err != nil {
-			return 0, nil, err
+			return 0, nil, fmt.Errorf("container exec inspect: %w", err)
 		}
 
 		if !execResp.Running {
@@ -1129,7 +1129,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, networkingConfig, platform, req.Name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("container create: %w", err)
 	}
 
 	// #248: If there is more than one network specified in the request attach newly created container to them one by one
@@ -1144,7 +1144,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				}
 				err = p.client.NetworkConnect(ctx, nw.ID, resp.ID, &endpointSetting)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("network connect: %w", err)
 				}
 			}
 		}
@@ -1245,7 +1245,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	if !p.config.RyukDisabled {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
-			return nil, fmt.Errorf("%w: creating reaper failed", err)
+			return nil, fmt.Errorf("reaper: %w", err)
 		}
 		termSignal, err = r.Connect()
 		if err != nil {
