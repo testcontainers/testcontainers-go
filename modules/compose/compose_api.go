@@ -192,8 +192,8 @@ type dockerCompose struct {
 	// only one strategy can be added to a service, to use multiple use wait.ForAll(...)
 	waitStrategies map[string]wait.Strategy
 
-	// used to synchronise writes to the containers map
-	containersLock sync.RWMutex
+	// Used to synchronise writes to the containers.
+	containersLock sync.Mutex
 
 	// cache for containers that are part of the stack
 	// used in ServiceContainer(...) function to avoid calls to the Docker API
@@ -362,10 +362,6 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 				}()
 			}
 
-			d.containersLock.Lock()
-			defer d.containersLock.Unlock()
-			d.containers[srv.Name] = dc
-
 			return nil
 		})
 	}
@@ -390,11 +386,6 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 			if err != nil {
 				return err
 			}
-
-			// cache all the containers on compose.up
-			d.containersLock.Lock()
-			defer d.containersLock.Unlock()
-			d.containers[svc] = target
 
 			return strategy.WaitUntilReady(errGrpCtx, target)
 		})
@@ -427,12 +418,20 @@ func (d *dockerCompose) WithOsEnv() ComposeStack {
 	return d
 }
 
-func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
+// cachedContainer returns the cached container for svcName or nil if it doesn't exist.
+func (d *dockerCompose) cachedContainer(svcName string) *testcontainers.DockerContainer {
 	d.containersLock.Lock()
 	defer d.containersLock.Unlock()
 
-	if ctr, ok := d.containers[svcName]; ok {
-		return ctr, nil
+	return d.containers[svcName]
+}
+
+// lookupContainer is used to retrieve the container instance from the cache or the Docker API.
+//
+// Safe for concurrent calls.
+func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
+	if c := d.cachedContainer(svcName); c != nil {
+		return c, nil
 	}
 
 	containers, err := d.dockerClient.ContainerList(ctx, container.ListOptions{
@@ -466,15 +465,14 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 
 	ctr.SetProvider(dockerProvider)
 
+	d.containersLock.Lock()
+	defer d.containersLock.Unlock()
 	d.containers[svcName] = ctr
 
 	return ctr, nil
 }
 
 func (d *dockerCompose) lookupNetworks(ctx context.Context) error {
-	d.containersLock.Lock()
-	defer d.containersLock.Unlock()
-
 	networks, err := d.dockerClient.NetworkList(ctx, dockernetwork.ListOptions{
 		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
