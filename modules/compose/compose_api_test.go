@@ -2,11 +2,9 @@ package compose
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -60,7 +58,7 @@ func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 }
 
 func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
-	debugTest(t)
+	testcontainers.DebugTest(t)
 
 	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)
@@ -70,7 +68,7 @@ func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
 	t.Cleanup(cancel)
 
 	t.Cleanup(func() {
-		debugContainer(t, "api-mysql")
+		testcontainers.DebugInfo(t)
 	})
 
 	err = compose.
@@ -654,137 +652,4 @@ func cleanup(t *testing.T, compose *dockerCompose) {
 			RemoveImagesLocal,
 		), "compose.Down()")
 	})
-}
-
-var debugEnabledTime time.Time
-
-func debugTest(t *testing.T) {
-	t.Helper()
-	config.Reset()
-	// t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-	t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
-
-	oldDebugPrintln := debugPrintln
-	debugPrintln = func(a ...any) {
-		t.Log(append([]any{time.Now().Format(time.RFC3339Nano)}, a...)...)
-	}
-	t.Cleanup(func() {
-		debugPrintln = oldDebugPrintln
-		config.Reset()
-	})
-
-	dockerDebugging(t, true)
-
-	t.Cleanup(func() {
-		dockerDebugging(t, false)
-	})
-}
-
-// dockerDebugging enables or disables Docker debug logging.
-func dockerDebugging(t *testing.T, enable bool) {
-	t.Helper()
-
-	t.Log("Docker debug logging:", enable)
-
-	const file = "/etc/docker/daemon.json"
-	data, err := os.ReadFile(file)
-	if err != nil {
-		t.Logf("error reading daemon.json: %s", err)
-		return
-	}
-
-	t.Logf("daemon.json: %s", string(data))
-
-	cfg := make(map[string]any)
-	err = json.Unmarshal(data, &cfg)
-	if err != nil {
-		t.Logf("error unmarshalling daemon.json: %s", err)
-		return
-	}
-
-	cfg["debug"] = enable
-
-	data, err = json.Marshal(cfg)
-	if err != nil {
-		t.Logf("error marshalling daemon.json: %s", err)
-		return
-	}
-
-	t.Logf("daemon.json: %s", string(data))
-
-	f, err := os.CreateTemp("", "")
-	if err != nil {
-		t.Logf("error writing daemon.json: %s", err)
-		return
-	}
-
-	defer os.Remove(f.Name())
-
-	if _, err := f.Write(data); err != nil {
-		t.Logf("error writing daemon.json: %s", err)
-		return
-	}
-
-	cmd := exec.CommandContext(context.Background(), "sudo", "cp", f.Name(), file)
-	log, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Logf("error restarting docker: %s, %s", err, log)
-		return
-	}
-
-	if enable {
-		debugEnabledTime = time.Now()
-	}
-	cmd = exec.CommandContext(context.Background(), "sudo", "systemctl", "reload-or-restart", "docker")
-	log, err = cmd.CombinedOutput()
-	if err != nil {
-		t.Logf("error reloading docker: %s, %s", err, log)
-		cmd = exec.CommandContext(context.Background(), "journalctl", "-xeu", "docker.service")
-		log, err = cmd.CombinedOutput()
-		if err != nil {
-			t.Logf("error running journalctl: %s, %s", err, log)
-			return
-		}
-		t.Logf("docker journalctl: %s", log)
-		return
-	}
-
-	t.Logf("docker reloaded: %s", log)
-}
-
-func debugContainer(t *testing.T, service string) {
-	t.Helper()
-
-	// Docker events.
-	time.Sleep(time.Second) // Events are not immediately available.
-	cmd := exec.CommandContext(context.Background(),
-		"docker", "events",
-		// "--filter", "type=container",
-		// "--filter", "service="+service,
-		"--since", "10m",
-		"--until", "0s",
-	)
-	_ = service
-	stdoutStderr, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Logf("error running docker events: %s", err)
-	} else {
-		t.Logf("docker events: %s", stdoutStderr)
-	}
-
-	// Docker logs.
-	if debugEnabledTime.IsZero() {
-		t.Log("debugEnabledTime is zero, skipping journalctl")
-	} else {
-		cmd = exec.CommandContext(context.Background(),
-			"journalctl", "-xu", "docker.service",
-			"--since", debugEnabledTime.Format("2006-01-02 15:04:05"),
-		)
-		stdoutStderr, err = cmd.CombinedOutput()
-		if err != nil {
-			t.Logf("error running journalctl: %s, %s", err, stdoutStderr)
-		} else {
-			t.Logf("docker journalctl: %s", stdoutStderr)
-		}
-	}
 }
