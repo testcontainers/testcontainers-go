@@ -437,6 +437,9 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
+			LogConsumerCfg: &LogConsumerConfig{
+				Consumers: []LogConsumer{NewTestLogConsumer(t, "nginxA:")},
+			},
 		},
 		Started: true,
 	})
@@ -451,6 +454,9 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 				nginxDefaultPort,
 			},
 			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+			LogConsumerCfg: &LogConsumerConfig{
+				Consumers: []LogConsumer{NewTestLogConsumer(t, "nginxB:")},
+			},
 		},
 		Started: true,
 	})
@@ -461,29 +467,19 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := http.Get(endpointA)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	endpointB, err := nginxB.PortEndpoint(ctx, nginxDefaultPort, "http")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	resp, err = http.Get(endpointB)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestContainerCreation(t *testing.T) {
