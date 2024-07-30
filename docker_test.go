@@ -262,8 +262,8 @@ var debugEnabledTime time.Time
 func debugTest(t *testing.T) {
 	t.Helper()
 	config.Reset()
-	t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-	// t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
+	// t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
+	t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
 
 	oldDebugPrintln := debugPrintln
 	debugPrintln = func(a ...any) {

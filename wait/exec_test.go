@@ -32,14 +32,14 @@ func ExampleExecStrategy() {
 	start := time.Now()
 
 	// TODO: remove, trying without reaper.
-	oldDisabled := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
+	// oldDisabled := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
 	oldVerbose := os.Getenv("TESTCONTAINERS_RYUK_VERBOSE")
 	config.Reset()
-	os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
+	// os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 	os.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
 	defer func() {
 		config.Reset()
-		os.Setenv("TESTCONTAINERS_RYUK_DISABLED", oldDisabled)
+		// os.Setenv("TESTCONTAINERS_RYUK_DISABLED", oldDisabled)
 		os.Setenv("TESTCONTAINERS_RYUK_VERBOSE", oldVerbose)
 	}()
 
