@@ -548,6 +548,9 @@ func TestContainerCreationWithName(t *testing.T) {
 			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
 			Name:       creationName,
 			Networks:   []string{"bridge"},
+			LogConsumerCfg: &LogConsumerConfig{
+				Consumers: []LogConsumer{NewTestLogConsumer(t, "nginxC:")},
+			},
 		},
 		Started: true,
 	})
@@ -555,45 +558,31 @@ func TestContainerCreationWithName(t *testing.T) {
 	require.NoError(t, err)
 
 	inspect, err := nginxC.Inspect(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	name := inspect.Name
-	if name != expectedName {
-		t.Errorf("Expected container name '%s'. Got '%s'.", expectedName, name)
-	}
+	require.Equal(t, expectedName, name)
+
 	networks, err := nginxC.Networks(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(networks) != 1 {
-		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
-	}
+	require.NoError(t, err)
+	require.Len(t, networks, 1)
+
 	network := networks[0]
 	switch providerType {
 	case ProviderDocker:
-		if network != Bridge {
-			t.Errorf("Expected network name '%s'. Got '%s'.", Bridge, network)
-		}
+		require.Equal(t, Bridge, network)
 	case ProviderPodman:
-		if network != Podman {
-			t.Errorf("Expected network name '%s'. Got '%s'.", Podman, network)
-		}
+		require.Equal(t, Podman, network)
 	}
 
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
 
 	resp, err := http.Get(endpoint)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
