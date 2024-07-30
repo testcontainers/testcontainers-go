@@ -491,6 +491,10 @@ func TestPortMappingCheck(t *testing.T) {
 			exposedAndMappedPorts: makePortMap("1024/tcp", "1025/tcp", "1026/tcp"),
 			exposedPorts:          []string{"1024", "25:1025/tcp", "1026:1026"},
 		},
+		"only-ipv4": {
+			exposedAndMappedPorts: makePortMap("1024/tcp"),
+			exposedPorts:          []string{"0.0.0.0::1024/tcp"},
+		},
 		"no-mapped-ports": {
 			exposedAndMappedPorts: makePortMap(),
 			exposedPorts:          []string{"1024"},
