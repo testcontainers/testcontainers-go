@@ -220,10 +220,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			// convenient for testing
 			"REGISTRY_STORAGE_DELETE_ENABLED": "true",
 		},
-		WaitingFor: wait.ForAll(
-			wait.ForExposedPort(),
-			wait.ForLog("listening on [::]:5000").WithStartupTimeout(10*time.Second),
-		),
+		WaitingFor: wait.ForHTTP("/").
+			WithPort(registryPort).
+			WithStartupTimeout(10 * time.Second),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
