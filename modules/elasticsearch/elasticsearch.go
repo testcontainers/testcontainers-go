@@ -2,6 +2,8 @@ package elasticsearch
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
 	"os"
@@ -32,7 +34,7 @@ type ElasticsearchContainer struct {
 }
 
 // Deprecated: use Run instead
-// RunContainer creates an instance of the Couchbase container type
+// RunContainer creates an instance of the Elasticsearch container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ElasticsearchContainer, error) {
 	return Run(ctx, "docker.elastic.co/elasticsearch/elasticsearch:7.9.2", opts...)
 }
@@ -50,12 +52,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				defaultHTTPPort + "/tcp",
 				defaultTCPPort + "/tcp",
 			},
-			// regex that
-			//   matches 8.3 JSON logging with started message and some follow up content within the message field
-			//   matches 8.0 JSON logging with no whitespace between message field and content
-			//   matches 7.x JSON logging with whitespace between message field and content
-			//   matches 6.x text logging with node name in brackets and just a 'started' message till the end of the line
-			WaitingFor: wait.ForLog(`.*("message":\s?"started(\s|")?.*|]\sstarted\n)`).AsRegexp(),
 			LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
 				{
 					// the container needs a post create hook to set the default JVM options in a file
@@ -94,6 +90,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		req.LifecycleHooks[0].PostCreates = append(req.LifecycleHooks[0].PostCreates, configureJvmOpts)
 	}
 
+	// Set the default waiting strategy if not already set.
+	if req.WaitingFor == nil {
+		defaultWaitFor(settings, &req.ContainerRequest)
+	}
+
 	container, err := testcontainers.GenericContainer(ctx, req)
 	var esContainer *ElasticsearchContainer
 	if container != nil {
@@ -108,6 +109,32 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	return esContainer, nil
+}
+
+// defaultWaitFor sets the default waiting strategy based on settings.
+func defaultWaitFor(settings *Options, req *testcontainers.ContainerRequest) {
+	waitHTTP := wait.ForHTTP("/").WithPort(defaultHTTPPort)
+	if settings.CACert != nil {
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(settings.CACert)
+		waitHTTP = waitHTTP.WithTLS(true, &tls.Config{RootCAs: caCertPool})
+	} else if sslRequired(req) {
+		waitHTTP = waitHTTP.WithTLS(true).WithAllowInsecure(true)
+	}
+
+	if settings.Password != "" || settings.Username != "" {
+		waitHTTP = waitHTTP.WithBasicAuth(settings.Username, settings.Password)
+	}
+
+	req.WaitingFor = wait.ForAll(
+		// regex that
+		//   matches 8.3 JSON logging with started message and some follow up content within the message field
+		//   matches 8.0 JSON logging with no whitespace between message field and content
+		//   matches 7.x JSON logging with whitespace between message field and content
+		//   matches 6.x text logging with node name in brackets and just a 'started' message till the end of the line
+		wait.ForLog(`.*("message":\s?"started(\s|")?.*|]\sstarted\n)`).AsRegexp(),
+		waitHTTP,
+	)
 }
 
 // configureAddress sets the address of the Elasticsearch container.
@@ -133,48 +160,59 @@ func (c *ElasticsearchContainer) configureAddress(ctx context.Context) error {
 	return nil
 }
 
+// sslRequired returns true if the SSL is required, otherwise false.
+func sslRequired(req *testcontainers.ContainerRequest) bool {
+	if !isAtLeastVersion(req.Image, 8) {
+		return false
+	}
+
+	// These configuration keys explicitly disable CA generation.
+	// If any are set we skip the file retrieval.
+	configKeys := []string{
+		"xpack.security.enabled",
+		"xpack.security.http.ssl.enabled",
+		"xpack.security.transport.ssl.enabled",
+	}
+	for _, configKey := range configKeys {
+		if value, ok := req.Env[configKey]; ok {
+			if value == "false" {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
 // configureCertificate transfers the certificate settings to the container request.
 // For that, it defines a post start hook that copies the certificate from the container to the host.
 // The certificate is only available since version 8, and will be located in a well-known location.
 func configureCertificate(settings *Options, req *testcontainers.GenericContainerRequest) error {
-	if isAtLeastVersion(req.Image, 8) {
-		// These configuration keys explicitly disable CA generation.
-		// If any are set we skip the file retrieval.
-		configKeys := []string{
-			"xpack.security.enabled",
-			"xpack.security.http.ssl.enabled",
-			"xpack.security.transport.ssl.enabled",
-		}
-		for _, configKey := range configKeys {
-			if value, ok := req.Env[configKey]; ok {
-				if value == "false" {
-					return nil
-				}
-			}
-		}
-
-		// The container needs a post ready hook to copy the certificate from the container to the host.
-		// This certificate is only available since version 8
-		req.LifecycleHooks[0].PostReadies = append(req.LifecycleHooks[0].PostReadies,
-			func(ctx context.Context, container testcontainers.Container) error {
-				const defaultCaCertPath = "/usr/share/elasticsearch/config/certs/http_ca.crt"
-
-				readCloser, err := container.CopyFileFromContainer(ctx, defaultCaCertPath)
-				if err != nil {
-					return err
-				}
-
-				// receive the bytes from the default location
-				certBytes, err := io.ReadAll(readCloser)
-				if err != nil {
-					return err
-				}
-
-				settings.CACert = certBytes
-
-				return nil
-			})
+	if !sslRequired(&req.ContainerRequest) {
+		return nil
 	}
+
+	// The container needs a post ready hook to copy the certificate from the container to the host.
+	// This certificate is only available since version 8
+	req.LifecycleHooks[0].PostReadies = append(req.LifecycleHooks[0].PostReadies,
+		func(ctx context.Context, container testcontainers.Container) error {
+			const defaultCaCertPath = "/usr/share/elasticsearch/config/certs/http_ca.crt"
+
+			readCloser, err := container.CopyFileFromContainer(ctx, defaultCaCertPath)
+			if err != nil {
+				return err
+			}
+
+			// receive the bytes from the default location
+			certBytes, err := io.ReadAll(readCloser)
+			if err != nil {
+				return err
+			}
+
+			settings.CACert = certBytes
+
+			return nil
+		})
 
 	return nil
 }
