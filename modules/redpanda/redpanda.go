@@ -212,9 +212,28 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// 8. Wait until Redpanda is ready to serve requests.
+	waitHTTP := wait.ForHTTP(defaultAdminAPIPort).
+		WithStatusCodeMatcher(func(status int) bool {
+			return status == http.StatusNotFound
+		})
+
+	var tlsConfig *tls.Config
+	if settings.EnableTLS {
+		cert, err := tls.X509KeyPair(settings.cert, settings.key)
+		if err != nil {
+			return c, fmt.Errorf("failed to create admin client with cert: %w", err)
+		}
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(settings.cert)
+		tlsConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			RootCAs:      caCertPool,
+		}
+		waitHTTP = waitHTTP.WithTLS(true, tlsConfig)
+	}
 	err = wait.ForAll(
 		wait.NewHostPortStrategy(defaultKafkaAPIPort),
-		wait.NewHostPortStrategy(defaultAdminAPIPort),
+		waitHTTP,
 		wait.NewHostPortStrategy(defaultSchemaRegistryPort),
 		wait.ForLog("Successfully started Redpanda!"),
 	).WaitUntilReady(ctx, container)
@@ -237,21 +256,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		adminAPIUrl := fmt.Sprintf("%s://%v:%d", c.urlScheme, hostIP, adminAPIPort.Int())
 		adminCl := NewAdminAPIClient(adminAPIUrl)
 		if settings.EnableTLS {
-			cert, err := tls.X509KeyPair(settings.cert, settings.key)
-			if err != nil {
-				return c, fmt.Errorf("failed to create admin client with cert: %w", err)
-			}
-			caCertPool := x509.NewCertPool()
-			caCertPool.AppendCertsFromPEM(settings.cert)
 			adminCl = adminCl.WithHTTPClient(&http.Client{
 				Timeout: 5 * time.Second,
 				Transport: &http.Transport{
 					ForceAttemptHTTP2:   true,
 					TLSHandshakeTimeout: 10 * time.Second,
-					TLSClientConfig: &tls.Config{
-						Certificates: []tls.Certificate{cert},
-						RootCAs:      caCertPool,
-					},
+					TLSClientConfig:     tlsConfig,
 				},
 			})
 		}
