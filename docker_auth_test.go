@@ -286,7 +286,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 				ContainerFilePath: "/data",
 			},
 		},
-		WaitingFor: wait.ForExposedPort(),
+		WaitingFor: wait.ForHTTP("/").WithPort("5000/tcp"),
 	}
 	// }
 
@@ -310,9 +310,6 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	t.Cleanup(func() {
 		removeImageFromLocalCache(t, addr+"/redis:5.0-alpine")
 	})
-
-	_, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
 
 	return addr
 }
