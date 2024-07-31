@@ -1,6 +1,7 @@
 package azurite_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -168,16 +169,28 @@ func ExampleRun_blobOperations() {
 	// 1
 }
 
+// bufLogConsumer writes logs to a buffer.
+type bufLogConsumer struct {
+	bytes.Buffer
+}
+
+// Accept implements testcontainers.LogConsumer.
+func (c *bufLogConsumer) Accept(l testcontainers.Log) {
+	c.Buffer.Write(append([]byte(l.LogType+":"), l.Content...))
+}
+
 // This example demonstrates how to create, list and delete queues.
 // Inspired by https://github.com/Azure/azure-sdk-for-go/blob/718000938221915fb2f3c7522d4fd09f7d74cafb/sdk/storage/azqueue/samples_test.go#L1
 func ExampleRun_queueOperations() {
 	// queueOperations {
 	ctx := context.Background()
 
+	buf := &bufLogConsumer{}
 	azuriteContainer, err := azurite.Run(
 		ctx,
 		"mcr.microsoft.com/azure-storage/azurite:3.28.0",
 		azurite.WithInMemoryPersistence(64),
+		testcontainers.WithLogConsumers(buf),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(azuriteContainer); err != nil {
@@ -212,6 +225,7 @@ func ExampleRun_queueOperations() {
 	})
 	if err != nil {
 		log.Printf("failed to create queue: %s", err)
+		log.Println("log:", buf.String())
 		return
 	}
 
@@ -224,6 +238,7 @@ func ExampleRun_queueOperations() {
 		resp, err := pager.NextPage(context.Background())
 		if err != nil {
 			log.Printf("failed to list queues: %s", err)
+			log.Println("log:", buf.String())
 			return
 		}
 
@@ -235,6 +250,7 @@ func ExampleRun_queueOperations() {
 	_, err = client.DeleteQueue(context.TODO(), queueName, &azqueue.DeleteOptions{})
 	if err != nil {
 		log.Printf("failed to delete queue: %s", err)
+		log.Println("log:", buf.String())
 		return
 	}
 
@@ -251,10 +267,12 @@ func ExampleRun_tableOperations() {
 	// tableOperations {
 	ctx := context.Background()
 
+	buf := &bufLogConsumer{}
 	azuriteContainer, err := azurite.Run(
 		ctx,
 		"mcr.microsoft.com/azure-storage/azurite:3.28.0",
 		azurite.WithInMemoryPersistence(64),
+		testcontainers.WithLogConsumers(buf),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(azuriteContainer); err != nil {
@@ -287,6 +305,7 @@ func ExampleRun_tableOperations() {
 	_, err = client.CreateTable(context.TODO(), tableName, nil)
 	if err != nil {
 		log.Printf("failed to create table: %s", err)
+		log.Println("log:", buf.String())
 		return
 	}
 
@@ -296,6 +315,7 @@ func ExampleRun_tableOperations() {
 		resp, err := pager.NextPage(context.Background())
 		if err != nil {
 			log.Printf("failed to list tables: %s", err)
+			log.Println("log:", buf.String())
 			return
 		}
 
@@ -307,6 +327,7 @@ func ExampleRun_tableOperations() {
 	_, err = client.DeleteTable(context.TODO(), tableName, nil)
 	if err != nil {
 		fmt.Println(err)
+		log.Println("log:", buf.String())
 		return
 	}
 
