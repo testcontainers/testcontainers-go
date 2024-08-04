@@ -327,20 +327,26 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		return err
 	}
 
+	var termSignal chan bool
 	if d.reaper != nil {
-		for _, n := range d.networks {
-			termSignal, err := d.reaper.Connect()
-			if err != nil {
-				return fmt.Errorf("failed to connect to reaper: %w", err)
-			}
-			n.SetTerminationSignal(termSignal)
+		termSignal, err = d.reaper.Connect()
 
-			// Cleanup on error, otherwise set termSignal to nil before successful return.
-			defer func() {
-				if termSignal != nil {
-					termSignal <- true
-				}
-			}()
+		// Cleanup on error
+		defer func() {
+			if err != nil {
+				termSignal <- true
+			}
+		}()
+
+		if err != nil {
+			err = fmt.Errorf("failed to connect to reaper: %w", err)
+			return err
+		}
+	}
+
+	if termSignal != nil {
+		for _, n := range d.networks {
+			n.SetTerminationSignal(termSignal)
 		}
 	}
 
@@ -350,24 +356,15 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		// we are going to connect each container to the reaper
 		srv := srv
 		errGrpContainers.Go(func() error {
-			dc, err := d.lookupContainer(errGrpCtx, srv.Name)
+			var dc *testcontainers.DockerContainer
+
+			dc, err = d.lookupContainer(errGrpCtx, srv.Name)
 			if err != nil {
 				return err
 			}
 
-			if d.reaper != nil {
-				termSignal, err := d.reaper.Connect()
-				if err != nil {
-					return fmt.Errorf("failed to connect to reaper: %w", err)
-				}
+			if termSignal != nil {
 				dc.SetTerminationSignal(termSignal)
-
-				// Cleanup on error, otherwise set termSignal to nil before successful return.
-				defer func() {
-					if termSignal != nil {
-						termSignal <- true
-					}
-				}()
 			}
 
 			d.containersLock.Lock()
@@ -379,12 +376,12 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 	}
 
 	// wait here for the containers lookup to finish
-	if err := errGrpContainers.Wait(); err != nil {
+	if err = errGrpContainers.Wait(); err != nil {
 		return err
 	}
 
 	if len(d.waitStrategies) == 0 {
-		return nil
+		return err
 	}
 
 	errGrpWait, errGrpCtx := errgroup.WithContext(ctx)
@@ -394,7 +391,8 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		strategy := strategy
 
 		errGrpWait.Go(func() error {
-			target, err := d.lookupContainer(errGrpCtx, svc)
+			var target *testcontainers.DockerContainer
+			target, err = d.lookupContainer(errGrpCtx, svc)
 			if err != nil {
 				return err
 			}
@@ -408,7 +406,11 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		})
 	}
 
-	return errGrpWait.Wait()
+	if err = errGrpWait.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (d *dockerCompose) WaitForService(s string, strategy wait.Strategy) ComposeStack {

@@ -701,6 +701,31 @@ func TestDockerComposeApiWithWaitForShortLifespanService(t *testing.T) {
 	assert.Contains(t, services, "tzatziki")
 }
 
+func TestDockerComposeUp(t *testing.T) {
+	path, _ := RenderComposeSimple(t)
+	compose, err := NewDockerCompose(path)
+	require.NoError(t, err, "NewDockerCompose()")
+
+	t.Cleanup(func() {
+		require.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveImagesLocal), "compose.Down()")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	require.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
+
+	config.Reset() // reset the config using the internal method to avoid the sync.Once
+	tcConfig := config.Read()
+	time.Sleep(tcConfig.RyukConnectionTimeout + 10*time.Second) // wait for the timeout of ryuk + 10 seconds to make sure that ryuk doesn't destory the compose project
+
+	nginxContainer, err := compose.ServiceContainer(context.Background(), "api-nginx")
+	require.NoError(t, err, "ServiceContainer")
+
+	_, err = nginxContainer.Inspect(context.Background())
+	require.NoError(t, err, "Inspect")
+}
+
 func testNameHash(name string) StackIdentifier {
 	return StackIdentifier(fmt.Sprintf("%x", fnv.New32a().Sum([]byte(name))))
 }
