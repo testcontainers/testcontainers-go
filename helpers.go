@@ -62,6 +62,12 @@ func TerminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr CreatedCont
 	if ctr == nil {
 		return
 	}
+
+	// check if it's a nil DockerContainer struct
+	if ctr.(*DockerContainer) == nil {
+		return
+	}
+
 	tb.Cleanup(func() {
 		if ctr != nil {
 			tb.Log("terminating container")
