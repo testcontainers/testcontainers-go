@@ -81,13 +81,3 @@ func TestKafka(t *testing.T) {
 		t.Fatalf("expected value to be %s, got %s", "value", string(consumer.message.Value))
 	}
 }
-
-func TestKafka_invalidVersion(t *testing.T) {
-	ctx := context.Background()
-
-	_, err := kafka.Run(ctx, "apache/kafka-native:3.1.0",
-		kafka.WithClusterID("kraftCluster"))
-	if err == nil {
-		t.Fatal(err)
-	}
-}

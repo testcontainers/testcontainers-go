@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"github.com/docker/docker/api/types/container"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"golang.org/x/mod/semver"
-
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -75,6 +73,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
+		Started:          true,
 	}
 
 	for _, opt := range opts {
@@ -83,19 +82,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	err := validateKRaftVersion(genericContainerReq.Image)
-	if err != nil {
-		return nil, err
-	}
 	clusterID := genericContainerReq.Env["CLUSTER_ID"]
 	configureControllerQuorumVoters(&genericContainerReq)
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := container.Start(ctx); err != nil {
 		return nil, err
 	}
 
@@ -110,15 +101,31 @@ func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+func WithHostPort(port int) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.HostConfigModifier = func(config *container.HostConfig) {
+			config.PortBindings = map[nat.Port][]nat.PortBinding{
+				"9093/tcp": {
+					{
+						HostIP:   "0.0.0.0",
+						HostPort: strconv.Itoa(port),
+					},
+				},
+			}
+		}
+		return nil
+	}
+}
+
 // Brokers retrieves the broker connection strings from Kafka with only one entry,
 // defined by the exposed public port.
 func (kc *KafkaContainer) Brokers(ctx context.Context) ([]string, error) {
-	host, err := kc.Container.Host(ctx)
+	host, err := kc.Host(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	port, err := kc.Container.MappedPort(ctx, publicPort)
+	port, err := kc.MappedPort(ctx, publicPort)
 	if err != nil {
 		return nil, err
 	}
@@ -145,34 +152,4 @@ func configureControllerQuorumVoters(req *testcontainers.GenericContainerRequest
 
 		req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"] = fmt.Sprintf("1@%s:9094", host)
 	}
-	// }
-}
-
-// validateKRaftVersion validates if the image version is compatible with KRaft mode,
-// which is available since version 7.0.0.
-func validateKRaftVersion(fqName string) error {
-	if fqName == "" {
-		return fmt.Errorf("image cannot be empty")
-	}
-
-	image := fqName[:strings.LastIndex(fqName, ":")]
-	version := fqName[strings.LastIndex(fqName, ":")+1:]
-
-	if !strings.EqualFold(image, "apache/kafka-native") {
-		// do not validate if the image is not the official one.
-		// not raising an error here, letting the image to start and
-		// eventually evaluate an error if it exists.
-		return nil
-	}
-
-	// semver requires the version to start with a "v"
-	if !strings.HasPrefix(version, "v") {
-		version = fmt.Sprintf("v%s", version)
-	}
-
-	if semver.Compare(version, "v3.8.0") < 0 { // version < v7.4.0
-		return fmt.Errorf("version=%s. KRaft mode is only available since version 3.8.0", version)
-	}
-
-	return nil
 }
