@@ -198,6 +198,34 @@ var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHoo
 	}
 }
 
+func checkPortsMapped(exposedAndMappedPorts nat.PortMap, exposedPorts []string) error {
+	portMap, _, err := nat.ParsePortSpecs(exposedPorts)
+	if err != nil {
+		return fmt.Errorf("parse exposed ports: %w", err)
+	}
+
+	for exposedPort := range portMap {
+		// having entries in exposedAndMappedPorts, where the key is the exposed port,
+		// and the value is the mapped port, means that the port has been already mapped.
+		if _, ok := exposedAndMappedPorts[exposedPort]; ok {
+			continue
+		}
+
+		// check if the port is mapped with the protocol (default is TCP)
+		if strings.Contains(string(exposedPort), "/") {
+			return fmt.Errorf("port %s is not mapped yet", exposedPort)
+		}
+
+		// Port didn't have a type, default to tcp and retry.
+		exposedPort += "/tcp"
+		if _, ok := exposedAndMappedPorts[exposedPort]; !ok {
+			return fmt.Errorf("port %s is not mapped yet", exposedPort)
+		}
+	}
+
+	return nil
+}
+
 // defaultReadinessHook is a hook that will wait for the container to be ready
 var defaultReadinessHook = func() ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
@@ -222,26 +250,7 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 							return err
 						}
 
-						exposedAndMappedPorts := jsonRaw.NetworkSettings.Ports
-
-						for _, exposedPort := range dockerContainer.exposedPorts {
-							portMap := nat.Port(exposedPort)
-							// having entries in exposedAndMappedPorts, where the key is the exposed port,
-							// and the value is the mapped port, means that the port has been already mapped.
-							if _, ok := exposedAndMappedPorts[portMap]; !ok {
-								// check if the port is mapped with the protocol (default is TCP)
-								if !strings.Contains(exposedPort, "/") {
-									portMap = nat.Port(fmt.Sprintf("%s/tcp", exposedPort))
-									if _, ok := exposedAndMappedPorts[portMap]; !ok {
-										return fmt.Errorf("port %s is not mapped yet", exposedPort)
-									}
-								} else {
-									return fmt.Errorf("port %s is not mapped yet", exposedPort)
-								}
-							}
-						}
-
-						return nil
+						return checkPortsMapped(jsonRaw.NetworkSettings.Ports, dockerContainer.exposedPorts)
 					},
 					b,
 					func(err error, duration time.Duration) {
