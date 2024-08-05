@@ -101,6 +101,7 @@ var permanentClientErrors = []func(error) bool{
 	errdefs.IsUnauthorized,
 	errdefs.IsForbidden,
 	errdefs.IsNotImplemented,
+	errdefs.IsSystem,
 }
 
 func IsPermanentClientError(err error) bool {

@@ -37,6 +37,7 @@ type ReadyContainer interface {
 	Host(context.Context) (string, error)
 	Inspect(context.Context) (*types.ContainerJSON, error)
 	MappedPort(context.Context, nat.Port) (nat.Port, error)
+	Endpoint(context.Context, string) (string, error)               // get proto://ip:port string for the lowest exposed port
 	PortEndpoint(context.Context, nat.Port, string) (string, error) // Alias for Host() + Port() methods
 	ContainerIP(context.Context) (string, error)
 	Logs(context.Context) (io.ReadCloser, error)

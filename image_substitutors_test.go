@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go/image"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
 func TestSubstituteBuiltImage(t *testing.T) {
@@ -20,6 +21,7 @@ func TestSubstituteBuiltImage(t *testing.T) {
 	}
 
 	t.Run("should not use the properties prefix on built images", func(t *testing.T) {
+		config.Reset()
 		c, err := Run(context.Background(), req)
 		if err != nil {
 			t.Fatal(err)

@@ -3,6 +3,7 @@ package image
 import (
 	"fmt"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
@@ -92,3 +93,44 @@ func (s DockerSubstitutor) Substitute(img string) (string, error) {
 }
 
 // }
+
+// CustomHubSubstitutor represents a way to substitute the hub of an image with a custom one,
+// using provided value with respect to the HubImageNamePrefix configuration value.
+type CustomHubSubstitutor struct {
+	hub string
+}
+
+// NewCustomHubSubstitutor creates a new CustomHubSubstitutor
+func NewCustomHubSubstitutor(hub string) CustomHubSubstitutor {
+	return CustomHubSubstitutor{
+		hub: hub,
+	}
+}
+
+// Description returns the name of the type and a short description of how it modifies the image.
+func (c CustomHubSubstitutor) Description() string {
+	return fmt.Sprintf("CustomHubSubstitutor (replaces hub with %s)", c.hub)
+}
+
+// Substitute replaces the hub of the image with the provided one, with certain conditions:
+//   - if the hub is empty, the image is returned as is.
+//   - if the image already contains a registry, the image is returned as is.
+//   - if the HubImageNamePrefix configuration value is set, the image is returned as is.
+func (c CustomHubSubstitutor) Substitute(image string) (string, error) {
+	registry := core.ExtractRegistry(image, "")
+	cfg := config.Read()
+
+	exclusions := []func() bool{
+		func() bool { return c.hub == "" },
+		func() bool { return registry != "" },
+		func() bool { return cfg.HubImageNamePrefix != "" },
+	}
+
+	for _, exclusion := range exclusions {
+		if exclusion() {
+			return image, nil
+		}
+	}
+
+	return fmt.Sprintf("%s/%s", c.hub, image), nil
+}

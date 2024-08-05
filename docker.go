@@ -278,16 +278,15 @@ func (c *DockerContainer) Endpoint(ctx context.Context, proto string) (string, e
 		return "", err
 	}
 
-	ports := inspect.NetworkSettings.Ports
-
-	// get first port
-	var firstPort nat.Port
-	for p := range ports {
-		firstPort = p
-		break
+	// Get lowest numbered bound port.
+	var lowestPort nat.Port
+	for port := range inspect.NetworkSettings.Ports {
+		if lowestPort == "" || port.Int() < lowestPort.Int() {
+			lowestPort = port
+		}
 	}
 
-	return c.PortEndpoint(ctx, firstPort, proto)
+	return c.PortEndpoint(ctx, lowestPort, proto)
 }
 
 // Exec executes a command in the current container.

@@ -157,50 +157,52 @@ import (
 	"log"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
 	reusableContainerName = "my_test_reusable_container"
 )
 
-ctx := context.Background()
+func main() {
+	ctx := context.Background()
 
-n1, err := testcontainers.Run(ctx, testcontainers.Request{
-	Image:        "nginx:1.17.6",
-	ExposedPorts: []string{"80/tcp"},
-	WaitingFor:   wait.ForListeningPort("80/tcp"),
-	Name:         reusableContainerName,
-	Started: true,
-})
-if err != nil {
-	log.Fatal(err)
-}
-defer n1.Terminate(ctx)
+	n1, err := testcontainers.Run(ctx, testcontainers.Request{
+		Image:        "nginx:1.17.6",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		Name:         reusableContainerName,
+		Started: true,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer n1.Terminate(ctx)
 
-copiedFileName := "hello_copy.sh"
-err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
+	copiedFileName := "hello_copy.sh"
+	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
 
-if err != nil {
-	log.Fatal(err)
-}
+	if err != nil {
+		log.Fatal(err)
+	}
 
-n2, err := testcontainers.Run(ctx, testcontainers.Request{
-	Image:        "nginx:1.17.6",
-	ExposedPorts: []string{"80/tcp"},
-	WaitingFor:   wait.ForListeningPort("80/tcp"),
-	Name:         reusableContainerName,
-	Started: true,
-	Reuse: true,
-})
-if err != nil {
-	log.Fatal(err)
-}
+	n2, err := testcontainers.Run(ctx, testcontainers.Request{
+		Image:        "nginx:1.17.6",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		Name:         reusableContainerName,
+		Started: true,
+		Reuse: true,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
-if err != nil {
-	log.Fatal(err)
-}
-fmt.Println(c)
+	c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(c)
 ```
 
 ## Parallel running

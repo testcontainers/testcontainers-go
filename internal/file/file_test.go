@@ -8,7 +8,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -93,7 +92,7 @@ func TestTarDir(t *testing.T) {
 
 			srcFiles, err := os.ReadDir(src)
 			if err != nil {
-				log.Fatal(err)
+				t.Fatal(err)
 			}
 
 			for _, srcFile := range srcFiles {
