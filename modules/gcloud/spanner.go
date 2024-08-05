@@ -29,10 +29,5 @@ func RunSpanner(ctx context.Context, img string, opts ...testcontainers.Containe
 		return nil, err
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return newGCloudContainer(ctx, 9010, container, settings)
+	return newGCloudContainer(ctx, req, 9010, settings, "")
 }

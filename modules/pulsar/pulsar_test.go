@@ -3,7 +3,6 @@ package pulsar_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/apache/pulsar-client-go/pulsar/log"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/stretchr/testify/assert"
@@ -21,12 +21,20 @@ import (
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 )
 
+// noopLogConsumer implements testcontainers.LogConsumer
+// and does nothing with the logs.
+type noopLogConsumer struct{}
+
+// Accept implements testcontainers.LogConsumer.
+func (*noopLogConsumer) Accept(testcontainers.Log) {}
+
 func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	nw, err := tcnetwork.New(ctx)
 	require.NoError(t, err)
+	testcontainers.CleanupNetwork(t, nw)
 
 	nwName := nw.Name
 
@@ -80,7 +88,7 @@ func TestPulsar(t *testing.T) {
 			name: "with log consumers",
 			opts: []testcontainers.ContainerCustomizer{
 				// withLogconsumers {
-				testcontainers.WithLogConsumers(&testcontainers.StdoutLogConsumer{}),
+				testcontainers.WithLogConsumers(&noopLogConsumer{}),
 				// }
 			},
 		},
@@ -93,11 +101,8 @@ func TestPulsar(t *testing.T) {
 				"docker.io/apachepulsar/pulsar:2.10.2",
 				tt.opts...,
 			)
+			testcontainers.CleanupContainer(t, c)
 			require.NoError(t, err)
-			defer func() {
-				err := c.Terminate(ctx)
-				require.NoError(t, err)
-			}()
 
 			// getBrokerURL {
 			brokerURL, err := c.BrokerURL(ctx)
@@ -116,6 +121,7 @@ func TestPulsar(t *testing.T) {
 				URL:               brokerURL,
 				OperationTimeout:  30 * time.Second,
 				ConnectionTimeout: 30 * time.Second,
+				Logger:            log.DefaultNopLogger(),
 			})
 			require.NoError(t, err)
 			t.Cleanup(func() { pc.Close() })
@@ -134,13 +140,13 @@ func TestPulsar(t *testing.T) {
 			go func() {
 				msg, err := consumer.Receive(ctx)
 				if err != nil {
-					fmt.Println("failed to receive message", err)
+					t.Log("failed to receive message", err)
 					return
 				}
 				msgChan <- msg.Payload()
 				err = consumer.Ack(msg)
 				if err != nil {
-					fmt.Println("failed to send ack", err)
+					t.Log("failed to send ack", err)
 					return
 				}
 			}()
@@ -188,14 +194,7 @@ func TestPulsar(t *testing.T) {
 
 			// check that the subscription exists
 			_, ok := subscriptionsMap[subscriptionName]
-			assert.True(t, ok)
+			require.True(t, ok)
 		})
 	}
-
-	// remove the network after the last, so that all containers are already removed
-	// and there are no active endpoints on the network
-	t.Cleanup(func() {
-		err := nw.Remove(context.Background())
-		require.NoError(t, err)
-	})
 }

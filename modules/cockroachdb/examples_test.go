@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cockroachdb"
 )
 
@@ -14,31 +15,33 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	cockroachdbContainer, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := cockroachdbContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(cockroachdbContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := cockroachdbContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 	fmt.Println(state.Running)
 
 	addr, err := cockroachdbContainer.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err)
+		log.Printf("failed to get connection string: %s", err)
+		return
 	}
 	u, err := url.Parse(addr)
 	if err != nil {
-		log.Fatalf("failed to parse connection string: %s", err)
+		log.Printf("failed to parse connection string: %s", err)
+		return
 	}
 	u.Host = fmt.Sprintf("%s:%s", u.Hostname(), "xxx")
 	fmt.Println(u.String())

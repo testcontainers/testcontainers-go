@@ -56,7 +56,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	req := testcontainers.ContainerRequest{
 		Image:        img,
 		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("* Ready to accept connections"),
+		WaitingFor:   wait.ForListeningPort("6379/tcp"),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -71,11 +71,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *ValkeyContainer
+	if container != nil {
+		c = &ValkeyContainer{Container: container}
 	}
 
-	return &ValkeyContainer{Container: container}, nil
+	return c, err
 }
 
 // WithConfigFile sets the config file to be used for the valkey container, and sets the command to run the valkey server

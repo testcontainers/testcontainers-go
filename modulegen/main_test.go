@@ -430,7 +430,9 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 	assert.Equal(t, "\t\tImage: img,", data[17])
 	assert.Equal(t, "\t\tif err := opt.Customize(&genericContainerReq); err != nil {", data[26])
 	assert.Equal(t, "\t\t\treturn nil, fmt.Errorf(\"customize: %w\", err)", data[27])
-	assert.Equal(t, "\treturn &"+containerName+"{Container: container}, nil", data[36])
+	assert.Equal(t, "\tvar c *"+containerName, data[32])
+	assert.Equal(t, "\t\tc = &"+containerName+"{Container: container}", data[34])
+	assert.Equal(t, "\treturn c, err", data[37])
 }
 
 // assert content GitHub workflow for the module

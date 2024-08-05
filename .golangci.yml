@@ -8,6 +8,7 @@ linters:
     - nonamedreturns
     - testifylint
     - errcheck
+    - nolintlint
 
 linters-settings:
   errorlint:

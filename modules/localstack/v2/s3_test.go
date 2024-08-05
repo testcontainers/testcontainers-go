@@ -74,6 +74,7 @@ func TestS3(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := localstack.Run(ctx, "localstack/localstack:1.4.0")
+	testcontainers.CleanupContainer(t, container)
 	require.NoError(t, err)
 
 	s3Client, err := s3Client(ctx, container)

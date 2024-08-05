@@ -52,11 +52,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *VaultContainer
+	if container != nil {
+		c = &VaultContainer{Container: container}
 	}
 
-	return &VaultContainer{container}, nil
+	return c, err
 }
 
 // WithToken is a container option function that sets the root token for the Vault

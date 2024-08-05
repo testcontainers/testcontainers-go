@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mssql"
 )
 
@@ -19,21 +20,21 @@ func ExampleRun() {
 		mssql.WithAcceptEULA(),
 		mssql.WithPassword(password),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := mssqlContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(mssqlContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := mssqlContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)

@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/qdrant"
 )
 
@@ -18,21 +19,21 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	qdrantContainer, err := qdrant.Run(ctx, "qdrant/qdrant:v1.7.4")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := qdrantContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(qdrantContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := qdrantContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -44,25 +45,27 @@ func ExampleRun() {
 func ExampleRun_createPoints() {
 	// fullExample {
 	qdrantContainer, err := qdrant.Run(context.Background(), "qdrant/qdrant:v1.7.4")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := qdrantContainer.Terminate(context.Background()); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(qdrantContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	grpcEndpoint, err := qdrantContainer.GRPCEndpoint(context.Background())
 	if err != nil {
-		log.Fatalf("failed to get gRPC endpoint: %s", err) // nolint:gocritic
+		log.Printf("failed to get gRPC endpoint: %s", err)
+		return
 	}
 
 	// Set up a connection to the server.
 	conn, err := grpc.NewClient(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		log.Printf("did not connect: %v", err)
+		return
 	}
 	defer conn.Close()
 
@@ -89,7 +92,8 @@ func ExampleRun_createPoints() {
 		},
 	})
 	if err != nil {
-		log.Fatalf("Could not create collection: %v", err)
+		log.Printf("Could not create collection: %v", err)
+		return
 	}
 
 	// 2. Contact the server and print out its response.
@@ -97,7 +101,8 @@ func ExampleRun_createPoints() {
 	defer cancel()
 	r, err := collections_client.List(ctx, &pb.ListCollectionsRequest{})
 	if err != nil {
-		log.Fatalf("could not get collections: %v", err)
+		log.Printf("could not get collections: %v", err)
+		return
 	}
 	fmt.Printf("List of collections: %s\n", r.GetCollections())
 
@@ -113,7 +118,8 @@ func ExampleRun_createPoints() {
 		FieldType:      &fieldIndex1Type,
 	})
 	if err != nil {
-		log.Fatalf("Could not create field index: %v", err)
+		log.Printf("Could not create field index: %v", err)
+		return
 	}
 
 	// 5. Create integer field index
@@ -125,7 +131,8 @@ func ExampleRun_createPoints() {
 		FieldType:      &fieldIndex2Type,
 	})
 	if err != nil {
-		log.Fatalf("Could not create field index: %v", err)
+		log.Printf("Could not create field index: %v", err)
+		return
 	}
 
 	// 6. Upsert points
@@ -258,7 +265,8 @@ func ExampleRun_createPoints() {
 		Points:         upsertPoints,
 	})
 	if err != nil {
-		log.Fatalf("Could not upsert points: %v", err)
+		log.Printf("Could not upsert points: %v", err)
+		return
 	}
 
 	// 7. Retrieve points by ids
@@ -270,7 +278,8 @@ func ExampleRun_createPoints() {
 		},
 	})
 	if err != nil {
-		log.Fatalf("Could not retrieve points: %v", err)
+		log.Printf("Could not retrieve points: %v", err)
+		return
 	}
 
 	fmt.Printf("Retrieved points: %d\n", len(pointsById.GetResult()))
@@ -285,7 +294,8 @@ func ExampleRun_createPoints() {
 		WithPayload: &pb.WithPayloadSelector{SelectorOptions: &pb.WithPayloadSelector_Enable{Enable: true}},
 	})
 	if err != nil {
-		log.Fatalf("Could not search points: %v", err)
+		log.Printf("Could not search points: %v", err)
+		return
 	}
 
 	fmt.Printf("Found points: %d\n", len(unfilteredSearchResult.GetResult()))
@@ -313,7 +323,8 @@ func ExampleRun_createPoints() {
 		},
 	})
 	if err != nil {
-		log.Fatalf("Could not search points: %v", err)
+		log.Printf("Could not search points: %v", err)
+		return
 	}
 	// }
 

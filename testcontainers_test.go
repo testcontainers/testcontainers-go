@@ -1,7 +1,6 @@
 package testcontainers
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
@@ -81,5 +80,5 @@ func TestSessionIDHelper(t *testing.T) {
 		t.Skip("Not a real test, used as a test helper")
 	}
 
-	fmt.Printf(">>>%s<<<\n", SessionID())
+	t.Logf(">>>%s<<<\n", SessionID())
 }

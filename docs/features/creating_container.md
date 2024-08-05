@@ -42,23 +42,27 @@ func setupNginx(ctx context.Context) (*nginxContainer, error) {
 		ContainerRequest: req,
 		Started:          true,
 	})
+	var nginxC *nginxContainer
+	if container != nil {
+		nginxC = &nginxContainer{Container: c}
+	}
 	if err != nil {
-		return nil, err
+		return nginxC, err
 	}
 
 	ip, err := container.Host(ctx)
 	if err != nil {
-		return nil, err
+		return nginxC, err
 	}
 
 	mappedPort, err := container.MappedPort(ctx, "80")
 	if err != nil {
-		return nil, err
+		return nginxC, err
 	}
 
-	uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+	nginxC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 
-	return &nginxContainer{Container: container, URI: uri}, nil
+	return nginxC, nil
 }
 
 func TestIntegrationNginxLatestReturn(t *testing.T) {
@@ -69,21 +73,11 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 	ctx := context.Background()
 
 	nginxC, err := setupNginx(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.CleanupContainer(t, nginxC)
+	require.NoError(t, err)
 
 	resp, err := http.Get(nginxC.URI)
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 ```
 
@@ -145,8 +139,8 @@ The aforementioned `GenericContainer` function and the `ContainerRequest` struct
 
 ## Reusable container
 
-With `Reuse` option you can reuse an existing container. Reusing will work only if you pass an 
-existing container name via 'req.Name' field. If the name is not in a list of existing containers, 
+With `Reuse` option you can reuse an existing container. Reusing will work only if you pass an
+existing container name via 'req.Name' field. If the name is not in a list of existing containers,
 the function will create a new generic container. If `Reuse` is true and `Name` is empty, you will get error.
 
 The following test creates an NGINX container, adds a file into it and then reuses the container again for checking the file:
@@ -178,16 +172,22 @@ func main() {
 		},
 		Started: true,
 	})
+	defer func() {
+		if err := testcontainers.TerminateContainer(n1); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
-	defer n1.Terminate(ctx)
 
 	copiedFileName := "hello_copy.sh"
 	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 
 	n2, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -200,13 +200,20 @@ func main() {
 		Started: true,
 		Reuse:   true,
 	})
+	defer func() {
+		if err := testcontainers.TerminateContainer(n2); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 
 	c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 	fmt.Println(c)
 }
@@ -256,25 +263,26 @@ func main() {
 	}
 
 	res, err := testcontainers.ParallelContainers(ctx, requests, testcontainers.ParallelContainersOptions{})
+	for _, c := range res {
+		c := c
+		defer func() {
+			if err := testcontainers.TerminateContainer(c); err != nil {
+				log.Printf("failed to terminate container: %s", c)
+			}
+		}()
+	}
+
 	if err != nil {
 		e, ok := err.(testcontainers.ParallelContainersError)
 		if !ok {
-			log.Fatalf("unknown error: %v", err)
+			log.Printf("unknown error: %v", err)
+			return
 		}
 
 		for _, pe := range e.Errors {
 			fmt.Println(pe.Request, pe.Error)
 		}
 		return
-	}
-
-	for _, c := range res {
-		c := c
-		defer func() {
-			if err := c.Terminate(ctx); err != nil {
-				log.Fatalf("failed to terminate container: %s", c)
-			}
-		}()
 	}
 }
 ```

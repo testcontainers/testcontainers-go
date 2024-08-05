@@ -18,26 +18,28 @@ type GCloudContainer struct {
 }
 
 // newGCloudContainer creates a new GCloud container, obtaining the URL to access the container from the specified port.
-func newGCloudContainer(ctx context.Context, port int, c testcontainers.Container, settings options) (*GCloudContainer, error) {
+func newGCloudContainer(ctx context.Context, req testcontainers.GenericContainerRequest, port int, settings options, urlPrefix string) (*GCloudContainer, error) {
+	container, err := testcontainers.GenericContainer(ctx, req)
+	var c *GCloudContainer
+	if container != nil {
+		c = &GCloudContainer{Container: container, Settings: settings}
+	}
+	if err != nil {
+		return c, err
+	}
 	mappedPort, err := c.MappedPort(ctx, nat.Port(fmt.Sprintf("%d/tcp", port)))
 	if err != nil {
-		return nil, err
+		return c, err
 	}
 
 	hostIP, err := c.Host(ctx)
 	if err != nil {
-		return nil, err
+		return c, err
 	}
 
-	uri := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
+	c.URI = urlPrefix + hostIP + ":" + mappedPort.Port()
 
-	gCloudContainer := &GCloudContainer{
-		Container: c,
-		Settings:  settings,
-		URI:       uri,
-	}
-
-	return gCloudContainer, nil
+	return c, nil
 }
 
 type options struct {

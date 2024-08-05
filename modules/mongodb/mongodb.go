@@ -50,14 +50,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *MongoDBContainer
+	if container != nil {
+		c = &MongoDBContainer{Container: container, username: username, password: password}
 	}
 
-	if username != "" && password != "" {
-		return &MongoDBContainer{Container: container, username: username, password: password}, nil
-	}
-	return &MongoDBContainer{Container: container}, nil
+	return c, err
 }
 
 // WithUsername sets the initial username to be created when the container starts
@@ -92,7 +90,7 @@ func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 				func(ctx context.Context, c testcontainers.Container) error {
 					ip, err := c.ContainerIP(ctx)
 					if err != nil {
-						return err
+						return fmt.Errorf("container ip: %w", err)
 					}
 
 					cmd := eval("rs.initiate({ _id: '%s', members: [ { _id: 0, host: '%s:27017' } ] })", replSetName, ip)

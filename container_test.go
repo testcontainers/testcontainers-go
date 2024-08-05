@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strings"
 	"testing"
 	"time"
 
@@ -148,17 +147,17 @@ func Test_BuildImageWithContexts(t *testing.T) {
 	type TestCase struct {
 		Name               string
 		ContextPath        string
-		ContextArchive     func() (io.Reader, error)
+		ContextArchive     func() (io.ReadSeeker, error)
 		ExpectedEchoOutput string
 		Dockerfile         string
-		ExpectedError      error
+		ExpectedError      string
 	}
 
 	testCases := []TestCase{
 		{
 			Name: "test build from context archive",
 			// fromDockerfileWithContextArchive {
-			ContextArchive: func() (io.Reader, error) {
+			ContextArchive: func() (io.ReadSeeker, error) {
 				var buf bytes.Buffer
 				tarWriter := tar.NewWriter(&buf)
 				files := []struct {
@@ -203,7 +202,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 		},
 		{
 			Name: "test build from context archive and be able to use files in it",
-			ContextArchive: func() (io.Reader, error) {
+			ContextArchive: func() (io.ReadSeeker, error) {
 				var buf bytes.Buffer
 				tarWriter := tar.NewWriter(&buf)
 				files := []struct {
@@ -252,21 +251,21 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			ExpectedEchoOutput: "hi this is from the say_hi.sh file!",
 		},
 		{
-			Name:               "test buildling from a context on the filesystem",
+			Name:               "test building from a context on the filesystem",
 			ContextPath:        "./testdata",
 			Dockerfile:         "echo.Dockerfile",
 			ExpectedEchoOutput: "this is from the echo test Dockerfile",
-			ContextArchive: func() (io.Reader, error) {
+			ContextArchive: func() (io.ReadSeeker, error) {
 				return nil, nil
 			},
 		},
 		{
 			Name:        "it should error if neither a context nor a context archive are specified",
 			ContextPath: "",
-			ContextArchive: func() (io.Reader, error) {
+			ContextArchive: func() (io.ReadSeeker, error) {
 				return nil, nil
 			},
-			ExpectedError: errors.New("you must specify either a build context or an image: failed to create container"),
+			ExpectedError: "create container: you must specify either a build context or an image",
 		},
 	}
 
@@ -276,9 +275,8 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 			a, err := testCase.ContextArchive()
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
+
 			req := testcontainers.ContainerRequest{
 				FromDockerfile: testcontainers.FromDockerfile{
 					ContextArchive: a,
@@ -292,16 +290,14 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				ContainerRequest: req,
 				Started:          true,
 			})
-			switch {
-			case testCase.ExpectedError != nil && err != nil:
-				if testCase.ExpectedError.Error() != err.Error() {
-					t.Fatalf("unexpected error: %s, was expecting %s", err.Error(), testCase.ExpectedError.Error())
-				}
-			case err != nil:
-				t.Fatal(err)
-			default:
-				terminateContainerOnEnd(t, ctx, c)
+			testcontainers.CleanupContainer(t, c)
+
+			if testCase.ExpectedError != "" {
+				require.EqualError(t, err, testCase.ExpectedError)
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }
@@ -320,28 +316,18 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
-	if err != nil && err.Error() != "failed to start container: container exited with code 0" {
-		t.Fatal(err)
-	} else if err == nil {
-		terminateContainerOnEnd(t, ctx, c)
-		t.Fatal("was expecting error starting container")
-	}
+	testcontainers.CleanupContainer(t, c)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "container exited with code 0")
 
 	logs, logErr := c.Logs(ctx)
-	if logErr != nil {
-		t.Fatal(logErr)
-	}
+	require.NoError(t, logErr)
 
 	b, err := io.ReadAll(logs)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	log := string(b)
-	if strings.Contains(log, "I was not expecting this") == false {
-		t.Fatalf("could not find expected log in %s", log)
-	}
+	require.Contains(t, log, "I was not expecting this")
 }
 
 // dockerImageSubstitutor {
@@ -434,17 +420,13 @@ func TestImageSubstitutors(t *testing.T) {
 				ContainerRequest: req,
 				Started:          true,
 			})
+			testcontainers.CleanupContainer(t, container)
 			if test.expectedError != nil {
 				require.ErrorIs(t, err, test.expectedError)
 				return
 			}
 
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer func() {
-				terminateContainerOnEnd(t, ctx, container)
-			}()
+			require.NoError(t, err)
 
 			// enforce the concrete type, as GenericContainer returns an interface,
 			// which will be changed in future implementations of the library
@@ -472,17 +454,13 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 				ContainerRequest: req,
 				Started:          true,
 			})
-			if err != nil {
-				t.Fatalf("could not start container: %v", err)
-			}
+			testcontainers.CleanupContainer(t, container)
+			require.NoError(t, err)
+
 			// mappedPort {
 			port, err := container.MappedPort(ctx, nginxDefaultPort)
 			// }
-			if err != nil {
-				t.Fatalf("could not get mapped port: %v", err)
-			}
-
-			terminateContainerOnEnd(t, ctx, container)
+			require.NoError(t, err)
 
 			t.Logf("Parallel container [iteration_%d] listening on %d\n", i, port.Int())
 		})
@@ -500,17 +478,17 @@ func ExampleGenericContainer_withSubstitutors() {
 		},
 		Started: true,
 	})
-	// }
-	if err != nil {
-		log.Fatalf("could not start container: %v", err)
-	}
-
 	defer func() {
-		err := container.Terminate(ctx)
-		if err != nil {
-			log.Fatalf("could not terminate container: %v", err)
+		if err := testcontainers.TerminateContainer(container); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+
+	// }
+	if err != nil {
+		log.Printf("could not start container: %v", err)
+		return
+	}
 
 	// enforce the concrete type, as GenericContainer returns an interface,
 	// which will be changed in future implementations of the library

@@ -7,14 +7,18 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
+	"os/exec"
 	"testing"
 	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -25,23 +29,60 @@ func ExampleExecStrategy() {
 		WaitingFor: wait.ForExec([]string{"awslocal", "dynamodb", "list-tables"}),
 	}
 
+	start := time.Now()
+
+	// TODO: remove, trying without reaper.
+	// oldDisabled := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
+	oldVerbose := os.Getenv("TESTCONTAINERS_RYUK_VERBOSE")
+	config.Reset()
+	// os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
+	os.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
+	defer func() {
+		config.Reset()
+		// os.Setenv("TESTCONTAINERS_RYUK_DISABLED", oldDisabled)
+		os.Setenv("TESTCONTAINERS_RYUK_VERBOSE", oldVerbose)
+	}()
+
 	localstack, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := localstack.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(localstack); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		// TODO: remove this debugging code
+		output, err2 := exec.Command("docker", "ps", "-a").Output()
+		if err2 != nil {
+			log.Printf("failed to run docker ps -a: %s, %s", err2, output)
+		} else {
+			log.Printf("docker ps: %s", output)
+		}
+
+		time.Sleep(time.Second) // Events are not immediately available.
+		output, err2 = exec.CommandContext(context.Background(),
+			"docker", "events",
+			"--filter", "type=container",
+			"--filter", "container="+localstack.GetContainerID(),
+			"--since", start.Format("2006-01-02 15:04:05"),
+			"--until", "0s",
+		).Output()
+		if err2 != nil {
+			log.Printf("failed to run docker events: %s, %s", err2, output)
+		} else {
+			log.Printf("docker events: %s", output)
+		}
+
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	state, err := localstack.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -200,14 +241,7 @@ func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 
 	ctx := context.Background()
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.CleanupContainer(t, container)
+	require.NoError(t, err)
 	// }
 }

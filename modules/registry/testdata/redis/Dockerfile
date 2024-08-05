@@ -1,3 +1,3 @@
-ARG REGISTRY_PORT=5000
+ARG REGISTRY_HOST=localhost:5000
 
-FROM localhost:${REGISTRY_PORT}/redis:5.0-alpine
+FROM ${REGISTRY_HOST}/redis:5.0-alpine

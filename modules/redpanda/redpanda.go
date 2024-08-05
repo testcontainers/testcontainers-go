@@ -86,6 +86,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				"--smp=1",
 				"--memory=1G",
 			},
+			WaitingFor: wait.ForAll(
+				// Wait for the ports to be exposed only as the container needs configuration
+				// before it will bind to the ports and be ready to serve requests.
+				wait.ForExposedPortOnly(defaultKafkaAPIPort),
+				wait.ForExposedPortOnly(defaultAdminAPIPort),
+				wait.ForExposedPortOnly(defaultSchemaRegistryPort),
+			),
 		},
 		Started: true,
 	}
@@ -119,7 +126,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	// 4. Register extra kafka listeners if provided, network aliases will be
 	// set
-	if err := registerListeners(ctx, settings, req); err != nil {
+	if err := registerListeners(settings, req); err != nil {
 		return nil, fmt.Errorf("failed to register listeners: %w", err)
 	}
 
@@ -173,84 +180,100 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, req)
+	var c *Container
+	if container != nil {
+		c = &Container{Container: container}
+	}
 	if err != nil {
-		return nil, err
+		return c, err
 	}
 
 	// 6. Get mapped port for the Kafka API, so that we can render and then mount
 	// the Redpanda config with the advertised Kafka address.
 	hostIP, err := container.Host(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get container host: %w", err)
+		return c, fmt.Errorf("failed to get container host: %w", err)
 	}
 
 	kafkaPort, err := container.MappedPort(ctx, nat.Port(defaultKafkaAPIPort))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get mapped Kafka port: %w", err)
+		return c, fmt.Errorf("failed to get mapped Kafka port: %w", err)
 	}
 
 	// 7. Render redpanda.yaml config and mount it.
 	nodeConfig, err := renderNodeConfig(settings, hostIP, kafkaPort.Int())
 	if err != nil {
-		return nil, fmt.Errorf("failed to render node config: %w", err)
+		return c, fmt.Errorf("failed to render node config: %w", err)
 	}
 
 	err = container.CopyToContainer(ctx, nodeConfig, filepath.Join(redpandaDir, "redpanda.yaml"), 600)
 	if err != nil {
-		return nil, fmt.Errorf("failed to copy redpanda.yaml into container: %w", err)
+		return c, fmt.Errorf("failed to copy redpanda.yaml into container: %w", err)
 	}
 
-	// 8. Wait until Redpanda is ready to serve requests
-	err = wait.ForAll(
-		wait.ForListeningPort(defaultKafkaAPIPort),
-		wait.ForLog("Successfully started Redpanda!").WithPollInterval(100*time.Millisecond)).
-		WaitUntilReady(ctx, container)
-	if err != nil {
-		return nil, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
-	}
+	// 8. Wait until Redpanda is ready to serve requests.
+	waitHTTP := wait.ForHTTP(defaultAdminAPIPort).
+		WithStatusCodeMatcher(func(status int) bool {
+			return status == http.StatusNotFound
+		})
 
-	scheme := "http"
+	var tlsConfig *tls.Config
 	if settings.EnableTLS {
-		scheme += "s"
+		cert, err := tls.X509KeyPair(settings.cert, settings.key)
+		if err != nil {
+			return c, fmt.Errorf("failed to create admin client with cert: %w", err)
+		}
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(settings.cert)
+		tlsConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			RootCAs:      caCertPool,
+		}
+		waitHTTP = waitHTTP.WithTLS(true, tlsConfig)
+	}
+	err = wait.ForAll(
+		wait.NewHostPortStrategy(defaultKafkaAPIPort),
+		waitHTTP,
+		wait.NewHostPortStrategy(defaultSchemaRegistryPort),
+		wait.ForLog("Successfully started Redpanda!"),
+	).WaitUntilReady(ctx, container)
+	if err != nil {
+		return c, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
+	}
+
+	c.urlScheme = "http"
+	if settings.EnableTLS {
+		c.urlScheme += "s"
 	}
 
 	// 9. Create Redpanda Service Accounts if configured to do so.
 	if len(settings.ServiceAccounts) > 0 {
 		adminAPIPort, err := container.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
 		if err != nil {
-			return nil, fmt.Errorf("failed to get mapped Admin API port: %w", err)
+			return c, fmt.Errorf("failed to get mapped Admin API port: %w", err)
 		}
 
-		adminAPIUrl := fmt.Sprintf("%s://%v:%d", scheme, hostIP, adminAPIPort.Int())
+		adminAPIUrl := fmt.Sprintf("%s://%v:%d", c.urlScheme, hostIP, adminAPIPort.Int())
 		adminCl := NewAdminAPIClient(adminAPIUrl)
 		if settings.EnableTLS {
-			cert, err := tls.X509KeyPair(settings.cert, settings.key)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create admin client with cert: %w", err)
-			}
-			caCertPool := x509.NewCertPool()
-			caCertPool.AppendCertsFromPEM(settings.cert)
 			adminCl = adminCl.WithHTTPClient(&http.Client{
 				Timeout: 5 * time.Second,
 				Transport: &http.Transport{
 					ForceAttemptHTTP2:   true,
 					TLSHandshakeTimeout: 10 * time.Second,
-					TLSClientConfig: &tls.Config{
-						Certificates: []tls.Certificate{cert},
-						RootCAs:      caCertPool,
-					},
+					TLSClientConfig:     tlsConfig,
 				},
 			})
 		}
 
 		for username, password := range settings.ServiceAccounts {
 			if err := adminCl.CreateUser(ctx, username, password); err != nil {
-				return nil, fmt.Errorf("failed to create service account with username %q: %w", username, err)
+				return c, fmt.Errorf("failed to create service account with username %q: %w", username, err)
 			}
 		}
 	}
 
-	return &Container{Container: container, urlScheme: scheme}, nil
+	return c, nil
 }
 
 // KafkaSeedBroker returns the seed broker that should be used for connecting
@@ -298,7 +321,7 @@ func renderBootstrapConfig(settings options) ([]byte, error) {
 
 // registerListeners validates that the provided listeners are valid and set network aliases for the provided addresses.
 // The container must be attached to at least one network.
-func registerListeners(ctx context.Context, settings options, req testcontainers.GenericContainerRequest) error {
+func registerListeners(settings options, req testcontainers.GenericContainerRequest) error {
 	if len(settings.Listeners) == 0 {
 		return nil
 	}

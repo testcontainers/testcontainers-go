@@ -20,21 +20,21 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.24.5")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := weaviateContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(weaviateContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := weaviateContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -48,24 +48,26 @@ func ExampleRun_connectWithClient() {
 	ctx := context.Background()
 
 	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.23.9")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := weaviateContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(weaviateContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	scheme, host, err := weaviateContainer.HttpHostAddress(ctx)
 	if err != nil {
-		log.Fatalf("failed to get http schema and host: %s", err) // nolint:gocritic
+		log.Printf("failed to get http schema and host: %s", err)
+		return
 	}
 
 	grpcHost, err := weaviateContainer.GrpcHostAddress(ctx)
 	if err != nil {
-		log.Fatalf("failed to get gRPC host: %s", err) // nolint:gocritic
+		log.Printf("failed to get gRPC host: %s", err)
+		return
 	}
 
 	connectionClient := &http.Client{}
@@ -115,24 +117,26 @@ func ExampleRun_connectWithClientWithModules() {
 	}
 
 	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.25.5", opts...)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := weaviateContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(weaviateContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	scheme, host, err := weaviateContainer.HttpHostAddress(ctx)
 	if err != nil {
-		log.Fatalf("failed to get http schema and host: %s", err) // nolint:gocritic
+		log.Printf("failed to get http schema and host: %s", err)
+		return
 	}
 
 	grpcHost, err := weaviateContainer.GrpcHostAddress(ctx)
 	if err != nil {
-		log.Fatalf("failed to get gRPC host: %s", err) // nolint:gocritic
+		log.Printf("failed to get gRPC host: %s", err)
+		return
 	}
 
 	connectionClient := &http.Client{}

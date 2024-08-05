@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
 )
 
@@ -21,14 +22,8 @@ func TestCassandra(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := cassandra.Run(ctx, "cassandra:4.1.3")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		require.NoError(t, container.Terminate(ctx))
-	})
+	testcontainers.CleanupContainer(t, container)
+	require.NoError(t, err)
 
 	// connectionString {
 	connectionHost, err := container.ConnectionHost(ctx)
@@ -37,9 +32,7 @@ func TestCassandra(t *testing.T) {
 
 	cluster := gocql.NewCluster(connectionHost)
 	session, err := cluster.CreateSession()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer session.Close()
 
 	// perform assertions
@@ -61,14 +54,8 @@ func TestCassandraWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		require.NoError(t, container.Terminate(ctx))
-	})
+	testcontainers.CleanupContainer(t, container)
+	require.NoError(t, err)
 
 	connectionHost, err := container.ConnectionHost(ctx)
 	require.NoError(t, err)
@@ -93,14 +80,8 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		// withInitScripts {
 		container, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
 		// }
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// Clean up the container after the test is complete
-		t.Cleanup(func() {
-			require.NoError(t, container.Terminate(ctx))
-		})
+		testcontainers.CleanupContainer(t, container)
+		require.NoError(t, err)
 
 		// connectionHost {
 		connectionHost, err := container.ConnectionHost(ctx)
@@ -124,14 +105,8 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		ctx := context.Background()
 
 		container, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// Clean up the container after the test is complete
-		t.Cleanup(func() {
-			require.NoError(t, container.Terminate(ctx))
-		})
+		testcontainers.CleanupContainer(t, container)
+		require.NoError(t, err)
 
 		connectionHost, err := container.ConnectionHost(ctx)
 		require.NoError(t, err)

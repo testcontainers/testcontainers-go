@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-ldap/ldap/v3"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/openldap"
 )
 
@@ -15,21 +16,21 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	openldapContainer, err := openldap.Run(ctx, "bitnami/openldap:2.6.6")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := openldapContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(openldapContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := openldapContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -43,32 +44,34 @@ func ExampleRun_connect() {
 	ctx := context.Background()
 
 	openldapContainer, err := openldap.Run(ctx, "bitnami/openldap:2.6.6")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := openldapContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(openldapContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	connectionString, err := openldapContainer.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
+		log.Printf("failed to get connection string: %s", err)
+		return
 	}
 
 	client, err := ldap.DialURL(connectionString)
 	if err != nil {
-		log.Fatalf("failed to connect to LDAP server: %s", err)
+		log.Printf("failed to connect to LDAP server: %s", err)
+		return
 	}
 	defer client.Close()
 
 	// First bind with a read only user
 	err = client.Bind("cn=admin,dc=example,dc=org", "adminpassword")
 	if err != nil {
-		log.Fatalf("failed to bind to LDAP server: %s", err)
+		log.Printf("failed to bind to LDAP server: %s", err)
+		return
 	}
 
 	// Search for the given username
@@ -82,11 +85,13 @@ func ExampleRun_connect() {
 
 	sr, err := client.Search(searchRequest)
 	if err != nil {
-		log.Fatalf("failed to search LDAP server: %s", err)
+		log.Printf("failed to search LDAP server: %s", err)
+		return
 	}
 
 	if len(sr.Entries) != 1 {
-		log.Fatal("User does not exist or too many entries returned")
+		log.Print("User does not exist or too many entries returned")
+		return
 	}
 
 	fmt.Println(sr.Entries[0].DN)

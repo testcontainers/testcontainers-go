@@ -161,14 +161,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *OpenLDAPContainer
+	if container != nil {
+		c = &OpenLDAPContainer{
+			Container:     container,
+			adminUsername: req.Env["LDAP_ADMIN_USERNAME"],
+			adminPassword: req.Env["LDAP_ADMIN_PASSWORD"],
+			rootDn:        req.Env["LDAP_ROOT"],
+		}
 	}
 
-	return &OpenLDAPContainer{
-		Container:     container,
-		adminUsername: req.Env["LDAP_ADMIN_USERNAME"],
-		adminPassword: req.Env["LDAP_ADMIN_PASSWORD"],
-		rootDn:        req.Env["LDAP_ROOT"],
-	}, nil
+	return c, err
 }

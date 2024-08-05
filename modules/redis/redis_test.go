@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 )
 
@@ -18,12 +19,8 @@ func TestIntegrationSetGet(t *testing.T) {
 	ctx := context.Background()
 
 	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7")
+	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := redisContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	assertSetsGets(t, ctx, redisContainer, 1)
 }
@@ -32,12 +29,8 @@ func TestRedisWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7", tcredis.WithConfigFile(filepath.Join("testdata", "redis7.conf")))
+	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := redisContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	assertSetsGets(t, ctx, redisContainer, 1)
 }
@@ -74,12 +67,8 @@ func TestRedisWithImage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			redisContainer, err := tcredis.Run(ctx, tt.image, tcredis.WithConfigFile(filepath.Join("testdata", "redis6.conf")))
+			testcontainers.CleanupContainer(t, redisContainer)
 			require.NoError(t, err)
-			t.Cleanup(func() {
-				if err := redisContainer.Terminate(ctx); err != nil {
-					t.Fatalf("failed to terminate container: %s", err)
-				}
-			})
 
 			assertSetsGets(t, ctx, redisContainer, 1)
 		})
@@ -90,12 +79,8 @@ func TestRedisWithLogLevel(t *testing.T) {
 	ctx := context.Background()
 
 	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7", tcredis.WithLogLevel(tcredis.LogLevelVerbose))
+	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := redisContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	assertSetsGets(t, ctx, redisContainer, 10)
 }
@@ -104,12 +89,8 @@ func TestRedisWithSnapshotting(t *testing.T) {
 	ctx := context.Background()
 
 	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7", tcredis.WithSnapshotting(10, 1))
+	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := redisContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	assertSetsGets(t, ctx, redisContainer, 10)
 }

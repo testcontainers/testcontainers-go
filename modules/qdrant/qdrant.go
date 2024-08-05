@@ -43,11 +43,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *QdrantContainer
+	if container != nil {
+		c = &QdrantContainer{Container: container}
 	}
 
-	return &QdrantContainer{Container: container}, nil
+	return c, err
 }
 
 // RESTEndpoint returns the REST endpoint of the Qdrant container

@@ -3,7 +3,6 @@ package vault_test
 import (
 	"context"
 	"io"
-	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -35,6 +34,7 @@ func TestVault(t *testing.T) {
 	}
 
 	vaultContainer, err := testcontainervault.Run(ctx, "hashicorp/vault:1.13.0", opts...)
+	testcontainers.CleanupContainer(t, vaultContainer)
 	require.NoError(t, err)
 
 	// httpHostAddress {
@@ -117,12 +117,5 @@ func TestVault(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, "bar", s.Data.Data["foo"])
 		})
-	})
-
-	t.Cleanup(func() {
-		// Clean up the vault after the test is complete
-		if err := vaultContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate vault: %s", err)
-		}
 	})
 }

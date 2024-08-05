@@ -71,31 +71,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
 			{
 				PostStarts: []testcontainers.ContainerHook{
-					// 1. copy the starter script into the container
+					// Use a single hook to copy the starter script and wait for
+					// the Kafka server to be ready. This prevents the wait running
+					// if the starter script fails to copy.
 					func(ctx context.Context, c testcontainers.Container) error {
-						host, err := c.Host(ctx)
-						if err != nil {
-							return err
+						// 1. copy the starter script into the container
+						if err := copyStarterScript(ctx, c); err != nil {
+							return fmt.Errorf("copy starter script: %w", err)
 						}
 
-						inspect, err := c.Inspect(ctx)
-						if err != nil {
-							return err
-						}
-
-						hostname := inspect.Config.Hostname
-
-						port, err := c.MappedPort(ctx, publicPort)
-						if err != nil {
-							return err
-						}
-
-						scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname)
-
-						return c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755)
-					},
-					// 2. wait for the Kafka server to be ready
-					func(ctx context.Context, c testcontainers.Container) error {
+						// 2. wait for the Kafka server to be ready
 						return wait.ForLog(".*Transitioning from RECOVERY to RUNNING.*").AsRegexp().WaitUntilReady(ctx, c)
 					},
 				},
@@ -119,16 +104,47 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
-	clusterID := genericContainerReq.Env["CLUSTER_ID"]
-
 	configureControllerQuorumVoters(&genericContainerReq)
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *KafkaContainer
+	if container != nil {
+		c = &KafkaContainer{Container: container, ClusterID: genericContainerReq.Env["CLUSTER_ID"]}
 	}
 
-	return &KafkaContainer{Container: container, ClusterID: clusterID}, nil
+	return c, err
+}
+
+// copyStarterScript copies the starter script into the container.
+func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
+	if err := wait.ForExposedPortOnly(publicPort).WaitUntilReady(ctx, c); err != nil {
+		return fmt.Errorf("wait for exposed port: %w", err)
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return fmt.Errorf("host: %w", err)
+	}
+
+	inspect, err := c.Inspect(ctx)
+	if err != nil {
+		return fmt.Errorf("inspect: %w", err)
+	}
+
+	hostname := inspect.Config.Hostname
+
+	port, err := c.MappedPort(ctx, publicPort)
+	if err != nil {
+		return fmt.Errorf("mapped port: %w", err)
+	}
+
+	scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname)
+
+	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755); err != nil {
+		return fmt.Errorf("copy to container: %w", err)
+	}
+
+	return nil
 }
 
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {

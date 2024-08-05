@@ -22,21 +22,21 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	openfgaContainer, err := openfga.Run(ctx, "openfga/openfga:v1.5.0")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := openfgaContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(openfgaContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := openfgaContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -47,21 +47,21 @@ func ExampleRun() {
 
 func ExampleRun_connectToPlayground() {
 	openfgaContainer, err := openfga.Run(context.Background(), "openfga/openfga:v1.5.0")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := openfgaContainer.Terminate(context.Background()); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(openfgaContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	// playgroundEndpoint {
 	playgroundEndpoint, err := openfgaContainer.PlaygroundEndpoint(context.Background())
 	if err != nil {
-		log.Fatalf("failed to get playground endpoint: %s", err) // nolint:gocritic
+		log.Printf("failed to get playground endpoint: %s", err)
+		return
 	}
 	// }
 
@@ -69,7 +69,8 @@ func ExampleRun_connectToPlayground() {
 
 	resp, err := httpClient.Get(playgroundEndpoint)
 	if err != nil {
-		log.Fatalf("failed to get playground endpoint: %s", err) // nolint:gocritic
+		log.Printf("failed to get playground endpoint: %s", err)
+		return
 	}
 
 	fmt.Println(resp.StatusCode)
@@ -80,21 +81,21 @@ func ExampleRun_connectToPlayground() {
 
 func ExampleRun_connectWithSDKClient() {
 	openfgaContainer, err := openfga.Run(context.Background(), "openfga/openfga:v1.5.0")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := openfgaContainer.Terminate(context.Background()); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(openfgaContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	// httpEndpoint {
 	httpEndpoint, err := openfgaContainer.HttpEndpoint(context.Background())
 	if err != nil {
-		log.Fatalf("failed to get HTTP endpoint: %s", err) // nolint:gocritic
+		log.Printf("failed to get HTTP endpoint: %s", err)
+		return
 	}
 	// }
 
@@ -103,26 +104,30 @@ func ExampleRun_connectWithSDKClient() {
 		ApiUrl: httpEndpoint, // required
 	})
 	if err != nil {
-		log.Fatalf("failed to create SDK client: %s", err) // nolint:gocritic
+		log.Printf("failed to create SDK client: %s", err)
+		return
 	}
 
 	list, err := fgaClient.ListStores(context.Background()).Execute()
 	if err != nil {
-		log.Fatalf("failed to list stores: %s", err) // nolint:gocritic
+		log.Printf("failed to list stores: %s", err)
+		return
 	}
 
 	fmt.Println(len(list.Stores))
 
 	store, err := fgaClient.CreateStore(context.Background()).Body(client.ClientCreateStoreRequest{Name: "test"}).Execute()
 	if err != nil {
-		log.Fatalf("failed to create store: %s", err) // nolint:gocritic
+		log.Printf("failed to create store: %s", err)
+		return
 	}
 
 	fmt.Println(store.Name)
 
 	list, err = fgaClient.ListStores(context.Background()).Execute()
 	if err != nil {
-		log.Fatalf("failed to list stores: %s", err) // nolint:gocritic
+		log.Printf("failed to list stores: %s", err)
+		return
 	}
 
 	fmt.Println(len(list.Stores))
@@ -145,20 +150,20 @@ func ExampleRun_writeModel() {
 			"OPENFGA_AUTHN_PRESHARED_KEYS": secret,
 		}),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := openfgaContainer.Terminate(context.Background()); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(openfgaContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	httpEndpoint, err := openfgaContainer.HttpEndpoint(context.Background())
 	if err != nil {
-		log.Fatalf("failed to get HTTP endpoint: %s", err) // nolint:gocritic
+		log.Printf("failed to get HTTP endpoint: %s", err)
+		return
 	}
 
 	fgaClient, err := client.NewSdkClient(&client.ClientConfiguration{
@@ -177,28 +182,33 @@ func ExampleRun_writeModel() {
 		StoreId: "11111111111111111111111111",
 	})
 	if err != nil {
-		log.Fatalf("failed to create openfga client: %v", err)
+		log.Printf("failed to create openfga client: %v", err)
+		return
 	}
 
 	f, err := os.Open(filepath.Join("testdata", "authorization_model.json"))
 	if err != nil {
-		log.Fatalf("failed to open file: %v", err)
+		log.Printf("failed to open file: %v", err)
+		return
 	}
 	defer f.Close()
 
 	bs, err := io.ReadAll(f)
 	if err != nil {
-		log.Fatalf("failed to read file: %v", err)
+		log.Printf("failed to read file: %v", err)
+		return
 	}
 
 	var body client.ClientWriteAuthorizationModelRequest
 	if err := json.Unmarshal(bs, &body); err != nil {
-		log.Fatalf("failed to unmarshal json: %v", err)
+		log.Printf("failed to unmarshal json: %v", err)
+		return
 	}
 
 	resp, err := fgaClient.WriteAuthorizationModel(context.Background()).Body(body).Execute()
 	if err != nil {
-		log.Fatalf("failed to write authorization model: %v", err)
+		log.Printf("failed to write authorization model: %v", err)
+		return
 	}
 
 	// }

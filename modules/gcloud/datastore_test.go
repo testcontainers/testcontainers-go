@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
@@ -22,16 +23,15 @@ func ExampleRunDatastoreContainer() {
 		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
 		gcloud.WithProjectID("datastore-project"),
 	)
-	if err != nil {
-		log.Fatalf("failed to run container: %v", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := datastoreContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %v", err)
+		if err := testcontainers.TerminateContainer(datastoreContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to run container: %v", err)
+		return
+	}
 	// }
 
 	// datastoreClient {
@@ -45,7 +45,8 @@ func ExampleRunDatastoreContainer() {
 
 	dsClient, err := datastore.NewClient(ctx, projectID, options...)
 	if err != nil {
-		log.Fatalf("failed to create client: %v", err) // nolint:gocritic
+		log.Printf("failed to create client: %v", err)
+		return
 	}
 	defer dsClient.Close()
 	// }
@@ -60,13 +61,15 @@ func ExampleRunDatastoreContainer() {
 	}
 	_, err = dsClient.Put(ctx, k, &data)
 	if err != nil {
-		log.Fatalf("failed to put data: %v", err)
+		log.Printf("failed to put data: %v", err)
+		return
 	}
 
 	saved := Task{}
 	err = dsClient.Get(ctx, k, &saved)
 	if err != nil {
-		log.Fatalf("failed to get data: %v", err)
+		log.Printf("failed to get data: %v", err)
+		return
 	}
 
 	fmt.Println(saved.Description)

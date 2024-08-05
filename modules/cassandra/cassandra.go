@@ -114,9 +114,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *CassandraContainer
+	if container != nil {
+		c = &CassandraContainer{Container: container}
 	}
 
-	return &CassandraContainer{Container: container}, nil
+	return c, err
 }

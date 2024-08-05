@@ -15,18 +15,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/influxdb"
 )
 
-func containerCleanup(t *testing.T, container testcontainers.Container) {
-	err := container.Terminate(context.Background())
-	require.NoError(t, err, "failed to terminate container")
-}
-
 func TestV1Container(t *testing.T) {
 	ctx := context.Background()
 	influxDbContainer, err := influxdb.Run(ctx, "influxdb:1.8.10")
+	testcontainers.CleanupContainer(t, influxDbContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		containerCleanup(t, influxDbContainer)
-	})
 
 	state, err := influxDbContainer.State(ctx)
 	require.NoError(t, err)
@@ -44,10 +37,8 @@ func TestV2Container(t *testing.T) {
 		influxdb.WithUsername("root"),
 		influxdb.WithPassword("password"),
 	)
+	testcontainers.CleanupContainer(t, influxDbContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		containerCleanup(t, influxDbContainer)
-	})
 
 	state, err := influxDbContainer.State(ctx)
 	require.NoError(t, err)
@@ -63,10 +54,8 @@ func TestWithInitDb(t *testing.T) {
 		"influxdb:1.8.10",
 		influxdb.WithInitDb("testdata"),
 	)
+	testcontainers.CleanupContainer(t, influxDbContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		containerCleanup(t, influxDbContainer)
-	})
 
 	if state, err := influxDbContainer.State(ctx); err != nil || !state.Running {
 		require.NoError(t, err)
@@ -99,10 +88,8 @@ func TestWithConfigFile(t *testing.T) {
 		"influxdb:"+influxVersion,
 		influxdb.WithConfigFile(filepath.Join("testdata", "influxdb.conf")),
 	)
+	testcontainers.CleanupContainer(t, influxDbContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		containerCleanup(t, influxDbContainer)
-	})
 
 	if state, err := influxDbContainer.State(context.Background()); err != nil || !state.Running {
 		require.NoError(t, err)

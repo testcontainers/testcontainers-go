@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	wvt "github.com/weaviate/weaviate-go-client/v4/weaviate"
 	wvtgrpc "github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/weaviate"
 )
 
@@ -19,35 +21,21 @@ func TestWeaviate(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := weaviate.Run(ctx, "semitechnologies/weaviate:1.25.5")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.CleanupContainer(t, container)
+	require.NoError(t, err)
 
 	t.Run("HttpHostAddress", func(tt *testing.T) {
 		// httpHostAddress {
 		schema, host, err := container.HttpHostAddress(ctx)
 		// }
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		cli := &http.Client{}
 		resp, err := cli.Get(fmt.Sprintf("%s://%s", schema, host))
-		if err != nil {
-			tt.Fatalf("failed to perform GET request: %s", err)
-		}
+		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		if resp.StatusCode != http.StatusOK {
-			tt.Fatalf("unexpected status code: %d", resp.StatusCode)
-		}
+		require.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
 	t.Run("GrpcHostAddress", func(tt *testing.T) {

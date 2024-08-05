@@ -9,6 +9,7 @@ import (
 
 	ch "github.com/ClickHouse/clickhouse-go/v2"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 )
 
@@ -28,31 +29,35 @@ func ExampleRun() {
 		clickhouse.WithInitScripts(filepath.Join("testdata", "init-db.sh")),
 		clickhouse.WithConfigFile(filepath.Join("testdata", "config.xml")),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
 	defer func() {
-		if err := clickHouseContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(clickHouseContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := clickHouseContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
 
 	connectionString, err := clickHouseContainer.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err)
+		log.Printf("failed to get connection string: %s", err)
+		return
 	}
 
 	opts, err := ch.ParseDSN(connectionString)
 	if err != nil {
-		log.Fatalf("failed to parse DSN: %s", err)
+		log.Printf("failed to parse DSN: %s", err)
+		return
 	}
 
 	fmt.Println(strings.HasPrefix(opts.ClientInfo.String(), "clickhouse-go/"))

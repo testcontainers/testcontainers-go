@@ -15,3 +15,6 @@ TEST-*.xml
 tcvenv
 
 **/go.work
+
+# VS Code settings
+.vscode

@@ -24,21 +24,24 @@ func startContainer(ctx context.Context) (*nginxContainer, error) {
 		ContainerRequest: req,
 		Started:          true,
 	})
+	var nginxC *nginxContainer
+	if container != nil {
+		nginxC = &nginxContainer{Container: container}
+	}
 	if err != nil {
-		return nil, err
+		return nginxC, err
 	}
 
 	ip, err := container.Host(ctx)
 	if err != nil {
-		return nil, err
+		return nginxC, err
 	}
 
 	mappedPort, err := container.MappedPort(ctx, "80")
 	if err != nil {
-		return nil, err
+		return nginxC, err
 	}
 
-	uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
-
-	return &nginxContainer{Container: container, URI: uri}, nil
+	nginxC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+	return nginxC, nil
 }

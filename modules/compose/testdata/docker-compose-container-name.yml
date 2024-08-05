@@ -1,4 +1,3 @@
-version: '3'
 services:
   {{ .ServiceType }}-nginx:
     container_name: {{ .ServiceType }}-nginxy
