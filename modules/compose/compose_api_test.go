@@ -717,7 +717,7 @@ func TestDockerComposeUp(t *testing.T) {
 
 	config.Reset() // reset the config using the internal method to avoid the sync.Once
 	tcConfig := config.Read()
-	time.Sleep(tcConfig.RyukConnectionTimeout + 10*time.Second) // wait for the timeout of ryuk + 10 seconds to make sure that ryuk doesn't destory the compose project
+	time.Sleep(tcConfig.RyukConnectionTimeout + 10*time.Second) // wait for the timeout of ryuk + 10 seconds to make sure that ryuk doesn't destroy the compose project
 
 	nginxContainer, err := compose.ServiceContainer(context.Background(), "api-nginx")
 	require.NoError(t, err, "ServiceContainer")
