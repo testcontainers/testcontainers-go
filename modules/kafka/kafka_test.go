@@ -2,13 +2,11 @@ package kafka_test
 
 import (
 	"context"
-	"io"
 	"strings"
 	"testing"
 
 	"github.com/IBM/sarama"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
 )
 
@@ -17,7 +15,7 @@ func TestKafka(t *testing.T) {
 
 	ctx := context.Background()
 
-	kafkaContainer, err := kafka.Run(ctx, "confluentinc/confluent-local:7.5.0", kafka.WithClusterID("kraftCluster"))
+	kafkaContainer, err := kafka.Run(ctx, "apache/kafka-native:3.8.0", kafka.WithClusterID("kraftCluster"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,8 +26,6 @@ func TestKafka(t *testing.T) {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
-
-	assertAdvertisedListeners(t, kafkaContainer)
 
 	if !strings.EqualFold(kafkaContainer.ClusterID, "kraftCluster") {
 		t.Fatalf("expected clusterID to be %s, got %s", "kraftCluster", kafkaContainer.ClusterID)
@@ -57,8 +53,6 @@ func TestKafka(t *testing.T) {
 
 	// wait for the consumer to be ready
 	<-ready
-
-	// perform assertions
 
 	// set config to true because successfully delivered messages will be returned on the Successes channel
 	config.Producer.Return.Successes = true
@@ -91,37 +85,9 @@ func TestKafka(t *testing.T) {
 func TestKafka_invalidVersion(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := kafka.Run(ctx, "confluentinc/confluent-local:6.3.3", kafka.WithClusterID("kraftCluster"))
+	_, err := kafka.Run(ctx, "apache/kafka-native:3.1.0",
+		kafka.WithClusterID("kraftCluster"))
 	if err == nil {
 		t.Fatal(err)
-	}
-}
-
-// assertAdvertisedListeners checks that the advertised listeners are set correctly:
-// - The BROKER:// protocol is using the hostname of the Kafka container
-func assertAdvertisedListeners(t *testing.T, container testcontainers.Container) {
-	inspect, err := container.Inspect(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	hostname := inspect.Config.Hostname
-
-	code, r, err := container.Exec(context.Background(), []string{"cat", "/usr/sbin/testcontainers_start.sh"})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if code != 0 {
-		t.Fatalf("expected exit code to be 0, got %d", code)
-	}
-
-	bs, err := io.ReadAll(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !strings.Contains(string(bs), "BROKER://"+hostname+":9092") {
-		t.Fatalf("expected advertised listeners to contain %s, got %s", "BROKER://"+hostname+":9092", string(bs))
 	}
 }

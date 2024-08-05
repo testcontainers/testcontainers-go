@@ -13,7 +13,7 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	kafkaContainer, err := kafka.Run(ctx,
-		"confluentinc/confluent-local:7.5.0",
+		"apache/kafka-native:3.8.0",
 		kafka.WithClusterID("test-cluster"),
 	)
 	if err != nil {

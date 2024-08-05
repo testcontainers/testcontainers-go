@@ -3,31 +3,19 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"math"
+	"github.com/docker/docker/api/types/container"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"strings"
+	"time"
 
 	"github.com/docker/go-connections/nat"
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const publicPort = nat.Port("9093/tcp")
 const (
-	starterScript = "/usr/sbin/testcontainers_start.sh"
-
-	// starterScript {
-	starterScriptContent = `#!/bin/bash
-source /etc/confluent/docker/bash-config
-export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://%s:%d,BROKER://%s:9092
-echo Starting Kafka KRaft mode
-sed -i '/KAFKA_ZOOKEEPER_CONNECT/d' /etc/confluent/docker/configure
-echo 'kafka-storage format --ignore-formatted -t "$(kafka-storage random-uuid)" -c /etc/kafka/kafka.properties' >> /etc/confluent/docker/configure
-echo '' > /etc/confluent/docker/ensure
-/etc/confluent/docker/configure
-/etc/confluent/docker/launch`
-	// }
+	publicPort = nat.Port("9093/tcp")
 )
 
 // KafkaContainer represents the Kafka container type used in the module
@@ -39,7 +27,7 @@ type KafkaContainer struct {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Kafka container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error) {
-	return Run(ctx, "confluentinc/confluent-local:7.5.0", opts...)
+	return Run(ctx, "apache/kafka-native:3.8.0", opts...)
 }
 
 // Run creates an instance of the Kafka container type
@@ -47,65 +35,46 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	req := testcontainers.ContainerRequest{
 		Image:        img,
 		ExposedPorts: []string{string(publicPort)},
+		WaitingFor: wait.ForLog("Transition from STARTING to STARTED (kafka." +
+			"server.BrokerServer)").WithStartupTimeout(2 * time.Minute),
 		Env: map[string]string{
-			// envVars {
-			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT",
-			"KAFKA_INTER_BROKER_LISTENER_NAME":               "BROKER",
+			"KAFKA_LISTENERS":              "CONTROLLER://0.0.0.0:9094,PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092",
+			"KAFKA_ADVERTISED_LISTENERS":   "PLAINTEXT://localhost:9093,BROKER://localhost:9092",
+			"KAFKA_REST_BOOTSTRAP_SERVERS": "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
+			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "CONTROLLER" +
+				":PLAINTEXT,SASL_PLAINTEXT:SASL_PLAINTEXT," +
+				"PLAINTEXT:PLAINTEXT," +
+				"BROKER:PLAINTEXT",
+			"KAFKA_CONTROLLER_LISTENER_NAMES":                "CONTROLLER",
 			"KAFKA_BROKER_ID":                                "1",
 			"KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR":         "1",
 			"KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS":             "1",
+			"KAFKA_INTER_BROKER_LISTENER_NAME":               "BROKER",
+			"KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL":     "PLAIN",
 			"KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR": "1",
 			"KAFKA_TRANSACTION_STATE_LOG_MIN_ISR":            "1",
-			"KAFKA_LOG_FLUSH_INTERVAL_MESSAGES":              fmt.Sprintf("%d", math.MaxInt),
+			"KAFKA_LOG_FLUSH_INTERVAL_MESSAGES":              "9223372036854775807", // math.MaxInt value
 			"KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS":         "0",
 			"KAFKA_NODE_ID":                                  "1",
 			"KAFKA_PROCESS_ROLES":                            "broker,controller",
-			"KAFKA_CONTROLLER_LISTENER_NAMES":                "CONTROLLER",
-			// }
+			"KAFKA_CONTROLLER_QUORUM_VOTERS":                 "1@localhost:9094",
+			"KAFKA_SASL_ENABLED_MECHANISMS":                  "PLAIN",
+			"KAFKA_OPTS":                                     " ",
 		},
-		Entrypoint: []string{"sh"},
-		// this CMD will wait for the starter script to be copied into the container and then execute it
-		Cmd: []string{"-c", "while [ ! -f " + starterScript + " ]; do sleep 0.1; done; bash " + starterScript},
-		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
-			{
-				PostStarts: []testcontainers.ContainerHook{
-					// 1. copy the starter script into the container
-					func(ctx context.Context, c testcontainers.Container) error {
-						host, err := c.Host(ctx)
-						if err != nil {
-							return err
-						}
-
-						inspect, err := c.Inspect(ctx)
-						if err != nil {
-							return err
-						}
-
-						hostname := inspect.Config.Hostname
-
-						port, err := c.MappedPort(ctx, publicPort)
-						if err != nil {
-							return err
-						}
-
-						scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname)
-
-						return c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755)
-					},
-					// 2. wait for the Kafka server to be ready
-					func(ctx context.Context, c testcontainers.Container) error {
-						return wait.ForLog(".*Transitioning from RECOVERY to RUNNING.*").AsRegexp().WaitUntilReady(ctx, c)
+		HostConfigModifier: func(config *container.HostConfig) {
+			config.PortBindings = map[nat.Port][]nat.PortBinding{
+				"9093/tcp": {
+					{
+						HostIP:   "0.0.0.0",
+						HostPort: "9093",
 					},
 				},
-			},
+			}
 		},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
-		Started:          true,
 	}
 
 	for _, opt := range opts {
@@ -118,13 +87,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if err != nil {
 		return nil, err
 	}
-
 	clusterID := genericContainerReq.Env["CLUSTER_ID"]
-
 	configureControllerQuorumVoters(&genericContainerReq)
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := container.Start(ctx); err != nil {
 		return nil, err
 	}
 
@@ -142,12 +113,12 @@ func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 // Brokers retrieves the broker connection strings from Kafka with only one entry,
 // defined by the exposed public port.
 func (kc *KafkaContainer) Brokers(ctx context.Context) ([]string, error) {
-	host, err := kc.Host(ctx)
+	host, err := kc.Container.Host(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	port, err := kc.MappedPort(ctx, publicPort)
+	port, err := kc.Container.MappedPort(ctx, publicPort)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +158,7 @@ func validateKRaftVersion(fqName string) error {
 	image := fqName[:strings.LastIndex(fqName, ":")]
 	version := fqName[strings.LastIndex(fqName, ":")+1:]
 
-	if !strings.EqualFold(image, "confluentinc/confluent-local") {
+	if !strings.EqualFold(image, "apache/kafka-native") {
 		// do not validate if the image is not the official one.
 		// not raising an error here, letting the image to start and
 		// eventually evaluate an error if it exists.
@@ -199,8 +170,8 @@ func validateKRaftVersion(fqName string) error {
 		version = fmt.Sprintf("v%s", version)
 	}
 
-	if semver.Compare(version, "v7.4.0") < 0 { // version < v7.4.0
-		return fmt.Errorf("version=%s. KRaft mode is only available since version 7.4.0", version)
+	if semver.Compare(version, "v3.8.0") < 0 { // version < v7.4.0
+		return fmt.Errorf("version=%s. KRaft mode is only available since version 3.8.0", version)
 	}
 
 	return nil

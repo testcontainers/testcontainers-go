@@ -70,7 +70,7 @@ func TestValidateKRaftVersion(t *testing.T) {
 	}{
 		{
 			name:    "Official: valid version",
-			image:   "confluentinc/confluent-local:7.5.0",
+			image:   "apache/kafka-native:3.8.0",
 			wantErr: false,
 		},
 		{
