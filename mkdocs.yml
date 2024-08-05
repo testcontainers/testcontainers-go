@@ -76,6 +76,7 @@ nav:
         - modules/dolt.md
         - modules/elasticsearch.md
         - modules/gcloud.md
+        - modules/grafana-lgtm.md
         - modules/inbucket.md
         - modules/influxdb.md
         - modules/k3s.md
