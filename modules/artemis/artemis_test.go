@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/go-stomp/stomp/v3"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/artemis"
@@ -65,31 +65,31 @@ func TestArtemis(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			container, err := artemis.Run(ctx, "docker.io/apache/activemq-artemis:2.30.0-alpine", test.opts...)
-			require.NoError(t, err)
-			t.Cleanup(func() { require.NoError(t, container.Terminate(ctx), "failed to terminate container") })
+			assert.NilError(t, err)
+			t.Cleanup(func() { assert.NilError(t, container.Terminate(ctx), "failed to terminate container") })
 
 			// consoleURL {
 			u, err := container.ConsoleURL(ctx)
 			// }
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			res, err := http.Get(u)
-			require.NoError(t, err, "failed to access console")
+			assert.NilError(t, err, "failed to access console")
 			res.Body.Close()
-			assert.Equal(t, http.StatusOK, res.StatusCode, "failed to access console")
+			assert.Check(t, is.Equal(http.StatusOK, res.StatusCode), "failed to access console")
 
 			if test.user != "" {
-				assert.Equal(t, test.user, container.User(), "unexpected user")
+				assert.Check(t, is.Equal(test.user, container.User()), "unexpected user")
 			}
 
 			if test.pass != "" {
-				assert.Equal(t, test.pass, container.Password(), "unexpected password")
+				assert.Check(t, is.Equal(test.pass, container.Password()), "unexpected password")
 			}
 
 			// brokerEndpoint {
 			host, err := container.BrokerEndpoint(ctx)
 			// }
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			var opt []func(*stomp.Conn) error
 			if test.user != "" || test.pass != "" {
@@ -97,22 +97,22 @@ func TestArtemis(t *testing.T) {
 			}
 
 			conn, err := stomp.Dial("tcp", host, opt...)
-			require.NoError(t, err, "failed to connect")
-			t.Cleanup(func() { require.NoError(t, conn.Disconnect()) })
+			assert.NilError(t, err, "failed to connect")
+			t.Cleanup(func() { assert.NilError(t, conn.Disconnect()) })
 
 			sub, err := conn.Subscribe("test", stomp.AckAuto)
-			require.NoError(t, err, "failed to subscribe")
-			t.Cleanup(func() { require.NoError(t, sub.Unsubscribe()) })
+			assert.NilError(t, err, "failed to subscribe")
+			t.Cleanup(func() { assert.NilError(t, sub.Unsubscribe()) })
 
 			err = conn.Send("test", "", []byte("test"))
-			require.NoError(t, err, "failed to send")
+			assert.NilError(t, err, "failed to send")
 
 			ticker := time.NewTicker(10 * time.Second)
 			select {
 			case <-ticker.C:
 				t.Fatal("timed out waiting for message")
 			case msg := <-sub.C:
-				require.Equal(t, "test", string(msg.Body), "received unexpected message")
+				assert.Equal(t, "test", string(msg.Body), "received unexpected message")
 			}
 
 			if test.hook != nil {
@@ -126,15 +126,15 @@ func expectQueue(t *testing.T, container *artemis.Container, queueName string) {
 	t.Helper()
 
 	u, err := container.ConsoleURL(context.Background())
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	r, err := http.Get(u + `/jolokia/read/org.apache.activemq.artemis:broker="0.0.0.0"/QueueNames`)
-	require.NoError(t, err, "failed to request QueueNames")
+	assert.NilError(t, err, "failed to request QueueNames")
 	defer r.Body.Close()
 
 	var res struct{ Value []string }
 	err = json.NewDecoder(r.Body).Decode(&res)
-	require.NoError(t, err, "failed to decode QueueNames response")
+	assert.NilError(t, err, "failed to decode QueueNames response")
 
-	require.Containsf(t, res.Value, queueName, "should contain queue")
+	assert.Assert(t, is.Contains(res.Value, queueName), "should contain queue")
 }

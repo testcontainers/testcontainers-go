@@ -5,13 +5,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 )
 
 func getTestRootContext(t *testing.T) context.Context {
 	current, err := os.Getwd()
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	return context.New(filepath.Dir(current))
 }

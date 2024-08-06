@@ -12,7 +12,8 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -36,13 +37,13 @@ func TestGenericReusableContainer(t *testing.T) {
 		},
 		Started: true,
 	})
-	require.NoError(t, err)
-	require.True(t, n1.IsRunning())
+	assert.NilError(t, err)
+	assert.Assert(t, n1.IsRunning())
 	terminateContainerOnEnd(t, ctx, n1)
 
 	copiedFileName := "hello_copy.sh"
 	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	tests := []struct {
 		name          string
@@ -95,12 +96,12 @@ func TestGenericReusableContainer(t *testing.T) {
 				Reuse:   tc.reuseOption,
 			})
 
-			require.NoError(t, tc.errorMatcher(err))
+			assert.NilError(t, tc.errorMatcher(err))
 
 			if err == nil {
 				c, _, err := n2.Exec(ctx, []string{"/bin/ash", copiedFileName})
-				require.NoError(t, err)
-				require.Zero(t, c)
+				assert.NilError(t, err)
+				assert.Equal(t, c, 0)
 			}
 		})
 	}
@@ -121,8 +122,8 @@ func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
 		},
 		Started: true,
 	})
-	require.Error(t, err)
-	require.NotNil(t, c)
+	assert.Assert(t, is.ErrorContains(err, ""))
+	assert.Assert(t, c != nil)
 	terminateContainerOnEnd(t, context.Background(), c)
 }
 
@@ -138,15 +139,15 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 
 			t.Log(output)
 			// check is reuse container with WaitingFor work correctly.
-			require.True(t, strings.Contains(output, "⏳ Waiting for container id"))
-			require.True(t, strings.Contains(output, "🔔 Container is ready"))
+			assert.Assert(t, strings.Contains(output, "⏳ Waiting for container id"))
+			assert.Assert(t, strings.Contains(output, "🔔 Container is ready"))
 		}()
 	}
 
 	wg.Wait()
 
 	cli, err := NewDockerClientWithOpts(context.Background())
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	f := filters.NewArgs(filters.KeyValuePair{Key: "name", Value: reusableContainerName})
 
@@ -154,11 +155,11 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 		All:     true,
 		Filters: f,
 	})
-	require.NoError(t, err)
-	require.Len(t, ctrs, 1)
+	assert.NilError(t, err)
+	assert.Assert(t, is.Len(ctrs, 1))
 
 	nginxC, err := containerFromDockerResponse(context.Background(), ctrs[0])
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	terminateContainerOnEnd(t, context.Background(), nginxC)
 }
@@ -169,7 +170,7 @@ func createReuseContainerInSubprocess(t *testing.T) string {
 	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
 
 	output, err := cmd.CombinedOutput()
-	require.NoError(t, err, string(output))
+	assert.NilError(t, err, string(output))
 
 	return string(output)
 }
@@ -194,6 +195,6 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 		Started: true,
 		Reuse:   true,
 	})
-	require.NoError(t, err)
-	require.True(t, nginxC.IsRunning())
+	assert.NilError(t, err)
+	assert.Assert(t, nginxC.IsRunning())
 }

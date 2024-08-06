@@ -13,8 +13,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 
 	"github.com/testcontainers/testcontainers-go"
 	testcontainerspulsar "github.com/testcontainers/testcontainers-go/modules/pulsar"
@@ -26,7 +25,7 @@ func TestPulsar(t *testing.T) {
 	defer cancel()
 
 	nw, err := tcnetwork.New(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	nwName := nw.Name
 
@@ -93,31 +92,31 @@ func TestPulsar(t *testing.T) {
 				"docker.io/apachepulsar/pulsar:2.10.2",
 				tt.opts...,
 			)
-			require.NoError(t, err)
+			assert.NilError(t, err)
 			defer func() {
 				err := c.Terminate(ctx)
-				require.NoError(t, err)
+				assert.NilError(t, err)
 			}()
 
 			// getBrokerURL {
 			brokerURL, err := c.BrokerURL(ctx)
 			// }
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			// getAdminURL {
 			serviceURL, err := c.HTTPServiceURL(ctx)
 			// }
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
-			assert.True(t, strings.HasPrefix(brokerURL, "pulsar://"))
-			assert.True(t, strings.HasPrefix(serviceURL, "http://"))
+			assert.Check(t, strings.HasPrefix(brokerURL, "pulsar://"))
+			assert.Check(t, strings.HasPrefix(serviceURL, "http://"))
 
 			pc, err := pulsar.NewClient(pulsar.ClientOptions{
 				URL:               brokerURL,
 				OperationTimeout:  30 * time.Second,
 				ConnectionTimeout: 30 * time.Second,
 			})
-			require.NoError(t, err)
+			assert.NilError(t, err)
 			t.Cleanup(func() { pc.Close() })
 
 			subscriptionName := "pulsar-test"
@@ -127,7 +126,7 @@ func TestPulsar(t *testing.T) {
 				SubscriptionName: subscriptionName,
 				Type:             pulsar.Exclusive,
 			})
-			require.NoError(t, err)
+			assert.NilError(t, err)
 			t.Cleanup(func() { consumer.Close() })
 
 			msgChan := make(chan []byte)
@@ -148,12 +147,12 @@ func TestPulsar(t *testing.T) {
 			producer, err := pc.CreateProducer(pulsar.ProducerOptions{
 				Topic: "test-topic",
 			})
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			_, err = producer.Send(ctx, &pulsar.ProducerMessage{
 				Payload: []byte("hello world"),
 			})
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			ticker := time.NewTicker(1 * time.Minute)
 			select {
@@ -171,24 +170,24 @@ func TestPulsar(t *testing.T) {
 			}
 
 			resp, err := httpClient.Get(serviceURL + "/admin/v2/persistent/public/default/test-topic/stats")
-			require.NoError(t, err)
+			assert.NilError(t, err)
 			defer resp.Body.Close()
 
 			body, err := io.ReadAll(resp.Body)
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			var stats map[string]interface{}
 			err = json.Unmarshal(body, &stats)
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			subscriptions := stats["subscriptions"]
-			require.NotNil(t, subscriptions)
+			assert.Assert(t, subscriptions != nil)
 
 			subscriptionsMap := subscriptions.(map[string]interface{})
 
 			// check that the subscription exists
 			_, ok := subscriptionsMap[subscriptionName]
-			assert.True(t, ok)
+			assert.Check(t, ok)
 		})
 	}
 
@@ -196,6 +195,6 @@ func TestPulsar(t *testing.T) {
 	// and there are no active endpoints on the network
 	t.Cleanup(func() {
 		err := nw.Remove(context.Background())
-		require.NoError(t, err)
+		assert.NilError(t, err)
 	})
 }

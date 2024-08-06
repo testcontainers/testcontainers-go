@@ -11,8 +11,8 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/image"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 )
 
 func TestBuildImageFromDockerfile(t *testing.T) {
@@ -36,11 +36,11 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 		},
 		// }
 	})
-	require.NoError(t, err)
-	assert.Equal(t, "test-repo:test-tag", tag)
+	assert.NilError(t, err)
+	assert.Check(t, is.Equal("test-repo:test-tag", tag))
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	t.Cleanup(func() {
 		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
@@ -71,11 +71,11 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 			Repo:       "test-repo",
 		},
 	})
-	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(tag, "test-repo:"))
+	assert.NilError(t, err)
+	assert.Check(t, strings.HasPrefix(tag, "test-repo:"))
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	t.Cleanup(func() {
 		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
@@ -106,11 +106,11 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 			Tag:        "test-tag",
 		},
 	})
-	require.NoError(t, err)
-	assert.True(t, strings.HasSuffix(tag, ":test-tag"))
+	assert.NilError(t, err)
+	assert.Check(t, strings.HasSuffix(tag, ":test-tag"))
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	t.Cleanup(func() {
 		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
@@ -141,18 +141,18 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 			},
 			Started: true,
 		})
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		r, err := c.Logs(ctx)
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		logs, err := io.ReadAll(r)
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
-		assert.Equal(t, fmt.Sprintf("target%d\n\n", i), string(logs))
+		assert.Check(t, is.Equal(fmt.Sprintf("target%d\n\n", i), string(logs)))
 
 		t.Cleanup(func() {
-			require.NoError(t, c.Terminate(ctx))
+			assert.NilError(t, c.Terminate(ctx))
 		})
 	}
 }
@@ -214,5 +214,5 @@ func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
 		},
 		Started: true,
 	})
-	require.Error(t, err)
+	assert.Assert(t, is.ErrorContains(err, ""))
 }

@@ -11,8 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/docker/go-connections/nat"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/localstack"
@@ -74,10 +74,10 @@ func TestS3(t *testing.T) {
 	ctx := context.Background()
 
 	container, err := localstack.Run(ctx, "localstack/localstack:1.4.0")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	s3Client, err := s3Client(ctx, container)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	t.Run("S3 operations", func(t *testing.T) {
 		bucketName := "localstack-bucket"
@@ -86,8 +86,8 @@ func TestS3(t *testing.T) {
 		outputBucket, err := s3Client.CreateBucket(ctx, &s3.CreateBucketInput{
 			Bucket: aws.String(bucketName),
 		})
-		require.NoError(t, err)
-		assert.NotNil(t, outputBucket)
+		assert.NilError(t, err)
+		assert.Check(t, outputBucket != nil)
 
 		// put object
 		s3Key1 := "key1"
@@ -100,31 +100,31 @@ func TestS3(t *testing.T) {
 			ContentType:        aws.String("application/text"),
 			ContentDisposition: aws.String("attachment"),
 		})
-		require.NoError(t, err)
-		assert.NotNil(t, outputObject)
+		assert.NilError(t, err)
+		assert.Check(t, outputObject != nil)
 
 		t.Run("List Buckets", func(t *testing.T) {
 			output, err := s3Client.ListBuckets(ctx, &s3.ListBucketsInput{})
-			require.NoError(t, err)
-			assert.NotNil(t, output)
+			assert.NilError(t, err)
+			assert.Check(t, output != nil)
 
 			buckets := output.Buckets
-			assert.Len(t, buckets, 1)
-			assert.Equal(t, bucketName, *buckets[0].Name)
+			assert.Check(t, is.Len(buckets, 1))
+			assert.Check(t, is.Equal(bucketName, *buckets[0].Name))
 		})
 
 		t.Run("List Objects in Bucket", func(t *testing.T) {
 			output, err := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 				Bucket: aws.String(bucketName),
 			})
-			require.NoError(t, err)
-			assert.NotNil(t, output)
+			assert.NilError(t, err)
+			assert.Check(t, output != nil)
 
 			objects := output.Contents
 
-			assert.Len(t, objects, 1)
-			assert.Equal(t, s3Key1, *objects[0].Key)
-			assert.Equal(t, aws.Int64(int64(len(body1))), objects[0].Size)
+			assert.Check(t, is.Len(objects, 1))
+			assert.Check(t, is.Equal(s3Key1, *objects[0].Key))
+			assert.Check(t, is.DeepEqual(aws.Int64(int64(len(body1))), objects[0].Size))
 		})
 	})
 }

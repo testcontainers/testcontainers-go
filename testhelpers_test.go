@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -21,6 +21,6 @@ func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr testcontain
 	}
 	tb.Cleanup(func() {
 		tb.Log("terminating container")
-		require.NoError(tb, ctr.Terminate(ctx))
+		assert.NilError(tb, ctr.Terminate(ctx))
 	})
 }

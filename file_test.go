@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 )
 
 func Test_IsDir(t *testing.T) {
@@ -45,11 +45,11 @@ func Test_IsDir(t *testing.T) {
 		t.Run(test.filepath, func(t *testing.T) {
 			result, err := isDir(test.filepath)
 			if test.err != nil {
-				require.Error(t, err, "expected error")
+				assert.Assert(t, is.ErrorContains(err, ""), "expected error")
 			} else {
-				require.NoError(t, err, "not expected error")
+				assert.NilError(t, err, "not expected error")
 			}
-			assert.Equal(t, test.expected, result)
+			assert.Check(t, is.Equal(test.expected, result))
 		})
 	}
 }
@@ -72,7 +72,7 @@ func Test_TarDir(t *testing.T) {
 			src := originalSrc
 			if test.abs {
 				absSrc, err := filepath.Abs(src)
-				require.NoError(t, err)
+				assert.NilError(t, err)
 
 				src = absSrc
 			}
@@ -106,7 +106,7 @@ func Test_TarDir(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				assert.Equal(t, srcBytes, untarBytes)
+				assert.Check(t, is.DeepEqual(srcBytes, untarBytes))
 			}
 		})
 	}
@@ -136,7 +136,7 @@ func Test_TarFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, b, untarBytes)
+	assert.Check(t, is.DeepEqual(b, untarBytes))
 }
 
 // untar takes a destination path and a reader; a tar reader loops over the tarfile

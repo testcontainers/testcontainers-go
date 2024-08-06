@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	capi "github.com/hashicorp/consul/api"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/consul"
@@ -41,17 +41,17 @@ func TestConsul(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			container, err := consul.Run(ctx, "docker.io/hashicorp/consul:1.15", test.opts...)
-			require.NoError(t, err)
-			t.Cleanup(func() { require.NoError(t, container.Terminate(ctx), "failed to terminate container") })
+			assert.NilError(t, err)
+			t.Cleanup(func() { assert.NilError(t, container.Terminate(ctx), "failed to terminate container") })
 
 			// Check if API is up
 			host, err := container.ApiEndpoint(ctx)
-			require.NoError(t, err)
-			assert.NotEmpty(t, len(host))
+			assert.NilError(t, err)
+			assert.Check(t, len(len(host)) != 0)
 
 			res, err := http.Get("http://" + host)
-			require.NoError(t, err)
-			assert.Equal(t, http.StatusOK, res.StatusCode)
+			assert.NilError(t, err)
+			assert.Check(t, is.Equal(http.StatusOK, res.StatusCode))
 
 			cfg := capi.DefaultConfig()
 			cfg.Address = host
@@ -59,15 +59,15 @@ func TestConsul(t *testing.T) {
 			reg := &capi.AgentServiceRegistration{ID: "abcd", Name: test.name}
 
 			client, err := capi.NewClient(cfg)
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			// Register / Unregister service
 			s := client.Agent()
 			err = s.ServiceRegister(reg)
-			require.NoError(t, err)
+			assert.NilError(t, err)
 
 			err = s.ServiceDeregister("abcd")
-			require.NoError(t, err)
+			assert.NilError(t, err)
 		})
 	}
 }

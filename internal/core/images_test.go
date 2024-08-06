@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 )
 
 const (
@@ -66,11 +66,11 @@ func TestExtractImagesFromDockerfile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			images, err := ExtractImagesFromDockerfile(tt.dockerfile, tt.buildArgs)
 			if tt.expectedError {
-				require.Error(t, err)
-				assert.Empty(t, images)
+				assert.Assert(t, is.ErrorContains(err, ""))
+				assert.Check(t, is.Len(images, 0))
 			} else {
-				require.NoError(t, err)
-				assert.Equal(t, tt.expected, images)
+				assert.NilError(t, err)
+				assert.Check(t, is.DeepEqual(tt.expected, images))
 			}
 		})
 	}
@@ -222,7 +222,7 @@ func TestExtractRegistry(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			actual := ExtractRegistry(test.image, IndexDockerIO)
-			assert.Equal(t, test.expected, actual, "expected %s, got %s", test.expected, actual)
+			assert.Check(t, is.Equal(test.expected, actual), "expected %s, got %s", test.expected, actual)
 		})
 	}
 }

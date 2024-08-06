@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -29,35 +30,35 @@ func TestGetDockerConfig(t *testing.T) {
 	// Verify that the default docker config file exists before any test in this suite runs.
 	// Then, we can safely run the tests that rely on it.
 	defaultCfg, err := dockercfg.LoadDefaultConfig()
-	require.NoError(t, err)
-	require.NotEmpty(t, defaultCfg)
+	assert.NilError(t, err)
+	assert.Check(t, !reflect.ValueOf(defaultCfg).IsZero())
 
 	t.Run("without DOCKER_CONFIG env var retrieves default", func(t *testing.T) {
 		t.Setenv("DOCKER_CONFIG", "")
 
 		cfg, err := getDockerConfig()
-		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
+		assert.NilError(t, err)
+		assert.Check(t, !reflect.ValueOf(cfg).IsZero())
 
-		assert.Equal(t, defaultCfg, cfg)
+		assert.Check(t, is.DeepEqual(defaultCfg, cfg))
 	})
 
 	t.Run("with DOCKER_CONFIG env var pointing to a non-existing file raises error", func(t *testing.T) {
 		t.Setenv("DOCKER_CONFIG", filepath.Join(testDockerConfigDirPath, "non-existing"))
 
 		cfg, err := getDockerConfig()
-		require.Error(t, err)
-		require.Empty(t, cfg)
+		assert.Assert(t, is.ErrorContains(err, ""))
+		assert.Assert(t, is.Len(cfg, 0))
 	})
 
 	t.Run("with DOCKER_CONFIG env var", func(t *testing.T) {
 		t.Setenv("DOCKER_CONFIG", testDockerConfigDirPath)
 
 		cfg, err := getDockerConfig()
-		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
+		assert.NilError(t, err)
+		assert.Check(t, !reflect.ValueOf(cfg).IsZero())
 
-		assert.Len(t, cfg.AuthConfigs, 3)
+		assert.Check(t, is.Len(cfg.AuthConfigs, 3))
 
 		authCfgs := cfg.AuthConfigs
 
@@ -82,10 +83,10 @@ func TestGetDockerConfig(t *testing.T) {
 		t.Setenv("DOCKER_CONFIG", testDockerConfigDirPath)
 
 		cfg, err := getDockerConfig()
-		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
+		assert.NilError(t, err)
+		assert.Check(t, !reflect.ValueOf(cfg).IsZero())
 
-		assert.Len(t, cfg.AuthConfigs, 1)
+		assert.Check(t, is.Len(cfg.AuthConfigs, 1))
 
 		authCfgs := cfg.AuthConfigs
 
@@ -108,13 +109,13 @@ func TestGetDockerConfig(t *testing.T) {
 		}`)
 
 		registry, cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
-		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
+		assert.NilError(t, err)
+		assert.Check(t, !reflect.ValueOf(registry).IsZero())
 
-		assert.Equal(t, exampleAuth, registry)
-		assert.Equal(t, "gopher", cfg.Username)
-		assert.Equal(t, "secret", cfg.Password)
-		assert.Equal(t, base64, cfg.Auth)
+		assert.Check(t, is.Equal(exampleAuth, registry))
+		assert.Check(t, is.Equal("gopher", cfg.Username))
+		assert.Check(t, is.Equal("secret", cfg.Password))
+		assert.Check(t, is.Equal(base64, cfg.Auth))
 	})
 
 	t.Run("match registry authentication by host", func(t *testing.T) {
@@ -130,13 +131,13 @@ func TestGetDockerConfig(t *testing.T) {
 		}`)
 
 		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
-		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
+		assert.NilError(t, err)
+		assert.Check(t, !reflect.ValueOf(registry).IsZero())
 
-		assert.Equal(t, imageReg, registry)
-		assert.Equal(t, "gopher", cfg.Username)
-		assert.Equal(t, "secret", cfg.Password)
-		assert.Equal(t, base64, cfg.Auth)
+		assert.Check(t, is.Equal(imageReg, registry))
+		assert.Check(t, is.Equal("gopher", cfg.Username))
+		assert.Check(t, is.Equal("secret", cfg.Password))
+		assert.Check(t, is.Equal(base64, cfg.Auth))
 	})
 
 	t.Run("fail to match registry authentication due to invalid host", func(t *testing.T) {
@@ -153,10 +154,10 @@ func TestGetDockerConfig(t *testing.T) {
 		}`)
 
 		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
-		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
-		require.Empty(t, cfg)
+		assert.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
+		assert.Assert(t, is.Len(cfg, 0))
 
-		assert.Equal(t, imageReg, registry)
+		assert.Check(t, is.Equal(imageReg, registry))
 	})
 
 	t.Run("fail to match registry authentication by host with empty URL scheme creds and missing default", func(t *testing.T) {
@@ -180,10 +181,10 @@ func TestGetDockerConfig(t *testing.T) {
 		}`)
 
 		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
-		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
-		require.Empty(t, cfg)
+		assert.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
+		assert.Assert(t, is.Len(cfg, 0))
 
-		assert.Equal(t, imageReg, registry)
+		assert.Check(t, is.Equal(imageReg, registry))
 	})
 }
 
@@ -199,7 +200,7 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 	}
 
 	redisC, err := prepareRedisImage(ctx, req, t)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, redisC)
 }
 
@@ -250,7 +251,7 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 	}
 
 	redisC, err := prepareRedisImage(ctx, req, t)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, redisC)
 }
 
@@ -282,7 +283,7 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 	}
 
 	redisC, err := prepareRedisImage(ctx, req, t)
-	require.Error(t, err)
+	assert.Assert(t, is.ErrorContains(err, ""))
 	terminateContainerOnEnd(t, ctx, redisC)
 }
 
@@ -310,14 +311,14 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, redisContainer)
 }
 
 func prepareLocalRegistryWithAuth(t *testing.T) string {
 	ctx := context.Background()
 	wd, err := os.Getwd()
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	// copyDirectoryToContainer {
 	req := ContainerRequest{
 		Image:        "registry:2",
@@ -349,10 +350,10 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	}
 
 	registryC, err := GenericContainer(ctx, genContainerReq)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	mappedPort, err := registryC.MappedPort(ctx, "5000/tcp")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	mp := mappedPort.Port()
 
@@ -360,7 +361,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 		removeImageFromLocalCache(t, "localhost:"+mp+"/redis:5.0-alpine")
 	})
 	t.Cleanup(func() {
-		require.NoError(t, registryC.Terminate(context.Background()))
+		assert.NilError(t, registryC.Terminate(context.Background()))
 	})
 
 	_, cancel := context.WithCancel(context.Background())

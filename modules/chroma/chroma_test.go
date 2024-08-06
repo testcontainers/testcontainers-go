@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	chromago "github.com/amikos-tech/chroma-go"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 
 	"github.com/testcontainers/testcontainers-go/modules/chroma"
 )
@@ -59,7 +59,7 @@ func TestChroma(t *testing.T) {
 		}
 
 		hb, err := chromaClient.Heartbeat(context.TODO())
-		require.NoError(tt, err)
-		require.NotNil(tt, hb["nanosecond heartbeat"])
+		assert.NilError(tt, err)
+		assert.Assert(tt, hb["nanosecond heartbeat"] != nil)
 	})
 }

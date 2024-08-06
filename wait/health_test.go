@@ -8,7 +8,8 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
@@ -58,8 +59,8 @@ func TestWaitForHealthTimesOutForUnhealthy(t *testing.T) {
 	wg := NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
 	err := wg.WaitUntilReady(context.Background(), target)
 
-	require.Error(t, err)
-	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Assert(t, is.ErrorContains(err, ""))
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 }
 
 // TestWaitForHealthSucceeds ensures that a healthy container always succeeds.
@@ -73,7 +74,7 @@ func TestWaitForHealthSucceeds(t *testing.T) {
 	wg := NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
 	err := wg.WaitUntilReady(context.Background(), target)
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 }
 
 // TestWaitForHealthWithNil checks that an initial `nil` Health will not cause a panic,
@@ -97,7 +98,7 @@ func TestWaitForHealthWithNil(t *testing.T) {
 	}(target)
 
 	err := wg.WaitUntilReady(context.Background(), target)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 }
 
 // TestWaitFailsForNilHealth checks that Health always nil fails (but will NOT cause a panic)
@@ -113,8 +114,8 @@ func TestWaitFailsForNilHealth(t *testing.T) {
 		WithPollInterval(100 * time.Millisecond)
 
 	err := wg.WaitUntilReady(context.Background(), target)
-	require.Error(t, err)
-	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Assert(t, is.ErrorContains(err, ""))
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 }
 
 func TestWaitForHealthFailsDueToOOMKilledContainer(t *testing.T) {
@@ -128,8 +129,8 @@ func TestWaitForHealthFailsDueToOOMKilledContainer(t *testing.T) {
 		WithPollInterval(100 * time.Millisecond)
 
 	err := wg.WaitUntilReady(context.Background(), target)
-	require.Error(t, err)
-	require.EqualError(t, err, "container crashed with out-of-memory (OOMKilled)")
+	assert.Assert(t, is.ErrorContains(err, ""))
+	assert.Error(t, err, "container crashed with out-of-memory (OOMKilled)")
 }
 
 func TestWaitForHealthFailsDueToExitedContainer(t *testing.T) {
@@ -144,8 +145,8 @@ func TestWaitForHealthFailsDueToExitedContainer(t *testing.T) {
 		WithPollInterval(100 * time.Millisecond)
 
 	err := wg.WaitUntilReady(context.Background(), target)
-	require.Error(t, err)
-	require.EqualError(t, err, "container exited with code 1")
+	assert.Assert(t, is.ErrorContains(err, ""))
+	assert.Error(t, err, "container exited with code 1")
 }
 
 func TestWaitForHealthFailsDueToUnexpectedContainerStatus(t *testing.T) {
@@ -159,6 +160,6 @@ func TestWaitForHealthFailsDueToUnexpectedContainerStatus(t *testing.T) {
 		WithPollInterval(100 * time.Millisecond)
 
 	err := wg.WaitUntilReady(context.Background(), target)
-	require.Error(t, err)
-	require.EqualError(t, err, "unexpected container status \"dead\"")
+	assert.Assert(t, is.ErrorContains(err, ""))
+	assert.Error(t, err, "unexpected container status \"dead\"")
 }

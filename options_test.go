@@ -5,8 +5,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
@@ -50,22 +50,22 @@ func TestOverrideContainerRequest(t *testing.T) {
 
 	// the toBeMergedRequest should be merged into the req
 	err := testcontainers.CustomizeRequest(toBeMergedRequest)(&req)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	// toBeMergedRequest should not be changed
-	assert.Equal(t, "", toBeMergedRequest.Env["BAR"])
-	assert.Len(t, toBeMergedRequest.ExposedPorts, 1)
-	assert.Equal(t, "67890/tcp", toBeMergedRequest.ExposedPorts[0])
+	assert.Check(t, is.Equal("", toBeMergedRequest.Env["BAR"]))
+	assert.Check(t, is.Len(toBeMergedRequest.ExposedPorts, 1))
+	assert.Check(t, is.Equal("67890/tcp", toBeMergedRequest.ExposedPorts[0]))
 
 	// req should be merged with toBeMergedRequest
-	assert.Equal(t, "FOO", req.Env["FOO"])
-	assert.Equal(t, "BAR", req.Env["BAR"])
-	assert.Equal(t, "bar", req.Image)
-	assert.Equal(t, []string{"12345/tcp", "67890/tcp"}, req.ExposedPorts)
-	assert.Equal(t, []string{"foo", "bar", "baaz", "foo1", "bar1"}, req.Networks)
-	assert.Equal(t, []string{"foo0", "foo1", "foo2", "foo3"}, req.NetworkAliases["foo"])
-	assert.Equal(t, []string{"bar"}, req.NetworkAliases["foo1"])
-	assert.Equal(t, wait.ForLog("foo"), req.WaitingFor)
+	assert.Check(t, is.Equal("FOO", req.Env["FOO"]))
+	assert.Check(t, is.Equal("BAR", req.Env["BAR"]))
+	assert.Check(t, is.Equal("bar", req.Image))
+	assert.Check(t, is.DeepEqual([]string{"12345/tcp", "67890/tcp"}, req.ExposedPorts))
+	assert.Check(t, is.DeepEqual([]string{"foo", "bar", "baaz", "foo1", "bar1"}, req.Networks))
+	assert.Check(t, is.DeepEqual([]string{"foo0", "foo1", "foo2", "foo3"}, req.NetworkAliases["foo"]))
+	assert.Check(t, is.DeepEqual([]string{"bar"}, req.NetworkAliases["foo1"]))
+	assert.Check(t, is.DeepEqual(wait.ForLog("foo"), req.WaitingFor))
 }
 
 type msgsLogConsumer struct {
@@ -89,21 +89,21 @@ func TestWithLogConsumers(t *testing.T) {
 	lc := &msgsLogConsumer{}
 
 	err := testcontainers.WithLogConsumers(lc)(&req)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
 	// we expect an error because the MySQL environment variables are not set
 	// but this is expected because we just want to test the log consumer
-	require.EqualError(t, err, "failed to start container: container exited with code 1")
+	assert.Error(t, err, "failed to start container: container exited with code 1")
 	// c might be not nil even on error
 	if c != nil {
 		defer func() {
 			err = c.Terminate(context.Background())
-			require.NoError(t, err)
+			assert.NilError(t, err)
 		}()
 	}
 
-	assert.NotEmpty(t, lc.msgs)
+	assert.Check(t, len(lc.msgs) != 0)
 }
 
 func TestWithStartupCommand(t *testing.T) {
@@ -118,24 +118,24 @@ func TestWithStartupCommand(t *testing.T) {
 	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
 
 	err := testcontainers.WithStartupCommand(testExec)(&req)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
-	assert.Len(t, req.LifecycleHooks, 1)
-	assert.Len(t, req.LifecycleHooks[0].PostStarts, 1)
+	assert.Check(t, is.Len(req.LifecycleHooks, 1))
+	assert.Check(t, is.Len(req.LifecycleHooks[0].PostStarts, 1))
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	defer func() {
 		err = c.Terminate(context.Background())
-		require.NoError(t, err)
+		assert.NilError(t, err)
 	}()
 
 	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	content, err := io.ReadAll(reader)
-	require.NoError(t, err)
-	assert.Equal(t, "/tmp/.testcontainers\n", string(content))
+	assert.NilError(t, err)
+	assert.Check(t, is.Equal("/tmp/.testcontainers\n", string(content)))
 }
 
 func TestWithAfterReadyCommand(t *testing.T) {
@@ -150,24 +150,24 @@ func TestWithAfterReadyCommand(t *testing.T) {
 	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
 
 	err := testcontainers.WithAfterReadyCommand(testExec)(&req)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
-	assert.Len(t, req.LifecycleHooks, 1)
-	assert.Len(t, req.LifecycleHooks[0].PostReadies, 1)
+	assert.Check(t, is.Len(req.LifecycleHooks, 1))
+	assert.Check(t, is.Len(req.LifecycleHooks[0].PostReadies, 1))
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	defer func() {
 		err = c.Terminate(context.Background())
-		require.NoError(t, err)
+		assert.NilError(t, err)
 	}()
 
 	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	content, err := io.ReadAll(reader)
-	require.NoError(t, err)
-	assert.Equal(t, "/tmp/.testcontainers\n", string(content))
+	assert.NilError(t, err)
+	assert.Check(t, is.Equal("/tmp/.testcontainers\n", string(content)))
 }
 
 func TestWithEnv(t *testing.T) {
@@ -212,8 +212,8 @@ func TestWithEnv(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			opt := testcontainers.WithEnv(tc.env)
-			require.NoError(t, opt.Customize(tc.req))
-			require.Equal(t, tc.expect, tc.req.Env)
+			assert.NilError(t, opt.Customize(tc.req))
+			assert.DeepEqual(t, tc.expect, tc.req.Env)
 		})
 	}
 }
@@ -245,8 +245,8 @@ func TestWithHostPortAccess(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			opt := testcontainers.WithHostPortAccess(tc.hostPorts...)
-			require.NoError(t, opt.Customize(tc.req))
-			require.Equal(t, tc.expect, tc.req.HostAccessPorts)
+			assert.NilError(t, opt.Customize(tc.req))
+			assert.DeepEqual(t, tc.expect, tc.req.HostAccessPorts)
 		})
 	}
 }

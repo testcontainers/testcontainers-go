@@ -3,7 +3,7 @@ package testcontainers
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 )
 
 func TestWithLogger(t *testing.T) {
@@ -11,14 +11,14 @@ func TestWithLogger(t *testing.T) {
 	logOpt := WithLogger(logger)
 	t.Run("container", func(t *testing.T) {
 		var req GenericContainerRequest
-		require.NoError(t, logOpt.Customize(&req))
-		require.Equal(t, logger, req.Logger)
+		assert.NilError(t, logOpt.Customize(&req))
+		assert.DeepEqual(t, logger, req.Logger)
 	})
 
 	t.Run("provider", func(t *testing.T) {
 		var opts GenericProviderOptions
 		logOpt.ApplyGenericTo(&opts)
-		require.Equal(t, logger, opts.Logger)
+		assert.DeepEqual(t, logger, opts.Logger)
 	})
 
 	t.Run("docker", func(t *testing.T) {
@@ -26,6 +26,6 @@ func TestWithLogger(t *testing.T) {
 			GenericProviderOptions: &GenericProviderOptions{},
 		}
 		logOpt.ApplyDockerTo(opts)
-		require.Equal(t, logger, opts.Logger)
+		assert.DeepEqual(t, logger, opts.Logger)
 	})
 }

@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/docker/docker/client"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -92,19 +92,19 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, gReq)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	ep, err := c.Endpoint(ctx, "http")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=hello")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=there")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	select {
 	case <-g.Done:
@@ -112,7 +112,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 		t.Fatal("never received final log message")
 	}
 
-	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
+	assert.Check(t, is.DeepEqual([]string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs()))
 
 	terminateContainerOnEnd(t, ctx, c)
 }
@@ -157,27 +157,27 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, gReq)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, c)
 
 	ep, err := c.Endpoint(ctx, "http")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=this-is-stdout")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep + "/stderr?echo=this-is-stderr")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	<-g.Ack
 
-	assert.Equal(t, map[string]string{
+	assert.Check(t, is.DeepEqual(map[string]string{
 		StdoutLog: "echo this-is-stdout\n",
 		StderrLog: "echo this-is-stderr\n",
-	}, g.LogTypes)
+	}, g.LogTypes))
 }
 
 func Test_MultipleLogConsumers(t *testing.T) {
@@ -212,23 +212,23 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, gReq)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	ep, err := c.Endpoint(ctx, "http")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=mlem")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	<-first.Done
 	<-second.Done
 
-	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, first.Msgs())
-	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, second.Msgs())
-	require.NoError(t, c.Terminate(ctx))
+	assert.Check(t, is.DeepEqual([]string{"ready\n", "echo mlem\n"}, first.Msgs()))
+	assert.Check(t, is.DeepEqual([]string{"ready\n", "echo mlem\n"}, second.Msgs()))
+	assert.NilError(t, c.Terminate(ctx))
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {
@@ -259,7 +259,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		},
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, dind)
 
 	var remoteDocker string
@@ -397,7 +397,7 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, "0", strings.TrimSpace(string(b)))
+	assert.Check(t, is.Equal("0", strings.TrimSpace(string(b))))
 }
 
 func TestContainerLogsEnableAtStart(t *testing.T) {
@@ -429,26 +429,26 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, gReq)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	ep, err := c.Endpoint(ctx, "http")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=hello")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=there")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	select {
 	case <-g.Done:
 	case <-time.After(10 * time.Second):
 		t.Fatal("never received final log message")
 	}
-	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
+	assert.Check(t, is.DeepEqual([]string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs()))
 
 	terminateContainerOnEnd(t, ctx, c)
 }
@@ -481,7 +481,7 @@ func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, gReq)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, c)
 }
 
@@ -513,13 +513,13 @@ func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, gReq)
-	require.NoError(t, err)
-	require.NotNil(t, c)
+	assert.NilError(t, err)
+	assert.Assert(t, c != nil)
 
 	// because the log production timeout is too high, the container should have already been terminated
 	// so no need to terminate it again with "terminateContainerOnEnd(t, ctx, c)"
 	dc := c.(*DockerContainer)
-	require.NoError(t, dc.stopLogProduction())
+	assert.NilError(t, dc.stopLogProduction())
 
 	terminateContainerOnEnd(t, ctx, c)
 }
@@ -558,16 +558,16 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, genericReq1)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	ep1, err := c.Endpoint(ctx, "http")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep1 + "/stdout?echo=hello1")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep1 + "/stdout?echo=there1")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	second := TestLogConsumer{
 		msgs:     []string{},
@@ -593,16 +593,16 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	}
 
 	c2, err := GenericContainer(ctx, genericReq2)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	ep2, err := c2.Endpoint(ctx, "http")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep2 + "/stdout?echo=hello2")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	_, err = http.Get(ep2 + "/stdout?echo=there2")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	// Handling the termination of the containers
 	defer func() {
@@ -619,8 +619,8 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 
 	// We check log size due to context cancellation causing
 	// varying message counts, leading to test failure.
-	assert.GreaterOrEqual(t, len(first.Msgs()), 2)
-	assert.GreaterOrEqual(t, len(second.Msgs()), 2)
+	assert.Check(t, len(first.Msgs()) >= 2)
+	assert.Check(t, len(second.Msgs()) >= 2)
 
 	// Restore stderr
 	w.Close()
@@ -636,7 +636,7 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	// The context cancel shouldn't cause the system to throw a
 	// logStoppedForOutOfSyncMessage, as it hangs the system with
 	// the multiple containers.
-	assert.False(t, strings.Contains(actual, logStoppedForOutOfSyncMessage))
+	assert.Check(t, !strings.Contains(actual, logStoppedForOutOfSyncMessage))
 }
 
 type FooLogConsumer struct {

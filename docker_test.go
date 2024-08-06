@@ -22,8 +22,8 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -82,7 +82,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	}
 
 	nginxC, err := GenericContainer(ctx, gcr)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	// host, err := nginxC.Host(ctx)
@@ -198,7 +198,7 @@ func TestContainerWithHostNetwork(t *testing.T) {
 
 	nginxC, err := GenericContainer(ctx, gcr)
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	portEndpoint, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
@@ -235,7 +235,7 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 		},
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxA)
 
 	if nginxA.GetContainerID() == "" {
@@ -301,9 +301,9 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		}
 
 		state, err := nginx.State(ctx)
-		require.Error(t, err, "expected error from container inspect.")
+		assert.Assert(t, is.ErrorContains(err, ""), "expected error from container inspect.")
 
-		assert.Nil(t, state, "expected nil container inspect.")
+		assert.Check(t, is.Nil(state), "expected nil container inspect.")
 	})
 
 	t.Run("Nil State after termination if raw as already set", func(t *testing.T) {
@@ -314,9 +314,9 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		}
 
 		state, err := nginx.State(ctx)
-		require.NoError(t, err, "unexpected error from container inspect before container termination.")
+		assert.NilError(t, err, "unexpected error from container inspect before container termination.")
 
-		assert.NotNil(t, state, "unexpected nil container inspect before container termination.")
+		assert.Check(t, state != nil, "unexpected nil container inspect before container termination.")
 
 		// terminate the container before the raw state is set
 		err = nginx.Terminate(ctx)
@@ -325,9 +325,9 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		}
 
 		state, err = nginx.State(ctx)
-		require.Error(t, err, "expected error from container inspect after container termination.")
+		assert.Assert(t, is.ErrorContains(err, ""), "expected error from container inspect after container termination.")
 
-		assert.Nil(t, state, "unexpected nil container inspect after container termination.")
+		assert.Check(t, is.Nil(state), "unexpected nil container inspect after container termination.")
 	})
 }
 
@@ -418,7 +418,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 		Started: true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxA)
 
 	nginxB, err := GenericContainer(ctx, GenericContainerRequest{
@@ -433,11 +433,11 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 		Started: true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxB)
 
 	endpointA, err := nginxA.PortEndpoint(ctx, nginxDefaultPort, "http")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	resp, err := http.Get(endpointA)
 	if err != nil {
@@ -480,11 +480,11 @@ func TestContainerCreation(t *testing.T) {
 		Started: true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	resp, err := http.Get(endpoint)
 	if err != nil {
@@ -536,7 +536,7 @@ func TestContainerCreationWithName(t *testing.T) {
 		Started: true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	inspect, err := nginxC.Inspect(ctx)
@@ -568,7 +568,7 @@ func TestContainerCreationWithName(t *testing.T) {
 	}
 
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	resp, err := http.Get(endpoint)
 	if err != nil {
@@ -597,7 +597,7 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 		Started: true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
@@ -652,7 +652,7 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 		Started: true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
@@ -731,7 +731,7 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 		Started:          true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, mysqlC)
 }
 
@@ -765,7 +765,7 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 
 	c, err := GenericContainer(ctx, genContainerReq)
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, c)
 
 	ep, err := c.Endpoint(ctx, "http")
@@ -784,8 +784,8 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, 200, resp.StatusCode)
-	assert.Equal(t, ba, string(body))
+	assert.Check(t, is.Equal(200, resp.StatusCode))
+	assert.Check(t, is.Equal(ba, string(body)))
 }
 
 func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
@@ -815,7 +815,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 
 	c, err := GenericContainer(ctx, genContainerReq)
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, c)
 
 	_ = w.Close()
@@ -869,7 +869,7 @@ func TestContainerCreationWaitingForHostPort(t *testing.T) {
 		Started:          true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginx)
 }
 
@@ -886,7 +886,7 @@ func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.
 		Started:          true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginx)
 }
 
@@ -913,7 +913,7 @@ func TestCMD(t *testing.T) {
 		Started:          true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, c)
 }
 
@@ -940,7 +940,7 @@ func TestEntrypoint(t *testing.T) {
 		Started:          true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, c)
 }
 
@@ -968,7 +968,7 @@ func TestWorkingDir(t *testing.T) {
 		Started:          true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, c)
 }
 
@@ -1151,8 +1151,8 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 		Started: true,
 	})
 
-	require.NoError(t, err)
-	require.NoError(t, bashC.Terminate(ctx))
+	assert.NilError(t, err)
+	assert.NilError(t, bashC.Terminate(ctx))
 }
 
 func TestContainerWithTmpFs(t *testing.T) {
@@ -1169,7 +1169,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 		Started:          true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, ctr)
 
 	path := "/testtmpfs/test.file"
@@ -1266,7 +1266,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 
 		terminateContainerOnEnd(t, ctx, c)
 
-		require.Error(t, err)
+		assert.Assert(t, is.ErrorContains(err, ""))
 	})
 
 	t.Run("specific platform should be propagated", func(t *testing.T) {
@@ -1282,20 +1282,20 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 			Started: false,
 		})
 
-		require.NoError(t, err)
+		assert.NilError(t, err)
 		terminateContainerOnEnd(t, ctx, c)
 
 		dockerCli, err := NewDockerClientWithOpts(ctx)
-		require.NoError(t, err)
+		assert.NilError(t, err)
 		defer dockerCli.Close()
 
 		ctr, err := dockerCli.ContainerInspect(ctx, c.GetContainerID())
-		require.NoError(t, err)
+		assert.NilError(t, err)
 
 		img, _, err := dockerCli.ImageInspectWithRaw(ctx, ctr.Image)
-		require.NoError(t, err)
-		assert.Equal(t, "linux", img.Os)
-		assert.Equal(t, "amd64", img.Architecture)
+		assert.NilError(t, err)
+		assert.Check(t, is.Equal("linux", img.Os))
+		assert.Check(t, is.Equal("amd64", img.Architecture))
 	})
 }
 
@@ -1314,7 +1314,7 @@ func TestContainerWithCustomHostname(t *testing.T) {
 		Started:          true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, ctr)
 
 	if actualHostname := readHostname(t, ctr.GetContainerID()); actualHostname != hostname {
@@ -1329,15 +1329,15 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 		},
 		Started: true,
 	})
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, context.Background(), ctr)
 
 	inspect, err := ctr.Inspect(context.Background())
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
-	assert.NotEmpty(t, inspect.ID)
+	assert.Check(t, len(inspect.ID) != 0)
 
-	require.NoError(t, ctr.Stop(context.Background(), nil))
+	assert.NilError(t, ctr.Stop(context.Background(), nil))
 }
 
 func readHostname(tb testing.TB, containerId string) string {
@@ -1384,7 +1384,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 				Started: true,
 			})
 
-			require.NoError(t, err)
+			assert.NilError(t, err)
 			terminateContainerOnEnd(t, ctx, nginxC)
 
 			_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), tc.copiedFileName, 700)
@@ -1413,11 +1413,11 @@ func TestDockerContainerCopyDirToContainer(t *testing.T) {
 	})
 
 	p := filepath.Join(".", "testdata", "Dokerfile")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testdata/Dockerfile", 700)
-	require.Error(t, err) // copying a file using the directory method will raise an error
+	assert.Assert(t, is.ErrorContains(err, "")) // copying a file using the directory method will raise an error
 
 	p = filepath.Join(".", "testdata")
 	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testdata", 700)
@@ -1475,21 +1475,21 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 			terminateContainerOnEnd(t, ctx, nginxC)
 
 			if err != nil {
-				require.Contains(t, err.Error(), tc.errMsg)
+				assert.Assert(t, is.Contains(err.Error(), tc.errMsg))
 			} else {
 				for _, f := range tc.files {
-					require.NoError(t, err)
+					assert.NilError(t, err)
 
 					hostFileData, err := os.ReadFile(f.HostFilePath)
-					require.NoError(t, err)
+					assert.NilError(t, err)
 
 					fd, err := nginxC.CopyFileFromContainer(ctx, f.ContainerFilePath)
-					require.NoError(t, err)
+					assert.NilError(t, err)
 					defer fd.Close()
 					containerFileData, err := io.ReadAll(fd)
-					require.NoError(t, err)
+					assert.NilError(t, err)
 
-					require.Equal(t, hostFileData, containerFileData)
+					assert.DeepEqual(t, hostFileData, containerFileData)
 				}
 			}
 		})
@@ -1501,7 +1501,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 	hostDirName := "testdata"
 
 	abs, err := filepath.Abs(filepath.Join(".", hostDirName))
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	tests := []struct {
 		name     string
@@ -1559,7 +1559,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			})
 			terminateContainerOnEnd(t, ctx, nginxC)
 
-			require.Equal(t, (err != nil), tc.hasError)
+			assert.Equal(t, (err != nil), tc.hasError)
 			if err == nil {
 				dir := tc.dir
 
@@ -1598,7 +1598,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 				Started: true,
 			})
 
-			require.NoError(t, err)
+			assert.NilError(t, err)
 			terminateContainerOnEnd(t, ctx, nginxC)
 
 			fileContent, err := os.ReadFile(filepath.Join(".", "testdata", "hello.sh"))
@@ -1637,7 +1637,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 		Started: true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	copiedFileName := "hello_copy.sh"
@@ -1660,7 +1660,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, fileContent, fileContentFromContainer)
+	assert.Check(t, is.DeepEqual(fileContent, fileContentFromContainer))
 }
 
 func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
@@ -1676,7 +1676,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 		Started: true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	copiedFileName := "hello_copy.sh"
@@ -1699,7 +1699,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Empty(t, fileContentFromContainer)
+	assert.Check(t, is.Len(fileContentFromContainer, 0))
 }
 
 func TestDockerContainerResources(t *testing.T) {
@@ -1740,19 +1740,19 @@ func TestDockerContainerResources(t *testing.T) {
 		Started: true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxC)
 
 	c, err := NewDockerClientWithOpts(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	defer c.Close()
 
 	containerID := nginxC.GetContainerID()
 
 	resp, err := c.ContainerInspect(ctx, containerID)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
-	assert.Equal(t, expected, resp.HostConfig.Ulimits)
+	assert.Check(t, is.DeepEqual(expected, resp.HostConfig.Ulimits))
 }
 
 func TestContainerCapAdd(t *testing.T) {
@@ -1776,18 +1776,18 @@ func TestContainerCapAdd(t *testing.T) {
 		},
 		Started: true,
 	})
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginx)
 
 	dockerClient, err := NewDockerClientWithOpts(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	defer dockerClient.Close()
 
 	containerID := nginx.GetContainerID()
 	resp, err := dockerClient.ContainerInspect(ctx, containerID)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
-	assert.Equal(t, strslice.StrSlice{expected}, resp.HostConfig.CapAdd)
+	assert.Check(t, is.DeepEqual(strslice.StrSlice{expected}, resp.HostConfig.CapAdd))
 }
 
 func TestContainerRunningCheckingStatusCode(t *testing.T) {
@@ -1830,7 +1830,7 @@ func TestContainerWithUserID(t *testing.T) {
 		Started:          true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, ctr)
 
 	r, err := ctr.Logs(ctx)
@@ -1843,7 +1843,7 @@ func TestContainerWithUserID(t *testing.T) {
 		t.Fatal(err)
 	}
 	actual := regexp.MustCompile(`\D+`).ReplaceAllString(string(b), "")
-	assert.Equal(t, req.User, actual)
+	assert.Check(t, is.Equal(req.User, actual))
 }
 
 func TestContainerWithNoUserID(t *testing.T) {
@@ -1859,7 +1859,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 		Started:          true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, ctr)
 
 	r, err := ctr.Logs(ctx)
@@ -1872,7 +1872,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 		t.Fatal(err)
 	}
 	actual := regexp.MustCompile(`\D+`).ReplaceAllString(string(b), "")
-	assert.Equal(t, "0", actual)
+	assert.Check(t, is.Equal("0", actual))
 }
 
 func TestGetGatewayIP(t *testing.T) {
@@ -1903,7 +1903,7 @@ func TestNetworkModeWithContainerReference(t *testing.T) {
 		Started: true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxA)
 
 	networkMode := fmt.Sprintf("container:%v", nginxA.GetContainerID())
@@ -1918,7 +1918,7 @@ func TestNetworkModeWithContainerReference(t *testing.T) {
 		Started: true,
 	})
 
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, nginxB)
 }
 
@@ -1929,7 +1929,7 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 
 	// compare the bytes of each file in the source with the bytes from the copied-from-container file
 	srcFiles, err := os.ReadDir(hostFilePath)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	for _, srcFile := range srcFiles {
 		if srcFile.IsDir() {
@@ -1937,33 +1937,33 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 		}
 		srcBytes, err := os.ReadFile(filepath.Join(hostFilePath, srcFile.Name()))
 		if err != nil {
-			require.NoError(t, err)
+			assert.NilError(t, err)
 		}
 
 		fp := filepath.Join(containerFilePath, srcFile.Name())
 		// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
 		// paths for the container files are using Linux path separators
 		fd, err := container.CopyFileFromContainer(ctx, fp)
-		require.NoError(t, err, "Path not found in container: %s", fp)
+		assert.NilError(t, err, "Path not found in container: %s", fp)
 		defer fd.Close()
 
 		targetPath := filepath.Join(tmpDir, srcFile.Name())
 		dst, err := os.Create(targetPath)
 		if err != nil {
-			require.NoError(t, err)
+			assert.NilError(t, err)
 		}
 		defer dst.Close()
 
 		_, err = io.Copy(dst, fd)
 		if err != nil {
-			require.NoError(t, err)
+			assert.NilError(t, err)
 		}
 
 		untarBytes, err := os.ReadFile(targetPath)
 		if err != nil {
-			require.NoError(t, err)
+			assert.NilError(t, err)
 		}
-		assert.Equal(t, srcBytes, untarBytes)
+		assert.Check(t, is.DeepEqual(srcBytes, untarBytes))
 	}
 }
 
@@ -1974,14 +1974,14 @@ func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr Container) 
 	}
 	tb.Cleanup(func() {
 		tb.Log("terminating container")
-		require.NoError(tb, ctr.Terminate(ctx))
+		assert.NilError(tb, ctr.Terminate(ctx))
 	})
 }
 
 func TestDockerProviderFindContainerByName(t *testing.T) {
 	ctx := context.Background()
 	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	defer provider.Close()
 
 	c1, err := GenericContainer(ctx, GenericContainerRequest{
@@ -1993,10 +1993,10 @@ func TestDockerProviderFindContainerByName(t *testing.T) {
 		},
 		Started: true,
 	})
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	c1Inspect, err := c1.Inspect(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, c1)
 
 	c1Name := c1Inspect.Name
@@ -2010,13 +2010,13 @@ func TestDockerProviderFindContainerByName(t *testing.T) {
 		},
 		Started: true,
 	})
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, c2)
 
 	c, err := provider.findContainerByName(ctx, "test")
-	require.NoError(t, err)
-	require.NotNil(t, c)
-	assert.Contains(t, c.Names, c1Name)
+	assert.NilError(t, err)
+	assert.Assert(t, c != nil)
+	assert.Check(t, is.Contains(c.Names, c1Name))
 }
 
 func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
@@ -2032,7 +2032,7 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			ctx := context.Background()
 			// Set up CLI.
 			provider, err := NewDockerProvider()
-			require.NoError(t, err, "get docker provider should not fail")
+			assert.NilError(t, err, "get docker provider should not fail")
 			defer func() { _ = provider.Close() }()
 			cli := provider.Client()
 			// Create container.
@@ -2046,15 +2046,15 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 					},
 				},
 			})
-			require.NoError(t, err, "create container should not fail")
+			assert.NilError(t, err, "create container should not fail")
 			defer func() { _ = c.Terminate(context.Background()) }()
 			// Get the image ID.
 			containerInspect, err := c.Inspect(ctx)
-			require.NoError(t, err, "container inspect should not fail")
+			assert.NilError(t, err, "container inspect should not fail")
 
 			containerName := containerInspect.Name
 			containerDetails, err := cli.ContainerInspect(ctx, containerName)
-			require.NoError(t, err, "inspect container should not fail")
+			assert.NilError(t, err, "inspect container should not fail")
 			containerImage := containerDetails.Image
 			t.Cleanup(func() {
 				_, _ = cli.ImageRemove(ctx, containerImage, image.RemoveOptions{
@@ -2064,12 +2064,12 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			})
 			// Now, we terminate the container and check whether the image still exists.
 			err = c.Terminate(ctx)
-			require.NoError(t, err, "terminate container should not fail")
+			assert.NilError(t, err, "terminate container should not fail")
 			_, _, err = cli.ImageInspectWithRaw(ctx, containerImage)
 			if tt.keepBuiltImage {
-				require.NoError(t, err, "image should still exist")
+				assert.NilError(t, err, "image should still exist")
 			} else {
-				require.Error(t, err, "image should not exist anymore")
+				assert.Assert(t, is.ErrorContains(err, ""), "image should not exist anymore")
 			}
 		})
 	}
@@ -2151,7 +2151,7 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p, err := NewDockerProvider()
-			require.NoError(t, err)
+			assert.NilError(t, err)
 			m := &errMockCli{err: tt.errReturned}
 			p.client = m
 
@@ -2160,8 +2160,8 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			defer cancel()
 			_, _ = p.BuildImage(ctx, &ContainerRequest{})
 
-			assert.Positive(t, m.imageBuildCount)
-			assert.Equal(t, tt.shouldRetry, m.imageBuildCount > 1)
+			assert.Check(t, m.imageBuildCount > 0)
+			assert.Check(t, is.Equal(tt.shouldRetry, m.imageBuildCount > 1))
 		})
 	}
 }
@@ -2202,7 +2202,7 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p, err := NewDockerProvider()
-			require.NoError(t, err)
+			assert.NilError(t, err)
 			m := &errMockCli{err: tt.errReturned}
 			p.client = m
 
@@ -2211,8 +2211,8 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 			defer cancel()
 			_, _ = p.waitContainerCreation(ctx, "someID")
 
-			assert.Positive(t, m.containerListCount)
-			assert.Equal(t, tt.shouldRetry, m.containerListCount > 1)
+			assert.Check(t, m.containerListCount > 0)
+			assert.Check(t, is.Equal(tt.shouldRetry, m.containerListCount > 1))
 		})
 	}
 }
@@ -2263,7 +2263,7 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p, err := NewDockerProvider()
-			require.NoError(t, err)
+			assert.NilError(t, err)
 			m := &errMockCli{err: tt.errReturned}
 			p.client = m
 
@@ -2272,8 +2272,8 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 			defer cancel()
 			_ = p.attemptToPullImage(ctx, "someTag", image.PullOptions{})
 
-			assert.Positive(t, m.imagePullCount)
-			assert.Equal(t, tt.shouldRetry, m.imagePullCount > 1)
+			assert.Check(t, m.imagePullCount > 0)
+			assert.Check(t, is.Equal(tt.shouldRetry, m.imagePullCount > 1))
 		})
 	}
 }

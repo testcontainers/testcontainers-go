@@ -8,8 +8,8 @@ import (
 	"time"
 
 	influxclient "github.com/influxdata/influxdb1-client/v2"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/influxdb"
@@ -17,19 +17,19 @@ import (
 
 func containerCleanup(t *testing.T, container testcontainers.Container) {
 	err := container.Terminate(context.Background())
-	require.NoError(t, err, "failed to terminate container")
+	assert.NilError(t, err, "failed to terminate container")
 }
 
 func TestV1Container(t *testing.T) {
 	ctx := context.Background()
 	influxDbContainer, err := influxdb.Run(ctx, "influxdb:1.8.10")
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	t.Cleanup(func() {
 		containerCleanup(t, influxDbContainer)
 	})
 
 	state, err := influxDbContainer.State(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	if !state.Running {
 		t.Fatal("InfluxDB container is not running")
@@ -44,13 +44,13 @@ func TestV2Container(t *testing.T) {
 		influxdb.WithUsername("root"),
 		influxdb.WithPassword("password"),
 	)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	t.Cleanup(func() {
 		containerCleanup(t, influxDbContainer)
 	})
 
 	state, err := influxDbContainer.State(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	if !state.Running {
 		t.Fatal("InfluxDB container is not running")
@@ -63,33 +63,33 @@ func TestWithInitDb(t *testing.T) {
 		"influxdb:1.8.10",
 		influxdb.WithInitDb("testdata"),
 	)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	t.Cleanup(func() {
 		containerCleanup(t, influxDbContainer)
 	})
 
 	if state, err := influxDbContainer.State(ctx); err != nil || !state.Running {
-		require.NoError(t, err)
+		assert.NilError(t, err)
 	}
 
 	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
 		Addr: influxDbContainer.MustConnectionUrl(ctx),
 	})
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	defer cli.Close()
 
 	expected_0 := `[{"statement_id":0,"Series":[{"name":"h2o_feet","tags":{"location":"coyote_creek"},"columns":["time","location","max"],"values":[[1566977040,"coyote_creek",9.964]]},{"name":"h2o_feet","tags":{"location":"santa_monica"},"columns":["time","location","max"],"values":[[1566964440,"santa_monica",7.205]]}],"Messages":null}]`
 	q := influxclient.NewQuery(`select "location", MAX("water_level") from "h2o_feet" group by "location"`, "NOAA_water_database", "s")
 	response, err := cli.Query(q)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
 	if response.Error() != nil {
 		t.Fatal(response.Error())
 	}
 	testJson, err := json.Marshal(response.Results)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
-	assert.JSONEq(t, expected_0, string(testJson))
+	assert.Equal(t, expected_0, string(testJson))
 }
 
 func TestWithConfigFile(t *testing.T) {
@@ -99,26 +99,26 @@ func TestWithConfigFile(t *testing.T) {
 		"influxdb:"+influxVersion,
 		influxdb.WithConfigFile(filepath.Join("testdata", "influxdb.conf")),
 	)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	t.Cleanup(func() {
 		containerCleanup(t, influxDbContainer)
 	})
 
 	if state, err := influxDbContainer.State(context.Background()); err != nil || !state.Running {
-		require.NoError(t, err)
+		assert.NilError(t, err)
 	}
 
-	/// influxConnectionUrl {
+	// / influxConnectionUrl {
 	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
 		Addr: influxDbContainer.MustConnectionUrl(context.Background()),
 	})
 	// }
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	defer cli.Close()
 
 	ping, version, err := cli.Ping(5 * time.Second)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 
-	assert.Equal(t, "1.8.10", version)
-	assert.Greater(t, ping, time.Duration(0))
+	assert.Check(t, is.Equal("1.8.10", version))
+	assert.Check(t, ping > time.Duration(0))
 }

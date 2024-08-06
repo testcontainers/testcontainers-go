@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types/mount"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
+	is "gotest.tools/v3/assert/cmp"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -37,7 +37,7 @@ func TestVolumeMount(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equalf(t, tt.want, testcontainers.VolumeMount(tt.args.volumeName, tt.args.mountTarget), "VolumeMount(%v, %v)", tt.args.volumeName, tt.args.mountTarget)
+			assert.Check(t, is.DeepEqual(tt.want, testcontainers.VolumeMount(tt.args.volumeName, tt.args.mountTarget)), "VolumeMount(%v, %v)", tt.args.volumeName, tt.args.mountTarget)
 		})
 	}
 }
@@ -165,7 +165,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equalf(t, tt.want, tt.mounts.PrepareMounts(), "PrepareMounts()")
+			assert.Check(t, is.DeepEqual(tt.want, tt.mounts.PrepareMounts()), "PrepareMounts()")
 		})
 	}
 }
@@ -190,17 +190,17 @@ func TestCreateContainerWithVolume(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created
 	client, err := testcontainers.NewDockerClientWithOpts(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	defer client.Close()
 
 	volume, err := client.VolumeInspect(ctx, "test-volume")
-	require.NoError(t, err)
-	assert.Equal(t, "test-volume", volume.Name)
+	assert.NilError(t, err)
+	assert.Check(t, is.Equal("test-volume", volume.Name))
 }
 
 func TestMountsReceiveRyukLabels(t *testing.T) {
@@ -221,15 +221,15 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	terminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created with the expected labels
 	client, err := testcontainers.NewDockerClientWithOpts(ctx)
-	require.NoError(t, err)
+	assert.NilError(t, err)
 	defer client.Close()
 
 	volume, err := client.VolumeInspect(ctx, "app-data")
-	require.NoError(t, err)
-	assert.Equal(t, testcontainers.GenericLabels(), volume.Labels)
+	assert.NilError(t, err)
+	assert.Check(t, is.DeepEqual(testcontainers.GenericLabels(), volume.Labels))
 }
