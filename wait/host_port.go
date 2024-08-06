@@ -91,21 +91,19 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 
 	internalPort := hp.Port
 	if internalPort == "" {
-		var ports nat.PortMap
 		inspect, err := target.Inspect(ctx)
 		if err != nil {
 			return err
 		}
 
-		ports = inspect.NetworkSettings.Ports
+		boundPorts, err := core.BoundPortsFromBindings(inspect.NetworkSettings.Ports)
+		if err != nil {
+			return err
+		}
 
-		if len(ports) > 0 {
-			boundPorts, err := core.BoundPortsFromBindings(ports)
-			if err != nil {
-				return err
-			}
-
-			for containerPort := range boundPorts {
+		// no need to check for empty boundPorts, BoundPortsFromBindings will return an empty map if there are no bindings
+		for containerPort := range boundPorts {
+			if internalPort == "" || containerPort.Int() < internalPort.Int() {
 				internalPort = containerPort
 				break
 			}

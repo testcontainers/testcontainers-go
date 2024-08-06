@@ -3,7 +3,7 @@
 The host-port wait strategy will check if the container is listening to a specific port and allows to set the following conditions:
 
 - a port exposed by the container. The port and protocol to be used, which is represented by a string containing the port number and protocol in the format "80/tcp".
-- alternatively, wait for the first exposed port in the container.
+- alternatively, wait for the lowest exposed port in the container.
 - the startup timeout to be used, default is 60 seconds.
 - the poll interval to be used, default is 100 milliseconds.
 
@@ -19,9 +19,9 @@ req := ContainerRequest{
 }
 ```
 
-## First exposed port in the container
+## Lowest exposed port in the container
 
-The wait strategy will use the first exposed port from the container configuration.
+The wait strategy will use the lowest exposed port from the container configuration.
 
 ```golang
 req := ContainerRequest{
@@ -30,7 +30,7 @@ req := ContainerRequest{
 }
 ```
 
-Said that, it could be the case that the container request included ports to be exposed. Therefore using `wait.ForExposedPort` will wait for the first exposed port in the request, because the container configuration retrieved from Docker will already include them.
+Said that, it could be the case that the container request included ports to be exposed. Therefore using `wait.ForExposedPort` will wait for the lowest exposed port in the request, because the container configuration retrieved from Docker will already include them.
 
 ```golang
 req := ContainerRequest{

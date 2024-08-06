@@ -57,19 +57,29 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
   Server Version: %v
   API Version: %v
   Operating System: %v
-  Total Memory: %v MB
+  Total Memory: %v MB%s
   Testcontainers for Go Version: v%s
   Resolved Docker Host: %s - %s
   Resolved Docker Socket Path: %s
   Test SessionID: %s
   Test ProcessID: %s
 `
+	infoLabels := ""
+	if len(dockerInfo.Labels) > 0 {
+		infoLabels = `
+  Labels:`
+		for _, lb := range dockerInfo.Labels {
+			infoLabels += "\n    " + lb
+		}
+	}
 
 	dockerHost := core.ExtractDockerHost(ctx)
 
 	Logger.Printf(infoMessage, packagePath,
-		dockerInfo.ServerVersion, c.Client.ClientVersion(),
+		dockerInfo.ServerVersion,
+		c.Client.ClientVersion(),
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
+		infoLabels,
 		internal.Version,
 		dockerHost,
 		core.GetDockerHostIPs(),

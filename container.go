@@ -36,7 +36,7 @@ type DeprecatedContainer interface {
 // Container allows getting info about and controlling a single container instance
 type Container interface {
 	GetContainerID() string                                         // get the container id from the provider
-	Endpoint(context.Context, string) (string, error)               // get proto://ip:port string for the first exposed port
+	Endpoint(context.Context, string) (string, error)               // get proto://ip:port string for the lowest exposed port
 	PortEndpoint(context.Context, nat.Port, string) (string, error) // get proto://ip:port string for the given exposed port
 	Host(context.Context) (string, error)                           // get host where the container port is exposed
 	Inspect(context.Context) (*types.ContainerJSON, error)          // get container info

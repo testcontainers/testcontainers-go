@@ -62,6 +62,10 @@
             "path": "../modules/gcloud"
         },
         {
+            "name": "module / grafana-lgtm",
+            "path": "../modules/grafana-lgtm"
+        },
+        {
             "name": "module / inbucket",
             "path": "../modules/inbucket"
         },
@@ -168,6 +172,10 @@
         {
             "name": "module / surrealdb",
             "path": "../modules/surrealdb"
+        },
+        {
+            "name": "module / valkey",
+            "path": "../modules/valkey"
         },
         {
             "name": "module / vault",
