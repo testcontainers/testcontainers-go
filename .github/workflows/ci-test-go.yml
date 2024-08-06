@@ -53,6 +53,16 @@ jobs:
       RYUK_CONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '5m' || '60s' }}"
       RYUK_RECONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '30s' || '10s' }}"
     steps:
+      - name: Install Latest Docker
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
+        run: |
+          sudo systemctl stop docker.service
+          sudo apt-get purge docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-ce-rootless-extras docker-buildx-plugin
+          curl -fsSL https://test.docker.com -o get-docker.sh
+          sudo REPO_FILE=docker-ce-staging.repo DOWNLOAD_URL=https://download-stage.docker.com sh ./get-docker.sh
+      - name: Check Docker version
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
+        run: docker version
       - name: Setup rootless Docker
         if: ${{ inputs.rootless-docker }}
         uses: ScribeMD/rootless-docker@6bd157a512c2fafa4e0243a8aa87d964eb890886  # v0.2.2
