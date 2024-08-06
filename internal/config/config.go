@@ -28,6 +28,7 @@ type Config struct {
 	HubImageNamePrefix      string        `properties:"hub.image.name.prefix,default="`
 	RyukDisabled            bool          `properties:"ryuk.disabled,default=false"`
 	RyukPrivileged          bool          `properties:"ryuk.container.privileged,default=false"`
+	RyukUserNamespace       string        `properties:"ryuk.container.user.namespace,default="`
 	RyukReconnectionTimeout time.Duration `properties:"ryuk.reconnection.timeout,default=10s"`
 	RyukConnectionTimeout   time.Duration `properties:"ryuk.connection.timeout,default=1m"`
 	RyukVerbose             bool          `properties:"ryuk.verbose,default=false"`
@@ -71,6 +72,11 @@ func read() Config {
 		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
 		if parseBool(ryukPrivilegedEnv) {
 			config.RyukPrivileged = ryukPrivilegedEnv == "true"
+		}
+
+		ryukUserNamespaceEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_USER_NAMESPACE")
+		if ryukUserNamespaceEnv != "" {
+			config.RyukUserNamespace = ryukUserNamespaceEnv
 		}
 
 		ryukVerboseEnv := os.Getenv("TESTCONTAINERS_RYUK_VERBOSE")
