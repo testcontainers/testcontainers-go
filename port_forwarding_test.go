@@ -82,8 +82,7 @@ func TestExposeHostPorts(t *testing.T) {
 				require.NoError(tt, err)
 
 				tt.Cleanup(func() {
-					err := nw.Remove(context.Background())
-					require.NoError(tt, err)
+					require.NoError(tt, nw.Remove(context.Background()))
 				})
 
 				req.Networks = []string{nw.Name}
@@ -100,8 +99,7 @@ func TestExposeHostPorts(t *testing.T) {
 			c, err := testcontainers.GenericContainer(ctx, req)
 			require.NoError(tt, err)
 			tt.Cleanup(func() {
-				err := c.Terminate(context.Background())
-				require.NoError(tt, err)
+				require.NoError(tt, c.Terminate(context.Background()))
 			})
 
 			if tc.hasHostAccess {
