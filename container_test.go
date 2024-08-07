@@ -151,7 +151,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 		ContextArchive     func() (io.Reader, error)
 		ExpectedEchoOutput string
 		Dockerfile         string
-		ExpectedError      error
+		ExpectedError      string
 	}
 
 	testCases := []TestCase{
@@ -252,7 +252,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			ExpectedEchoOutput: "hi this is from the say_hi.sh file!",
 		},
 		{
-			Name:               "test buildling from a context on the filesystem",
+			Name:               "test building from a context on the filesystem",
 			ContextPath:        "./testdata",
 			Dockerfile:         "echo.Dockerfile",
 			ExpectedEchoOutput: "this is from the echo test Dockerfile",
@@ -266,7 +266,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			ContextArchive: func() (io.Reader, error) {
 				return nil, nil
 			},
-			ExpectedError: errors.New("you must specify either a build context or an image: failed to create container"),
+			ExpectedError: "create container: you must specify either a build context or an image",
 		},
 	}
 
@@ -292,16 +292,15 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				ContainerRequest: req,
 				Started:          true,
 			})
-			switch {
-			case testCase.ExpectedError != nil && err != nil:
-				if testCase.ExpectedError.Error() != err.Error() {
-					t.Fatalf("unexpected error: %s, was expecting %s", err.Error(), testCase.ExpectedError.Error())
-				}
-			case err != nil:
-				t.Fatal(err)
-			default:
-				terminateContainerOnEnd(t, ctx, c)
+
+			defer terminateContainerOnEnd(t, ctx, c)
+
+			if testCase.ExpectedError != "" {
+				require.EqualError(t, err, testCase.ExpectedError)
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }
