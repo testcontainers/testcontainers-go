@@ -13,6 +13,7 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	"github.com/testcontainers/testcontainers-go/internal/core/network"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -37,10 +38,10 @@ var sshPassword = uuid.NewString()
 // 1. Create a new SSHD container.
 // 2. Expose the host ports to the container after the container is ready.
 // 3. Close the SSH sessions before killing the container.
-func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (ContainerLifecycleHooks, error) {
+func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (ContainerLifecycleHooks, error) {
 	var sshdConnectHook ContainerLifecycleHooks
 
-	if len(p) == 0 {
+	if len(ports) == 0 {
 		return sshdConnectHook, fmt.Errorf("no ports to expose")
 	}
 
@@ -59,7 +60,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 		// get the first network of the container to connect the SSHD container to it.
 		nw, err := network.GetByName(ctx, sshdFirstNetwork)
 		if err != nil {
-			return sshdConnectHook, fmt.Errorf("failed to get the network: %w", err)
+			return sshdConnectHook, fmt.Errorf("get network %q: %w", sshdFirstNetwork, err)
 		}
 
 		dockerNw := DockerNetwork{
@@ -91,13 +92,13 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, p ...int) (Cont
 	// start the SSHD container with the provided options
 	sshdContainer, err := newSshdContainer(ctx, opts...)
 	if err != nil {
-		return sshdConnectHook, fmt.Errorf("failed to create the SSH server: %w", err)
+		return sshdConnectHook, fmt.Errorf("new sshd container: %w", err)
 	}
 
 	// IP in the first network of the container
 	sshdIP, err := sshdContainer.ContainerIP(context.Background())
 	if err != nil {
-		return sshdConnectHook, fmt.Errorf("failed to get IP for the SSHD container: %w", err)
+		return sshdConnectHook, fmt.Errorf("get sshd container IP: %w", err)
 	}
 
 	if req.HostConfigModifier == nil {
@@ -155,6 +156,7 @@ func newSshdContainer(ctx context.Context, opts ...ContainerCustomizer) (*sshdCo
 			HostAccessPorts: []int{}, // empty list because it does not need any port
 			ExposedPorts:    []string{sshPort},
 			Env:             map[string]string{"PASSWORD": sshPassword},
+			WaitingFor:      wait.ForListeningPort(sshPort),
 		},
 		Started: true,
 	}
