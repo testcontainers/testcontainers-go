@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -136,6 +137,25 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func TestBuildImageFromDockerfile_BuildError(t *testing.T) {
+	ctx := context.Background()
+	dockerClient, err := core.NewClient(ctx)
+	require.NoError(t, err)
+
+	defer dockerClient.Close()
+
+	req := Request{
+		FromDockerfile: FromDockerfile{
+			Dockerfile: "error.Dockerfile",
+			Context:    filepath.Join(".", "testdata"),
+		},
+		Started: true,
+	}
+	_, err = Run(ctx, req)
+
+	require.EqualError(t, err, `create container: build image: The command '/bin/sh -c exit 1' returned a non-zero code: 1`)
 }
 
 func TestBuildImageFromDockerfile_NoTag(t *testing.T) {

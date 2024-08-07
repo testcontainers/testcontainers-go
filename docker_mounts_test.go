@@ -58,16 +58,21 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 	}
 
 	ctx := context.Background()
+	client, err := core.NewClient(ctx)
+	require.NoError(t, err)
+	defer client.Close()
+
+	// Ensure the volume is removed before creating the container
+	// otherwise the volume will be reused and the labels won't be set.
+	err = client.VolumeRemove(ctx, "app-data", true)
+	require.NoError(t, err)
+
 	c, err := testcontainers.Run(ctx, req)
 	require.NoError(t, err)
 	testcontainers.TerminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created with the expected labels
-	client, err := core.NewClient(ctx)
-	require.NoError(t, err)
-	defer client.Close()
-
 	volume, err := client.VolumeInspect(ctx, "app-data")
 	require.NoError(t, err)
-	assert.Equal(t, core.DefaultLabels(core.SessionID()), volume.Labels)
+	require.Equal(t, core.DefaultLabels(core.SessionID()), volume.Labels)
 }

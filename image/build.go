@@ -2,6 +2,7 @@ package image
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -42,14 +43,14 @@ func Build(ctx context.Context, img BuildInfo) (string, error) {
 			var err error
 			buildOptions, err = img.BuildOptions()
 			if err != nil {
-				return types.ImageBuildResponse{}, backoff.Permanent(err)
+				return types.ImageBuildResponse{}, backoff.Permanent(fmt.Errorf("build options: %w", err))
 			}
 			defer tryClose(buildOptions.Context) // release resources in any case
 
 			resp, err := cli.ImageBuild(ctx, buildOptions.Context, buildOptions)
 			if err != nil {
 				if core.IsPermanentClientError(err) {
-					return types.ImageBuildResponse{}, backoff.Permanent(err)
+					return types.ImageBuildResponse{}, backoff.Permanent(fmt.Errorf("build image: %w", err))
 				}
 
 				img.Printf("Failed to build image: %s, will retry", err)
