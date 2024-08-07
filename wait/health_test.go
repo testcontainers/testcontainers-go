@@ -56,8 +56,8 @@ func (st *healthStrategyTarget) State(ctx context.Context) (*types.ContainerStat
 
 func (st *healthStrategyTarget) setState(health *types.Health) {
 	st.mtx.Lock()
+	defer st.mtx.Unlock()
 	st.state.Health = health
-	st.mtx.Unlock()
 }
 
 // TestWaitForHealthTimesOutForUnhealthy confirms that an unhealthy container will eventually
