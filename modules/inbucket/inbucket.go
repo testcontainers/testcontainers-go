@@ -59,9 +59,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Image:        img,
 		ExposedPorts: []string{"2500/tcp", "9000/tcp", "1100/tcp"},
 		WaitingFor: wait.ForAll(
-			wait.NewHostPortStrategy("2500/tcp"),
-			wait.NewHostPortStrategy("9000/tcp"),
-			wait.NewHostPortStrategy("1100/tcp"),
+			wait.ForListeningPort("2500/tcp"),
+			wait.ForListeningPort("9000/tcp"),
+			wait.ForListeningPort("1100/tcp"),
 		),
 	}
 
