@@ -66,7 +66,7 @@ func TestNew(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, 1, len(resources))
+	assert.Len(t, resources, 1)
 
 	newNetwork := resources[0]
 

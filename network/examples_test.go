@@ -6,6 +6,7 @@ import (
 	"log"
 
 	dockernetwork "github.com/docker/docker/api/types/network"
+
 	"github.com/testcontainers/testcontainers-go/network"
 )
 
