@@ -2,8 +2,6 @@ package network_test
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"testing"
 	"time"
 
@@ -23,9 +21,7 @@ const (
 	nginxDefaultPort = "80/tcp"
 )
 
-// Create a network.
-func ExampleNew() {
-	// createNetwork {
+func TestNew(t *testing.T) {
 	ctx := context.Background()
 
 	net, err := network.New(ctx,
@@ -35,18 +31,14 @@ func ExampleNew() {
 		network.WithInternal(),
 		network.WithLabels(map[string]string{"this-is-a-test": "value"}),
 	)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t, err)
 	defer func() {
 		if err := net.Remove(ctx); err != nil {
-			log.Fatalf("failed to remove network: %s", err)
+			t.Fatalf("failed to remove network: %s", err)
 		}
 	}()
 
 	networkName := net.Name
-	// }
 
 	nginxC, _ := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -62,49 +54,30 @@ func ExampleNew() {
 	})
 	defer func() {
 		if err := nginxC.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+			t.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 
 	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t, err)
 
 	resources, err := client.NetworkList(context.Background(), dockernetwork.ListOptions{
 		Filters: filters.NewArgs(filters.Arg("name", networkName)),
 	})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t, err)
 
-	fmt.Println(len(resources))
+	assert.Len(t, resources, 1)
 
 	newNetwork := resources[0]
 
 	expectedLabels := testcontainers.GenericLabels()
 	expectedLabels["this-is-a-test"] = "true"
 
-	fmt.Println(newNetwork.Attachable)
-	fmt.Println(newNetwork.Internal)
-	fmt.Println(newNetwork.Labels["this-is-a-test"])
+	assert.True(t, newNetwork.Attachable)
+	assert.True(t, newNetwork.Internal)
+	assert.Equal(t, "value", newNetwork.Labels["this-is-a-test"])
 
-	state, err := nginxC.State(ctx)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Println(state.Running)
-
-	// Output:
-	// 1
-	// true
-	// true
-	// value
-	// true
+	require.NoError(t, err)
 }
 
 // testNetworkAliases {
