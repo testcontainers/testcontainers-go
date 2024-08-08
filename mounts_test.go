@@ -217,6 +217,15 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 	}
 
 	ctx := context.Background()
+	client, err := testcontainers.NewDockerClientWithOpts(ctx)
+	require.NoError(t, err)
+	defer client.Close()
+
+	// Ensure the volume is removed before creating the container
+	// otherwise the volume will be reused and the labels won't be set.
+	err = client.VolumeRemove(ctx, "app-data", true)
+	require.NoError(t, err)
+
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
@@ -224,12 +233,8 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 	require.NoError(t, err)
 	terminateContainerOnEnd(t, ctx, c)
 
-	// Check if volume is created with the expected labels
-	client, err := testcontainers.NewDockerClientWithOpts(ctx)
-	require.NoError(t, err)
-	defer client.Close()
-
+	// Check if volume is created with the expected labels.
 	volume, err := client.VolumeInspect(ctx, "app-data")
 	require.NoError(t, err)
-	assert.Equal(t, testcontainers.GenericLabels(), volume.Labels)
+	require.Equal(t, testcontainers.GenericLabels(), volume.Labels)
 }
