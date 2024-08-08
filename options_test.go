@@ -94,7 +94,7 @@ func TestWithLogConsumers(t *testing.T) {
 	c, err := testcontainers.GenericContainer(context.Background(), req)
 	// we expect an error because the MySQL environment variables are not set
 	// but this is expected because we just want to test the log consumer
-	require.EqualError(t, err, "failed to start container: container exited with code 1")
+	require.EqualError(t, err, "start container: container exited with code 1")
 	// c might be not nil even on error
 	if c != nil {
 		defer func() {
