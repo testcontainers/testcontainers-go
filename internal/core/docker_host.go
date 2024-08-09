@@ -160,7 +160,7 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 		return checkDockerSocketFn(tcHost)
 	}
 
-	testcontainersDockerSocket, err := dockerSocketOverridePath(ctx)
+	testcontainersDockerSocket, err := dockerSocketOverridePath()
 	if err == nil {
 		return checkDockerSocketFn(testcontainersDockerSocket)
 	}
@@ -220,7 +220,7 @@ func dockerHostFromProperties(ctx context.Context) (string, error) {
 
 // dockerSocketOverridePath returns the docker socket from the TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE environment variable,
 // if it's not empty
-func dockerSocketOverridePath(ctx context.Context) (string, error) {
+func dockerSocketOverridePath() (string, error) {
 	if dockerHostPath, exists := os.LookupEnv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"); exists {
 		return dockerHostPath, nil
 	}

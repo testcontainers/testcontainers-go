@@ -189,7 +189,7 @@ func TestExtractDockerHost(t *testing.T) {
 			err := createTmpDockerSocket(tmpDir)
 			require.NoError(t, err)
 
-			socket, err := dockerSocketOverridePath(context.Background())
+			socket, err := dockerSocketOverridePath()
 			require.NoError(t, err)
 			assert.Equal(t, tmpSocket, socket)
 		})
@@ -199,7 +199,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
 
-			socket, err := dockerSocketOverridePath(context.Background())
+			socket, err := dockerSocketOverridePath()
 			require.ErrorIs(t, err, ErrDockerSocketOverrideNotSet)
 			assert.Empty(t, socket)
 		})
