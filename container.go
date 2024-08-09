@@ -43,10 +43,13 @@ type Container interface {
 	MappedPort(context.Context, nat.Port) (nat.Port, error)         // get externally mapped port for a container port
 	Ports(context.Context) (nat.PortMap, error)                     // Deprecated: Use c.Inspect(ctx).NetworkSettings.Ports instead
 	SessionID() string                                              // get session id
-	IsRunning() bool
+	IsRunning() bool                                                // IsRunning returns true if the container is running, false otherwise.
 	Start(context.Context) error                                    // start the container
 	Stop(context.Context, *time.Duration) error                     // stop the container
-	Terminate(context.Context) error                                // terminate the container
+
+	// Terminate stops and removes the container and its image if it was built and not flagged as kept.
+	Terminate(ctx context.Context) error
+
 	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
 	FollowOutput(LogConsumer)                                       // Deprecated: it will be removed in the next major release
 	StartLogProducer(context.Context, ...LogProductionOption) error // Deprecated: Use the ContainerRequest instead
