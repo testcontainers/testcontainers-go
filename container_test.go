@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strings"
 	"testing"
 	"time"
 
@@ -319,28 +318,18 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
-	if err != nil && err.Error() != "failed to start container: container exited with code 0" {
-		t.Fatal(err)
-	} else if err == nil {
-		terminateContainerOnEnd(t, ctx, c)
-		t.Fatal("was expecting error starting container")
-	}
+	terminateContainerOnEnd(t, ctx, c)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "container exited with code 0")
 
 	logs, logErr := c.Logs(ctx)
-	if logErr != nil {
-		t.Fatal(logErr)
-	}
+	require.NoError(t, logErr)
 
 	b, err := io.ReadAll(logs)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	log := string(b)
-	if strings.Contains(log, "I was not expecting this") == false {
-		t.Fatalf("could not find expected log in %s", log)
-	}
+	require.Contains(t, log, "I was not expecting this")
 }
 
 // dockerImageSubstitutor {

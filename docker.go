@@ -221,24 +221,24 @@ func (c *DockerContainer) SessionID() string {
 func (c *DockerContainer) Start(ctx context.Context) error {
 	err := c.startingHook(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("starting hook: %w", err)
 	}
 
 	if err := c.provider.client.ContainerStart(ctx, c.ID, container.StartOptions{}); err != nil {
-		return err
+		return fmt.Errorf("container start: %w", err)
 	}
 	defer c.provider.Close()
 
 	err = c.startedHook(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("started hook: %w", err)
 	}
 
 	c.isRunning = true
 
 	err = c.readiedHook(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("readied hook: %w", err)
 	}
 
 	return nil
