@@ -233,15 +233,15 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 			func(ctx context.Context, c Container) error {
 				// wait until all the exposed ports are mapped:
 				// it will be ready when all the exposed ports are mapped,
-				// checking every 50ms, up to 5s, and failing if all the
-				// exposed ports are not mapped in that time.
+				// checking every 50ms, up to 1s, and failing if all the
+				// exposed ports are not mapped in 5s.
 				dockerContainer := c.(*DockerContainer)
 
 				b := backoff.NewExponentialBackOff()
 
 				b.InitialInterval = 50 * time.Millisecond
-				b.MaxElapsedTime = 1 * time.Second
-				b.MaxInterval = 5 * time.Second
+				b.MaxElapsedTime = 5 * time.Second
+				b.MaxInterval = time.Duration(float64(time.Second) * backoff.DefaultRandomizationFactor)
 
 				err := backoff.RetryNotify(
 					func() error {
