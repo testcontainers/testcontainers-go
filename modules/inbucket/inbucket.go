@@ -51,9 +51,13 @@ func (c *Container) WebInterface(ctx context.Context) (string, error) {
 func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        img,
-		ExposedPorts: []string{"2500/tcp", "9000/tcp"},
-		WaitingFor:   wait.ForLog("SMTP listening on tcp4"),
-		Started:      true,
+		ExposedPorts: []string{"2500/tcp", "9000/tcp", "1100/tcp"},
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort("2500/tcp"),
+			wait.ForListeningPort("9000/tcp"),
+			wait.ForListeningPort("1100/tcp"),
+		),
+		Started: true,
 	}
 
 	for _, opt := range opts {

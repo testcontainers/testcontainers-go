@@ -43,6 +43,10 @@ type options struct {
 	// Listeners is a list of custom listeners that can be provided to access the
 	// containers form within docker networks
 	Listeners []listener
+
+	// ExtraBootstrapConfig is a map of configs to be interpolated into the
+	// container's bootstrap.yml
+	ExtraBootstrapConfig map[string]any
 }
 
 func defaultOptions() options {
@@ -55,6 +59,7 @@ func defaultOptions() options {
 		AutoCreateTopics:                   false,
 		EnableTLS:                          false,
 		Listeners:                          make([]listener, 0),
+		ExtraBootstrapConfig:               make(map[string]any, 0),
 	}
 }
 
@@ -153,5 +158,15 @@ func WithListener(lis string) Option {
 			Port:                 portInt,
 			AuthenticationMethod: o.KafkaAuthenticationMethod,
 		})
+	}
+}
+
+// WithBootstrapConfig adds an arbitrary config kvp to the Redpanda container.
+// Per the name, this config will be interpolated into the generated bootstrap
+// config file, which is particularly useful for configs requiring a restart
+// when otherwise applied to a running Redpanda instance.
+func WithBootstrapConfig(cfg string, val any) Option {
+	return func(o *options) {
+		o.ExtraBootstrapConfig[cfg] = val
 	}
 }

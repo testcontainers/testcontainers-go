@@ -92,12 +92,7 @@ func TestWithLogConsumers(t *testing.T) {
 	// but this is expected because we just want to test the log consumer
 	require.EqualError(t, err, "failed to start container: container exited with code 1")
 	// c might be not nil even on error
-	if c != nil {
-		defer func() {
-			err = c.Terminate(context.Background())
-			require.NoError(t, err)
-		}()
-	}
+	testcontainers.TerminateContainerOnEnd(t, context.Background(), c)
 
 	assert.NotEmpty(t, lc1.msgs)
 	assert.NotEmpty(t, lc2.msgs)

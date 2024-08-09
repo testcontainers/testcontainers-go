@@ -28,6 +28,7 @@ type CreatedContainer interface {
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
 	GetContainerID() string
 	State(context.Context) (*types.ContainerState, error)
+	// Terminate stops and removes the container and its image if it was built and not flagged as kept.
 	Terminate(context.Context) error
 }
 

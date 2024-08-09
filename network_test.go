@@ -2,8 +2,6 @@ package testcontainers_test
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"testing"
 
 	"github.com/docker/docker/api/types/filters"
@@ -12,14 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/internal/core"
 	corenetwork "github.com/testcontainers/testcontainers-go/internal/core/network"
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 )
 
-// Create a network.
-func ExampleNewNetwork() {
-	// createNetwork {
+func TestNew(t *testing.T) {
 	ctx := context.Background()
 
 	net, err := testcontainers.NewNetwork(ctx,
@@ -29,52 +24,51 @@ func ExampleNewNetwork() {
 		tcnetwork.WithInternal(),
 		tcnetwork.WithLabels(map[string]string{"this-is-a-test": "value"}),
 	)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t, err)
 	defer func() {
 		if err := net.Remove(ctx); err != nil {
-			log.Fatalf("failed to remove network: %s", err)
+			t.Fatalf("failed to remove network: %s", err)
 		}
 	}()
 
 	networkName := net.Name
-	// }
 
-	client, err := core.NewClient(context.Background())
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	nginxC, _ := testcontainers.Run(ctx, testcontainers.Request{
+		Image: "nginx:alpine",
+		ExposedPorts: []string{
+			"80/tcp",
+		},
+		Networks: []string{
+			networkName,
+		},
+		Started: true,
+	})
+	defer func() {
+		if err := nginxC.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
 
-	args := filters.NewArgs()
-	args.Add("name", networkName)
+	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	require.NoError(t, err)
 
 	resources, err := client.NetworkList(context.Background(), dockernetwork.ListOptions{
-		Filters: args,
+		Filters: filters.NewArgs(filters.Arg("name", networkName)),
 	})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t, err)
 
-	fmt.Println(len(resources))
+	assert.Len(t, resources, 1)
 
 	newNetwork := resources[0]
 
-	expectedLabels := core.DefaultLabels(core.SessionID())
+	expectedLabels := testcontainers.GenericLabels()
 	expectedLabels["this-is-a-test"] = "true"
 
-	fmt.Println(newNetwork.Attachable)
-	fmt.Println(newNetwork.Internal)
-	fmt.Println(newNetwork.Labels["this-is-a-test"])
+	assert.True(t, newNetwork.Attachable)
+	assert.True(t, newNetwork.Internal)
+	assert.Equal(t, "value", newNetwork.Labels["this-is-a-test"])
 
-	// Output:
-	// 1
-	// true
-	// true
-	// value
+	require.NoError(t, err)
 }
 
 func TestNewNetwork_withOptions(t *testing.T) {

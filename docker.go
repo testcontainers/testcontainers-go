@@ -383,6 +383,7 @@ func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.Conta
 	return &jsonRaw, nil
 }
 
+// IsRunning returns true if the container is running, false otherwise.
 func (c *DockerContainer) IsRunning() bool {
 	return c.isRunning
 }
@@ -575,7 +576,7 @@ func (c *DockerContainer) SetTerminationSignal(signal chan bool) {
 func (c *DockerContainer) Start(ctx context.Context) error {
 	err := c.startingHook(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("starting hook: %w", err)
 	}
 
 	cli, err := core.NewClient(ctx)
@@ -585,19 +586,19 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 	defer cli.Close()
 
 	if err := cli.ContainerStart(ctx, c.ID, container.StartOptions{}); err != nil {
-		return err
+		return fmt.Errorf("container start: %w", err)
 	}
 
 	err = c.startedHook(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("started hook: %w", err)
 	}
 
 	c.isRunning = true
 
 	err = c.readiedHook(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("readied hook: %w", err)
 	}
 
 	return nil

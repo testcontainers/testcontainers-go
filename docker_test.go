@@ -1451,6 +1451,11 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			shouldRetry: false,
 		},
 		{
+			name:        "no retry on system error",
+			errReturned: errdefs.System(errors.New("system error")),
+			shouldRetry: false,
+		},
+		{
 			name:        "retry on non-permanent error",
 			errReturned: errors.New("whoops"),
 			shouldRetry: true,
@@ -1467,7 +1472,16 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			// give a chance to retry
 			ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 			defer cancel()
-			_, _ = tcimage.Build(ctx, &Request{})
+			_, err := tcimage.Build(ctx, &Request{
+				FromDockerfile: FromDockerfile{
+					Context: filepath.Join(".", "testdata", "retry"),
+				},
+			})
+			if tt.errReturned != nil {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 
 			assert.Positive(t, m.imageBuildCount)
 			assert.Equal(t, tt.shouldRetry, m.imageBuildCount > 1)
@@ -1500,6 +1514,11 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 			name:        "retry when not found",
 			errReturned: errdefs.NotFound(errors.New("not there yet")),
 			shouldRetry: true,
+		},
+		{
+			name:        "no retry on system error",
+			errReturned: errdefs.System(errors.New("system error")),
+			shouldRetry: false,
 		},
 		{
 			name:        "retry on non-permanent error",
@@ -1559,6 +1578,11 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 		{
 			name:        "no retry when not implemented by provider",
 			errReturned: errdefs.NotImplemented(errors.New("unknown method")),
+			shouldRetry: false,
+		},
+		{
+			name:        "no retry on system error",
+			errReturned: errdefs.System(errors.New("system error")),
 			shouldRetry: false,
 		},
 		{

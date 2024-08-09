@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"testing"
 	"time"
 
@@ -315,28 +314,18 @@ func TestGetLogsFromFailedContainer(t *testing.T) {
 	// }
 
 	c, err := testcontainers.Run(ctx, req)
-
-	if err != nil && err.Error() != "failed to start container: container exited with code 0" {
-		t.Fatal(err)
-	} else if err == nil {
-		testcontainers.TerminateContainerOnEnd(t, ctx, c)
-		t.Fatal("was expecting error starting container")
-	}
+	testcontainers.TerminateContainerOnEnd(t, ctx, c)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "container exited with code 0")
 
 	logs, logErr := c.Logs(ctx)
-	if logErr != nil {
-		t.Fatal(logErr)
-	}
+	require.NoError(t, logErr)
 
 	b, err := io.ReadAll(logs)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	log := string(b)
-	if strings.Contains(log, "I was not expecting this") == false {
-		t.Fatalf("could not find expected log in %s", log)
-	}
+	require.Contains(t, log, "I was not expecting this")
 }
 
 type errorSubstitutor struct{}
