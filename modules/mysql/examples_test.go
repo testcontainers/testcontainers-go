@@ -68,7 +68,7 @@ func ExampleRun_connect() {
 
 	connectionString, err := mysqlContainer.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err)
+		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
 	}
 
 	db, err := sql.Open("mysql", connectionString)
