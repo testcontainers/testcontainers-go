@@ -144,7 +144,6 @@ func TestRunContainer_authenticated(t *testing.T) {
 					BuildArgs: map[string]*string{
 						"REGISTRY_PORT": &strPort,
 					},
-					PrintBuildLog: true,
 				},
 				AlwaysPullImage: true, // make sure the authentication takes place
 				ExposedPorts:    []string{"6379/tcp"},
@@ -190,7 +189,6 @@ func TestRunContainer_authenticated(t *testing.T) {
 					BuildArgs: map[string]*string{
 						"REGISTRY_PORT": &strPort,
 					},
-					PrintBuildLog: true,
 				},
 				AlwaysPullImage: true, // make sure the authentication takes place
 				ExposedPorts:    []string{"6379/tcp"},
@@ -302,7 +300,6 @@ func TestRunContainer_wrongData(t *testing.T) {
 				BuildArgs: map[string]*string{
 					"REGISTRY_PORT": &strPort,
 				},
-				PrintBuildLog: true,
 			},
 			AlwaysPullImage: true, // make sure the authentication takes place
 			ExposedPorts:    []string{"6379/tcp"},
