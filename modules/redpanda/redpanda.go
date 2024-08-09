@@ -209,9 +209,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	// 8. Wait until Redpanda is ready to serve requests.
 	err = wait.ForAll(
-		wait.NewHostPortStrategy(defaultKafkaAPIPort),
-		wait.NewHostPortStrategy(defaultAdminAPIPort),
-		wait.NewHostPortStrategy(defaultSchemaRegistryPort),
+		wait.ForListeningPort(defaultKafkaAPIPort),
+		wait.ForListeningPort(defaultAdminAPIPort),
+		wait.ForListeningPort(defaultSchemaRegistryPort),
 		wait.ForLog("Successfully started Redpanda!"),
 	).WaitUntilReady(ctx, container)
 	if err != nil {
