@@ -165,26 +165,25 @@ var defaultCopyFileToContainerHook = func(files []ContainerFile) ContainerLifecy
 var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PostStarts: []ContainerHook{
-			// first post-start hook is to produce logs and start log consumers
+			// Produce logs sending details to the log consumers.
+			// See combineContainerHooks for the order of execution.
 			func(ctx context.Context, c Container) error {
-				dockerContainer := c.(*DockerContainer)
-
-				if cfg == nil {
+				if cfg == nil || len(cfg.Consumers) == 0 {
 					return nil
 				}
 
+				dockerContainer := c.(*DockerContainer)
+				dockerContainer.consumers = dockerContainer.consumers[:0]
 				for _, consumer := range cfg.Consumers {
 					dockerContainer.followOutput(consumer)
 				}
 
-				if len(cfg.Consumers) > 0 {
-					return dockerContainer.startLogProduction(ctx, cfg.Opts...)
-				}
-				return nil
+				return dockerContainer.startLogProduction(ctx, cfg.Opts...)
 			},
 		},
-		PreTerminates: []ContainerHook{
-			// first pre-terminate hook is to stop the log production
+		PostStops: []ContainerHook{
+			// Stop the log production.
+			// See combineContainerHooks for the order of execution.
 			func(ctx context.Context, c Container) error {
 				if cfg == nil || len(cfg.Consumers) == 0 {
 					return nil
