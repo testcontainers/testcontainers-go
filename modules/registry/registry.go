@@ -109,7 +109,6 @@ func (c *RegistryContainer) ImageExists(ctx context.Context, imageRef string) er
 		WithMethod(http.MethodHead).
 		WithBasicAuth(imageAuth.Username, imageAuth.Password).
 		WithHeaders(map[string]string{"Accept": "application/vnd.docker.distribution.manifest.v2+json"}).
-		WithForcedIPv4LocalHost().
 		WithStatusCodeMatcher(func(statusCode int) bool {
 			return statusCode == http.StatusOK
 		}).

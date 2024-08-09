@@ -155,7 +155,7 @@ func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx:latest",
 		ExposedPorts: []string{"8080/tcp", "80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithForcedIPv4LocalHost(),
+		WaitingFor:   wait.ForHTTP("/").WithPort("80/tcp"),
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -818,7 +818,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
 			t.Fatal("no error")
 		}
 
-		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+		expected := "no exposed tcp ports or mapped ports - cannot wait for status"
 		if err.Error() != expected {
 			t.Fatalf("expected %q, got %q", expected, err.Error())
 		}
@@ -872,7 +872,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
 			t.Fatal("no error")
 		}
 
-		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+		expected := "no exposed tcp ports or mapped ports - cannot wait for status"
 		if err.Error() != expected {
 			t.Fatalf("expected %q, got %q", expected, err.Error())
 		}
@@ -921,7 +921,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.
 			t.Fatal("no error")
 		}
 
-		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+		expected := "no exposed tcp ports or mapped ports - cannot wait for status"
 		if err.Error() != expected {
 			t.Fatalf("expected %q, got %q", expected, err.Error())
 		}

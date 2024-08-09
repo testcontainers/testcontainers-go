@@ -11,10 +11,11 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/docker/go-connections/nat"
+
+	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
 // Implement interface
@@ -41,7 +42,7 @@ type HTTPStrategy struct {
 	ResponseHeadersMatcher func(headers http.Header) bool
 	PollInterval           time.Duration
 	UserInfo               *url.Userinfo
-	ForceIPv4LocalHost     bool
+	ForceIPv4LocalHost     bool // Deprecated: it will be removed in a future release
 }
 
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
@@ -137,6 +138,7 @@ func (ws *HTTPStrategy) WithPollInterval(pollInterval time.Duration) *HTTPStrate
 	return ws
 }
 
+// Deprecated: will be removed in a future release.
 // WithForcedIPv4LocalHost forces usage of localhost to be ipv4 127.0.0.1
 // to avoid ipv6 docker bugs https://github.com/moby/moby/issues/42442 https://github.com/moby/moby/issues/42375
 func (ws *HTTPStrategy) WithForcedIPv4LocalHost() *HTTPStrategy {
@@ -168,10 +170,6 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	if err != nil {
 		return err
 	}
-	// to avoid ipv6 docker bugs https://github.com/moby/moby/issues/42442 https://github.com/moby/moby/issues/42375
-	if ws.ForceIPv4LocalHost {
-		ipAddress = strings.Replace(ipAddress, "localhost", "127.0.0.1", 1)
-	}
 
 	var mappedPort nat.Port
 	if ws.Port == "" {
@@ -193,22 +191,27 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 			return err
 		}
 
+		boundPorts, err := core.BoundPortsFromBindings(inspect.NetworkSettings.Ports)
+		if err != nil {
+			return err
+		}
+
 		// Find the lowest numbered exposed tcp port.
 		var lowestPort nat.Port
 		var hostPort string
-		for port, bindings := range inspect.NetworkSettings.Ports {
+		for port, bindings := range boundPorts {
 			if len(bindings) == 0 || port.Proto() != "tcp" {
 				continue
 			}
 
 			if lowestPort == "" || port.Int() < lowestPort.Int() {
 				lowestPort = port
-				hostPort = bindings[0].HostPort
+				hostPort = inspect.NetworkSettings.Ports[port][0].HostPort
 			}
 		}
 
 		if lowestPort == "" {
-			return errors.New("No exposed tcp ports or mapped ports - cannot wait for status")
+			return errors.New("no exposed tcp ports or mapped ports - cannot wait for status")
 		}
 
 		mappedPort, _ = nat.NewPort(lowestPort.Proto(), hostPort)
@@ -229,7 +232,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		}
 
 		if mappedPort.Proto() != "tcp" {
-			return errors.New("Cannot use HTTP client on non-TCP ports")
+			return errors.New("cannot use HTTP client on non-TCP ports")
 		}
 	}
 

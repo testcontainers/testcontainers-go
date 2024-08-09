@@ -59,7 +59,7 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
   Operating System: %v
   Total Memory: %v MB%s
   Testcontainers for Go Version: v%s
-  Resolved Docker Host: %s
+  Resolved Docker Host: %s - %s
   Resolved Docker Socket Path: %s
   Test SessionID: %s
   Test ProcessID: %s
@@ -73,13 +73,16 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
 		}
 	}
 
+	dockerHost := core.ExtractDockerHost(ctx)
+
 	Logger.Printf(infoMessage, packagePath,
 		dockerInfo.ServerVersion,
 		c.Client.ClientVersion(),
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
 		infoLabels,
 		internal.Version,
-		core.ExtractDockerHost(ctx),
+		dockerHost,
+		core.GetDockerHostIPs(),
 		core.ExtractDockerSocket(ctx),
 		core.SessionID(),
 		core.ProcessID(),
