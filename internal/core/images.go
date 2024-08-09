@@ -2,6 +2,7 @@ package core
 
 import (
 	"bufio"
+	"io"
 	"net/url"
 	"os"
 	"regexp"
@@ -25,17 +26,22 @@ const (
 
 var rxURL = regexp.MustCompile(URL)
 
+// ExtractImagesFromDockerfile extracts images from the Dockerfile sourced from dockerfile.
 func ExtractImagesFromDockerfile(dockerfile string, buildArgs map[string]*string) ([]string, error) {
-	var images []string
-
 	file, err := os.Open(dockerfile)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
+	return ExtractImagesFromReader(file, buildArgs)
+}
+
+// ExtractImagesFromReader extracts images from the Dockerfile sourced from r.
+func ExtractImagesFromReader(r io.Reader, buildArgs map[string]*string) ([]string, error) {
+	var images []string
 	var lines []string
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
