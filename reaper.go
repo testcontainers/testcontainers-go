@@ -255,6 +255,10 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 			hc.AutoRemove = true
 			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
 			hc.NetworkMode = Bridge
+			// Ryuk mounts the Docker socket so running it within a userns will cause major headaches.
+			if tcConfig.RyukUserNs {
+				hc.UsernsMode = "host"
+			}
 		},
 		Env: map[string]string{},
 	}
