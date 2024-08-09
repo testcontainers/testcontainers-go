@@ -18,6 +18,17 @@ type TestcontainersConfig struct {
 // of the TestcontainersConfig struct
 func ReadConfig() TestcontainersConfig {
 	cfg := config.Read()
+
+	if cfg.RyukDisabled {
+		ryukDisabledMessage := `
+**********************************************************************************************
+Ryuk has been disabled for the current execution. This can cause unexpected behavior in your environment.
+More on this: https://golang.testcontainers.org/features/garbage_collector/
+**********************************************************************************************`
+
+		Logger.Printf(ryukDisabledMessage)
+	}
+
 	return TestcontainersConfig{
 		Host:           cfg.Host,
 		TLSVerify:      cfg.TLSVerify,
