@@ -252,6 +252,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 		WaitingFor:   wait.ForListeningPort(listeningPort),
 		Name:         reaperContainerNameFromSessionID(sessionID),
 		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.UsernsMode = container.UsernsMode(tcConfig.RyukUserNamespace)
 			hc.AutoRemove = true
 			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
 			hc.NetworkMode = Bridge
