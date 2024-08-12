@@ -61,10 +61,10 @@ func ForExposedPort() *HostPortStrategy {
 	return NewHostPortStrategy("")
 }
 
-// WithoutInternalCheck changes the host port strategy to skip the internal check,
+// SkipInternalCheck changes the host port strategy to skip the internal check,
 // which is useful when a shell is not available in the container or when the
 // container doesn't bind the port internally until additional conditions are met.
-func (hp *HostPortStrategy) WithoutInternalCheck() *HostPortStrategy {
+func (hp *HostPortStrategy) SkipInternalCheck() *HostPortStrategy {
 	hp.skipInternalCheck = true
 
 	return hp
