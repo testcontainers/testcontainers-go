@@ -276,7 +276,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		if errors.Is(err, context.DeadlineExceeded) {
 			break
 		}
-		time.Sleep(100 * time.Microsecond)
+		time.Sleep(10 * time.Millisecond)
 		t.Log("retrying get endpoint")
 	}
 	if err != nil {
