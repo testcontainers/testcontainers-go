@@ -75,3 +75,7 @@ func (st NopStrategyTarget) Exec(_ context.Context, _ []string, _ ...exec.Proces
 func (st NopStrategyTarget) State(_ context.Context) (*types.ContainerState, error) {
 	return &st.ContainerState, nil
 }
+
+func (st NopStrategyTarget) CopyFileFromContainer(context.Context, string) (io.ReadCloser, error) {
+	return st.ReaderCloser, nil
+}
