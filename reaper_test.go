@@ -210,7 +210,7 @@ func TestReaperReusedIfHealthy(t *testing.T) {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
 
-	SkipIfContainerRuntimeIsNotHealthy(&testing.T{})
+	SkipIfContainerRuntimeIsNotHealthy(t)
 
 	ctx := context.Background()
 
@@ -240,7 +240,7 @@ func TestRecreateReaperIfTerminated(t *testing.T) {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
 
-	SkipIfContainerRuntimeIsNotHealthy(&testing.T{})
+	SkipIfContainerRuntimeIsNotHealthy(t)
 
 	ctx := context.Background()
 

@@ -165,7 +165,16 @@ func (c *DockerContainer) StopLogProduction() error {
 
 	c.logProductionWaitGroup.Wait()
 
-	return <-c.logProductionError
+	if err := <-c.logProductionError; err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			// Returning context errors is not useful for the consumer.
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 func (c *DockerContainer) WithLogProductionTimeout(timeout time.Duration) {
