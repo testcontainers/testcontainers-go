@@ -73,7 +73,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 				nginxHighPort,
 			},
 			Privileged: true,
-			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxHighPort),
 			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.NetworkMode = "host"
 			},
@@ -182,7 +182,7 @@ func TestContainerWithHostNetwork(t *testing.T) {
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:      nginxAlpineImage,
-			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxHighPort),
 			Files: []ContainerFile{
 				{
 					HostFilePath:      absPath,
@@ -414,6 +414,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort),
 		},
 		Started: true,
 	})
@@ -428,7 +429,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort),
 		},
 		Started: true,
 	})
@@ -475,7 +476,7 @@ func TestContainerCreation(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort),
 		},
 		Started: true,
 	})
@@ -529,7 +530,7 @@ func TestContainerCreationWithName(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort),
 			Name:       creationName,
 			Networks:   []string{"bridge"},
 		},
@@ -592,7 +593,7 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort), // default startupTimeout is 60s
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort), // default startupTimeout is 60s
 		},
 		Started: true,
 	})
