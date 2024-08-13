@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -74,6 +75,14 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 	}
 	if err != nil {
 		// At this point `c` might not be nil. Give the caller an opportunity to call Destroy on the container.
+		// TODO: Remove this debugging.
+		if strings.Contains(err.Error(), "toomanyrequests") {
+			// Debugging information for rate limiting.
+			cfg, err := getDockerConfig()
+			if err == nil {
+				fmt.Printf("XXX: too many requests: %+v", cfg)
+			}
+		}
 		return c, fmt.Errorf("create container: %w", err)
 	}
 
