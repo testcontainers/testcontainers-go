@@ -38,7 +38,8 @@ test-%: $(GOBIN)/gotestsum
 		--junitfile TEST-unit.xml \
 		-- \
 		-coverprofile=coverage.out \
-		-timeout=30m
+		-timeout=30m \
+		-v
 
 .PHONY: tools
 tools:
