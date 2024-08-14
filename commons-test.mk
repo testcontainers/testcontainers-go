@@ -37,6 +37,7 @@ test-%: $(GOBIN)/gotestsum
 		--packages="./..." \
 		--junitfile TEST-unit.xml \
 		-- \
+		-v \
 		-coverprofile=coverage.out \
 		-timeout=30m
 
