@@ -209,5 +209,4 @@ func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
 	})
-	// }
 }

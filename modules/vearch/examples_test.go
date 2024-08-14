@@ -9,6 +9,7 @@ import (
 )
 
 func ExampleRun() {
+	// runVearchContainer {
 	ctx := context.Background()
 
 	vearchContainer, err := vearch.Run(ctx, "vearch/vearch:3.5.1")
