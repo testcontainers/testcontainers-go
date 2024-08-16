@@ -57,7 +57,7 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 	}
 	provider, err := req.ProviderType.GetProvider(WithLogger(logging))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get provider: %w", err)
 	}
 	defer provider.Close()
 
@@ -79,7 +79,7 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 
 	if req.Started && !c.IsRunning() {
 		if err := c.Start(ctx); err != nil {
-			return c, fmt.Errorf("failed to start container: %w", err)
+			return c, fmt.Errorf("start container: %w", err)
 		}
 	}
 	return c, nil
