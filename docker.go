@@ -313,12 +313,12 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 
 	response, err := cli.ContainerExecCreate(ctx, c.ID, processOptions.ExecConfig)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("container exec create: %w", err)
 	}
 
 	hijack, err := cli.ContainerExecAttach(ctx, response.ID, container.ExecAttachOptions{})
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("container exec attach: %w", err)
 	}
 
 	processOptions.Reader = hijack.Reader
@@ -333,7 +333,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 	for {
 		execResp, err := cli.ContainerExecInspect(ctx, response.ID)
 		if err != nil {
-			return 0, nil, err
+			return 0, nil, fmt.Errorf("container exec inspect: %w", err)
 		}
 
 		if !execResp.Running {

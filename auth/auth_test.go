@@ -2,10 +2,12 @@ package auth
 
 import (
 	"context"
+	_ "embed"
 	"path/filepath"
 	"testing"
 
 	"github.com/cpuguy83/dockercfg"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -179,5 +181,34 @@ func TestGetDockerConfig(t *testing.T) {
 		require.Empty(t, cfg)
 
 		assert.Equal(t, imageReg, registry)
+	})
+}
+
+//go:embed testdata/.docker/config.json
+var dockerConfig string
+
+func TestGetDockerConfigs(t *testing.T) {
+	t.Run("file", func(t *testing.T) {
+		got, err := GetDockerConfigs()
+		require.NoError(t, err)
+		require.NotNil(t, got)
+	})
+
+	t.Run("env", func(t *testing.T) {
+		t.Setenv("DOCKER_AUTH_CONFIG", dockerConfig)
+
+		got, err := GetDockerConfigs()
+		require.NoError(t, err)
+
+		// We can only check the keys as the values are not deterministic.
+		expected := map[string]registry.AuthConfig{
+			"https://index.docker.io/v1/": {},
+			"https://example.com":         {},
+			"https://my.private.registry": {},
+		}
+		for k := range got {
+			got[k] = registry.AuthConfig{}
+		}
+		require.Equal(t, expected, got)
 	})
 }

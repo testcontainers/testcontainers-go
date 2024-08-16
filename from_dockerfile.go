@@ -10,7 +10,7 @@ import (
 // rather than using a pre-built one
 type FromDockerfile struct {
 	Context        string             // the path to the context of the docker build
-	ContextArchive io.Reader          // the tar archive file to send to docker that contains the build context
+	ContextArchive io.ReadSeeker      // the tar archive file to send to docker that contains the build context
 	Dockerfile     string             // the path from the context to the Dockerfile for the image, defaults to "Dockerfile"
 	Repo           string             // the repo label for image, defaults to UUID
 	Tag            string             // the tag label for image, defaults to UUID

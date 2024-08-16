@@ -111,7 +111,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 
 	// 4. Register extra kafka listeners if provided, network aliases will be
 	// set
-	if err := registerListeners(ctx, settings, req); err != nil {
+	if err := registerListeners(settings, req); err != nil {
 		return nil, fmt.Errorf("failed to register listeners: %w", err)
 	}
 
@@ -192,11 +192,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 		return nil, fmt.Errorf("failed to copy redpanda.yaml into container: %w", err)
 	}
 
-	// 8. Wait until Redpanda is ready to serve requests
+	// 8. Wait until Redpanda is ready to serve requests.
 	err = wait.ForAll(
 		wait.ForListeningPort(defaultKafkaAPIPort),
-		wait.ForLog("Successfully started Redpanda!").WithPollInterval(100*time.Millisecond)).
-		WaitUntilReady(ctx, ctr)
+		wait.ForListeningPort(defaultAdminAPIPort),
+		wait.ForListeningPort(defaultSchemaRegistryPort),
+		wait.ForLog("Successfully started Redpanda!").WithPollInterval(100*time.Millisecond),
+	).WaitUntilReady(ctx, ctr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
 	}
@@ -291,7 +293,7 @@ func renderBootstrapConfig(settings options) ([]byte, error) {
 
 // registerListeners validates that the provided listeners are valid and set network aliases for the provided addresses.
 // The container must be attached to at least one network.
-func registerListeners(ctx context.Context, settings options, req testcontainers.Request) error {
+func registerListeners(settings options, req testcontainers.Request) error {
 	if len(settings.Listeners) == 0 {
 		return nil
 	}

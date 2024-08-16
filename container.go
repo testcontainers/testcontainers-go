@@ -85,7 +85,7 @@ func Run(ctx context.Context, req Request) (*DockerContainer, error) {
 
 	if req.Started && !c.IsRunning() {
 		if err := c.Start(ctx); err != nil {
-			return c, fmt.Errorf("failed to start container: %w", err)
+			return c, fmt.Errorf("start container: %w", err)
 		}
 	}
 	return c, nil

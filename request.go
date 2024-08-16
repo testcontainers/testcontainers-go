@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"archive/tar"
 	"context"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -79,7 +81,10 @@ func (r *Request) BuildOptions() (types.ImageBuildOptions, error) {
 	buildOptions.Dockerfile = r.GetDockerfile()
 
 	// Make sure the auth configs from the Dockerfile are set right after the user-defined build options.
-	authsFromDockerfile := getAuthConfigsFromDockerfile(r)
+	authsFromDockerfile, err := getAuthConfigsFromDockerfile(r)
+	if err != nil {
+		return buildOptions, fmt.Errorf("get auth configs from Dockerfile: %w", err)
+	}
 
 	if buildOptions.AuthConfigs == nil {
 		buildOptions.AuthConfigs = map[string]registry.AuthConfig{}
@@ -126,24 +131,73 @@ func (r *Request) BuildOptions() (types.ImageBuildOptions, error) {
 	return buildOptions, nil
 }
 
+// dockerFileImages returns the images from the request Dockerfile.
+func (c *Request) dockerFileImages() ([]string, error) {
+	if c.ContextArchive == nil {
+		// Source is a directory, we can read the Dockerfile directly.
+		images, err := core.ExtractImagesFromDockerfile(filepath.Join(c.Context, c.GetDockerfile()), c.GetBuildArgs())
+		if err != nil {
+			return nil, fmt.Errorf("extract images from Dockerfile: %w", err)
+		}
+
+		return images, nil
+	}
+
+	// Source is an archive, we need to read it to get the Dockerfile.
+	dockerFile := c.GetDockerfile()
+	tr := tar.NewReader(c.FromDockerfile.ContextArchive)
+
+	for {
+		hdr, err := tr.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil, fmt.Errorf("Dockerfile %q not found in context archive", dockerFile)
+			}
+
+			return nil, fmt.Errorf("reading tar archive: %w", err)
+		}
+
+		if hdr.Name != dockerFile {
+			continue
+		}
+
+		images, err := core.ExtractImagesFromReader(tr, c.GetBuildArgs())
+		if err != nil {
+			return nil, fmt.Errorf("extract images from Dockerfile: %w", err)
+		}
+
+		// Reset the archive to the beginning.
+		if _, err := c.ContextArchive.Seek(0, io.SeekStart); err != nil {
+			return nil, fmt.Errorf("seek context archive to start: %w", err)
+		}
+
+		return images, nil
+	}
+}
+
 // getAuthConfigsFromDockerfile returns the auth configs to be able to pull from an authenticated docker registry
-func getAuthConfigsFromDockerfile(r *Request) map[string]registry.AuthConfig {
-	images, err := core.ExtractImagesFromDockerfile(filepath.Join(r.Context, r.GetDockerfile()), r.GetBuildArgs())
+func getAuthConfigsFromDockerfile(c *Request) (map[string]registry.AuthConfig, error) {
+	images, err := c.dockerFileImages()
 	if err != nil {
-		return map[string]registry.AuthConfig{}
+		return nil, fmt.Errorf("docker file images: %w", err)
 	}
 
 	authConfigs := map[string]registry.AuthConfig{}
-	for _, img := range images {
-		registry, authConfig, err := auth.ForDockerImage(context.Background(), img)
+	for _, image := range images {
+		registry, authConfig, err := auth.ForDockerImage(context.Background(), image)
 		if err != nil {
+			if !errors.Is(err, dockercfg.ErrCredentialsNotFound) {
+				return nil, fmt.Errorf("docker image auth %q: %w", image, err)
+			}
+
+			// Credentials not found no config to add.
 			continue
 		}
 
 		authConfigs[registry] = authConfig
 	}
 
-	return authConfigs
+	return authConfigs, nil
 }
 
 // GetBuildArgs returns the env args to be used when creating from Dockerfile

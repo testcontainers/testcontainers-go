@@ -20,7 +20,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 		ExposedPorts: []string{"1080/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("started on port: 1080"),
-			wait.ForListeningPort("1080/tcp"),
+			wait.ForListeningPort("1080/tcp").SkipInternalCheck(),
 		),
 		Env:     map[string]string{},
 		Started: true,
@@ -33,8 +33,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	}
 
 	ctr, err := testcontainers.Run(ctx, req)
+	var c *Container
+	if ctr != nil {
+		c = &Container{DockerContainer: ctr}
+	}
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
 	return &Container{DockerContainer: ctr}, nil
