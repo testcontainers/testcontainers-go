@@ -639,23 +639,54 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	assert.False(t, strings.Contains(actual, logStoppedForOutOfSyncMessage))
 }
 
+// FooLogConsumer is a test log consumer that accepts logs from the
+// "hello-world" Docker image, which prints out the "Hello from Docker!"
+// log message.
 type FooLogConsumer struct {
 	LogChannel chan string
+	t          *testing.T
 }
 
+// Accept receives a log message and sends it to the log channel if it
+// contains the "Hello from Docker!" message.
 func (c FooLogConsumer) Accept(rawLog Log) {
 	log := string(rawLog.Content)
-	c.LogChannel <- log
+	if strings.Contains(log, "Hello from Docker!") {
+		select {
+		case c.LogChannel <- log:
+		default:
+		}
+	}
 }
 
-func NewFooLogConsumer() *FooLogConsumer {
+// AssertRead waits for a log message to be received.
+func (c FooLogConsumer) AssertRead() {
+	select {
+	case <-c.LogChannel:
+	case <-time.After(5 * time.Second):
+		c.t.Fatal("receive timeout")
+	}
+}
+
+// SlurpOne reads a value from the channel if it is available.
+func (c FooLogConsumer) SlurpOne() {
+	select {
+	case <-c.LogChannel:
+	default:
+	}
+}
+
+func NewFooLogConsumer(t *testing.T) *FooLogConsumer {
+	t.Helper()
+
 	return &FooLogConsumer{
-		LogChannel: make(chan string),
+		t:          t,
+		LogChannel: make(chan string, 2),
 	}
 }
 
 func TestRestartContainerWithLogConsumer(t *testing.T) {
-	logConsumer := NewFooLogConsumer()
+	logConsumer := NewFooLogConsumer(t)
 
 	ctx := context.Background()
 	container, err := GenericContainer(ctx, GenericContainerRequest{
@@ -668,28 +699,27 @@ func TestRestartContainerWithLogConsumer(t *testing.T) {
 		},
 		Started: false,
 	})
-	if err != nil {
-		t.Fatalf("Cant create container: %s", err.Error())
-	}
+	terminateContainerOnEnd(t, ctx, container)
+	require.NoError(t, err)
 
+	// Start and confirm that the log consumer receives the log message.
 	err = container.Start(ctx)
-	if err != nil {
-		t.Fatalf("Cant start container: %s", err.Error())
-	}
+	require.NoError(t, err)
 
-	d := 30 * time.Second
+	logConsumer.AssertRead()
+
+	// Stop the container and clear any pending message.
+	d := 5 * time.Second
 	err = container.Stop(ctx, &d)
-	if err != nil {
-		t.Fatalf("Cant stop container: %s", err.Error())
-	}
-	err = container.Start(ctx)
-	if err != nil {
-		t.Fatalf("Cant start container: %s", err.Error())
-	}
+	require.NoError(t, err)
 
-	for s := range logConsumer.LogChannel {
-		if strings.Contains(s, "Hello from Docker!") {
-			break
-		}
-	}
+	logConsumer.SlurpOne()
+
+	// Restart the container and confirm that the log consumer receives new log messages.
+	err = container.Start(ctx)
+	require.NoError(t, err)
+
+	// First message is from the first start.
+	logConsumer.AssertRead()
+	logConsumer.AssertRead()
 }
