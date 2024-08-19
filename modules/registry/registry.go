@@ -5,15 +5,26 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/registry"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+)
+
+const (
+	// registryPort is the default port used by the Registry container.
+	registryPort = "5000/tcp"
+
+	// DefaultImage is the default image used by the Registry container.
+	DefaultImage = "registry:2.8.3"
 )
 
 // RegistryContainer represents the Registry container type used in the module
@@ -24,17 +35,56 @@ type RegistryContainer struct {
 
 // Address returns the address of the Registry container, using the HTTP protocol
 func (c *RegistryContainer) Address(ctx context.Context) (string, error) {
-	port, err := c.MappedPort(ctx, "5000")
+	host, err := c.HostAddress(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	ipAddress, err := c.Host(ctx)
+	return "http://" + host, nil
+}
+
+// HostAddress returns the host address including port of the Registry container.
+func (c *RegistryContainer) HostAddress(ctx context.Context) (string, error) {
+	port, err := c.MappedPort(ctx, registryPort)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	return fmt.Sprintf("http://%s:%s", ipAddress, port.Port()), nil
+	host, err := c.Container.Host(ctx)
+	if err != nil {
+		return "", fmt.Errorf("host: %w", err)
+	}
+
+	if host == "localhost" {
+		// This is a workaround for WSL, where localhost is not reachable from Docker.
+		host, err = localAddress(ctx)
+		if err != nil {
+			return "", fmt.Errorf("local ip: %w", err)
+		}
+	}
+
+	return net.JoinHostPort(host, port.Port()), nil
+}
+
+// localAddress returns the local address of the machine
+// which can be used to connect to the local registry.
+// This avoids the issues with localhost on WSL.
+func localAddress(ctx context.Context) (string, error) {
+	if os.Getenv("WSL_DISTRO_NAME") == "" {
+		return "localhost", nil
+	}
+
+	var d net.Dialer
+	conn, err := d.DialContext(ctx, "udp", "golang.org:80")
+	if err != nil {
+		return "", fmt.Errorf("dial: %w", err)
+	}
+
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP.String(), nil
 }
 
 // getEndpointWithAuth returns the HTTP endpoint of the Registry container, along with the image auth
@@ -165,7 +215,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RegistryContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        img,
-		ExposedPorts: []string{"5000/tcp"},
+		ExposedPorts: []string{registryPort},
 		Env: map[string]string{
 			// convenient for testing
 			"REGISTRY_STORAGE_DELETE_ENABLED": "true",
@@ -202,4 +252,56 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	c.RegistryName = strings.TrimPrefix(address, "http://")
 
 	return c, nil
+}
+
+// SetDockerAuthConfig sets the DOCKER_AUTH_CONFIG environment variable with
+// authentication for the given host, username and password sets.
+// It returns a function to reset the environment back to the previous state.
+func SetDockerAuthConfig(host, username, password string, additional ...string) (func(), error) {
+	authConfigs, err := DockerAuthConfig(host, username, password, additional...)
+	if err != nil {
+		return nil, fmt.Errorf("docker auth config: %w", err)
+	}
+
+	auth, err := json.Marshal(dockercfg.Config{AuthConfigs: authConfigs})
+	if err != nil {
+		return nil, fmt.Errorf("marshal auth config: %w", err)
+	}
+
+	previousAuthConfig := os.Getenv("DOCKER_AUTH_CONFIG")
+	os.Setenv("DOCKER_AUTH_CONFIG", string(auth))
+
+	return func() {
+		if previousAuthConfig == "" {
+			os.Unsetenv("DOCKER_AUTH_CONFIG")
+			return
+		}
+		os.Setenv("DOCKER_AUTH_CONFIG", previousAuthConfig)
+	}, nil
+}
+
+// DockerAuthConfig returns a map of AuthConfigs including base64 encoded Auth field
+// for the provided details. It also accepts additional host, username and password
+// triples to add more auth configurations.
+func DockerAuthConfig(host, username, password string, additional ...string) (map[string]dockercfg.AuthConfig, error) {
+	if len(additional)%3 != 0 {
+		return nil, fmt.Errorf("additional must be a multiple of 3")
+	}
+
+	additional = append(additional, host, username, password)
+	authConfigs := make(map[string]dockercfg.AuthConfig, len(additional)/3)
+	for i := 0; i < len(additional); i += 3 {
+		host, username, password := additional[i], additional[i+1], additional[i+2]
+		auth := dockercfg.AuthConfig{
+			Username: username,
+			Password: password,
+		}
+
+		if username != "" || password != "" {
+			auth.Auth = base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
+		}
+		authConfigs[host] = auth
+	}
+
+	return authConfigs, nil
 }

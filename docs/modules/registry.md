@@ -39,6 +39,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
+### Docker Auth Config
+
+The module exposes a way to set the Docker Auth Config for the Registry container, thanks to the `SetDockerAuthConfig` function.
+This is useful when you need to pull images from a private registry. It basically sets the `DOCKER_AUTH_CONFIG` environment variable
+with authentication for the given host, username and password sets. It returns a function to reset the environment back to the previous state,
+which is helpful when you need to reset the environment after a test.
+
+On the same hand, the module also exposes a way to build a Docker Auth Config for the Registry container, thanks to the `DockerAuthConfig` helper function.
+This function returns a map of `AuthConfigs` including base64 encoded Auth field for the provided details.
+It also accepts additional host, username and password triples to add more auth configurations.
+
 ### Container Options
 
 When starting the Registry container, you can pass options in a variadic way to configure it.
@@ -80,10 +91,15 @@ Otherwise, the Registry will start but you won't be able to read any images from
 
 The Registry container exposes the following methods:
 
+#### HostAddress
+
+This method returns the returns the host address including port of the Distribution Registry.
+E.g. `localhost:32878`.
+
 #### Address
 
 This method returns the HTTP address string to connect to the Distribution Registry, so that you can use to connect to the Registry.
-E.g. `http://localhost:32878/v2/_catalog`.
+E.g. `http://localhost:32878`.
 
 <!--codeinclude-->
 [HTTP Address](../../modules/registry/registry_test.go) inside_block:httpAddress
