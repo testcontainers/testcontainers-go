@@ -2,10 +2,13 @@ package registry_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"path/filepath"
-	"strings"
 	"testing"
+
+	"github.com/cpuguy83/dockercfg"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/registry"
@@ -13,136 +16,89 @@ import (
 )
 
 func TestRegistry_unauthenticated(t *testing.T) {
-	container, err := registry.Run(context.Background(), "registry:2.8.3")
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctx := context.Background()
+	container, err := registry.Run(ctx, registry.DefaultImage)
+	terminateContainerOnEnd(t, ctx, container)
+	require.NoError(t, err)
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(context.Background()); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
-	httpAddress, err := container.Address(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
+	httpAddress, err := container.Address(ctx)
+	require.NoError(t, err)
 
 	resp, err := http.Get(httpAddress + "/v2/_catalog")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected status code 200, but got %d", resp.StatusCode)
-	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestRunContainer_authenticated(t *testing.T) {
+	ctx := context.Background()
 	registryContainer, err := registry.Run(
-		context.Background(),
-		"registry:2.8.3",
+		ctx,
+		registry.DefaultImage,
 		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
 		registry.WithData(filepath.Join("testdata", "data")),
 	)
-	if err != nil {
-		t.Fatalf("failed to start container: %s", err)
-	}
-	t.Cleanup(func() {
-		if err := registryContainer.Terminate(context.Background()); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	terminateContainerOnEnd(t, ctx, registryContainer)
+	require.NoError(t, err)
 
 	// httpAddress {
-	httpAddress, err := registryContainer.Address(context.Background())
+	httpAddress, err := registryContainer.Address(ctx)
 	// }
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	registryPort, err := registryContainer.MappedPort(context.Background(), "5000/tcp")
-	if err != nil {
-		t.Fatalf("failed to get mapped port: %s", err)
-	}
-	strPort := registryPort.Port()
+	registryHost, err := registryContainer.HostAddress(ctx)
+	require.NoError(t, err)
 
 	t.Run("HTTP connection without basic auth fails", func(tt *testing.T) {
 		httpCli := http.Client{}
-		req, err := http.NewRequest("GET", httpAddress+"/v2/_catalog", nil)
-		if err != nil {
-			tt.Fatal(err)
-		}
+		req, err := http.NewRequest(http.MethodGet, httpAddress+"/v2/_catalog", nil)
+		require.NoError(t, err)
 
 		resp, err := httpCli.Do(req)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		if resp.StatusCode != http.StatusUnauthorized {
-			t.Fatalf("expected status code 401, but got %d", resp.StatusCode)
-		}
+		require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
 	t.Run("HTTP connection with incorrect basic auth fails", func(tt *testing.T) {
 		httpCli := http.Client{}
-		req, err := http.NewRequest("GET", httpAddress+"/v2/_catalog", nil)
-		if err != nil {
-			tt.Fatal(err)
-		}
+		req, err := http.NewRequest(http.MethodGet, httpAddress+"/v2/_catalog", nil)
+		require.NoError(t, err)
 
 		req.SetBasicAuth("foo", "bar")
 
 		resp, err := httpCli.Do(req)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		if resp.StatusCode != http.StatusUnauthorized {
-			t.Fatalf("expected status code 401, but got %d", resp.StatusCode)
-		}
+		require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
 	t.Run("HTTP connection with basic auth succeeds", func(tt *testing.T) {
 		httpCli := http.Client{}
-		req, err := http.NewRequest("GET", httpAddress+"/v2/_catalog", nil)
-		if err != nil {
-			tt.Fatal(err)
-		}
+		req, err := http.NewRequest(http.MethodGet, httpAddress+"/v2/_catalog", nil)
+		require.NoError(t, err)
 
 		req.SetBasicAuth("testuser", "testpassword")
 
 		resp, err := httpCli.Do(req)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("expected status code 200, but got %d", resp.StatusCode)
-		}
+		require.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
 	t.Run("build images with wrong credentials fails", func(tt *testing.T) {
-		// Zm9vOmJhcg== is base64 for foo:bar
-		tt.Setenv("DOCKER_AUTH_CONFIG", `{
-			"auths": {
-				"localhost:`+strPort+`": { "username": "foo", "password": "bar", "auth": "Zm9vOmJhcg==" }
-			},
-			"credsStore": "desktop"
-		}`)
+		setAuthConfig(tt, registryHost, "foo", "bar")
 
 		redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				FromDockerfile: testcontainers.FromDockerfile{
 					Context: filepath.Join("testdata", "redis"),
 					BuildArgs: map[string]*string{
-						"REGISTRY_PORT": &strPort,
+						"REGISTRY_HOST": &registryHost,
 					},
 				},
 				AlwaysPullImage: true, // make sure the authentication takes place
@@ -151,31 +107,13 @@ func TestRunContainer_authenticated(t *testing.T) {
 			},
 			Started: true,
 		})
-		if err == nil {
-			tt.Fatalf("expected to fail to start container, but it did not")
-		}
-		if redisC != nil {
-			tt.Fatal("redis container should not be running")
-			tt.Cleanup(func() {
-				if err := redisC.Terminate(context.Background()); err != nil {
-					tt.Fatalf("failed to terminate container: %s", err)
-				}
-			})
-		}
-
-		if !strings.Contains(err.Error(), "unauthorized: authentication required") {
-			tt.Fatalf("expected error to be 'unauthorized: authentication required' but got '%s'", err.Error())
-		}
+		terminateContainerOnEnd(tt, ctx, redisC)
+		require.Error(tt, err)
+		require.Contains(tt, err.Error(), "unauthorized: authentication required")
 	})
 
 	t.Run("build image with valid credentials", func(tt *testing.T) {
-		// dGVzdHVzZXI6dGVzdHBhc3N3b3Jk is base64 for testuser:testpassword
-		tt.Setenv("DOCKER_AUTH_CONFIG", `{
-		"auths": {
-			"localhost:`+strPort+`": { "username": "testuser", "password": "testpassword", "auth": "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" }
-		},
-		"credsStore": "desktop"
-	}`)
+		setAuthConfig(tt, registryHost, "testuser", "testpassword")
 
 		// build a custom redis image from the private registry,
 		// using RegistryName of the container as the registry.
@@ -187,7 +125,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 				FromDockerfile: testcontainers.FromDockerfile{
 					Context: filepath.Join("testdata", "redis"),
 					BuildArgs: map[string]*string{
-						"REGISTRY_PORT": &strPort,
+						"REGISTRY_HOST": &registryHost,
 					},
 				},
 				AlwaysPullImage: true, // make sure the authentication takes place
@@ -196,97 +134,58 @@ func TestRunContainer_authenticated(t *testing.T) {
 			},
 			Started: true,
 		})
-		if err != nil {
-			tt.Fatalf("failed to start container: %s", err)
-		}
-
-		tt.Cleanup(func() {
-			if err := redisC.Terminate(context.Background()); err != nil {
-				tt.Fatalf("failed to terminate container: %s", err)
-			}
-		})
+		terminateContainerOnEnd(tt, ctx, redisC)
+		require.NoError(tt, err)
 
 		state, err := redisC.State(context.Background())
-		if err != nil {
-			tt.Fatalf("failed to get redis container state: %s", err) // nolint:gocritic
-		}
-
-		if !state.Running {
-			tt.Fatalf("expected redis container to be running, but it is not")
-		}
+		require.NoError(tt, err)
+		require.True(tt, state.Running, "expected redis container to be running, but it is not")
 	})
 }
 
 func TestRunContainer_authenticated_withCredentials(t *testing.T) {
+	ctx := context.Background()
 	// htpasswdString {
 	registryContainer, err := registry.Run(
-		context.Background(),
-		"registry:2.8.3",
+		ctx,
+		registry.DefaultImage,
 		registry.WithHtpasswd("testuser:$2y$05$tTymaYlWwJOqie.bcSUUN.I.kxmo1m5TLzYQ4/ejJ46UMXGtq78EO"),
 	)
 	// }
-	if err != nil {
-		t.Fatalf("failed to start container: %s", err)
-	}
-	t.Cleanup(func() {
-		if err := registryContainer.Terminate(context.Background()); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	terminateContainerOnEnd(t, ctx, registryContainer)
+	require.NoError(t, err)
 
-	httpAddress, err := registryContainer.Address(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
+	httpAddress, err := registryContainer.Address(ctx)
+	require.NoError(t, err)
 
 	httpCli := http.Client{}
-	req, err := http.NewRequest("GET", httpAddress+"/v2/_catalog", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	req, err := http.NewRequest(http.MethodGet, httpAddress+"/v2/_catalog", nil)
+	require.NoError(t, err)
 
 	req.SetBasicAuth("testuser", "testpassword")
 
 	resp, err := httpCli.Do(req)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected status code 200, but got %d", resp.StatusCode)
-	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestRunContainer_wrongData(t *testing.T) {
+	ctx := context.Background()
 	registryContainer, err := registry.Run(
-		context.Background(),
-		"registry:2.8.3",
+		ctx,
+		registry.DefaultImage,
 		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
 		registry.WithData(filepath.Join("testdata", "wrongdata")),
 	)
-	if err != nil {
-		t.Fatalf("failed to start container: %s", err)
-	}
-	t.Cleanup(func() {
-		if err := registryContainer.Terminate(context.Background()); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	terminateContainerOnEnd(t, ctx, registryContainer)
+	require.NoError(t, err)
 
-	registryPort, err := registryContainer.MappedPort(context.Background(), "5000/tcp")
-	if err != nil {
-		t.Fatalf("failed to get mapped port: %s", err)
-	}
-	strPort := registryPort.Port()
+	registryHost, err := registryContainer.HostAddress(ctx)
+	require.NoError(t, err)
 
-	// dGVzdHVzZXI6dGVzdHBhc3N3b3Jk is base64 for testuser:testpassword
-	t.Setenv("DOCKER_AUTH_CONFIG", `{
-		"auths": {
-			"localhost:`+strPort+`": { "username": "testuser", "password": "testpassword", "auth": "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" }
-		},
-		"credsStore": "desktop"
-	}`)
+	setAuthConfig(t, registryHost, "testuser", "testpassword")
 
 	// build a custom redis image from the private registry,
 	// using RegistryName of the container as the registry.
@@ -298,7 +197,7 @@ func TestRunContainer_wrongData(t *testing.T) {
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context: filepath.Join("testdata", "redis"),
 				BuildArgs: map[string]*string{
-					"REGISTRY_PORT": &strPort,
+					"REGISTRY_HOST": &registryHost,
 				},
 			},
 			AlwaysPullImage: true, // make sure the authentication takes place
@@ -307,19 +206,33 @@ func TestRunContainer_wrongData(t *testing.T) {
 		},
 		Started: true,
 	})
-	if err == nil {
-		t.Fatalf("expected to fail to start container, but it did not")
-	}
-	if redisC != nil {
-		t.Fatal("redis container should not be running")
-		t.Cleanup(func() {
-			if err := redisC.Terminate(context.Background()); err != nil {
-				t.Fatalf("failed to terminate container: %s", err)
-			}
-		})
+	terminateContainerOnEnd(t, ctx, redisC)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "manifest unknown")
+}
+
+// setAuthConfig sets the DOCKER_AUTH_CONFIG environment variable with
+// authentication for with the given host, username and password.
+func setAuthConfig(t *testing.T, host, username, password string) {
+	t.Helper()
+
+	authConfigs, err := registry.DockerAuthConfig(host, username, password)
+	require.NoError(t, err)
+	auth, err := json.Marshal(dockercfg.Config{AuthConfigs: authConfigs})
+	require.NoError(t, err)
+
+	t.Setenv("DOCKER_AUTH_CONFIG", string(auth))
+}
+
+// terminateContainerOnEnd terminates the container when the test ends if it is not nil.
+func terminateContainerOnEnd(tb testing.TB, ctx context.Context, container testcontainers.Container) {
+	tb.Helper()
+
+	if container == nil {
+		return
 	}
 
-	if !strings.Contains(err.Error(), "manifest unknown") {
-		t.Fatalf("expected error to be 'manifest unknown' but got '%s'", err.Error())
-	}
+	tb.Cleanup(func() {
+		require.NoError(tb, container.Terminate(ctx))
+	})
 }
