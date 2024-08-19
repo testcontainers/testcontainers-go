@@ -46,7 +46,7 @@ This is useful when you need to pull images from a private registry. It basicall
 with authentication for the given host, username and password sets. It returns a function to reset the environment back to the previous state,
 which is helpful when you need to reset the environment after a test.
 
-On the same hand, the module also exposes a way to get the Docker Auth Config for the Registry container, thanks to the `DockerAuthConfig` helper function.
+On the same hand, the module also exposes a way to build a Docker Auth Config for the Registry container, thanks to the `DockerAuthConfig` helper function.
 This function returns a map of `AuthConfigs` including base64 encoded Auth field for the provided details.
 It also accepts additional host, username and password triples to add more auth configurations.
 
