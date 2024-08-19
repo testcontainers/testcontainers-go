@@ -255,7 +255,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // SetDockerAuthConfig sets the DOCKER_AUTH_CONFIG environment variable with
-// authentication for with the given host, username and password sets.
+// authentication for the given host, username and password sets.
 // It returns a function to reset the environment back to the previous state.
 func SetDockerAuthConfig(host, username, password string, additional ...string) (func(), error) {
 	authConfigs, err := DockerAuthConfig(host, username, password, additional...)
