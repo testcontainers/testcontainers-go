@@ -70,7 +70,7 @@ func TestPre(t *testing.T) {
 				tt.Fatalf("Error initializing git repository: %v", err)
 			}
 
-			if err := releaser.PreRun(ctx); err != nil {
+			if err := releaser.PreRun(ctx, gitClient); err != nil {
 				tt.Fatalf("Pre() error = %v", err)
 			}
 

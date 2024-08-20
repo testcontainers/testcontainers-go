@@ -33,16 +33,6 @@ func New(ctx context.Context, branch string, dryRun bool) *GitClient {
 // InitRepository initializes a git repository in the root directory of the context.
 // Handy for testing.
 func (g *GitClient) InitRepository() error {
-	if g.dryRun {
-		fmt.Println("git init")
-		fmt.Println("git remote add origin git@github.com:testcontainers/testcontainers-go.git")
-		fmt.Println("git checkout -b " + g.defaultBranch)
-		fmt.Println("touch .keep")
-		fmt.Println("git add .keep")
-		fmt.Println("git commit -m 'Initial commit'")
-		return nil
-	}
-
 	// set a fake origin for testing purposes
 	g.origin = "git@testing-github.com:testcontainers/testcontainers-go.git"
 

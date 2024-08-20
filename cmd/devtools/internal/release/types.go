@@ -2,6 +2,7 @@ package release
 
 import (
 	"github.com/testcontainers/testcontainers-go/devtools/internal/context"
+	"github.com/testcontainers/testcontainers-go/devtools/internal/git"
 )
 
 const (
@@ -12,8 +13,8 @@ const (
 var directories = []string{"examples", "modules"}
 
 type Releaser interface {
-	PreRun(ctx context.Context) error
-	Run(ctx context.Context) error
+	PreRun(ctx context.Context, g *git.GitClient) error
+	Run(ctx context.Context, g *git.GitClient) error
 }
 
 type dryRunReleaseManager struct {
@@ -35,13 +36,13 @@ func NewReleaseManager(branch string, bumpType string, dryRun bool) Releaser {
 	return &r
 }
 
-func (p *dryRunReleaseManager) PreRun(ctx context.Context) error {
-	return preRun(ctx, p.branch, true)
+func (p *dryRunReleaseManager) PreRun(ctx context.Context, gitClient *git.GitClient) error {
+	return preRun(ctx, gitClient, p.branch, true)
 }
 
-func (p *dryRunReleaseManager) Run(ctx context.Context) error {
+func (p *dryRunReleaseManager) Run(ctx context.Context, gitClient *git.GitClient) error {
 	// dry run and skip remote operations
-	return run(ctx, p.branch, p.bumpType, true, true, golangProxy)
+	return run(ctx, gitClient, p.bumpType, true, true, golangProxy)
 }
 
 type releaseManager struct {
@@ -49,11 +50,11 @@ type releaseManager struct {
 	bumpType string
 }
 
-func (p *releaseManager) PreRun(ctx context.Context) error {
-	return preRun(ctx, p.branch, false)
+func (p *releaseManager) PreRun(ctx context.Context, gitClient *git.GitClient) error {
+	return preRun(ctx, gitClient, p.branch, false)
 }
 
-func (p *releaseManager) Run(ctx context.Context) error {
+func (p *releaseManager) Run(ctx context.Context, gitClient *git.GitClient) error {
 	// no dry run and execute remote operations
-	return run(ctx, p.branch, p.bumpType, false, false, golangProxy)
+	return run(ctx, gitClient, p.bumpType, false, false, golangProxy)
 }

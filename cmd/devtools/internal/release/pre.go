@@ -17,15 +17,13 @@ import (
 // - updating the version in the go.mod files of the examples and modules directories
 // - running the make tidy-examples and make tidy-modules commands
 // - updating the version in the markdown files in the docs directory
-func preRun(ctx context.Context, branch string, dryRun bool) error {
+func preRun(ctx context.Context, gitClient *git.GitClient, branch string, dryRun bool) error {
 	version, err := extractCurrentVersion(ctx)
 	if err != nil {
 		return err
 	}
 
 	vVersion := "v" + version
-
-	gitClient := git.New(ctx, branch, dryRun)
 
 	err = gitClient.HasOriginRemote()
 	if err != nil {

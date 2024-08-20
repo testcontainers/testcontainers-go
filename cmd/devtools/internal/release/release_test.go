@@ -179,11 +179,11 @@ func TestRun(t *testing.T) {
 			}
 
 			// we need to force the pre-run so that the version file is created
-			if err := releaser.PreRun(ctx); err != nil {
+			if err := releaser.PreRun(ctx, gitClient); err != nil {
 				tt.Fatalf("Pre() error = %v", err)
 			}
 
-			if err := releaser.Run(ctx); err != nil {
+			if err := releaser.Run(ctx, gitClient); err != nil {
 				tt.Fatalf("Run() error = %v", err)
 			}
 

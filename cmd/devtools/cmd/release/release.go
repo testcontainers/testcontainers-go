@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/testcontainers/testcontainers-go/devtools/internal/context"
+	"github.com/testcontainers/testcontainers-go/devtools/internal/git"
 	"github.com/testcontainers/testcontainers-go/devtools/internal/release"
 )
 
@@ -29,10 +30,14 @@ executing them.`,
 			return err
 		}
 
-		// when using the CLI, we are going to use the main branch for the release
-		releaser := release.NewReleaseManager("main", bumpType, dryRun)
+		branch := "main"
 
-		err = releaser.PreRun(ctx)
+		// when using the CLI, we are going to use the main branch for the release
+		releaser := release.NewReleaseManager(branch, bumpType, dryRun)
+
+		gitClient := git.New(ctx, branch, dryRun)
+
+		err = releaser.PreRun(ctx, gitClient)
 		if err != nil {
 			return err
 		}
@@ -41,7 +46,7 @@ executing them.`,
 			return nil
 		}
 
-		return releaser.Run(ctx)
+		return releaser.Run(ctx, gitClient)
 	},
 }
 

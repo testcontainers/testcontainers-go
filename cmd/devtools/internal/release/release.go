@@ -20,7 +20,7 @@ const (
 )
 
 // run performs the release
-func run(ctx devcontext.Context, branch string, bumpType string, dryRun bool, skipRemoteOps bool, proxyURL string) error {
+func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryRun bool, skipRemoteOps bool, proxyURL string) error {
 	if bumpType == "" {
 		bumpType = "minor"
 	}
@@ -40,9 +40,6 @@ func run(ctx devcontext.Context, branch string, bumpType string, dryRun bool, sk
 	}
 
 	fmt.Println("Next version:", nextVersion)
-
-	// add the files to git
-	gitClient := git.New(ctx, branch, dryRun)
 
 	// the glob expressions must be quoted to avoid shell expansion
 	args := [][]string{

@@ -10,6 +10,7 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/testcontainers/testcontainers-go/devtools/internal/context"
+	"github.com/testcontainers/testcontainers-go/devtools/internal/git"
 	"github.com/testcontainers/testcontainers-go/devtools/internal/module"
 )
 
@@ -31,12 +32,12 @@ func NewTestReleaser(dryRun bool, rootDir string, bumpType string, proxyURL stri
 	}
 }
 
-func (p *testReleaser) PreRun(ctx context.Context) error {
-	return preRun(ctx, p.branch, p.dryRun)
+func (p *testReleaser) PreRun(ctx context.Context, gitClient *git.GitClient) error {
+	return preRun(ctx, gitClient, p.branch, p.dryRun)
 }
 
-func (p *testReleaser) Run(ctx context.Context) error {
-	return run(ctx, p.branch, p.bumpType, p.dryRun, p.skipRemoteOps, p.proxyURL)
+func (p *testReleaser) Run(ctx context.Context, gitClient *git.GitClient) error {
+	return run(ctx, gitClient, p.bumpType, p.dryRun, p.skipRemoteOps, p.proxyURL)
 }
 
 func createBumpFiles(t *testing.T, ctx context.Context, version string) {
