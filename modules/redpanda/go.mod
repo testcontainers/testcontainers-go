@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/docker/go-connections v0.5.0
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.32.0
+	github.com/testcontainers/testcontainers-go v0.33.0
 	github.com/twmb/franz-go v1.16.1
 	github.com/twmb/franz-go/pkg/kadm v1.11.0
 	golang.org/x/mod v0.16.0
