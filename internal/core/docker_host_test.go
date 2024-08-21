@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -40,6 +41,14 @@ var resetSocketOverrideFn = func() {
 	os.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", originalDockerSocketOverride)
 }
 
+var testCallbackCheckPassing = func(_ string) error {
+	return nil
+}
+
+var testCallbackCheckError = func(_ string) error {
+	return fmt.Errorf("could not check the Docker host")
+}
+
 func TestExtractDockerHost(t *testing.T) {
 	setupDockerHostNotFound(t)
 	// do not mess with local .testcontainers.properties
@@ -47,10 +56,11 @@ func TestExtractDockerHost(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir) // Windows support
 
-	t.Run("Docker Host as extracted just once", func(t *testing.T) {
+	t.Run("Docker Host is extracted just once", func(t *testing.T) {
 		expected := "/path/to/docker.sock"
 		t.Setenv("DOCKER_HOST", expected)
-		host := ExtractDockerHost(context.Background())
+
+		host := ExtractDockerHost(context.Background(), testCallbackCheckPassing)
 
 		assert.Equal(t, expected, host)
 
@@ -69,6 +79,18 @@ func TestExtractDockerHost(t *testing.T) {
 		host := extractDockerHost(context.Background())
 
 		assert.Equal(t, testRemoteHost, host)
+	})
+
+	t.Run("Testcontainers Host is resolved first but not reachable", func(t *testing.T) {
+		t.Setenv("DOCKER_HOST", "/path/to/docker.sock")
+		content := "tc.host=" + testRemoteHost
+
+		setupTestcontainersProperties(t, content)
+
+		host := extractDockerHost(context.Background(), testCallbackCheckError)
+
+		// the default Docker host with schema is returned because we cannot any other host
+		assert.Equal(t, DockerSocketPathWithSchema, host)
 	})
 
 	t.Run("Docker Host as environment variable", func(t *testing.T) {
@@ -410,6 +432,22 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
 
 		assert.Equal(t, "/this/is/a/sample.sock", socket)
+	})
+
+	t.Run("Unix Docker Socket is passed as docker.host property but not reachable", func(t *testing.T) {
+		content := "docker.host=" + DockerSocketSchema + "/this/is/a/sample.sock"
+		setupTestcontainersProperties(t, content)
+
+		t.Cleanup(resetSocketOverrideFn)
+
+		ctx := context.Background()
+		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+		os.Unsetenv("DOCKER_HOST")
+
+		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"}, testCallbackCheckError)
+
+		// the default Docker host without schema is returned because we cannot any other host
+		assert.Equal(t, DockerSocketPath, socket)
 	})
 }
 

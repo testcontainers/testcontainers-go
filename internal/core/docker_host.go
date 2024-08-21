@@ -56,6 +56,23 @@ func DefaultGatewayIP() (string, error) {
 	return ip, nil
 }
 
+// Use a vanilla Docker client to check if the Docker host is reachable.
+// It will avoid recursive calls to this function.
+var defaultCallbackCheckFn = func(host string) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithHost(host))
+	if err != nil {
+		return err
+	}
+
+	_, err = cli.Info(context.Background())
+	if err != nil {
+		return err
+	}
+	defer cli.Close()
+
+	return nil
+}
+
 // ExtractDockerHost Extracts the docker host from the different alternatives, caching the result to avoid unnecessary
 // calculations. Use this function to get the actual Docker host. This function does not consider Windows containers at the moment.
 // The possible alternatives are:
@@ -67,9 +84,16 @@ func DefaultGatewayIP() (string, error) {
 //  5. Docker host from the "docker.host" property in the ~/.testcontainers.properties file.
 //  6. Rootless docker socket path.
 //  7. Else, the default Docker socket including schema will be returned.
-func ExtractDockerHost(ctx context.Context) string {
+func ExtractDockerHost(ctx context.Context, callbackChecks ...func(host string) error) string {
 	dockerHostOnce.Do(func() {
-		dockerHostCache = extractDockerHost(ctx)
+		// the tests can pass a custom callback check to avoid the Docker client creation
+		// and to avoid changing the code base, passing zero callbacks will mean the default one,
+		// which checks that the host is reachable.
+		if len(callbackChecks) == 0 {
+			callbackChecks = append(callbackChecks, defaultCallbackCheckFn)
+		}
+
+		dockerHostCache = extractDockerHost(ctx, callbackChecks...)
 	})
 
 	return dockerHostCache
@@ -98,7 +122,7 @@ func ExtractDockerSocket(ctx context.Context) string {
 
 // extractDockerHost Extracts the docker host from the different alternatives, without caching the result.
 // This internal method is handy for testing purposes.
-func extractDockerHost(ctx context.Context) string {
+func extractDockerHost(ctx context.Context, callbackChecks ...func(host string) error) string {
 	dockerHostFns := []func(context.Context) (string, error){
 		testcontainersHostFromProperties,
 		dockerHostFromEnv,
@@ -109,11 +133,20 @@ func extractDockerHost(ctx context.Context) string {
 	}
 
 	outerErr := ErrSocketNotFound
+BEGIN:
 	for _, dockerHostFn := range dockerHostFns {
 		dockerHost, err := dockerHostFn(ctx)
 		if err != nil {
 			outerErr = fmt.Errorf("%w: %w", outerErr, err)
 			continue
+		}
+
+		for _, callbackCheck := range callbackChecks {
+			err = callbackCheck(dockerHost)
+			if err != nil {
+				outerErr = fmt.Errorf("%w: %w", outerErr, err)
+				continue BEGIN // retry with the next docker host function
+			}
 		}
 
 		return dockerHost
@@ -123,7 +156,7 @@ func extractDockerHost(ctx context.Context) string {
 	return DockerSocketPathWithSchema
 }
 
-// extractDockerHost Extracts the docker socket from the different alternatives, without caching the result.
+// extractDockerSocket Extracts the docker socket from the different alternatives, without caching the result.
 // It will internally use the default Docker client, calling the internal method extractDockerSocketFromClient with it.
 // This internal method is handy for testing purposes.
 // If a Docker client cannot be created, the program will panic.
@@ -134,13 +167,13 @@ func extractDockerSocket(ctx context.Context) string {
 	}
 	defer cli.Close()
 
-	return extractDockerSocketFromClient(ctx, cli)
+	return extractDockerSocketFromClient(ctx, cli, defaultCallbackCheckFn)
 }
 
 // extractDockerSocketFromClient Extracts the docker socket from the different alternatives, without caching the result,
 // and receiving an instance of the Docker API client interface.
 // This internal method is handy for testing purposes, passing a mock type simulating the desired behaviour.
-func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) string {
+func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient, callbackChecks ...func(host string) error) string {
 	// check that the socket is not a tcp or unix socket
 	checkDockerSocketFn := func(socket string) string {
 		// this use case will cover the case when the docker host is a tcp socket
@@ -179,7 +212,7 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 		return DockerSocketPath
 	}
 
-	dockerHost := extractDockerHost(ctx)
+	dockerHost := extractDockerHost(ctx, callbackChecks...)
 
 	return checkDockerSocketFn(dockerHost)
 }
