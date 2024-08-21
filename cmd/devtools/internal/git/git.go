@@ -171,6 +171,9 @@ func (g *GitClient) Tag(tag string) error {
 	return g.Exec("tag", tag)
 }
 
+// HasOriginRemote checks if the repository has an origin remote set to the expected value.
+// The expected value is set in the origin field of the GitClient,
+// and defaults to the testcontainers-go upstream repository.
 func (g *GitClient) HasOriginRemote() error {
 	remotes, err := g.remotes()
 	if err != nil {

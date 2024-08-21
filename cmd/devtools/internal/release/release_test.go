@@ -264,6 +264,8 @@ func (lc *wiremockLogConsumer) Accept(l testcontainers.Log) {
 	}
 }
 
+// startGolangProxy starts a wiremock container with a mapping file to proxy requests to the golang proxy.
+// This mock is used to simulate the requests to the golang proxy
 func startGolangProxy(t *testing.T, consumer testcontainers.LogConsumer) *wiremock.WireMockContainer {
 	goCtx := gocontext.Background()
 

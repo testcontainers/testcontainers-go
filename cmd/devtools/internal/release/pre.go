@@ -40,6 +40,7 @@ func preRun(ctx context.Context, gitClient *git.GitClient, branch string, dryRun
 		return fmt.Errorf("error bumping version: %w", err)
 	}
 
+	// loop through the examples and modules directories to update the go.mod files
 	for _, directory := range directories {
 		path := filepath.Join(ctx.RootDir, directory)
 		modules, err := getSubdirectories(path)
@@ -47,6 +48,7 @@ func preRun(ctx context.Context, gitClient *git.GitClient, branch string, dryRun
 			return fmt.Errorf("error getting subdirectories: %w", err)
 		}
 
+		// loop through the Go modules in the directory
 		for _, module := range modules {
 			moduleModFile := filepath.Join(path, module, "go.mod")
 			err := replaceInFile(dryRun, true, moduleModFile, "testcontainers-go v.*", fmt.Sprintf("testcontainers-go v%s", version))
@@ -66,6 +68,9 @@ func preRun(ctx context.Context, gitClient *git.GitClient, branch string, dryRun
 	return processMarkdownFiles(dryRun, docsDir, version)
 }
 
+// extractCurrentVersion extracts the current version from the version file.
+// It reads the contents of that version file and replaces the value of the constant representing the version, if found.
+// If the version is not found, it returns an error.
 func extractCurrentVersion(ctx context.Context) (string, error) {
 	data, err := os.ReadFile(ctx.VersionFile())
 	if err != nil {
@@ -80,6 +85,7 @@ func extractCurrentVersion(ctx context.Context) (string, error) {
 	return "", fmt.Errorf("version not found in version.go")
 }
 
+// bumpVersion bumps the version in the mkdocs.yml and sonar-project.properties files.
 func bumpVersion(ctx context.Context, dryRun bool, vVersion string) error {
 	if err := replaceInFile(dryRun, true, ctx.MkdocsConfigFile(), "latest_version: .*", fmt.Sprintf("latest_version: %s", vVersion)); err != nil {
 		return err
@@ -138,6 +144,7 @@ func sinceVersionText(version string) string {
 	return fmt.Sprintf(`Since testcontainers-go <a href=\"https://github.com/testcontainers/testcontainers-go/releases/tag/v%s\"><span class=\"tc-version\">:material-tag: v%s</span></a>`, version, version)
 }
 
+// processMarkdownFiles processes all the markdown files in the docs directory, replacing the non-released text with the released text.
 func processMarkdownFiles(dryRun bool, docsDir, version string) error {
 	return filepath.Walk(docsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

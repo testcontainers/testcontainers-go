@@ -67,6 +67,7 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 		return fmt.Errorf("error tagging the release: %w", err)
 	}
 
+	// loop through the examples and modules directories to create the git tags
 	for _, directory := range directories {
 		path := filepath.Join(ctx.RootDir, directory)
 		modules, err := getSubdirectories(path)
@@ -74,6 +75,7 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 			return fmt.Errorf("error getting subdirectories: %w", err)
 		}
 
+		// loop through the Go modules in the directory
 		for _, module := range modules {
 			moduleTag := fmt.Sprintf("%s/%s/%s", directory, module, releaseVersion) // e.g. modules/mongodb/v0.0.1
 			if err := gitClient.Tag(moduleTag); err != nil {
@@ -109,6 +111,8 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 	if err := hitGolangProxy(proxyURL, dryRun, repository, releaseVersion); err != nil {
 		return fmt.Errorf("error hitting the golang proxy for the core: %w", err)
 	}
+
+	// loop through the modules to hit the golang proxy
 	for _, directory := range directories {
 		path := filepath.Join(ctx.RootDir, directory)
 		modules, err := getSubdirectories(path)
@@ -116,6 +120,7 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 			return fmt.Errorf("error getting subdirectories: %w", err)
 		}
 
+		// loop through the Go modules in the directory
 		for _, module := range modules {
 			modulePath := fmt.Sprintf("%s/%s/%s", repository, directory, module)
 			if err := hitGolangProxy(proxyURL, dryRun, modulePath, releaseVersion); err != nil {
@@ -156,6 +161,9 @@ func hitGolangProxy(proxyURL string, dryRun bool, modulePath string, moduleVersi
 	return nil
 }
 
+// getSemverVersion gets the next version based on the bump type.
+// It uses testcontainers-go to run a container with the semver-tool to bump the version.
+// The image is "mdelapenya/semver-tool:3.4.0".
 func getSemverVersion(bumpType string, vVersion string) (string, error) {
 	// get the next version from the bump type. It will use the semver-tool to bump the version
 	c, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
