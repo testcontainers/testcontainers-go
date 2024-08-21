@@ -116,6 +116,22 @@ func extractDockerHost(ctx context.Context) string {
 			continue
 		}
 
+		// check if the docker host responds to an Info request
+		// we are going to use the default Docker client to check if the host is reachable
+		// which will avoid recursive calls to this function
+		cli, err := client.NewClientWithOpts(client.WithHost(dockerHost))
+		if err != nil {
+			outerErr = fmt.Errorf("%w: %w", outerErr, err)
+			continue
+		}
+		defer cli.Close()
+
+		_, err = cli.Info(ctx)
+		if err != nil {
+			outerErr = fmt.Errorf("%w: %w", outerErr, err)
+			continue
+		}
+
 		return dockerHost
 	}
 
@@ -141,8 +157,7 @@ func extractDockerSocket(ctx context.Context) string {
 // and receiving an instance of the Docker API client interface.
 // This internal method is handy for testing purposes, passing a mock type simulating the desired behaviour.
 func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) string {
-	// check that the socket is not a tcp or unix socket,
-	// and that it is reachable.
+	// check that the socket is not a tcp or unix socket
 	checkDockerSocketFn := func(socket string) string {
 		// this use case will cover the case when the docker host is a tcp socket
 		if strings.HasPrefix(socket, TCPSchema) {
@@ -151,11 +166,6 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 
 		if strings.HasPrefix(socket, DockerSocketSchema) {
 			return strings.Replace(socket, DockerSocketSchema, "", 1)
-		}
-
-		_, err := cli.Info(ctx)
-		if err != nil {
-			return DockerSocketPath
 		}
 
 		return socket
