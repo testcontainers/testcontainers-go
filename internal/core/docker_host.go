@@ -116,22 +116,6 @@ func extractDockerHost(ctx context.Context) string {
 			continue
 		}
 
-		// check if the docker host responds to an Info request
-		// we are going to use the default Docker client to check if the host is reachable
-		// which will avoid recursive calls to this function
-		cli, err := client.NewClientWithOpts(client.WithHost(dockerHost))
-		if err != nil {
-			outerErr = fmt.Errorf("%w: %w", outerErr, err)
-			continue
-		}
-		defer cli.Close()
-
-		_, err = cli.Info(ctx)
-		if err != nil {
-			outerErr = fmt.Errorf("%w: %w", outerErr, err)
-			continue
-		}
-
 		return dockerHost
 	}
 
