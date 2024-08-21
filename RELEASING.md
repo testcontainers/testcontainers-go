@@ -189,15 +189,14 @@ Replacing 'Not available until the next release of testcontainers-go <a href=\"h
 Once you are satisfied with the modified files in the git state:
 
 - Run the [release](./cmd/devtools/cmd/release/release.go) command script to create the release in dry-run mode.
-- You can use the `--dry-run` flag to enable or disable the dry-run mode. By default, it's enabled.
+- You can use the `--dry-run` flag to enable or disable the dry-run mode. **By default, it's disabled**.
 
 ```shell
 cd cmd/devtools
 go run main.go release
 ```
 
-- You can define the bump type, using the `--bump_type` flag. The default value is `minor`, but you can also use `major`, `patch` or `prerel` (the script will fail if the value is not one of these four):
-
+- You can define the bump type, using the `--bump-type` flag. The default value is `minor`, but you can also use `major`, `patch` or `prerel` (the script will fail if the value is not one of these four). That value represents the next development version after the release.
 
 ```shell
 cd cmd/devtools
@@ -211,12 +210,15 @@ go run main.go release --bump-type=major
 
              "${directory}/${module_name}/${version}", e.g. "examples/mysql/v0.18.0", "modules/compose/v0.18.0"
 
-- The script will update the [version.go](./internal/version.go) file, setting the next development version to the value defined in the `--bump-type` flag. For example, if the current version is `v0.18.0`, the script will update the [version.go](./internal/version.go) file with the next development version `v0.19.0`.
-- The script will create a commit in the **main** branch if the `--dry-run` flag is set to `false`.
+- The script will update the [version.go](./internal/version.go) file, setting the next development version to the value defined in the `--bump-type` flag. For example, if the current version is `v0.18.0`, and a `minor` bump is used, the script will update the [version.go](./internal/version.go) file with the next development version `v0.19.0`.
+- The script will create a commit with the modified version file in the **main** branch if the `--dry-run` flag is set to `false`. This represents the new development version after the release. The commit message is `chore: prepare for next minor development cycle (0.34.0)`.
 - The script will push the main branch including the tags to the upstream repository, https://github.com/testcontainers/testcontainers-go, if the `--dry-run` flag is set to `false`.
 - Finally, the script will trigger the Golang proxy to update the modules in https://proxy.golang.org/, if the `--dry-run` flag is set to `false`.
 
 An example execution, with dry-run mode enabled:
+
+<details>
+  <summary>Sample output</summary>
 
 ```shell
 cd cmd/devtools
@@ -393,6 +395,7 @@ Hitting the Golang proxy: https://proxy.golang.org/github.com/testcontainers/tes
 Hitting the Golang proxy: https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/vearch/@v/v0.32.0.info
 Hitting the Golang proxy: https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/weaviate/@v/v0.32.0.info
 ```
+</details>
 
 Right after that, you have to:
 - Verify that the commits are in the upstream repository, otherwise, update it with the current state of the main branch.
