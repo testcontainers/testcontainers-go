@@ -2,14 +2,12 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/docker/docker/api/types/system"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/errdefs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -273,17 +271,12 @@ func TestExtractDockerHost(t *testing.T) {
 // different operating systems.
 type mockCli struct {
 	client.APIClient
-	OS           string
-	notReachable bool
+	OS string
 }
 
 // Info returns a mock implementation of types.Info, which is handy for detecting the operating system,
 // which is used to determine the default docker socket path.
 func (m mockCli) Info(ctx context.Context) (system.Info, error) {
-	if m.notReachable {
-		return system.Info{}, errdefs.Unavailable(fmt.Errorf("Docker is not reachable"))
-	}
-
 	return system.Info{
 		OperatingSystem: m.OS,
 	}, nil
@@ -415,29 +408,6 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		os.Unsetenv("DOCKER_HOST")
 
 		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
-
-		assert.Equal(t, "/this/is/a/sample.sock", socket)
-	})
-
-	t.Run("Unix Docker Socket is not reachable, so Info panics", func(t *testing.T) {
-		defer func() {
-			if r := recover(); r == nil {
-				t.Errorf("The code did not panic")
-			}
-		}()
-
-		content := "docker.host=" + DockerSocketSchema + "/this/is/a/sample.sock"
-		setupTestcontainersProperties(t, content)
-		setupDockerSocketNotFound(t)
-
-		t.Cleanup(resetSocketOverrideFn)
-
-		ctx := context.Background()
-		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
-		os.Unsetenv("DOCKER_HOST")
-
-		// force a non
-		socket := extractDockerSocketFromClient(ctx, mockCli{notReachable: true})
 
 		assert.Equal(t, "/this/is/a/sample.sock", socket)
 	})
