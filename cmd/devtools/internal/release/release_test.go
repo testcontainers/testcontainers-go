@@ -268,7 +268,7 @@ func startGolangProxy(t *testing.T, consumer testcontainers.LogConsumer) *wiremo
 	goCtx := gocontext.Background()
 
 	opts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithImage("wiremock/wiremock:3.8.0"),
+		wiremock.WithImage("wiremock/wiremock:3.8.0"),
 		testcontainers.WithEnv(map[string]string{
 			// enable verbose mode in order to capture the requests in the log consumer
 			"WIREMOCK_OPTIONS": "--verbose",
