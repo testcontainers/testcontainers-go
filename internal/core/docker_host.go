@@ -56,9 +56,9 @@ func DefaultGatewayIP() (string, error) {
 	return ip, nil
 }
 
-// Use a vanilla Docker client to check if the Docker host is reachable.
+// defaultCallbackCheck Use a vanilla Docker client to check if the Docker host is reachable.
 // It will avoid recursive calls to this function.
-var defaultCallbackCheckFn = func(host string) error {
+func defaultCallbackCheck(host string) error {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithHost(host))
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func ExtractDockerHost(ctx context.Context, callbackChecks ...func(host string) 
 		// and to avoid changing the code base, passing zero callbacks will mean the default one,
 		// which checks that the host is reachable.
 		if len(callbackChecks) == 0 {
-			callbackChecks = append(callbackChecks, defaultCallbackCheckFn)
+			callbackChecks = append(callbackChecks, defaultCallbackCheck)
 		}
 
 		dockerHostCache = extractDockerHost(ctx, callbackChecks...)
@@ -167,7 +167,7 @@ func extractDockerSocket(ctx context.Context) string {
 	}
 	defer cli.Close()
 
-	return extractDockerSocketFromClient(ctx, cli, defaultCallbackCheckFn)
+	return extractDockerSocketFromClient(ctx, cli, defaultCallbackCheck)
 }
 
 // extractDockerSocketFromClient Extracts the docker socket from the different alternatives, without caching the result,
