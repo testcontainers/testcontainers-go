@@ -75,9 +75,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the Azurite container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*AzuriteContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*AzuriteContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        img,
+		Image:        img.String(),
 		ExposedPorts: []string{BlobPort, QueuePort, TablePort},
 		Env:          map[string]string{},
 		Entrypoint:   []string{"azurite"},

@@ -144,9 +144,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 //   - the log message "Successfully updated the policies on namespace public/default"
 //
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        img,
+		Image:        img.String(),
 		Env:          map[string]string{},
 		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
 		WaitingFor:   defaultWaitStrategies,

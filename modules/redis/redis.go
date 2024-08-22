@@ -50,9 +50,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the Redis container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RedisContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*RedisContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        img,
+		Image:        img.String(),
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("* Ready to accept connections"),
 	}

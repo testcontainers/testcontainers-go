@@ -85,10 +85,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the Artemis container type with a given image
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: img,
+			Image: img.String(),
 			Env: map[string]string{
 				"ARTEMIS_USER":     "artemis",
 				"ARTEMIS_PASSWORD": "artemis",

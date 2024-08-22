@@ -120,7 +120,7 @@ func TestRunContainer(t *testing.T) {
 
 		container, err := Run(
 			ctx,
-			fmt.Sprintf("localstack/localstack:%s", tt.version),
+			testcontainers.NewDockerImage(fmt.Sprintf("localstack/localstack:%s", tt.version)),
 		)
 
 		t.Run("Localstack:"+tt.version+" - multiple services exposed on same port", func(t *testing.T) {

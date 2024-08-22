@@ -42,13 +42,15 @@ func (c *OllamaContainer) ConnectionString(ctx context.Context) (string, error) 
 // The target image name should be unique, as this method will commit the current state
 // of the container into a new image with the given name, so it doesn't override existing images.
 // It should be used for creating an image that contains a loaded model.
-func (c *OllamaContainer) Commit(ctx context.Context, targetImage string) error {
+func (c *OllamaContainer) Commit(ctx context.Context, targetImage testcontainers.DockerImage) error {
 	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		return err
 	}
 
-	list, err := cli.ImageList(ctx, image.ListOptions{Filters: filters.NewArgs(filters.Arg("reference", targetImage))})
+	targetImg := targetImage.String()
+
+	list, err := cli.ImageList(ctx, image.ListOptions{Filters: filters.NewArgs(filters.Arg("reference", targetImg))})
 	if err != nil {
 		return fmt.Errorf("listing images %w", err)
 	}
@@ -58,7 +60,7 @@ func (c *OllamaContainer) Commit(ctx context.Context, targetImage string) error 
 	}
 
 	_, err = cli.ContainerCommit(ctx, c.GetContainerID(), container.CommitOptions{
-		Reference: targetImage,
+		Reference: targetImg,
 		Config: &container.Config{
 			Labels: map[string]string{
 				core.LabelSessionID: "",
@@ -79,9 +81,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the Ollama container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OllamaContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*OllamaContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        img,
+		Image:        img.String(),
 		ExposedPorts: []string{"11434/tcp"},
 		WaitingFor:   wait.ForListeningPort("11434/tcp").WithStartupTimeout(60 * time.Second),
 	}

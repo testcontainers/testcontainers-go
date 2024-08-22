@@ -28,9 +28,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the NATS container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*NATSContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*NATSContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        img,
+		Image:        img.String(),
 		ExposedPorts: []string{defaultClientPort, defaultRoutingPort, defaultMonitoringPort},
 		Cmd:          []string{"-DV", "-js"},
 		WaitingFor:   wait.ForLog("Listening for client connections on 0.0.0.0:4222"),

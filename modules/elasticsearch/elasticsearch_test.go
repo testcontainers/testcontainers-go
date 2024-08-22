@@ -34,7 +34,7 @@ func TestElasticsearch(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		image              string
+		image              testcontainers.DockerImage
 		passwordCustomiser testcontainers.ContainerCustomizer
 	}{
 		{

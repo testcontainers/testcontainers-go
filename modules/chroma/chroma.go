@@ -20,9 +20,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the Chroma container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        img,
+		Image:        img.String(),
 		ExposedPorts: []string{"8000/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("8000/tcp"),

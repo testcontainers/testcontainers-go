@@ -69,10 +69,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the Consul container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error) {
 	containerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: img,
+			Image: img.String(),
 			ExposedPorts: []string{
 				defaultHttpApiPort + "/tcp",
 				defaultBrokerPort + "/tcp",

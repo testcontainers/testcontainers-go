@@ -73,9 +73,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the RabbitMQ container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RabbitMQContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*RabbitMQContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: img,
+		Image: img.String(),
 		Env: map[string]string{
 			"RABBITMQ_DEFAULT_USER": defaultUser,
 			"RABBITMQ_DEFAULT_PASS": defaultPassword,
