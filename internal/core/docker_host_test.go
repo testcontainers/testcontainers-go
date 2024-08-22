@@ -41,12 +41,20 @@ var resetSocketOverrideFn = func() {
 	os.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", originalDockerSocketOverride)
 }
 
-var testCallbackCheckPassing = func(_ string) error {
+var testCallbackCheckPassing = func(_ context.Context, _ string) error {
 	return nil
 }
 
-var testCallbackCheckError = func(_ string) error {
+var testCallbackCheckError = func(_ context.Context, _ string) error {
 	return fmt.Errorf("could not check the Docker host")
+}
+
+func mockCallbackCheck(t *testing.T, fn func(_ context.Context, _ string) error) {
+	oldCheck := defaultCallbackCheckFn
+	defaultCallbackCheckFn = fn
+	t.Cleanup(func() {
+		defaultCallbackCheckFn = oldCheck
+	})
 }
 
 func TestExtractDockerHost(t *testing.T) {
@@ -56,11 +64,14 @@ func TestExtractDockerHost(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir) // Windows support
 
+	// apply the passing check to all sub-tests
+	mockCallbackCheck(t, testCallbackCheckPassing)
+
 	t.Run("Docker Host is extracted just once", func(t *testing.T) {
 		expected := "/path/to/docker.sock"
 		t.Setenv("DOCKER_HOST", expected)
 
-		host := ExtractDockerHost(context.Background(), testCallbackCheckPassing)
+		host := ExtractDockerHost(context.Background())
 
 		assert.Equal(t, expected, host)
 
@@ -87,7 +98,10 @@ func TestExtractDockerHost(t *testing.T) {
 
 		setupTestcontainersProperties(t, content)
 
-		host := extractDockerHost(context.Background(), testCallbackCheckError)
+		// mock the callback check to return an error
+		mockCallbackCheck(t, testCallbackCheckError)
+
+		host := extractDockerHost(context.Background())
 
 		// the default Docker host with schema is returned because we cannot any other host
 		assert.Equal(t, DockerSocketPathWithSchema, host)
@@ -307,6 +321,8 @@ func (m mockCli) Info(ctx context.Context) (system.Info, error) {
 func TestExtractDockerSocketFromClient(t *testing.T) {
 	setupDockerHostNotFound(t)
 
+	mockCallbackCheck(t, testCallbackCheckPassing)
+
 	t.Run("Docker socket from Testcontainers host defined in properties", func(t *testing.T) {
 		content := "tc.host=" + testRemoteHost
 
@@ -444,7 +460,9 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
 		os.Unsetenv("DOCKER_HOST")
 
-		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"}, testCallbackCheckError)
+		mockCallbackCheck(t, testCallbackCheckError)
+
+		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
 
 		// the default Docker host without schema is returned because we cannot any other host
 		assert.Equal(t, DockerSocketPath, socket)
