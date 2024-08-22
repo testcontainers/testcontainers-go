@@ -663,14 +663,10 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 }
 
 func TestBuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
-	t.Log("getting ctx")
 	ctx := context.Background()
-
-	t.Log("got ctx, creating container request")
 
 	// fromDockerfileWithBuildArgs {
 	ba := "build args value"
-
 	req := Request{
 		FromDockerfile: FromDockerfile{
 			Context:    filepath.Join(".", "testdata"),
@@ -691,23 +687,16 @@ func TestBuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	TerminateContainerOnEnd(t, ctx, c)
 
 	ep, err := c.Endpoint(ctx, "http")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	resp, err := http.Get(ep + "/env")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, 200, resp.StatusCode)
-	assert.Equal(t, ba, string(body))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+	require.Equal(t, ba, string(body))
 }
 
 func TestBuildContainerFromDockerfileWithBuildLog(t *testing.T) {

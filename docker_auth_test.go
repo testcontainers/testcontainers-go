@@ -2,7 +2,9 @@ package testcontainers
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"net"
 	"os"
 	"testing"
 
@@ -45,22 +47,16 @@ func removeImageFromLocalCache(t *testing.T, img string) {
 		Force:         true,
 		PruneChildren: true,
 	})
-	if err != nil {
+	if err != nil && !client.IsErrNotFound(err) {
 		t.Logf("could not remove image %s: %v\n", img, err)
 	}
 }
 
 func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
-	mappedPort := prepareLocalRegistryWithAuth(t)
+	registryHost := prepareLocalRegistryWithAuth(t)
 
 	// using the same credentials as in the Docker Registry
-	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
-	t.Setenv("DOCKER_AUTH_CONFIG", `{
-		"auths": {
-				"localhost:`+mappedPort+`": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
-		},
-		"credsStore": "desktop"
-	}`)
+	setAuthConfig(t, registryHost, "testuser", "testpassword")
 
 	ctx := context.Background()
 
@@ -69,8 +65,10 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 			Context:    "./testdata",
 			Dockerfile: "auth.Dockerfile",
 			BuildArgs: map[string]*string{
-				"REGISTRY_PORT": &mappedPort,
+				"REGISTRY_HOST": &registryHost,
 			},
+			Repo:          "localhost",
+			PrintBuildLog: true,
 		},
 		AlwaysPullImage: true, // make sure the authentication takes place
 		ExposedPorts:    []string{"6379/tcp"},
@@ -84,16 +82,10 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 }
 
 func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *testing.T) {
-	mappedPort := prepareLocalRegistryWithAuth(t)
+	registryHost := prepareLocalRegistryWithAuth(t)
 
 	// using different credentials than in the Docker Registry
-	base64 := "Zm9vOmJhcg==" // foo:bar
-	t.Setenv("DOCKER_AUTH_CONFIG", `{
-		"auths": {
-			"localhost:`+mappedPort+`": { "username": "foo", "password": "bar", "auth": "`+base64+`" }
-		},
-		"credsStore": "desktop"
-	}`)
+	setAuthConfig(t, registryHost, "foo", "bar")
 
 	ctx := context.Background()
 
@@ -102,7 +94,7 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 			Context:    "./testdata",
 			Dockerfile: "auth.Dockerfile",
 			BuildArgs: map[string]*string{
-				"REGISTRY_PORT": &mappedPort,
+				"REGISTRY_HOST": &registryHost,
 			},
 		},
 		AlwaysPullImage: true, // make sure the authentication takes place
@@ -117,20 +109,14 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 }
 
 func TestCreateContainerFromPrivateRegistry(t *testing.T) {
-	mappedPort := prepareLocalRegistryWithAuth(t)
+	registryHost := prepareLocalRegistryWithAuth(t)
 
 	// using the same credentials as in the Docker Registry
-	base64 := "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" // testuser:testpassword
-	t.Setenv("DOCKER_AUTH_CONFIG", `{
-		"auths": {
-				"localhost:`+mappedPort+`": { "username": "testuser", "password": "testpassword", "auth": "`+base64+`" }
-		},
-		"credsStore": "desktop"
-	}`)
+	setAuthConfig(t, registryHost, "testuser", "testpassword")
 
 	ctx := context.Background()
 	req := Request{
-		Image:           "localhost:" + mappedPort + "/redis:5.0-alpine",
+		Image:           registryHost + "/redis:5.0-alpine",
 		AlwaysPullImage: true, // make sure the authentication takes place
 		ExposedPorts:    []string{"6379/tcp"},
 		WaitingFor:      wait.ForLog("Ready to accept connections"),
@@ -176,10 +162,12 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	mappedPort, err := registryC.MappedPort(ctx, "5000/tcp")
 	require.NoError(t, err)
 
+	ip := localAddress(t)
 	mp := mappedPort.Port()
+	addr := ip + ":" + mp
 
 	t.Cleanup(func() {
-		removeImageFromLocalCache(t, "localhost:"+mp+"/redis:5.0-alpine")
+		removeImageFromLocalCache(t, addr+"/redis:5.0-alpine")
 	})
 	t.Cleanup(func() {
 		require.NoError(t, registryC.Terminate(context.Background()))
@@ -188,5 +176,53 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	_, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	return mp
+	return addr
+}
+
+// setAuthConfig sets the DOCKER_AUTH_CONFIG environment variable with
+// authentication for with the given host, username and password.
+// It returns the base64 encoded credentials.
+func setAuthConfig(t *testing.T, host, username, password string) string {
+	t.Helper()
+
+	var creds string
+	if username != "" || password != "" {
+		creds = base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
+	}
+
+	auth := fmt.Sprintf(`{
+	"auths": {
+		%q: {
+			"username": %q,
+			"password": %q,
+			"auth": %q
+		}
+	},
+	"credsStore": "desktop"
+}`,
+		host,
+		username,
+		password,
+		creds,
+	)
+	t.Setenv("DOCKER_AUTH_CONFIG", auth)
+
+	return creds
+}
+
+// localAddress returns the local address of the machine
+// which can be used to connect to the local registry.
+// This avoids the issues with localhost on WSL.
+func localAddress(t *testing.T) string {
+	if os.Getenv("WSL_DISTRO_NAME") == "" {
+		return "localhost"
+	}
+
+	conn, err := net.Dial("udp", "golang.org:80")
+	require.NoError(t, err)
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP.String()
 }

@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	_ "embed"
+	"encoding/base64"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -70,12 +72,7 @@ func TestGetDockerConfig(t *testing.T) {
 	})
 
 	t.Run("DOCKER_AUTH_CONFIG env var takes precedence", func(t *testing.T) {
-		t.Setenv("DOCKER_AUTH_CONFIG", `{
-			"auths": {
-					"`+exampleAuth+`": {}
-			},
-			"credsStore": "desktop"
-		}`)
+		setAuthConfig(t, exampleAuth, "", "")
 		t.Setenv("DOCKER_CONFIG", testDockerConfigDirPath)
 
 		cfg, err := getDockerConfig()
@@ -95,36 +92,23 @@ func TestGetDockerConfig(t *testing.T) {
 	})
 
 	t.Run("retrieve auth with DOCKER_AUTH_CONFIG env var", func(t *testing.T) {
-		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
-
-		t.Setenv("DOCKER_AUTH_CONFIG", `{
-			"auths": {
-					"`+exampleAuth+`": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
-			},
-			"credsStore": "desktop"
-		}`)
+		username, password := "gopher", "secret"
+		creds := setAuthConfig(t, exampleAuth, username, password)
 
 		registry, cfg, err := ForDockerImage(context.Background(), exampleAuth+"/my/image:latest")
 		require.NoError(t, err)
 		require.NotEmpty(t, cfg)
 
 		assert.Equal(t, exampleAuth, registry)
-		assert.Equal(t, "gopher", cfg.Username)
-		assert.Equal(t, "secret", cfg.Password)
-		assert.Equal(t, base64, cfg.Auth)
+		assert.Equal(t, username, cfg.Username)
+		assert.Equal(t, password, cfg.Password)
+		assert.Equal(t, creds, cfg.Auth)
 	})
 
 	t.Run("match registry authentication by host", func(t *testing.T) {
-		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
 		imageReg := "example-auth.com"
 		imagePath := "/my/image:latest"
-
-		t.Setenv("DOCKER_AUTH_CONFIG", `{
-			"auths": {
-					"`+exampleAuth+`": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
-			},
-			"credsStore": "desktop"
-		}`)
+		base64 := setAuthConfig(t, exampleAuth, "gopher", "secret")
 
 		registry, cfg, err := ForDockerImage(context.Background(), imageReg+imagePath)
 		require.NoError(t, err)
@@ -137,17 +121,10 @@ func TestGetDockerConfig(t *testing.T) {
 	})
 
 	t.Run("fail to match registry authentication due to invalid host", func(t *testing.T) {
-		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
 		imageReg := "example-auth.com"
 		imagePath := "/my/image:latest"
 		invalidRegistryURL := "://invalid-host"
-
-		t.Setenv("DOCKER_AUTH_CONFIG", `{
-			"auths": {
-					"`+invalidRegistryURL+`": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
-			},
-			"credsStore": "desktop"
-		}`)
+		setAuthConfig(t, invalidRegistryURL, "gopher", "secret")
 
 		registry, cfg, err := ForDockerImage(context.Background(), imageReg+imagePath)
 		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
@@ -165,16 +142,9 @@ func TestGetDockerConfig(t *testing.T) {
 			return ""
 		}
 
-		base64 := "Z29waGVyOnNlY3JldA==" // gopher:secret
 		imageReg := ""
 		imagePath := "image:latest"
-
-		t.Setenv("DOCKER_AUTH_CONFIG", `{
-			"auths": {
-					"example-auth.com": { "username": "gopher", "password": "secret", "auth": "`+base64+`" }
-			},
-			"credsStore": "desktop"
-		}`)
+		setAuthConfig(t, "example-auth.com", "gopher", "secret")
 
 		registry, cfg, err := ForDockerImage(context.Background(), imageReg+imagePath)
 		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
@@ -211,4 +181,35 @@ func TestGetDockerConfigs(t *testing.T) {
 		}
 		require.Equal(t, expected, got)
 	})
+}
+
+// setAuthConfig sets the DOCKER_AUTH_CONFIG environment variable with
+// authentication for with the given host, username and password.
+// It returns the base64 encoded credentials.
+func setAuthConfig(t *testing.T, host, username, password string) string {
+	t.Helper()
+
+	var creds string
+	if username != "" || password != "" {
+		creds = base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
+	}
+
+	auth := fmt.Sprintf(`{
+		"auths": {
+			%q: {
+				"username": %q,
+				"password": %q,
+				"auth": %q
+			}
+		},
+		"credsStore": "desktop"
+	}`,
+		host,
+		username,
+		password,
+		creds,
+	)
+	t.Setenv("DOCKER_AUTH_CONFIG", auth)
+
+	return creds
 }

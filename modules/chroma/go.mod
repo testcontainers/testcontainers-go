@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/amikos-tech/chroma-go v0.1.2
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.32.0
+	github.com/testcontainers/testcontainers-go v0.33.0
 )
 
 require (
