@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/examples/toxiproxy
 
-go 1.21
+go 1.22
 
 require (
 	github.com/Shopify/toxiproxy/v2 v2.8.0

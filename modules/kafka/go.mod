@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/kafka
 
-go 1.21
+go 1.22
 
 require (
 	github.com/IBM/sarama v1.42.1

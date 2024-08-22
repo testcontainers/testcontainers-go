@@ -26,7 +26,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.21.x, 1.x]
+        go-version: [1.22.x, 1.x]
         platform: [ubuntu-latest, macos-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -44,7 +44,7 @@ jobs:
     name: "Test with reaper off"
     strategy:
       matrix:
-        go-version: [1.21.x, 1.x]
+        go-version: [1.22.x, 1.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
@@ -61,7 +61,7 @@ jobs:
     name: "Test with Rootless Docker"
     strategy:
       matrix:
-        go-version: [1.21.x, 1.x]
+        go-version: [1.22.x, 1.x]
         platform: [ubuntu-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -76,7 +76,7 @@ jobs:
   test-module-generator:
     strategy:
       matrix:
-        go-version: [1.21.x, 1.x]
+        go-version: [1.22.x, 1.x]
         platform: [ubuntu-latest, macos-latest, windows-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -92,7 +92,7 @@ jobs:
     needs: test
     strategy:
       matrix:
-        go-version: [1.21.x, 1.x]
+        go-version: [1.22.x, 1.x]
         platform: [ubuntu-latest]
         module: [artemis, azurite, cassandra, chroma, clickhouse, cockroachdb, compose, consul, couchbase, dolt, elasticsearch, gcloud, grafana-lgtm, inbucket, influxdb, k3s, k6, kafka, localstack, mariadb, milvus, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, ollama, openfga, openldap, opensearch, postgres, pulsar, qdrant, rabbitmq, redis, redpanda, registry, surrealdb, valkey, vault, vearch, weaviate]
     uses: ./.github/workflows/ci-test-go.yml
@@ -112,7 +112,7 @@ jobs:
         module: [nginx, toxiproxy]
     uses: ./.github/workflows/ci-test-go.yml
     with:
-      go-version: "1.21.x"
+      go-version: "1.22.x"
       fail-fast: true
       platform: 'ubuntu-latest'
       project-directory: examples/${{ matrix.module }}
