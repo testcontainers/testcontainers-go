@@ -133,9 +133,7 @@ func extractDockerHost(ctx context.Context) string {
 			continue
 		}
 
-		err = defaultCallbackCheckFn(ctx, dockerHost)
-		if err != nil {
-			outerErr = fmt.Errorf("%w: %w", outerErr, err)
+		if err = defaultCallbackCheckFn(ctx, dockerHost); err != nil {
 			continue
 		}
 
