@@ -1,6 +1,8 @@
 name: Windows tests
 
 on:
+  push:
+    branches: [ main ]
   repository_dispatch:
     types: [windows-test-command]
 
