@@ -21,7 +21,7 @@ readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly DRY_RUN="${DRY_RUN:-true}"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
 readonly GO_MOD_FILE="${ROOT_DIR}/go.mod"
-readonly DEVCONTAINER_IMAGE_PREFIX="go:0-"
+readonly DEVCONTAINER_IMAGE_PREFIX="go:"
 
 function main() {
   echo "Updating Go version:"

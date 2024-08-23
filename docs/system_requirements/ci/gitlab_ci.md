@@ -57,7 +57,7 @@ variables:
   DOCKER_DRIVER: overlay2
 
 test:
- image: golang:1.21
+ image: golang:1.22
  stage: test
  script: go test ./... -v
 ```

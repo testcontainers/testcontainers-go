@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/minio
 
-go 1.21
+go 1.22
 
 require (
 	github.com/minio/minio-go/v7 v7.0.68
