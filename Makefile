@@ -35,3 +35,16 @@ clean-docs:
 .PHONY: serve-docs
 serve-docs: tcvenv
 	. $(PYTHONBIN)/activate; $(PYTHONBIN)/mkdocs serve
+
+## --------------------------------------
+
+RFLAGS =
+DEVTOOLS_DIR = cmd/devtools
+
+.PHONE: pre-release
+pre-release:
+	cd $(DEVTOOLS_DIR) && go run main.go release --pre-release $(RFLAGS)
+
+.PHONE: release
+release:
+	cd $(DEVTOOLS_DIR) && go run main.go release $(RFLAGS)
