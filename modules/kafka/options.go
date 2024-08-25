@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -66,14 +67,14 @@ func externalListener(ctx context.Context, c testcontainers.Container) (KafkaLis
 }
 
 func internalListener(ctx context.Context, c testcontainers.Container) (KafkaListener, error) {
-	host, err := c.Host(ctx)
+	inspect, err := c.Inspect(ctx)
 	if err != nil {
-		return KafkaListener{}, err
+		return KafkaListener{}, fmt.Errorf("inspect: %w", err)
 	}
 
 	return KafkaListener{
 		Name: "INTERNAL",
-		Host: host,
+		Host: inspect.Config.Hostname,
 		Port: "9092",
 	}, nil
 }

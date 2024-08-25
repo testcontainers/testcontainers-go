@@ -182,23 +182,6 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container, settings
 		return fmt.Errorf("wait for exposed port: %w", err)
 	}
 
-	host, err := c.Host(ctx)
-	if err != nil {
-		return fmt.Errorf("host: %w", err)
-	}
-
-	inspect, err := c.Inspect(ctx)
-	if err != nil {
-		return fmt.Errorf("inspect: %w", err)
-	}
-
-	hostname := inspect.Config.Hostname
-
-	port, err := c.MappedPort(ctx, publicPort)
-	if err != nil {
-		return fmt.Errorf("mapped port: %w", err)
-	}
-
 	if len(settings.Listeners) == 0 {
 		defaultInternal, err := internalListener(ctx, c)
 		if err != nil {
@@ -219,7 +202,7 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container, settings
 		advertised = append(advertised, fmt.Sprintf("%s://%s:%s", item.Name, item.Host, item.Port))
 	}
 
-	scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname, strings.Join(advertised, ","))
+	scriptContent := fmt.Sprintf(starterScriptContent, strings.Join(advertised, ","))
 
 	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755); err != nil {
 		return fmt.Errorf("copy to container: %w", err)
