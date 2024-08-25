@@ -122,7 +122,7 @@ func TestTrimValidateListeners(t *testing.T) {
 			listeners: []KafkaListener{
 				{
 					Name: "INTERNAL",
-					Ip:   "kafka",
+					Host: "kafka",
 					Port: "9093",
 				},
 			},
@@ -133,7 +133,7 @@ func TestTrimValidateListeners(t *testing.T) {
 			listeners: []KafkaListener{
 				{
 					Name: "INTERNAL",
-					Ip:   "kafka",
+					Host: "kafka",
 					Port: "9094",
 				},
 			},
@@ -144,7 +144,7 @@ func TestTrimValidateListeners(t *testing.T) {
 			listeners: []KafkaListener{
 				{
 					Name: "  cOnTrOller   ",
-					Ip:   "kafka",
+					Host: "kafka",
 					Port: "9092",
 				},
 			},
@@ -155,7 +155,7 @@ func TestTrimValidateListeners(t *testing.T) {
 			listeners: []KafkaListener{
 				{
 					Name: "external",
-					Ip:   "kafka",
+					Host: "kafka",
 					Port: "9092",
 				},
 			},
@@ -166,12 +166,12 @@ func TestTrimValidateListeners(t *testing.T) {
 			listeners: []KafkaListener{
 				{
 					Name: "test",
-					Ip:   "kafka",
+					Host: "kafka",
 					Port: "9092",
 				},
 				{
 					Name: "test2",
-					Ip:   "kafka",
+					Host: "kafka",
 					Port: "9092",
 				},
 			},
@@ -182,12 +182,12 @@ func TestTrimValidateListeners(t *testing.T) {
 			listeners: []KafkaListener{
 				{
 					Name: "test",
-					Ip:   "kafka",
+					Host: "kafka",
 					Port: "9092",
 				},
 				{
 					Name: "test",
-					Ip:   "kafka",
+					Host: "kafka",
 					Port: "9095",
 				},
 			},
@@ -198,7 +198,7 @@ func TestTrimValidateListeners(t *testing.T) {
 			listeners: []KafkaListener{
 				{
 					Name: "test",
-					Ip:   "kafka",
+					Host: "kafka",
 					Port: "9095",
 				},
 			},

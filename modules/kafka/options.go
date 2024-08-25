@@ -21,7 +21,7 @@ func defaultOptions() options {
 // Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
 var _ testcontainers.ContainerCustomizer = (*Option)(nil)
 
-// Option is an option for the Redpanda container.
+// Option is an option for the Kafka container.
 type Option func(*options)
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
@@ -60,7 +60,7 @@ func externalListener(ctx context.Context, c testcontainers.Container) (KafkaLis
 
 	return KafkaListener{
 		Name: "EXTERNAL",
-		Ip:   host,
+		Host: host,
 		Port: port.Port(),
 	}, nil
 }
@@ -73,7 +73,7 @@ func internalListener(ctx context.Context, c testcontainers.Container) (KafkaLis
 
 	return KafkaListener{
 		Name: "INTERNAL",
-		Ip:   host,
+		Host: host,
 		Port: "9092",
 	}, nil
 }

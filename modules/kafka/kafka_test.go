@@ -122,7 +122,7 @@ func TestKafka_networkConnectivity(t *testing.T) {
 		kafka.WithListener([]kafka.KafkaListener{
 			{
 				Name: "INTERNAL",
-				Ip:   "kafka",
+				Host: "kafka",
 				Port: "9092",
 			},
 		}),
@@ -200,7 +200,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 		kafka.WithListener([]kafka.KafkaListener{
 			{
 				Name: "INTERNAL",
-				Ip:   "kafka",
+				Host: "kafka",
 				Port: "9093",
 			},
 		}),
@@ -216,7 +216,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 		kafka.WithListener([]kafka.KafkaListener{
 			{
 				Name: "INTERNAL",
-				Ip:   "kafka",
+				Host: "kafka",
 				Port: "9094",
 			},
 		}),
@@ -232,7 +232,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 		kafka.WithListener([]kafka.KafkaListener{
 			{
 				Name: "  cOnTrOller   ",
-				Ip:   "kafka",
+				Host: "kafka",
 				Port: "9092",
 			},
 		}),
@@ -248,7 +248,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 		kafka.WithListener([]kafka.KafkaListener{
 			{
 				Name: "external",
-				Ip:   "kafka",
+				Host: "kafka",
 				Port: "9092",
 			},
 		}),
@@ -264,12 +264,12 @@ func TestKafka_listenersValidation(t *testing.T) {
 		kafka.WithListener([]kafka.KafkaListener{
 			{
 				Name: "test",
-				Ip:   "kafka",
+				Host: "kafka",
 				Port: "9092",
 			},
 			{
 				Name: "test2",
-				Ip:   "kafka",
+				Host: "kafka",
 				Port: "9092",
 			},
 		}),
@@ -285,12 +285,12 @@ func TestKafka_listenersValidation(t *testing.T) {
 		kafka.WithListener([]kafka.KafkaListener{
 			{
 				Name: "test",
-				Ip:   "kafka",
+				Host: "kafka",
 				Port: "9092",
 			},
 			{
 				Name: "test",
-				Ip:   "kafka",
+				Host: "kafka",
 				Port: "9095",
 			},
 		}),

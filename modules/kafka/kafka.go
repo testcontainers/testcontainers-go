@@ -39,7 +39,7 @@ type KafkaContainer struct {
 
 type KafkaListener struct {
 	Name string
-	Ip   string
+	Host string
 	Port string
 }
 
@@ -111,7 +111,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 					// if the starter script fails to copy.
 					func(ctx context.Context, c testcontainers.Container) error {
 						// 1. copy the starter script into the container
-						if err := copyStarterScript(ctx, c); err != nil {
+						if err := copyStarterScript(ctx, c, &settings); err != nil {
 							return fmt.Errorf("copy starter script: %w", err)
 						}
 
@@ -143,7 +143,7 @@ func trimValidateListeners(listeners []KafkaListener) error {
 	// Trim
 	for i := 0; i < len(listeners); i++ {
 		listeners[i].Name = strings.ToUpper(strings.Trim(listeners[i].Name, " "))
-		listeners[i].Ip = strings.Trim(listeners[i].Ip, " ")
+		listeners[i].Host = strings.Trim(listeners[i].Host, " ")
 		listeners[i].Port = strings.Trim(listeners[i].Port, " ")
 	}
 
@@ -173,8 +173,9 @@ func trimValidateListeners(listeners []KafkaListener) error {
 
 	return nil
 }
+
 // copyStarterScript copies the starter script into the container.
-func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
+func copyStarterScript(ctx context.Context, c testcontainers.Container, settings *options) error {
 	if err := wait.ForListeningPort(publicPort).
 		SkipInternalCheck().
 		WaitUntilReady(ctx, c); err != nil {
@@ -215,7 +216,7 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 
 	var advertised []string
 	for _, item := range settings.Listeners {
-		advertised = append(advertised, fmt.Sprintf("%s://%s:%s", item.Name, item.Ip, item.Port))
+		advertised = append(advertised, fmt.Sprintf("%s://%s:%s", item.Name, item.Host, item.Port))
 	}
 
 	scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname, strings.Join(advertised, ","))
@@ -226,15 +227,6 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 
 	return nil
 }
-
-func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["CLUSTER_ID"] = clusterID
-
-		return nil
-	}
-}
-	
 
 func editEnvsForListeners(listeners []KafkaListener) map[string]string {
 	if len(listeners) == 0 {
