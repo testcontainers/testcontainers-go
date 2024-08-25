@@ -2,6 +2,7 @@ package redpanda_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,7 +27,7 @@ import (
 func TestRedpanda(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := redpanda.RunContainer(ctx)
+	container, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3")
 	require.NoError(t, err)
 
 	// Clean up the container after the test is complete
@@ -82,7 +83,8 @@ func TestRedpanda(t *testing.T) {
 func TestRedpandaWithAuthentication(t *testing.T) {
 	ctx := context.Background()
 	// redpandaCreateContainer {
-	container, err := redpanda.RunContainer(ctx,
+	container, err := redpanda.Run(ctx,
+		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
 		redpanda.WithEnableWasmTransform(),
@@ -193,8 +195,8 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 	ctx := context.Background()
 	// redpandaCreateContainer {
 	// this would fail to start if we weren't ignoring wasm transforms for older versions
-	container, err := redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+	container, err := redpanda.Run(ctx,
+		"redpandadata/redpanda:v23.2.18",
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
 		redpanda.WithEnableWasmTransform(),
@@ -321,7 +323,7 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 func TestRedpandaProduceWithAutoCreateTopics(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := redpanda.RunContainer(ctx, redpanda.WithAutoCreateTopics())
+	container, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", redpanda.WithAutoCreateTopics())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -355,7 +357,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 
 	ctx := context.Background()
 
-	container, err := redpanda.RunContainer(ctx, redpanda.WithTLS(cert.Bytes, cert.KeyBytes))
+	container, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", redpanda.WithTLS(cert.Bytes, cert.KeyBytes))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -424,7 +426,8 @@ func TestRedpandaWithTLSAndSASL(t *testing.T) {
 
 	ctx := context.Background()
 
-	container, err := redpanda.RunContainer(ctx,
+	container, err := redpanda.Run(ctx,
+		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 		redpanda.WithTLS(cert.Bytes, cert.KeyBytes),
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
@@ -463,13 +466,13 @@ func TestRedpandaListener_Simple(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Create network
-	rpNetwork, err := network.New(ctx, network.WithCheckDuplicate())
+	rpNetwork, err := network.New(ctx)
 	require.NoError(t, err)
 
 	// 2. Start Redpanda container
 	// withListenerRP {
-	container, err := redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+	container, err := redpanda.Run(ctx,
+		"redpandadata/redpanda:v23.2.18",
 		network.WithNetwork([]string{"redpanda-host"}, rpNetwork),
 		redpanda.WithListener("redpanda:29092"), redpanda.WithAutoCreateTopics(),
 	)
@@ -537,12 +540,12 @@ func TestRedpandaListener_InvalidPort(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Create network
-	RPNetwork, err := network.New(ctx, network.WithCheckDuplicate())
+	RPNetwork, err := network.New(ctx)
 	require.NoError(t, err)
 
 	// 2. Attempt Start Redpanda container
-	_, err = redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+	_, err = redpanda.Run(ctx,
+		"redpandadata/redpanda:v23.2.18",
 		redpanda.WithListener("redpanda:99092"),
 		network.WithNetwork([]string{"redpanda-host"}, RPNetwork),
 	)
@@ -562,12 +565,67 @@ func TestRedpandaListener_NoNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Attempt Start Redpanda container
-	_, err := redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+	_, err := redpanda.Run(ctx,
+		"redpandadata/redpanda:v23.2.18",
 		redpanda.WithListener("redpanda:99092"),
 	)
 
 	require.Error(t, err)
 
 	require.Contains(t, err.Error(), "container must be attached to at least one network")
+}
+
+func TestRedpandaBootstrapConfig(t *testing.T) {
+	ctx := context.Background()
+
+	container, err := redpanda.RunContainer(ctx,
+		redpanda.WithEnableWasmTransform(),
+		// These configs would require a restart if applied to a live Redpanda instance
+		redpanda.WithBootstrapConfig("data_transforms_per_core_memory_reservation", 33554432),
+		redpanda.WithBootstrapConfig("data_transforms_per_function_memory_limit", 16777216),
+	)
+	require.NoError(t, err)
+
+	httpCl := &http.Client{
+		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			ForceAttemptHTTP2:   true,
+			TLSHandshakeTimeout: 10 * time.Second,
+		},
+	}
+	adminAPIUrl, err := container.AdminAPIAddress(ctx)
+	require.NoError(t, err)
+
+	{
+		// Check that the configs reflect specified values
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster_config", adminAPIUrl), nil)
+		require.NoError(t, err)
+		resp, err := httpCl.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		var data map[string]any
+		err = json.NewDecoder(resp.Body).Decode(&data)
+		require.NoError(t, err)
+		reservation := int(data["data_transforms_per_core_memory_reservation"].(float64))
+		require.Equal(t, 33554432, reservation)
+		pf_limit := int(data["data_transforms_per_function_memory_limit"].(float64))
+		require.Equal(t, 16777216, pf_limit)
+	}
+
+	{
+		// Check that no restart is required. i.e. that the configs were applied via bootstrap config
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster_config/status", adminAPIUrl), nil)
+		require.NoError(t, err)
+		resp, err := httpCl.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		var data []map[string]any
+		err = json.NewDecoder(resp.Body).Decode(&data)
+		require.NoError(t, err)
+		require.Len(t, data, 1)
+		needs_restart := data[0]["restart"].(bool)
+		require.False(t, needs_restart)
+	}
 }

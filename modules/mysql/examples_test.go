@@ -7,16 +7,15 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runMySQLContainer {
 	ctx := context.Background()
 
-	mysqlContainer, err := mysql.RunContainer(ctx,
-		testcontainers.WithImage("mysql:8.0.36"),
+	mysqlContainer, err := mysql.Run(ctx,
+		"mysql:8.0.36",
 		mysql.WithConfigFile(filepath.Join("testdata", "my_8.cnf")),
 		mysql.WithDatabase("foo"),
 		mysql.WithUsername("root"),
@@ -46,11 +45,11 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connect() {
+func ExampleRun_connect() {
 	ctx := context.Background()
 
-	mysqlContainer, err := mysql.RunContainer(ctx,
-		testcontainers.WithImage("mysql:8.0.36"),
+	mysqlContainer, err := mysql.Run(ctx,
+		"mysql:8.0.36",
 		mysql.WithConfigFile(filepath.Join("testdata", "my_8.cnf")),
 		mysql.WithDatabase("foo"),
 		mysql.WithUsername("root"),
@@ -67,7 +66,10 @@ func ExampleRunContainer_connect() {
 		}
 	}()
 
-	connectionString, _ := mysqlContainer.ConnectionString(ctx)
+	connectionString, err := mysqlContainer.ConnectionString(ctx)
+	if err != nil {
+		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
+	}
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {

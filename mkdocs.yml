@@ -33,8 +33,8 @@ markdown_extensions:
         permalink: true
     - attr_list
     - pymdownx.emoji:
-        emoji_generator: !!python/name:materialx.emoji.to_svg
-        emoji_index: !!python/name:materialx.emoji.twemoji
+        emoji_generator: !!python/name:material.extensions.emoji.to_svg
+        emoji_index: !!python/name:material.extensions.emoji.twemoji
 nav:
     - Home: index.md
     - Quickstart: quickstart.md
@@ -66,6 +66,7 @@ nav:
     - Modules:
         - modules/index.md
         - modules/artemis.md
+        - modules/azurite.md
         - modules/cassandra.md
         - modules/chroma.md
         - modules/clickhouse.md
@@ -75,6 +76,7 @@ nav:
         - modules/dolt.md
         - modules/elasticsearch.md
         - modules/gcloud.md
+        - modules/grafana-lgtm.md
         - modules/inbucket.md
         - modules/influxdb.md
         - modules/k3s.md
@@ -102,6 +104,7 @@ nav:
         - modules/redpanda.md
         - modules/registry.md
         - modules/surrealdb.md
+        - modules/valkey.md
         - modules/vault.md
         - modules/vearch.md
         - modules/weaviate.md
@@ -131,4 +134,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.31.0
+    latest_version: v0.33.0

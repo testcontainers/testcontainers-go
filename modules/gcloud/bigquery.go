@@ -8,12 +8,18 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// Deprecated: use RunBigQuery instead
 // RunBigQueryContainer creates an instance of the GCloud container type for BigQuery.
-// The URI will always use http:// as the protocol.
 func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
+	return RunBigQuery(ctx, "ghcr.io/goccy/bigquery-emulator:0.4.3", opts...)
+}
+
+// RunBigQuery creates an instance of the GCloud container type for BigQuery.
+// The URI will always use http:// as the protocol.
+func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "ghcr.io/goccy/bigquery-emulator:0.4.3",
+			Image:        img,
 			ExposedPorts: []string{"9050/tcp", "9060/tcp"},
 			WaitingFor:   wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort("9050/tcp").WithStartupTimeout(time.Second * 5),
 		},
@@ -32,13 +38,13 @@ func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerC
 		return nil, err
 	}
 
-	spannerContainer, err := newGCloudContainer(ctx, 9050, container, settings)
+	bigQueryContainer, err := newGCloudContainer(ctx, 9050, container, settings)
 	if err != nil {
 		return nil, err
 	}
 
 	// always prepend http:// to the URI
-	spannerContainer.URI = "http://" + spannerContainer.URI
+	bigQueryContainer.URI = "http://" + bigQueryContainer.URI
 
-	return spannerContainer, nil
+	return bigQueryContainer, nil
 }

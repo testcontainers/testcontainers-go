@@ -43,10 +43,16 @@ type KafkaListener struct {
 	Port string
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Kafka container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error) {
+	return Run(ctx, "confluentinc/confluent-local:7.5.0", opts...)
+}
+
+// Run creates an instance of the Kafka container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "confluentinc/confluent-local:7.5.0",
+		Image:        img,
 		ExposedPorts: []string{string(publicPort)},
 		Env: map[string]string{
 			// envVars {
@@ -100,34 +106,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		[]testcontainers.ContainerLifecycleHooks{
 			{
 				PostStarts: []testcontainers.ContainerHook{
-					// 1. copy the starter script into the container
+					// Use a single hook to copy the starter script and wait for
+					// the Kafka server to be ready. This prevents the wait running
+					// if the starter script fails to copy.
 					func(ctx context.Context, c testcontainers.Container) error {
-						if len(settings.Listeners) == 0 {
-							defaultInternal, err := internalListener(ctx, c)
-							if err != nil {
-								return fmt.Errorf("can't create default internal listener: %w", err)
-							}
-							settings.Listeners = append(settings.Listeners, defaultInternal)
+						// 1. copy the starter script into the container
+						if err := copyStarterScript(ctx, c); err != nil {
+							return fmt.Errorf("copy starter script: %w", err)
 						}
 
-						defaultExternal, err := externalListener(ctx, c)
-						if err != nil {
-							return fmt.Errorf("can't create default external listener: %w", err)
-						}
-
-						settings.Listeners = append(settings.Listeners, defaultExternal)
-
-						var advertised []string
-						for _, item := range settings.Listeners {
-							advertised = append(advertised, fmt.Sprintf("%s://%s:%s", item.Name, item.Ip, item.Port))
-						}
-
-						scriptContent := fmt.Sprintf(starterScriptContent, strings.Join(advertised, ","))
-
-						return c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755)
-					},
-					// 2. wait for the Kafka server to be ready
-					func(ctx context.Context, c testcontainers.Container) error {
+						// 2. wait for the Kafka server to be ready
 						return wait.ForLog(".*Transitioning from RECOVERY to RUNNING.*").AsRegexp().WaitUntilReady(ctx, c)
 					},
 				},
@@ -185,6 +173,68 @@ func trimValidateListeners(listeners []KafkaListener) error {
 
 	return nil
 }
+// copyStarterScript copies the starter script into the container.
+func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
+	if err := wait.ForListeningPort(publicPort).
+		SkipInternalCheck().
+		WaitUntilReady(ctx, c); err != nil {
+		return fmt.Errorf("wait for exposed port: %w", err)
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return fmt.Errorf("host: %w", err)
+	}
+
+	inspect, err := c.Inspect(ctx)
+	if err != nil {
+		return fmt.Errorf("inspect: %w", err)
+	}
+
+	hostname := inspect.Config.Hostname
+
+	port, err := c.MappedPort(ctx, publicPort)
+	if err != nil {
+		return fmt.Errorf("mapped port: %w", err)
+	}
+
+	if len(settings.Listeners) == 0 {
+		defaultInternal, err := internalListener(ctx, c)
+		if err != nil {
+			return fmt.Errorf("can't create default internal listener: %w", err)
+		}
+		settings.Listeners = append(settings.Listeners, defaultInternal)
+	}
+
+	defaultExternal, err := externalListener(ctx, c)
+	if err != nil {
+		return fmt.Errorf("can't create default external listener: %w", err)
+	}
+
+	settings.Listeners = append(settings.Listeners, defaultExternal)
+
+	var advertised []string
+	for _, item := range settings.Listeners {
+		advertised = append(advertised, fmt.Sprintf("%s://%s:%s", item.Name, item.Ip, item.Port))
+	}
+
+	scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname, strings.Join(advertised, ","))
+
+	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755); err != nil {
+		return fmt.Errorf("copy to container: %w", err)
+	}
+
+	return nil
+}
+
+func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Env["CLUSTER_ID"] = clusterID
+
+		return nil
+	}
+}
+	
 
 func editEnvsForListeners(listeners []KafkaListener) map[string]string {
 	if len(listeners) == 0 {

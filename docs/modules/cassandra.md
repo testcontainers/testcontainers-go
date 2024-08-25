@@ -20,15 +20,23 @@ go get github.com/testcontainers/testcontainers-go/modules/cassandra
 [Creating a Cassandra container](../../modules/cassandra/examples_test.go) inside_block:runCassandraContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
 
-The Cassandra module exposes one entrypoint function to create the Cassandra container, and this function receives two parameters:
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
+The Cassandra module exposes one entrypoint function to create the Cassandra container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CassandraContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CassandraContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -37,8 +45,8 @@ When starting the Cassandra container, you can pass options in a variadic way to
 
 #### Image
 
-If you need to set a different Cassandra Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Cassandra. E.g. `testcontainers.WithImage("cassandra:4.1.3")`.
+If you need to set a different Cassandra Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "cassandra:4.1.3")`.
 
 {% include "../features/common_functional_options.md" %}
 

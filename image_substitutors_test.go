@@ -1,8 +1,53 @@
 package testcontainers
 
 import (
+	"context"
 	"testing"
+
+	"github.com/testcontainers/testcontainers-go/internal/config"
 )
+
+func TestCustomHubSubstitutor(t *testing.T) {
+	t.Run("should substitute the image with the provided one", func(t *testing.T) {
+		s := NewCustomHubSubstitutor("quay.io")
+
+		img, err := s.Substitute("foo/foo:latest")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if img != "quay.io/foo/foo:latest" {
+			t.Errorf("expected quay.io/foo/foo:latest, got %s", img)
+		}
+	})
+	t.Run("should not substitute the image if it is already using the provided hub", func(t *testing.T) {
+		s := NewCustomHubSubstitutor("quay.io")
+
+		img, err := s.Substitute("quay.io/foo/foo:latest")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if img != "quay.io/foo/foo:latest" {
+			t.Errorf("expected quay.io/foo/foo:latest, got %s", img)
+		}
+	})
+	t.Run("should not substitute the image if hub image name prefix config exist", func(t *testing.T) {
+		t.Cleanup(config.Reset)
+		config.Reset()
+		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", "registry.mycompany.com/mirror")
+		s := NewCustomHubSubstitutor("quay.io")
+
+		img, err := s.Substitute("foo/foo:latest")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if img != "foo/foo:latest" {
+			t.Errorf("expected foo/foo:latest, got %s", img)
+		}
+	})
+}
 
 func TestPrependHubRegistrySubstitutor(t *testing.T) {
 	t.Run("should prepend the hub registry to images from Docker Hub", func(t *testing.T) {
@@ -84,5 +129,37 @@ func TestPrependHubRegistrySubstitutor(t *testing.T) {
 				t.Errorf("expected registry.hub.docker.com/foo:latest, got %s", img)
 			}
 		})
+	})
+}
+
+func TestSubstituteBuiltImage(t *testing.T) {
+	req := GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			FromDockerfile: FromDockerfile{
+				Context:    "testdata",
+				Dockerfile: "echo.Dockerfile",
+				Tag:        "my-image",
+				Repo:       "my-repo",
+			},
+			ImageSubstitutors: []ImageSubstitutor{newPrependHubRegistry("my-registry")},
+		},
+		Started: false,
+	}
+
+	t.Run("should not use the properties prefix on built images", func(t *testing.T) {
+		config.Reset()
+		c, err := GenericContainer(context.Background(), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		json, err := c.Inspect(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if json.Config.Image != "my-registry/my-repo:my-image" {
+			t.Errorf("expected my-registry/my-repo:my-image, got %s", json.Config.Image)
+		}
 	})
 }

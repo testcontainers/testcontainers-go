@@ -5,14 +5,12 @@ import (
 	"testing"
 
 	"github.com/surrealdb/surrealdb.go"
-
-	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestSurrealDBSelect(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("surrealdb/surrealdb:v1.1.1"))
+	container, err := Run(ctx, "surrealdb/surrealdb:v1.1.1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +71,7 @@ func TestSurrealDBSelect(t *testing.T) {
 func TestSurrealDBWithAuth(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := RunContainer(ctx, testcontainers.WithImage("surrealdb/surrealdb:v1.1.1"), WithAuthentication())
+	container, err := Run(ctx, "surrealdb/surrealdb:v1.1.1", WithAuthentication())
 	if err != nil {
 		t.Fatal(err)
 	}

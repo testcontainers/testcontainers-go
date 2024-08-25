@@ -8,14 +8,17 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runRedpandaContainer {
 	ctx := context.Background()
 
-	redpandaContainer, err := redpanda.RunContainer(ctx,
+	redpandaContainer, err := redpanda.Run(ctx,
+		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
 		redpanda.WithEnableWasmTransform(),
+		redpanda.WithBootstrapConfig("data_transforms_per_core_memory_reservation", 33554432),
+		redpanda.WithBootstrapConfig("data_transforms_per_function_memory_limit", 16777216),
 		redpanda.WithNewServiceAccount("superuser-1", "test"),
 		redpanda.WithNewServiceAccount("superuser-2", "test"),
 		redpanda.WithNewServiceAccount("no-superuser", "test"),

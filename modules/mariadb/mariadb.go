@@ -17,11 +17,6 @@ const (
 	defaultDatabaseName = "test"
 )
 
-// defaultImage {
-const defaultImage = "mariadb:11.0.3"
-
-// }
-
 // MariaDBContainer represents the MariaDB container type used in the module
 type MariaDBContainer struct {
 	testcontainers.Container
@@ -124,10 +119,16 @@ func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the MariaDB container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MariaDBContainer, error) {
+	return Run(ctx, "mariadb:11.0.3", opts...)
+}
+
+// Run creates an instance of the MariaDB container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MariaDBContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MARIADB_USER":     defaultUser,
@@ -179,13 +180,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // MustConnectionString panics if the address cannot be determined.
 func (c *MariaDBContainer) MustConnectionString(ctx context.Context, args ...string) string {
-	addr, err := c.ConnectionString(ctx,args...)
+	addr, err := c.ConnectionString(ctx, args...)
 	if err != nil {
 		panic(err)
 	}
 	return addr
 }
-
 
 func (c *MariaDBContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "3306/tcp")

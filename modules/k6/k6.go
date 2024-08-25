@@ -32,11 +32,9 @@ type DownloadableFile struct {
 func (d *DownloadableFile) getDownloadPath() string {
 	baseName := path.Base(d.Uri.Path)
 	return path.Join(d.DownloadDir, baseName)
-
 }
 
 func downloadFileFromDescription(d DownloadableFile) error {
-
 	client := http.Client{Timeout: time.Second * 60}
 	req, err := http.NewRequest(http.MethodGet, d.Uri.String(), nil)
 	if err != nil {
@@ -62,7 +60,6 @@ func downloadFileFromDescription(d DownloadableFile) error {
 
 	_, err = io.Copy(downloadedFile, resp.Body)
 	return err
-
 }
 
 // WithTestScript mounts the given script into the ./test directory in the container
@@ -78,7 +75,6 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 	}
 
 	return WithTestScriptReader(f, scriptBaseName)
-
 }
 
 // WithTestScriptReader copies files into the Container using the Reader API
@@ -164,10 +160,16 @@ func WithCache() testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the K6 container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K6Container, error) {
+	return Run(ctx, "szkiba/k6x:v0.3.1", opts...)
+}
+
+// Run creates an instance of the K6 container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*K6Container, error) {
 	req := testcontainers.ContainerRequest{
-		Image:      "szkiba/k6x:v0.3.1",
+		Image:      img,
 		Cmd:        []string{"run"},
 		WaitingFor: wait.ForExit(),
 	}

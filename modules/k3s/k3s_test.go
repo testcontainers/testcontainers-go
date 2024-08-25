@@ -22,9 +22,7 @@ func Test_LoadImages(t *testing.T) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(3*time.Minute))
 	defer cancel()
 
-	k3sContainer, err := k3s.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1"),
-	)
+	k3sContainer, err := k3s.Run(ctx, "docker.io/rancher/k3s:v1.27.1-k3s1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,11 +121,12 @@ func Test_LoadImages(t *testing.T) {
 	})
 }
 
-func getTestPodState(ctx context.Context, k8s *kubernetes.Clientset) (state corev1.ContainerState, err error) {
+func getTestPodState(ctx context.Context, k8s *kubernetes.Clientset) (corev1.ContainerState, error) {
 	var pod *corev1.Pod
+	var err error
 	pod, err = k8s.CoreV1().Pods("default").Get(ctx, "test-pod", metav1.GetOptions{})
 	if err != nil || len(pod.Status.ContainerStatuses) == 0 {
-		return
+		return corev1.ContainerState{}, err
 	}
 	return pod.Status.ContainerStatuses[0].State, nil
 }
@@ -135,9 +134,7 @@ func getTestPodState(ctx context.Context, k8s *kubernetes.Clientset) (state core
 func Test_APIServerReady(t *testing.T) {
 	ctx := context.Background()
 
-	k3sContainer, err := k3s.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1"),
-	)
+	k3sContainer, err := k3s.Run(ctx, "docker.io/rancher/k3s:v1.27.1-k3s1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,8 +188,8 @@ func Test_APIServerReady(t *testing.T) {
 func Test_WithManifestOption(t *testing.T) {
 	ctx := context.Background()
 
-	k3sContainer, err := k3s.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/rancher/k3s:v1.27.1-k3s1"),
+	k3sContainer, err := k3s.Run(ctx,
+		"docker.io/rancher/k3s:v1.27.1-k3s1",
 		k3s.WithManifest("nginx-manifest.yaml"),
 		testcontainers.WithWaitStrategy(wait.ForExec([]string{"kubectl", "wait", "pod", "nginx", "--for=condition=Ready"})),
 	)

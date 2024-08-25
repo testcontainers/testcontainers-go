@@ -3,14 +3,13 @@ package testcontainers
 import (
 	"context"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
 )
 
 // NetworkProvider allows the creation of networks on an arbitrary system
 type NetworkProvider interface {
-	CreateNetwork(context.Context, NetworkRequest) (Network, error)            // create a network
-	GetNetwork(context.Context, NetworkRequest) (types.NetworkResource, error) // get a network
+	CreateNetwork(context.Context, NetworkRequest) (Network, error)      // create a network
+	GetNetwork(context.Context, NetworkRequest) (network.Inspect, error) // get a network
 }
 
 // Deprecated: will be removed in the future
@@ -36,9 +35,9 @@ func (n DefaultNetwork) ApplyDockerTo(opts *DockerProviderOptions) {
 // NetworkRequest represents the parameters used to get a network
 type NetworkRequest struct {
 	Driver         string
-	CheckDuplicate bool
+	CheckDuplicate bool // Deprecated: CheckDuplicate is deprecated since API v1.44, but it defaults to true when sent by the client package to older daemons.
 	Internal       bool
-	EnableIPv6     bool
+	EnableIPv6     *bool
 	Name           string
 	Labels         map[string]string
 	Attachable     bool

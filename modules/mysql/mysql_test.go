@@ -15,7 +15,7 @@ import (
 func TestMySQL(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mysql.RunContainer(ctx)
+	container, err := mysql.Run(ctx, "mysql:8.0.36")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,8 +34,8 @@ func TestMySQL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mustConnectionString := container.MustConnectionString(ctx,"tls=skip-verify")
-	if mustConnectionString!=connectionString{
+	mustConnectionString := container.MustConnectionString(ctx, "tls=skip-verify")
+	if mustConnectionString != connectionString {
 		t.Errorf("ConnectionString was not equal to MustConnectionString")
 	}
 
@@ -61,7 +61,8 @@ func TestMySQL(t *testing.T) {
 func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := mysql.RunContainer(ctx,
+	_, err := mysql.Run(ctx,
+		"mysql:8.0.36",
 		mysql.WithDatabase("foo"),
 		mysql.WithUsername("test"),
 		mysql.WithPassword(""))
@@ -73,7 +74,8 @@ func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mysql.RunContainer(ctx,
+	container, err := mysql.Run(ctx,
+		"mysql:8.0.36",
 		mysql.WithDatabase("foo"),
 		mysql.WithUsername("root"),
 		mysql.WithPassword(""))
@@ -113,7 +115,8 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 func TestMySQLWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := mysql.RunContainer(ctx,
+	container, err := mysql.Run(ctx,
+		"mysql:8.0.36",
 		mysql.WithScripts(filepath.Join("testdata", "schema.sql")))
 	if err != nil {
 		t.Fatal(err)

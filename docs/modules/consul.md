@@ -20,15 +20,23 @@ go get github.com/testcontainers/testcontainers-go/modules/consul
 [Creating a Consul container](../../modules/consul/examples_test.go) inside_block:runConsulContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
 
-The Consul module exposes one entrypoint function to create the Consul container, and this function receives two parameters:
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
+The Consul module exposes one entrypoint function to create the Consul container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -37,8 +45,8 @@ When starting the Consul container, you can pass options in a variadic way to co
 
 #### Image
 
-If you need to set a different Consul Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Consul. E.g. `testcontainers.WithImage("docker.io/hashicorp/consul:1.15")`.
+If you need to set a different Consul Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "docker.io/hashicorp/consul:1.15")`.
 
 {% include "../features/common_functional_options.md" %}
 

@@ -4,14 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/openfga"
 )
 
 func TestOpenFGA(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := openfga.RunContainer(ctx, testcontainers.WithImage("openfga/openfga:v1.5.0"))
+	container, err := openfga.Run(ctx, "openfga/openfga:v1.5.0")
 	if err != nil {
 		t.Fatal(err)
 	}

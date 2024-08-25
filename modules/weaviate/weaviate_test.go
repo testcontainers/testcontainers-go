@@ -6,20 +6,19 @@ import (
 	"net/http"
 	"testing"
 
+	wvt "github.com/weaviate/weaviate-go-client/v4/weaviate"
+	wvtgrpc "github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/weaviate"
-	wvt "github.com/weaviate/weaviate-go-client/v4/weaviate"
-	wvtgrpc "github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
 )
 
 func TestWeaviate(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := weaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.24.5"))
+	container, err := weaviate.Run(ctx, "semitechnologies/weaviate:1.25.5")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,9 +59,9 @@ func TestWeaviate(t *testing.T) {
 		}
 
 		var opts []grpc.DialOption
-		opts = append(opts, grpc.WithBlock())
+
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		conn, err := grpc.Dial(host, opts...)
+		conn, err := grpc.NewClient(host, opts...)
 		if err != nil {
 			tt.Fatalf("failed to dial connection: %v", err)
 		}

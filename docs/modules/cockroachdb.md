@@ -20,19 +20,24 @@ go get github.com/testcontainers/testcontainers-go/modules/cockroachdb
 [Creating a CockroachDB container](../../modules/cockroachdb/examples_test.go) inside_block:runCockroachDBContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
 
-The CockroachDB module exposes one entrypoint function to create the CockroachDB container, and this function receives two parameters:
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
+The CockroachDB module exposes one entrypoint function to create the CockroachDB container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
-
-!!!warning
-    When TLS is enabled there's a very small, unlikely chance that the underlying driver can panic when registering the driver as part of waiting for CockroachDB to be ready to accept connections. If this is repeatedly happening please open an issue.
 
 ### Container Options
 
@@ -40,8 +45,8 @@ When starting the CockroachDB container, you can pass options in a variadic way 
 
 #### Image
 
-If you need to set a different CockroachDB Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for CockroachDB. E.g. `testcontainers.WithImage("cockroachdb/cockroach:latest-v23.1")`.
+If you need to set a different CockroachDB Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "cockroachdb/cockroach:latest-v23.1")`.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -63,6 +68,9 @@ Control the maximum amount of memory used for storage, by default this is 100% b
 Internally CockroachDB requires a client certificate for the user to connect with.
 
 A helper `cockroachdb.NewTLSConfig` exists to generate all of this for you.
+
+!!!warning
+    When TLS is enabled there's a very small, unlikely chance that the underlying driver can panic when registering the driver as part of waiting for CockroachDB to be ready to accept connections. If this is repeatedly happening please open an issue.
 
 ### Container Methods
 

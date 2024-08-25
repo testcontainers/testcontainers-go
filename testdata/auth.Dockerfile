@@ -1,1 +1,3 @@
-FROM localhost:5001/redis:5.0-alpine
+ARG REGISTRY_HOST=localhost:5001
+
+FROM ${REGISTRY_HOST}/redis:5.0-alpine

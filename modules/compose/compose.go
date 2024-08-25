@@ -129,7 +129,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 
 	for i := range opts {
 		if err := opts[i].applyToComposeStack(&composeOptions); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("apply compose stack option: %w", err)
 		}
 	}
 
@@ -139,11 +139,11 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 
 	dockerCli, err := command.NewDockerCli()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new docker client: %w", err)
 	}
 
 	if err = dockerCli.Initialize(flags.NewClientOptions(), command.WithInitializeClient(makeClient)); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("initialize docker client: %w", err)
 	}
 
 	reaperProvider, err := testcontainers.NewDockerProvider()
@@ -151,10 +151,8 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		return nil, fmt.Errorf("failed to create reaper provider for compose: %w", err)
 	}
 
-	tcConfig := reaperProvider.Config()
-
 	var composeReaper *testcontainers.Reaper
-	if !tcConfig.RyukDisabled {
+	if !reaperProvider.Config().Config.RyukDisabled {
 		// NewReaper is deprecated: we need to find a way to create the reaper for compose
 		// bypassing the deprecation.
 		r, err := testcontainers.NewReaper(context.Background(), testcontainers.SessionID(), reaperProvider, "")

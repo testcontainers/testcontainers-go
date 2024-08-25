@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/{{ ParentDir }}/{{ $lower }}"
 )
 
@@ -13,7 +12,7 @@ func Example{{ $entrypoint }}() {
 	// run{{ $title }}Container {
 	ctx := context.Background()
 
-	{{ $lower }}Container, err := {{ $lower }}.{{ $entrypoint }}(ctx, testcontainers.WithImage("{{ $image }}"))
+	{{ $lower }}Container, err := {{ $lower }}.{{ $entrypoint }}(ctx, "{{ $image }}")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

@@ -26,7 +26,6 @@ const (
 	defaultSQLPort   = "26257/tcp"
 	defaultAdminPort = "8080/tcp"
 
-	defaultImage     = "cockroachdb/cockroach:latest-v23.1"
 	defaultUser      = "root"
 	defaultPassword  = ""
 	defaultDatabase  = "defaultdb"
@@ -68,12 +67,18 @@ func (c *CockroachDBContainer) TLSConfig() (*tls.Config, error) {
 	return connTLS(c.opts)
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the CockroachDB container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error) {
+	return Run(ctx, "cockroachdb/cockroach:latest-v23.1", opts...)
+}
+
+// Run creates an instance of the CockroachDB container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error) {
 	o := defaultOptions()
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: defaultImage,
+			Image: img,
 			ExposedPorts: []string{
 				defaultSQLPort,
 				defaultAdminPort,
@@ -169,24 +174,31 @@ func addWaitingFor(req *testcontainers.GenericContainerRequest, opts options) er
 		tlsConfig = cfg
 	}
 
-	req.WaitingFor = wait.ForAll(
+	sqlWait := wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
+		connStr := connString(opts, host, port)
+		if tlsConfig == nil {
+			return connStr
+		}
+
+		// register TLS config with pgx driver
+		connCfg, err := pgx.ParseConfig(connStr)
+		if err != nil {
+			panic(err)
+		}
+		connCfg.TLSConfig = tlsConfig
+
+		return stdlib.RegisterConnConfig(connCfg)
+	})
+	defaultStrategy := wait.ForAll(
 		wait.ForHTTP("/health").WithPort(defaultAdminPort),
-		wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
-			connStr := connString(opts, host, port)
-			if tlsConfig == nil {
-				return connStr
-			}
-
-			// register TLS config with pgx driver
-			connCfg, err := pgx.ParseConfig(connStr)
-			if err != nil {
-				panic(err)
-			}
-			connCfg.TLSConfig = tlsConfig
-
-			return stdlib.RegisterConnConfig(connCfg)
-		}),
+		sqlWait,
 	)
+
+	if req.WaitingFor == nil {
+		req.WaitingFor = defaultStrategy
+	} else {
+		req.WaitingFor = wait.ForAll(req.WaitingFor, defaultStrategy)
+	}
 
 	return nil
 }

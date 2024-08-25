@@ -20,15 +20,23 @@ go get github.com/testcontainers/testcontainers-go/modules/opensearch
 [Creating a OpenSearch container](../../modules/opensearch/examples_test.go) inside_block:runOpenSearchContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
 
-The OpenSearch module exposes one entrypoint function to create the OpenSearch container, and this function receives two parameters:
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
+The OpenSearch module exposes one entrypoint function to create the OpenSearch container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OpenSearchContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OpenSearchContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -37,8 +45,8 @@ When starting the OpenSearch container, you can pass options in a variadic way t
 
 #### Image
 
-If you need to set a different OpenSearch Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for OpenSearch. E.g. `testcontainers.WithImage("opensearchproject/opensearch:2.11.1")`.
+If you need to set a different OpenSearch Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "opensearchproject/opensearch:2.11.1")`.
 
 {% include "../features/common_functional_options.md" %}
 

@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
@@ -28,9 +27,9 @@ func ExampleRunFirestoreContainer() {
 	// runFirestoreContainer {
 	ctx := context.Background()
 
-	firestoreContainer, err := gcloud.RunFirestoreContainer(
+	firestoreContainer, err := gcloud.RunFirestore(
 		ctx,
-		testcontainers.WithImage("gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators"),
+		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
 		gcloud.WithProjectID("firestore-project"),
 	)
 	if err != nil {
@@ -48,7 +47,7 @@ func ExampleRunFirestoreContainer() {
 	// firestoreClient {
 	projectID := firestoreContainer.Settings.ProjectID
 
-	conn, err := grpc.Dial(firestoreContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(emulatorCreds{}))
+	conn, err := grpc.NewClient(firestoreContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(emulatorCreds{}))
 	if err != nil {
 		log.Fatalf("failed to dial: %v", err) // nolint:gocritic
 	}

@@ -25,7 +25,7 @@ func TestPulsar(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	nw, err := tcnetwork.New(ctx, tcnetwork.WithCheckDuplicate())
+	nw, err := tcnetwork.New(ctx)
 	require.NoError(t, err)
 
 	nwName := nw.Name
@@ -40,7 +40,6 @@ func TestPulsar(t *testing.T) {
 		{
 			name: "with modifiers",
 			opts: []testcontainers.ContainerCustomizer{
-				testcontainers.WithImage("docker.io/apachepulsar/pulsar:2.10.2"),
 				// addPulsarEnv {
 				testcontainerspulsar.WithPulsarEnv("brokerDeduplicationEnabled", "true"),
 				// }
@@ -89,8 +88,9 @@ func TestPulsar(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := testcontainerspulsar.RunContainer(
+			c, err := testcontainerspulsar.Run(
 				ctx,
+				"docker.io/apachepulsar/pulsar:2.10.2",
 				tt.opts...,
 			)
 			require.NoError(t, err)

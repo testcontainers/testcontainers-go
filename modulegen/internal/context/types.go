@@ -35,13 +35,13 @@ func (m *TestcontainersModule) ContainerName() string {
 }
 
 // Entrypoint returns the name of the entrypoint function, which is the lower-cased title of the example
-// If the example is a module, the entrypoint will be "RunContainer"
+// If the example is a module, the entrypoint will be "Run"
 func (m *TestcontainersModule) Entrypoint() string {
 	if m.IsModule {
-		return "RunContainer"
+		return "Run"
 	}
 
-	return "runContainer"
+	return "run"
 }
 
 func (m *TestcontainersModule) Lower() string {

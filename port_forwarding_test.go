@@ -6,8 +6,11 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -48,26 +51,15 @@ func TestExposeHostPorts(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			freePorts := make([]int, tt.numberOfPorts)
+	for _, tc := range tests {
+		t.Run(tc.name, func(tt *testing.T) {
+			freePorts := make([]int, tc.numberOfPorts)
 			for i := range freePorts {
-				freePort, err := getFreePort()
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				freePorts[i] = freePort
-
-				// create an http server for each port
-				server, err := createHttpServer(freePort)
-				if err != nil {
-					t.Fatal(err)
-				}
-				go func() {
-					_ = server.ListenAndServe()
-				}()
-				t.Cleanup(func() {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(w, expectedResponse)
+				}))
+				freePorts[i] = server.Listener.Addr().(*net.TCPAddr).Port
+				tt.Cleanup(func() {
 					server.Close()
 				})
 			}
@@ -83,15 +75,14 @@ func TestExposeHostPorts(t *testing.T) {
 				Started: true,
 			}
 
-			if tt.hasNetwork {
-				nw, err := network.New(context.Background())
-				if err != nil {
-					t.Fatal(err)
-				}
-				t.Cleanup(func() {
-					if err := nw.Remove(context.Background()); err != nil {
-						t.Fatal(err)
-					}
+			var nw *testcontainers.DockerNetwork
+			if tc.hasNetwork {
+				var err error
+				nw, err = network.New(context.Background())
+				require.NoError(tt, err)
+
+				tt.Cleanup(func() {
+					require.NoError(tt, nw.Remove(context.Background()))
 				})
 
 				req.Networks = []string{nw.Name}
@@ -99,31 +90,27 @@ func TestExposeHostPorts(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			if !tt.hasHostAccess {
+			if !tc.hasHostAccess {
 				var cancel context.CancelFunc
 				ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
 				defer cancel()
 			}
 
 			c, err := testcontainers.GenericContainer(ctx, req)
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(func() {
-				if err := c.Terminate(context.Background()); err != nil {
-					t.Fatal(err)
-				}
+			require.NoError(tt, err)
+			tt.Cleanup(func() {
+				require.NoError(tt, c.Terminate(context.Background()))
 			})
 
-			if tt.hasHostAccess {
+			if tc.hasHostAccess {
 				// create a container that has host access, which will
 				// automatically forward the port to the container
-				assertContainerHasHostAccess(t, c, freePorts...)
+				assertContainerHasHostAccess(tt, c, freePorts...)
 			} else {
 				// force cancellation because of timeout
 				time.Sleep(11 * time.Second)
 
-				assertContainerHasNoHostAccess(t, c, freePorts...)
+				assertContainerHasNoHostAccess(tt, c, freePorts...)
 			}
 		})
 	}
@@ -171,31 +158,4 @@ func assertContainerHasNoHostAccess(t *testing.T, c testcontainers.Container, po
 			t.Fatalf("expected not to get [%s] but got [%s]", expectedResponse, response)
 		}
 	}
-}
-
-func createHttpServer(port int) (*http.Server, error) {
-	server := &http.Server{
-		Addr: fmt.Sprintf(":%d", port),
-	}
-
-	server.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, expectedResponse)
-	})
-
-	return server, nil
-}
-
-// getFreePort asks the kernel for a free open port that is ready to use.
-func getFreePort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
-	}
-
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
 }

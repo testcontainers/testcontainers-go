@@ -17,11 +17,6 @@ const (
 	defaultDatabaseName = "test"
 )
 
-// defaultImage {
-const defaultImage = "mysql:8.0.36"
-
-// }
-
 // MySQLContainer represents the MySQL container type used in the module
 type MySQLContainer struct {
 	testcontainers.Container
@@ -48,10 +43,16 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the MySQL container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MySQLContainer, error) {
+	return Run(ctx, "mysql:8.0.36", opts...)
+}
+
+// Run creates an instance of the MySQL container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MySQLContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MYSQL_USER":     defaultUser,
@@ -96,7 +97,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // MustConnectionString panics if the address cannot be determined.
 func (c *MySQLContainer) MustConnectionString(ctx context.Context, args ...string) string {
-	addr, err := c.ConnectionString(ctx,args...)
+	addr, err := c.ConnectionString(ctx, args...)
 	if err != nil {
 		panic(err)
 	}

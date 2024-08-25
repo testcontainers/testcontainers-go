@@ -57,7 +57,7 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 	}
 	provider, err := req.ProviderType.GetProvider(WithLogger(logging))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get provider: %w", err)
 	}
 	defer provider.Close()
 
@@ -74,12 +74,12 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 	}
 	if err != nil {
 		// At this point `c` might not be nil. Give the caller an opportunity to call Destroy on the container.
-		return c, fmt.Errorf("%w: failed to create container", err)
+		return c, fmt.Errorf("create container: %w", err)
 	}
 
 	if req.Started && !c.IsRunning() {
 		if err := c.Start(ctx); err != nil {
-			return c, fmt.Errorf("failed to start container: %w", err)
+			return c, fmt.Errorf("start container: %w", err)
 		}
 	}
 	return c, nil

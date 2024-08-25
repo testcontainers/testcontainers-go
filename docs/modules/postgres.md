@@ -20,15 +20,23 @@ go get github.com/testcontainers/testcontainers-go/modules/postgres
 [Creating a Postgres container](../../modules/postgres/examples_test.go) inside_block:runPostgresContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
 
-The Postgres module exposes one entrypoint function to create the Postgres container, and this function receives two parameters:
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
+The Postgres module exposes one entrypoint function to create the Postgres container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -40,8 +48,8 @@ When starting the Postgres container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different Postgres Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Postgres. E.g. `testcontainers.WithImage("docker.io/postgres:16-alpine")`.
+If you need to set a different Postgres Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "docker.io/postgres:16-alpine")`.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -92,6 +100,15 @@ It's possible to use the Postgres container with PGVector, Timescale or Postgis,
 
 ## Examples
 
+### Wait Strategies
+
+The postgres module works best with these wait strategies.
+No default is supplied, so you need to set it explicitly.
+
+<!--codeinclude-->
+[Example Wait Strategies](../../modules/postgres/wait_strategies.go) inside_block:waitStrategy
+<!--/codeinclude-->
+
 ### Using Snapshots
 This example shows the usage of the postgres module's Snapshot feature to give each test a clean database without having
 to recreate the database container on every test or run heavy scripts to clean your database. This makes the individual
@@ -102,7 +119,35 @@ tests very modular, since they always run on a brand-new database.
     The Snapshot logic requires dropping the connected database and using the system database to run commands, which will
     not work if the database for the container is set to `"postgres"`.
 
-
 <!--codeinclude-->
 [Test with a reusable Postgres container](../../modules/postgres/postgres_test.go) inside_block:snapshotAndReset
+<!--/codeinclude-->
+
+### Snapshot/Restore with custom driver
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+The snapshot/restore feature tries to use the `postgres` driver with go's included `sql.DB` package to perform database operations.
+If the `postgres` driver is not installed, it will fall back to using `docker exec`, which works, but is slower.
+
+You can tell the module to use the database driver you have imported in your test package by setting `postgres.WithSQLDriver("name")` to your driver name.
+
+For example, if you use pgx, see the example below.
+
+```go
+package my_test
+
+import (
+	"testing"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
+)
+```
+
+The above code snippet is importing the `pgx` driver and the _Testcontainers for Go_ Postgres module.
+
+<!--codeinclude-->
+[Snapshot/Restore with custom driver](../../modules/postgres/postgres_test.go) inside_block:snapshotAndReset
 <!--/codeinclude-->

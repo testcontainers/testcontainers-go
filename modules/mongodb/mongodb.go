@@ -8,9 +8,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// defaultImage is the default MongoDB container image
-const defaultImage = "mongo:6"
-
 // MongoDBContainer represents the MongoDB container type used in the module
 type MongoDBContainer struct {
 	testcontainers.Container
@@ -18,10 +15,16 @@ type MongoDBContainer struct {
 	password string
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the MongoDB container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MongoDBContainer, error) {
+	return Run(ctx, "mongo:6", opts...)
+}
+
+// Run creates an instance of the MongoDB container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MongoDBContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"27017/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("Waiting for connections"),
@@ -81,18 +84,18 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 
 // WithReplicaSet configures the container to run a single-node MongoDB replica set named "rs".
 // It will wait until the replica set is ready.
-func WithReplicaSet() testcontainers.CustomizeRequestOption {
+func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Cmd = append(req.Cmd, "--replSet", "rs")
+		req.Cmd = append(req.Cmd, "--replSet", replSetName)
 		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
 			PostStarts: []testcontainers.ContainerHook{
 				func(ctx context.Context, c testcontainers.Container) error {
 					ip, err := c.ContainerIP(ctx)
 					if err != nil {
-						return err
+						return fmt.Errorf("container ip: %w", err)
 					}
 
-					cmd := eval("rs.initiate({ _id: 'rs', members: [ { _id: 0, host: '%s:27017' } ] })", ip)
+					cmd := eval("rs.initiate({ _id: '%s', members: [ { _id: 0, host: '%s:27017' } ] })", replSetName, ip)
 					return wait.ForExec(cmd).WaitUntilReady(ctx, c)
 				},
 			},

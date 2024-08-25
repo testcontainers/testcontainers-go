@@ -10,15 +10,14 @@ import (
 	"github.com/tmc/langchaingo/llms"
 	langchainollama "github.com/tmc/langchaingo/llms/ollama"
 
-	"github.com/testcontainers/testcontainers-go"
 	tcollama "github.com/testcontainers/testcontainers-go/modules/ollama"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runOllamaContainer {
 	ctx := context.Background()
 
-	ollamaContainer, err := tcollama.RunContainer(ctx, testcontainers.WithImage("ollama/ollama:0.1.25"))
+	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.1.25")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -42,14 +41,11 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_withModel_llama2_http() {
+func ExampleRun_withModel_llama2_http() {
 	// withHTTPModelLlama2 {
 	ctx := context.Background()
 
-	ollamaContainer, err := tcollama.RunContainer(
-		ctx,
-		testcontainers.WithImage("ollama/ollama:0.1.25"),
-	)
+	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.1.25")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -63,12 +59,12 @@ func ExampleRunContainer_withModel_llama2_http() {
 
 	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "pull", model})
 	if err != nil {
-		log.Fatalf("failed to pull model %s: %s", model, err)
+		log.Fatalf("failed to pull model %s: %s", model, err) // nolint:gocritic
 	}
 
 	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "run", model})
 	if err != nil {
-		log.Fatalf("failed to run model %s: %s", model, err)
+		log.Fatalf("failed to run model %s: %s", model, err) // nolint:gocritic
 	}
 
 	connectionStr, err := ollamaContainer.ConnectionString(ctx)
@@ -100,14 +96,11 @@ func ExampleRunContainer_withModel_llama2_http() {
 	// Intentionally not asserting the output, as we don't want to run this example in the tests.
 }
 
-func ExampleRunContainer_withModel_llama2_langchain() {
+func ExampleRun_withModel_llama2_langchain() {
 	// withLangchainModelLlama2 {
 	ctx := context.Background()
 
-	ollamaContainer, err := tcollama.RunContainer(
-		ctx,
-		testcontainers.WithImage("ollama/ollama:0.1.25"),
-	)
+	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.1.25")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -121,12 +114,12 @@ func ExampleRunContainer_withModel_llama2_langchain() {
 
 	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "pull", model})
 	if err != nil {
-		log.Fatalf("failed to pull model %s: %s", model, err)
+		log.Fatalf("failed to pull model %s: %s", model, err) // nolint:gocritic
 	}
 
 	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "run", model})
 	if err != nil {
-		log.Fatalf("failed to run model %s: %s", model, err)
+		log.Fatalf("failed to run model %s: %s", model, err) // nolint:gocritic
 	}
 
 	connectionStr, err := ollamaContainer.ConnectionString(ctx)

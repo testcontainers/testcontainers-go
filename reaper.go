@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/errdefs"
@@ -86,46 +87,53 @@ func lookUpReaperContainer(ctx context.Context, sessionID string) (*DockerContai
 	exp.MaxInterval = 5.0 * time.Second  // max interval between attempts
 	exp.MaxElapsedTime = 1 * time.Minute // max time to keep trying
 
-	var reaperContainer *DockerContainer
-	err = backoff.Retry(func() error {
-		args := []filters.KeyValuePair{
+	opts := container.ListOptions{
+		All: true,
+		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", core.LabelSessionID, sessionID)),
 			filters.Arg("label", fmt.Sprintf("%s=%t", core.LabelReaper, true)),
 			filters.Arg("label", fmt.Sprintf("%s=%t", core.LabelRyuk, true)),
 			filters.Arg("name", reaperContainerNameFromSessionID(sessionID)),
-		}
-
-		resp, err := dockerClient.ContainerList(ctx, container.ListOptions{
-			All:     true,
-			Filters: filters.NewArgs(args...),
-		})
-		if err != nil {
-			return err
-		}
-
-		if len(resp) == 0 {
-			// reaper container not found in the running state: do not look for it again
-			return nil
-		}
-
-		if len(resp) > 1 {
-			return fmt.Errorf("not possible to have multiple reaper containers found for session ID %s", sessionID)
-		}
-
-		r, err := containerFromDockerResponse(ctx, resp[0])
-		if err != nil {
-			return err
-		}
-
-		reaperContainer = r
-
-		return nil
-	}, backoff.WithContext(exp, ctx))
-	if err != nil {
-		return nil, err
+		),
 	}
 
-	return reaperContainer, nil
+	return backoff.RetryNotifyWithData(
+		func() (*DockerContainer, error) {
+			resp, err := dockerClient.ContainerList(ctx, opts)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(resp) == 0 {
+				// reaper container not found in the running state: do not look for it again
+				return nil, nil
+			}
+
+			if len(resp) > 1 {
+				return nil, fmt.Errorf("not possible to have multiple reaper containers found for session ID %s", sessionID)
+			}
+
+			r, err := containerFromDockerResponse(ctx, resp[0])
+			if err != nil {
+				return nil, err
+			}
+
+			if r.healthStatus == types.Healthy || r.healthStatus == types.NoHealthcheck {
+				return r, nil
+			}
+
+			// if a health status is present on the container, and the container is healthy, error
+			if r.healthStatus != "" {
+				return nil, fmt.Errorf("container %s is not healthy, wanted status=%s, got status=%s", resp[0].ID[:8], types.Healthy, r.healthStatus)
+			}
+
+			return r, nil
+		},
+		backoff.WithContext(exp, ctx),
+		func(err error, duration time.Duration) {
+			Logger.Printf("Error looking up reaper container, will retry: %v", err)
+		},
+	)
 }
 
 // reuseOrCreateReaper returns an existing Reaper instance if it exists and is running. Otherwise, a new Reaper instance
@@ -162,6 +170,7 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 		if err != nil {
 			return nil, err
 		}
+
 		return reaperInstance, nil
 	}
 
@@ -192,6 +201,27 @@ func reuseReaperContainer(ctx context.Context, sessionID string, provider Reaper
 	if err != nil {
 		return nil, err
 	}
+
+	Logger.Printf("⏳ Waiting for Reaper port to be ready")
+
+	var containerJson *types.ContainerJSON
+
+	if containerJson, err = reaperContainer.Inspect(ctx); err != nil {
+		return nil, fmt.Errorf("failed to inspect reaper container %s: %w", reaperContainer.ID[:8], err)
+	}
+
+	if containerJson != nil && containerJson.NetworkSettings != nil {
+		for port := range containerJson.NetworkSettings.Ports {
+			err := wait.ForListeningPort(port).
+				WithPollInterval(100*time.Millisecond).
+				WaitUntilReady(ctx, reaperContainer)
+			if err != nil {
+				return nil, fmt.Errorf("failed waiting for reaper container %s port %s/%s to be ready: %w",
+					reaperContainer.ID[:8], port.Proto(), port.Port(), err)
+			}
+		}
+	}
+
 	return &Reaper{
 		Provider:  provider,
 		SessionID: sessionID,

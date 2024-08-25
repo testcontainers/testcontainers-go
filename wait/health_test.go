@@ -3,6 +3,7 @@ package wait
 import (
 	"context"
 	"io"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,41 +16,54 @@ import (
 
 type healthStrategyTarget struct {
 	state *types.ContainerState
+	mtx   sync.Mutex
 }
 
-func (st healthStrategyTarget) Host(ctx context.Context) (string, error) {
+func (st *healthStrategyTarget) Host(ctx context.Context) (string, error) {
 	return "", nil
 }
 
-func (st healthStrategyTarget) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+func (st *healthStrategyTarget) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
 	return nil, nil
 }
 
 // Deprecated: use Inspect instead
-func (st healthStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
+func (st *healthStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
 	return nil, nil
 }
 
-func (st healthStrategyTarget) MappedPort(ctx context.Context, n nat.Port) (nat.Port, error) {
+func (st *healthStrategyTarget) MappedPort(ctx context.Context, n nat.Port) (nat.Port, error) {
 	return n, nil
 }
 
-func (st healthStrategyTarget) Logs(ctx context.Context) (io.ReadCloser, error) {
+func (st *healthStrategyTarget) Logs(ctx context.Context) (io.ReadCloser, error) {
 	return nil, nil
 }
 
-func (st healthStrategyTarget) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
+func (st *healthStrategyTarget) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
 	return 0, nil, nil
 }
 
-func (st healthStrategyTarget) State(ctx context.Context) (*types.ContainerState, error) {
-	return st.state, nil
+func (st *healthStrategyTarget) State(ctx context.Context) (*types.ContainerState, error) {
+	st.mtx.Lock()
+	defer st.mtx.Unlock()
+
+	// Return a copy to prevent data race.
+	state := *st.state
+
+	return &state, nil
+}
+
+func (st *healthStrategyTarget) setState(health *types.Health) {
+	st.mtx.Lock()
+	defer st.mtx.Unlock()
+	st.state.Health = health
 }
 
 // TestWaitForHealthTimesOutForUnhealthy confirms that an unhealthy container will eventually
 // time out.
 func TestWaitForHealthTimesOutForUnhealthy(t *testing.T) {
-	target := healthStrategyTarget{
+	target := &healthStrategyTarget{
 		state: &types.ContainerState{
 			Running: true,
 			Health:  &types.Health{Status: types.Unhealthy},
@@ -64,7 +78,7 @@ func TestWaitForHealthTimesOutForUnhealthy(t *testing.T) {
 
 // TestWaitForHealthSucceeds ensures that a healthy container always succeeds.
 func TestWaitForHealthSucceeds(t *testing.T) {
-	target := healthStrategyTarget{
+	target := &healthStrategyTarget{
 		state: &types.ContainerState{
 			Running: true,
 			Health:  &types.Health{Status: types.Healthy},
@@ -93,7 +107,7 @@ func TestWaitForHealthWithNil(t *testing.T) {
 		// wait a bit to simulate startup time and give check time to at least
 		// try a few times with a nil Health
 		time.Sleep(200 * time.Millisecond)
-		target.state.Health = &types.Health{Status: types.Healthy}
+		target.setState(&types.Health{Status: types.Healthy})
 	}(target)
 
 	err := wg.WaitUntilReady(context.Background(), target)

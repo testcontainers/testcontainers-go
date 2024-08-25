@@ -18,6 +18,10 @@
             "path": "../modules/artemis"
         },
         {
+            "name": "module / azurite",
+            "path": "../modules/azurite"
+        },
+        {
             "name": "module / cassandra",
             "path": "../modules/cassandra"
         },
@@ -56,6 +60,10 @@
         {
             "name": "module / gcloud",
             "path": "../modules/gcloud"
+        },
+        {
+            "name": "module / grafana-lgtm",
+            "path": "../modules/grafana-lgtm"
         },
         {
             "name": "module / inbucket",
@@ -164,6 +172,10 @@
         {
             "name": "module / surrealdb",
             "path": "../modules/surrealdb"
+        },
+        {
+            "name": "module / valkey",
+            "path": "../modules/valkey"
         },
         {
             "name": "module / vault",

@@ -79,10 +79,16 @@ func WithAllowAllCaps() testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the SurrealDB container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*SurrealDBContainer, error) {
+	return Run(ctx, "surrealdb/surrealdb:v1.1.1", opts...)
+}
+
+// Run creates an instance of the SurrealDB container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*SurrealDBContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "surrealdb/surrealdb:v1.1.1",
+		Image: img,
 		Env: map[string]string{
 			"SURREAL_USER":           "root",
 			"SURREAL_PASS":           "root",

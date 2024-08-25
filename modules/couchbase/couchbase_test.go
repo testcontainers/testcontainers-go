@@ -7,13 +7,12 @@ import (
 
 	"github.com/couchbase/gocb/v2"
 
-	"github.com/testcontainers/testcontainers-go"
 	tccouchbase "github.com/testcontainers/testcontainers-go/modules/couchbase"
 )
 
 const (
 	// dockerImages {
-	enterpriseEdition = "couchbase:enterprise-7.1.3"
+	enterpriseEdition = "couchbase:enterprise-7.6.1"
 	communityEdition  = "couchbase:community-7.1.1"
 	// }
 )
@@ -30,7 +29,7 @@ func TestCouchbaseWithCommunityContainer(t *testing.T) {
 		WithFlushEnabled(false).
 		WithPrimaryIndex(true)
 
-	container, err := tccouchbase.RunContainer(ctx, testcontainers.WithImage(communityEdition), tccouchbase.WithBuckets(bucket))
+	container, err := tccouchbase.Run(ctx, communityEdition, tccouchbase.WithBuckets(bucket))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +54,15 @@ func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	container, err := tccouchbase.RunContainer(ctx, testcontainers.WithImage(enterpriseEdition), tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
+	bucket := tccouchbase.NewBucket(bucketName).
+		WithQuota(100).
+		WithReplicas(0).
+		WithFlushEnabled(true).
+		WithPrimaryIndex(true)
+	container, err := tccouchbase.Run(ctx,
+		enterpriseEdition,
+		tccouchbase.WithBuckets(bucket),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,8 +86,8 @@ func TestWithCredentials(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	_, err := tccouchbase.RunContainer(ctx,
-		testcontainers.WithImage(communityEdition),
+	_, err := tccouchbase.Run(ctx,
+		communityEdition,
 		tccouchbase.WithAdminCredentials("testcontainers", "testcontainers.IS.cool!"),
 		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
 	if err != nil {
@@ -92,8 +99,8 @@ func TestWithCredentials_Password_LessThan_6(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	_, err := tccouchbase.RunContainer(ctx,
-		testcontainers.WithImage(communityEdition),
+	_, err := tccouchbase.Run(ctx,
+		communityEdition,
 		tccouchbase.WithAdminCredentials("testcontainers", "12345"),
 		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
 
@@ -106,8 +113,8 @@ func TestAnalyticsServiceWithCommunityContainer(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	_, err := tccouchbase.RunContainer(ctx,
-		testcontainers.WithImage(communityEdition),
+	_, err := tccouchbase.Run(ctx,
+		communityEdition,
 		tccouchbase.WithServiceAnalytics(),
 		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
 
@@ -120,8 +127,8 @@ func TestEventingServiceWithCommunityContainer(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	_, err := tccouchbase.RunContainer(ctx,
-		testcontainers.WithImage(communityEdition),
+	_, err := tccouchbase.Run(ctx,
+		communityEdition,
 		tccouchbase.WithServiceEventing(),
 		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
 

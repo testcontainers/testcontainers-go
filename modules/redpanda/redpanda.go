@@ -52,8 +52,14 @@ type Container struct {
 	urlScheme string
 }
 
-// RunContainer creates an instance of the Redpanda container type.
+// Deprecated: use Run instead
+// RunContainer creates an instance of the Redpanda container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	return Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", opts...)
+}
+
+// Run creates an instance of the Redpanda container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	tmpDir, err := os.MkdirTemp("", "redpanda")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
@@ -64,7 +70,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	// Some (e.g. Image) may be overridden by providing an option argument to this function.
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.redpanda.com/redpandadata/redpanda:v23.3.3",
+			Image: img,
 			User:  "root:root",
 			// Files: Will be added later after we've rendered our YAML templates.
 			ExposedPorts: []string{
@@ -80,6 +86,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 				"--smp=1",
 				"--memory=1G",
 			},
+			WaitingFor: wait.ForAll(
+				// Wait for the ports to be exposed only as the container needs configuration
+				// before it will bind to the ports and be ready to serve requests.
+				wait.ForListeningPort(defaultKafkaAPIPort).SkipInternalCheck(),
+				wait.ForListeningPort(defaultAdminAPIPort).SkipInternalCheck(),
+				wait.ForListeningPort(defaultSchemaRegistryPort).SkipInternalCheck(),
+			),
 		},
 		Started: true,
 	}
@@ -113,7 +126,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 	// 4. Register extra kafka listeners if provided, network aliases will be
 	// set
-	if err := registerListeners(ctx, settings, req); err != nil {
+	if err := registerListeners(settings, req); err != nil {
 		return nil, fmt.Errorf("failed to register listeners: %w", err)
 	}
 
@@ -194,11 +207,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, fmt.Errorf("failed to copy redpanda.yaml into container: %w", err)
 	}
 
-	// 8. Wait until Redpanda is ready to serve requests
+	// 8. Wait until Redpanda is ready to serve requests.
 	err = wait.ForAll(
 		wait.ForListeningPort(defaultKafkaAPIPort),
-		wait.ForLog("Successfully started Redpanda!").WithPollInterval(100*time.Millisecond)).
-		WaitUntilReady(ctx, container)
+		wait.ForListeningPort(defaultAdminAPIPort),
+		wait.ForListeningPort(defaultSchemaRegistryPort),
+		wait.ForLog("Successfully started Redpanda!"),
+	).WaitUntilReady(ctx, container)
 	if err != nil {
 		return nil, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
 	}
@@ -275,6 +290,7 @@ func renderBootstrapConfig(settings options) ([]byte, error) {
 		KafkaAPIEnableAuthorization: settings.KafkaEnableAuthorization,
 		AutoCreateTopics:            settings.AutoCreateTopics,
 		EnableWasmTransform:         settings.EnableWasmTransform,
+		ExtraBootstrapConfig:        settings.ExtraBootstrapConfig,
 	}
 
 	tpl, err := template.New("bootstrap.yaml").Parse(bootstrapConfigTpl)
@@ -292,7 +308,7 @@ func renderBootstrapConfig(settings options) ([]byte, error) {
 
 // registerListeners validates that the provided listeners are valid and set network aliases for the provided addresses.
 // The container must be attached to at least one network.
-func registerListeners(ctx context.Context, settings options, req testcontainers.GenericContainerRequest) error {
+func registerListeners(settings options, req testcontainers.GenericContainerRequest) error {
 	if len(settings.Listeners) == 0 {
 		return nil
 	}
@@ -349,6 +365,7 @@ type redpandaBootstrapConfigTplParams struct {
 	KafkaAPIEnableAuthorization bool
 	AutoCreateTopics            bool
 	EnableWasmTransform         bool
+	ExtraBootstrapConfig        map[string]any
 }
 
 type redpandaConfigTplParams struct {

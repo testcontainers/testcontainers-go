@@ -276,7 +276,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		if errors.Is(err, context.DeadlineExceeded) {
 			break
 		}
-		time.Sleep(100 * time.Microsecond)
+		time.Sleep(10 * time.Millisecond)
 		t.Log("retrying get endpoint")
 	}
 	if err != nil {
@@ -285,15 +285,15 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
 
-	client, err := NewDockerClientWithOpts(ctx, opts...)
+	dockerClient, err := NewDockerClientWithOpts(ctx, opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer dockerClient.Close()
 
 	provider := &DockerProvider{
-		client: client,
-		config: ReadConfig(),
+		client: dockerClient,
+		config: config.Read(),
 		DockerProviderOptions: &DockerProviderOptions{
 			GenericProviderOptions: &GenericProviderOptions{
 				Logger: TestLogger(t),
@@ -637,4 +637,89 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	// logStoppedForOutOfSyncMessage, as it hangs the system with
 	// the multiple containers.
 	assert.False(t, strings.Contains(actual, logStoppedForOutOfSyncMessage))
+}
+
+// FooLogConsumer is a test log consumer that accepts logs from the
+// "hello-world" Docker image, which prints out the "Hello from Docker!"
+// log message.
+type FooLogConsumer struct {
+	LogChannel chan string
+	t          *testing.T
+}
+
+// Accept receives a log message and sends it to the log channel if it
+// contains the "Hello from Docker!" message.
+func (c FooLogConsumer) Accept(rawLog Log) {
+	log := string(rawLog.Content)
+	if strings.Contains(log, "Hello from Docker!") {
+		select {
+		case c.LogChannel <- log:
+		default:
+		}
+	}
+}
+
+// AssertRead waits for a log message to be received.
+func (c FooLogConsumer) AssertRead() {
+	select {
+	case <-c.LogChannel:
+	case <-time.After(5 * time.Second):
+		c.t.Fatal("receive timeout")
+	}
+}
+
+// SlurpOne reads a value from the channel if it is available.
+func (c FooLogConsumer) SlurpOne() {
+	select {
+	case <-c.LogChannel:
+	default:
+	}
+}
+
+func NewFooLogConsumer(t *testing.T) *FooLogConsumer {
+	t.Helper()
+
+	return &FooLogConsumer{
+		t:          t,
+		LogChannel: make(chan string, 2),
+	}
+}
+
+func TestRestartContainerWithLogConsumer(t *testing.T) {
+	logConsumer := NewFooLogConsumer(t)
+
+	ctx := context.Background()
+	container, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:           "hello-world",
+			AlwaysPullImage: true,
+			LogConsumerCfg: &LogConsumerConfig{
+				Consumers: []LogConsumer{logConsumer},
+			},
+		},
+		Started: false,
+	})
+	terminateContainerOnEnd(t, ctx, container)
+	require.NoError(t, err)
+
+	// Start and confirm that the log consumer receives the log message.
+	err = container.Start(ctx)
+	require.NoError(t, err)
+
+	logConsumer.AssertRead()
+
+	// Stop the container and clear any pending message.
+	d := 5 * time.Second
+	err = container.Stop(ctx, &d)
+	require.NoError(t, err)
+
+	logConsumer.SlurpOne()
+
+	// Restart the container and confirm that the log consumer receives new log messages.
+	err = container.Start(ctx)
+	require.NoError(t, err)
+
+	// First message is from the first start.
+	logConsumer.AssertRead()
+	logConsumer.AssertRead()
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	ch "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -30,7 +31,7 @@ type Test struct {
 func TestClickHouseDefaultConfig(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := clickhouse.RunContainer(ctx)
+	container, err := clickhouse.Run(ctx, "clickhouse/clickhouse-server:23.3.8.21-alpine")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +63,8 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 func TestClickHouseConnectionHost(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := clickhouse.RunContainer(ctx,
+	container, err := clickhouse.Run(ctx,
+		"clickhouse/clickhouse-server:23.3.8.21-alpine",
 		clickhouse.WithUsername(user),
 		clickhouse.WithPassword(password),
 		clickhouse.WithDatabase(dbname),
@@ -94,7 +96,7 @@ func TestClickHouseConnectionHost(t *testing.T) {
 	defer conn.Close()
 
 	// perform assertions
-	data, err := performCRUD(conn)
+	data, err := performCRUD(t, conn)
 	require.NoError(t, err)
 	assert.Len(t, data, 1)
 }
@@ -102,7 +104,12 @@ func TestClickHouseConnectionHost(t *testing.T) {
 func TestClickHouseDSN(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := clickhouse.RunContainer(ctx, clickhouse.WithUsername(user), clickhouse.WithPassword(password), clickhouse.WithDatabase(dbname))
+	container, err := clickhouse.Run(ctx,
+		"clickhouse/clickhouse-server:23.3.8.21-alpine",
+		clickhouse.WithUsername(user),
+		clickhouse.WithPassword(password),
+		clickhouse.WithDatabase(dbname),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +133,7 @@ func TestClickHouseDSN(t *testing.T) {
 	defer conn.Close()
 
 	// perform assertions
-	data, err := performCRUD(conn)
+	data, err := performCRUD(t, conn)
 	require.NoError(t, err)
 	assert.Len(t, data, 1)
 }
@@ -135,7 +142,8 @@ func TestClickHouseWithInitScripts(t *testing.T) {
 	ctx := context.Background()
 
 	// withInitScripts {
-	container, err := clickhouse.RunContainer(ctx,
+	container, err := clickhouse.Run(ctx,
+		"clickhouse/clickhouse-server:23.3.8.21-alpine",
 		clickhouse.WithUsername(user),
 		clickhouse.WithPassword(password),
 		clickhouse.WithDatabase(dbname),
@@ -184,7 +192,8 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			container, err := clickhouse.RunContainer(ctx,
+			container, err := clickhouse.Run(ctx,
+				"clickhouse/clickhouse-server:23.3.8.21-alpine",
 				clickhouse.WithUsername(user),
 				clickhouse.WithPassword(""),
 				clickhouse.WithDatabase(dbname),
@@ -215,7 +224,7 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 			defer conn.Close()
 
 			// perform assertions
-			data, err := performCRUD(conn)
+			data, err := performCRUD(t, conn)
 			require.NoError(t, err)
 			assert.Len(t, data, 1)
 		})
@@ -245,7 +254,8 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	container, err := clickhouse.RunContainer(ctx,
+	container, err := clickhouse.Run(ctx,
+		"clickhouse/clickhouse-server:23.3.8.21-alpine",
 		clickhouse.WithUsername(user),
 		clickhouse.WithPassword(password),
 		clickhouse.WithDatabase(dbname),
@@ -278,75 +288,69 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 	defer conn.Close()
 
 	// perform assertions
-	data, err := performReplicatedCRUD(conn)
+	data, err := performReplicatedCRUD(t, conn)
 	require.NoError(t, err)
 	assert.Len(t, data, 1)
 }
 
-func performReplicatedCRUD(conn driver.Conn) ([]Test, error) {
-	var (
-		err error
-		res []Test
-	)
-
-	err = backoff.Retry(func() error {
-		err = conn.Exec(context.Background(), "CREATE TABLE replicated_test_table (id UInt64) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/mdb.data_transfer_cp_cdc', '{replica}') PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
-		if err != nil {
-			return err
-		}
-
-		err = conn.Exec(context.Background(), "INSERT INTO replicated_test_table (id) VALUES (1);")
-		if err != nil {
-			return err
-		}
-
-		rows, err := conn.Query(context.Background(), "SELECT * FROM replicated_test_table;")
-		if err != nil {
-			return err
-		}
-
-		for rows.Next() {
-			var r Test
-
-			err := rows.Scan(&r.Id)
+func performReplicatedCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {
+	return backoff.RetryNotifyWithData(
+		func() ([]Test, error) {
+			err := conn.Exec(context.Background(), "CREATE TABLE replicated_test_table (id UInt64) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/mdb.data_transfer_cp_cdc', '{replica}') PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
 			if err != nil {
-				return err
+				return nil, err
 			}
 
-			res = append(res, r)
-		}
-		return nil
-	}, backoff.NewExponentialBackOff())
+			err = conn.Exec(context.Background(), "INSERT INTO replicated_test_table (id) VALUES (1);")
+			if err != nil {
+				return nil, err
+			}
 
-	return res, err
+			rows, err := conn.Query(context.Background(), "SELECT * FROM replicated_test_table;")
+			if err != nil {
+				return nil, err
+			}
+
+			var res []Test
+			for rows.Next() {
+				var r Test
+
+				err := rows.Scan(&r.Id)
+				if err != nil {
+					return nil, err
+				}
+
+				res = append(res, r)
+			}
+			return res, nil
+		},
+		backoff.NewExponentialBackOff(),
+		func(err error, duration time.Duration) {
+			t.Log(err)
+		},
+	)
 }
 
-func performCRUD(conn driver.Conn) ([]Test, error) {
-	var (
-		err  error
-		rows []Test
+func performCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {
+	return backoff.RetryNotifyWithData(
+		func() ([]Test, error) {
+			err := conn.Exec(context.Background(), "create table if not exists test_table (id UInt64) engine = MergeTree PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
+			if err != nil {
+				return nil, err
+			}
+
+			err = conn.Exec(context.Background(), "INSERT INTO test_table (id) VALUES (1);")
+			if err != nil {
+				return nil, err
+			}
+
+			return getAllRows(conn)
+		},
+		backoff.NewExponentialBackOff(),
+		func(err error, duration time.Duration) {
+			t.Log(err)
+		},
 	)
-
-	err = backoff.Retry(func() error {
-		err = conn.Exec(context.Background(), "create table if not exists test_table (id UInt64) engine = MergeTree PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
-		if err != nil {
-			return err
-		}
-
-		err = conn.Exec(context.Background(), "INSERT INTO test_table (id) VALUES (1);")
-		if err != nil {
-			return err
-		}
-
-		rows, err = getAllRows(conn)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}, backoff.NewExponentialBackOff())
-
-	return rows, err
 }
 
 func getAllRows(conn driver.Conn) ([]Test, error) {

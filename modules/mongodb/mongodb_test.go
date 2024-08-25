@@ -2,7 +2,6 @@ package mongodb_test
 
 import (
 	"context"
-	"log"
 	"testing"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,39 +14,37 @@ import (
 func TestMongoDB(t *testing.T) {
 	type tests struct {
 		name string
+		img  string
 		opts []testcontainers.ContainerCustomizer
 	}
 	testCases := []tests{
 		{
 			name: "From Docker Hub",
-			opts: []testcontainers.ContainerCustomizer{
-				testcontainers.WithImage("mongo:6"),
-			},
+			img:  "mongo:6",
+			opts: []testcontainers.ContainerCustomizer{},
 		},
 		{
 			name: "Community Server",
-			opts: []testcontainers.ContainerCustomizer{
-				testcontainers.WithImage("mongodb/mongodb-community-server:7.0.2-ubi8"),
-			},
+			img:  "mongodb/mongodb-community-server:7.0.2-ubi8",
+			opts: []testcontainers.ContainerCustomizer{},
 		},
 		{
 			name: "Enterprise Server",
-			opts: []testcontainers.ContainerCustomizer{
-				testcontainers.WithImage("mongodb/mongodb-enterprise-server:7.0.0-ubi8"),
-			},
+			img:  "mongodb/mongodb-enterprise-server:7.0.0-ubi8",
+			opts: []testcontainers.ContainerCustomizer{},
 		},
 		{
 			name: "With Replica set and mongo:4",
+			img:  "mongo:4",
 			opts: []testcontainers.ContainerCustomizer{
-				testcontainers.WithImage("mongo:4"),
-				mongodb.WithReplicaSet(),
+				mongodb.WithReplicaSet("rs"),
 			},
 		},
 		{
 			name: "With Replica set and mongo:6",
+			img:  "mongo:6",
 			opts: []testcontainers.ContainerCustomizer{
-				testcontainers.WithImage("mongo:6"),
-				mongodb.WithReplicaSet(),
+				mongodb.WithReplicaSet("rs"),
 			},
 		},
 	}
@@ -59,7 +56,7 @@ func TestMongoDB(t *testing.T) {
 
 			ctx := context.Background()
 
-			mongodbContainer, err := mongodb.RunContainer(ctx, tc.opts...)
+			mongodbContainer, err := mongodb.Run(ctx, tc.img, tc.opts...)
 			if err != nil {
 				tt.Fatalf("failed to start container: %s", err)
 			}
@@ -75,14 +72,17 @@ func TestMongoDB(t *testing.T) {
 				tt.Fatalf("failed to get connection string: %s", err)
 			}
 
-			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint))
+			// Force direct connection to the container to avoid the replica set
+			// connection string that is returned by the container itself when
+			// using the replica set option.
+			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint+"/?connect=direct"))
 			if err != nil {
 				tt.Fatalf("failed to connect to MongoDB: %s", err)
 			}
 
 			err = mongoClient.Ping(ctx, nil)
 			if err != nil {
-				log.Fatalf("failed to ping MongoDB: %s", err)
+				tt.Fatalf("failed to ping MongoDB: %s", err)
 			}
 
 			if mongoClient.Database("test").Name() != "test" {

@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,7 +44,7 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, types.ImageRemoveOptions{
+		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
@@ -77,7 +79,7 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, types.ImageRemoveOptions{
+		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
@@ -85,6 +87,28 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func TestBuildImageFromDockerfile_BuildError(t *testing.T) {
+	ctx := context.Background()
+	dockerClient, err := NewDockerClientWithOpts(ctx)
+	require.NoError(t, err)
+
+	defer dockerClient.Close()
+
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Dockerfile: "error.Dockerfile",
+			Context:    filepath.Join(".", "testdata"),
+		},
+	}
+	_, err = GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
+		ContainerRequest: req,
+		Started:          true,
+	})
+
+	require.EqualError(t, err, `create container: build image: The command '/bin/sh -c exit 1' returned a non-zero code: 1`)
 }
 
 func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
@@ -112,7 +136,7 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, types.ImageRemoveOptions{
+		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
