@@ -190,6 +190,10 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	}
 }
 
+func TestKafka_restProxyService(t *testing.T) {
+	// TODO: test kafka rest proxy service
+}
+
 func TestKafka_listenersValidation(t *testing.T) {
 	ctx := context.Background()
 	var err error
@@ -322,6 +326,37 @@ func initKafkaTest(ctx context.Context, network string, brokers string, input st
 		ContainerRequest: req,
 		Started:          true,
 	})
+
+	// TODO: use kcat
+	/*
+		try (
+			Network network = Network.newNetwork();
+			// registerListener {
+			KafkaContainer kafka = new KafkaContainer(KAFKA_KRAFT_TEST_IMAGE)
+				.withListener(() -> "kafka:19092")
+				.withNetwork(network);
+			// }
+			// createKCatContainer {
+			GenericContainer<?> kcat = new GenericContainer<>("confluentinc/cp-kcat:7.4.1")
+				.withCreateContainerCmdModifier(cmd -> {
+					cmd.withEntrypoint("sh");
+				})
+				.withCopyToContainer(Transferable.of("Message produced by kcat"), "/data/msgs.txt")
+				.withNetwork(network)
+				.withCommand("-c", "tail -f /dev/null")
+			// }
+		) {
+			kafka.start();
+			kcat.start();
+			// produceConsumeMessage {
+			kcat.execInContainer("kcat", "-b", "kafka:19092", "-t", "msgs", "-P", "-l", "/data/msgs.txt");
+			String stdout = kcat
+				.execInContainer("kcat", "-b", "kafka:19092", "-C", "-t", "msgs", "-c", "1")
+				.getStdout();
+			// }
+			assertThat(stdout).contains("Message produced by kcat");
+		}
+	*/
 }
 
 func createTopics(brokers []string, topics []string) error {
