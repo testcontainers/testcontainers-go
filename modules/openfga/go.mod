@@ -1,10 +1,10 @@
 module github.com/testcontainers/testcontainers-go/modules/openfga
 
-go 1.21
+go 1.22
 
 require (
 	github.com/openfga/go-sdk v0.3.5
-	github.com/testcontainers/testcontainers-go v0.32.0
+	github.com/testcontainers/testcontainers-go v0.33.0
 )
 
 require (

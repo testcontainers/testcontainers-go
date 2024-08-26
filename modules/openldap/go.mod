@@ -1,10 +1,10 @@
 module github.com/testcontainers/testcontainers-go/modules/openldap
 
-go 1.21
+go 1.22
 
 require (
 	github.com/go-ldap/ldap/v3 v3.4.6
-	github.com/testcontainers/testcontainers-go v0.32.0
+	github.com/testcontainers/testcontainers-go v0.33.0
 )
 
 require (

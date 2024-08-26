@@ -1,10 +1,10 @@
 module github.com/testcontainers/testcontainers-go/modules/mariadb
 
-go 1.21
+go 1.22
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1
-	github.com/testcontainers/testcontainers-go v0.32.0
+	github.com/testcontainers/testcontainers-go v0.33.0
 )
 
 require (

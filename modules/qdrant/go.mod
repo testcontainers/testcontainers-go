@@ -1,10 +1,10 @@
 module github.com/testcontainers/testcontainers-go/modules/qdrant
 
-go 1.21
+go 1.22
 
 require (
 	github.com/qdrant/go-client v1.7.0
-	github.com/testcontainers/testcontainers-go v0.32.0
+	github.com/testcontainers/testcontainers-go v0.33.0
 	google.golang.org/grpc v1.64.1
 )
 

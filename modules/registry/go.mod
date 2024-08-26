@@ -1,12 +1,12 @@
 module github.com/testcontainers/testcontainers-go/modules/registry
 
-go 1.21
+go 1.22
 
 require (
 	github.com/cpuguy83/dockercfg v0.3.1
 	github.com/docker/docker v27.1.1+incompatible
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.32.0
+	github.com/testcontainers/testcontainers-go v0.33.0
 )
 
 require (

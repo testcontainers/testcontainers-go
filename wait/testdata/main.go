@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 	"time"
 )
 
-func main() {
+func run() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -93,5 +94,15 @@ func main() {
 	log.Println("stopping...")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	_ = server.Shutdown(ctx)
+	if err := server.Shutdown(ctx); err != nil {
+		return fmt.Errorf("shutdown: %w", err)
+	}
+
+	return nil
+}
+
+func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
 }

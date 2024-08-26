@@ -1,12 +1,12 @@
 module github.com/testcontainers/testcontainers-go/modules/cassandra
 
-go 1.21
+go 1.22
 
 require (
 	github.com/docker/go-connections v0.5.0
 	github.com/gocql/gocql v1.6.0
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.32.0
+	github.com/testcontainers/testcontainers-go v0.33.0
 )
 
 require (

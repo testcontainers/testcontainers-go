@@ -1,12 +1,12 @@
 module github.com/testcontainers/testcontainers-go/modules/redis
 
-go 1.21
+go 1.22
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.32.0
+	github.com/testcontainers/testcontainers-go v0.33.0
 
 )
 

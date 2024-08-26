@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/vearch
 
 go 1.22.0
 
-require github.com/testcontainers/testcontainers-go v0.32.0
+require github.com/testcontainers/testcontainers-go v0.33.0
 
 require (
 	dario.cat/mergo v1.0.0 // indirect

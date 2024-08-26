@@ -1,13 +1,13 @@
 module github.com/testcontainers/testcontainers-go/modules/clickhouse
 
-go 1.21
+go 1.22
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.20.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/docker/go-connections v0.5.0
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.32.0
+	github.com/testcontainers/testcontainers-go v0.33.0
 )
 
 require (
