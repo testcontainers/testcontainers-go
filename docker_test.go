@@ -2295,7 +2295,6 @@ func TestCustomPrefixTrailingSlashIsProperlyRemovedIfPresent(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err != nil {
 		t.Fatal(err)
 	}
