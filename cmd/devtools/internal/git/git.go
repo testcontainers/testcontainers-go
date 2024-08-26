@@ -6,15 +6,19 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go/devtools/internal/context"
 )
+
+// tcOrigin is the expected origin remote URL for the testcontainers-go repository.
+// It is used for pushing the release state (commits and tags) to the upstream repository.
+const tcOrigin string = "git@github.com:testcontainers/testcontainers-go.git"
 
 type GitClient struct {
 	ctx           context.Context
 	defaultBranch string
 	dryRun        bool
-	origin        string
 }
 
 func New(ctx context.Context, branch string, dryRun bool) *GitClient {
@@ -26,22 +30,18 @@ func New(ctx context.Context, branch string, dryRun bool) *GitClient {
 		ctx:           ctx,
 		defaultBranch: branch,
 		dryRun:        dryRun,
-		origin:        "git@github.com:testcontainers/testcontainers-go.git",
 	}
 }
 
 // InitRepository initializes a git repository in the root directory of the context.
 // Handy for testing.
-func (g *GitClient) InitRepository() error {
-	// set a fake origin for testing purposes
-	g.origin = "git@testing-github.com:testcontainers/testcontainers-go.git"
-
+func (g *GitClient) InitRepository(remote string) error {
 	if err := g.Exec("init"); err != nil {
 		return err
 	}
 
 	// URL is not real, just for testing purposes, but the name must be origin
-	if err := g.Exec("remote", "add", "origin", g.origin); err != nil {
+	if err := g.Exec("remote", "add", "origin", remote); err != nil {
 		return err
 	}
 
@@ -136,7 +136,7 @@ func (g *GitClient) PushTags() error {
 	return g.Exec("push", "origin", "--tags")
 }
 
-func (g *GitClient) remotes() (map[string]string, error) {
+func (g *GitClient) Remotes() (map[string]string, error) {
 	args := []string{
 		"remote", "-v",
 	}
@@ -171,22 +171,15 @@ func (g *GitClient) Tag(tag string) error {
 	return g.Exec("tag", tag)
 }
 
-// HasOriginRemote checks if the repository has an origin remote set to the expected value.
+// CheckOriginRemote checks if the repository has an origin remote set to the expected value.
 // The expected value is set in the origin field of the GitClient,
 // and defaults to the testcontainers-go upstream repository.
-func (g *GitClient) HasOriginRemote() error {
-	remotes, err := g.remotes()
+func (g *GitClient) CheckOriginRemote() (func() error, error) {
+	noopCleanup := func() error { return nil }
+
+	remotes, err := g.Remotes()
 	if err != nil {
-		return err
-	}
-
-	if g.dryRun {
-		// no errors in dry run
-		return nil
-	}
-
-	if len(remotes) == 0 {
-		return fmt.Errorf("no remotes found")
+		return noopCleanup, err
 	}
 
 	// verify the origin remote exists
@@ -196,12 +189,40 @@ func (g *GitClient) HasOriginRemote() error {
 	} else if orf, ok := remotes["origin-(fetch)"]; ok {
 		origin = orf
 	} else {
-		return fmt.Errorf("origin remote not found")
+		// create the origin remote
+		if err := g.Exec("remote", "add", "origin", tcOrigin); err != nil {
+			return noopCleanup, fmt.Errorf("origin remote not added: %w", err)
+		}
+
+		// no need to cleanup the origin remote
+		return noopCleanup, nil
 	}
 
-	if origin != g.origin {
-		return fmt.Errorf("origin remote, %s, is not the expected one: %s", origin, g.origin)
+	// create a random remote to backup the existing origin remote
+	randomRemote := "backup-" + origin + fmt.Sprintf("-%d", time.Now().Unix())
+	if err := g.Exec("remote", "add", randomRemote, origin); err != nil {
+		return noopCleanup, fmt.Errorf("error adding remote %s: %w", randomRemote, err)
 	}
 
-	return nil
+	cleanUpRemote := func() error {
+		// return back the original original value for the origin remote
+		err := g.Exec("remote", "set-url", "origin", origin)
+		if err != nil {
+			return fmt.Errorf("error setting origin remote back to %s: %w", origin, err)
+		}
+
+		// finally remove the backup remote
+		return g.Exec("remote", "remove", randomRemote)
+	}
+
+	if g.dryRun {
+		cleanUpRemote = noopCleanup
+	}
+
+	// set the origin remote to the expected value
+	if err := g.Exec("remote", "set-url", "origin", tcOrigin); err != nil {
+		return cleanUpRemote, fmt.Errorf("error setting origin remote to %s: %w", tcOrigin, err)
+	}
+
+	return cleanUpRemote, nil
 }

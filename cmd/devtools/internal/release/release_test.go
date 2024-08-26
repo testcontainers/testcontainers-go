@@ -172,9 +172,11 @@ func TestRun(t *testing.T) {
 			// initialise project files
 			initialiseProject(tt, ctx, rootCtx, initVersion, nextDevelopmentVersion)
 
+			expectedRemote := "foo"
+
 			// init the git repository for testing
 			gitClient := git.New(ctx, releaser.branch, false)
-			if err := gitClient.InitRepository(); err != nil {
+			if err := gitClient.InitRepository(expectedRemote); err != nil {
 				tt.Fatalf("Error initializing git repository: %v", err)
 			}
 
@@ -244,6 +246,8 @@ func TestRun(t *testing.T) {
 			if version != tc.args.expectedVersion {
 				tt.Errorf("Expected next development version not found: %s", version)
 			}
+
+			assertGitState(tt, gitClient, expectedRemote)
 		})
 	}
 }

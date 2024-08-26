@@ -25,10 +25,11 @@ func preRun(ctx context.Context, gitClient *git.GitClient, branch string, dryRun
 
 	vVersion := "v" + version
 
-	err = gitClient.HasOriginRemote()
+	cleanUpRemote, err := gitClient.CheckOriginRemote()
 	if err != nil {
 		return err
 	}
+	defer cleanUpRemote()
 
 	err = gitClient.Exec("checkout", branch)
 	if err != nil {

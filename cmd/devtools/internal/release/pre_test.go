@@ -64,9 +64,11 @@ func TestPre(t *testing.T) {
 			// initialise project files
 			initialiseProject(tt, ctx, rootCtx, initVersion, nextVersion)
 
+			expectedRemote := "foo"
+
 			// init the git repository for testing
 			gitClient := git.New(ctx, releaser.branch, tc.args.dryRun)
-			if err := gitClient.InitRepository(); err != nil {
+			if err := gitClient.InitRepository(expectedRemote); err != nil {
 				tt.Fatalf("Error initializing git repository: %v", err)
 			}
 
@@ -85,6 +87,10 @@ func TestPre(t *testing.T) {
 			assertModules(tt, ctx, true, expectedVersion)
 			assertModules(tt, ctx, false, expectedVersion)
 			assertMarkdownFiles(tt, ctx, expectedMarkDown)
+
+			if !tc.args.dryRun {
+				assertGitState(tt, gitClient, expectedRemote)
+			}
 		})
 	}
 }
@@ -108,6 +114,25 @@ func assertBumpFiles(t *testing.T, ctx context.Context, version string) {
 
 	if string(read) != "sonar.projectVersion=v"+version {
 		t.Errorf("Expected sonar.projectVersion=v%s, got %s", version, string(read))
+	}
+}
+
+func assertGitState(t *testing.T, gitClient *git.GitClient, expectedRemote string) {
+	remotes, err := gitClient.Remotes()
+	if err != nil {
+		t.Fatalf("Error getting remotes: %v", err)
+	}
+
+	if len(remotes) != 2 {
+		t.Errorf("Expected 2 remotes, got %d", len(remotes))
+	}
+
+	// verify that the origin remote contains the expected Github repository URL
+	if r, ok := remotes["origin-(fetch)"]; !ok || r != expectedRemote {
+		t.Fatalf("Expected origin-fetch remote to be %s, got %s", expectedRemote, r)
+	}
+	if r, ok := remotes["origin-(push)"]; !ok || r != expectedRemote {
+		t.Fatalf("Expected origin-fetch remote to be %s, got %s", expectedRemote, r)
 	}
 }
 

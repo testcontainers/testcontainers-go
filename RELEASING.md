@@ -13,15 +13,11 @@ First, check that the following packages are installed in your local machine:
 
 Once checked, it's really important that you verify that the [version.go](./internal/version.go) file is up-to-date, containing the right version you want to create. That file will be used by the automation to perform the release.
 
-Once the version file is correct in the repository, please check that the git remote for the `origin` is pointing to `github.com/testcontainers/testcontainers-go`. You can check it by running:
-
-```shell
-git remote -v
-```
+This automated process needs that the `origin` remote is pointing to `git@github.com:testcontainers/testcontainers-go.git`. If you already have an `origin` remote, the script backs it up and sets the `origin` remote to the right URL. If you don't have an `origin` remote, the script will set it up for you.
 
 ## Prepare the release
 
-Once the remote is properly set, please follow these steps:
+Please follow these steps:
 
 - Prepare the release with the following command:
 ```shell

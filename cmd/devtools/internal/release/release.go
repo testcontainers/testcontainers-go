@@ -25,6 +25,12 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 		bumpType = "minor"
 	}
 
+	cleanUpRemote, err := gitClient.CheckOriginRemote()
+	if err != nil {
+		return err
+	}
+	defer cleanUpRemote()
+
 	version, err := extractCurrentVersion(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to extract the current version: %w", err)
