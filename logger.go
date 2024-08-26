@@ -8,34 +8,20 @@ import (
 	"testing"
 
 	"github.com/docker/docker/client"
-
-	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
 // Logger is the default log instance
 var Logger Logging = log.New(os.Stderr, "", log.LstdFlags)
 
 func init() {
-	verbose := false
 	for _, arg := range os.Args {
 		if strings.EqualFold(arg, "-test.v=true") || strings.EqualFold(arg, "-v") {
-			verbose = true
-			break
+			return
 		}
 	}
 
-	if !verbose {
-		Logger = &noopLogger{}
-	}
-
-	if config.Read().RyukDisabled {
-		ryukDisabledMessage := `
-**********************************************************************************************
-Ryuk has been disabled for the current execution. This can cause unexpected behavior in your environment.
-More on this: https://golang.testcontainers.org/features/garbage_collector/
-**********************************************************************************************`
-		Logger.Printf(ryukDisabledMessage)
-	}
+	// If we are not running in verbose mode, we configure a noop logger by default.
+	Logger = &noopLogger{}
 }
 
 // Validate our types implement the required interfaces.

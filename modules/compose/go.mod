@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/compose
 
-go 1.21
+go 1.22
 
 replace github.com/testcontainers/testcontainers-go => ../..
 
@@ -8,10 +8,10 @@ require (
 	github.com/compose-spec/compose-go/v2 v2.1.3
 	github.com/docker/cli v27.0.3+incompatible
 	github.com/docker/compose/v2 v2.28.1
-	github.com/docker/docker v27.1.0+incompatible
+	github.com/docker/docker v27.1.1+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.32.0
+	github.com/testcontainers/testcontainers-go v0.33.0
 	golang.org/x/sync v0.7.0
 	gopkg.in/yaml.v3 v3.0.1
 )

@@ -6,6 +6,7 @@ The host-port wait strategy will check if the container is listening to a specif
 - alternatively, wait for the lowest exposed port in the container.
 - the startup timeout to be used, default is 60 seconds.
 - the poll interval to be used, default is 100 milliseconds.
+- skip the internal check.
 
 Variations on the HostPort wait strategy are supported, including:
 
@@ -37,5 +38,25 @@ req := ContainerRequest{
     Image:        "docker.io/nginx:alpine",
     ExposedPorts: []string{"80/tcp", "9080/tcp"},
     WaitingFor:   wait.ForExposedPort(),
+}
+```
+
+## Skipping the internal check
+
+_Testcontainers for Go_ checks if the container is listening to the port internally before returning the control to the caller. For that it uses a shell command to check the port status:
+
+<!--codeinclude-->
+[Internal check](../../../wait/host_port.go) inside_block:buildInternalCheckCommand
+<!--/codeinclude-->
+
+But there are cases where this internal check is not needed, for example when a shell is not available in the container or
+when the container doesn't bind the port internally until additional conditions are met.
+In this case, the `wait.ForExposedPort.SkipInternalCheck` can be used to skip the internal check.
+
+```golang
+req := ContainerRequest{
+    Image:        "docker.io/nginx:alpine",
+    ExposedPorts: []string{"80/tcp", "9080/tcp"},
+    WaitingFor:   wait.ForExposedPort().SkipInternalCheck(),
 }
 ```

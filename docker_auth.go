@@ -2,8 +2,13 @@ package testcontainers
 
 import (
 	"context"
+	"crypto/md5"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"sync"
@@ -21,15 +26,21 @@ var defaultRegistryFn = defaultRegistry
 // Finally, it will use the credential helpers to extract the information from the docker config file
 // for that registry, if it exists.
 func DockerImageAuth(ctx context.Context, image string) (string, registry.AuthConfig, error) {
-	defaultRegistry := defaultRegistryFn(ctx)
-	reg := core.ExtractRegistry(image, defaultRegistry)
-
-	cfgs, err := getDockerAuthConfigs()
+	configs, err := getDockerAuthConfigs()
 	if err != nil {
+		reg := core.ExtractRegistry(image, defaultRegistryFn(ctx))
 		return reg, registry.AuthConfig{}, err
 	}
 
-	if cfg, ok := getRegistryAuth(reg, cfgs); ok {
+	return dockerImageAuth(ctx, image, configs)
+}
+
+// dockerImageAuth returns the auth config for the given Docker image.
+func dockerImageAuth(ctx context.Context, image string, configs map[string]registry.AuthConfig) (string, registry.AuthConfig, error) {
+	defaultRegistry := defaultRegistryFn(ctx)
+	reg := core.ExtractRegistry(image, defaultRegistry)
+
+	if cfg, ok := getRegistryAuth(reg, configs); ok {
 		return reg, cfg, nil
 	}
 
@@ -80,24 +91,93 @@ func defaultRegistry(ctx context.Context) string {
 	return info.IndexServerAddress
 }
 
-// authConfig represents the details of the auth config for a registry.
-type authConfig struct {
+// authConfigResult is a result looking up auth details for key.
+type authConfigResult struct {
 	key string
 	cfg registry.AuthConfig
+	err error
+}
+
+// credentialsCache is a cache for registry credentials.
+type credentialsCache struct {
+	entries map[string]credentials
+	mtx     sync.RWMutex
+}
+
+// credentials represents the username and password for a registry.
+type credentials struct {
+	username string
+	password string
+}
+
+var creds = &credentialsCache{entries: map[string]credentials{}}
+
+// Get returns the username and password for the given hostname
+// as determined by the details in configPath.
+func (c *credentialsCache) Get(hostname, configKey string) (string, string, error) {
+	key := configKey + ":" + hostname
+	c.mtx.RLock()
+	entry, ok := c.entries[key]
+	c.mtx.RUnlock()
+
+	if ok {
+		return entry.username, entry.password, nil
+	}
+
+	// No entry found, request and cache.
+	user, password, err := dockercfg.GetRegistryCredentials(hostname)
+	if err != nil {
+		return "", "", fmt.Errorf("getting credentials for %s: %w", hostname, err)
+	}
+
+	c.mtx.Lock()
+	c.entries[key] = credentials{username: user, password: password}
+	c.mtx.Unlock()
+
+	return user, password, nil
+}
+
+// configFileKey returns a key to use for caching credentials based on
+// the contents of the currently active config.
+func configFileKey() (string, error) {
+	configPath, err := dockercfg.ConfigPath()
+	if err != nil {
+		return "", err
+	}
+
+	f, err := os.Open(configPath)
+	if err != nil {
+		return "", fmt.Errorf("open config file: %w", err)
+	}
+
+	defer f.Close()
+
+	h := md5.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", fmt.Errorf("copying config file: %w", err)
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // getDockerAuthConfigs returns a map with the auth configs from the docker config file
 // using the registry as the key
-var getDockerAuthConfigs = sync.OnceValues(func() (map[string]registry.AuthConfig, error) {
+func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 	cfg, err := getDockerConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	cfgs := map[string]registry.AuthConfig{}
-	results := make(chan authConfig, len(cfg.AuthConfigs)+len(cfg.CredentialHelpers))
+	configKey, err := configFileKey()
+	if err != nil {
+		return nil, err
+	}
+
+	size := len(cfg.AuthConfigs) + len(cfg.CredentialHelpers)
+	cfgs := make(map[string]registry.AuthConfig, size)
+	results := make(chan authConfigResult, size)
 	var wg sync.WaitGroup
-	wg.Add(len(cfg.AuthConfigs) + len(cfg.CredentialHelpers))
+	wg.Add(size)
 	for k, v := range cfg.AuthConfigs {
 		go func(k string, v dockercfg.AuthConfig) {
 			defer wg.Done()
@@ -112,16 +192,23 @@ var getDockerAuthConfigs = sync.OnceValues(func() (map[string]registry.AuthConfi
 				Username:      v.Username,
 			}
 
-			if v.Username == "" && v.Password == "" {
-				u, p, _ := dockercfg.GetRegistryCredentials(k)
+			switch {
+			case ac.Username == "" && ac.Password == "":
+				// Look up credentials from the credential store.
+				u, p, err := creds.Get(k, configKey)
+				if err != nil {
+					results <- authConfigResult{err: err}
+					return
+				}
+
 				ac.Username = u
 				ac.Password = p
-			}
-
-			if v.Auth == "" {
+			case ac.Auth == "":
+				// Create auth from the username and password encoding.
 				ac.Auth = base64.StdEncoding.EncodeToString([]byte(ac.Username + ":" + ac.Password))
 			}
-			results <- authConfig{key: k, cfg: ac}
+
+			results <- authConfigResult{key: k, cfg: ac}
 		}(k, v)
 	}
 
@@ -131,11 +218,19 @@ var getDockerAuthConfigs = sync.OnceValues(func() (map[string]registry.AuthConfi
 		go func(k string) {
 			defer wg.Done()
 
-			ac := registry.AuthConfig{}
-			u, p, _ := dockercfg.GetRegistryCredentials(k)
-			ac.Username = u
-			ac.Password = p
-			results <- authConfig{key: k, cfg: ac}
+			u, p, err := creds.Get(k, configKey)
+			if err != nil {
+				results <- authConfigResult{err: err}
+				return
+			}
+
+			results <- authConfigResult{
+				key: k,
+				cfg: registry.AuthConfig{
+					Username: u,
+					Password: p,
+				},
+			}
 		}(k)
 	}
 
@@ -144,12 +239,22 @@ var getDockerAuthConfigs = sync.OnceValues(func() (map[string]registry.AuthConfi
 		close(results)
 	}()
 
-	for ac := range results {
-		cfgs[ac.key] = ac.cfg
+	var errs []error
+	for result := range results {
+		if result.err != nil {
+			errs = append(errs, result.err)
+			continue
+		}
+
+		cfgs[result.key] = result.cfg
+	}
+
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
 	}
 
 	return cfgs, nil
-})
+}
 
 // getDockerConfig returns the docker config file. It will internally check, in this particular order:
 // 1. the DOCKER_AUTH_CONFIG environment variable, unmarshalling it into a dockercfg.Config

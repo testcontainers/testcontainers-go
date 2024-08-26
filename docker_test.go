@@ -73,7 +73,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 				nginxHighPort,
 			},
 			Privileged: true,
-			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxHighPort),
 			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.NetworkMode = "host"
 			},
@@ -182,7 +182,7 @@ func TestContainerWithHostNetwork(t *testing.T) {
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:      nginxAlpineImage,
-			WaitingFor: wait.ForListeningPort(nginxHighPort),
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxHighPort),
 			Files: []ContainerFile{
 				{
 					HostFilePath:      absPath,
@@ -414,6 +414,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort),
 		},
 		Started: true,
 	})
@@ -428,7 +429,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort),
 		},
 		Started: true,
 	})
@@ -475,7 +476,7 @@ func TestContainerCreation(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort),
 		},
 		Started: true,
 	})
@@ -529,7 +530,7 @@ func TestContainerCreationWithName(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort),
 			Name:       creationName,
 			Networks:   []string{"bridge"},
 		},
@@ -592,7 +593,7 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort), // default startupTimeout is 60s
+			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort), // default startupTimeout is 60s
 		},
 		Started: true,
 	})
@@ -736,14 +737,10 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 }
 
 func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
-	t.Log("getting ctx")
 	ctx := context.Background()
-
-	t.Log("got ctx, creating container request")
 
 	// fromDockerfileWithBuildArgs {
 	ba := "build args value"
-
 	req := ContainerRequest{
 		FromDockerfile: FromDockerfile{
 			Context:    filepath.Join(".", "testdata"),
@@ -769,23 +766,16 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	terminateContainerOnEnd(t, ctx, c)
 
 	ep, err := c.Endpoint(ctx, "http")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	resp, err := http.Get(ep + "/env")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, 200, resp.StatusCode)
-	assert.Equal(t, ba, string(body))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+	require.Equal(t, ba, string(body))
 }
 
 func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
@@ -1973,7 +1963,6 @@ func terminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr Container) 
 		return
 	}
 	tb.Cleanup(func() {
-		tb.Log("terminating container")
 		require.NoError(tb, ctr.Terminate(ctx))
 	})
 }
@@ -2142,6 +2131,11 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			shouldRetry: false,
 		},
 		{
+			name:        "no retry on system error",
+			errReturned: errdefs.System(errors.New("system error")),
+			shouldRetry: false,
+		},
+		{
 			name:        "retry on non-permanent error",
 			errReturned: errors.New("whoops"),
 			shouldRetry: true,
@@ -2158,7 +2152,16 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			// give a chance to retry
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			_, _ = p.BuildImage(ctx, &ContainerRequest{})
+			_, err = p.BuildImage(ctx, &ContainerRequest{
+				FromDockerfile: FromDockerfile{
+					Context: filepath.Join(".", "testdata", "retry"),
+				},
+			})
+			if tt.errReturned != nil {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 
 			assert.Positive(t, m.imageBuildCount)
 			assert.Equal(t, tt.shouldRetry, m.imageBuildCount > 1)

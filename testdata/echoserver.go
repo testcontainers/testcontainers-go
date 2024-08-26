@@ -10,9 +10,8 @@ import (
 
 func envHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
-		_, _ = rw.Write([]byte(os.Getenv("FOO")))
-
 		rw.WriteHeader(http.StatusAccepted)
+		rw.Write([]byte(os.Getenv("FOO"))) //nolint:errcheck // Nothing we can usefully do with the error here.
 	}
 }
 
@@ -21,9 +20,7 @@ func echoHandler(destination *os.File) http.HandlerFunc {
 		echo := req.URL.Query()["echo"][0]
 
 		l := log.New(destination, "echo ", 0)
-
 		l.Println(echo)
-		_ = destination.Sync()
 
 		rw.WriteHeader(http.StatusAccepted)
 	}
@@ -39,10 +36,12 @@ func main() {
 
 	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	fmt.Println("ready")
 
-	_ = http.Serve(ln, mux)
+	if err := http.Serve(ln, mux); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -32,14 +32,6 @@ func (f stackUpOptionFunc) applyToStackUp(o *stackUpOptions) {
 	f(o)
 }
 
-//nolint:unused
-type stackDownOptionFunc func(do *api.DownOptions)
-
-//nolint:unused
-func (f stackDownOptionFunc) applyToStackDown(do *api.DownOptions) {
-	f(do)
-}
-
 // RunServices is comparable to 'docker compose run' as it only creates a subset of containers
 // instead of all services defined by the project
 func RunServices(serviceNames ...string) StackUpOption {
@@ -128,19 +120,19 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) error {
 		tmp = filepath.Join(tmp, strconv.FormatInt(time.Now().UnixNano(), 10))
 		err := os.MkdirAll(tmp, 0o755)
 		if err != nil {
-			return fmt.Errorf("failed to create temporary directory: %w", err)
+			return fmt.Errorf("create temporary directory: %w", err)
 		}
 
 		name := fmt.Sprintf(baseName, i)
 
 		bs, err := io.ReadAll(reader)
 		if err != nil {
-			return fmt.Errorf("failed to read from reader: %w", err)
+			return fmt.Errorf("read from reader: %w", err)
 		}
 
 		err = os.WriteFile(filepath.Join(tmp, name), bs, 0o644)
 		if err != nil {
-			return fmt.Errorf("failed to write to temporary file: %w", err)
+			return fmt.Errorf("write to temporary file: %w", err)
 		}
 
 		f[i] = filepath.Join(tmp, name)
@@ -200,8 +192,8 @@ type dockerCompose struct {
 	// only one strategy can be added to a service, to use multiple use wait.ForAll(...)
 	waitStrategies map[string]wait.Strategy
 
-	// used to synchronise writes to the containers map
-	containersLock sync.RWMutex
+	// Used to synchronise writes to the containers.
+	containersLock sync.Mutex
 
 	// cache for containers that are part of the stack
 	// used in ServiceContainer(...) function to avoid calls to the Docker API
@@ -319,7 +311,7 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		},
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("compose up: %w", err)
 	}
 
 	err = d.lookupNetworks(ctx)
@@ -370,10 +362,6 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 				}()
 			}
 
-			d.containersLock.Lock()
-			defer d.containersLock.Unlock()
-			d.containers[srv.Name] = dc
-
 			return nil
 		})
 	}
@@ -398,11 +386,6 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 			if err != nil {
 				return err
 			}
-
-			// cache all the containers on compose.up
-			d.containersLock.Lock()
-			defer d.containersLock.Unlock()
-			d.containers[svc] = target
 
 			return strategy.WaitUntilReady(errGrpCtx, target)
 		})
@@ -435,12 +418,20 @@ func (d *dockerCompose) WithOsEnv() ComposeStack {
 	return d
 }
 
-func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
+// cachedContainer returns the cached container for svcName or nil if it doesn't exist.
+func (d *dockerCompose) cachedContainer(svcName string) *testcontainers.DockerContainer {
 	d.containersLock.Lock()
 	defer d.containersLock.Unlock()
 
-	if ctr, ok := d.containers[svcName]; ok {
-		return ctr, nil
+	return d.containers[svcName]
+}
+
+// lookupContainer is used to retrieve the container instance from the cache or the Docker API.
+//
+// Safe for concurrent calls.
+func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
+	if c := d.cachedContainer(svcName); c != nil {
+		return c, nil
 	}
 
 	containers, err := d.dockerClient.ContainerList(ctx, container.ListOptions{
@@ -451,7 +442,7 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 		),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("container list: %w", err)
 	}
 
 	if len(containers) == 0 {
@@ -467,29 +458,28 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 
 	dockerProvider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(d.logger))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new docker provider: %w", err)
 	}
 
 	dockerProvider.SetClient(d.dockerClient)
 
 	ctr.SetProvider(dockerProvider)
 
+	d.containersLock.Lock()
+	defer d.containersLock.Unlock()
 	d.containers[svcName] = ctr
 
 	return ctr, nil
 }
 
 func (d *dockerCompose) lookupNetworks(ctx context.Context) error {
-	d.containersLock.Lock()
-	defer d.containersLock.Unlock()
-
 	networks, err := d.dockerClient.NetworkList(ctx, dockernetwork.ListOptions{
 		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
 		),
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("network list: %w", err)
 	}
 
 	for _, n := range networks {
@@ -514,12 +504,12 @@ func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, err
 
 	compiledOptions, err := cli.NewProjectOptions(d.configs, projectOptions...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new project options: %w", err)
 	}
 
 	proj, err := compiledOptions.LoadProject(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load project: %w", err)
 	}
 
 	for i, s := range proj.Services {
@@ -578,7 +568,7 @@ func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
 func makeClient(*command.DockerCli) (client.APIClient, error) {
 	dockerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new docker client: %w", err)
 	}
 	return dockerClient, nil
 }

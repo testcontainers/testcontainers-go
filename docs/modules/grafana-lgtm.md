@@ -1,6 +1,6 @@
 # Grafana LGTM
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/grafanalgtm
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -50,7 +50,7 @@ E.g. `Run(context.Background(), "grafana/otel-lgtm:0.6.0")`.
 
 #### Admin Credentials
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
 If you need to set different admin credentials in the Grafana LGTM container, you can set them using the `WithAdminCredentials(user, password)` option.
 
@@ -65,37 +65,37 @@ The Grafana LGTM container exposes the following methods:
 
 #### Grafana Endpoint
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
 The `HttpEndpoint(ctx)` method returns the HTTP endpoint to connect to Grafana, using the default `3000` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
 
 #### Loki Endpoint
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
 The `LokiEndpoint(ctx)` method returns the HTTP endpoint to connect to Loki, using the default `3100` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
 
 #### Tempo Endpoint
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
 The `TempoEndpoint(ctx)` method returns the HTTP endpoint to connect to Tempo, using the default `3200` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
 
 #### Otel HTTP Endpoint
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
 The `OtelHTTPEndpoint(ctx)` method returns the endpoint to connect to Otel using HTTP, using the default `4318` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
 
 #### Otel gRPC Endpoint
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
 The `OtelGRPCEndpoint(ctx)` method returns the endpoint to connect to Otel using gRPC, using the default `4317` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
 
 #### Prometheus Endpoint
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
 The `PrometheusHttpEndpoint(ctx)` method returns the endpoint to connect to Prometheus, using the default `9090` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
 

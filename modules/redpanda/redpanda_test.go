@@ -2,6 +2,7 @@ package redpanda_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -572,4 +573,59 @@ func TestRedpandaListener_NoNetwork(t *testing.T) {
 	require.Error(t, err)
 
 	require.Contains(t, err.Error(), "container must be attached to at least one network")
+}
+
+func TestRedpandaBootstrapConfig(t *testing.T) {
+	ctx := context.Background()
+
+	container, err := redpanda.RunContainer(ctx,
+		redpanda.WithEnableWasmTransform(),
+		// These configs would require a restart if applied to a live Redpanda instance
+		redpanda.WithBootstrapConfig("data_transforms_per_core_memory_reservation", 33554432),
+		redpanda.WithBootstrapConfig("data_transforms_per_function_memory_limit", 16777216),
+	)
+	require.NoError(t, err)
+
+	httpCl := &http.Client{
+		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			ForceAttemptHTTP2:   true,
+			TLSHandshakeTimeout: 10 * time.Second,
+		},
+	}
+	adminAPIUrl, err := container.AdminAPIAddress(ctx)
+	require.NoError(t, err)
+
+	{
+		// Check that the configs reflect specified values
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster_config", adminAPIUrl), nil)
+		require.NoError(t, err)
+		resp, err := httpCl.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		var data map[string]any
+		err = json.NewDecoder(resp.Body).Decode(&data)
+		require.NoError(t, err)
+		reservation := int(data["data_transforms_per_core_memory_reservation"].(float64))
+		require.Equal(t, 33554432, reservation)
+		pf_limit := int(data["data_transforms_per_function_memory_limit"].(float64))
+		require.Equal(t, 16777216, pf_limit)
+	}
+
+	{
+		// Check that no restart is required. i.e. that the configs were applied via bootstrap config
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster_config/status", adminAPIUrl), nil)
+		require.NoError(t, err)
+		resp, err := httpCl.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		var data []map[string]any
+		err = json.NewDecoder(resp.Body).Decode(&data)
+		require.NoError(t, err)
+		require.Len(t, data, 1)
+		needs_restart := data[0]["restart"].(bool)
+		require.False(t, needs_restart)
+	}
 }

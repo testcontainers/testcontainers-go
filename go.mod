@@ -1,13 +1,13 @@
 module github.com/testcontainers/testcontainers-go
 
-go 1.21
+go 1.22
 
 require (
 	dario.cat/mergo v1.0.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/containerd/platforms v0.2.1
 	github.com/cpuguy83/dockercfg v0.3.1
-	github.com/docker/docker v27.1.0+incompatible
+	github.com/docker/docker v27.1.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/google/uuid v1.6.0
 	github.com/magiconair/properties v1.8.7
