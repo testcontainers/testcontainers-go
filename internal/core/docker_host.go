@@ -83,10 +83,15 @@ var defaultCallbackCheckFn = func(ctx context.Context, host string) error {
 //  4. Docker host from the default docker socket path, without the unix schema.
 //  5. Docker host from the "docker.host" property in the ~/.testcontainers.properties file.
 //  6. Rootless docker socket path.
-//  7. Else, the default Docker socket including schema will be returned.
+//  7. Else, because the Docker host is not set, it panics.
 func ExtractDockerHost(ctx context.Context) string {
 	dockerHostOnce.Do(func() {
-		dockerHostCache = extractDockerHost(ctx)
+		cache, err := extractDockerHost(ctx)
+		if err != nil {
+			panic(err)
+		}
+
+		dockerHostCache = cache
 	})
 
 	return dockerHostCache
@@ -115,7 +120,7 @@ func ExtractDockerSocket(ctx context.Context) string {
 
 // extractDockerHost Extracts the docker host from the different alternatives, without caching the result.
 // This internal method is handy for testing purposes.
-func extractDockerHost(ctx context.Context) string {
+func extractDockerHost(ctx context.Context) (string, error) {
 	dockerHostFns := []func(context.Context) (string, error){
 		testcontainersHostFromProperties,
 		dockerHostFromEnv,
@@ -137,11 +142,10 @@ func extractDockerHost(ctx context.Context) string {
 			continue
 		}
 
-		return dockerHost
+		return dockerHost, nil
 	}
 
-	// We are not supporting Windows containers at the moment
-	return DockerSocketPathWithSchema
+	return "", outerErr
 }
 
 // extractDockerSocket Extracts the docker socket from the different alternatives, without caching the result.
@@ -200,7 +204,10 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 		return DockerSocketPath
 	}
 
-	dockerHost := extractDockerHost(ctx)
+	dockerHost, err := extractDockerHost(ctx)
+	if err != nil {
+		panic(err) // Docker host is required to get the Docker socket
+	}
 
 	return checkDockerSocketFn(dockerHost)
 }
