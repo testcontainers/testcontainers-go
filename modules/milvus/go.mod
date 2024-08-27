@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/milvus
 
-go 1.21
+go 1.22
 
 require (
 	github.com/milvus-io/milvus-sdk-go/v2 v2.3.6

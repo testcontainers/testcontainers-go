@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/registry
 
-go 1.21
+go 1.22
 
 require (
 	github.com/cpuguy83/dockercfg v0.3.1

@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/chroma
 
-go 1.21
+go 1.22
 
 require (
 	github.com/amikos-tech/chroma-go v0.1.2
