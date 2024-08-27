@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/valkey-io/valkey-go"
 
+	"github.com/testcontainers/testcontainers-go"
 	tcvalkey "github.com/testcontainers/testcontainers-go/modules/valkey"
 )
 
@@ -47,7 +48,7 @@ func TestValkeyWithImage(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		image string
+		image testcontainers.DockerImage
 	}{
 		// There is only one release of Valkey at the time of writing
 		{

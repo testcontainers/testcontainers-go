@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 )
 
@@ -47,7 +48,7 @@ func TestRedisWithImage(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		image string
+		image testcontainers.DockerImage
 	}{
 		{
 			name:  "Redis6",

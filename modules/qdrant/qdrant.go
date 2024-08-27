@@ -21,9 +21,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the Qdrant container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        img,
+		Image:        img.String(),
 		ExposedPorts: []string{"6333/tcp", "6334/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("6333/tcp").WithStartupTimeout(5*time.Second),

@@ -15,10 +15,10 @@ func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.Container
 }
 
 // RunDatastore creates an instance of the GCloud container type for Datastore.
-func RunDatastore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
+func RunDatastore(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
+			Image:        img.String(),
 			ExposedPorts: []string{"8081/tcp"},
 			WaitingFor:   wait.ForHTTP("/").WithPort("8081/tcp"),
 		},

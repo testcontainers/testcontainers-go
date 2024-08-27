@@ -15,10 +15,10 @@ func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCus
 }
 
 // RunPubsub creates an instance of the GCloud container type for Pubsub.
-func RunPubsub(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
+func RunPubsub(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
+			Image:        img.String(),
 			ExposedPorts: []string{"8085/tcp"},
 			WaitingFor:   wait.ForLog("started"),
 		},

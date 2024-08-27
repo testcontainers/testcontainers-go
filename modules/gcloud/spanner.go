@@ -14,10 +14,10 @@ func RunSpannerContainer(ctx context.Context, opts ...testcontainers.ContainerCu
 }
 
 // RunSpanner creates an instance of the GCloud container type for Spanner.
-func RunSpanner(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
+func RunSpanner(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
+			Image:        img.String(),
 			ExposedPorts: []string{"9010/tcp"},
 			WaitingFor:   wait.ForLog("Cloud Spanner emulator running"),
 		},

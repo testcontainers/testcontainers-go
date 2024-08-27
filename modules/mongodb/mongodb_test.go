@@ -14,7 +14,7 @@ import (
 func TestMongoDB(t *testing.T) {
 	type tests struct {
 		name string
-		img  string
+		img  testcontainers.DockerImage
 		opts []testcontainers.ContainerCustomizer
 	}
 	testCases := []tests{

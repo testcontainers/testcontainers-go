@@ -15,10 +15,10 @@ func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerC
 }
 
 // RunBigTable creates an instance of the GCloud container type for BigTable.
-func RunBigTable(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
+func RunBigTable(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
+			Image:        img.String(),
 			ExposedPorts: []string{"9000/tcp"},
 			WaitingFor:   wait.ForLog("running"),
 		},

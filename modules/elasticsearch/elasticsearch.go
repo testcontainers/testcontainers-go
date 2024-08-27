@@ -20,9 +20,9 @@ const (
 
 const (
 	// Deprecated: it will be removed in the next major version
-	DefaultBaseImage = "docker.elastic.co/elasticsearch/elasticsearch"
+	DefaultBaseImage testcontainers.DockerImage = "docker.elastic.co/elasticsearch/elasticsearch"
 	// Deprecated: it will be removed in the next major version
-	DefaultBaseImageOSS = "docker.elastic.co/elasticsearch/elasticsearch-oss"
+	DefaultBaseImageOSS testcontainers.DockerImage = "docker.elastic.co/elasticsearch/elasticsearch-oss"
 )
 
 // ElasticsearchContainer represents the Elasticsearch container type used in the module
@@ -38,10 +38,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the Elasticsearch container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ElasticsearchContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*ElasticsearchContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: img,
+			Image: img.String(),
 			Env: map[string]string{
 				"discovery.type": "single-node",
 				"cluster.routing.allocation.disk.threshold_enabled": "false",

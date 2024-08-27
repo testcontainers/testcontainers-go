@@ -32,7 +32,7 @@ func TestPostgres(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		image string
+		image testcontainers.DockerImage
 	}{
 		{
 			name:  "Postgres",

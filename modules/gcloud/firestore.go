@@ -15,10 +15,10 @@ func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.Container
 }
 
 // RunFirestore creates an instance of the GCloud container type for Firestore.
-func RunFirestore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
+func RunFirestore(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
+			Image:        img.String(),
 			ExposedPorts: []string{"8080/tcp"},
 			WaitingFor:   wait.ForLog("running"),
 		},

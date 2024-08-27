@@ -16,10 +16,10 @@ func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerC
 
 // RunBigQuery creates an instance of the GCloud container type for BigQuery.
 // The URI will always use http:// as the protocol.
-func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
+func RunBigQuery(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
+			Image:        img.String(),
 			ExposedPorts: []string{"9050/tcp", "9060/tcp"},
 			WaitingFor:   wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort("9050/tcp").WithStartupTimeout(time.Second * 5),
 		},

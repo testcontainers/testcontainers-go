@@ -46,9 +46,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the OpenFGA container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OpenFGAContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*OpenFGAContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        img,
+		Image:        img.String(),
 		Cmd:          []string{"run"},
 		ExposedPorts: []string{"3000/tcp", "8080/tcp", "8081/tcp"},
 		WaitingFor: wait.ForAll(

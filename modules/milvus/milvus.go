@@ -48,14 +48,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the Milvus container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MilvusContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*MilvusContainer, error) {
 	config, err := renderEmbedEtcdConfig(defaultClientPort)
 	if err != nil {
 		return nil, fmt.Errorf("render config: %w", err)
 	}
 
 	req := testcontainers.ContainerRequest{
-		Image:        img,
+		Image:        img.String(),
 		ExposedPorts: []string{"19530/tcp", "9091/tcp", "2379/tcp"},
 		Env: map[string]string{
 			"ETCD_USE_EMBED":     "true",

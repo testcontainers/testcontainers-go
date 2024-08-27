@@ -167,9 +167,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the K6 container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*K6Container, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*K6Container, error) {
 	req := testcontainers.ContainerRequest{
-		Image:      img,
+		Image:      img.String(),
 		Cmd:        []string{"run"},
 		WaitingFor: wait.ForExit(),
 	}

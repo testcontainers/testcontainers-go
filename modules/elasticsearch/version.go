@@ -9,7 +9,7 @@ import (
 
 // isOSS returns true if the base image (without tag) is an OSS image
 func isOSS(image string) bool {
-	return strings.HasPrefix(image, DefaultBaseImageOSS)
+	return strings.HasPrefix(image, DefaultBaseImageOSS.String())
 }
 
 // isAtLeastVersion returns true if the base image (without tag) is in a version or above

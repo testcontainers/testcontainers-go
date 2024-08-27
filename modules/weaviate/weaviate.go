@@ -26,9 +26,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the Weaviate container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        img,
+		Image:        img.String(),
 		Cmd:          []string{"--host", "0.0.0.0", "--scheme", "http", "--port", "8080"},
 		ExposedPorts: []string{httpPort, grpcPort},
 		Env: map[string]string{

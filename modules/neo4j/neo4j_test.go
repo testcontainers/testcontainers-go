@@ -9,6 +9,7 @@ import (
 
 	neo "github.com/neo4j/neo4j-go-driver/v5/neo4j"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/neo4j"
 )
 
@@ -64,7 +65,7 @@ func TestNeo4jWithEnterpriseLicense(t *testing.T) {
 
 	ctx := context.Background()
 
-	images := map[string]string{
+	images := map[string]testcontainers.DockerImage{
 		"StandardEdition":   "docker.io/neo4j:4.4",
 		"EnterpriseEdition": "docker.io/neo4j:4.4-enterprise",
 	}

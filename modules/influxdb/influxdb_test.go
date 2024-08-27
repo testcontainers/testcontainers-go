@@ -96,7 +96,7 @@ func TestWithConfigFile(t *testing.T) {
 	influxVersion := "1.8.10"
 
 	influxDbContainer, err := influxdb.Run(context.Background(),
-		"influxdb:"+influxVersion,
+		testcontainers.NewDockerImage("influxdb:"+influxVersion),
 		influxdb.WithConfigFile(filepath.Join("testdata", "influxdb.conf")),
 	)
 	require.NoError(t, err)

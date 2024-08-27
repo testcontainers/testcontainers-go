@@ -86,9 +86,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the SurrealDB container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*SurrealDBContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*SurrealDBContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: img,
+		Image: img.String(),
 		Env: map[string]string{
 			"SURREAL_USER":           "root",
 			"SURREAL_PASS":           "root",

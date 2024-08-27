@@ -74,11 +74,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the CockroachDB container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error) {
 	o := defaultOptions()
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: img,
+			Image: img.String(),
 			ExposedPorts: []string{
 				defaultSQLPort,
 				defaultAdminPort,

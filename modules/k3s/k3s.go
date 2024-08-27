@@ -54,14 +54,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the K3s container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error) {
 	host, err := getContainerHost(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	req := testcontainers.ContainerRequest{
-		Image: img,
+		Image: img.String(),
 		ExposedPorts: []string{
 			defaultKubeSecurePort,
 			defaultRancherWebhookPort,

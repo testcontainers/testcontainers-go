@@ -13,7 +13,7 @@ type Config struct {
 	password         string
 	isEnterprise     bool
 	buckets          []bucket
-	imageName        string
+	imageName        testcontainers.DockerImage
 	indexStorageMode indexStorageMode
 }
 
@@ -90,7 +90,7 @@ func WithBuckets(bucket ...bucket) bucketCustomizer {
 // Deprecated: Use testcontainers.WithImage instead.
 func WithImageName(imageName string) Option {
 	return func(c *Config) {
-		c.imageName = imageName
+		c.imageName = testcontainers.NewDockerImage(imageName)
 	}
 }
 

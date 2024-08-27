@@ -140,9 +140,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 }
 
 // Run creates an instance of the Postgres container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error) {
+func Run(ctx context.Context, img testcontainers.DockerImage, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: img,
+		Image: img.String(),
 		Env: map[string]string{
 			"POSTGRES_USER":     defaultUser,
 			"POSTGRES_PASSWORD": defaultPassword,
