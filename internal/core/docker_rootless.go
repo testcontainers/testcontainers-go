@@ -57,7 +57,7 @@ func rootlessDockerSocketPath(_ context.Context) (string, error) {
 	for _, socketPathFn := range socketPathFns {
 		s, err := socketPathFn()
 		if err != nil {
-			if !isHostNotFound(err) {
+			if !isHostNotSet(err) {
 				errs = append(errs, err)
 			}
 			continue

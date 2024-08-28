@@ -134,7 +134,7 @@ func extractDockerHost(ctx context.Context) (string, error) {
 	for _, dockerHostFn := range dockerHostFns {
 		dockerHost, err := dockerHostFn(ctx)
 		if err != nil {
-			if !isHostNotFound(err) {
+			if !isHostNotSet(err) {
 				errs = append(errs, err)
 			}
 			continue
@@ -222,7 +222,7 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 
 // isHostNotSet returns true if the error is related to the Docker host
 // not being set, false otherwise.
-func isHostNotFound(err error) bool {
+func isHostNotSet(err error) bool {
 	switch {
 	case errors.Is(err, ErrTestcontainersHostNotSetInProperties),
 		errors.Is(err, ErrDockerHostNotSet),
