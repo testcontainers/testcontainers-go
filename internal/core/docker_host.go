@@ -229,7 +229,6 @@ func isHostNotFound(err error) bool {
 		errors.Is(err, ErrDockerSocketNotSetInContext),
 		errors.Is(err, ErrDockerSocketNotSetInProperties),
 		errors.Is(err, ErrSocketNotFoundInPath),
-		errors.Is(err, ErrDockerSocketNotSetInProperties),
 		errors.Is(err, ErrXDGRuntimeDirNotSet),
 		errors.Is(err, ErrRootlessDockerNotFoundHomeRunDir),
 		errors.Is(err, ErrRootlessDockerNotFoundHomeDesktopDir),
