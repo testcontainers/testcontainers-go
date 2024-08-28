@@ -63,12 +63,12 @@ var defaultCallbackCheckFn = func(ctx context.Context, host string) error {
 	if err != nil {
 		return err
 	}
+	defer cli.Close()
 
 	_, err = cli.Info(ctx)
 	if err != nil {
 		return err
 	}
-	defer cli.Close()
 
 	return nil
 }
