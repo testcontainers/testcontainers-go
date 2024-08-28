@@ -109,7 +109,7 @@ func ExtractDockerHost(ctx context.Context) string {
 //  5. If the socket contains the unix schema, the schema is removed (e.g. unix:///var/run/docker.sock -> /var/run/docker.sock)
 //  6. Else, the default location of the docker socket is used (/var/run/docker.sock)
 //
-// In any case, if the docker socket schema is "tcp://", the default docker socket path will be returned.
+// It panics if a Docker client cannot be created, or the Docker host cannot be discovered.
 func ExtractDockerSocket(ctx context.Context) string {
 	dockerSocketPathOnce.Do(func() {
 		dockerSocketPathCache = extractDockerSocket(ctx)
@@ -151,7 +151,7 @@ func extractDockerHost(ctx context.Context) (string, error) {
 // extractDockerSocket Extracts the docker socket from the different alternatives, without caching the result.
 // It will internally use the default Docker client, calling the internal method extractDockerSocketFromClient with it.
 // This internal method is handy for testing purposes.
-// If a Docker client cannot be created, the program will panic.
+// It panics if a Docker client cannot be created, or the Docker host is not discovered.
 func extractDockerSocket(ctx context.Context) string {
 	cli, err := NewClient(ctx)
 	if err != nil {
@@ -165,6 +165,7 @@ func extractDockerSocket(ctx context.Context) string {
 // extractDockerSocketFromClient Extracts the docker socket from the different alternatives, without caching the result,
 // and receiving an instance of the Docker API client interface.
 // This internal method is handy for testing purposes, passing a mock type simulating the desired behaviour.
+// It panics if the Docker Info call errors, or the Docker host is not discovered.
 func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) string {
 	// check that the socket is not a tcp or unix socket
 	checkDockerSocketFn := func(socket string) string {
