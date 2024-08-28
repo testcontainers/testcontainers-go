@@ -130,22 +130,29 @@ func extractDockerHost(ctx context.Context) (string, error) {
 		rootlessDockerSocketPath,
 	}
 
-	outerErr := ErrSocketNotFound
+	var errs []error
 	for _, dockerHostFn := range dockerHostFns {
 		dockerHost, err := dockerHostFn(ctx)
 		if err != nil {
-			outerErr = fmt.Errorf("%w: %w", outerErr, err)
+			if !isHostNotFound(err) {
+				errs = append(errs, err)
+			}
 			continue
 		}
 
 		if err = defaultCallbackCheckFn(ctx, dockerHost); err != nil {
+			errs = append(errs, fmt.Errorf("check host %q: %w", dockerHost, err))
 			continue
 		}
 
 		return dockerHost, nil
 	}
 
-	return "", outerErr
+	if len(errs) > 0 {
+		return "", errors.Join(errs...)
+	}
+
+	return "", ErrSocketNotFound
 }
 
 // extractDockerSocket Extracts the docker socket from the different alternatives, without caching the result.
@@ -211,6 +218,26 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 	}
 
 	return checkDockerSocketFn(dockerHost)
+}
+
+// isHostNotSet returns true if the error is related to the Docker host
+// not being set, false otherwise.
+func isHostNotFound(err error) bool {
+	switch {
+	case errors.Is(err, ErrTestcontainersHostNotSetInProperties),
+		errors.Is(err, ErrDockerHostNotSet),
+		errors.Is(err, ErrDockerSocketNotSetInContext),
+		errors.Is(err, ErrDockerSocketNotSetInProperties),
+		errors.Is(err, ErrSocketNotFoundInPath),
+		errors.Is(err, ErrDockerSocketNotSetInProperties),
+		errors.Is(err, ErrXDGRuntimeDirNotSet),
+		errors.Is(err, ErrRootlessDockerNotFoundHomeRunDir),
+		errors.Is(err, ErrRootlessDockerNotFoundHomeDesktopDir),
+		errors.Is(err, ErrRootlessDockerNotFoundRunDir):
+		return true
+	default:
+		return false
+	}
 }
 
 // dockerHostFromEnv returns the docker host from the DOCKER_HOST environment variable, if it's not empty

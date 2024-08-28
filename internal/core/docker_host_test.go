@@ -102,8 +102,7 @@ func TestExtractDockerHost(t *testing.T) {
 		mockCallbackCheck(t, testCallbackCheckError)
 
 		host, err := extractDockerHost(context.Background())
-		require.ErrorIs(t, err, ErrDockerSocketNotSetInContext)
-		require.ErrorIs(t, err, ErrDockerSocketNotSetInProperties)
+		require.Error(t, err)
 		require.Equal(t, "", host)
 	})
 
