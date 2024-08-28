@@ -461,14 +461,10 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		mockCallbackCheck(t, testCallbackCheckError)
 
-		// check that panic is raised
-		defer func() {
-			if r := recover(); r == nil {
-				t.Errorf("The code did not panic")
-			}
-		}()
-
-		socket := extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
+		var socket string
+		require.Panics(t, func() {
+			socket = extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
+		})
 
 		// the default Docker host without schema is returned because we cannot any other host
 		require.Equal(t, "", socket)
