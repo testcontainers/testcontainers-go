@@ -91,7 +91,7 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		ExposedPorts: []string{"8080/tcp"},
 		Labels:       core.DefaultLabels(testSessionID),
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
-			hostConfig.Binds = []string{core.ExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
+			hostConfig.Binds = []string{core.MustExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
 		},
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
 		Env: map[string]string{
@@ -376,7 +376,7 @@ func Test_NewReaper(t *testing.T) {
 			name: "docker-host in context",
 			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
 				req.HostConfigModifier = func(hostConfig *container.HostConfig) {
-					hostConfig.Binds = []string{core.ExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
+					hostConfig.Binds = []string{core.MustExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
 				}
 				return req
 			}),

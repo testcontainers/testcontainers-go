@@ -56,24 +56,24 @@ func DefaultGatewayIP() (string, error) {
 	return ip, nil
 }
 
-// defaultCallbackCheckFn Use a vanilla Docker client to check if the Docker host is reachable.
+// dockerHostCheck Use a vanilla Docker client to check if the Docker host is reachable.
 // It will avoid recursive calls to this function.
-var defaultCallbackCheckFn = func(ctx context.Context, host string) error {
+var dockerHostCheck = func(ctx context.Context, host string) error {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithHost(host), client.WithAPIVersionNegotiation())
 	if err != nil {
-		return err
+		return fmt.Errorf("new client: %w", err)
 	}
 	defer cli.Close()
 
 	_, err = cli.Info(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("docker info: %w", err)
 	}
 
 	return nil
 }
 
-// ExtractDockerHost Extracts the docker host from the different alternatives, caching the result to avoid unnecessary
+// MustExtractDockerHost Extracts the docker host from the different alternatives, caching the result to avoid unnecessary
 // calculations. Use this function to get the actual Docker host. This function does not consider Windows containers at the moment.
 // The possible alternatives are:
 //
@@ -84,7 +84,7 @@ var defaultCallbackCheckFn = func(ctx context.Context, host string) error {
 //  5. Docker host from the "docker.host" property in the ~/.testcontainers.properties file.
 //  6. Rootless docker socket path.
 //  7. Else, because the Docker host is not set, it panics.
-func ExtractDockerHost(ctx context.Context) string {
+func MustExtractDockerHost(ctx context.Context) string {
 	dockerHostOnce.Do(func() {
 		cache, err := extractDockerHost(ctx)
 		if err != nil {
@@ -97,7 +97,7 @@ func ExtractDockerHost(ctx context.Context) string {
 	return dockerHostCache
 }
 
-// ExtractDockerSocket Extracts the docker socket from the different alternatives, removing the socket schema and
+// MustExtractDockerSocket Extracts the docker socket from the different alternatives, removing the socket schema and
 // caching the result to avoid unnecessary calculations. Use this function to get the docker socket path,
 // not the host (e.g. mounting the socket in a container). This function does not consider Windows containers at the moment.
 // The possible alternatives are:
@@ -110,7 +110,7 @@ func ExtractDockerHost(ctx context.Context) string {
 //  6. Else, the default location of the docker socket is used (/var/run/docker.sock)
 //
 // It panics if a Docker client cannot be created, or the Docker host cannot be discovered.
-func ExtractDockerSocket(ctx context.Context) string {
+func MustExtractDockerSocket(ctx context.Context) string {
 	dockerSocketPathOnce.Do(func() {
 		dockerSocketPathCache = extractDockerSocket(ctx)
 	})
@@ -140,7 +140,7 @@ func extractDockerHost(ctx context.Context) (string, error) {
 			continue
 		}
 
-		if err = defaultCallbackCheckFn(ctx, dockerHost); err != nil {
+		if err = dockerHostCheck(ctx, dockerHost); err != nil {
 			errs = append(errs, fmt.Errorf("check host %q: %w", dockerHost, err))
 			continue
 		}

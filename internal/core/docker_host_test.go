@@ -50,10 +50,10 @@ func testCallbackCheckError(_ context.Context, _ string) error {
 }
 
 func mockCallbackCheck(t *testing.T, fn func(_ context.Context, _ string) error) {
-	oldCheck := defaultCallbackCheckFn
-	defaultCallbackCheckFn = fn
+	oldCheck := dockerHostCheck
+	dockerHostCheck = fn
 	t.Cleanup(func() {
-		defaultCallbackCheckFn = oldCheck
+		dockerHostCheck = oldCheck
 	})
 }
 
@@ -71,13 +71,13 @@ func TestExtractDockerHost(t *testing.T) {
 		expected := "/path/to/docker.sock"
 		t.Setenv("DOCKER_HOST", expected)
 
-		host := ExtractDockerHost(context.Background())
+		host := MustExtractDockerHost(context.Background())
 
 		assert.Equal(t, expected, host)
 
 		t.Setenv("DOCKER_HOST", "/path/to/another/docker.sock")
 
-		host = ExtractDockerHost(context.Background())
+		host = MustExtractDockerHost(context.Background())
 		require.Equal(t, expected, host)
 	})
 
