@@ -41,11 +41,11 @@ var resetSocketOverrideFn = func() {
 	os.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", originalDockerSocketOverride)
 }
 
-var testCallbackCheckPassing = func(_ context.Context, _ string) error {
+func testCallbackCheckPassing(_ context.Context, _ string) error {
 	return nil
 }
 
-var testCallbackCheckError = func(_ context.Context, _ string) error {
+func testCallbackCheckError(_ context.Context, _ string) error {
 	return fmt.Errorf("could not check the Docker host")
 }
 
