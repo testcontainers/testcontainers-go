@@ -178,7 +178,7 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 		setupRootlessNotFound(t)
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
-		require.Error(t, err)
+		require.ErrorIs(t, err, ErrRootlessDockerNotFoundXDGRuntimeDir)
 		assert.Empty(t, socketPath)
 	})
 }
