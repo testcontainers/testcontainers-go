@@ -8,10 +8,10 @@ import (
 
 // Deprecated: use MustExtractDockerHost instead.
 func ExtractDockerSocket() string {
-	return MustExtractDockerSocket()
+	return MustExtractDockerSocket(context.Background())
 }
 
-// ExtractDockerSocket Extracts the docker socket from the different alternatives, removing the socket schema.
+// MustExtractDockerSocket Extracts the docker socket from the different alternatives, removing the socket schema.
 // Use this function to get the docker socket path, not the host (e.g. mounting the socket in a container).
 // This function does not consider Windows containers at the moment.
 // The possible alternatives are:
@@ -24,8 +24,8 @@ func ExtractDockerSocket() string {
 //  6. Else, the default location of the docker socket is used (/var/run/docker.sock)
 //
 // It panics if a Docker client cannot be created, or the Docker host cannot be discovered.
-func MustExtractDockerSocket() string {
-	return core.MustExtractDockerSocket(context.Background())
+func MustExtractDockerSocket(ctx context.Context) string {
+	return core.MustExtractDockerSocket(ctx)
 }
 
 // SessionID returns a unique session ID for the current test session. Because each Go package
