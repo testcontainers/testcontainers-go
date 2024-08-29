@@ -195,10 +195,10 @@ github.com/mattn/go-isatty v0.0.14/go.mod h1:7GGIvUiUoEMVVmxf/4nioHXj79iQHKdU27k
 github.com/mattn/goveralls v0.0.2/go.mod h1:8d1ZMHsd7fW6IRPKQh46F2WRpyib5/X4FOpevwGNQEw=
 github.com/mediocregopher/radix/v3 v3.4.2/go.mod h1:8FL3F6UQRXHXIBSPUs5h0RybMF8i4n7wVopoX3x7Bv8=
 github.com/microcosm-cc/bluemonday v1.0.2/go.mod h1:iVP4YcDBq+n/5fb23BhYFvIMq/leAFZyRl6bYmGDlGc=
-github.com/milvus-io/milvus-proto/go-api/v2 v2.3.5 h1:4XDy6ATB2Z0fl4Jn0hS6BT6/8YaE0d+ZUf4uBH+Z0Do=
-github.com/milvus-io/milvus-proto/go-api/v2 v2.3.5/go.mod h1:1OIl0v5PQeNxIJhCvY+K55CBUOYDZevw9g9380u1Wek=
-github.com/milvus-io/milvus-sdk-go/v2 v2.3.6 h1:JVn9OdaronLGmtpxvamQf523mtn3Z/CRxkSZCMWutV4=
-github.com/milvus-io/milvus-sdk-go/v2 v2.3.6/go.mod h1:bYFSXVxEj6A/T8BfiR+xkofKbAVZpWiDvKr3SzYUWiA=
+github.com/milvus-io/milvus-proto/go-api/v2 v2.4.0 h1:9KsyZR+neMlRvV52C5sIsLB13jthT2AY/+buyiNjcCg=
+github.com/milvus-io/milvus-proto/go-api/v2 v2.4.0/go.mod h1:1OIl0v5PQeNxIJhCvY+K55CBUOYDZevw9g9380u1Wek=
+github.com/milvus-io/milvus-sdk-go/v2 v2.4.0 h1:llESmiYiaFqRh0CUrZCLH0IWWkk5r8/vz0tkaA0YzQo=
+github.com/milvus-io/milvus-sdk-go/v2 v2.4.0/go.mod h1:8IKyxVV+kd+RADMuMpo8GXnTDq5ZxrSSWpe9nJieboQ=
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/moby/docker-image-spec v1.3.1 h1:jMKff3w6PgbfSa69GfNg+zN/XLhfXJGnEx3Nl2EsFP0=

@@ -10,7 +10,7 @@ import (
 )
 
 func TestImageList(t *testing.T) {
-	t.Setenv("DOCKER_HOST", core.ExtractDockerHost(context.Background()))
+	t.Setenv("DOCKER_HOST", core.MustExtractDockerHost(context.Background()))
 
 	provider, err := ProviderDocker.GetProvider()
 	if err != nil {
@@ -54,7 +54,7 @@ func TestImageList(t *testing.T) {
 }
 
 func TestSaveImages(t *testing.T) {
-	t.Setenv("DOCKER_HOST", core.ExtractDockerHost(context.Background()))
+	t.Setenv("DOCKER_HOST", core.MustExtractDockerHost(context.Background()))
 
 	provider, err := ProviderDocker.GetProvider()
 	if err != nil {

@@ -8,7 +8,7 @@ import (
 )
 
 func TestProviderTypeGetProviderAutodetect(t *testing.T) {
-	dockerHost := core.ExtractDockerHost(context.Background())
+	dockerHost := core.MustExtractDockerHost(context.Background())
 	const podmanSocket = "unix://$XDG_RUNTIME_DIR/podman/podman.sock"
 
 	tests := []struct {

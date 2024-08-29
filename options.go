@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"dario.cat/mergo"
@@ -155,7 +156,12 @@ func (c CustomHubSubstitutor) Substitute(image string) (string, error) {
 		}
 	}
 
-	return fmt.Sprintf("%s/%s", c.hub, image), nil
+	result, err := url.JoinPath(c.hub, image)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
 }
 
 // prependHubRegistry represents a way to prepend a custom Hub registry to the image name,
@@ -198,7 +204,12 @@ func (p prependHubRegistry) Substitute(image string) (string, error) {
 		}
 	}
 
-	return fmt.Sprintf("%s/%s", p.prefix, image), nil
+	result, err := url.JoinPath(p.prefix, image)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
 }
 
 // WithImageSubstitutors sets the image substitutors for a container

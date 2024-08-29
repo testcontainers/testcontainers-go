@@ -233,7 +233,7 @@ func reuseReaperContainer(ctx context.Context, sessionID string, provider Reaper
 // newReaper creates a Reaper with a sessionID to identify containers and a
 // provider to use. Do not call this directly, use reuseOrCreateReaper instead.
 func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
-	dockerHostMount := core.ExtractDockerSocket(ctx)
+	dockerHostMount := core.MustExtractDockerSocket(ctx)
 
 	reaper := &Reaper{
 		Provider:  provider,
