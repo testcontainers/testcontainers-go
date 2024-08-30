@@ -140,6 +140,7 @@ type ContainerRequest struct {
 	RegistryCred            string // Deprecated: Testcontainers will detect registry credentials automatically
 	WaitingFor              wait.Strategy
 	Name                    string // for specifying container name
+	Reuse                   bool   `hash:"ignore"` // For reusing an existing container
 	Hostname                string
 	WorkingDir              string                                     // specify the working directory of the container
 	ExtraHosts              []string                                   // Deprecated: Use HostConfigModifier instead

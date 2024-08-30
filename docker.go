@@ -1122,29 +1122,68 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
 
-	err = req.creatingHook(ctx)
-	if err != nil {
-		return nil, err
+	// calculate the hash at the end, right before creating the container
+	hash := req.hash()
+
+	var resp container.CreateResponse
+	if req.Reuse {
+		// we must protect the reusability of the container in the case it's invoked
+		// in a parallel execution, via ParallelContainers or t.Parallel()
+		reuseContainerMx.Lock()
+		defer reuseContainerMx.Unlock()
+
+		c, err := p.findContainerByHash(ctx, hash)
+		if err != nil {
+			return nil, err
+		}
+
+		// Create a new container if the request is to reuse the container, but there is no container found by hash
+		if c != nil {
+			resp.ID = c.ID
+
+			// replace the logging messages for reused containers
+			req.LifecycleHooks[0].PreCreates[0] = func(ctx context.Context, req ContainerRequest) error {
+				Logger.Printf("🔥 Reusing container: %s", resp.ID[:12])
+				return nil
+			}
+			req.LifecycleHooks[0].PostCreates[0] = func(ctx context.Context, c Container) error {
+				Logger.Printf("🔥 Container reused: %s", resp.ID[:12])
+				return nil
+			}
+		}
 	}
 
-	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, networkingConfig, platform, req.Name)
-	if err != nil {
-		return nil, fmt.Errorf("container create: %w", err)
-	}
+	// If the container was not found by hash, create a new one
+	if resp.ID == "" {
+		// calculate the hash, and add the labels, just before creating the container
+		hash := req.hash()
+		req.Labels[core.LabelContainerHash] = fmt.Sprintf("%d", hash.Hash)
+		req.Labels[core.LabelCopiedFilesHash] = fmt.Sprintf("%d", hash.FilesHash)
 
-	// #248: If there is more than one network specified in the request attach newly created container to them one by one
-	if len(req.Networks) > 1 {
-		for _, n := range req.Networks[1:] {
-			nw, err := p.GetNetwork(ctx, NetworkRequest{
-				Name: n,
-			})
-			if err == nil {
-				endpointSetting := network.EndpointSettings{
-					Aliases: req.NetworkAliases[n],
-				}
-				err = p.client.NetworkConnect(ctx, nw.ID, resp.ID, &endpointSetting)
-				if err != nil {
-					return nil, fmt.Errorf("network connect: %w", err)
+		err = req.creatingHook(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err = p.client.ContainerCreate(ctx, dockerInput, hostConfig, networkingConfig, platform, req.Name)
+		if err != nil {
+			return nil, fmt.Errorf("container create: %w", err)
+		}
+
+		// #248: If there is more than one network specified in the request attach newly created container to them one by one
+		if len(req.Networks) > 1 {
+			for _, n := range req.Networks[1:] {
+				nw, err := p.GetNetwork(ctx, NetworkRequest{
+					Name: n,
+				})
+				if err == nil {
+					endpointSetting := network.EndpointSettings{
+						Aliases: req.NetworkAliases[n],
+					}
+					err = p.client.NetworkConnect(ctx, nw.ID, resp.ID, &endpointSetting)
+					if err != nil {
+						return nil, fmt.Errorf("network connect: %w", err)
+					}
 				}
 			}
 		}
@@ -1194,10 +1233,28 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 	return nil, nil
 }
 
-func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string) (*types.Container, error) {
+func (p *DockerProvider) findContainerByHash(ctx context.Context, ch containerHash) (*types.Container, error) {
+	filter := filters.NewArgs(
+		filters.Arg("label", fmt.Sprintf("%s=%d", core.LabelContainerHash, ch.Hash)),
+		filters.Arg("label", fmt.Sprintf("%s=%d", core.LabelCopiedFilesHash, ch.FilesHash)),
+	)
+
+	containers, err := p.client.ContainerList(ctx, container.ListOptions{Filters: filter})
+	if err != nil {
+		return nil, err
+	}
+	defer p.Close()
+
+	if len(containers) > 0 {
+		return &containers[0], nil
+	}
+	return nil, nil
+}
+
+func (p *DockerProvider) waitContainerCreation(ctx context.Context, hash containerHash) (*types.Container, error) {
 	return backoff.RetryNotifyWithData(
 		func() (*types.Container, error) {
-			c, err := p.findContainerByName(ctx, name)
+			c, err := p.findContainerByHash(ctx, hash)
 			if err != nil {
 				if !errdefs.IsNotFound(err) && isPermanentClientError(err) {
 					return nil, backoff.Permanent(err)
@@ -1206,7 +1263,7 @@ func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string)
 			}
 
 			if c == nil {
-				return nil, errdefs.NotFound(fmt.Errorf("container %s not found", name))
+				return nil, errdefs.NotFound(fmt.Errorf("container %v not found", hash))
 			}
 			return c, nil
 		},
@@ -1220,8 +1277,14 @@ func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string)
 	)
 }
 
+// Deprecated: it will be removed in the next major release.
 func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
-	c, err := p.findContainerByName(ctx, req.Name)
+	return p.reuseOrCreateContainer(ctx, req)
+}
+
+func (p *DockerProvider) reuseOrCreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
+	hash := req.hash()
+	c, err := p.findContainerByHash(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -1233,7 +1296,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		if !createContainerFailDueToNameConflictRegex.MatchString(err.Error()) {
 			return nil, err
 		}
-		c, err = p.waitContainerCreation(ctx, req.Name)
+		c, err = p.waitContainerCreation(ctx, hash)
 		if err != nil {
 			return nil, err
 		}
