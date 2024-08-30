@@ -145,11 +145,21 @@ The aforementioned `GenericContainer` function and the `ContainerRequest` struct
 
 ## Reusable container
 
-With `Reuse` option you can reuse an existing container. Reusing will work only if you pass an 
-existing container name via 'req.Name' field. If the name is not in a list of existing containers, 
-the function will create a new generic container. If `Reuse` is true and `Name` is empty, you will get error.
+With `Reuse` option you can reuse an existing container. Reusing containers works out of the box just by setting the `Reuse` field to `true`.
+It will automatically create a hash of the container request and use it adding labels to the container.
+
+Two labels are added:
+
+- `org.testcontainers.hash` - set to the hash of the container request.
+- `org.testcontainers.copied_files.hash` - set to the hash of the files copied to the container using the `Files` field in the container request.
+
+!!!info
+	Only the files copied in the container request will be checked for reuse. If you copy a file to a container after it has been created, as in the example below, the container will still be reused, because the original request has not changed.
+
+If there is no container with those two labels matching the hash values, the function will create a new generic container. Otherwise, it will reuse the existing container.
 
 The following test creates an NGINX container, adds a file into it and then reuses the container again for checking the file:
+
 ```go
 package main
 
@@ -162,20 +172,17 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const (
-	reusableContainerName = "my_test_reusable_container"
-)
-
 func main() {
 	ctx := context.Background()
 
+	req := testcontainers.ContainerRequest{
+		Image:        "nginx:1.17.6",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+	},
+
 	n1, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
-			Name:         reusableContainerName,
-		},
+		ContainerRequest: req
 		Started: true,
 	})
 	if err != nil {
@@ -190,15 +197,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// mark the second container as reusable
+	req.Reuse = true
+
 	n2, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
-			Name:         reusableContainerName,
-		},
+		ContainerRequest: req,
 		Started: true,
-		Reuse:   true,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -211,6 +215,8 @@ func main() {
 	fmt.Println(c)
 }
 ```
+
+Becuase the `Reuse` option is set to `true`, the container request is the same, and the copied files have not changed, the second container is reused and the file `hello_copy.sh` will be executed.
 
 ## Parallel running
 
