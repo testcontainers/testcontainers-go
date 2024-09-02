@@ -253,7 +253,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 		kafka.WithClusterID("test-cluster"),
 		kafka.WithListener([]kafka.KafkaListener{
 			{
-				Name: "external",
+				Name: "plaintext",
 				Host: "kafka",
 				Port: "9092",
 			},
