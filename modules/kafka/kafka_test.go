@@ -109,7 +109,7 @@ func TestKafka_networkConnectivity(t *testing.T) {
 		topic_out = "topic_out"
 	)
 
-	Network, err := network.New(ctx, network.WithCheckDuplicate())
+	Network, err := network.New(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
