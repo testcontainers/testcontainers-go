@@ -38,7 +38,7 @@ func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithListener adds a custom listener to the Redpanda containers. Listener
+// WithListener adds a custom listener to the Kafka containers. Listener
 // will be aliases to all networks, so they can be accessed from within docker
 // networks. At leas one network must be attached to the container, if not an
 // error will be thrown when starting the container.
