@@ -14,6 +14,12 @@ const (
 	testdataPackage = "testdata"
 )
 
+func RenderComposeProfiles(t *testing.T) string {
+	t.Helper()
+
+	return writeTemplate(t, "docker-compose-profiles.yml")
+}
+
 func RenderComposeComplex(t *testing.T) (string, []int) {
 	t.Helper()
 
