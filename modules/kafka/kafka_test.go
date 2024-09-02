@@ -374,6 +374,7 @@ func createTopics(brokers []string, topics []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
+	defer c.Close()
 
 	_, err = c.Brokers()[0].CreateTopics(t)
 	if err != nil {
