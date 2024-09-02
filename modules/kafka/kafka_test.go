@@ -369,6 +369,9 @@ func createTopics(brokers []string, topics []string) error {
 	var err error
 
 	c, err := sarama.NewClient(brokers, sarama.NewConfig())
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
 
 	_, err = c.Brokers()[0].CreateTopics(t)
 	if err != nil {
