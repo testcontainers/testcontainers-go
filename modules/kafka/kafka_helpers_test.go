@@ -111,7 +111,6 @@ func TestValidateKRaftVersion(t *testing.T) {
 }
 
 func TestTrimValidateListeners(t *testing.T) {
-
 	tests := []struct {
 		name        string
 		listeners   []KafkaListener

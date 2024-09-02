@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/IBM/sarama"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
@@ -128,7 +129,6 @@ func TestKafka_networkConnectivity(t *testing.T) {
 		}),
 	)
 	// }
-
 	if err != nil {
 		t.Fatalf("failed to start container: %s", err)
 	}
@@ -138,9 +138,11 @@ func TestKafka_networkConnectivity(t *testing.T) {
 		t.Fatal("failed to get brokers", err)
 	}
 
-	createTopics(brokers, []string{topic_in, topic_out})
+	err = createTopics(brokers, []string{topic_in, topic_out})
+	require.NoError(t, err)
 
-	initKafkaTest(ctx, Network.Name, "kafka:9092", topic_in, topic_out)
+	_, err = initKafkaTest(ctx, Network.Name, "kafka:9092", topic_in, topic_out)
+	require.NoError(t, err)
 
 	// perform assertions
 
@@ -378,7 +380,7 @@ func createTopics(brokers []string, topics []string) error {
 		return fmt.Errorf("failed to create topics: %w", err)
 	}
 
-	fmt.Println("succesfully created topics")
+	fmt.Println("successfully created topics")
 
 	return nil
 }
