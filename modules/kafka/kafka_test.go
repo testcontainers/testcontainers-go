@@ -198,112 +198,93 @@ func TestKafka_restProxyService(t *testing.T) {
 
 func TestKafka_listenersValidation(t *testing.T) {
 	ctx := context.Background()
-	var err error
 
-	_, err = kafka.Run(ctx,
-		"confluentinc/confluent-local:7.6.1",
-		kafka.WithClusterID("test-cluster"),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "BROKER",
-				Host: "kafka",
-				Port: "9093",
+	testCases := []struct {
+		name      string
+		listeners []kafka.KafkaListener
+	}{
+		{
+			name: "reserved listener port duplication 1",
+			listeners: []kafka.KafkaListener{
+				{
+					Name: "BROKER",
+					Host: "kafka",
+					Port: "9093",
+				},
 			},
-		}),
-	)
-
-	if err == nil {
-		t.Fatalf("expected to fail due to reserved listener port duplication")
+		},
+		{
+			name: "reserved listener port duplication 2",
+			listeners: []kafka.KafkaListener{
+				{
+					Name: "BROKER",
+					Host: "kafka",
+					Port: "9094",
+				},
+			},
+		},
+		{
+			name: "reserved listener name duplication (controller)",
+			listeners: []kafka.KafkaListener{
+				{
+					Name: "  cOnTrOller   ",
+					Host: "kafka",
+					Port: "9092",
+				},
+			},
+		},
+		{
+			name: "reserved listener name duplication (plaintext)",
+			listeners: []kafka.KafkaListener{
+				{
+					Name: "plaintext",
+					Host: "kafka",
+					Port: "9092",
+				},
+			},
+		},
+		{
+			name: "duplicated ports not allowed",
+			listeners: []kafka.KafkaListener{
+				{
+					Name: "test",
+					Host: "kafka",
+					Port: "9092",
+				},
+				{
+					Name: "test2",
+					Host: "kafka",
+					Port: "9092",
+				},
+			},
+		},
+		{
+			name: "duplicated names not allowed",
+			listeners: []kafka.KafkaListener{
+				{
+					Name: "test",
+					Host: "kafka",
+					Port: "9092",
+				},
+				{
+					Name: "test",
+					Host: "kafka",
+					Port: "9095",
+				},
+			},
+		},
 	}
 
-	_, err = kafka.Run(ctx,
-		"confluentinc/confluent-local:7.6.1",
-		kafka.WithClusterID("test-cluster"),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "BROKER",
-				Host: "kafka",
-				Port: "9094",
-			},
-		}),
-	)
-
-	if err == nil {
-		t.Fatalf("expected to fail due to reserved listener port duplication")
-	}
-
-	_, err = kafka.Run(ctx,
-		"confluentinc/confluent-local:7.6.1",
-		kafka.WithClusterID("test-cluster"),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "  cOnTrOller   ",
-				Host: "kafka",
-				Port: "9092",
-			},
-		}),
-	)
-
-	if err == nil {
-		t.Fatalf("expected to fail due to reserved listener name duplication")
-	}
-
-	_, err = kafka.Run(ctx,
-		"confluentinc/confluent-local:7.6.1",
-		kafka.WithClusterID("test-cluster"),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "plaintext",
-				Host: "kafka",
-				Port: "9092",
-			},
-		}),
-	)
-
-	if err == nil {
-		t.Fatalf("expected to fail due to reserved listener name duplication")
-	}
-
-	_, err = kafka.Run(ctx,
-		"confluentinc/confluent-local:7.6.1",
-		kafka.WithClusterID("test-cluster"),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "test",
-				Host: "kafka",
-				Port: "9092",
-			},
-			{
-				Name: "test2",
-				Host: "kafka",
-				Port: "9092",
-			},
-		}),
-	)
-
-	if err == nil {
-		t.Fatalf("expected to fail due to port duplication")
-	}
-
-	_, err = kafka.Run(ctx,
-		"confluentinc/confluent-local:7.6.1",
-		kafka.WithClusterID("test-cluster"),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "test",
-				Host: "kafka",
-				Port: "9092",
-			},
-			{
-				Name: "test",
-				Host: "kafka",
-				Port: "9095",
-			},
-		}),
-	)
-
-	if err == nil {
-		t.Fatalf("expected to fail due to name duplication")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, err := kafka.Run(ctx,
+				"confluentinc/confluent-local:7.6.1",
+				kafka.WithClusterID("test-cluster"),
+				kafka.WithListener(tc.listeners),
+			)
+			require.Error(t, err)
+			require.Nil(t, c, "expected container to be nil")
+		})
 	}
 }
 
