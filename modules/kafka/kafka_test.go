@@ -121,7 +121,7 @@ func TestKafka_networkConnectivity(t *testing.T) {
 		network.WithNetwork([]string{"kafka"}, Network),
 		kafka.WithListener([]kafka.KafkaListener{
 			{
-				Name: "INTERNAL",
+				Name: "BROKER",
 				Host: "kafka",
 				Port: "9092",
 			},
@@ -203,7 +203,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 		kafka.WithClusterID("test-cluster"),
 		kafka.WithListener([]kafka.KafkaListener{
 			{
-				Name: "INTERNAL",
+				Name: "BROKER",
 				Host: "kafka",
 				Port: "9093",
 			},
@@ -219,7 +219,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 		kafka.WithClusterID("test-cluster"),
 		kafka.WithListener([]kafka.KafkaListener{
 			{
-				Name: "INTERNAL",
+				Name: "BROKER",
 				Host: "kafka",
 				Port: "9094",
 			},
@@ -381,7 +381,7 @@ func createTopics(brokers []string, topics []string) error {
 }
 
 // assertAdvertisedListeners checks that the advertised listeners are set correctly:
-// - The INTERNAL:// protocol is using the hostname of the Kafka container
+// - The BROKER:// protocol is using the hostname of the Kafka container
 func assertAdvertisedListeners(t *testing.T, container testcontainers.Container) {
 	hostname, err := container.Host(context.Background())
 	if err != nil {
@@ -401,7 +401,7 @@ func assertAdvertisedListeners(t *testing.T, container testcontainers.Container)
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(string(bs), "INTERNAL://"+hostname+":9092") {
-		t.Fatalf("expected advertised listeners to contain %s, got %s", "INTERNAL://"+hostname+":9092", string(bs))
+	if !strings.Contains(string(bs), "BROKER://"+hostname+":9092") {
+		t.Fatalf("expected advertised listeners to contain %s, got %s", "BROKER://"+hostname+":9092", string(bs))
 	}
 }

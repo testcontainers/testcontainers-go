@@ -56,10 +56,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ExposedPorts: []string{string(publicPort)},
 		Env: map[string]string{
 			// envVars {
-			"KAFKA_LISTENERS":                                "EXTERNAL://0.0.0.0:9093,INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "EXTERNAL://0.0.0.0:9093,INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT",
-			"KAFKA_INTER_BROKER_LISTENER_NAME":               "INTERNAL",
+			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
+			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
+			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT",
+			"KAFKA_INTER_BROKER_LISTENER_NAME":               "BROKER",
 			"KAFKA_BROKER_ID":                                "1",
 			"KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR":         "1",
 			"KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS":             "1",
@@ -157,7 +157,7 @@ func trimValidateListeners(listeners []KafkaListener) error {
 
 	// check for default listeners
 	names["CONTROLLER"] = true
-	names["EXTERNAL"] = true
+	names["PLAINTEXT"] = true
 
 	for _, item := range listeners {
 		if names[item.Name] {
@@ -183,14 +183,14 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container, settings
 	}
 
 	if len(settings.Listeners) == 0 {
-		defaultInternal, err := internalListener(ctx, c)
+		defaultInternal, err := brokerListener(ctx, c)
 		if err != nil {
 			return fmt.Errorf("can't create default internal listener: %w", err)
 		}
 		settings.Listeners = append(settings.Listeners, defaultInternal)
 	}
 
-	defaultExternal, err := externalListener(ctx, c)
+	defaultExternal, err := plainTextListener(ctx, c)
 	if err != nil {
 		return fmt.Errorf("can't create default external listener: %w", err)
 	}
@@ -218,9 +218,9 @@ func editEnvsForListeners(listeners []KafkaListener) map[string]string {
 	}
 
 	envs := map[string]string{
-		"KAFKA_LISTENERS":                      "CONTROLLER://0.0.0.0:9094, EXTERNAL://0.0.0.0:9093",
-		"KAFKA_REST_BOOTSTRAP_SERVERS":         "CONTROLLER://0.0.0.0:9094, EXTERNAL://0.0.0.0:9093",
-		"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "CONTROLLER:PLAINTEXT, EXTERNAL:PLAINTEXT",
+		"KAFKA_LISTENERS":                      "CONTROLLER://0.0.0.0:9094, PLAINTEXT://0.0.0.0:9093",
+		"KAFKA_REST_BOOTSTRAP_SERVERS":         "CONTROLLER://0.0.0.0:9094, PLAINTEXT://0.0.0.0:9093",
+		"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "CONTROLLER:PLAINTEXT, PLAINTEXT:PLAINTEXT",
 	}
 
 	// expect first listener has common network between kafka instances

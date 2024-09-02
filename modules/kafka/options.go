@@ -48,7 +48,7 @@ func WithListener(listeners []KafkaListener) Option {
 	}
 }
 
-func externalListener(ctx context.Context, c testcontainers.Container) (KafkaListener, error) {
+func plainTextListener(ctx context.Context, c testcontainers.Container) (KafkaListener, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return KafkaListener{}, err
@@ -60,20 +60,20 @@ func externalListener(ctx context.Context, c testcontainers.Container) (KafkaLis
 	}
 
 	return KafkaListener{
-		Name: "EXTERNAL",
+		Name: "PLAINTEXT",
 		Host: host,
 		Port: port.Port(),
 	}, nil
 }
 
-func internalListener(ctx context.Context, c testcontainers.Container) (KafkaListener, error) {
+func brokerListener(ctx context.Context, c testcontainers.Container) (KafkaListener, error) {
 	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return KafkaListener{}, fmt.Errorf("inspect: %w", err)
 	}
 
 	return KafkaListener{
-		Name: "INTERNAL",
+		Name: "BROKER",
 		Host: inspect.Config.Hostname,
 		Port: "9092",
 	}, nil
