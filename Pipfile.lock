@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "621bd677256ac0975a720ce1caa39b6594bb39290f0fbf90abc616ab206bec7d"
+            "sha256": "0411eac13d1b06b42671b8a654fb269eb0c329d9a3d41f669ccf7b653ef8ad32"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -295,11 +295,12 @@
         },
         "mkdocs-markdownextradata-plugin": {
             "hashes": [
-                "sha256:9c562e8fe375647d5692d11dfe369a7bdd50302174d35995fce2aeca58036ec6"
+                "sha256:34dd40870781784c75809596b2d8d879da783815b075336d541de1f150c94242",
+                "sha256:4aed9b43b8bec65b02598387426ca4809099ea5f5aa78bf114f3296fd46686b5"
             ],
             "index": "pypi",
-            "markers": "python_version not in '3.0, 3.1, 3.2, 3.3' and python_full_version >= '2.7.9'",
-            "version": "==0.2.5"
+            "markers": "python_version >= '3.6'",
+            "version": "==0.2.6"
         },
         "mkdocs-material": {
             "hashes": [
