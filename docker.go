@@ -1295,10 +1295,6 @@ func (p *DockerProvider) waitContainerCreationInTimeout(ctx context.Context, has
 
 // Deprecated: it will be removed in the next major release.
 func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
-	return p.reuseOrCreateContainer(ctx, req)
-}
-
-func (p *DockerProvider) reuseOrCreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	hash := req.hash()
 	c, err := p.findContainerByHash(ctx, hash)
 	if err != nil {
