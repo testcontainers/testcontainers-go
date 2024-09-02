@@ -55,6 +55,80 @@ func TestHashContainerRequest(t *testing.T) {
 	require.Equal(t, hash1.FilesHash, hash2.FilesHash)
 }
 
+func TestHashContainerRequest_includingDirs(t *testing.T) {
+	req1 := ContainerRequest{
+		Image: "nginx",
+		Env:   map[string]string{"a": "b"},
+		FromDockerfile: FromDockerfile{
+			BuildOptionsModifier: func(options *types.ImageBuildOptions) {},
+		},
+		ExposedPorts:      []string{"80/tcp"},
+		Privileged:        false,
+		ImageSubstitutors: []ImageSubstitutor{newPrependHubRegistry("localhost:5000")},
+		LifecycleHooks: []ContainerLifecycleHooks{
+			{
+				PreStarts: []ContainerHook{
+					func(ctx context.Context, c Container) error {
+						return nil
+					},
+				},
+			},
+		},
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			// NOOP
+		},
+		WaitingFor: wait.ForLog("nginx: ready"),
+		Files: []ContainerFile{
+			{
+				HostFilePath:      "testdata",
+				ContainerFilePath: "/data",
+				FileMode:          0755,
+			},
+		},
+	}
+
+	req2 := ContainerRequest{
+		Image: "nginx",
+		Env:   map[string]string{"a": "b"},
+		FromDockerfile: FromDockerfile{
+			BuildOptionsModifier: func(options *types.ImageBuildOptions) {},
+		},
+		ExposedPorts:      []string{"80/tcp"},
+		Privileged:        false,
+		ImageSubstitutors: []ImageSubstitutor{newPrependHubRegistry("localhost:5000")},
+		LifecycleHooks: []ContainerLifecycleHooks{
+			{
+				PreStarts: []ContainerHook{
+					func(ctx context.Context, c Container) error {
+						return nil
+					},
+				},
+			},
+		},
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			// NOOP
+		},
+		WaitingFor: wait.ForLog("nginx: ready"),
+		Files: []ContainerFile{
+			{
+				HostFilePath:      filepath.Join("testdata", "data"),
+				ContainerFilePath: "/data",
+				FileMode:          0755,
+			},
+		},
+	}
+
+	hash1 := req1.hash()
+	require.NotEqual(t, 0, hash1)
+
+	hash2 := req2.hash()
+	require.NotEqual(t, 0, hash2)
+
+	require.NotEqual(t, hash1.Hash, hash2.Hash) // because the hostfile path is different
+	require.Zero(t, hash1.FilesHash)            // the dir is not included in the hash
+	require.Equal(t, hash1.FilesHash, hash2.FilesHash)
+}
+
 func TestHashContainerRequest_differs(t *testing.T) {
 	req1 := ContainerRequest{
 		Image: "nginx",
