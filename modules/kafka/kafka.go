@@ -102,25 +102,24 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		genericContainerReq.Env[key] = item
 	}
 
-	genericContainerReq.ContainerRequest.LifecycleHooks =
-		[]testcontainers.ContainerLifecycleHooks{
-			{
-				PostStarts: []testcontainers.ContainerHook{
-					// Use a single hook to copy the starter script and wait for
-					// the Kafka server to be ready. This prevents the wait running
-					// if the starter script fails to copy.
-					func(ctx context.Context, c testcontainers.Container) error {
-						// 1. copy the starter script into the container
-						if err := copyStarterScript(ctx, c, &settings); err != nil {
-							return fmt.Errorf("copy starter script: %w", err)
-						}
+	genericContainerReq.ContainerRequest.LifecycleHooks = []testcontainers.ContainerLifecycleHooks{
+		{
+			PostStarts: []testcontainers.ContainerHook{
+				// Use a single hook to copy the starter script and wait for
+				// the Kafka server to be ready. This prevents the wait running
+				// if the starter script fails to copy.
+				func(ctx context.Context, c testcontainers.Container) error {
+					// 1. copy the starter script into the container
+					if err := copyStarterScript(ctx, c, &settings); err != nil {
+						return fmt.Errorf("copy starter script: %w", err)
+					}
 
-						// 2. wait for the Kafka server to be ready
-						return wait.ForLog(".*Transitioning from RECOVERY to RUNNING.*").AsRegexp().WaitUntilReady(ctx, c)
-					},
+					// 2. wait for the Kafka server to be ready
+					return wait.ForLog(".*Transitioning from RECOVERY to RUNNING.*").AsRegexp().WaitUntilReady(ctx, c)
 				},
 			},
-		}
+		},
+	}
 
 	err := validateKRaftVersion(genericContainerReq.Image)
 	if err != nil {
