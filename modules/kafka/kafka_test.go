@@ -192,6 +192,86 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	}
 }
 
+func TestKafka_withListener(t *testing.T) {
+	ctx := context.Background()
+
+	// 1. Create network
+	rpNetwork, err := network.New(ctx)
+	require.NoError(t, err)
+
+	// 2. Start Kafka ctr
+	// withListenerRP {
+	ctr, err := kafka.Run(ctx,
+		"confluentinc/confluent-local:7.6.1",
+		network.WithNetwork([]string{"kafka"}, rpNetwork),
+		kafka.WithListener([]kafka.KafkaListener{
+			{
+				Name: "BROKER",
+				Host: "kafka",
+				Port: "9092",
+			},
+		}),
+	)
+	// }
+	require.NoError(t, err)
+
+	// 3. Start KCat container
+	// withListenerKcat {
+	kcat, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "confluentinc/cp-kcat:7.4.1",
+			Networks: []string{
+				rpNetwork.Name,
+			},
+			Entrypoint: []string{
+				"sh",
+			},
+			Cmd: []string{
+				"-c",
+				"tail -f /dev/null",
+			},
+		},
+		Started: true,
+	})
+	// }
+
+	require.NoError(t, err)
+
+	// 4. Copy message to kcat
+	err = kcat.CopyToContainer(ctx, []byte("Message produced by kcat"), "/tmp/msgs.txt", 700)
+	require.NoError(t, err)
+
+	// 5. Produce message to Kafka
+	// withListenerExec {
+	_, _, err = kcat.Exec(ctx, []string{"kcat", "-b", "kafka:9092", "-t", "msgs", "-P", "-l", "/tmp/msgs.txt"})
+	// }
+
+	require.NoError(t, err)
+
+	// 6. Consume message from Kafka
+	_, stdout, err := kcat.Exec(ctx, []string{"kcat", "-b", "kafka:9092", "-C", "-t", "msgs", "-c", "1"})
+	require.NoError(t, err)
+
+	// 7. Read Message from stdout
+	out, err := io.ReadAll(stdout)
+	require.NoError(t, err)
+
+	require.Contains(t, string(out), "Message produced by kcat")
+
+	t.Cleanup(func() {
+		if err := kcat.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate kcat container: %s", err)
+		}
+		if err := ctr.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate Kafka container: %s", err)
+		}
+
+		if err := rpNetwork.Remove(ctx); err != nil {
+			t.Fatalf("failed to remove network: %s", err)
+		}
+	})
+}
+
 func TestKafka_restProxyService(t *testing.T) {
 	// TODO: test kafka rest proxy service
 }
@@ -309,37 +389,6 @@ func initKafkaTest(ctx context.Context, network string, brokers string, input st
 		ContainerRequest: req,
 		Started:          true,
 	})
-
-	// TODO: use kcat
-	/*
-		try (
-			Network network = Network.newNetwork();
-			// registerListener {
-			KafkaContainer kafka = new KafkaContainer(KAFKA_KRAFT_TEST_IMAGE)
-				.withListener(() -> "kafka:19092")
-				.withNetwork(network);
-			// }
-			// createKCatContainer {
-			GenericContainer<?> kcat = new GenericContainer<>("confluentinc/cp-kcat:7.4.1")
-				.withCreateContainerCmdModifier(cmd -> {
-					cmd.withEntrypoint("sh");
-				})
-				.withCopyToContainer(Transferable.of("Message produced by kcat"), "/data/msgs.txt")
-				.withNetwork(network)
-				.withCommand("-c", "tail -f /dev/null")
-			// }
-		) {
-			kafka.start();
-			kcat.start();
-			// produceConsumeMessage {
-			kcat.execInContainer("kcat", "-b", "kafka:19092", "-t", "msgs", "-P", "-l", "/data/msgs.txt");
-			String stdout = kcat
-				.execInContainer("kcat", "-b", "kafka:19092", "-C", "-t", "msgs", "-c", "1")
-				.getStdout();
-			// }
-			assertThat(stdout).contains("Message produced by kcat");
-		}
-	*/
 }
 
 func createTopics(brokers []string, topics []string) error {
