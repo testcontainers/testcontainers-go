@@ -114,7 +114,16 @@ func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
 func TestGenericReusableContainerInSubprocess(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(10)
-	for i := 0; i < 10; i++ {
+
+	creatingMessage := "🐳 Creating container for image docker.io/menedev/delayed-nginx:1.15.2"
+	creatingCount := 0
+	expectedCreatingCount := 1
+
+	reusingMessage := "🔥 Container reused"
+	reusingCount := 0
+	expectedReusingCount := 9
+
+	for i := 0; i < (expectedCreatingCount + expectedReusingCount); i++ {
 		go func() {
 			defer wg.Done()
 
@@ -122,25 +131,21 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 			output := createReuseContainerInSubprocess(t)
 
 			t.Log(output)
-			// check is reuse container with WaitingFor work correctly.
-			require.True(t, strings.Contains(output, "⏳ Waiting for container id"))
-			require.True(t, strings.Contains(output, "🔔 Container is ready"))
+
+			if strings.Contains(output, creatingMessage) {
+				creatingCount++
+			}
+
+			if strings.Contains(output, reusingMessage) {
+				reusingCount++
+			}
 		}()
 	}
 
 	wg.Wait()
 
-	provider, err := NewDockerProvider()
-	require.NoError(t, err)
-
-	c, err := provider.findContainerByHash(context.Background(), reusableReq.hash())
-	require.NoError(t, err)
-	require.NotNil(t, c)
-
-	nginxC, err := containerFromDockerResponse(context.Background(), *c)
-	require.NoError(t, err)
-
-	terminateContainerOnEnd(t, context.Background(), nginxC)
+	require.Equal(t, expectedCreatingCount, creatingCount)
+	require.Equal(t, expectedReusingCount, reusingCount)
 }
 
 func createReuseContainerInSubprocess(t *testing.T) string {

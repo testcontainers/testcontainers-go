@@ -1132,8 +1132,15 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		reuseContainerMx.Lock()
 		defer reuseContainerMx.Unlock()
 
-		c, err := p.findContainerByHash(ctx, hash)
-		if err != nil {
+		// in the case different test programs are creating a container with the same hash,
+		// we must check if the container is already created. For that we wait up to 5 seconds
+		// for the container to be created. If the error means the container is not found, we
+		// can proceed with the creation of the container.
+		// This is needed because we need to synchronize the creation of the container across
+		// different test programs.
+		c, err := p.waitContainerCreationInTimeout(ctx, hash, 5*time.Second)
+		if err != nil && !errdefs.IsNotFound(err) {
+			// another error occurred different from not found, so we return the error
 			return nil, err
 		}
 
@@ -1141,7 +1148,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if c != nil {
 			resp.ID = c.ID
 
-			// replace the logging messages for reused containers
+			// replace the logging messages for reused containers:
+			// we know the first lifecycle hook is the logger hook,
+			// so it's safe to replace its first message for reused containers.
 			req.LifecycleHooks[0].PreCreates[0] = func(ctx context.Context, req ContainerRequest) error {
 				Logger.Printf("🔥 Reusing container: %s", resp.ID[:12])
 				return nil
@@ -1252,6 +1261,13 @@ func (p *DockerProvider) findContainerByHash(ctx context.Context, ch containerHa
 }
 
 func (p *DockerProvider) waitContainerCreation(ctx context.Context, hash containerHash) (*types.Container, error) {
+	return p.waitContainerCreationInTimeout(ctx, hash, 5*time.Second)
+}
+
+func (p *DockerProvider) waitContainerCreationInTimeout(ctx context.Context, hash containerHash, timeout time.Duration) (*types.Container, error) {
+	exp := backoff.NewExponentialBackOff()
+	exp.MaxElapsedTime = timeout
+
 	return backoff.RetryNotifyWithData(
 		func() (*types.Container, error) {
 			c, err := p.findContainerByHash(ctx, hash)
@@ -1267,7 +1283,7 @@ func (p *DockerProvider) waitContainerCreation(ctx context.Context, hash contain
 			}
 			return c, nil
 		},
-		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
+		backoff.WithContext(exp, ctx),
 		func(err error, duration time.Duration) {
 			if errdefs.IsNotFound(err) {
 				return
