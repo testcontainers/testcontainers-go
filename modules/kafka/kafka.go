@@ -64,7 +64,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 		Cmd: []string{"-c", "while [ ! -f " + starterScript + " ]; do sleep 0.1; done; bash " + starterScript},
 		LifecycleHooks: []testcontainers.LifecycleHooks{
 			{
-				PostStarts: []testcontainers.ContainerHook{
+				PostStarts: []testcontainers.StartedContainerHook{
 					// Use a single hook to copy the starter script and wait for
 					// the Kafka server to be ready. This prevents the wait running
 					// if the starter script fails to copy.
