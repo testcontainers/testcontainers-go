@@ -57,6 +57,7 @@ nav:
             - Introduction: features/wait/introduction.md
             - Exec: features/wait/exec.md
             - Exit: features/wait/exit.md
+            - File: features/wait/file.md
             - Health: features/wait/health.md
             - HostPort: features/wait/host_port.md
             - HTTP: features/wait/http.md
