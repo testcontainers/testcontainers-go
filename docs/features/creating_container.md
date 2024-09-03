@@ -145,23 +145,28 @@ The aforementioned `GenericContainer` function and the `ContainerRequest` struct
 
 ## Reusable container
 
-With `Reuse` option you can reuse an existing container. Reusing containers works out of the box just by setting the `Reuse` field to `true`.
-It will automatically create a hash of the container request and use it adding labels to the container.
+!!!warning
+	Reusing containers is an experimental feature and you can experience some issues while using it in your tests. If you find any issue, please report it creating an issue [here](https://github.com/testcontainers/testcontainers-go/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml&title=%5BBug%5D%3A+).
 
-Two labels are added:
+A `ReusableContainer` is a container you mark to be reused across different tests. Reusing containers works out of the box just by setting the `Reuse` field to `true`.
+Internally, _Testcontainers for Go_ automatically creates a hash of the container request and adds it as a container label. Two labels are added:
 
-- `org.testcontainers.hash` - set to the hash of the container request.
-- `org.testcontainers.copied_files.hash` - set to the hash of the files copied to the container using the `Files` field in the container request.
+- `org.testcontainers.hash` - the hash of the container request.
+- `org.testcontainers.copied_files.hash` - the hash of the files copied to the container using the `Files` field in the container request.
 
 !!!info
 	Only the files copied in the container request will be checked for reuse. If you copy a file to a container after it has been created, as in the example below, the container will still be reused, because the original request has not changed.
 
-If there is no container with those two labels matching the hash values, the function will create a new generic container. Otherwise, it will reuse the existing container.
+If there is no container with those two labels matching the hash values, the function will create a new container. Otherwise, it will reuse the existing container.
+
+This behaviour persists across multiple test runs, as long as the container request remains the same. Ryuk the resource reaper won't terminate that container if it is marked for reuse, as it won't match the prune conditions used by Ryuk.
+
+### Reuse example
 
 The following test creates an NGINX container, adds a file into it and then reuses the container again for checking the file:
 
 ```go
-package main
+package testcontainers_test
 
 import (
 	"context"
@@ -172,37 +177,42 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func main() {
+func ExampleReusableContainer_usingACopiedFile() {
 	ctx := context.Background()
 
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx:1.17.6",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForListeningPort("80/tcp"),
-	},
+		Reuse:        true, // mark the container as reusable
+	}
 
 	n1, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req
-		Started: true,
+		ContainerRequest: req,
+		Started:          true,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer n1.Terminate(ctx)
+	// not terminating the container on purpose, so that it can be reused in a different test.
+	// defer n1.Terminate(ctx)
+
+	// Let's copy a file to the container, to demonstrate that successive containers can use the same files
+	// when the container is marked for reuse.
+	bs := []byte(`#!/usr/bin/env bash
+echo "hello world" > /data/hello.txt
+echo "done"`)
 
 	copiedFileName := "hello_copy.sh"
-	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
-
+	err = n1.CopyToContainer(ctx, bs, "/"+copiedFileName, 700)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// mark the second container as reusable
-	req.Reuse = true
-
+	// Because n2 uses the same container request, it will reuse the container created by n1.
 	n2, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
-		Started: true,
+		Started:          true,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -212,11 +222,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// the file must exist in this second container, as it's reusing the first one
 	fmt.Println(c)
+
+	// Output: 0
 }
+
 ```
 
-Becuase the `Reuse` option is set to `true`, the container request is the same, and the copied files have not changed, the second container is reused and the file `hello_copy.sh` will be executed.
+Becuase the `Reuse` option is set to `true`, and the copied files have not changed, the container request is the same, resulting in the second container reusing the first one and the file `hello_copy.sh` being executed.
 
 ## Parallel running
 
