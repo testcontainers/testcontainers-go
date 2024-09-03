@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/couchbase
 
-go 1.21
+go 1.22
 
 toolchain go1.21.7
 

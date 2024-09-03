@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/ollama
 
-go 1.21
+go 1.22
 
 require (
 	github.com/docker/docker v27.1.1+incompatible

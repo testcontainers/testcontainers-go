@@ -2,6 +2,7 @@ package image
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -59,7 +60,12 @@ func (p prependHubRegistry) Substitute(img string) (string, error) {
 		}
 	}
 
-	return fmt.Sprintf("%s/%s", p.prefix, img), nil
+	result, err := url.JoinPath(p.prefix, img)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
 }
 
 // noopImageSubstitutor {
@@ -89,7 +95,12 @@ func (s DockerSubstitutor) Description() string {
 }
 
 func (s DockerSubstitutor) Substitute(img string) (string, error) {
-	return "docker.io/" + img, nil
+	result, err := url.JoinPath("docker.io", img)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
 }
 
 // }
@@ -132,5 +143,10 @@ func (c CustomHubSubstitutor) Substitute(image string) (string, error) {
 		}
 	}
 
-	return fmt.Sprintf("%s/%s", c.hub, image), nil
+	result, err := url.JoinPath(c.hub, image)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
 }

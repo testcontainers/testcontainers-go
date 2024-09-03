@@ -163,6 +163,13 @@ func (f ComposeStackFiles) applyToComposeStack(o *composeStackOptions) error {
 	return nil
 }
 
+type ComposeProfiles []string
+
+func (p ComposeProfiles) applyToComposeStack(o *composeStackOptions) error {
+	o.Profiles = append(o.Profiles, p...)
+	return nil
+}
+
 type StackIdentifier string
 
 func (f StackIdentifier) applyToComposeStack(o *composeStackOptions) error {
@@ -221,6 +228,9 @@ type dockerCompose struct {
 	// options used to compile the compose project
 	// e.g. environment settings, ...
 	projectOptions []cli.ProjectOptionsFn
+
+	// profiles applied to the compose project after compilation.
+	projectProfiles []string
 
 	// compiled compose project
 	// can be nil if the stack wasn't started yet
@@ -517,6 +527,13 @@ func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, err
 	proj, err := compiledOptions.LoadProject(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load project: %w", err)
+	}
+
+	if len(d.projectProfiles) > 0 {
+		proj, err = proj.WithProfiles(d.projectProfiles)
+		if err != nil {
+			return nil, fmt.Errorf("with profiles: %w", err)
+		}
 	}
 
 	for i, s := range proj.Services {

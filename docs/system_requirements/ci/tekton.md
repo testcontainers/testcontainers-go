@@ -16,7 +16,7 @@ spec:
     - name: source
   steps:
     - name: read
-      image: golang:1.21
+      image: golang:1.22
       workingDir: $(workspaces.source.path)
       script: go test ./... -v
       volumeMounts:

@@ -43,7 +43,7 @@ type Reaper struct {
 // newReaper creates a Reaper with a sessionID to identify containers.
 // Do not call this directly, use NewReaper instead.
 func newReaper(ctx context.Context, sessionID string) (*Reaper, error) {
-	dockerHostMount := core.ExtractDockerSocket(ctx)
+	dockerHostMount := core.MustExtractDockerSocket(ctx)
 
 	reaper := &Reaper{
 		SessionID: sessionID,

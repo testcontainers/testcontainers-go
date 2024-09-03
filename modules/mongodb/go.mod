@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/mongodb
 
-go 1.21
+go 1.22
 
 require (
 	github.com/testcontainers/testcontainers-go v0.33.0

@@ -13,7 +13,7 @@ import (
 )
 
 func TestList(t *testing.T) {
-	t.Setenv("DOCKER_HOST", core.ExtractDockerHost(context.Background()))
+	t.Setenv("DOCKER_HOST", core.MustExtractDockerHost(context.Background()))
 
 	imageName := "redis:latest"
 
@@ -42,7 +42,7 @@ func TestList(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	t.Setenv("DOCKER_HOST", core.ExtractDockerHost(context.Background()))
+	t.Setenv("DOCKER_HOST", core.MustExtractDockerHost(context.Background()))
 
 	imageName := "redis:latest"
 

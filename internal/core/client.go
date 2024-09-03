@@ -82,8 +82,8 @@ Labels:`
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
 		infoLabels,
 		internal.Version,
-		ExtractDockerHost(ctx),
-		ExtractDockerSocket(ctx),
+		MustExtractDockerHost(ctx),
+		MustExtractDockerSocket(ctx),
 		SessionID(),
 		ProcessID(),
 	)
@@ -140,7 +140,7 @@ func NewClient(ctx context.Context, ops ...client.Opt) (*DockerClient, error) {
 
 	tcConfig := config.Read()
 
-	dockerHost := ExtractDockerHost(ctx)
+	dockerHost := MustExtractDockerHost(ctx)
 
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
 	if dockerHost != "" {
