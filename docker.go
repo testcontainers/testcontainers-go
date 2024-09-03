@@ -1122,6 +1122,12 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
 
+	if req.Reuse {
+		// Remove the SessionID label from the request, as we don't want Ryuk to control
+		// the container lifecycle in the case of reusing containers.
+		delete(req.Labels, core.LabelSessionID)
+	}
+
 	// calculate the hash at the end, right before creating the container
 	hash := req.hash()
 
