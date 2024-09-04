@@ -161,6 +161,13 @@ If there is no container with those two labels matching the hash values, _Testco
 
 This behaviour persists across multiple test runs, as long as the container request remains the same. Ryuk the resource reaper does not terminate that container if it is marked for reuse, as it does not match the prune conditions used by Ryuk. To know more about Ryuk, please read the [Garbage Collector](/features/garbage_collector#ryuk) documentation.
 
+!!!warning
+	In the case different test programs are creating a container with the same hash, we must check if the container is already created.
+	For that _Testcontainers for Go_ waits up-to 5 seconds for the container to be created. If the container is not found,
+	the code proceedes with the creation of the container, else the container is reused.
+	This wait is needed because we need to synchronize the creation of the container across different test programs,
+	so you could find very rare situations where the container is not found in different test sessions and it is created in them.
+
 ### Reuse example
 
 The following example creates an NGINX container, adds a file into it and then reuses the container again for checking the file:
