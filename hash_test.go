@@ -40,7 +40,7 @@ func TestHashContainerRequest(t *testing.T) {
 			{
 				HostFilePath:      filepath.Join("testdata", "hello.sh"),
 				ContainerFilePath: "/hello.sh",
-				FileMode:          0755,
+				FileMode:          0o755,
 			},
 		},
 	}
@@ -82,7 +82,7 @@ func TestHashContainerRequest_includingDirs(t *testing.T) {
 			{
 				HostFilePath:      "testdata",
 				ContainerFilePath: "/data",
-				FileMode:          0755,
+				FileMode:          0o755,
 			},
 		},
 	}
@@ -113,7 +113,7 @@ func TestHashContainerRequest_includingDirs(t *testing.T) {
 			{
 				HostFilePath:      filepath.Join("testdata", "data"),
 				ContainerFilePath: "/data",
-				FileMode:          0755,
+				FileMode:          0o755,
 			},
 		},
 	}
@@ -156,7 +156,7 @@ func TestHashContainerRequest_differs(t *testing.T) {
 			{
 				HostFilePath:      filepath.Join("testdata", "hello.sh"),
 				ContainerFilePath: "/hello.sh",
-				FileMode:          0755,
+				FileMode:          0o755,
 			},
 		},
 	}
@@ -187,7 +187,7 @@ func TestHashContainerRequest_differs(t *testing.T) {
 			{
 				HostFilePath:      filepath.Join("testdata", "hello.sh"),
 				ContainerFilePath: "/hello.sh",
-				FileMode:          0755,
+				FileMode:          0o755,
 			},
 		},
 	}
@@ -240,7 +240,7 @@ func TestHashContainerRequest_modifiedFiles(t *testing.T) {
 			{
 				HostFilePath:      tmpFile,
 				ContainerFilePath: "/hello.sh",
-				FileMode:          0755,
+				FileMode:          0o755,
 			},
 		},
 	}

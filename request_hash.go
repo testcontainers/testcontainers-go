@@ -51,9 +51,8 @@ func (c ContainerRequest) hash() containerHash {
 					if err != nil {
 						continue
 					}
-				} else {
-					// NOOP: Calculate the hash of the directory content is not supported.
 				}
+				// The else of this condition is a NOOP, as calculating the hash of the directory content is not supported.
 			}
 
 			fh, err := core.Hash(fileContent)
