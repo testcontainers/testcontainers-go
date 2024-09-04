@@ -148,18 +148,18 @@ The aforementioned `GenericContainer` function and the `ContainerRequest` struct
 !!!warning
 	Reusing containers is an experimental feature, so please acknowledge you can experience some issues while using it. If you find any issue, please report it [here](https://github.com/testcontainers/testcontainers-go/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml&title=%5BBug%5D%3A+).
 
-A `ReusableContainer` is a container you mark to be reused across different tests. Reusing containers works out of the box just by setting the `Reuse` field to `true`.
+A `ReusableContainer` is a container you mark to be reused across different tests. Reusing containers works out of the box just by setting the `Reuse` field in the `ContainerRequest` to `true`.
 Internally, _Testcontainers for Go_ automatically creates a hash of the container request and adds it as a container label. Two labels are added:
 
 - `org.testcontainers.hash` - the hash of the container request.
 - `org.testcontainers.copied_files.hash` - the hash of the files copied to the container using the `Files` field in the container request.
 
 !!!info
-	Only the files copied in the container request will be checked for reuse. If you copy a file to a container after it has been created, as in the example below, the container will still be reused, because the original request has not changed.
+	Only the files copied in the container request will be checked for reuse. If you copy a file to a container after it has been created, as in the example below, the container will still be reused, because the original request has not changed. Directories added in the `Files` field are not included in the hash, to avoid performance issues calculating the hash of large directories.
 
-If there is no container with those two labels matching the hash values, the function will create a new container. Otherwise, it will reuse the existing container.
+If there is no container with those two labels matching the hash values, _Testcontainers for Go_ creates a new container. Otherwise, it reuses the existing one.
 
-This behaviour persists across multiple test runs, as long as the container request remains the same. Ryuk the resource reaper won't terminate that container if it is marked for reuse, as it won't match the prune conditions used by Ryuk.
+This behaviour persists across multiple test runs, as long as the container request remains the same. Ryuk the resource reaper does not terminate that container if it is marked for reuse, as it does not match the prune conditions used by Ryuk. To know more about Ryuk, please read the [Garbage Collector](/features/garbage_collector#ryuk) documentation.
 
 ### Reuse example
 

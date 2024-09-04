@@ -139,7 +139,7 @@ In the case you need to retrieve the network name, you can use the `Networks(ctx
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-If you want to reuse a container across different test executions, you can use `testcontainers.WithReuse` option. This option will keep the container running after the test execution, and it will be reused by any other test sharing the same `ContainerRequest`:
+If you want to reuse a container across different test executions, you can use `testcontainers.WithReuse` option. This option will keep the container running after the test execution, so it can be reused by any other test sharing the same `ContainerRequest`. As a result, the container is not terminated by Ryuk.
 
 ```golang
 postgres, err = postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithReuse())
