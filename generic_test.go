@@ -18,6 +18,7 @@ var reusableReq = ContainerRequest{
 	Image:        nginxDelayedImage,
 	ExposedPorts: []string{nginxDefaultPort},
 	WaitingFor:   wait.ForListeningPort(nginxDefaultPort), // default startupTimeout is 60s
+	Reuse:        true,
 }
 
 func TestGenericReusableContainer_reused(t *testing.T) {
@@ -35,13 +36,6 @@ func TestGenericReusableContainer_reused(t *testing.T) {
 	copiedFileName := "hello_copy.sh"
 	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
 	require.NoError(t, err)
-
-	// because the second container is marked for reuse, the first container will be reused
-	old := reusableReq.Reuse
-	t.Cleanup(func() {
-		reusableReq.Reuse = old
-	})
-	reusableReq.Reuse = true
 
 	n2, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
@@ -73,11 +67,11 @@ func TestGenericReusableContainer_notReused(t *testing.T) {
 
 	// because the second container is not marked for reuse, a new container will be created
 	// even though the hashes are the same.
-	old := reusableReq.Reuse
+	old := reusableReq
 	t.Cleanup(func() {
-		reusableReq.Reuse = old
+		reusableReq = old
 	})
-	reusableReq.Reuse = false
+	reusableReq.Hostname = "foo"
 
 	n2, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
@@ -85,6 +79,7 @@ func TestGenericReusableContainer_notReused(t *testing.T) {
 		Started:          true,
 	})
 	require.NoError(t, err)
+	terminateContainerOnEnd(t, ctx, n2)
 
 	c, _, err := n2.Exec(ctx, []string{"/bin/sh", copiedFileName})
 	require.NoError(t, err)
@@ -167,12 +162,6 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 	}
 
 	ctx := context.Background()
-
-	old := reusableReq.Reuse
-	t.Cleanup(func() {
-		reusableReq.Reuse = old
-	})
-	reusableReq.Reuse = true
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
