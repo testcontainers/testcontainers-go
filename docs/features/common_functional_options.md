@@ -135,6 +135,18 @@ If you want to attach your containers to a throw-away network, you can use the `
 
 In the case you need to retrieve the network name, you can use the `Networks(ctx)` method of the `Container` interface, right after it's running, which returns a slice of strings with the names of the networks where the container is attached.
 
+#### WithReuse
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you want to reuse a container across different test executions, you can use `testcontainers.WithReuse` option. This option will keep the container running after the test execution, and it will be reused by any other test sharing the same `ContainerRequest`:
+
+```golang
+postgres, err = postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithReuse())
+```
+
+Please read the [Reuse containers](/features/creating_container#reusable-container) documentation for more information.
+
 #### Docker type modifiers
 
 If you need an advanced configuration for the container, you can leverage the following Docker type modifiers:
@@ -143,7 +155,7 @@ If you need an advanced configuration for the container, you can leverage the fo
 - `testcontainers.WithHostConfigModifier`
 - `testcontainers.WithEndpointSettingsModifier`
 
-Please read the [Create containers: Advanced Settings](/features/creating_container.md#advanced-settings) documentation for more information.
+Please read the [Create containers: Advanced Settings](/features/creating_container#advanced-settings) documentation for more information.
 
 #### Customising the ContainerRequest
 

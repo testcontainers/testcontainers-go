@@ -146,7 +146,7 @@ The aforementioned `GenericContainer` function and the `ContainerRequest` struct
 ## Reusable container
 
 !!!warning
-	Reusing containers is an experimental feature and you can experience some issues while using it in your tests. If you find any issue, please report it creating an issue [here](https://github.com/testcontainers/testcontainers-go/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml&title=%5BBug%5D%3A+).
+	Reusing containers is an experimental feature, so please acknowledge you can experience some issues while using it. If you find any issue, please report it [here](https://github.com/testcontainers/testcontainers-go/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml&title=%5BBug%5D%3A+).
 
 A `ReusableContainer` is a container you mark to be reused across different tests. Reusing containers works out of the box just by setting the `Reuse` field to `true`.
 Internally, _Testcontainers for Go_ automatically creates a hash of the container request and adds it as a container label. Two labels are added:
