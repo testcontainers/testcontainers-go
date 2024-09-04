@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -9,9 +10,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
+)
+
+const (
+	reusableMarkerTestLabel string = "TEST_REUSABLE_MARKER"
 )
 
 var reusableReq = ContainerRequest{
@@ -152,6 +160,24 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 	require.LessOrEqual(t, creatingCount, totalCount)
 	require.LessOrEqual(t, reusingCount, totalCount)
 	require.Equal(t, totalCount, reusingCount+creatingCount)
+
+	// cleanup the containers that could have been created in the subprocesses
+
+	cli, err := core.NewClient(context.Background())
+	require.NoError(t, err)
+
+	// We need to find the containers created in the subprocesses and terminate them.
+	// For that, we are going to search for containers with the reusable test label.
+	f := filters.NewArgs(filters.Arg("label", fmt.Sprintf("%s=%s", reusableMarkerTestLabel, "true")))
+	cs, err := cli.ContainerList(context.Background(), container.ListOptions{Filters: f})
+	require.NoError(t, err)
+	defer cli.Close()
+
+	for _, c := range cs {
+		dc, err := containerFromDockerResponse(context.Background(), c)
+		require.NoError(t, err)
+		require.NoError(t, dc.Terminate(context.Background()))
+	}
 }
 
 func createReuseContainerInSubprocess(t *testing.T) string {
@@ -174,12 +200,18 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 
 	ctx := context.Background()
 
+	// we are going to mark the container with a test label, so that we can find it later
+	req := reusableReq
+	if req.Labels == nil {
+		req.Labels = map[string]string{}
+	}
+	req.Labels[reusableMarkerTestLabel] = "true"
+
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
-		ContainerRequest: reusableReq,
+		ContainerRequest: req,
 		Started:          true,
 	})
-	t.Logf("container hash: %v", reusableReq.hash())
 	require.NoError(t, err)
 	require.True(t, nginxC.IsRunning())
 }
