@@ -321,6 +321,15 @@ func WithAfterReadyCommand(execs ...Executable) CustomizeRequestOption {
 	}
 }
 
+// WithReuse allows to reuse the container for multiple tests
+func WithReuse() CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Reuse = true // update deprecated field too
+		req.ContainerRequest.Reuse = true
+		return nil
+	}
+}
+
 // WithWaitStrategy sets the wait strategy for a container, using 60 seconds as deadline
 func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
 	return WithWaitStrategyAndDeadline(60*time.Second, strategies...)
