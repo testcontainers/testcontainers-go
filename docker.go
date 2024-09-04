@@ -1128,15 +1128,17 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		delete(req.Labels, core.LabelSessionID)
 	}
 
-	// calculate the hash at the end, right before creating the container
-	hash := req.hash()
-
 	var resp container.CreateResponse
 	if req.Reuse {
 		// we must protect the reusability of the container in the case it's invoked
 		// in a parallel execution, via ParallelContainers or t.Parallel()
 		reuseContainerMx.Lock()
 		defer reuseContainerMx.Unlock()
+
+		// calculate the hash, and add the labels, just before creating the container
+		hash := req.hash()
+		req.Labels[core.LabelContainerHash] = fmt.Sprintf("%d", hash.Hash)
+		req.Labels[core.LabelCopiedFilesHash] = fmt.Sprintf("%d", hash.FilesHash)
 
 		// in the case different test programs are creating a container with the same hash,
 		// we must check if the container is already created. For that we wait up to 5 seconds
@@ -1170,11 +1172,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	// If the container was not found by hash, create a new one
 	if resp.ID == "" {
-		// calculate the hash, and add the labels, just before creating the container
-		hash := req.hash()
-		req.Labels[core.LabelContainerHash] = fmt.Sprintf("%d", hash.Hash)
-		req.Labels[core.LabelCopiedFilesHash] = fmt.Sprintf("%d", hash.FilesHash)
-
 		err = req.creatingHook(ctx)
 		if err != nil {
 			return nil, err
