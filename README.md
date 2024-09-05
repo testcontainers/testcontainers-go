@@ -1,4 +1,4 @@
-# Testcontainers for Go
+# Testcontainers
 
 [![Main pipeline](https://github.com/testcontainers/testcontainers-go/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/testcontainers/testcontainers-go/actions/workflows/ci.yml)
 [![GoDoc Reference](https://pkg.go.dev/badge/github.com/testcontainers/testcontainers-go.svg)](https://pkg.go.dev/github.com/testcontainers/testcontainers-go)
