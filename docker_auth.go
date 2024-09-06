@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"sync"
@@ -137,26 +136,14 @@ func (c *credentialsCache) Get(hostname, configKey string) (string, string, erro
 	return user, password, nil
 }
 
-// configFileKey returns a key to use for caching credentials based on
+// configKey returns a key to use for caching credentials based on
 // the contents of the currently active config.
-func configFileKey() (string, error) {
-	configPath, err := dockercfg.ConfigPath()
+func configKey(cfg dockercfg.Config) (string, error) {
+	h := md5.New()
+	err := json.NewEncoder(h).Encode(cfg)
 	if err != nil {
 		return "", err
 	}
-
-	f, err := os.Open(configPath)
-	if err != nil {
-		return "", fmt.Errorf("open config file: %w", err)
-	}
-
-	defer f.Close()
-
-	h := md5.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", fmt.Errorf("copying config file: %w", err)
-	}
-
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
@@ -165,10 +152,11 @@ func configFileKey() (string, error) {
 func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 	cfg, err := getDockerConfig()
 	if err != nil {
-		return nil, err
+		// accept no configured registries since all might be accessible anonymously
+		return map[string]registry.AuthConfig{}, nil
 	}
 
-	configKey, err := configFileKey()
+	key, err := configKey(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +183,7 @@ func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 			switch {
 			case ac.Username == "" && ac.Password == "":
 				// Look up credentials from the credential store.
-				u, p, err := creds.Get(k, configKey)
+				u, p, err := creds.Get(k, key)
 				if err != nil {
 					results <- authConfigResult{err: err}
 					return
@@ -218,12 +206,11 @@ func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 		go func(k string) {
 			defer wg.Done()
 
-			u, p, err := creds.Get(k, configKey)
+			u, p, err := creds.Get(k, key)
 			if err != nil {
 				results <- authConfigResult{err: err}
 				return
 			}
-
 			results <- authConfigResult{
 				key: k,
 				cfg: registry.AuthConfig{

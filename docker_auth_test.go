@@ -414,4 +414,12 @@ func Test_getDockerAuthConfigs(t *testing.T) {
 		}
 		require.Equal(t, expected, got)
 	})
+
+	t.Run("none", func(t *testing.T) {
+		// make sure no config is set
+		t.Setenv("DOCKER_CONFIG", "not existing")
+		got, err := getDockerAuthConfigs()
+		require.NoError(t, err)
+		require.Empty(t, got)
+	})
 }
