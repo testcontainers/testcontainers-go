@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"sync"
@@ -137,24 +136,12 @@ func (c *credentialsCache) Get(hostname, configKey string) (string, string, erro
 	return user, password, nil
 }
 
-// configFileKey returns a key to use for caching credentials based on
+// configKey returns a key to use for caching credentials based on
 // the contents of the currently active config.
-func configFileKey() (string, error) {
-	configPath, err := dockercfg.ConfigPath()
-	if err != nil {
-		return "", err
-	}
-
-	f, err := os.Open(configPath)
-	if err != nil {
-		return "", fmt.Errorf("open config file: %w", err)
-	}
-
-	defer f.Close()
-
+func configKey(cfg *dockercfg.Config) (string, error) {
 	h := md5.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", fmt.Errorf("copying config file: %w", err)
+	if err := json.NewEncoder(h).Encode(cfg); err != nil {
+		return "", fmt.Errorf("encode config: %w", err)
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
@@ -165,10 +152,14 @@ func configFileKey() (string, error) {
 func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 	cfg, err := getDockerConfig()
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return map[string]registry.AuthConfig{}, nil
+		}
+
 		return nil, err
 	}
 
-	configKey, err := configFileKey()
+	key, err := configKey(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +186,7 @@ func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 			switch {
 			case ac.Username == "" && ac.Password == "":
 				// Look up credentials from the credential store.
-				u, p, err := creds.Get(k, configKey)
+				u, p, err := creds.Get(k, key)
 				if err != nil {
 					results <- authConfigResult{err: err}
 					return
@@ -218,7 +209,7 @@ func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 		go func(k string) {
 			defer wg.Done()
 
-			u, p, err := creds.Get(k, configKey)
+			u, p, err := creds.Get(k, key)
 			if err != nil {
 				results <- authConfigResult{err: err}
 				return
@@ -260,20 +251,20 @@ func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 // 1. the DOCKER_AUTH_CONFIG environment variable, unmarshalling it into a dockercfg.Config
 // 2. the DOCKER_CONFIG environment variable, as the path to the config file
 // 3. else it will load the default config file, which is ~/.docker/config.json
-func getDockerConfig() (dockercfg.Config, error) {
-	dockerAuthConfig := os.Getenv("DOCKER_AUTH_CONFIG")
-	if dockerAuthConfig != "" {
-		cfg := dockercfg.Config{}
-		err := json.Unmarshal([]byte(dockerAuthConfig), &cfg)
-		if err == nil {
-			return cfg, nil
+func getDockerConfig() (*dockercfg.Config, error) {
+	if env := os.Getenv("DOCKER_AUTH_CONFIG"); env != "" {
+		var cfg dockercfg.Config
+		if err := json.Unmarshal([]byte(env), &cfg); err != nil {
+			return nil, fmt.Errorf("unmarshal DOCKER_AUTH_CONFIG: %w", err)
 		}
+
+		return &cfg, nil
 	}
 
 	cfg, err := dockercfg.LoadDefaultConfig()
 	if err != nil {
-		return cfg, err
+		return nil, fmt.Errorf("load default config: %w", err)
 	}
 
-	return cfg, nil
+	return &cfg, nil
 }
