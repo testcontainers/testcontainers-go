@@ -1,10 +1,8 @@
 package wait
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"io"
 	"testing"
 	"time"
 )
@@ -26,7 +24,7 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 			strategy: ForAll(),
 			args: args{
 				ctx:    context.Background(),
-				target: NopStrategyTarget{},
+				target: NewNopStrategyTarget(),
 			},
 			wantErr: true,
 		},
@@ -41,7 +39,7 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 			),
 			args: args{
 				ctx:    context.Background(),
-				target: NopStrategyTarget{},
+				target: NewNopStrategyTarget(),
 			},
 			wantErr: true,
 		},
@@ -59,10 +57,8 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 				ForLog("docker"),
 			).WithDeadline(1 * time.Second),
 			args: args{
-				ctx: context.Background(),
-				target: NopStrategyTarget{
-					ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
-				},
+				ctx:    context.Background(),
+				target: NewNopStrategyTarget(NopTargetData("docker")),
 			},
 			wantErr: false,
 		},
@@ -80,10 +76,8 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 				ForLog("docker"),
 			).WithStartupTimeoutDefault(1 * time.Second),
 			args: args{
-				ctx: context.Background(),
-				target: NopStrategyTarget{
-					ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
-				},
+				ctx:    context.Background(),
+				target: NewNopStrategyTarget(NopTargetData("docker")),
 			},
 			wantErr: false,
 		},
@@ -101,10 +95,8 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 				ForLog("docker"),
 			).WithStartupTimeoutDefault(1 * time.Second),
 			args: args{
-				ctx: context.Background(),
-				target: NopStrategyTarget{
-					ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
-				},
+				ctx:    context.Background(),
+				target: NewNopStrategyTarget(NopTargetData("docker")),
 			},
 			wantErr: false,
 		},

@@ -1,546 +1,90 @@
-package wait
+package wait_test
 
 import (
-	"context"
-	"io"
 	"net"
-	"strconv"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 
-	"github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func TestWaitForListeningPortSucceeds(t *testing.T) {
+// testNatPort creates a new NAT port for testing.
+func testNatPort(t *testing.T) nat.Port {
+	t.Helper()
+
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer listener.Close()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, listener.Close())
+	})
 
-	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	_, port, err := net.SplitHostPort(listener.Addr().String())
+	require.NoError(t, err)
 
-	var mappedPortCount, execCount int
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			defer func() { mappedPortCount++ }()
-			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
-			}
-			return port, nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Running: true,
-			}, nil
-		},
-		ExecImpl: func(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
-			defer func() { execCount++ }()
-			if execCount == 0 {
-				return 1, nil, nil
-			}
-			return 0, nil, nil
-		},
-	}
+	natPort, err := nat.NewPort("tcp", port)
+	require.NoError(t, err)
 
-	wg := ForListeningPort("80").
-		WithStartupTimeout(5 * time.Second).
-		WithPollInterval(100 * time.Millisecond)
-
-	if err := wg.WaitUntilReady(context.Background(), target); err != nil {
-		t.Fatal(err)
-	}
+	return natPort
 }
 
-func TestWaitForExposedPortSucceeds(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer listener.Close()
+// testPortStrategy tests the given wait.Strategy with the given option.
+func testHostPortStrategy(t *testing.T, strategy wait.Strategy) {
+	t.Helper()
 
-	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testPortScenarios(t, strategy, func(t *testing.T, b *waitBuilder) *waitBuilder {
+		if b.NoTCP() {
+			// No TCP ports so listener needed.
+			return b
+		}
 
-	var mappedPortCount, execCount int
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"80": []nat.PortBinding{
-								{
-									HostIP:   "0.0.0.0",
-									HostPort: port.Port(),
-								},
-							},
-						},
-					},
-				},
-			}, nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			defer func() { mappedPortCount++ }()
-			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
-			}
-			return port, nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Running: true,
-			}, nil
-		},
-		ExecImpl: func(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
-			defer func() { execCount++ }()
-			if execCount == 0 {
-				return 1, nil, nil
-			}
-			return 0, nil, nil
-		},
-	}
+		port := testNatPort(t)
+		return b.MappedPorts(port).Exec(1, 0)
+	})
 
-	wg := ForExposedPort().
-		WithStartupTimeout(5 * time.Second).
-		WithPollInterval(100 * time.Millisecond)
+	t.Run("no-shell", func(t *testing.T) {
+		port := testNatPort(t)
+		newWaitBuilder().
+			MappedPorts(port).
+			Exec(126).
+			Run(t, strategy)
+	})
 
-	if err := wg.WaitUntilReady(context.Background(), target); err != nil {
-		t.Fatal(err)
-	}
+	t.Run("no-port", func(t *testing.T) {
+		strategy := &wait.HostPortStrategy{}
+		strategy = strategy.
+			WithStartupTimeout(200 * time.Millisecond).
+			WithPollInterval(10 * time.Millisecond)
+		var portErr wait.PortNotFoundErr
+		newWaitBuilder().
+			MappedPorts().
+			ErrorAs(&portErr).
+			Run(t, strategy)
+	})
 }
 
-func TestHostPortStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
-	var mappedPortCount int
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			defer func() { mappedPortCount++ }()
-			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
-			}
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				OOMKilled: true,
-			}, nil
-		},
-	}
+func TestForListeningPort(t *testing.T) {
+	strategy := wait.ForListeningPort("80").
+		WithStartupTimeout(200 * time.Millisecond).
+		WithPollInterval(10 * time.Millisecond)
 
-	wg := NewHostPortStrategy("80").
-		WithStartupTimeout(5 * time.Second).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
+	testHostPortStrategy(t, strategy)
 }
 
-func TestHostPortStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
-	var mappedPortCount int
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			defer func() { mappedPortCount++ }()
-			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
-			}
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Status:   "exited",
-				ExitCode: 1,
-			}, nil
-		},
-	}
+func TestWaitForExposed(t *testing.T) {
+	strategy := wait.ForExposedPort().
+		WithStartupTimeout(200 * time.Millisecond).
+		WithPollInterval(10 * time.Millisecond)
 
-	wg := NewHostPortStrategy("80").
-		WithStartupTimeout(5 * time.Second).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
+	testHostPortStrategy(t, strategy)
 }
 
-func TestHostPortStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *testing.T) {
-	var mappedPortCount int
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			defer func() { mappedPortCount++ }()
-			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
-			}
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Status: "dead",
-			}, nil
-		},
-	}
+func TestNewHostPortStrategy(t *testing.T) {
+	strategy := wait.NewHostPortStrategy("80").
+		WithStartupTimeout(200 * time.Millisecond).
+		WithPollInterval(10 * time.Millisecond)
 
-	wg := NewHostPortStrategy("80").
-		WithStartupTimeout(5 * time.Second).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHostPortStrategyFailsWhileExternalCheckingDueToOOMKilledContainer(t *testing.T) {
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				OOMKilled: true,
-			}, nil
-		},
-	}
-
-	wg := NewHostPortStrategy("80").
-		WithStartupTimeout(5 * time.Second).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHostPortStrategyFailsWhileExternalCheckingDueToExitedContainer(t *testing.T) {
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Status:   "exited",
-				ExitCode: 1,
-			}, nil
-		},
-	}
-
-	wg := NewHostPortStrategy("80").
-		WithStartupTimeout(5 * time.Second).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHostPortStrategyFailsWhileExternalCheckingDueToUnexpectedContainerStatus(t *testing.T) {
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Status: "dead",
-			}, nil
-		},
-	}
-
-	wg := NewHostPortStrategy("80").
-		WithStartupTimeout(5 * time.Second).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHostPortStrategyFailsWhileInternalCheckingDueToOOMKilledContainer(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer listener.Close()
-
-	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var stateCount int
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return port, nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			defer func() { stateCount++ }()
-			if stateCount == 0 {
-				return &types.ContainerState{
-					Running: true,
-				}, nil
-			}
-			return &types.ContainerState{
-				OOMKilled: true,
-			}, nil
-		},
-	}
-
-	wg := NewHostPortStrategy("80").
-		WithStartupTimeout(5 * time.Second).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer listener.Close()
-
-	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var stateCount int
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return port, nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			defer func() { stateCount++ }()
-			if stateCount == 0 {
-				return &types.ContainerState{
-					Running: true,
-				}, nil
-			}
-			return &types.ContainerState{
-				Status:   "exited",
-				ExitCode: 1,
-			}, nil
-		},
-	}
-
-	wg := NewHostPortStrategy("80").
-		WithStartupTimeout(5 * time.Second).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatus(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer listener.Close()
-
-	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var stateCount int
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return port, nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			defer func() { stateCount++ }()
-			if stateCount == 0 {
-				return &types.ContainerState{
-					Running: true,
-				}, nil
-			}
-			return &types.ContainerState{
-				Status: "dead",
-			}, nil
-		},
-	}
-
-	wg := NewHostPortStrategy("80").
-		WithStartupTimeout(5 * time.Second).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer listener.Close()
-
-	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"80": []nat.PortBinding{
-								{
-									HostIP:   "0.0.0.0",
-									HostPort: port.Port(),
-								},
-							},
-						},
-					},
-				},
-			}, nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return port, nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Running: true,
-			}, nil
-		},
-		ExecImpl: func(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
-			// This is the error that would be returned if the shell is not installed.
-			return 126, nil, nil
-		},
-	}
-
-	wg := NewHostPortStrategy("80").
-		WithStartupTimeout(5 * time.Second).
-		WithPollInterval(100 * time.Millisecond)
-
-	if err := wg.WaitUntilReady(context.Background(), target); err != nil {
-		t.Fatal(err)
-	}
+	testHostPortStrategy(t, strategy)
 }
