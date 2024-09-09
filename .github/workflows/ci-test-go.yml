@@ -85,13 +85,25 @@ jobs:
           #           takes precedence over all other caching options.
           skip-cache: true
 
+      - name: generate
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
+        working-directory: ./${{ inputs.project-directory }}
+        shell: bash
+        run: |
+          make generate
+          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
+
       - name: modVerify
         working-directory: ./${{ inputs.project-directory }}
         run: go mod verify
 
       - name: modTidy
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
         working-directory: ./${{ inputs.project-directory }}
-        run: make tidy
+        shell: bash
+        run: |
+          make tidy
+          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
 
       - name: ensure compilation
         working-directory: ./${{ inputs.project-directory }}
