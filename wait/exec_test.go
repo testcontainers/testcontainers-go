@@ -102,6 +102,10 @@ func (st mockExecTarget) State(_ context.Context) (*types.ContainerState, error)
 	return nil, errors.New("not implemented")
 }
 
+func (st mockExecTarget) CopyFileFromContainer(_ context.Context, _ string) (io.ReadCloser, error) {
+	return nil, errors.New("not implemented")
+}
+
 func TestExecStrategyWaitUntilReady(t *testing.T) {
 	target := mockExecTarget{}
 	wg := wait.NewExecStrategy([]string{"true"}).

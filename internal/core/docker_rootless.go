@@ -53,18 +53,24 @@ func rootlessDockerSocketPath(_ context.Context) (string, error) {
 		rootlessSocketPathFromRunDir,
 	}
 
-	outerErr := ErrRootlessDockerNotFound
+	var errs []error
 	for _, socketPathFn := range socketPathFns {
 		s, err := socketPathFn()
 		if err != nil {
-			outerErr = fmt.Errorf("%w: %w", outerErr, err)
+			if !isHostNotSet(err) {
+				errs = append(errs, err)
+			}
 			continue
 		}
 
 		return DockerSocketSchema + s, nil
 	}
 
-	return "", outerErr
+	if len(errs) > 0 {
+		return "", errors.Join(errs...)
+	}
+
+	return "", ErrRootlessDockerNotFound
 }
 
 func fileExists(f string) bool {

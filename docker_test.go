@@ -2280,3 +2280,30 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 		})
 	}
 }
+
+func TestCustomPrefixTrailingSlashIsProperlyRemovedIfPresent(t *testing.T) {
+	hubPrefixWithTrailingSlash := "public.ecr.aws/"
+	dockerImage := "amazonlinux/amazonlinux:2023"
+
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image:             dockerImage,
+		ImageSubstitutors: []ImageSubstitutor{newPrependHubRegistry(hubPrefixWithTrailingSlash)},
+	}
+
+	c, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		terminateContainerOnEnd(t, ctx, c)
+	}()
+
+	// enforce the concrete type, as GenericContainer returns an interface,
+	// which will be changed in future implementations of the library
+	dockerContainer := c.(*DockerContainer)
+	assert.Equal(t, fmt.Sprintf("%s%s", hubPrefixWithTrailingSlash, dockerImage), dockerContainer.Image)
+}

@@ -3,7 +3,7 @@ module github.com/testcontainers/testcontainers-go/modules/milvus
 go 1.22
 
 require (
-	github.com/milvus-io/milvus-sdk-go/v2 v2.3.6
+	github.com/milvus-io/milvus-sdk-go/v2 v2.4.0
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.33.0
 )
@@ -39,7 +39,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
-	github.com/milvus-io/milvus-proto/go-api/v2 v2.3.5 // indirect
+	github.com/milvus-io/milvus-proto/go-api/v2 v2.4.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
