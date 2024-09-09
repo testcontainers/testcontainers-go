@@ -11,6 +11,7 @@ require (
 	github.com/docker/go-connections v0.5.0
 	github.com/google/uuid v1.6.0
 	github.com/magiconair/properties v1.8.7
+	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/moby/patternmatcher v0.6.0
 	github.com/moby/term v0.5.0
 	github.com/opencontainers/image-spec v1.1.0

@@ -5,12 +5,14 @@ import (
 )
 
 const (
-	LabelBase      = "org.testcontainers"
-	LabelLang      = LabelBase + ".lang"
-	LabelReaper    = LabelBase + ".reaper"
-	LabelRyuk      = LabelBase + ".ryuk"
-	LabelSessionID = LabelBase + ".sessionId"
-	LabelVersion   = LabelBase + ".version"
+	LabelBase            = "org.testcontainers"
+	LabelLang            = LabelBase + ".lang"
+	LabelContainerHash   = LabelBase + ".hash"
+	LabelCopiedFilesHash = LabelBase + ".copied_files.hash"
+	LabelReaper          = LabelBase + ".reaper"
+	LabelRyuk            = LabelBase + ".ryuk"
+	LabelSessionID       = LabelBase + ".sessionId"
+	LabelVersion         = LabelBase + ".version"
 )
 
 func DefaultLabels(sessionID string) map[string]string {
