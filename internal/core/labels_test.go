@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMergeCustomLabels(t *testing.T) {
@@ -16,7 +17,7 @@ func TestMergeCustomLabels(t *testing.T) {
 		err := MergeCustomLabels(dst, src)
 
 		// --- Then ---
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, map[string]string{"A": "1", "B": "X", "C": "3"}, dst)
 	})
 
@@ -30,7 +31,7 @@ func TestMergeCustomLabels(t *testing.T) {
 
 		// --- Then ---
 		want := `cannot use prefix "org.testcontainers" for custom labels`
-		assert.Error(t, err, want)
+		require.Error(t, err, want)
 		assert.Equal(t, map[string]string{"A": "1", "B": "2"}, dst)
 	})
 }
