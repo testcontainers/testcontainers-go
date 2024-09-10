@@ -397,64 +397,6 @@ func (_c *mockStrategyTarget_MappedPort_Call) RunAndReturn(run func(context.Cont
 	return _c
 }
 
-// Ports provides a mock function with given fields: ctx
-func (_m *mockStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
-	ret := _m.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Ports")
-	}
-
-	var r0 nat.PortMap
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (nat.PortMap, error)); ok {
-		return rf(ctx)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context) nat.PortMap); ok {
-		r0 = rf(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(nat.PortMap)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// mockStrategyTarget_Ports_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Ports'
-type mockStrategyTarget_Ports_Call struct {
-	*mock.Call
-}
-
-// Ports is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *mockStrategyTarget_Expecter) Ports(ctx interface{}) *mockStrategyTarget_Ports_Call {
-	return &mockStrategyTarget_Ports_Call{Call: _e.mock.On("Ports", ctx)}
-}
-
-func (_c *mockStrategyTarget_Ports_Call) Run(run func(ctx context.Context)) *mockStrategyTarget_Ports_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
-	})
-	return _c
-}
-
-func (_c *mockStrategyTarget_Ports_Call) Return(_a0 nat.PortMap, _a1 error) *mockStrategyTarget_Ports_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *mockStrategyTarget_Ports_Call) RunAndReturn(run func(context.Context) (nat.PortMap, error)) *mockStrategyTarget_Ports_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // State provides a mock function with given fields: _a0
 func (_m *mockStrategyTarget) State(_a0 context.Context) (*types.ContainerState, error) {
 	ret := _m.Called(_a0)
