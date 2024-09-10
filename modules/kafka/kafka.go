@@ -20,7 +20,7 @@ const (
 	// starterScript {
 	starterScriptContent = `#!/bin/bash
 source /etc/confluent/docker/bash-config
-export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://%s:%d,BROKER://%s:9092
+export KAFKA_ADVERTISED_LISTENERS=%s
 echo Starting Kafka KRaft mode
 sed -i '/KAFKA_ZOOKEEPER_CONNECT/d' /etc/confluent/docker/configure
 echo 'kafka-storage format --ignore-formatted -t "$(kafka-storage random-uuid)" -c /etc/kafka/kafka.properties' >> /etc/confluent/docker/configure
@@ -34,6 +34,13 @@ echo '' > /etc/confluent/docker/ensure
 type KafkaContainer struct {
 	testcontainers.Container
 	ClusterID string
+	Listeners KafkaListener
+}
+
+type KafkaListener struct {
+	Name string
+	Host string
+	Port string
 }
 
 // Deprecated: use Run instead
@@ -49,10 +56,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ExposedPorts: []string{string(publicPort)},
 		Env: map[string]string{
 			// envVars {
-			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT",
-			"KAFKA_INTER_BROKER_LISTENER_NAME":               "BROKER",
+			"KAFKA_LISTENERS":                                "EXTERNAL://0.0.0.0:9093,INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
+			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "EXTERNAL://0.0.0.0:9093,INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
+			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT",
+			"KAFKA_INTER_BROKER_LISTENER_NAME":               "INTERNAL",
 			"KAFKA_BROKER_ID":                                "1",
 			"KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR":         "1",
 			"KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS":             "1",
@@ -68,7 +75,35 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Entrypoint: []string{"sh"},
 		// this CMD will wait for the starter script to be copied into the container and then execute it
 		Cmd: []string{"-c", "while [ ! -f " + starterScript + " ]; do sleep 0.1; done; bash " + starterScript},
-		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+	}
+
+	genericContainerReq := testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	settings := defaultOptions()
+	for _, opt := range opts {
+		if apply, ok := opt.(Option); ok {
+			apply(&settings)
+		}
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := trimValidateListeners(settings.Listeners); err != nil {
+		return nil, fmt.Errorf("listeners validation: %w", err)
+	}
+
+	// apply envs for listeners
+	envChange := editEnvsForListeners(settings.Listeners)
+	for key, item := range envChange {
+		genericContainerReq.Env[key] = item
+	}
+
+	genericContainerReq.ContainerRequest.LifecycleHooks =
+		[]testcontainers.ContainerLifecycleHooks{
 			{
 				PostStarts: []testcontainers.ContainerHook{
 					// Use a single hook to copy the starter script and wait for
@@ -76,7 +111,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 					// if the starter script fails to copy.
 					func(ctx context.Context, c testcontainers.Container) error {
 						// 1. copy the starter script into the container
-						if err := copyStarterScript(ctx, c); err != nil {
+						if err := copyStarterScript(ctx, c, &settings); err != nil {
 							return fmt.Errorf("copy starter script: %w", err)
 						}
 
@@ -85,19 +120,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 					},
 				},
 			},
-		},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
 		}
-	}
 
 	err := validateKRaftVersion(genericContainerReq.Image)
 	if err != nil {
@@ -116,32 +139,70 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return &KafkaContainer{Container: container, ClusterID: clusterID}, nil
 }
 
+func trimValidateListeners(listeners []KafkaListener) error {
+	// Trim
+	for i := 0; i < len(listeners); i++ {
+		listeners[i].Name = strings.ToUpper(strings.Trim(listeners[i].Name, " "))
+		listeners[i].Host = strings.Trim(listeners[i].Host, " ")
+		listeners[i].Port = strings.Trim(listeners[i].Port, " ")
+	}
+
+	// Validate
+	var ports map[string]bool = make(map[string]bool, len(listeners)+2)
+	var names map[string]bool = make(map[string]bool, len(listeners)+2)
+
+	// check for default listeners
+	ports["9094"] = true
+	ports["9093"] = true
+
+	// check for default listeners
+	names["CONTROLLER"] = true
+	names["EXTERNAL"] = true
+
+	for _, item := range listeners {
+		if names[item.Name] {
+			return fmt.Errorf("duplicate of listener name: %s", item.Name)
+		}
+		names[item.Name] = true
+
+		if ports[item.Port] {
+			return fmt.Errorf("duplicate of listener port: %s", item.Port)
+		}
+		ports[item.Port] = true
+	}
+
+	return nil
+}
+
 // copyStarterScript copies the starter script into the container.
-func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
+func copyStarterScript(ctx context.Context, c testcontainers.Container, settings *options) error {
 	if err := wait.ForListeningPort(publicPort).
 		SkipInternalCheck().
 		WaitUntilReady(ctx, c); err != nil {
 		return fmt.Errorf("wait for exposed port: %w", err)
 	}
 
-	host, err := c.Host(ctx)
-	if err != nil {
-		return fmt.Errorf("host: %w", err)
+	if len(settings.Listeners) == 0 {
+		defaultInternal, err := internalListener(ctx, c)
+		if err != nil {
+			return fmt.Errorf("can't create default internal listener: %w", err)
+		}
+		settings.Listeners = append(settings.Listeners, defaultInternal)
 	}
 
-	inspect, err := c.Inspect(ctx)
+	defaultExternal, err := externalListener(ctx, c)
 	if err != nil {
-		return fmt.Errorf("inspect: %w", err)
+		return fmt.Errorf("can't create default external listener: %w", err)
 	}
 
-	hostname := inspect.Config.Hostname
+	settings.Listeners = append(settings.Listeners, defaultExternal)
 
-	port, err := c.MappedPort(ctx, publicPort)
-	if err != nil {
-		return fmt.Errorf("mapped port: %w", err)
+	var advertised []string
+	for _, item := range settings.Listeners {
+		advertised = append(advertised, fmt.Sprintf("%s://%s:%s", item.Name, item.Host, item.Port))
 	}
 
-	scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname)
+	scriptContent := fmt.Sprintf(starterScriptContent, strings.Join(advertised, ","))
 
 	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755); err != nil {
 		return fmt.Errorf("copy to container: %w", err)
@@ -150,12 +211,43 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 	return nil
 }
 
-func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["CLUSTER_ID"] = clusterID
-
-		return nil
+func editEnvsForListeners(listeners []KafkaListener) map[string]string {
+	if len(listeners) == 0 {
+		// no change
+		return map[string]string{}
 	}
+
+	envs := map[string]string{
+		"KAFKA_LISTENERS":                      "CONTROLLER://0.0.0.0:9094, EXTERNAL://0.0.0.0:9093",
+		"KAFKA_REST_BOOTSTRAP_SERVERS":         "CONTROLLER://0.0.0.0:9094, EXTERNAL://0.0.0.0:9093",
+		"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "CONTROLLER:PLAINTEXT, EXTERNAL:PLAINTEXT",
+	}
+
+	// expect first listener has common network between kafka instances
+	envs["KAFKA_INTER_BROKER_LISTENER_NAME"] = listeners[0].Name
+
+	// expect small number of listeners, so joins is okay
+	for _, item := range listeners {
+		envs["KAFKA_LISTENERS"] = strings.Join(
+			[]string{
+				envs["KAFKA_LISTENERS"],
+				fmt.Sprintf("%s://0.0.0.0:%s", item.Name, item.Port),
+			},
+			",",
+		)
+
+		envs["KAFKA_REST_BOOTSTRAP_SERVERS"] = envs["KAFKA_LISTENERS"]
+
+		envs["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = strings.Join(
+			[]string{
+				envs["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"],
+				item.Name + ":" + "PLAINTEXT",
+			},
+			",",
+		)
+	}
+
+	return envs
 }
 
 // Brokers retrieves the broker connection strings from Kafka with only one entry,

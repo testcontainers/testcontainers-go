@@ -109,3 +109,111 @@ func TestValidateKRaftVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestTrimValidateListeners(t *testing.T) {
+
+	tests := []struct {
+		name        string
+		listeners   []KafkaListener
+		wantErr     bool
+		description string
+	}{
+		{
+			listeners: []KafkaListener{
+				{
+					Name: "INTERNAL",
+					Host: "kafka",
+					Port: "9093",
+				},
+			},
+			wantErr:     true,
+			description: "expected to fail due to reserved listener port duplication",
+		},
+		{
+			listeners: []KafkaListener{
+				{
+					Name: "INTERNAL",
+					Host: "kafka",
+					Port: "9094",
+				},
+			},
+			wantErr:     true,
+			description: "expected to fail due to reserved listener port duplication",
+		},
+		{
+			listeners: []KafkaListener{
+				{
+					Name: "  cOnTrOller   ",
+					Host: "kafka",
+					Port: "9092",
+				},
+			},
+			wantErr:     true,
+			description: "expected to fail due to reserved listener name CONTROLLER duplication",
+		},
+		{
+			listeners: []KafkaListener{
+				{
+					Name: "external",
+					Host: "kafka",
+					Port: "9092",
+				},
+			},
+			wantErr:     true,
+			description: "expected to fail due to reserved listener name EXTERNAL duplication",
+		},
+		{
+			listeners: []KafkaListener{
+				{
+					Name: "test",
+					Host: "kafka",
+					Port: "9092",
+				},
+				{
+					Name: "test2",
+					Host: "kafka",
+					Port: "9092",
+				},
+			},
+			wantErr:     true,
+			description: "expected to fail due to port duplication",
+		},
+		{
+			listeners: []KafkaListener{
+				{
+					Name: "test",
+					Host: "kafka",
+					Port: "9092",
+				},
+				{
+					Name: "test",
+					Host: "kafka",
+					Port: "9095",
+				},
+			},
+			wantErr:     true,
+			description: "expected to fail due to name duplication",
+		},
+		{
+			listeners: []KafkaListener{
+				{
+					Name: "test",
+					Host: "kafka",
+					Port: "9095",
+				},
+			},
+			wantErr:     false,
+			description: "expected no errors",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			err := trimValidateListeners(test.listeners)
+
+			if test.wantErr != (err != nil) {
+				t.Fatalf(test.description)
+			}
+		})
+	}
+}
