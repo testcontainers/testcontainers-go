@@ -1,6 +1,7 @@
 package wait
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"time"
@@ -42,6 +43,32 @@ func (ws *NopStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 	return ws.waitUntilReady(ctx, target)
 }
 
+// NopStrategyTargetOption is a functional option for customising a NopStrategyTarget.
+type NopStrategyTargetOption func(*NopStrategyTarget)
+
+// NopTargetData sets the ReaderCloser to read from data.
+func NopTargetData(data string) NopStrategyTargetOption {
+	return func(target *NopStrategyTarget) {
+		target.ReaderCloser = io.NopCloser(bytes.NewBufferString(data))
+	}
+}
+
+// NewNopStrategyTarget returns a fully functional NopStrategyTarget which can be
+// used in tests and customised using the provided options.
+func NewNopStrategyTarget(options ...NopStrategyTargetOption) *NopStrategyTarget {
+	s := &NopStrategyTarget{
+		ReaderCloser:   io.NopCloser(new(bytes.Buffer)),
+		ContainerState: types.ContainerState{Running: true},
+	}
+
+	for _, option := range options {
+		option(s)
+	}
+
+	return s
+}
+
+// NopStrategyTarget is a fully functional StrategyTarget which can be used in tests.
 type NopStrategyTarget struct {
 	ReaderCloser   io.ReadCloser
 	ContainerState types.ContainerState

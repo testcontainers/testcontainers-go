@@ -10,13 +10,14 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -473,457 +474,69 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 	}
 }
 
-func TestHttpStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
-	var mappedPortCount int
-	target := &wait.MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			defer func() { mappedPortCount++ }()
-			if mappedPortCount == 0 {
-				return "", wait.ErrPortNotFound
-			}
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				OOMKilled: true,
-			}, nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
-							},
-						},
-					},
-				},
-			}, nil
-		},
+// testForHTTP is a helper function to test the HTTP strategy.
+func testForHTTP(t *testing.T, strategy wait.Strategy) {
+	udpPorts := nat.PortMap{
+		"80/udp": []nat.PortBinding{{
+			HostIP:   hostAddress,
+			HostPort: defaultHostPort,
+		}},
 	}
 
-	wg := wait.ForHTTP("/").
-		WithStartupTimeout(500 * time.Millisecond).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
+	testPortScenarios(t, strategy, func(t *testing.T, b *waitBuilder) *waitBuilder {
+		if b.NoTCP() {
+			// No TCP ports so no HTTP server needed.
+			return b
 		}
 
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
+		// Start a HTTP server and update the mapped ports.
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		t.Cleanup(svr.Close)
+
+		_, port, err := net.SplitHostPort(svr.Listener.Addr().String())
+		require.NoError(t, err)
+
+		// Maintain SendingRequest state.
+		if b.Ports() == 2 {
+			return b.MappedPorts("", nat.Port(port))
 		}
-	}
+
+		return b.MappedPorts(nat.Port(port))
+	})
+
+	t.Run("getting-port/only-udp-ports", func(t *testing.T) {
+		var portErr wait.PortNotFoundErr
+		newWaitBuilder().
+			InternalPort("80/udp").
+			InspectPortMap(udpPorts).
+			ErrorAs(&portErr).Run(t, strategy)
+	})
+
+	t.Run("sending-request/only-udp-ports", func(t *testing.T) {
+		var portErr wait.PortNotFoundErr
+		newWaitBuilder().
+			InternalPort("80/udp").
+			InspectPortMap(udpPorts).
+			SendingRequest(true).
+			ErrorAs(&portErr).Run(t, strategy)
+	})
 }
 
-func TestHttpStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
-	var mappedPortCount int
-	target := &wait.MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			defer func() { mappedPortCount++ }()
-			if mappedPortCount == 0 {
-				return "", wait.ErrPortNotFound
-			}
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Status:   "exited",
-				ExitCode: 1,
-			}, nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
-							},
-						},
-					},
-				},
-			}, nil
-		},
-	}
+func TestForHTTP(t *testing.T) {
+	t.Run("no-port", func(t *testing.T) {
+		strategy := wait.ForHTTP("/").
+			WithStartupTimeout(200 * time.Millisecond).
+			WithPollInterval(10 * time.Millisecond)
+		testForHTTP(t, strategy)
+	})
 
-	wg := wait.ForHTTP("/").
-		WithStartupTimeout(500 * time.Millisecond).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHttpStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *testing.T) {
-	var mappedPortCount int
-	target := &wait.MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			defer func() { mappedPortCount++ }()
-			if mappedPortCount == 0 {
-				return "", wait.ErrPortNotFound
-			}
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Status: "dead",
-			}, nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
-							},
-						},
-					},
-				},
-			}, nil
-		},
-	}
-
-	wg := wait.ForHTTP("/").
-		WithStartupTimeout(500 * time.Millisecond).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHTTPStrategyFailsWhileRequestSendingDueToOOMKilledContainer(t *testing.T) {
-	target := &wait.MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				OOMKilled: true,
-			}, nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
-							},
-						},
-					},
-				},
-			}, nil
-		},
-	}
-
-	wg := wait.ForHTTP("/").
-		WithStartupTimeout(500 * time.Millisecond).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHttpStrategyFailsWhileRequestSendingDueToExitedContainer(t *testing.T) {
-	target := &wait.MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Status:   "exited",
-				ExitCode: 1,
-			}, nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
-							},
-						},
-					},
-				},
-			}, nil
-		},
-	}
-
-	wg := wait.ForHTTP("/").
-		WithStartupTimeout(500 * time.Millisecond).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHttpStrategyFailsWhileRequestSendingDueToUnexpectedContainerStatus(t *testing.T) {
-	target := &wait.MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Status: "dead",
-			}, nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
-							},
-						},
-					},
-				},
-			}, nil
-		},
-	}
-
-	wg := wait.ForHTTP("/").
-		WithStartupTimeout(500 * time.Millisecond).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
-	var mappedPortCount int
-	target := &wait.MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			defer func() { mappedPortCount++ }()
-			if mappedPortCount == 0 {
-				return "", wait.ErrPortNotFound
-			}
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Status:  "running",
-				Running: true,
-			}, nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{},
-					},
-				},
-			}, nil
-		},
-	}
-
-	wg := wait.ForHTTP("/").
-		WithStartupTimeout(500 * time.Millisecond).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
-	var mappedPortCount int
-	target := &wait.MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			defer func() { mappedPortCount++ }()
-			if mappedPortCount == 0 {
-				return "", wait.ErrPortNotFound
-			}
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Running: true,
-				Status:  "running",
-			}, nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/udp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
-							},
-						},
-					},
-				},
-			}, nil
-		},
-	}
-
-	wg := wait.ForHTTP("/").
-		WithStartupTimeout(500 * time.Millisecond).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
-}
-
-func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.T) {
-	var mappedPortCount int
-	target := &wait.MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			defer func() { mappedPortCount++ }()
-			if mappedPortCount == 0 {
-				return "", wait.ErrPortNotFound
-			}
-			return "49152", nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Running: true,
-				Status:  "running",
-			}, nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{},
-						},
-					},
-				},
-			}, nil
-		},
-	}
-
-	wg := wait.ForHTTP("/").
-		WithStartupTimeout(500 * time.Millisecond).
-		WithPollInterval(100 * time.Millisecond)
-
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
+	t.Run("with-port", func(t *testing.T) {
+		strategy := wait.ForHTTP("/").
+			WithPort("80/tcp").
+			WithStartupTimeout(200 * time.Millisecond).
+			WithPollInterval(10 * time.Millisecond)
+		testForHTTP(t, strategy)
+	})
 }

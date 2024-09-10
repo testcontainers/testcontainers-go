@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/docker/go-connections/nat"
@@ -33,6 +32,11 @@ type HostPortStrategy struct {
 	// a shell is not available in the container or when the container doesn't bind
 	// the port internally until additional conditions are met.
 	skipInternalCheck bool
+
+	// forceIPv4LocalHost is a flag to force the use of IPv4 localhost address
+	// instead of the default localhost address.
+
+	forceIPv4LocalHost bool
 }
 
 // NewHostPortStrategy constructs a default host port strategy that waits for the given
@@ -82,6 +86,15 @@ func (hp *HostPortStrategy) WithPollInterval(pollInterval time.Duration) *HostPo
 	return hp
 }
 
+// WithForcedIPv4LocalHost forces usage of localhost to be ipv4 127.0.0.1
+// to avoid ipv6 docker bugs:
+// - https://github.com/moby/moby/issues/42442
+// - https://github.com/moby/moby/issues/42375
+func (hp *HostPortStrategy) WithForcedIPv4LocalHost() *HostPortStrategy {
+	hp.forceIPv4LocalHost = true
+	return hp
+}
+
 func (hp *HostPortStrategy) Timeout() *time.Duration {
 	return hp.timeout
 }
@@ -96,37 +109,77 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	ipAddress, err := target.Host(ctx)
+	port, err := hostPortMapping(ctx, hp.Port, hp.PollInterval, hp.forceIPv4LocalHost, "tcp", target)
 	if err != nil {
 		return err
 	}
 
-	waitInterval := hp.PollInterval
+	if err := externalCheck(ctx, port, target, hp.PollInterval); err != nil {
+		return err
+	}
 
-	internalPort := hp.Port
-	if internalPort == "" {
-		inspect, err := target.Inspect(ctx)
+	if hp.skipInternalCheck {
+		return nil
+	}
+
+	if err = internalCheck(ctx, port.InternalPort, target, hp.PollInterval); err != nil {
+		if errors.Is(errShellNotExecutable, err) {
+			log.Println("Shell not executable in container, only external port check will be performed")
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
+}
+
+func externalCheck(ctx context.Context, port *portDetails, target StrategyTarget, waitInterval time.Duration) error {
+	proto := port.InternalPort.Proto()
+	dialer := net.Dialer{}
+	address := port.Address()
+	for {
+		conn, err := dialer.DialContext(ctx, proto, address)
 		if err != nil {
-			return err
-		}
-
-		for port := range inspect.NetworkSettings.Ports {
-			if internalPort == "" || port.Int() < internalPort.Int() {
-				internalPort = port
+			var v *net.OpError
+			if errors.As(err, &v) {
+				var v2 *os.SyscallError
+				if errors.As(v.Err, &v2) {
+					if isConnRefusedErr(v2.Err) {
+						select {
+						case <-ctx.Done():
+							return fmt.Errorf("%w: %w", ctx.Err(), err)
+						case <-time.After(waitInterval):
+							if err := checkTarget(ctx, target); err != nil {
+								return err
+							}
+						}
+						continue
+					}
+				}
 			}
+			return fmt.Errorf("dial: %w", err)
 		}
+
+		conn.Close()
+		return nil
 	}
+}
 
-	if internalPort == "" {
-		return fmt.Errorf("no port to wait for")
-	}
+func internalCheck(ctx context.Context, internalPort nat.Port, target StrategyTarget, waitInterval time.Duration) error {
+	command := buildInternalCheckCommand(internalPort.Int())
+	for {
+		exitCode, _, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
+		if err != nil {
+			return fmt.Errorf("%w, host port waiting failed", err)
+		}
 
-	var port nat.Port
-	port, err = target.MappedPort(ctx, internalPort)
-	i := 0
-
-	for port == "" {
-		i++
+		switch exitCode {
+		case 0:
+			return nil
+		case 126:
+			return errShellNotExecutable
+		}
 
 		select {
 		case <-ctx.Done():
@@ -135,83 +188,8 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			if err := checkTarget(ctx, target); err != nil {
 				return err
 			}
-			port, err = target.MappedPort(ctx, internalPort)
-			if err != nil {
-				log.Printf("(%d) [%s] %s\n", i, port, err)
-			}
 		}
 	}
-
-	if err := externalCheck(ctx, ipAddress, port, target, waitInterval); err != nil {
-		return err
-	}
-
-	if hp.skipInternalCheck {
-		return nil
-	}
-
-	err = internalCheck(ctx, internalPort, target)
-	if err != nil && errors.Is(errShellNotExecutable, err) {
-		log.Println("Shell not executable in container, only external port check will be performed")
-	} else {
-		return err
-	}
-
-	return nil
-}
-
-func externalCheck(ctx context.Context, ipAddress string, port nat.Port, target StrategyTarget, waitInterval time.Duration) error {
-	proto := port.Proto()
-	portNumber := port.Int()
-	portString := strconv.Itoa(portNumber)
-
-	dialer := net.Dialer{}
-	address := net.JoinHostPort(ipAddress, portString)
-	for {
-		if err := checkTarget(ctx, target); err != nil {
-			return err
-		}
-		conn, err := dialer.DialContext(ctx, proto, address)
-		if err != nil {
-			var v *net.OpError
-			if errors.As(err, &v) {
-				var v2 *os.SyscallError
-				if errors.As(v.Err, &v2) {
-					if isConnRefusedErr(v2.Err) {
-						time.Sleep(waitInterval)
-						continue
-					}
-				}
-			}
-			return err
-		}
-
-		conn.Close()
-		return nil
-	}
-}
-
-func internalCheck(ctx context.Context, internalPort nat.Port, target StrategyTarget) error {
-	command := buildInternalCheckCommand(internalPort.Int())
-	for {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		if err := checkTarget(ctx, target); err != nil {
-			return err
-		}
-		exitCode, _, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
-		if err != nil {
-			return fmt.Errorf("%w, host port waiting failed", err)
-		}
-
-		if exitCode == 0 {
-			break
-		} else if exitCode == 126 {
-			return errShellNotExecutable
-		}
-	}
-	return nil
 }
 
 func buildInternalCheckCommand(internalPort int) string {

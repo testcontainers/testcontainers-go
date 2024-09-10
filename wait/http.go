@@ -10,8 +10,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/docker/go-connections/nat"
@@ -144,8 +142,7 @@ func (ws *HTTPStrategy) WithForcedIPv4LocalHost() *HTTPStrategy {
 	return ws
 }
 
-// ForHTTP is a convenience method similar to Wait.java
-// https://github.com/testcontainers/testcontainers-java/blob/1d85a3834bd937f80aad3a4cec249c027f31aeb4/core/src/main/java/org/testcontainers/containers/wait/strategy/Wait.java
+// ForHTTP is an alias for NewHTTPStrategy.
 func ForHTTP(path string) *HTTPStrategy {
 	return NewHTTPStrategy(path)
 }
@@ -164,84 +161,29 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	ipAddress, err := target.Host(ctx)
+	// TODO: Handle HTTP3 which is UDP.
+	port, err := hostPortMapping(ctx, ws.Port, ws.PollInterval, ws.ForceIPv4LocalHost, "tcp", target)
 	if err != nil {
 		return err
 	}
-	// to avoid ipv6 docker bugs https://github.com/moby/moby/issues/42442 https://github.com/moby/moby/issues/42375
-	if ws.ForceIPv4LocalHost {
-		ipAddress = strings.Replace(ipAddress, "localhost", "127.0.0.1", 1)
+
+	if err := ws.httpCheck(ctx, target, port); err != nil {
+		return err
 	}
 
-	var mappedPort nat.Port
-	if ws.Port == "" {
-		// We wait one polling interval before we grab the ports
-		// otherwise they might not be bound yet on startup.
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(ws.PollInterval):
-			// Port should now be bound so just continue.
-		}
+	return nil
+}
 
-		if err := checkTarget(ctx, target); err != nil {
-			return err
-		}
-
-		inspect, err := target.Inspect(ctx)
-		if err != nil {
-			return err
-		}
-
-		// Find the lowest numbered exposed tcp port.
-		var lowestPort nat.Port
-		var hostPort string
-		for port, bindings := range inspect.NetworkSettings.Ports {
-			if len(bindings) == 0 || port.Proto() != "tcp" {
-				continue
-			}
-
-			if lowestPort == "" || port.Int() < lowestPort.Int() {
-				lowestPort = port
-				hostPort = bindings[0].HostPort
-			}
-		}
-
-		if lowestPort == "" {
-			return errors.New("No exposed tcp ports or mapped ports - cannot wait for status")
-		}
-
-		mappedPort, _ = nat.NewPort(lowestPort.Proto(), hostPort)
-	} else {
-		mappedPort, err = target.MappedPort(ctx, ws.Port)
-
-		for mappedPort == "" {
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("%w: %w", ctx.Err(), err)
-			case <-time.After(ws.PollInterval):
-				if err := checkTarget(ctx, target); err != nil {
-					return err
-				}
-
-				mappedPort, err = target.MappedPort(ctx, ws.Port)
-			}
-		}
-
-		if mappedPort.Proto() != "tcp" {
-			return errors.New("Cannot use HTTP client on non-TCP ports")
-		}
-	}
-
+// httpCheck sets up and runs the HTTP check until it succeeds or the context is canceled.
+func (ws *HTTPStrategy) httpCheck(ctx context.Context, target StrategyTarget, port *portDetails) error {
 	switch ws.Method {
 	case http.MethodGet, http.MethodHead, http.MethodPost,
 		http.MethodPut, http.MethodPatch, http.MethodDelete,
 		http.MethodConnect, http.MethodOptions, http.MethodTrace:
-	default:
-		if ws.Method != "" {
-			return fmt.Errorf("invalid http method %q", ws.Method)
-		}
+	case "":
 		ws.Method = http.MethodGet
+	default:
+		return fmt.Errorf("invalid http method %q", ws.Method)
 	}
 
 	tripper := &http.Transport{
@@ -274,14 +216,13 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	}
 
 	client := http.Client{Transport: tripper, Timeout: time.Second}
-	address := net.JoinHostPort(ipAddress, strconv.Itoa(mappedPort.Int()))
 
 	endpoint, err := url.Parse(ws.Path)
 	if err != nil {
 		return err
 	}
 	endpoint.Scheme = proto
-	endpoint.Host = address
+	endpoint.Host = port.Address()
 
 	if ws.UserInfo != nil {
 		endpoint.User = ws.UserInfo
@@ -292,47 +233,95 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	if ws.Body != nil {
 		body, err = io.ReadAll(ws.Body)
 		if err != nil {
-			return err
+			return fmt.Errorf("read body: %w", err)
 		}
 	}
 
+	matcher := ws.matcher()
+
 	for {
+		err := ws.doRequest(ctx, &client, endpoint, body, matcher)
+		if err == nil {
+			return nil
+		}
+
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return fmt.Errorf("%w: %w", ctx.Err(), err)
 		case <-time.After(ws.PollInterval):
 			if err := checkTarget(ctx, target); err != nil {
 				return err
 			}
-			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint.String(), bytes.NewReader(body))
-			if err != nil {
-				return err
-			}
-
-			for k, v := range ws.Headers {
-				req.Header.Set(k, v)
-			}
-
-			resp, err := client.Do(req)
-			if err != nil {
-				continue
-			}
-			if ws.StatusCodeMatcher != nil && !ws.StatusCodeMatcher(resp.StatusCode) {
-				_ = resp.Body.Close()
-				continue
-			}
-			if ws.ResponseMatcher != nil && !ws.ResponseMatcher(resp.Body) {
-				_ = resp.Body.Close()
-				continue
-			}
-			if ws.ResponseHeadersMatcher != nil && !ws.ResponseHeadersMatcher(resp.Header) {
-				_ = resp.Body.Close()
-				continue
-			}
-			if err := resp.Body.Close(); err != nil {
-				continue
-			}
-			return nil
 		}
 	}
+}
+
+// warpMatcher wraps a matcher with a handler and a next matcher.
+func warpMatcher(handler, next func(resp *http.Response) error) func(resp *http.Response) error {
+	return func(resp *http.Response) error {
+		if err := handler(resp); err != nil {
+			return err
+		}
+
+		return next(resp)
+	}
+}
+
+// matcher returns a matcher function that combines all the matchers.
+func (ws *HTTPStrategy) matcher() func(resp *http.Response) error {
+	matcher := func(resp *http.Response) error {
+		return nil
+	}
+	if ws.StatusCodeMatcher == nil {
+		matcher = warpMatcher(func(resp *http.Response) error {
+			if !ws.StatusCodeMatcher(resp.StatusCode) {
+				return fmt.Errorf("status code mismatch %d", resp.StatusCode)
+			}
+			return nil
+		}, matcher)
+	}
+	if ws.ResponseMatcher == nil {
+		matcher = warpMatcher(func(resp *http.Response) error {
+			if !ws.ResponseMatcher(resp.Body) {
+				return errors.New("body mismatch")
+			}
+			return nil
+		}, matcher)
+	}
+	if ws.ResponseHeadersMatcher == nil {
+		matcher = warpMatcher(func(resp *http.Response) error {
+			if !ws.ResponseHeadersMatcher(resp.Header) {
+				return fmt.Errorf("header mismatch: %v", resp.Header)
+			}
+			return nil
+		}, matcher)
+	}
+
+	return matcher
+}
+
+// doRequest performs the actual HTTP request.
+func (ws *HTTPStrategy) doRequest(ctx context.Context, client *http.Client, endpoint *url.URL, body []byte, matcher func(resp *http.Response) error) (err error) {
+	req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint.String(), bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("new request: %w", err)
+	}
+
+	for k, v := range ws.Headers {
+		req.Header.Set(k, v)
+	}
+
+	var resp *http.Response
+	if resp, err = client.Do(req); err != nil {
+		return fmt.Errorf("do request: %w", err)
+	}
+	defer func() {
+		err = errors.Join(err, resp.Body.Close())
+	}()
+
+	if err := matcher(resp); err != nil {
+		return err
+	}
+
+	return nil
 }

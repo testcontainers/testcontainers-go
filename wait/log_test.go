@@ -1,17 +1,20 @@
-package wait
+package wait_test
 
 import (
 	"bytes"
 	"context"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const logTimeout = time.Second
+const logTimeout = time.Millisecond * 200
 
 const loremIpsum = `Lorem ipsum dolor sit amet,
 consectetur adipiscing elit.
@@ -26,21 +29,23 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit.`
 
 func TestWaitForLog(t *testing.T) {
 	t.Run("no regexp", func(t *testing.T) {
-		target := NopStrategyTarget{
-			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
+		target := wait.NopStrategyTarget{
+			ReaderCloser:   io.NopCloser(bytes.NewReader([]byte("docker"))),
+			ContainerState: types.ContainerState{Running: true},
 		}
-		wg := NewLogStrategy("docker").WithStartupTimeout(100 * time.Millisecond)
+		wg := wait.NewLogStrategy("docker").WithStartupTimeout(100 * time.Millisecond)
 		err := wg.WaitUntilReady(context.Background(), target)
 		require.NoError(t, err)
 	})
 
 	t.Run("no regexp", func(t *testing.T) {
-		target := NopStrategyTarget{
-			ReaderCloser: io.NopCloser(bytes.NewReader([]byte(loremIpsum))),
+		target := wait.NopStrategyTarget{
+			ReaderCloser:   io.NopCloser(bytes.NewReader([]byte(loremIpsum))),
+			ContainerState: types.ContainerState{Running: true},
 		}
 
 		// get all words that start with "ip", end with "m" and has a whitespace before the "ip"
-		wg := NewLogStrategy(`\sip[\w]+m`).WithStartupTimeout(100 * time.Millisecond).AsRegexp()
+		wg := wait.NewLogStrategy(`\sip[\w]+m`).WithStartupTimeout(100 * time.Millisecond).AsRegexp()
 		err := wg.WaitUntilReady(context.Background(), target)
 		require.NoError(t, err)
 	})
@@ -48,10 +53,11 @@ func TestWaitForLog(t *testing.T) {
 
 func TestWaitWithExactNumberOfOccurrences(t *testing.T) {
 	t.Run("no regexp", func(t *testing.T) {
-		target := NopStrategyTarget{
-			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker\n\rdocker"))),
+		target := wait.NopStrategyTarget{
+			ReaderCloser:   io.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker\n\rdocker"))),
+			ContainerState: types.ContainerState{Running: true},
 		}
-		wg := NewLogStrategy("docker").
+		wg := wait.NewLogStrategy("docker").
 			WithStartupTimeout(100 * time.Millisecond).
 			WithOccurrence(2)
 		err := wg.WaitUntilReady(context.Background(), target)
@@ -59,14 +65,15 @@ func TestWaitWithExactNumberOfOccurrences(t *testing.T) {
 	})
 
 	t.Run("as regexp", func(t *testing.T) {
-		target := NopStrategyTarget{
-			ReaderCloser: io.NopCloser(bytes.NewReader([]byte(loremIpsum))),
+		target := wait.NopStrategyTarget{
+			ReaderCloser:   io.NopCloser(bytes.NewReader([]byte(loremIpsum))),
+			ContainerState: types.ContainerState{Running: true},
 		}
 
 		// get texts from "ip" to the next "m".
 		// there are three occurrences of this pattern in the string:
 		// one "ipsum mauris" and two "ipsum dolor sit am"
-		wg := NewLogStrategy(`ip(.*)m`).WithStartupTimeout(100 * time.Millisecond).AsRegexp().WithOccurrence(3)
+		wg := wait.NewLogStrategy(`ip(.*)m`).WithStartupTimeout(100 * time.Millisecond).AsRegexp().WithOccurrence(3)
 		err := wg.WaitUntilReady(context.Background(), target)
 		require.NoError(t, err)
 	})
@@ -74,10 +81,11 @@ func TestWaitWithExactNumberOfOccurrences(t *testing.T) {
 
 func TestWaitWithExactNumberOfOccurrencesButItWillNeverHappen(t *testing.T) {
 	t.Run("no regexp", func(t *testing.T) {
-		target := NopStrategyTarget{
-			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker"))),
+		target := wait.NopStrategyTarget{
+			ReaderCloser:   io.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker"))),
+			ContainerState: types.ContainerState{Running: true},
 		}
-		wg := NewLogStrategy("containerd").
+		wg := wait.NewLogStrategy("containerd").
 			WithStartupTimeout(logTimeout).
 			WithOccurrence(2)
 		err := wg.WaitUntilReady(context.Background(), target)
@@ -85,13 +93,14 @@ func TestWaitWithExactNumberOfOccurrencesButItWillNeverHappen(t *testing.T) {
 	})
 
 	t.Run("as regexp", func(t *testing.T) {
-		target := NopStrategyTarget{
-			ReaderCloser: io.NopCloser(bytes.NewReader([]byte(loremIpsum))),
+		target := wait.NopStrategyTarget{
+			ReaderCloser:   io.NopCloser(bytes.NewReader([]byte(loremIpsum))),
+			ContainerState: types.ContainerState{Running: true},
 		}
 
 		// get texts from "ip" to the next "m".
 		// there are only three occurrences matching
-		wg := NewLogStrategy(`do(.*)ck.+`).WithStartupTimeout(100 * time.Millisecond).AsRegexp().WithOccurrence(4)
+		wg := wait.NewLogStrategy(`do(.*)ck.+`).WithStartupTimeout(100 * time.Millisecond).AsRegexp().WithOccurrence(4)
 		err := wg.WaitUntilReady(context.Background(), target)
 		require.Error(t, err)
 	})
@@ -99,10 +108,11 @@ func TestWaitWithExactNumberOfOccurrencesButItWillNeverHappen(t *testing.T) {
 
 func TestWaitShouldFailWithExactNumberOfOccurrences(t *testing.T) {
 	t.Run("no regexp", func(t *testing.T) {
-		target := NopStrategyTarget{
-			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker"))),
+		target := wait.NopStrategyTarget{
+			ReaderCloser:   io.NopCloser(bytes.NewReader([]byte("kubernetes\r\ndocker"))),
+			ContainerState: types.ContainerState{Running: true},
 		}
-		wg := NewLogStrategy("docker").
+		wg := wait.NewLogStrategy("docker").
 			WithStartupTimeout(logTimeout).
 			WithOccurrence(2)
 		err := wg.WaitUntilReady(context.Background(), target)
@@ -110,102 +120,53 @@ func TestWaitShouldFailWithExactNumberOfOccurrences(t *testing.T) {
 	})
 
 	t.Run("as regexp", func(t *testing.T) {
-		target := NopStrategyTarget{
-			ReaderCloser: io.NopCloser(bytes.NewReader([]byte(loremIpsum))),
+		target := wait.NopStrategyTarget{
+			ReaderCloser:   io.NopCloser(bytes.NewReader([]byte(loremIpsum))),
+			ContainerState: types.ContainerState{Running: true},
 		}
 
 		// get "Maecenas".
 		// there are only one occurrence matching
-		wg := NewLogStrategy(`^Mae[\w]?enas\s`).WithStartupTimeout(100 * time.Millisecond).AsRegexp().WithOccurrence(2)
+		wg := wait.NewLogStrategy(`^Mae[\w]?enas\s`).WithStartupTimeout(100 * time.Millisecond).AsRegexp().WithOccurrence(2)
 		err := wg.WaitUntilReady(context.Background(), target)
 		require.Error(t, err)
 	})
 }
 
-func TestWaitForLogFailsDueToOOMKilledContainer(t *testing.T) {
-	target := &MockStrategyTarget{
-		LogsImpl: func(_ context.Context) (io.ReadCloser, error) {
-			return io.NopCloser(bytes.NewReader([]byte(""))), nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				OOMKilled: true,
-			}, nil
-		},
-	}
+// testForLog tests the given strategy with different container state scenarios.
+func testForLog(t *testing.T, strategy wait.Strategy) {
+	t.Helper()
 
-	t.Run("no regexp", func(t *testing.T) {
-		wg := ForLog("docker").WithStartupTimeout(logTimeout)
-
-		err := wg.WaitUntilReady(context.Background(), target)
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		require.EqualError(t, err, expected)
+	reader := strings.NewReader("")
+	t.Run("running", func(t *testing.T) {
+		reader.Reset(loremIpsum)
+		newWaitBuilder().Logs(reader).Run(t, strategy)
 	})
 
-	t.Run("as regexp", func(t *testing.T) {
-		wg := ForLog("docker").WithStartupTimeout(logTimeout).AsRegexp()
+	t.Run("oom", func(t *testing.T) {
+		reader.Reset(loremIpsum)
+		newWaitBuilder().State(oom).Logs(reader).Run(t, strategy)
+	})
 
-		err := wg.WaitUntilReady(context.Background(), target)
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		require.EqualError(t, err, expected)
+	t.Run("exited", func(t *testing.T) {
+		reader.Reset(loremIpsum)
+		newWaitBuilder().State(exited).Logs(reader).Run(t, strategy)
+	})
+
+	t.Run("dead", func(t *testing.T) {
+		reader.Reset(loremIpsum)
+		newWaitBuilder().State(dead).Logs(reader).Run(t, strategy)
 	})
 }
 
-func TestWaitForLogFailsDueToExitedContainer(t *testing.T) {
-	target := &MockStrategyTarget{
-		LogsImpl: func(_ context.Context) (io.ReadCloser, error) {
-			return io.NopCloser(bytes.NewReader([]byte(""))), nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Status:   "exited",
-				ExitCode: 1,
-			}, nil
-		},
-	}
-
-	t.Run("no regexp", func(t *testing.T) {
-		wg := ForLog("docker").WithStartupTimeout(logTimeout)
-
-		err := wg.WaitUntilReady(context.Background(), target)
-		expected := "container exited with code 1"
-		require.EqualError(t, err, expected)
+func TestForLog(t *testing.T) {
+	t.Run("no-regexp", func(t *testing.T) {
+		strategy := wait.ForLog("ipsum").WithStartupTimeout(logTimeout)
+		testForLog(t, strategy)
 	})
 
-	t.Run("as regexp", func(t *testing.T) {
-		wg := ForLog("docker").WithStartupTimeout(logTimeout).AsRegexp()
-
-		err := wg.WaitUntilReady(context.Background(), target)
-		expected := "container exited with code 1"
-		require.EqualError(t, err, expected)
-	})
-}
-
-func TestWaitForLogFailsDueToUnexpectedContainerStatus(t *testing.T) {
-	target := &MockStrategyTarget{
-		LogsImpl: func(_ context.Context) (io.ReadCloser, error) {
-			return io.NopCloser(bytes.NewReader([]byte(""))), nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Status: "dead",
-			}, nil
-		},
-	}
-
-	t.Run("no regexp", func(t *testing.T) {
-		wg := ForLog("docker").WithStartupTimeout(logTimeout)
-
-		err := wg.WaitUntilReady(context.Background(), target)
-		expected := "unexpected container status \"dead\""
-		require.EqualError(t, err, expected)
-	})
-
-	t.Run("as regexp", func(t *testing.T) {
-		wg := ForLog("docker").WithStartupTimeout(logTimeout).AsRegexp()
-
-		err := wg.WaitUntilReady(context.Background(), target)
-		expected := "unexpected container status \"dead\""
-		require.EqualError(t, err, expected)
+	t.Run("as-regexp", func(t *testing.T) {
+		strategy := wait.ForLog("i.sum").WithStartupTimeout(logTimeout).AsRegexp()
+		testForLog(t, strategy)
 	})
 }

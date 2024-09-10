@@ -180,7 +180,7 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 	if err != nil {
 		return "", err
 	}
-	if inspect.ContainerJSONBase.HostConfig.NetworkMode == "host" {
+	if inspect.ContainerJSONBase.HostConfig.NetworkMode.IsHost() {
 		return port, nil
 	}
 
@@ -199,7 +199,7 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 		return nat.NewPort(k.Proto(), p[0].HostPort)
 	}
 
-	return "", errors.New("port not found")
+	return "", wait.PortNotFoundErr(port)
 }
 
 // Deprecated: use c.Inspect(ctx).NetworkSettings.Ports instead.

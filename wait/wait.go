@@ -13,6 +13,17 @@ import (
 	"github.com/testcontainers/testcontainers-go/exec"
 )
 
+// PortNotFoundErr is returned when a port is not found.
+type PortNotFoundErr nat.Port
+
+// Error implements error.
+func (p PortNotFoundErr) Error() string {
+	if p == "" {
+		return "unable to determine port"
+	}
+	return fmt.Sprintf("port %q not found", string(p))
+}
+
 // Strategy defines the basic interface for a Wait Strategy
 type Strategy interface {
 	WaitUntilReady(context.Context, StrategyTarget) error

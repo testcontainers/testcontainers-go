@@ -1,8 +1,10 @@
 package wait
 
 import (
+	"bufio"
+	"bytes"
 	"context"
-	"io"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -92,54 +94,74 @@ func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	length := 0
-
-LOOP:
+	var buf bytes.Buffer
+	check := ws.checkFunc()
 	for {
+		found, err := readLogs(ctx, &buf, check, target)
+		if err != nil {
+			return err
+		}
+
+		if found {
+			if err := checkTarget(ctx, target); err != nil {
+				return err
+			}
+			return nil
+		}
+
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			checkErr := checkTarget(ctx, target)
-
-			reader, err := target.Logs(ctx)
-			if err != nil {
-				time.Sleep(ws.PollInterval)
-				continue
-			}
-
-			b, err := io.ReadAll(reader)
-			if err != nil {
-				time.Sleep(ws.PollInterval)
-				continue
-			}
-
-			logs := string(b)
-
-			switch {
-			case length == len(logs) && checkErr != nil:
-				return checkErr
-			case checkLogsFn(ws, b):
-				break LOOP
-			default:
-				length = len(logs)
-				time.Sleep(ws.PollInterval)
-				continue
+			return fmt.Errorf("wait for log: %w", ctx.Err())
+		case <-time.After(ws.PollInterval):
+			if err := checkTarget(ctx, target); err != nil {
+				return err
 			}
 		}
 	}
-
-	return nil
 }
 
-func checkLogsFn(ws *LogStrategy, b []byte) bool {
-	if ws.IsRegexp {
-		re := regexp.MustCompile(ws.Log)
-		occurrences := re.FindAll(b, -1)
+// readLogs reads the logs from the target line by line and checks if the log entry is present.
+// It returns true if the log entry is found, false otherwise.
+// Logs are read until the log entry is found or the context is canceled.
+func readLogs(ctx context.Context, buf *bytes.Buffer, check func(buf *bytes.Buffer) bool, target StrategyTarget) (bool, error) {
+	reader, err := target.Logs(ctx)
+	if err != nil {
+		return false, fmt.Errorf("read logs: %w", err)
+	}
+	defer reader.Close()
 
-		return len(occurrences) >= ws.Occurrence
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		buf.Write(scanner.Bytes())
+		buf.WriteByte('\n')
+		if check(buf) {
+			return true, nil
+		}
+
+		if ctx.Err() != nil {
+			return false, fmt.Errorf("scan logs: %w", ctx.Err())
+		}
 	}
 
-	logs := string(b)
-	return strings.Count(logs, ws.Log) >= ws.Occurrence
+	if err := scanner.Err(); err != nil {
+		return false, fmt.Errorf("scan logs: %w", err)
+	}
+
+	return false, nil
+}
+
+// checkFunc returns a function that checks if the buffer contains the log entry.
+func (ws *LogStrategy) checkFunc() func(buf *bytes.Buffer) bool {
+	if ws.IsRegexp {
+		re := regexp.MustCompile(ws.Log)
+		return func(buf *bytes.Buffer) bool {
+			occurrences := re.FindAll(buf.Bytes(), ws.Occurrence)
+
+			return len(occurrences) == ws.Occurrence
+		}
+	}
+
+	return func(buf *bytes.Buffer) bool {
+		return strings.Count(buf.String(), ws.Log) >= ws.Occurrence
+	}
 }
