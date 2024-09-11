@@ -49,6 +49,13 @@ func TestMongoDB(t *testing.T) {
 				mongodb.WithReplicaSet("rs"),
 			},
 		},
+		{
+			name: "With Replica set and mongo:7",
+			img:  "mongo:7",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
