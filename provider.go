@@ -147,7 +147,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 
 	return &DockerProvider{
 		DockerProviderOptions: o,
-		host:                  core.ExtractDockerHost(ctx),
+		host:                  core.MustExtractDockerHost(ctx),
 		client:                c,
 		config:                config.Read(),
 	}, nil
