@@ -13,6 +13,13 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+type exitStatus = int
+
+const (
+	exitEaccess     exitStatus = 126 // container cmd can't be invoked (permission denied)
+	exitCmdNotFound exitStatus = 127 // container cmd not found/does not exist or invalid bind-mount
+)
+
 // Implement interface
 var (
 	_ Strategy        = (*HostPortStrategy)(nil)
@@ -20,6 +27,7 @@ var (
 )
 
 var errShellNotExecutable = errors.New("/bin/sh command not executable")
+var errShellNotFound = errors.New("/bin/sh command not found")
 
 type HostPortStrategy struct {
 	// Port is a string containing port number and protocol in the format "80/tcp"
@@ -207,10 +215,16 @@ func internalCheck(ctx context.Context, internalPort nat.Port, target StrategyTa
 			return fmt.Errorf("%w, host port waiting failed", err)
 		}
 
+		/*
+			Docker maps exit code 127 to 126, while Podman treats them separately.
+			Handle both to ensure compatibility with Docker and Podman.
+		*/
 		if exitCode == 0 {
 			break
-		} else if exitCode == 126 || exitCode == 127 {
+		} else if exitCode == exitEaccess {
 			return errShellNotExecutable
+		} else if exitCode == exitCmdNotFound {
+			return errShellNotFound
 		}
 	}
 	return nil

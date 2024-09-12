@@ -497,7 +497,7 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 		},
 		ExecImpl: func(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
 			// This is the error that would be returned if the shell is not installed.
-			return 126, nil, nil
+			return exitEaccess, nil, nil
 		},
 	}
 
