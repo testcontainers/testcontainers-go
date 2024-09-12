@@ -36,7 +36,8 @@ func main() {
 
 	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 
 	fmt.Println("ready")

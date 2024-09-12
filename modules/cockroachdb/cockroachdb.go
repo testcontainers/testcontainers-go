@@ -118,10 +118,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, req)
-	if err != nil {
-		return nil, err
+	var c *CockroachDBContainer
+	if container != nil {
+		c = &CockroachDBContainer{Container: container, opts: o}
 	}
-	return &CockroachDBContainer{Container: container, opts: o}, nil
+
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 type modiferFunc func(*testcontainers.GenericContainerRequest, options) error

@@ -290,8 +290,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				ContainerRequest: req,
 				Started:          true,
 			})
-
-			defer terminateContainerOnEnd(t, ctx, c)
+			testcontainers.CleanupContainer(t, c)
 
 			if testCase.ExpectedError != "" {
 				require.EqualError(t, err, testCase.ExpectedError)
@@ -317,7 +316,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	terminateContainerOnEnd(t, ctx, c)
+	testcontainers.CleanupContainer(t, c)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "container exited with code 0")
 
@@ -417,25 +416,21 @@ func TestImageSubstitutors(t *testing.T) {
 				ImageSubstitutors: test.substitutors,
 			}
 
-			container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 				ContainerRequest: req,
 				Started:          true,
 			})
+			testcontainers.CleanupContainer(t, ctr)
 			if test.expectedError != nil {
 				require.ErrorIs(t, err, test.expectedError)
 				return
 			}
 
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer func() {
-				terminateContainerOnEnd(t, ctx, container)
-			}()
+			require.NoError(t, err)
 
 			// enforce the concrete type, as GenericContainer returns an interface,
 			// which will be changed in future implementations of the library
-			dockerContainer := container.(*testcontainers.DockerContainer)
+			dockerContainer := ctr.(*testcontainers.DockerContainer)
 			assert.Equal(t, test.expectedImage, dockerContainer.Image)
 		})
 	}
@@ -455,21 +450,17 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 				ExposedPorts: []string{nginxDefaultPort},
 				WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 			}
-			container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 				ContainerRequest: req,
 				Started:          true,
 			})
-			if err != nil {
-				t.Fatalf("could not start container: %v", err)
-			}
-			// mappedPort {
-			port, err := container.MappedPort(ctx, nginxDefaultPort)
-			// }
-			if err != nil {
-				t.Fatalf("could not get mapped port: %v", err)
-			}
+			testcontainers.CleanupContainer(t, ctr)
+			require.NoError(t, err)
 
-			terminateContainerOnEnd(t, ctx, container)
+			// mappedPort {
+			port, err := ctr.MappedPort(ctx, nginxDefaultPort)
+			// }
+			require.NoError(t, err)
 
 			t.Logf("Parallel container [iteration_%d] listening on %d\n", i, port.Int())
 		})
@@ -480,28 +471,28 @@ func ExampleGenericContainer_withSubstitutors() {
 	ctx := context.Background()
 
 	// applyImageSubstitutors {
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:             "alpine:latest",
 			ImageSubstitutors: []testcontainers.ImageSubstitutor{dockerImageSubstitutor{}},
 		},
 		Started: true,
 	})
-	// }
-	if err != nil {
-		log.Fatalf("could not start container: %v", err)
-	}
-
 	defer func() {
-		err := container.Terminate(ctx)
-		if err != nil {
-			log.Fatalf("could not terminate container: %v", err)
+		if err := testcontainers.TerminateContainer(ctr); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
 
+	// }
+	if err != nil {
+		log.Printf("could not start container: %v", err)
+		return
+	}
+
 	// enforce the concrete type, as GenericContainer returns an interface,
 	// which will be changed in future implementations of the library
-	dockerContainer := container.(*testcontainers.DockerContainer)
+	dockerContainer := ctr.(*testcontainers.DockerContainer)
 
 	fmt.Println(dockerContainer.Image)
 

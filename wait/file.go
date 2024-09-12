@@ -97,7 +97,7 @@ func (ws *FileStrategy) matchFile(ctx context.Context, target StrategyTarget) er
 	if err != nil {
 		return fmt.Errorf("copy from container: %w", err)
 	}
-	defer rc.Close() //nolint: errcheck // Read close error can't tell us anything useful.
+	defer rc.Close()
 
 	if ws.matcher == nil {
 		// No matcher, just check if the file exists.

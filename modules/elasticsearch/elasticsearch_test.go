@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/elasticsearch"
 )
@@ -80,22 +82,13 @@ func TestElasticsearch(t *testing.T) {
 			}
 
 			esContainer, err := elasticsearch.Run(ctx, tt.image, opts...)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			t.Cleanup(func() {
-				if err := esContainer.Terminate(ctx); err != nil {
-					t.Fatalf("failed to terminate container: %s", err)
-				}
-			})
+			testcontainers.CleanupContainer(t, esContainer)
+			require.NoError(t, err)
 
 			httpClient := configureHTTPClient(esContainer)
 
 			req, err := http.NewRequest("GET", esContainer.Settings.Address, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 
 			// set the password for the request using the Authentication header
 			if tt.passwordCustomiser != nil {
@@ -184,23 +177,16 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
-			container, err := elasticsearch.Run(
+			ctr, err := elasticsearch.Run(
 				ctx,
 				baseImage8,
 				testcontainers.WithEnv(map[string]string{
 					test.configKey: "false",
 				}))
-			if err != nil {
-				t.Fatal(err)
-			}
+			testcontainers.CleanupContainer(t, ctr)
+			require.NoError(t, err)
 
-			t.Cleanup(func() {
-				if err := container.Terminate(ctx); err != nil {
-					t.Fatalf("failed to terminate container: %s", err)
-				}
-			})
-
-			if len(container.Settings.CACert) > 0 {
+			if len(ctr.Settings.CACert) > 0 {
 				t.Fatal("expected CA cert to be empty")
 			}
 		})
@@ -210,26 +196,19 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 func TestElasticsearch8WithoutCredentials(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := elasticsearch.Run(ctx, baseImage8)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctr, err := elasticsearch.Run(ctx, baseImage8)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	httpClient := configureHTTPClient(ctr)
 
-	httpClient := configureHTTPClient(container)
-
-	req, err := http.NewRequest("GET", container.Settings.Address, nil)
+	req, err := http.NewRequest("GET", ctr.Settings.Address, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// elastic:changeme are the default credentials for Elasticsearch 8
-	req.SetBasicAuth(container.Settings.Username, container.Settings.Password)
+	req.SetBasicAuth(ctr.Settings.Username, ctr.Settings.Password)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -253,7 +232,8 @@ func TestElasticsearchOSSCannotuseWithPassword(t *testing.T) {
 
 	ossImage := elasticsearch.DefaultBaseImageOSS + ":7.9.2"
 
-	_, err := elasticsearch.Run(ctx, ossImage, elasticsearch.WithPassword("foo"))
+	ctr, err := elasticsearch.Run(ctx, ossImage, elasticsearch.WithPassword("foo"))
+	testcontainers.CleanupContainer(t, ctr)
 	if err == nil {
 		t.Fatal(err, "Should not be able to use WithPassword with OSS image.")
 	}

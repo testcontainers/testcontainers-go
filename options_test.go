@@ -93,7 +93,7 @@ func TestWithLogConsumers(t *testing.T) {
 
 	ctx := context.Background()
 	c, err := testcontainers.GenericContainer(ctx, req)
-	terminateContainerOnEnd(t, ctx, c)
+	testcontainers.CleanupContainer(t, c)
 	// we expect an error because the MySQL environment variables are not set
 	// but this is expected because we just want to test the log consumer
 	require.Error(t, err)
@@ -119,11 +119,8 @@ func TestWithStartupCommand(t *testing.T) {
 	assert.Len(t, req.LifecycleHooks[0].PostStarts, 1)
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	defer func() {
-		err = c.Terminate(context.Background())
-		require.NoError(t, err)
-	}()
 
 	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
 	require.NoError(t, err)
@@ -151,11 +148,8 @@ func TestWithAfterReadyCommand(t *testing.T) {
 	assert.Len(t, req.LifecycleHooks[0].PostReadies, 1)
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	defer func() {
-		err = c.Terminate(context.Background())
-		require.NoError(t, err)
-	}()
 
 	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
 	require.NoError(t, err)

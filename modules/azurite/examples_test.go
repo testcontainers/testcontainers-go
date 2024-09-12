@@ -12,6 +12,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azurite"
 )
 
@@ -23,21 +24,21 @@ func ExampleRun() {
 		ctx,
 		"mcr.microsoft.com/azure-storage/azurite:3.28.0",
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := azuriteContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(azuriteContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := azuriteContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -57,20 +58,21 @@ func ExampleRun_blobOperations() {
 		"mcr.microsoft.com/azure-storage/azurite:3.28.0",
 		azurite.WithInMemoryPersistence(64),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := azuriteContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(azuriteContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	// using the built-in shared key credential type
 	cred, err := azblob.NewSharedKeyCredential(azurite.AccountName, azurite.AccountKey)
 	if err != nil {
-		log.Fatalf("failed to create shared key credential: %s", err) // nolint:gocritic
+		log.Printf("failed to create shared key credential: %s", err)
+		return
 	}
 
 	// create an azblob.Client for the specified storage account that uses the above credentials
@@ -78,14 +80,16 @@ func ExampleRun_blobOperations() {
 
 	client, err := azblob.NewClientWithSharedKeyCredential(blobServiceURL, cred, nil)
 	if err != nil {
-		log.Fatalf("failed to create client: %s", err) // nolint:gocritic
+		log.Printf("failed to create client: %s", err)
+		return
 	}
 
 	// ===== 1. Create a container =====
 	containerName := "testcontainer"
 	_, err = client.CreateContainer(context.TODO(), containerName, nil)
 	if err != nil {
-		log.Fatalf("failed to create container: %s", err)
+		log.Printf("failed to create container: %s", err)
+		return
 	}
 
 	// ===== 2. Upload and Download a block blob =====
@@ -101,13 +105,15 @@ func ExampleRun_blobOperations() {
 			Tags:     map[string]string{"Year": "2022"},
 		})
 	if err != nil {
-		log.Fatalf("failed to upload blob: %s", err)
+		log.Printf("failed to upload blob: %s", err)
+		return
 	}
 
 	// Download the blob's contents and ensure that the download worked properly
 	blobDownloadResponse, err := client.DownloadStream(context.TODO(), containerName, blobName, nil)
 	if err != nil {
-		log.Fatalf("failed to download blob: %s", err) // nolint:gocritic
+		log.Printf("failed to download blob: %s", err)
+		return
 	}
 
 	// Use the bytes.Buffer object to read the downloaded data.
@@ -115,7 +121,8 @@ func ExampleRun_blobOperations() {
 	reader := blobDownloadResponse.Body
 	downloadData, err := io.ReadAll(reader)
 	if err != nil {
-		log.Fatalf("failed to read downloaded data: %s", err) // nolint:gocritic
+		log.Printf("failed to read downloaded data: %s", err)
+		return
 	}
 
 	fmt.Println(string(downloadData))
@@ -133,7 +140,8 @@ func ExampleRun_blobOperations() {
 	for pager.More() {
 		resp, err := pager.NextPage(context.TODO())
 		if err != nil {
-			log.Fatalf("failed to list blobs: %s", err)
+			log.Printf("failed to list blobs: %s", err)
+			return
 		}
 
 		fmt.Println(len(resp.Segment.BlobItems))
@@ -142,13 +150,15 @@ func ExampleRun_blobOperations() {
 	// Delete the blob.
 	_, err = client.DeleteBlob(context.TODO(), containerName, blobName, nil)
 	if err != nil {
-		log.Fatalf("failed to delete blob: %s", err)
+		log.Printf("failed to delete blob: %s", err)
+		return
 	}
 
 	// Delete the container.
 	_, err = client.DeleteContainer(context.TODO(), containerName, nil)
 	if err != nil {
-		log.Fatalf("failed to delete container: %s", err)
+		log.Printf("failed to delete container: %s", err)
+		return
 	}
 
 	// }
@@ -169,20 +179,21 @@ func ExampleRun_queueOperations() {
 		"mcr.microsoft.com/azure-storage/azurite:3.28.0",
 		azurite.WithInMemoryPersistence(64),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := azuriteContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(azuriteContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	// using the built-in shared key credential type
 	cred, err := azqueue.NewSharedKeyCredential(azurite.AccountName, azurite.AccountKey)
 	if err != nil {
-		log.Fatalf("failed to create shared key credential: %s", err) // nolint:gocritic
+		log.Printf("failed to create shared key credential: %s", err)
+		return
 	}
 
 	// create an azqueue.Client for the specified storage account that uses the above credentials
@@ -190,7 +201,8 @@ func ExampleRun_queueOperations() {
 
 	client, err := azqueue.NewServiceClientWithSharedKeyCredential(queueServiceURL, cred, nil)
 	if err != nil {
-		log.Fatalf("failed to create client: %s", err)
+		log.Printf("failed to create client: %s", err)
+		return
 	}
 
 	queueName := "testqueue"
@@ -199,7 +211,8 @@ func ExampleRun_queueOperations() {
 		Metadata: map[string]*string{"hello": to.Ptr("world")},
 	})
 	if err != nil {
-		log.Fatalf("failed to create queue: %s", err)
+		log.Printf("failed to create queue: %s", err)
+		return
 	}
 
 	pager := client.NewListQueuesPager(&azqueue.ListQueuesOptions{
@@ -210,7 +223,8 @@ func ExampleRun_queueOperations() {
 	for pager.More() {
 		resp, err := pager.NextPage(context.Background())
 		if err != nil {
-			log.Fatalf("failed to list queues: %s", err)
+			log.Printf("failed to list queues: %s", err)
+			return
 		}
 
 		fmt.Println(len(resp.Queues))
@@ -220,7 +234,8 @@ func ExampleRun_queueOperations() {
 	// delete the queue
 	_, err = client.DeleteQueue(context.TODO(), queueName, &azqueue.DeleteOptions{})
 	if err != nil {
-		log.Fatalf("failed to delete queue: %s", err)
+		log.Printf("failed to delete queue: %s", err)
+		return
 	}
 
 	// }
@@ -241,20 +256,21 @@ func ExampleRun_tableOperations() {
 		"mcr.microsoft.com/azure-storage/azurite:3.28.0",
 		azurite.WithInMemoryPersistence(64),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := azuriteContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(azuriteContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	// using the built-in shared key credential type
 	cred, err := aztables.NewSharedKeyCredential(azurite.AccountName, azurite.AccountKey)
 	if err != nil {
-		log.Fatalf("failed to create shared key credential: %s", err) // nolint:gocritic
+		log.Printf("failed to create shared key credential: %s", err)
+		return
 	}
 
 	// create an aztables.Client for the specified storage account that uses the above credentials
@@ -262,14 +278,16 @@ func ExampleRun_tableOperations() {
 
 	client, err := aztables.NewServiceClientWithSharedKey(tablesServiceURL, cred, nil)
 	if err != nil {
-		log.Fatalf("failed to create client: %s", err)
+		log.Printf("failed to create client: %s", err)
+		return
 	}
 
 	tableName := "fromServiceClient"
 	// Create a table
 	_, err = client.CreateTable(context.TODO(), tableName, nil)
 	if err != nil {
-		log.Fatalf("failed to create table: %s", err)
+		log.Printf("failed to create table: %s", err)
+		return
 	}
 
 	// List tables
@@ -277,7 +295,8 @@ func ExampleRun_tableOperations() {
 	for pager.More() {
 		resp, err := pager.NextPage(context.Background())
 		if err != nil {
-			log.Fatalf("failed to list tables: %s", err)
+			log.Printf("failed to list tables: %s", err)
+			return
 		}
 
 		fmt.Println(len(resp.Tables))
@@ -287,7 +306,8 @@ func ExampleRun_tableOperations() {
 	// Delete a table
 	_, err = client.DeleteTable(context.TODO(), tableName, nil)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 
 	// }

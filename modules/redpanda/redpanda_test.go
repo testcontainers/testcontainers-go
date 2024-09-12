@@ -27,18 +27,12 @@ import (
 func TestRedpanda(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3")
+	ctr, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3")
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
 	// Test Kafka API
-	seedBroker, err := container.KafkaSeedBroker(ctx)
+	seedBroker, err := ctr.KafkaSeedBroker(ctx)
 	require.NoError(t, err)
 
 	kafkaCl, err := kgo.NewClient(
@@ -54,7 +48,7 @@ func TestRedpanda(t *testing.T) {
 
 	// Test Schema Registry API
 	httpCl := &http.Client{Timeout: 5 * time.Second}
-	schemaRegistryURL, err := container.SchemaRegistryAddress(ctx)
+	schemaRegistryURL, err := ctr.SchemaRegistryAddress(ctx)
 	require.NoError(t, err)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/subjects", schemaRegistryURL), nil)
 	require.NoError(t, err)
@@ -65,7 +59,7 @@ func TestRedpanda(t *testing.T) {
 
 	// Test Admin API
 	// adminAPIAddress {
-	adminAPIURL, err := container.AdminAPIAddress(ctx)
+	adminAPIURL, err := ctr.AdminAPIAddress(ctx)
 	// }
 	require.NoError(t, err)
 	req, err = http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster/health_overview", adminAPIURL), nil)
@@ -83,7 +77,7 @@ func TestRedpanda(t *testing.T) {
 func TestRedpandaWithAuthentication(t *testing.T) {
 	ctx := context.Background()
 	// redpandaCreateContainer {
-	container, err := redpanda.Run(ctx,
+	ctr, err := redpanda.Run(ctx,
 		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
@@ -94,18 +88,12 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 		redpanda.WithSuperusers("superuser-1", "superuser-2"),
 		redpanda.WithEnableSchemaRegistryHTTPBasicAuth(),
 	)
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 	// }
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
 	// kafkaSeedBroker {
-	seedBroker, err := container.KafkaSeedBroker(ctx)
+	seedBroker, err := ctr.KafkaSeedBroker(ctx)
 	// }
 	require.NoError(t, err)
 
@@ -169,7 +157,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 	// Test Schema Registry API
 	httpCl := &http.Client{Timeout: 5 * time.Second}
 	// schemaRegistryAddress {
-	schemaRegistryURL, err := container.SchemaRegistryAddress(ctx)
+	schemaRegistryURL, err := ctr.SchemaRegistryAddress(ctx)
 	// }
 	require.NoError(t, err)
 
@@ -178,7 +166,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 	require.NoError(t, err)
 	resp, err := httpCl.Do(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	resp.Body.Close()
 
 	// Successful authentication
@@ -186,7 +174,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 		req.SetBasicAuth(user, password)
 		resp, err = httpCl.Do(req)
 		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
 		resp.Body.Close()
 	}
 }
@@ -195,7 +183,7 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 	ctx := context.Background()
 	// redpandaCreateContainer {
 	// this would fail to start if we weren't ignoring wasm transforms for older versions
-	container, err := redpanda.Run(ctx,
+	ctr, err := redpanda.Run(ctx,
 		"redpandadata/redpanda:v23.2.18",
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
@@ -206,18 +194,12 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 		redpanda.WithSuperusers("superuser-1", "superuser-2"),
 		redpanda.WithEnableSchemaRegistryHTTPBasicAuth(),
 	)
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 	// }
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
 	// kafkaSeedBroker {
-	seedBroker, err := container.KafkaSeedBroker(ctx)
+	seedBroker, err := ctr.KafkaSeedBroker(ctx)
 	// }
 	require.NoError(t, err)
 
@@ -298,7 +280,7 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 	// Test Schema Registry API
 	httpCl := &http.Client{Timeout: 5 * time.Second}
 	// schemaRegistryAddress {
-	schemaRegistryURL, err := container.SchemaRegistryAddress(ctx)
+	schemaRegistryURL, err := ctr.SchemaRegistryAddress(ctx)
 	// }
 	require.NoError(t, err)
 
@@ -323,16 +305,11 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 func TestRedpandaProduceWithAutoCreateTopics(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", redpanda.WithAutoCreateTopics())
+	ctr, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", redpanda.WithAutoCreateTopics())
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
-	brokers, err := container.KafkaSeedBroker(ctx)
+	brokers, err := ctr.KafkaSeedBroker(ctx)
 	require.NoError(t, err)
 
 	kafkaCl, err := kgo.NewClient(
@@ -357,14 +334,9 @@ func TestRedpandaWithTLS(t *testing.T) {
 
 	ctx := context.Background()
 
-	container, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", redpanda.WithTLS(cert.Bytes, cert.KeyBytes))
+	ctr, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", redpanda.WithTLS(cert.Bytes, cert.KeyBytes))
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	tlsConfig := cert.TLSConfig()
 
@@ -378,7 +350,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 	}
 
 	// Test Admin API
-	adminAPIURL, err := container.AdminAPIAddress(ctx)
+	adminAPIURL, err := ctr.AdminAPIAddress(ctx)
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(adminAPIURL, "https://"), "AdminAPIAddress should return https url")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster/health_overview", adminAPIURL), nil)
@@ -389,7 +361,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 	resp.Body.Close()
 
 	// Test Schema Registry API
-	schemaRegistryURL, err := container.SchemaRegistryAddress(ctx)
+	schemaRegistryURL, err := ctr.SchemaRegistryAddress(ctx)
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(adminAPIURL, "https://"), "SchemaRegistryAddress should return https url")
 	req, err = http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/subjects", schemaRegistryURL), nil)
@@ -399,7 +371,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	resp.Body.Close()
 
-	brokers, err := container.KafkaSeedBroker(ctx)
+	brokers, err := ctr.KafkaSeedBroker(ctx)
 	require.NoError(t, err)
 
 	kafkaCl, err := kgo.NewClient(
@@ -426,7 +398,7 @@ func TestRedpandaWithTLSAndSASL(t *testing.T) {
 
 	ctx := context.Background()
 
-	container, err := redpanda.Run(ctx,
+	ctr, err := redpanda.Run(ctx,
 		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 		redpanda.WithTLS(cert.Bytes, cert.KeyBytes),
 		redpanda.WithEnableSASL(),
@@ -434,17 +406,12 @@ func TestRedpandaWithTLSAndSASL(t *testing.T) {
 		redpanda.WithNewServiceAccount("superuser-1", "test"),
 		redpanda.WithSuperusers("superuser-1"),
 	)
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	tlsConfig := cert.TLSConfig()
 
-	broker, err := container.KafkaSeedBroker(ctx)
+	broker, err := ctr.KafkaSeedBroker(ctx)
 	require.NoError(t, err)
 
 	kafkaCl, err := kgo.NewClient(
@@ -469,14 +436,17 @@ func TestRedpandaListener_Simple(t *testing.T) {
 	rpNetwork, err := network.New(ctx)
 	require.NoError(t, err)
 
-	// 2. Start Redpanda container
+	testcontainers.CleanupNetwork(t, rpNetwork)
+
+	// 2. Start Redpanda ctr
 	// withListenerRP {
-	container, err := redpanda.Run(ctx,
+	ctr, err := redpanda.Run(ctx,
 		"redpandadata/redpanda:v23.2.18",
 		network.WithNetwork([]string{"redpanda-host"}, rpNetwork),
 		redpanda.WithListener("redpanda:29092"), redpanda.WithAutoCreateTopics(),
 	)
 	// }
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
 	// 3. Start KCat container
@@ -498,7 +468,7 @@ func TestRedpandaListener_Simple(t *testing.T) {
 		Started: true,
 	})
 	// }
-
+	testcontainers.CleanupContainer(t, kcat)
 	require.NoError(t, err)
 
 	// 4. Copy message to kcat
@@ -519,21 +489,7 @@ func TestRedpandaListener_Simple(t *testing.T) {
 	// 7. Read Message from stdout
 	out, err := io.ReadAll(stdout)
 	require.NoError(t, err)
-
 	require.Contains(t, string(out), "Message produced by kcat")
-
-	t.Cleanup(func() {
-		if err := kcat.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate kcat container: %s", err)
-		}
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate redpanda container: %s", err)
-		}
-
-		if err := rpNetwork.Remove(ctx); err != nil {
-			t.Fatalf("failed to remove network: %s", err)
-		}
-	})
 }
 
 func TestRedpandaListener_InvalidPort(t *testing.T) {
@@ -542,34 +498,28 @@ func TestRedpandaListener_InvalidPort(t *testing.T) {
 	// 1. Create network
 	RPNetwork, err := network.New(ctx)
 	require.NoError(t, err)
+	testcontainers.CleanupNetwork(t, RPNetwork)
 
-	// 2. Attempt Start Redpanda container
-	_, err = redpanda.Run(ctx,
+	// 2. Attempt Start Redpanda ctr
+	ctr, err := redpanda.Run(ctx,
 		"redpandadata/redpanda:v23.2.18",
 		redpanda.WithListener("redpanda:99092"),
 		network.WithNetwork([]string{"redpanda-host"}, RPNetwork),
 	)
-
+	testcontainers.CleanupContainer(t, ctr)
 	require.Error(t, err)
-
 	require.Contains(t, err.Error(), "invalid port on listener redpanda:99092")
-
-	t.Cleanup(func() {
-		if err := RPNetwork.Remove(ctx); err != nil {
-			t.Fatalf("failed to remove network: %s", err)
-		}
-	})
 }
 
 func TestRedpandaListener_NoNetwork(t *testing.T) {
 	ctx := context.Background()
 
-	// 1. Attempt Start Redpanda container
-	_, err := redpanda.Run(ctx,
+	// 1. Attempt Start Redpanda ctr
+	ctr, err := redpanda.Run(ctx,
 		"redpandadata/redpanda:v23.2.18",
 		redpanda.WithListener("redpanda:99092"),
 	)
-
+	testcontainers.CleanupContainer(t, ctr)
 	require.Error(t, err)
 
 	require.Contains(t, err.Error(), "container must be attached to at least one network")

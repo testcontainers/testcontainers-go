@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/k6"
 )
@@ -39,8 +41,22 @@ func TestK6(t *testing.T) {
 		},
 	}
 
+	var cacheMount string
+	t.Cleanup(func() {
+		if cacheMount == "" {
+			return
+		}
+
+		// Ensure the cache volume is removed as mounts that specify a volume
+		// source as defined by the name are not removed automatically.
+		provider, err := testcontainers.NewDockerProvider()
+		require.NoError(t, err)
+		defer provider.Close()
+
+		require.NoError(t, provider.Client().VolumeRemove(context.Background(), cacheMount, true))
+	})
+
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
 			ctx := context.Background()
 
@@ -62,25 +78,19 @@ func TestK6(t *testing.T) {
 				options = k6.WithRemoteTestScript(desc)
 			}
 
-			container, err := k6.Run(ctx, "szkiba/k6x:v0.3.1", k6.WithCache(), options)
-			if err != nil {
-				t.Fatal(err)
+			ctr, err := k6.Run(ctx, "szkiba/k6x:v0.3.1", k6.WithCache(), options)
+			if ctr != nil && cacheMount == "" {
+				// First container, determine the cache mount.
+				cacheMount, err = ctr.CacheMount(ctx)
+				require.NoError(t, err)
 			}
-			// Clean up the container after the test is complete
-			t.Cleanup(func() {
-				if err := container.Terminate(ctx); err != nil {
-					t.Fatalf("failed to terminate container: %s", err)
-				}
-			})
+			testcontainers.CleanupContainer(t, ctr)
+			require.NoError(t, err)
 
 			// assert the result of the test
-			state, err := container.State(ctx)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if state.ExitCode != tc.expect {
-				t.Fatalf("expected %d got %d", tc.expect, state.ExitCode)
-			}
+			state, err := ctr.State(ctx)
+			require.NoError(t, err)
+			require.Equal(t, tc.expect, state.ExitCode)
 		})
 	}
 }

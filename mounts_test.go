@@ -171,13 +171,14 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 }
 
 func TestCreateContainerWithVolume(t *testing.T) {
+	volumeName := "test-volume"
 	// volumeMounts {
 	req := testcontainers.ContainerRequest{
 		Image: "alpine",
 		Mounts: testcontainers.ContainerMounts{
 			{
 				Source: testcontainers.GenericVolumeMountSource{
-					Name: "test-volume",
+					Name: volumeName,
 				},
 				Target: "/data",
 			},
@@ -190,8 +191,8 @@ func TestCreateContainerWithVolume(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
+	testcontainers.CleanupContainer(t, c, testcontainers.RemoveVolumes(volumeName))
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created
 	client, err := testcontainers.NewDockerClientWithOpts(ctx)
@@ -204,12 +205,13 @@ func TestCreateContainerWithVolume(t *testing.T) {
 }
 
 func TestMountsReceiveRyukLabels(t *testing.T) {
+	volumeName := "app-data"
 	req := testcontainers.ContainerRequest{
 		Image: "alpine",
 		Mounts: testcontainers.ContainerMounts{
 			{
 				Source: testcontainers.GenericVolumeMountSource{
-					Name: "app-data",
+					Name: volumeName,
 				},
 				Target: "/data",
 			},
@@ -223,18 +225,18 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 
 	// Ensure the volume is removed before creating the container
 	// otherwise the volume will be reused and the labels won't be set.
-	err = client.VolumeRemove(ctx, "app-data", true)
+	err = client.VolumeRemove(ctx, volumeName, true)
 	require.NoError(t, err)
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
+	testcontainers.CleanupContainer(t, c, testcontainers.RemoveVolumes(volumeName))
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created with the expected labels.
-	volume, err := client.VolumeInspect(ctx, "app-data")
+	volume, err := client.VolumeInspect(ctx, volumeName)
 	require.NoError(t, err)
 	require.Equal(t, testcontainers.GenericLabels(), volume.Labels)
 }
