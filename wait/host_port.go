@@ -209,7 +209,7 @@ func internalCheck(ctx context.Context, internalPort nat.Port, target StrategyTa
 
 		if exitCode == 0 {
 			break
-		} else if exitCode == 126 {
+		} else if exitCode == 126 || exitCode == 127 {
 			return errShellNotExecutable
 		}
 	}
