@@ -29,10 +29,10 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 		username := req.Env["QUERY_DEFAULT_USER"]
 		password := req.Env["QUERY_DEFAULT_PASSWORD"]
 		if len(password) == 0 {
-			password = defaultPassword
+			req.Env["QUERY_DEFAULT_PASSWORD"] = defaultPassword
 		}
 		if len(username) == 0 {
-			username = defaultUser
+			req.Env["QUERY_DEFAULT_USER"] = defaultUser
 		}
 		return nil
 	}
@@ -127,7 +127,6 @@ func (c *DatabendContainer) ConnectionString(ctx context.Context, args ...string
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["QUERY_DEFAULT_USER"] = username
-
 		return nil
 	}
 }
@@ -135,7 +134,6 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["QUERY_DEFAULT_PASSWORD"] = password
-
 		return nil
 	}
 }

@@ -15,8 +15,8 @@ func ExampleRun() {
 
 	databendContainer, err := databend.Run(ctx,
 		"datafuselabs/databend:v1.2.615",
-		databend.WithUsername("root"),
-		databend.WithPassword("password"),
+		databend.WithUsername("databend"),
+		databend.WithPassword("databend"),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(databendContainer); err != nil {
@@ -75,6 +75,10 @@ func ExampleRun_connect() {
 	}
 	var i int
 	row, err := db.Query("select 1")
+	if err != nil {
+		log.Printf("failed to query: %s", err)
+		return
+	}
 	err = row.Scan(&i)
 	if err != nil {
 		log.Printf("failed to scan row: %s", err)
