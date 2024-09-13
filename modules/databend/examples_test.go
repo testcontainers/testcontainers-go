@@ -7,7 +7,6 @@ import (
 	"log"
 
 	"github.com/testcontainers/testcontainers-go"
-
 	"github.com/testcontainers/testcontainers-go/modules/databend"
 )
 
