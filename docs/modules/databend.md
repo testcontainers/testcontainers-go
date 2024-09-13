@@ -50,6 +50,26 @@ E.g. `Run(context.Background(), "datafuselabs/databend:v1.2.615")`.
 
 {% include "../features/common_functional_options.md" %}
 
+#### Set username, password 
+
+If you need to set a different user/password, you can use `WithUsername`, `WithPassword` options.
+
+!!!info
+The default values for the username is `databend`, for password is `databend` and for the default database name is `default`.
+
 ### Container Methods
 
 The Databend container exposes the following methods:
+
+#### ConnectionString
+
+This method returns the connection string to connect to the Databend container, using the default `8000` port.
+It's possible to pass extra parameters to the connection string, e.g. `sslmode=disable`.
+
+<!--codeinclude-->
+[Get connection string](../../modules/databend/databend_test.go) inside_block:connectionString
+<!--/codeinclude-->
+
+#### MustGetConnectionString
+
+`MustConnectionString` panics if the address cannot be determined.
