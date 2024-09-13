@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/elasticsearch"
 )
@@ -80,22 +82,13 @@ func TestElasticsearch(t *testing.T) {
 			}
 
 			esContainer, err := elasticsearch.Run(ctx, tt.image, opts...)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			t.Cleanup(func() {
-				if err := esContainer.Terminate(ctx); err != nil {
-					t.Fatalf("failed to terminate container: %s", err)
-				}
-			})
+			testcontainers.CleanupContainer(t, esContainer)
+			require.NoError(t, err)
 
 			httpClient := configureHTTPClient(esContainer)
 
 			req, err := http.NewRequest("GET", esContainer.Settings.Address, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 
 			// set the password for the request using the Authentication header
 			if tt.passwordCustomiser != nil {
@@ -190,15 +183,8 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 				testcontainers.WithEnv(map[string]string{
 					test.configKey: "false",
 				}))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			t.Cleanup(func() {
-				if err := ctr.Terminate(ctx); err != nil {
-					t.Fatalf("failed to terminate container: %s", err)
-				}
-			})
+			testcontainers.CleanupContainer(t, ctr)
+			require.NoError(t, err)
 
 			if len(ctr.Settings.CACert) > 0 {
 				t.Fatal("expected CA cert to be empty")
@@ -211,15 +197,8 @@ func TestElasticsearch8WithoutCredentials(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := elasticsearch.Run(ctx, baseImage8)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Cleanup(func() {
-		if err := ctr.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	httpClient := configureHTTPClient(ctr)
 
@@ -251,7 +230,8 @@ func TestElasticsearch8WithoutCredentials(t *testing.T) {
 func TestElasticsearchOSSCannotuseWithPassword(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := elasticsearch.Run(ctx, "docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.2", elasticsearch.WithPassword("foo"))
+	ctr, err := elasticsearch.Run(ctx, "docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.2", elasticsearch.WithPassword("foo"))
+	testcontainers.CleanupContainer(t, ctr)
 	if err == nil {
 		t.Fatal(err, "Should not be able to use WithPassword with OSS image.")
 	}

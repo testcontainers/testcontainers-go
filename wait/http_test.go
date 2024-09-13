@@ -17,6 +17,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -34,20 +35,21 @@ func ExampleHTTPStrategy() {
 	}
 
 	c, err := testcontainers.Run(ctx, req)
+	defer func() {
+		if err := testcontainers.TerminateContainer(c); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
+		log.Printf("failed to start container: %s", err)
+		return
 	}
 	// }
 
-	defer func() {
-		if err := c.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
-		}
-	}()
-
 	state, err := c.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -60,12 +62,14 @@ func ExampleHTTPStrategy_WithHeaders() {
 	capath := filepath.Join("testdata", "root.pem")
 	cafile, err := os.ReadFile(capath)
 	if err != nil {
-		log.Fatalf("can't load ca file: %v", err)
+		log.Printf("can't load ca file: %v", err)
+		return
 	}
 
 	certpool := x509.NewCertPool()
 	if !certpool.AppendCertsFromPEM(cafile) {
-		log.Fatalf("the ca file isn't valid")
+		log.Printf("the ca file isn't valid")
+		return
 	}
 
 	ctx := context.Background()
@@ -90,19 +94,20 @@ func ExampleHTTPStrategy_WithHeaders() {
 	// }
 
 	c, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := c.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(c); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	state, err := c.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -122,20 +127,21 @@ func ExampleHTTPStrategy_WithPort() {
 	}
 
 	c, err := testcontainers.Run(ctx, req)
+	defer func() {
+		if err := testcontainers.TerminateContainer(c); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
+		log.Printf("failed to start container: %s", err)
+		return
 	}
 	// }
 
-	defer func() {
-		if err := c.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
-		}
-	}()
-
 	state, err := c.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -154,19 +160,20 @@ func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
 	}
 
 	c, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := c.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(c); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	state, err := c.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -186,20 +193,21 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 	}
 
 	gogs, err := testcontainers.Run(ctx, req)
+	defer func() {
+		if err := testcontainers.TerminateContainer(gogs); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
+		log.Printf("failed to start container: %s", err)
+		return
 	}
 	// }
 
-	defer func() {
-		if err := gogs.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
-		}
-	}()
-
 	state, err := gogs.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -210,17 +218,11 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 
 func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	workdir, err := os.Getwd()
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
 
 	capath := filepath.Join(workdir, "testdata", "root.pem")
 	cafile, err := os.ReadFile(capath)
-	if err != nil {
-		t.Errorf("can't load ca file: %v", err)
-		return
-	}
+	require.NoError(t, err)
 
 	certpool := x509.NewCertPool()
 	if !certpool.AppendCertsFromPEM(cafile) {
@@ -246,22 +248,15 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	}
 
 	ctr, err := testcontainers.Run(context.Background(), req)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer ctr.Terminate(context.Background()) // nolint: errcheck
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	host, err := ctr.Host(context.Background())
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
+
 	port, err := ctr.MappedPort(context.Background(), "6443/tcp")
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
+
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsconfig,
@@ -279,30 +274,19 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 		},
 	}
 	resp, err := client.Get(fmt.Sprintf("https://%s:%s", host, port.Port()))
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
+
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("status code isn't ok: %s", resp.Status)
-		return
-	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 	workdir, err := os.Getwd()
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
 
 	capath := filepath.Join(workdir, "testdata", "root.pem")
 	cafile, err := os.ReadFile(capath)
-	if err != nil {
-		t.Errorf("can't load ca file: %v", err)
-		return
-	}
+	require.NoError(t, err)
 
 	certpool := x509.NewCertPool()
 	if !certpool.AppendCertsFromPEM(cafile) {
@@ -327,22 +311,15 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 	}
 
 	ctr, err := testcontainers.Run(context.Background(), req)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer ctr.Terminate(context.Background()) // nolint: errcheck
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	host, err := ctr.Host(context.Background())
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
+
 	port, err := ctr.MappedPort(context.Background(), "6443/tcp")
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
+
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsconfig,
@@ -360,30 +337,19 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 		},
 	}
 	resp, err := client.Get(fmt.Sprintf("https://%s:%s", host, port.Port()))
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
+
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("status code isn't ok: %s", resp.Status)
-		return
-	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 	workdir, err := os.Getwd()
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
 
 	capath := filepath.Join(workdir, "testdata", "root.pem")
 	cafile, err := os.ReadFile(capath)
-	if err != nil {
-		t.Errorf("can't load ca file: %v", err)
-		return
-	}
+	require.NoError(t, err)
 
 	certpool := x509.NewCertPool()
 	if !certpool.AppendCertsFromPEM(cafile) {
@@ -416,26 +382,15 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 
 	ctx := context.Background()
 	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Cleanup(func() {
-		if err := ctr.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	host, err := ctr.Host(ctx)
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
+
 	port, err := ctr.MappedPort(ctx, "6443/tcp")
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
+
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsconfig,
@@ -453,15 +408,10 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 		},
 	}
 	resp, err := client.Get(fmt.Sprintf("https://%s:%s", host, port.Port()))
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	require.NoError(t, err)
+
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("status code isn't ok: %s", resp.Status)
-		return
-	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestHttpStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
@@ -504,17 +454,9 @@ func TestHttpStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) 
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
+	err := wg.WaitUntilReady(context.Background(), target)
+	expected := "container crashed with out-of-memory (OOMKilled)"
+	require.EqualError(t, err, expected)
 }
 
 func TestHttpStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
@@ -558,17 +500,9 @@ func TestHttpStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
+	err := wg.WaitUntilReady(context.Background(), target)
+	expected := "container exited with code 1"
+	require.EqualError(t, err, expected)
 }
 
 func TestHttpStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *testing.T) {
@@ -611,17 +545,9 @@ func TestHttpStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *test
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
+	err := wg.WaitUntilReady(context.Background(), target)
+	expected := "unexpected container status \"dead\""
+	require.EqualError(t, err, expected)
 }
 
 func TestHTTPStrategyFailsWhileRequestSendingDueToOOMKilledContainer(t *testing.T) {
@@ -659,17 +585,9 @@ func TestHTTPStrategyFailsWhileRequestSendingDueToOOMKilledContainer(t *testing.
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
+	err := wg.WaitUntilReady(context.Background(), target)
+	expected := "container crashed with out-of-memory (OOMKilled)"
+	require.EqualError(t, err, expected)
 }
 
 func TestHttpStrategyFailsWhileRequestSendingDueToExitedContainer(t *testing.T) {
@@ -708,17 +626,9 @@ func TestHttpStrategyFailsWhileRequestSendingDueToExitedContainer(t *testing.T) 
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
+	err := wg.WaitUntilReady(context.Background(), target)
+	expected := "container exited with code 1"
+	require.EqualError(t, err, expected)
 }
 
 func TestHttpStrategyFailsWhileRequestSendingDueToUnexpectedContainerStatus(t *testing.T) {
@@ -756,17 +666,9 @@ func TestHttpStrategyFailsWhileRequestSendingDueToUnexpectedContainerStatus(t *t
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
+	err := wg.WaitUntilReady(context.Background(), target)
+	expected := "unexpected container status \"dead\""
+	require.EqualError(t, err, expected)
 }
 
 func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
@@ -803,17 +705,9 @@ func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
+	err := wg.WaitUntilReady(context.Background(), target)
+	expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+	require.EqualError(t, err, expected)
 }
 
 func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
@@ -857,17 +751,9 @@ func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
+	err := wg.WaitUntilReady(context.Background(), target)
+	expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+	require.EqualError(t, err, expected)
 }
 
 func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.T) {
@@ -906,15 +792,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	{
-		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "No exposed tcp ports or mapped ports - cannot wait for status"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
-	}
+	err := wg.WaitUntilReady(context.Background(), target)
+	expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+	require.EqualError(t, err, expected)
 }

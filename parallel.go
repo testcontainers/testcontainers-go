@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 )
@@ -34,22 +35,22 @@ func (gpe ParallelContainersError) Error() string {
 func parallelContainersRunner(
 	ctx context.Context,
 	requests <-chan Request,
-	errors chan<- ParallelContainersRequestError,
+	errorsCh chan<- ParallelContainersRequestError,
 	containers chan<- StartedContainer,
 	wg *sync.WaitGroup,
 ) {
+	defer wg.Done()
 	for req := range requests {
 		c, err := Run(ctx, req)
 		if err != nil {
-			errors <- ParallelContainersRequestError{
+			errorsCh <- ParallelContainersRequestError{
 				Request: req,
-				Error:   err,
+				Error:   errors.Join(err, TerminateContainer(c)),
 			}
 			continue
 		}
 		containers <- c
 	}
-	wg.Done()
 }
 
 // ParallelContainers creates containers with parameters and run them in parallel mode

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	neo "github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/neo4j"
@@ -20,16 +21,12 @@ func TestNeo4j(outer *testing.T) {
 
 	ctx := context.Background()
 
-	container := setupNeo4j(ctx, outer)
-
-	outer.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			outer.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	ctr, err := setupNeo4j(ctx)
+	testcontainers.CleanupContainer(outer, ctr)
+	require.NoError(outer, err)
 
 	outer.Run("connects via Bolt", func(t *testing.T) {
-		driver := createDriver(t, ctx, container)
+		driver := createDriver(t, ctx, ctr)
 
 		err := driver.VerifyConnectivity(ctx)
 		if err != nil {
@@ -38,7 +35,7 @@ func TestNeo4j(outer *testing.T) {
 	})
 
 	outer.Run("exercises APOC plugin", func(t *testing.T) {
-		driver := createDriver(t, ctx, container)
+		driver := createDriver(t, ctx, ctr)
 
 		result, err := neo.ExecuteQuery(ctx, driver,
 			"RETURN apoc.number.arabicToRoman(1986) AS output", nil,
@@ -52,7 +49,7 @@ func TestNeo4j(outer *testing.T) {
 	})
 
 	outer.Run("is configured with custom Neo4j settings", func(t *testing.T) {
-		env := getContainerEnv(t, ctx, container)
+		env := getContainerEnv(t, ctx, ctr)
 
 		if !strings.Contains(env, "NEO4J_dbms_tx__log_rotation_size=42M") {
 			t.Fatal("expected to custom setting to be exported but was not")
@@ -79,15 +76,8 @@ func TestNeo4jWithEnterpriseLicense(t *testing.T) {
 				neo4j.WithAdminPassword(testPassword),
 				neo4j.WithAcceptCommercialLicenseAgreement(),
 			)
-			if err != nil {
-				t.Fatalf("expected container to successfully initialize but did not: %s", err)
-			}
-
-			t.Cleanup(func() {
-				if err := ctr.Terminate(ctx); err != nil {
-					t.Fatalf("failed to terminate container: %s", err)
-				}
-			})
+			testcontainers.CleanupContainer(t, ctr)
+			require.NoError(t, err)
 
 			env := getContainerEnv(t, ctx, ctr)
 
@@ -105,14 +95,8 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 
 	outer.Run("without authentication", func(t *testing.T) {
 		ctr, err := neo4j.Run(ctx, "neo4j:4.4")
-		if err != nil {
-			t.Fatalf("expected env to successfully run but did not: %s", err)
-		}
-		t.Cleanup(func() {
-			if err := ctr.Terminate(ctx); err != nil {
-				outer.Fatalf("failed to terminate container: %s", err)
-			}
-		})
+		testcontainers.CleanupContainer(t, ctr)
+		require.NoError(t, err)
 	})
 
 	outer.Run("auth setting outside WithAdminPassword raises error", func(t *testing.T) {
@@ -121,6 +105,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("AUTH", "neo4j/thisisgonnafail"),
 		)
+		testcontainers.CleanupContainer(t, ctr)
 		if err == nil {
 			t.Fatalf("expected env to fail due to conflicting auth settings but did not")
 		}
@@ -141,14 +126,8 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 			neo4j.WithNeo4jSetting("some.key", "value3"),
 		)
 		// }
-		if err != nil {
-			t.Fatalf("expected env to successfully run but did not: %s", err)
-		}
-		t.Cleanup(func() {
-			if err := ctr.Terminate(ctx); err != nil {
-				outer.Fatalf("failed to terminate container: %s", err)
-			}
-		})
+		testcontainers.CleanupContainer(t, ctr)
+		require.NoError(t, err)
 
 		errorLogs := logger.Logs()
 		if !Contains(errorLogs, `setting "some.key" with value "value1" is now overwritten with value "value2"`+"\n") ||
@@ -162,7 +141,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 
 	outer.Run("rejects nil logger", func(t *testing.T) {
 		ctr, err := neo4j.Run(ctx, "neo4j:4.4", testcontainers.WithLogger(nil))
-
+		testcontainers.CleanupContainer(t, ctr)
 		if ctr != nil {
 			t.Fatalf("container must not be created with nil logger")
 		}
@@ -172,8 +151,8 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	})
 }
 
-func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Container {
-	ctr, err := neo4j.Run(ctx,
+func setupNeo4j(ctx context.Context) (*neo4j.Container, error) {
+	return neo4j.Run(ctx,
 		"neo4j:4.4",
 		neo4j.WithAdminPassword(testPassword),
 		// withLabsPlugin {
@@ -181,10 +160,6 @@ func setupNeo4j(ctx context.Context, t *testing.T) *neo4j.Container {
 		// }
 		neo4j.WithNeo4jSetting("dbms.tx_log.rotation.size", "42M"),
 	)
-	if err != nil {
-		t.Fatalf("expected container to successfully initialize but did not: %s", err)
-	}
-	return ctr
 }
 
 func createDriver(t *testing.T, ctx context.Context, container *neo4j.Container) neo.DriverWithContext {

@@ -97,13 +97,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	req.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
 
 	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		return nil, err
+	var c *Container
+	if ctr != nil {
+		c = &Container{DockerContainer: ctr}
 	}
 
-	c := &Container{
-		DockerContainer: ctr,
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
 	}
+
 	return c, nil
 }
 

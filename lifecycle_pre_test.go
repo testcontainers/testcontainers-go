@@ -19,10 +19,6 @@ import (
 func TestPreCreateModifierHook(t *testing.T) {
 	ctx := context.Background()
 
-	provider, err := core.NewClient(ctx)
-	require.NoError(t, err)
-	defer provider.Close()
-
 	t.Run("No exposed ports", func(t *testing.T) {
 		// reqWithModifiers {
 		req := Request{
@@ -35,7 +31,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 					Source: tcmount.DockerVolumeSource{
 						Name: "appdata",
 						VolumeOptions: &mount.VolumeOptions{
-							Labels: core.DefaultLabels(core.SessionID()),
+							Labels: GenericLabels(),
 						},
 					},
 					Target: "/data",
@@ -67,7 +63,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = req.preCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err := req.preCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
 		require.NoError(t, err)
 
 		// assertions
@@ -91,7 +87,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 					Source: "appdata",
 					Target: "/data",
 					VolumeOptions: &mount.VolumeOptions{
-						Labels: core.DefaultLabels(core.SessionID()),
+						Labels: GenericLabels(),
 					},
 				},
 			},
@@ -147,7 +143,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = req.preCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err := req.preCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
 		require.NoError(t, err)
 
 		// assertions
@@ -278,7 +274,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = req.preCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err := req.preCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
 		require.NoError(t, err)
 
 		// assertions
@@ -309,7 +305,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = req.preCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
+		err := req.preCreateContainerHook(ctx, inputConfig, inputHostConfig, inputNetworkingConfig)
 		require.NoError(t, err)
 
 		// assertions

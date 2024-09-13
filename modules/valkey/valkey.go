@@ -9,8 +9,8 @@ import (
 )
 
 // ValkeyContainer represents the Valkey container type used in the module
-type ValkeyContainer struct {
-	testcontainers.Container
+type Container struct {
+	*testcontainers.DockerContainer
 }
 
 // valkeyServerProcess is the name of the valkey server process
@@ -30,7 +30,7 @@ const (
 )
 
 // ConnectionString returns the connection string for the Valkey container
-func (c *ValkeyContainer) ConnectionString(ctx context.Context) (string, error) {
+func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	mappedPort, err := c.MappedPort(ctx, "6379/tcp")
 	if err != nil {
 		return "", err
@@ -46,7 +46,7 @@ func (c *ValkeyContainer) ConnectionString(ctx context.Context) (string, error) 
 }
 
 // Run creates an instance of the Valkey container type
-func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*ValkeyContainer, error) {
+func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*Container, error) {
 	req := testcontainers.Request{
 		Image:        img,
 		ExposedPorts: []string{"6379/tcp"},
@@ -60,12 +60,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 		}
 	}
 
-	container, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		return nil, err
+	ctr, err := testcontainers.Run(ctx, req)
+	var c *Container
+	if ctr != nil {
+		c = &Container{DockerContainer: ctr}
 	}
 
-	return &ValkeyContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 // WithConfigFile sets the config file to be used for the valkey container, and sets the command to run the valkey server

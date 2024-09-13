@@ -404,8 +404,8 @@ func assertModuleTestContent(t *testing.T, module context.TestcontainersModule, 
 
 	data := sanitiseContent(content)
 	assert.Equal(t, "package "+module.Lower()+"_test", data[0])
-	assert.Equal(t, "func Test"+module.Title()+"(t *testing.T) {", data[9])
-	assert.Equal(t, "\tctr, err := "+module.Lower()+"."+module.Entrypoint()+"(ctx, \""+module.Image+"\")", data[12])
+	assert.Equal(t, "func Test"+module.Title()+"(t *testing.T) {", data[11])
+	assert.Equal(t, "\tctr, err := "+module.Lower()+"."+module.Entrypoint()+"(ctx, \""+module.Image+"\")", data[14])
 }
 
 // assert content module
@@ -419,16 +419,17 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 	entrypoint := module.Entrypoint()
 
 	data := sanitiseContent(content)
-	assert.Equal(t, "package "+lower, data[0])
-	assert.Equal(t, "// "+containerName+" represents the "+exampleName+" container type used in the module", data[9])
-	assert.Equal(t, "type "+containerName+" struct {", data[10])
-	assert.Equal(t, "\t*testcontainers.DockerContainer", data[11])
-	assert.Equal(t, "// "+entrypoint+" creates an instance of the "+exampleName+" container type", data[14])
-	assert.Equal(t, "func "+entrypoint+"(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*"+containerName+", error) {", data[15])
-	assert.Equal(t, "\t\tImage: img,", data[17])
-	assert.Equal(t, "\t\tif err := opt.Customize(&req); err != nil {", data[22])
-	assert.Equal(t, "\t\t\treturn nil, fmt.Errorf(\"customize: %w\", err)", data[23])
-	assert.Equal(t, "\treturn &"+containerName+"{DockerContainer: ctr}, nil", data[32])
+	require.Equal(t, "package "+lower, data[0])
+	require.Equal(t, "// "+containerName+" represents the "+exampleName+" container type used in the module", data[9])
+	require.Equal(t, "type "+containerName+" struct {", data[10])
+	require.Equal(t, "// "+entrypoint+" creates an instance of the "+exampleName+" container type", data[14])
+	require.Equal(t, "func "+entrypoint+"(ctx context.Context, img string, opts ...testcontainers.RequestCustomizer) (*"+containerName+", error) {", data[15])
+	require.Equal(t, "\t\tImage: img,", data[17])
+	require.Equal(t, "\t\tif err := opt.Customize(&req); err != nil {", data[22])
+	require.Equal(t, "\t\t\treturn nil, fmt.Errorf(\"customize: %w\", err)", data[23])
+	require.Equal(t, "\tvar c *"+containerName, data[28])
+	require.Equal(t, "\t\tc = &"+containerName+"{DockerContainer: ctr}", data[30])
+	require.Equal(t, "\treturn c, nil", data[37])
 }
 
 // assert content GitHub workflow for the module

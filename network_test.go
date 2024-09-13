@@ -6,7 +6,6 @@ import (
 
 	"github.com/docker/docker/api/types/filters"
 	dockernetwork "github.com/docker/docker/api/types/network"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -19,17 +18,11 @@ func TestNew(t *testing.T) {
 
 	net, err := testcontainers.NewNetwork(ctx,
 		tcnetwork.WithAttachable(),
-		// Makes the network internal only, meaning the host machine cannot access it.
-		// Remove or use `network.WithDriver("bridge")` to change the network's mode.
-		tcnetwork.WithInternal(),
+		tcnetwork.WithDriver("bridge"),
 		tcnetwork.WithLabels(map[string]string{"this-is-a-test": "value"}),
 	)
 	require.NoError(t, err)
-	defer func() {
-		if err := net.Remove(ctx); err != nil {
-			t.Fatalf("failed to remove network: %s", err)
-		}
-	}()
+	testcontainers.CleanupNetwork(t, net)
 
 	networkName := net.Name
 
@@ -43,11 +36,8 @@ func TestNew(t *testing.T) {
 		},
 		Started: true,
 	})
-	defer func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	}()
+	testcontainers.CleanupContainer(t, nginxC)
+	require.NoError(t, err)
 
 	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoError(t, err)
@@ -57,17 +47,16 @@ func TestNew(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	assert.Len(t, resources, 1)
+	require.Len(t, resources, 1)
 
 	newNetwork := resources[0]
 
 	expectedLabels := testcontainers.GenericLabels()
 	expectedLabels["this-is-a-test"] = "true"
 
-	assert.True(t, newNetwork.Attachable)
-	assert.True(t, newNetwork.Internal)
-	assert.Equal(t, "value", newNetwork.Labels["this-is-a-test"])
-
+	require.True(t, newNetwork.Attachable)
+	require.False(t, newNetwork.Internal)
+	require.Equal(t, "value", newNetwork.Labels["this-is-a-test"])
 	require.NoError(t, err)
 }
 
@@ -94,12 +83,8 @@ func TestNewNetwork_withOptions(t *testing.T) {
 		tcnetwork.WithDriver("bridge"),
 	)
 	// }
-	if err != nil {
-		t.Fatal("cannot create network: ", err)
-	}
-	defer func() {
-		require.NoError(t, net.Remove(ctx))
-	}()
+	require.NoError(t, err)
+	testcontainers.CleanupNetwork(t, net)
 
 	networkName := net.Name
 
@@ -107,5 +92,5 @@ func TestNewNetwork_withOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal("Cannot get created network by name")
 	}
-	assert.Equal(t, ipamConfig, foundNetwork.IPAM)
+	require.Equal(t, ipamConfig, foundNetwork.IPAM)
 }

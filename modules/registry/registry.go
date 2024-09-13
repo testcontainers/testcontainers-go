@@ -227,15 +227,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	}
 
 	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		return nil, err
+	var c *Container
+	if ctr != nil {
+		c = &Container{DockerContainer: ctr}
 	}
 
-	c := &Container{DockerContainer: ctr}
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
 	address, err := c.Address(ctx)
 	if err != nil {
-		return c, err
+		return c, fmt.Errorf("address: %w", err)
 	}
 
 	c.RegistryName = strings.TrimPrefix(address, "http://")

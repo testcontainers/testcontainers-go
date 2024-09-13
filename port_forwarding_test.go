@@ -77,9 +77,7 @@ func TestExposeHostPorts(t *testing.T) {
 				var err error
 				nw, err = testcontainers.NewNetwork(context.Background())
 				require.NoError(tt, err)
-				tt.Cleanup(func() {
-					require.NoError(tt, nw.Remove(context.Background()))
-				})
+				testcontainers.CleanupNetwork(t, nw)
 
 				req.Networks = []string{nw.Name}
 				req.NetworkAliases = map[string][]string{nw.Name: {"myalpine"}}
@@ -93,10 +91,8 @@ func TestExposeHostPorts(t *testing.T) {
 			}
 
 			c, err := testcontainers.Run(ctx, req)
+			testcontainers.CleanupContainer(t, c)
 			require.NoError(tt, err)
-			tt.Cleanup(func() {
-				require.NoError(tt, c.Terminate(context.Background()))
-			})
 
 			if tc.hasHostAccess {
 				// create a container that has host access, which will
@@ -120,15 +116,11 @@ func httpRequest(t *testing.T, c testcontainers.ReadyContainer, port int) (int, 
 		tcexec.Multiplexed(),
 	)
 	// }
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// read the response
 	bs, err := io.ReadAll(reader)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	return code, string(bs)
 }

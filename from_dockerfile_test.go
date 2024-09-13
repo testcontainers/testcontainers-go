@@ -19,21 +19,21 @@ import (
 )
 
 func TestBuildImageFromDockerfile_Target(t *testing.T) {
-	// there are three targets: target0, target1 and target2.
+	// there are thre targets: target0, target1 and target2.
 	for i := 0; i < 3; i++ {
 		ctx := context.Background()
 		c, err := Run(ctx, Request{
 			FromDockerfile: FromDockerfile{
-				Context:       "testdata",
-				Dockerfile:    "target.Dockerfile",
-				PrintBuildLog: true,
-				KeepImage:     false,
+				Context:    "testdata",
+				Dockerfile: "target.Dockerfile",
+				KeepImage:  false,
 				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
 					buildOptions.Target = fmt.Sprintf("target%d", i)
 				},
 			},
 			Started: true,
 		})
+		CleanupContainer(t, c)
 		require.NoError(t, err)
 
 		r, err := c.Logs(ctx)
@@ -41,12 +41,7 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 
 		logs, err := io.ReadAll(r)
 		require.NoError(t, err)
-
-		assert.Equal(t, fmt.Sprintf("target%d\n\n", i), string(logs))
-
-		t.Cleanup(func() {
-			require.NoError(t, c.Terminate(ctx))
-		})
+		require.Equal(t, fmt.Sprintf("target%d\n\n", i), string(logs))
 	}
 }
 
@@ -55,18 +50,18 @@ func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := Run(ctx, Request{
+	ctr, err := Run(ctx, Request{
 		FromDockerfile: FromDockerfile{
-			Context:       "testdata",
-			Dockerfile:    "target.Dockerfile",
-			PrintBuildLog: true,
-			KeepImage:     false,
+			Context:    "testdata",
+			Dockerfile: "target.Dockerfile",
+			KeepImage:  false,
 			BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
 				buildOptions.Target = "target-foo"
 			},
 		},
 		Started: true,
 	})
+	CleanupContainer(t, ctr)
 	require.Error(t, err)
 }
 
@@ -153,8 +148,8 @@ func TestBuildImageFromDockerfile_BuildError(t *testing.T) {
 		},
 		Started: true,
 	}
-	_, err = Run(ctx, req)
-
+	ctr, err := Run(ctx, req)
+	CleanupContainer(t, ctr)
 	require.EqualError(t, err, `create container: build image: The command '/bin/sh -c exit 1' returned a non-zero code: 1`)
 }
 

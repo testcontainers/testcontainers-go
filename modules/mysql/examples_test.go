@@ -7,6 +7,7 @@ import (
 	"log"
 	"path/filepath"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
 )
 
@@ -22,21 +23,21 @@ func ExampleRun() {
 		mysql.WithPassword("password"),
 		mysql.WithScripts(filepath.Join("testdata", "schema.sql")),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := mysqlContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(mysqlContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := mysqlContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -56,40 +57,45 @@ func ExampleRun_connect() {
 		mysql.WithPassword("password"),
 		mysql.WithScripts(filepath.Join("testdata", "schema.sql")),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := mysqlContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(mysqlContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	connectionString, err := mysqlContainer.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
+		log.Printf("failed to get connection string: %s", err)
+		return
 	}
 
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
-		log.Fatalf("failed to connect to MySQL: %s", err) // nolint:gocritic
+		log.Printf("failed to connect to MySQL: %s", err)
+		return
 	}
 	defer db.Close()
 
 	if err = db.Ping(); err != nil {
-		log.Fatalf("failed to ping MySQL: %s", err)
+		log.Printf("failed to ping MySQL: %s", err)
+		return
 	}
 	stmt, err := db.Prepare("SELECT @@GLOBAL.tmpdir")
 	if err != nil {
-		log.Fatalf("failed to prepare statement: %s", err)
+		log.Printf("failed to prepare statement: %s", err)
+		return
 	}
 	defer stmt.Close()
 	row := stmt.QueryRow()
 	tmpDir := ""
 	err = row.Scan(&tmpDir)
 	if err != nil {
-		log.Fatalf("failed to scan row: %s", err)
+		log.Printf("failed to scan row: %s", err)
+		return
 	}
 
 	fmt.Println(tmpDir)

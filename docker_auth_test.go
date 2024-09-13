@@ -29,8 +29,8 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 	}
 
 	redisC, err := Run(ctx, req)
+	CleanupContainer(t, redisC)
 	require.NoError(t, err)
-	TerminateContainerOnEnd(t, ctx, redisC)
 }
 
 // removeImageFromLocalCache removes the image from the local cache
@@ -67,8 +67,7 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 			BuildArgs: map[string]*string{
 				"REGISTRY_HOST": &registryHost,
 			},
-			Repo:          "localhost",
-			PrintBuildLog: true,
+			Repo: "localhost",
 		},
 		AlwaysPullImage: true, // make sure the authentication takes place
 		ExposedPorts:    []string{"6379/tcp"},
@@ -77,8 +76,8 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 	}
 
 	redisC, err := Run(ctx, req)
+	CleanupContainer(t, redisC)
 	require.NoError(t, err)
-	TerminateContainerOnEnd(t, ctx, redisC)
 }
 
 func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *testing.T) {
@@ -104,8 +103,8 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 	}
 
 	redisC, err := Run(ctx, req)
+	CleanupContainer(t, redisC)
 	require.Error(t, err)
-	TerminateContainerOnEnd(t, ctx, redisC)
 }
 
 func TestCreateContainerFromPrivateRegistry(t *testing.T) {
@@ -124,8 +123,8 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 	}
 
 	redisContainer, err := Run(ctx, req)
+	CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
-	TerminateContainerOnEnd(t, ctx, redisContainer)
 }
 
 func prepareLocalRegistryWithAuth(t *testing.T) string {
@@ -157,6 +156,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	}
 
 	registryC, err := Run(ctx, req)
+	CleanupContainer(t, registryC)
 	require.NoError(t, err)
 
 	mappedPort, err := registryC.MappedPort(ctx, "5000/tcp")
@@ -168,9 +168,6 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 
 	t.Cleanup(func() {
 		removeImageFromLocalCache(t, addr+"/redis:5.0-alpine")
-	})
-	t.Cleanup(func() {
-		require.NoError(t, registryC.Terminate(context.Background()))
 	})
 
 	_, cancel := context.WithCancel(context.Background())

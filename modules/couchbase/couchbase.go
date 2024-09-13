@@ -103,21 +103,23 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	}
 
 	ctr, err := testcontainers.Run(ctx, req)
+	var couchbaseContainer *Container
+	if ctr != nil {
+		couchbaseContainer = &Container{DockerContainer: ctr}
+	}
 	if err != nil {
-		return nil, err
+		return couchbaseContainer, err
 	}
 
-	couchbaseContainer := Container{ctr, config}
-
 	if err = couchbaseContainer.initCluster(ctx); err != nil {
-		return nil, err
+		return couchbaseContainer, fmt.Errorf("init cluster: %w", err)
 	}
 
 	if err = couchbaseContainer.createBuckets(ctx); err != nil {
-		return nil, err
+		return couchbaseContainer, fmt.Errorf("create buckets: %w", err)
 	}
 
-	return &couchbaseContainer, nil
+	return couchbaseContainer, nil
 }
 
 // ConnectionString returns the connection string to connect to the Couchbase container instance.

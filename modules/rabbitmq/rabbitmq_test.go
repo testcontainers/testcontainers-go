@@ -12,6 +12,7 @@ import (
 
 	"github.com/mdelapenya/tlscert"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/rabbitmq"
@@ -21,29 +22,17 @@ func TestRunContainer_connectUsingAmqp(t *testing.T) {
 	ctx := context.Background()
 
 	rabbitmqContainer, err := rabbitmq.Run(ctx, "rabbitmq:3.12.11-management-alpine")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	testcontainers.CleanupContainer(t, rabbitmqContainer)
+	require.NoError(t, err)
 
 	amqpURL, err := rabbitmqContainer.AmqpURL(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	amqpConnection, err := amqp.Dial(amqpURL)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if err = amqpConnection.Close(); err != nil {
-		t.Fatal(err)
-	}
+	err = amqpConnection.Close()
+	require.NoError(t, err)
 }
 
 func TestRunContainer_connectUsingAmqps(t *testing.T) {
@@ -82,20 +71,11 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 	}
 
 	rabbitmqContainer, err := rabbitmq.Run(ctx, "rabbitmq:3.12.11-management-alpine", rabbitmq.WithSSL(sslSettings))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	testcontainers.CleanupContainer(t, rabbitmqContainer)
+	require.NoError(t, err)
 
 	amqpsURL, err := rabbitmqContainer.AmqpsURL(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	if !strings.HasPrefix(amqpsURL, "amqps") {
 		t.Fatal(fmt.Errorf("AMQPS Url should begin with `amqps`"))
@@ -104,15 +84,11 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 	certs := x509.NewCertPool()
 
 	pemData, err := os.ReadFile(sslSettings.CACertFile)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	certs.AppendCertsFromPEM(pemData)
 
 	amqpsConnection, err := amqp.DialTLS(amqpsURL, &tls.Config{InsecureSkipVerify: false, RootCAs: certs})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	if amqpsConnection.IsClosed() {
 		t.Fatal(fmt.Errorf("AMQPS Connection unexpectdely closed"))
@@ -238,15 +214,8 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 		testcontainers.WithAfterReadyCommand(Plugin{Name: "rabbitmq_shovel"}, Plugin{Name: "rabbitmq_random_exchange"}),
 		// }
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	testcontainers.CleanupContainer(t, rabbitmqContainer)
+	require.NoError(t, err)
 
 	if !assertEntity(t, rabbitmqContainer, "queues", "queue1", "queue2", "queue3", "queue4") {
 		t.Fatal(err)

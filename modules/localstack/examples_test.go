@@ -23,21 +23,21 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	localstackContainer, err := localstack.Run(ctx, "localstack/localstack:1.4.0")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := localstackContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(localstackContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := localstackContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -52,8 +52,15 @@ func ExampleRun_withNetwork() {
 
 	newNetwork, err := testcontainers.NewNetwork(ctx)
 	if err != nil {
-		log.Fatalf("failed to create network: %s", err)
+		log.Printf("failed to create network: %s", err)
+		return
 	}
+
+	defer func() {
+		if err := newNetwork.Remove(context.Background()); err != nil {
+			log.Printf("failed to remove network: %s", err)
+		}
+	}()
 
 	nwName := newNetwork.Name
 
@@ -63,21 +70,21 @@ func ExampleRun_withNetwork() {
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
 		testcontainers.WithNetwork([]string{nwName}, newNetwork),
 	)
+	defer func() {
+		if err := testcontainers.TerminateContainer(localstackContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
+		log.Printf("failed to start container: %s", err)
+		return
 	}
 	// }
 
-	// Clean up the container
-	defer func() {
-		if err := localstackContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
-		}
-	}()
-
 	networks, err := localstackContainer.Networks(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container networks: %s", err) // nolint:gocritic
+		log.Printf("failed to get container networks: %s", err)
+		return
 	}
 
 	fmt.Println(len(networks))
@@ -89,14 +96,20 @@ func ExampleRun_withNetwork() {
 func ExampleRun_legacyMode() {
 	ctx := context.Background()
 
-	_, err := localstack.Run(
+	ctr, err := localstack.Run(
 		ctx,
 		"localstack/localstack:0.10.0",
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
 		testcontainers.WithWaitStrategy(wait.ForLog("Ready.").WithStartupTimeout(5*time.Minute).WithOccurrence(1)),
 	)
+	defer func() {
+		if err := testcontainers.TerminateContainer(ctr); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
 	if err == nil {
-		log.Fatalf("expected an error, got nil")
+		log.Printf("expected an error, got nil")
+		return
 	}
 
 	fmt.Println(err)
@@ -136,17 +149,17 @@ func ExampleRun_usingLambdas() {
 				},
 			},
 		}),
-		// }
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
+	// }
 	defer func() {
-		err := ctr.Terminate(ctx)
-		if err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(ctr); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	// the three commands below are doing the following:
 	// 1. create a lambda function
@@ -168,7 +181,8 @@ func ExampleRun_usingLambdas() {
 	for _, cmd := range lambdaCommands {
 		_, _, err := ctr.Exec(ctx, cmd)
 		if err != nil {
-			log.Fatalf("failed to execute command %v: %s", cmd, err) // nolint:gocritic
+			log.Printf("failed to execute command %v: %s", cmd, err)
+			return
 		}
 	}
 
@@ -178,13 +192,15 @@ func ExampleRun_usingLambdas() {
 	}
 	_, reader, err := ctr.Exec(ctx, cmd, exec.Multiplexed())
 	if err != nil {
-		log.Fatalf("failed to execute command %v: %s", cmd, err)
+		log.Printf("failed to execute command %v: %s", cmd, err)
+		return
 	}
 
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(reader)
 	if err != nil {
-		log.Fatalf("failed to read from reader: %s", err)
+		log.Printf("failed to read from reader: %s", err)
+		return
 	}
 
 	content := buf.Bytes()
@@ -202,7 +218,8 @@ func ExampleRun_usingLambdas() {
 	v := &FunctionURLConfig{}
 	err = json.Unmarshal(content, v)
 	if err != nil {
-		log.Fatalf("failed to unmarshal content: %s", err)
+		log.Printf("failed to unmarshal content: %s", err)
+		return
 	}
 
 	httpClient := http.Client{
@@ -214,19 +231,22 @@ func ExampleRun_usingLambdas() {
 
 	mappedPort, err := ctr.MappedPort(ctx, "4566/tcp")
 	if err != nil {
-		log.Fatalf("failed to get mapped port: %s", err)
+		log.Printf("failed to get mapped port: %s", err)
+		return
 	}
 
 	functionURL = strings.ReplaceAll(functionURL, "4566", mappedPort.Port())
 
 	resp, err := httpClient.Post(functionURL, "application/json", bytes.NewBufferString(`{"num1": "10", "num2": "10"}`))
 	if err != nil {
-		log.Fatalf("failed to send request to lambda function: %s", err)
+		log.Printf("failed to send request to lambda function: %s", err)
+		return
 	}
 
 	jsonResponse, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("failed to read response body: %s", err)
+		log.Printf("failed to read response body: %s", err)
+		return
 	}
 
 	fmt.Println(string(jsonResponse))

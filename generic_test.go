@@ -34,8 +34,8 @@ func TestNewReusableContainer(t *testing.T) {
 		Started:      true,
 	})
 	require.NoError(t, err)
-	require.True(t, n1.isRunning)
-	TerminateContainerOnEnd(t, ctx, n1)
+	require.True(t, n1.IsRunning())
+	CleanupContainer(t, n1)
 
 	copiedFileName := "hello_copy.sh"
 	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
@@ -114,7 +114,7 @@ func TestNewContainerShouldReturnRefOnError(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.NotNil(t, c)
-	TerminateContainerOnEnd(t, context.Background(), c)
+	CleanupContainer(t, c)
 }
 
 func TestNewReusableContainerInSubprocess(t *testing.T) {
@@ -151,7 +151,7 @@ func TestNewReusableContainerInSubprocess(t *testing.T) {
 	nginxC, err := containerFromDockerResponse(context.Background(), ctrs[0])
 	require.NoError(t, err)
 
-	TerminateContainerOnEnd(t, context.Background(), nginxC)
+	CleanupContainer(t, nginxC)
 }
 
 func createReuseContainerInSubprocess(t *testing.T) string {

@@ -25,18 +25,5 @@ func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.Request
 
 	req.Cmd = []string{"--project", settings.ProjectID}
 
-	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	bigQueryContainer, err := newGCloudContainer(ctx, 9050, ctr, settings)
-	if err != nil {
-		return nil, err
-	}
-
-	// always prepend http:// to the URI
-	bigQueryContainer.URI = "http://" + bigQueryContainer.URI
-
-	return bigQueryContainer, nil
+	return newGCloudContainer(ctx, req, 9050, settings, "http://")
 }

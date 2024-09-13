@@ -78,15 +78,20 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	}
 
 	ctr, err := testcontainers.Run(ctx, req)
+	var dc *Container
+	if ctr != nil {
+		dc = &Container{DockerContainer: ctr, username: username, password: password, database: database}
+	}
 	if err != nil {
-		return nil, err
+		return dc, err
 	}
 
-	dc := &Container{ctr, username, password, database}
-
 	// dolthub/dolt-sql-server does not create user or database, so we do so here
-	err = dc.initialize(ctx, createUser)
-	return dc, err
+	if err = dc.initialize(ctx, createUser); err != nil {
+		return dc, fmt.Errorf("initialize: %w", err)
+	}
+
+	return dc, nil
 }
 
 func (c *Container) initialize(ctx context.Context, createUser bool) error {

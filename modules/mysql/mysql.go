@@ -76,18 +76,21 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	}
 
 	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		return nil, err
+	var c *Container
+	if ctr != nil {
+		c = &Container{
+			DockerContainer: ctr,
+			password:        password,
+			username:        username,
+			database:        req.Env["MYSQL_DATABASE"],
+		}
 	}
 
-	database := req.Env["MYSQL_DATABASE"]
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
-	return &Container{
-		DockerContainer: ctr,
-		username:        username,
-		password:        password,
-		database:        database,
-	}, nil
+	return c, nil
 }
 
 // MustConnectionString panics if the address cannot be determined.

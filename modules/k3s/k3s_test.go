@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/image"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kwait "k8s.io/apimachinery/pkg/util/wait"
@@ -26,50 +27,30 @@ func TestLoadImages(t *testing.T) {
 	defer cancel()
 
 	k3sContainer, err := k3s.Run(ctx, "docker.io/rancher/k3s:v1.27.1-k3s1")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container
-	defer func() {
-		if err := k3sContainer.Terminate(ctx); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	testcontainers.CleanupContainer(t, k3sContainer)
+	require.NoError(t, err)
 
 	kubeConfigYaml, err := k3sContainer.GetKubeConfig(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	restcfg, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigYaml)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	k8s, err := kubernetes.NewForConfig(restcfg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// ensure nginx image is available locally
 	err = tcimage.Pull(ctx, "nginx", tclog.NewTestLogger(t), image.PullOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	t.Run("Test load image not available", func(t *testing.T) {
 		err := k3sContainer.LoadImages(ctx, "fake.registry/fake:non-existing")
-		if err == nil {
-			t.Fatal("should had failed")
-		}
+		require.Error(t, err)
 	})
 
 	t.Run("Test load image in cluster", func(t *testing.T) {
 		err := k3sContainer.LoadImages(ctx, "nginx")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		pod := &corev1.Pod{
 			TypeMeta: metav1.TypeMeta{
@@ -91,9 +72,7 @@ func TestLoadImages(t *testing.T) {
 		}
 
 		_, err = k8s.CoreV1().Pods("default").Create(ctx, pod, metav1.CreateOptions{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		err = kwait.PollUntilContextCancel(ctx, time.Second, true, func(ctx context.Context) (bool, error) {
 			state, err := getTestPodState(ctx, k8s)
@@ -105,17 +84,11 @@ func TestLoadImages(t *testing.T) {
 			}
 			return state.Running != nil, nil
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		state, err := getTestPodState(ctx, k8s)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if state.Running == nil {
-			t.Fatalf("Unexpected status %v", state)
-		}
+		require.NoError(t, err)
+		require.NotNil(t, state.Running)
 	})
 }
 
@@ -133,31 +106,17 @@ func TestAPIServerReady(t *testing.T) {
 	ctx := context.Background()
 
 	k3sContainer, err := k3s.Run(ctx, "docker.io/rancher/k3s:v1.27.1-k3s1")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container
-	defer func() {
-		if err := k3sContainer.Terminate(ctx); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	testcontainers.CleanupContainer(t, k3sContainer)
+	require.NoError(t, err)
 
 	kubeConfigYaml, err := k3sContainer.GetKubeConfig(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	restcfg, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigYaml)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	k8s, err := kubernetes.NewForConfig(restcfg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	pod := &corev1.Pod{
 		TypeMeta: metav1.TypeMeta{
@@ -178,9 +137,7 @@ func TestAPIServerReady(t *testing.T) {
 	}
 
 	_, err = k8s.CoreV1().Pods("default").Create(context.Background(), pod, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatalf("failed to create pod %v", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestWithManifestOption(t *testing.T) {
@@ -191,14 +148,6 @@ func TestWithManifestOption(t *testing.T) {
 		k3s.WithManifest("nginx-manifest.yaml"),
 		testcontainers.WithWaitStrategy(wait.ForExec([]string{"kubectl", "wait", "pod", "nginx", "--for=condition=Ready"})),
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container
-	defer func() {
-		if err := k3sContainer.Terminate(ctx); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	testcontainers.CleanupContainer(t, k3sContainer)
+	require.NoError(t, err)
 }

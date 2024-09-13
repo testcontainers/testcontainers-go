@@ -12,6 +12,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -27,19 +28,20 @@ func ExampleExecStrategy() {
 	}
 
 	localstack, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := localstack.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(localstack); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	state, err := localstack.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -194,17 +196,10 @@ func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 			}),
 		Started: true,
 	}
-	// }
 
 	ctx := context.Background()
 	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Cleanup(func() {
-		if err := ctr.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+	// }
 }

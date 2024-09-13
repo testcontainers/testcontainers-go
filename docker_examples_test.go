@@ -23,16 +23,21 @@ func ExampleNew() {
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 		Started:      true,
 	}
-	nginxC, _ := Run(ctx, req)
+	nginxC, err := Run(ctx, req)
 	defer func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := TerminateContainer(nginxC); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %v", err)
+		return
+	}
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -41,16 +46,15 @@ func ExampleNew() {
 	// true
 }
 
-func ExampleNew_buildFromDockerfile() {
+func ExampleRun_buildFromDockerfile() {
 	ctx := context.Background()
 
 	// buildFromDockerfileWithModifier {
 	c, err := Run(ctx, Request{
 		FromDockerfile: FromDockerfile{
-			Context:       "testdata",
-			Dockerfile:    "target.Dockerfile",
-			PrintBuildLog: true,
-			KeepImage:     false,
+			Context:    "testdata",
+			Dockerfile: "target.Dockerfile",
+			KeepImage:  false,
 			BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
 				buildOptions.Target = "target2"
 			},
@@ -58,18 +62,26 @@ func ExampleNew_buildFromDockerfile() {
 		Started: true,
 	})
 	// }
+	defer func() {
+		if err := TerminateContainer(c); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %v", err)
+		log.Printf("failed to start container: %v", err)
+		return
 	}
 
 	r, err := c.Logs(ctx)
 	if err != nil {
-		log.Fatalf("failed to get logs: %v", err)
+		log.Printf("failed to get logs: %v", err)
+		return
 	}
 
 	logs, err := io.ReadAll(r)
 	if err != nil {
-		log.Fatalf("failed to read logs: %v", err)
+		log.Printf("failed to read logs: %v", err)
+		return
 	}
 
 	fmt.Println(string(logs))
@@ -85,20 +97,30 @@ func ExampleNew_containerHost() {
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 		Started:      true,
 	}
-	nginxC, _ := Run(ctx, req)
+	nginxC, err := Run(ctx, req)
 	defer func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := TerminateContainer(nginxC); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %v", err)
+		return
+	}
+
 	// containerHost {
-	ip, _ := nginxC.Host(ctx)
+	ip, err := nginxC.Host(ctx)
+	if err != nil {
+		log.Printf("failed to get container host: %s", err)
+		return
+	}
 	// }
 	println(ip)
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -114,17 +136,27 @@ func ExampleNew_containerStart() {
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
-	nginxC, _ := Run(ctx, req)
+	nginxC, err := Run(ctx, req)
 	defer func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := TerminateContainer(nginxC); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
-	_ = nginxC.Start(ctx)
+	if err != nil {
+		log.Printf("failed to create container: %v", err)
+		return
+	}
+
+	err = nginxC.Start(ctx)
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -141,17 +173,23 @@ func ExampleNew_containerStop() {
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 		Started:      true,
 	}
-	nginxC, _ := Run(ctx, req)
+	nginxC, err := Run(ctx, req)
 	defer func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := TerminateContainer(nginxC); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %v", err)
+		return
+	}
+
 	fmt.Println("Container has been started")
 	timeout := 10 * time.Second
-	err := nginxC.Stop(ctx, &timeout)
+	err = nginxC.Stop(ctx, &timeout)
 	if err != nil {
-		log.Fatalf("failed to stop container: %s", err) // nolint:gocritic
+		log.Printf("failed to stop container: %s", err)
+		return
 	}
 
 	fmt.Println("Container has been stopped")
@@ -169,12 +207,17 @@ func ExampleNew_mappedPort() {
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 		Started:      true,
 	}
-	nginxC, _ := Run(ctx, req)
+	nginxC, err := Run(ctx, req)
 	defer func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := TerminateContainer(nginxC); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %v", err)
+		return
+	}
+
 	// buildingAddresses {
 	ip, _ := nginxC.Host(ctx)
 	port, _ := nginxC.MappedPort(ctx, "80")
@@ -183,7 +226,8 @@ func ExampleNew_mappedPort() {
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -197,9 +241,7 @@ func ExampleNew_withNetwork() {
 
 	net, err := NewNetwork(ctx,
 		network.WithAttachable(),
-		// Makes the network internal only, meaning the host machine cannot access it.
-		// Remove or use `network.WithDriver("bridge")` to change the network's mode.
-		network.WithInternal(),
+		network.WithDriver("bridge"),
 		network.WithLabels(map[string]string{"this-is-a-test": "value"}),
 	)
 	if err != nil {
@@ -215,7 +257,7 @@ func ExampleNew_withNetwork() {
 	networkName := net.Name
 	// }
 
-	nginxC, _ := Run(ctx, Request{
+	nginxC, err := Run(ctx, Request{
 		Image: "nginx:alpine",
 		ExposedPorts: []string{
 			"80/tcp",
@@ -226,10 +268,14 @@ func ExampleNew_withNetwork() {
 		Started: true,
 	})
 	defer func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := TerminateContainer(nginxC); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %v", err)
+		return
+	}
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
@@ -252,17 +298,17 @@ func ExampleNew_withSubstitutors() {
 		ImageSubstitutors: []tcimage.Substitutor{tcimage.DockerSubstitutor{}},
 		Started:           true,
 	})
-	// }
-	if err != nil {
-		log.Fatalf("could not start container: %v", err)
-	}
-
 	defer func() {
-		err := ctr.Terminate(ctx)
-		if err != nil {
-			log.Fatalf("could not terminate container: %v", err)
+		if err := TerminateContainer(ctr); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+
+	// }
+	if err != nil {
+		log.Printf("could not start container: %v", err)
+		return
+	}
 
 	fmt.Println(ctr.Image)
 

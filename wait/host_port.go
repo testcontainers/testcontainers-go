@@ -130,31 +130,33 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("%w: %w", ctx.Err(), err)
+			return fmt.Errorf("mapped port: retries: %d, port: %q, last err: %w, ctx err: %w", i, port, err, ctx.Err())
 		case <-time.After(waitInterval):
 			if err := checkTarget(ctx, target); err != nil {
-				return err
+				return fmt.Errorf("check target: retries: %d, port: %q, last err: %w", i, port, err)
 			}
 			port, err = target.MappedPort(ctx, internalPort)
 			if err != nil {
-				log.Printf("(%d) [%s] %s\n", i, port, err)
+				log.Printf("mapped port: retries: %d, port: %q, err: %s\n", i, port, err)
 			}
 		}
 	}
 
 	if err := externalCheck(ctx, ipAddress, port, target, waitInterval); err != nil {
-		return err
+		return fmt.Errorf("external check: %w", err)
 	}
 
 	if hp.skipInternalCheck {
 		return nil
 	}
 
-	err = internalCheck(ctx, internalPort, target)
-	if err != nil && errors.Is(errShellNotExecutable, err) {
-		log.Println("Shell not executable in container, only external port check will be performed")
-	} else {
-		return err
+	if err = internalCheck(ctx, internalPort, target); err != nil {
+		if errors.Is(errShellNotExecutable, err) {
+			log.Println("Shell not executable in container, only external port validated")
+			return nil
+		}
+
+		return fmt.Errorf("internal check: %w", err)
 	}
 
 	return nil
@@ -167,9 +169,9 @@ func externalCheck(ctx context.Context, ipAddress string, port nat.Port, target 
 
 	dialer := net.Dialer{}
 	address := net.JoinHostPort(ipAddress, portString)
-	for {
+	for i := 0; ; i++ {
 		if err := checkTarget(ctx, target); err != nil {
-			return err
+			return fmt.Errorf("check target: retries: %d address: %s: %w", i, address, err)
 		}
 		conn, err := dialer.DialContext(ctx, proto, address)
 		if err != nil {
@@ -183,7 +185,7 @@ func externalCheck(ctx context.Context, ipAddress string, port nat.Port, target 
 					}
 				}
 			}
-			return err
+			return fmt.Errorf("dial: %w", err)
 		}
 
 		conn.Close()

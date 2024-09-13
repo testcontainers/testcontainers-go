@@ -2,7 +2,6 @@ package gcloud
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -25,13 +24,8 @@ func RunFirestore(ctx context.Context, img string, opts ...testcontainers.Reques
 	req.Cmd = []string{
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators firestore start --host-port 0.0.0.0:8080 " + fmt.Sprintf("--project=%s", settings.ProjectID),
+		"gcloud beta emulators firestore start --host-port 0.0.0.0:8080 --project=" + settings.ProjectID,
 	}
 
-	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return newGCloudContainer(ctx, 8080, ctr, settings)
+	return newGCloudContainer(ctx, req, 8080, settings, "")
 }

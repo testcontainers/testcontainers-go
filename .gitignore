@@ -16,3 +16,6 @@ coverage.out
 tcvenv
 
 **/go.work
+
+# VS Code settings
+.vscode

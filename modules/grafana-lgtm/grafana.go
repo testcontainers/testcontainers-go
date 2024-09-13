@@ -41,7 +41,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 
 	ctr, err := testcontainers.Run(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("generic container: %w", err)
 	}
 
 	c := &GrafanaLGTMContainer{DockerContainer: ctr}
@@ -49,7 +49,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	url, err := c.OtlpHttpEndpoint(ctx)
 	if err != nil {
 		// return the container instance to allow the caller to clean up
-		return c, err
+		return c, fmt.Errorf("otlp http endpoint: %w", err)
 	}
 
 	c.Printf("Access to the Grafana dashboard: %s", url)

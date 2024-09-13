@@ -7,19 +7,16 @@ import (
 
 	"github.com/inbucket/inbucket/pkg/rest/client"
 	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestInbucket(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := Run(ctx, "inbucket/inbucket:sha-2d409bb")
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		err := ctr.Terminate(ctx)
-		require.NoError(t, err)
-	})
 
 	// smtpConnection {
 	smtpUrl, err := ctr.SmtpConnection(ctx)

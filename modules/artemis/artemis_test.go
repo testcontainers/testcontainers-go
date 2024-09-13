@@ -66,7 +66,7 @@ func TestArtemis(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ctr, err := artemis.Run(ctx, "docker.io/apache/activemq-artemis:2.30.0-alpine", test.opts...)
 			require.NoError(t, err)
-			t.Cleanup(func() { require.NoError(t, ctr.Terminate(ctx), "failed to terminate container") })
+			testcontainers.CleanupContainer(t, ctr)
 
 			// consoleURL {
 			u, err := ctr.ConsoleURL(ctx)

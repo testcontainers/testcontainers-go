@@ -178,91 +178,91 @@ func TestLifecycleHooks(t *testing.T) {
 		{
 			PreCreates: []ContainerRequestHook{
 				func(ctx context.Context, req *Request) error {
-					prints = append(prints, fmt.Sprintf("pre-create hook 1: %#v", req))
+					prints = append(prints, "pre-create hook 1")
 					return nil
 				},
 				func(ctx context.Context, req *Request) error {
-					prints = append(prints, fmt.Sprintf("pre-create hook 2: %#v", req))
+					prints = append(prints, "pre-create hook 2")
 					return nil
 				},
 			},
 			PostCreates: []CreatedContainerHook{
 				func(ctx context.Context, c CreatedContainer) error {
-					prints = append(prints, fmt.Sprintf("post-create hook 1: %#v", c))
+					prints = append(prints, "post-create hook 1")
 					return nil
 				},
 				func(ctx context.Context, c CreatedContainer) error {
-					prints = append(prints, fmt.Sprintf("post-create hook 2: %#v", c))
+					prints = append(prints, "post-create hook 2")
 					return nil
 				},
 			},
 			PreStarts: []CreatedContainerHook{
 				func(ctx context.Context, c CreatedContainer) error {
-					prints = append(prints, fmt.Sprintf("pre-start hook 1: %#v", c))
+					prints = append(prints, "pre-start hook 1")
 					return nil
 				},
 				func(ctx context.Context, c CreatedContainer) error {
-					prints = append(prints, fmt.Sprintf("pre-start hook 2: %#v", c))
+					prints = append(prints, "pre-start hook 2")
 					return nil
 				},
 			},
 			PostStarts: []StartedContainerHook{
 				func(ctx context.Context, c StartedContainer) error {
-					prints = append(prints, fmt.Sprintf("post-start hook 1: %#v", c))
+					prints = append(prints, "post-start hook 1")
 					return nil
 				},
 				func(ctx context.Context, c StartedContainer) error {
-					prints = append(prints, fmt.Sprintf("post-start hook 2: %#v", c))
+					prints = append(prints, "post-start hook 2")
 					return nil
 				},
 			},
 			PostReadies: []StartedContainerHook{
 				func(ctx context.Context, c StartedContainer) error {
-					prints = append(prints, fmt.Sprintf("post-ready hook 1: %#v", c))
+					prints = append(prints, "post-ready hook 1")
 					return nil
 				},
 				func(ctx context.Context, c StartedContainer) error {
-					prints = append(prints, fmt.Sprintf("post-ready hook 2: %#v", c))
+					prints = append(prints, "post-ready hook 2")
 					return nil
 				},
 			},
 			PreStops: []StartedContainerHook{
 				func(ctx context.Context, c StartedContainer) error {
-					prints = append(prints, fmt.Sprintf("pre-stop hook 1: %#v", c))
+					prints = append(prints, "pre-stop hook 1")
 					return nil
 				},
 				func(ctx context.Context, c StartedContainer) error {
-					prints = append(prints, fmt.Sprintf("pre-stop hook 2: %#v", c))
+					prints = append(prints, "pre-stop hook 2")
 					return nil
 				},
 			},
 			PostStops: []StartedContainerHook{
 				func(ctx context.Context, c StartedContainer) error {
-					prints = append(prints, fmt.Sprintf("post-stop hook 1: %#v", c))
+					prints = append(prints, "post-stop hook 1")
 					return nil
 				},
 				func(ctx context.Context, c StartedContainer) error {
-					prints = append(prints, fmt.Sprintf("post-stop hook 2: %#v", c))
+					prints = append(prints, "post-stop hook 2")
 					return nil
 				},
 			},
 			PreTerminates: []StartedContainerHook{
 				func(ctx context.Context, c StartedContainer) error {
-					prints = append(prints, fmt.Sprintf("pre-terminate hook 1: %#v", c))
+					prints = append(prints, "pre-terminate hook 1")
 					return nil
 				},
 				func(ctx context.Context, c StartedContainer) error {
-					prints = append(prints, fmt.Sprintf("pre-terminate hook 2: %#v", c))
+					prints = append(prints, "pre-terminate hook 2")
 					return nil
 				},
 			},
 			PostTerminates: []StartedContainerHook{
 				func(ctx context.Context, c StartedContainer) error {
-					prints = append(prints, fmt.Sprintf("post-terminate hook 1: %#v", c))
+					prints = append(prints, "post-terminate hook 1")
 					return nil
 				},
 				func(ctx context.Context, c StartedContainer) error {
-					prints = append(prints, fmt.Sprintf("post-terminate hook 2: %#v", c))
+					prints = append(prints, "post-terminate hook 2")
 					return nil
 				},
 			},
@@ -270,51 +270,24 @@ func TestLifecycleHooks(t *testing.T) {
 	}
 	// }
 
-	req := Request{
+	c, err := Run(ctx, Request{
+		Image:          nginxAlpineImage,
 		LifecycleHooks: lifecycleHooks,
-	}
-	startedContainer := &DockerContainer{}
+		Started:        true,
+	})
+	CleanupContainer(t, c)
+	require.NoError(t, err)
+	require.NotNil(t, c)
 
-	for _, hook := range lifecycleHooks {
-		// TODO: instead of calling the hooks directly, we should create a Generic Container instead
-		err := hook.Creating(ctx)(&req)
-		require.NoError(t, err)
+	duration := 1 * time.Second
+	err = c.Stop(ctx, &duration)
+	require.NoError(t, err)
 
-		err = hook.Created(ctx)(startedContainer)
-		require.NoError(t, err)
+	err = c.Start(ctx)
+	require.NoError(t, err)
 
-		err = hook.Starting(ctx)(startedContainer)
-		require.NoError(t, err)
-
-		err = hook.Started(ctx)(startedContainer)
-		require.NoError(t, err)
-
-		err = hook.Readied(ctx)(startedContainer)
-		require.NoError(t, err)
-
-		err = hook.Stopping(ctx)(startedContainer)
-		require.NoError(t, err)
-
-		err = hook.Stopped(ctx)(startedContainer)
-		require.NoError(t, err)
-
-		// simulating container.Start again after the container has been stopped
-		err = hook.Starting(ctx)(startedContainer)
-		require.NoError(t, err)
-
-		err = hook.Started(ctx)(startedContainer)
-		require.NoError(t, err)
-
-		err = hook.Readied(ctx)(startedContainer)
-		require.NoError(t, err)
-		// end of simulating container.Start again
-
-		err = hook.Terminating(ctx)(startedContainer)
-		require.NoError(t, err)
-
-		err = hook.Terminated(ctx)(startedContainer)
-		require.NoError(t, err)
-	}
+	err = c.Terminate(ctx)
+	require.NoError(t, err)
 
 	lifecycleHooksIsHonouredFn(t, prints)
 }
@@ -335,6 +308,7 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 	// }
 
 	c, err := Run(ctx, req)
+	CleanupContainer(t, c)
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
@@ -348,7 +322,8 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 	err = c.Terminate(ctx)
 	require.NoError(t, err)
 
-	require.Len(t, dl.data, 12)
+	// Includes two additional entries for stop when terminate is called.
+	require.Len(t, dl.data, 14)
 }
 
 func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
@@ -366,6 +341,7 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 	}
 
 	c, err := Run(ctx, req)
+	CleanupContainer(t, c)
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
@@ -379,7 +355,8 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 	err = c.Terminate(ctx)
 	require.NoError(t, err)
 
-	require.Len(t, dl.data, 24)
+	// Includes four additional entries for stop (twice) when terminate is called.
+	require.Len(t, dl.data, 28)
 }
 
 type linesTestLogger struct {
@@ -406,11 +383,11 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	}
 
 	ctr, err := Run(ctx, req)
+	CleanupContainer(t, ctr)
 	// it should fail because the waiting for condition is not met
 	if err == nil {
 		t.Fatal(err)
 	}
-	TerminateContainerOnEnd(t, ctx, ctr)
 
 	containerLogs, err := ctr.Logs(ctx)
 	if err != nil {
@@ -444,41 +421,39 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 }
 
 func lifecycleHooksIsHonouredFn(t *testing.T, prints []string) {
-	require.Len(t, prints, 24)
+	t.Helper()
 
-	assert.True(t, strings.HasPrefix(prints[0], "pre-create hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[1], "pre-create hook 2: "))
+	expects := []string{
+		"pre-create hook 1",
+		"pre-create hook 2",
+		"post-create hook 1",
+		"post-create hook 2",
+		"pre-start hook 1",
+		"pre-start hook 2",
+		"post-start hook 1",
+		"post-start hook 2",
+		"post-ready hook 1",
+		"post-ready hook 2",
+		"pre-stop hook 1",
+		"pre-stop hook 2",
+		"post-stop hook 1",
+		"post-stop hook 2",
+		"pre-start hook 1",
+		"pre-start hook 2",
+		"post-start hook 1",
+		"post-start hook 2",
+		"post-ready hook 1",
+		"post-ready hook 2",
+		// Terminate currently calls stop to ensure that child containers are stopped.
+		"pre-stop hook 1",
+		"pre-stop hook 2",
+		"post-stop hook 1",
+		"post-stop hook 2",
+		"pre-terminate hook 1",
+		"pre-terminate hook 2",
+		"post-terminate hook 1",
+		"post-terminate hook 2",
+	}
 
-	assert.True(t, strings.HasPrefix(prints[2], "post-create hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[3], "post-create hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[4], "pre-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[5], "pre-start hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[6], "post-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[7], "post-start hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[8], "post-ready hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[9], "post-ready hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[10], "pre-stop hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[11], "pre-stop hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[12], "post-stop hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[13], "post-stop hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[14], "pre-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[15], "pre-start hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[16], "post-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[17], "post-start hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[18], "post-ready hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[19], "post-ready hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[20], "pre-terminate hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[21], "pre-terminate hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[22], "post-terminate hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[23], "post-terminate hook 2: "))
+	require.Equal(t, expects, prints)
 }

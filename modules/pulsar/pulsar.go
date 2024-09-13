@@ -133,14 +133,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 		}
 	}
 
-	c, err := testcontainers.Run(ctx, req)
+	ctr, err := testcontainers.Run(ctx, req)
+	var c *Container
+	if ctr != nil {
+		c = &Container{DockerContainer: ctr}
+	}
+
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	pc := &Container{
-		DockerContainer: c,
-	}
-
-	return pc, nil
+	return c, nil
 }

@@ -110,10 +110,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	}
 
 	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		return nil, err
+	var c *Container
+	if ctr != nil {
+		c = &Container{DockerContainer: ctr, opts: o}
 	}
-	return &Container{DockerContainer: ctr, opts: o}, nil
+
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 type modiferFunc func(*testcontainers.Request, options) error

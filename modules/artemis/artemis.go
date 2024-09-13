@@ -102,12 +102,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	}
 
 	ctr, err := testcontainers.Run(ctx, req)
+	var c *Container
+	if ctr != nil {
+		c = &Container{DockerContainer: ctr}
+	}
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	user := req.Env["ARTEMIS_USER"]
-	password := req.Env["ARTEMIS_PASSWORD"]
+	c.user = req.Env["ARTEMIS_USER"]
+	c.password = req.Env["ARTEMIS_PASSWORD"]
 
-	return &Container{DockerContainer: ctr, user: user, password: password}, nil
+	return c, nil
 }

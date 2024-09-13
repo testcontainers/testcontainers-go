@@ -94,16 +94,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 		return nil, err
 	}
 
-	clusterID := req.Env["CLUSTER_ID"]
-
 	configureControllerQuorumVoters(&req)
 
 	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		return nil, err
+	var c *Container
+	if ctr != nil {
+		c = &Container{DockerContainer: ctr, ClusterID: req.Env["CLUSTER_ID"]}
 	}
 
-	return &Container{DockerContainer: ctr, ClusterID: clusterID}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 // copyStarterScript copies the starter script into the container.

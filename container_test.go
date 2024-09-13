@@ -288,8 +288,7 @@ func TestBuildImageWithContexts(t *testing.T) {
 			}
 
 			c, err := testcontainers.Run(ctx, req)
-
-			defer testcontainers.TerminateContainerOnEnd(t, ctx, c)
+			testcontainers.CleanupContainer(t, c)
 
 			if testCase.ExpectedError != "" {
 				require.EqualError(t, err, testCase.ExpectedError)
@@ -313,7 +312,7 @@ func TestGetLogsFromFailedContainer(t *testing.T) {
 	// }
 
 	c, err := testcontainers.Run(ctx, req)
-	testcontainers.TerminateContainerOnEnd(t, ctx, c)
+	testcontainers.CleanupContainer(t, c)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "container exited with code 0")
 
@@ -386,17 +385,13 @@ func TestImageSubstitutors(t *testing.T) {
 			}
 
 			ctr, err := testcontainers.Run(ctx, req)
+			testcontainers.CleanupContainer(t, ctr)
 			if test.expectedError != nil {
 				require.ErrorIs(t, err, test.expectedError)
 				return
 			}
 
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer func() {
-				testcontainers.TerminateContainerOnEnd(t, ctx, ctr)
-			}()
+			require.NoError(t, err)
 
 			assert.Equal(t, test.expectedImage, ctr.Image)
 		})
@@ -419,17 +414,13 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 				Started:      true,
 			}
 			ctr, err := testcontainers.Run(ctx, req)
-			if err != nil {
-				t.Fatalf("could not start container: %v", err)
-			}
+			testcontainers.CleanupContainer(t, ctr)
+			require.NoError(t, err)
+
 			// mappedPort {
 			port, err := ctr.MappedPort(ctx, nginxDefaultPort)
 			// }
-			if err != nil {
-				t.Fatalf("could not get mapped port: %v", err)
-			}
-
-			testcontainers.TerminateContainerOnEnd(t, ctx, ctr)
+			require.NoError(t, err)
 
 			t.Logf("Parallel container [iteration_%d] listening on %d\n", i, port.Int())
 		})

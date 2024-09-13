@@ -13,13 +13,14 @@ import (
 )
 
 func TestCreateContainerWithVolume(t *testing.T) {
+	volumeName := "test-volume"
 	// volumeMounts {
 	req := testcontainers.Request{
 		Image: "alpine",
 		Mounts: tcmount.ContainerMounts{
 			{
 				Source: tcmount.GenericVolumeSource{
-					Name: "test-volume",
+					Name: volumeName,
 				},
 				Target: "/data",
 			},
@@ -30,8 +31,8 @@ func TestCreateContainerWithVolume(t *testing.T) {
 
 	ctx := context.Background()
 	c, err := testcontainers.Run(ctx, req)
+	testcontainers.CleanupContainer(t, c, testcontainers.RemoveVolumes(volumeName))
 	require.NoError(t, err)
-	testcontainers.TerminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created
 	client, err := core.NewClient(ctx)
@@ -44,12 +45,13 @@ func TestCreateContainerWithVolume(t *testing.T) {
 }
 
 func TestMountsReceiveRyukLabels(t *testing.T) {
+	volumeName := "app-data"
 	req := testcontainers.Request{
 		Image: "alpine",
 		Mounts: tcmount.ContainerMounts{
 			{
 				Source: tcmount.GenericVolumeSource{
-					Name: "app-data",
+					Name: volumeName,
 				},
 				Target: "/data",
 			},
@@ -64,15 +66,15 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 
 	// Ensure the volume is removed before creating the container
 	// otherwise the volume will be reused and the labels won't be set.
-	err = client.VolumeRemove(ctx, "app-data", true)
+	err = client.VolumeRemove(ctx, volumeName, true)
 	require.NoError(t, err)
 
 	c, err := testcontainers.Run(ctx, req)
+	testcontainers.CleanupContainer(t, c, testcontainers.RemoveVolumes(volumeName))
 	require.NoError(t, err)
-	testcontainers.TerminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created with the expected labels
-	volume, err := client.VolumeInspect(ctx, "app-data")
+	volume, err := client.VolumeInspect(ctx, volumeName)
 	require.NoError(t, err)
 	require.Equal(t, core.DefaultLabels(core.SessionID()), volume.Labels)
 }

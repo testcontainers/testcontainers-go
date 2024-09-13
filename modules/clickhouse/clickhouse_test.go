@@ -10,7 +10,6 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/docker/go-connections/nat"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -32,14 +31,8 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := clickhouse.Run(ctx, "clickhouse/clickhouse-server:23.3.8.21-alpine")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		require.NoError(t, ctr.Terminate(ctx))
-	})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	connectionHost, err := ctr.ConnectionHost(ctx)
 	require.NoError(t, err)
@@ -53,7 +46,7 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	assert.NotNil(t, conn)
+	require.NotNil(t, conn)
 	defer conn.Close()
 
 	err = conn.Ping(context.Background())
@@ -69,14 +62,8 @@ func TestClickHouseConnectionHost(t *testing.T) {
 		clickhouse.WithPassword(password),
 		clickhouse.WithDatabase(dbname),
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		require.NoError(t, ctr.Terminate(ctx))
-	})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	// connectionHost {
 	connectionHost, err := ctr.ConnectionHost(ctx)
@@ -92,13 +79,13 @@ func TestClickHouseConnectionHost(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	assert.NotNil(t, conn)
+	require.NotNil(t, conn)
 	defer conn.Close()
 
 	// perform assertions
 	data, err := performCRUD(t, conn)
 	require.NoError(t, err)
-	assert.Len(t, data, 1)
+	require.Len(t, data, 1)
 }
 
 func TestClickHouseDSN(t *testing.T) {
@@ -110,14 +97,8 @@ func TestClickHouseDSN(t *testing.T) {
 		clickhouse.WithPassword(password),
 		clickhouse.WithDatabase(dbname),
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		require.NoError(t, ctr.Terminate(ctx))
-	})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	// connectionString {
 	connectionString, err := ctr.ConnectionString(ctx, "debug=true")
@@ -127,15 +108,16 @@ func TestClickHouseDSN(t *testing.T) {
 	opts, err := ch.ParseDSN(connectionString)
 	require.NoError(t, err)
 
+	opts.Debugf = t.Logf
 	conn, err := ch.Open(opts)
 	require.NoError(t, err)
-	assert.NotNil(t, conn)
+	require.NotNil(t, conn)
 	defer conn.Close()
 
 	// perform assertions
 	data, err := performCRUD(t, conn)
 	require.NoError(t, err)
-	assert.Len(t, data, 1)
+	require.Len(t, data, 1)
 }
 
 func TestClickHouseWithInitScripts(t *testing.T) {
@@ -149,15 +131,9 @@ func TestClickHouseWithInitScripts(t *testing.T) {
 		clickhouse.WithDatabase(dbname),
 		clickhouse.WithInitScripts(filepath.Join("testdata", "init-db.sh")),
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 	// }
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		require.NoError(t, ctr.Terminate(ctx))
-	})
 
 	connectionHost, err := ctr.ConnectionHost(ctx)
 	require.NoError(t, err)
@@ -171,13 +147,13 @@ func TestClickHouseWithInitScripts(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	assert.NotNil(t, conn)
+	require.NotNil(t, conn)
 	defer conn.Close()
 
 	// perform assertions
 	data, err := getAllRows(conn)
 	require.NoError(t, err)
-	assert.Len(t, data, 1)
+	require.Len(t, data, 1)
 }
 
 func TestClickHouseWithConfigFile(t *testing.T) {
@@ -199,14 +175,8 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 				clickhouse.WithDatabase(dbname),
 				tC.configOption,
 			)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			// Clean up the container after the test is complete
-			t.Cleanup(func() {
-				require.NoError(t, ctr.Terminate(ctx))
-			})
+			testcontainers.CleanupContainer(t, ctr)
+			require.NoError(t, err)
 
 			connectionHost, err := ctr.ConnectionHost(ctx)
 			require.NoError(t, err)
@@ -220,13 +190,13 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 				},
 			})
 			require.NoError(t, err)
-			assert.NotNil(t, conn)
+			require.NotNil(t, conn)
 			defer conn.Close()
 
 			// perform assertions
 			data, err := performCRUD(t, conn)
 			require.NoError(t, err)
-			assert.Len(t, data, 1)
+			require.Len(t, data, 1)
 		})
 	}
 }
@@ -243,14 +213,11 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 		WaitingFor:   wait.ForListeningPort(zkPort),
 		Started:      true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testcontainers.CleanupContainer(t, zkcontainer)
+	require.NoError(t, err)
 
 	ipaddr, err := zkcontainer.ContainerIP(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	ctr, err := clickhouse.Run(ctx,
 		"clickhouse/clickhouse-server:23.3.8.21-alpine",
@@ -259,16 +226,9 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 		clickhouse.WithDatabase(dbname),
 		clickhouse.WithZookeeper(ipaddr, zkPort.Port()),
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 	// }
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		require.NoError(t, ctr.Terminate(ctx))
-		require.NoError(t, zkcontainer.Terminate(ctx))
-	})
 
 	connectionHost, err := ctr.ConnectionHost(ctx)
 	require.NoError(t, err)
@@ -282,13 +242,13 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	assert.NotNil(t, conn)
+	require.NotNil(t, conn)
 	defer conn.Close()
 
 	// perform assertions
 	data, err := performReplicatedCRUD(t, conn)
 	require.NoError(t, err)
-	assert.Len(t, data, 1)
+	require.Len(t, data, 1)
 }
 
 func performReplicatedCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {

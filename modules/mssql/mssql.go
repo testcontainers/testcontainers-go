@@ -60,14 +60,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	}
 
 	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		return nil, err
+	var c *Container
+	if ctr != nil {
+		c = &Container{DockerContainer: ctr, password: req.Env["MSSQL_SA_PASSWORD"], username: defaultUsername}
 	}
 
-	username := defaultUsername
-	password := req.Env["MSSQL_SA_PASSWORD"]
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
-	return &Container{DockerContainer: ctr, password: password, username: username}, nil
+	return c, nil
 }
 
 func (c *Container) ConnectionString(ctx context.Context, args ...string) (string, error) {

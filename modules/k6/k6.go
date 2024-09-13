@@ -18,6 +18,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// cacheTarget is the path to the cache volume in the container.
+const cacheTarget = "/cache"
+
 // Container represents the K6 container type used in the module
 type Container struct {
 	*testcontainers.DockerContainer
@@ -153,7 +156,7 @@ func WithCache() testcontainers.CustomizeRequestOption {
 				Name:          cacheVol,
 				VolumeOptions: volOptions,
 			},
-			Target: "/cache",
+			Target: cacheTarget,
 		}
 		req.Mounts = append(req.Mounts, mount)
 
@@ -177,9 +180,31 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	}
 
 	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		return nil, err
+	var c *Container
+	if ctr != nil {
+		c = &Container{DockerContainer: ctr}
 	}
 
-	return &Container{DockerContainer: ctr}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
+}
+
+// CacheMount returns the name of volume used as a cache or an empty string
+// if no cache was found.
+func (k *Container) CacheMount(ctx context.Context) (string, error) {
+	inspect, err := k.Inspect(ctx)
+	if err != nil {
+		return "", fmt.Errorf("inspect: %w", err)
+	}
+
+	for _, m := range inspect.Mounts {
+		if m.Type == mount.TypeVolume && m.Destination == cacheTarget {
+			return m.Name, nil
+		}
+	}
+
+	return "", nil
 }

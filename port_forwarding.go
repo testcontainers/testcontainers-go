@@ -38,9 +38,7 @@ var sshPassword = uuid.NewString()
 // 1. Create a new SSHD container.
 // 2. Expose the host ports to the container after the container is ready.
 // 3. Close the SSH sessions before killing the container.
-func exposeHostPorts(ctx context.Context, req *Request, ports ...int) (LifecycleHooks, error) {
-	var sshdConnectHook LifecycleHooks
-
+func exposeHostPorts(ctx context.Context, req *Request, ports ...int) (sshdConnectHook LifecycleHooks, err error) { //nolint:nonamedreturns // Required for error check.
 	if len(ports) == 0 {
 		return sshdConnectHook, fmt.Errorf("no ports to expose")
 	}
@@ -84,6 +82,12 @@ func exposeHostPorts(ctx context.Context, req *Request, ports ...int) (Lifecycle
 
 	// start the SSHD container with the provided options
 	sshdContainer, err := newSshdContainer(ctx, opts...)
+	// Ensure the SSHD container is stopped and removed in case of error.
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, TerminateContainer(sshdContainer))
+		}
+	}()
 	if err != nil {
 		return sshdConnectHook, fmt.Errorf("new sshd container: %w", err)
 	}
@@ -122,6 +126,20 @@ func exposeHostPorts(ctx context.Context, req *Request, ports ...int) (Lifecycle
 		originalHCM(hostConfig)
 	}
 
+	stopHooks := []StartedContainerHook{
+		func(ctx context.Context, _ StartedContainer) error {
+			if ctx.Err() != nil {
+				// Context already canceled, need to create a new one to ensure
+				// the SSH session is closed.
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+			}
+
+			return TerminateContainer(sshdContainer, StopContext(ctx))
+		},
+	}
+
 	// after the container is ready, create the SSH tunnel
 	// for each exposed port from the host.
 	sshdConnectHook = LifecycleHooks{
@@ -130,12 +148,8 @@ func exposeHostPorts(ctx context.Context, req *Request, ports ...int) (Lifecycle
 				return sshdContainer.exposeHostPort(ctx, req.HostAccessPorts...)
 			},
 		},
-		PreTerminates: []StartedContainerHook{
-			func(ctx context.Context, _ StartedContainer) error {
-				// before killing the container, close the SSH sessions
-				return sshdContainer.Terminate(ctx)
-			},
-		},
+		PreStops:      stopHooks,
+		PreTerminates: stopHooks,
 	}
 
 	return sshdConnectHook, nil
@@ -158,14 +172,14 @@ func newSshdContainer(ctx context.Context, opts ...RequestCustomizer) (*sshdCont
 		}
 	}
 
-	dc, err := Run(ctx, req)
-	if err != nil {
-		return nil, err
+	c, err := Run(ctx, req)
+	var sshd *sshdContainer
+	if c != nil {
+		sshd = &sshdContainer{StartedContainer: c}
 	}
 
-	sshd := &sshdContainer{
-		DockerContainer: dc,
-		portForwarders:  []PortForwarder{},
+	if err != nil {
+		return sshd, fmt.Errorf("generic container: %w", err)
 	}
 
 	sshClientConfig, err := configureSSHConfig(ctx, sshd)
@@ -182,7 +196,7 @@ func newSshdContainer(ctx context.Context, opts ...RequestCustomizer) (*sshdCont
 // sshdContainer represents the SSHD container type used for the port forwarding container.
 // It's an internal type that extends the DockerContainer type, to add the SSH tunneling capabilities.
 type sshdContainer struct {
-	*DockerContainer
+	StartedContainer
 	port           string
 	sshConfig      *ssh.ClientConfig
 	portForwarders []PortForwarder
@@ -190,17 +204,30 @@ type sshdContainer struct {
 
 // Terminate stops the container and closes the SSH session
 func (sshdC *sshdContainer) Terminate(ctx context.Context) error {
+	sshdC.closePorts(ctx)
+
+	return sshdC.StartedContainer.Terminate(ctx)
+}
+
+// Stop stops the container and closes the SSH session
+func (sshdC *sshdContainer) Stop(ctx context.Context, timeout *time.Duration) error {
+	sshdC.closePorts(ctx)
+
+	return sshdC.StartedContainer.Stop(ctx, timeout)
+}
+
+// closePorts closes all port forwarders.
+func (sshdC *sshdContainer) closePorts(ctx context.Context) {
 	for _, pfw := range sshdC.portForwarders {
 		pfw.Close(ctx)
 	}
-
-	return sshdC.DockerContainer.Terminate(ctx)
+	sshdC.portForwarders = nil // Ensure the port forwarders are not used after closing.
 }
 
 func configureSSHConfig(ctx context.Context, sshdC *sshdContainer) (*ssh.ClientConfig, error) {
 	mappedPort, err := sshdC.MappedPort(ctx, sshPort)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("mapped port: %w", err)
 	}
 	sshdC.port = mappedPort.Port()
 

@@ -151,14 +151,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	}
 
 	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		return nil, err
+	var c *Container
+	if ctr != nil {
+		c = &Container{
+			DockerContainer: ctr,
+			adminUsername:   req.Env["LDAP_ADMIN_USERNAME"],
+			adminPassword:   req.Env["LDAP_ADMIN_PASSWORD"],
+			rootDn:          req.Env["LDAP_ROOT"],
+		}
 	}
 
-	return &Container{
-		DockerContainer: ctr,
-		adminUsername:   req.Env["LDAP_ADMIN_USERNAME"],
-		adminPassword:   req.Env["LDAP_ADMIN_PASSWORD"],
-		rootDn:          req.Env["LDAP_ROOT"],
-	}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }

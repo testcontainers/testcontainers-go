@@ -49,17 +49,20 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	}
 
 	ctr, err := testcontainers.Run(ctx, req)
+	var c *Container
+	if ctr != nil {
+		c = &Container{
+			DockerContainer: ctr,
+			User:            settings.CmdArgs["user"],
+			Password:        settings.CmdArgs["pass"],
+		}
+	}
+
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	natsContainer := Container{
-		DockerContainer: ctr,
-		User:            settings.CmdArgs["user"],
-		Password:        settings.CmdArgs["pass"],
-	}
-
-	return &natsContainer, nil
+	return c, nil
 }
 
 func (c *Container) MustConnectionString(ctx context.Context, args ...string) string {

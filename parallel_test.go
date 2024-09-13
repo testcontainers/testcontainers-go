@@ -98,7 +98,7 @@ func TestParallelContainers(t *testing.T) {
 
 			for _, c := range res {
 				c := c
-				TerminateContainerOnEnd(t, context.Background(), c)
+				CleanupContainer(t, c)
 			}
 
 			if len(res) != tc.resLen {
@@ -149,5 +149,5 @@ func TestParallelContainersWithReuse(t *testing.T) {
 		t.Fatalf("expected errors: %d, got: %d\n", 0, len(e.Errors))
 	}
 	// Container is reused, only terminate first container
-	TerminateContainerOnEnd(t, ctx, res[0])
+	CleanupContainer(t, res[0])
 }

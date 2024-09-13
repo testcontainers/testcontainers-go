@@ -40,14 +40,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 	}
 
 	ctr, err := testcontainers.Run(ctx, req)
-	if err != nil {
-		return nil, err
+	var c *Container
+	if ctr != nil {
+		c = &Container{DockerContainer: ctr, username: username, password: password}
 	}
 
-	if username != "" && password != "" {
-		return &Container{DockerContainer: ctr, username: username, password: password}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
 	}
-	return &Container{DockerContainer: ctr}, nil
+
+	return c, nil
 }
 
 // WithUsername sets the initial username to be created when the container starts

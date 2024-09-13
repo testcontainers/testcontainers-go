@@ -53,8 +53,8 @@ func TestExecWithOptions(t *testing.T) {
 			}
 
 			ctr, err := Run(ctx, req)
+			CleanupContainer(t, ctr)
 			require.NoError(t, err)
-			TerminateContainerOnEnd(t, ctx, ctr)
 
 			// always append the multiplexed option for having the output
 			// in a readable format
@@ -83,8 +83,8 @@ func TestExecWithMultiplexedResponse(t *testing.T) {
 	}
 
 	ctr, err := Run(ctx, req)
+	CleanupContainer(t, ctr)
 	require.NoError(t, err)
-	TerminateContainerOnEnd(t, ctx, ctr)
 
 	code, reader, err := ctr.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"}, tcexec.Multiplexed())
 	require.NoError(t, err)
@@ -108,8 +108,8 @@ func TestExecWithNonMultiplexedResponse(t *testing.T) {
 	}
 
 	ctr, err := Run(ctx, req)
+	CleanupContainer(t, ctr)
 	require.NoError(t, err)
-	TerminateContainerOnEnd(t, ctx, ctr)
 
 	code, reader, err := ctr.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"})
 	require.NoError(t, err)

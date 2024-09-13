@@ -7,6 +7,7 @@ import (
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/milvus"
 )
 
@@ -14,13 +15,8 @@ func TestMilvus(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := milvus.Run(ctx, "milvusdb/milvus:v2.3.9")
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		err = ctr.Terminate(ctx)
-		require.NoError(t, err)
-	})
 
 	t.Run("Connect to Milvus with gRPC", func(tt *testing.T) {
 		// connectionString {

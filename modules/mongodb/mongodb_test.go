@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -57,37 +58,21 @@ func TestMongoDB(t *testing.T) {
 			ctx := context.Background()
 
 			mongodbContainer, err := mongodb.Run(ctx, tc.img, tc.opts...)
-			if err != nil {
-				tt.Fatalf("failed to start container: %s", err)
-			}
-
-			defer func() {
-				if err := mongodbContainer.Terminate(ctx); err != nil {
-					tt.Fatalf("failed to terminate container: %s", err)
-				}
-			}()
+			testcontainers.CleanupContainer(t, mongodbContainer)
+			require.NoError(tt, err)
 
 			endpoint, err := mongodbContainer.ConnectionString(ctx)
-			if err != nil {
-				tt.Fatalf("failed to get connection string: %s", err)
-			}
+			require.NoError(tt, err)
 
 			// Force direct connection to the container to avoid the replica set
 			// connection string that is returned by the container itself when
 			// using the replica set option.
 			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint+"/?connect=direct"))
-			if err != nil {
-				tt.Fatalf("failed to connect to MongoDB: %s", err)
-			}
+			require.NoError(tt, err)
 
 			err = mongoClient.Ping(ctx, nil)
-			if err != nil {
-				tt.Fatalf("failed to ping MongoDB: %s", err)
-			}
-
-			if mongoClient.Database("test").Name() != "test" {
-				tt.Fatalf("failed to connect to the correct database")
-			}
+			require.NoError(tt, err)
+			require.Equal(t, "test", mongoClient.Database("test").Name())
 		})
 	}
 }

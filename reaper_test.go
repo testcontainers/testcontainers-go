@@ -41,9 +41,8 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 		},
 		Started: true,
 	})
-
+	CleanupContainer(t, ctr)
 	require.NoError(t, err)
-	TerminateContainerOnEnd(t, ctx, ctr)
 
 	sessionID := core.SessionID()
 
@@ -71,10 +70,10 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 		},
 		Started: true,
 	})
+	CleanupContainer(t, c)
 	if err != nil {
 		t.Fatal(err)
 	}
-	TerminateContainerOnEnd(t, ctx, c)
 
 	sessionID := core.SessionID()
 
@@ -102,9 +101,8 @@ func TestContainerStopWithReaper(t *testing.T) {
 		},
 		Started: true,
 	})
-
+	CleanupContainer(t, nginxA)
 	require.NoError(t, err)
-	TerminateContainerOnEnd(t, ctx, nginxA)
 
 	state, err := nginxA.State(ctx)
 	if err != nil {
@@ -146,25 +144,18 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 		},
 		Started: true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	CleanupContainer(t, nginxA)
+	require.NoError(t, err)
 
 	state, err := nginxA.State(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if state.Running != true {
-		t.Fatal("The container shoud be in running state")
-	}
+	require.NoError(t, err)
+	require.True(t, state.Running)
+
 	err = nginxA.Terminate(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	_, err = nginxA.State(ctx)
-	if err == nil {
-		t.Fatal("expected error from container inspect.")
-	}
+	require.Error(t, err)
 }
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
@@ -182,6 +173,7 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 		},
 		Started: true,
 	})
+	CleanupContainer(t, nginxA)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,6 +208,7 @@ func TestReaperReusedIfHealthy(t *testing.T) {
 
 	// because Ryuk is not disabled, the returned reaper is not nil
 	r, err := NewReaper(ctx, testSessionID)
+	CleanupContainer(t, r.Container)
 	require.NoError(t, err, "creating the Reaper should not error")
 
 	reaperReused, err := NewReaper(ctx, testSessionID)
@@ -246,6 +239,7 @@ func TestRecreateReaperIfTerminated(t *testing.T) {
 
 	// because Ryuk is not disabled, the returned reaper is not nil
 	r, err := NewReaper(ctx, testSessionID)
+	CleanupContainer(t, r.Container)
 	require.NoError(t, err, "creating the Reaper should not error")
 
 	// Wait for ryuk's default timeout (10s) + 1s to allow for a graceful shutdown/cleanup of the container.

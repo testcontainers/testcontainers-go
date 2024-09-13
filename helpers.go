@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
@@ -53,24 +51,4 @@ func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
 	if info.OperatingSystem == "Docker Desktop" {
 		t.Skip("Skipping test that requires host network access when running in Docker Desktop")
 	}
-}
-
-// TerminateContainerOnEnd is a helper function to terminate a container when the test ends.
-// It will use the testing.TB.Cleanup function to terminate the container.
-func TerminateContainerOnEnd(tb testing.TB, ctx context.Context, ctr CreatedContainer) {
-	tb.Helper()
-	if ctr == nil {
-		return
-	}
-
-	// check if it's a nil DockerContainer struct
-	if ctr.(*DockerContainer) == nil {
-		return
-	}
-
-	tb.Cleanup(func() {
-		if ctr != nil {
-			require.NoError(tb, ctr.Terminate(ctx))
-		}
-	})
 }

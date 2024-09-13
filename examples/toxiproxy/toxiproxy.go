@@ -28,23 +28,26 @@ func startContainer(ctx context.Context, network string, networkAlias []string) 
 		},
 		Started: true,
 	}
-
 	ctr, err := testcontainers.Run(ctx, req)
+	var toxiC *toxiproxyContainer
+	if ctr != nil {
+		toxiC = &toxiproxyContainer{DockerContainer: ctr}
+	}
 	if err != nil {
-		return nil, err
+		return toxiC, err
 	}
 
 	mappedPort, err := ctr.MappedPort(ctx, "8474")
 	if err != nil {
-		return nil, err
+		return toxiC, err
 	}
 
 	hostIP, err := ctr.Host(ctx)
 	if err != nil {
-		return nil, err
+		return toxiC, err
 	}
 
-	uri := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
+	toxiC.URI = fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
 
-	return &toxiproxyContainer{DockerContainer: ctr, URI: uri}, nil
+	return toxiC, nil
 }
