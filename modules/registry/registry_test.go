@@ -31,7 +31,7 @@ func TestRegistry_unauthenticated(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
-func TestRunContainer_authenticated(t *testing.T) {
+func TestRun_authenticated(t *testing.T) {
 	ctx := context.Background()
 	registryContainer, err := registry.Run(
 		ctx,
@@ -141,7 +141,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 	})
 }
 
-func TestRunContainer_authenticated_withCredentials(t *testing.T) {
+func TestRun_authenticated_withCredentials(t *testing.T) {
 	ctx := context.Background()
 	// htpasswdString {
 	registryContainer, err := registry.Run(
@@ -169,7 +169,7 @@ func TestRunContainer_authenticated_withCredentials(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
-func TestRunContainer_wrongData(t *testing.T) {
+func TestRun_wrongData(t *testing.T) {
 	ctx := context.Background()
 	registryContainer, err := registry.Run(
 		ctx,

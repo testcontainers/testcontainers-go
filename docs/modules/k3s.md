@@ -26,8 +26,6 @@ go get github.com/testcontainers/testcontainers-go/modules/k3s
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
-!!!info
-    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The K3s module exposes one entrypoint function to create the K3s container, and this function receives three parameters:
 

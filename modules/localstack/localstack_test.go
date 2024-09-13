@@ -97,7 +97,7 @@ func TestIsLegacyMode(t *testing.T) {
 	}
 }
 
-func TestRunContainer(t *testing.T) {
+func TestRun(t *testing.T) {
 	tests := []struct {
 		version string
 	}{

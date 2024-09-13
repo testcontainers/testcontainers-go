@@ -18,7 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/rabbitmq"
 )
 
-func TestRunContainer_connectUsingAmqp(t *testing.T) {
+func TestRun_connectUsingAmqp(t *testing.T) {
 	ctx := context.Background()
 
 	rabbitmqContainer, err := rabbitmq.Run(ctx, "rabbitmq:3.12.11-management-alpine")
@@ -35,7 +35,7 @@ func TestRunContainer_connectUsingAmqp(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestRunContainer_connectUsingAmqps(t *testing.T) {
+func TestRun_connectUsingAmqps(t *testing.T) {
 	ctx := context.Background()
 
 	tmpDir := t.TempDir()
@@ -98,7 +98,7 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 	}
 }
 
-func TestRunContainer_withAllSettings(t *testing.T) {
+func TestRun_withAllSettings(t *testing.T) {
 	ctx := context.Background()
 
 	rabbitmqContainer, err := rabbitmq.Run(ctx,

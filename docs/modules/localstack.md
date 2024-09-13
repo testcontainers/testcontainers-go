@@ -31,8 +31,6 @@ Use the `testcontainers.WithEnv` option when creating the `LocalStackContainer` 
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
-!!!info
-    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The LocalStack module exposes one single function to create the LocalStack container, and this function receives three parameters:
 

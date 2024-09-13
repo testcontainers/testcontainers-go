@@ -26,8 +26,6 @@ go get github.com/testcontainers/testcontainers-go/modules/opensearch
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
-!!!info
-    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 The OpenSearch module exposes one entrypoint function to create the OpenSearch container, and this function receives three parameters:
 

@@ -92,7 +92,7 @@ func assertLoadedModel(t *testing.T, c *ollama.Container) {
 	require.Contains(t, string(bs), "all-minilm")
 }
 
-func TestRunContainer_withModel_error(t *testing.T) {
+func TestContainer_withModel_error(t *testing.T) {
 	ctx := context.Background()
 
 	ollamaContainer, err := ollama.Run(
