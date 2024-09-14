@@ -69,8 +69,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 	password := req.Env["QUERY_DEFAULT_PASSWORD"]
 
-	if len(password) == 0 && password == "" && !strings.EqualFold(defaultUser, username) {
-		return nil, fmt.Errorf("empty password and user")
+	if password == "" && username == "" {
+		return nil, errors.New("empty password and user")
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
