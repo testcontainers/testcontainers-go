@@ -2,6 +2,7 @@ package databend
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -24,18 +25,15 @@ type DatabendContainer struct {
 	database string
 }
 
-func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		username := req.Env["QUERY_DEFAULT_USER"]
-		password := req.Env["QUERY_DEFAULT_PASSWORD"]
-		if len(password) == 0 {
-			req.Env["QUERY_DEFAULT_PASSWORD"] = defaultPassword
-		}
-		if len(username) == 0 {
-			req.Env["QUERY_DEFAULT_USER"] = defaultUser
-		}
-		return nil
-	}
+var _ testcontainers.ContainerCustomizer = (*DatabendOption)(nil)
+
+// DatabendOption is an option for the Databend container.
+type DatabendOption func(*DatabendContainer)
+
+// Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
+func (o DatabendOption) Customize(*testcontainers.GenericContainerRequest) error {
+	// NOOP to satisfy interface.
+	return nil
 }
 
 // Run creates an instance of the Databend container type
@@ -47,7 +45,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"QUERY_DEFAULT_USER":     defaultUser,
 			"QUERY_DEFAULT_PASSWORD": defaultPassword,
 		},
-		WaitingFor: wait.ForLog("port: 8000  Databend Query Server"),
+		WaitingFor: wait.ForAll(
+			wait.ForLog("port: 8000  Databend Query Server"),
+			wait.ForListeningPort("8000/tcp"),
+		),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -55,20 +56,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Started:          true,
 	}
 
-	opts = append(opts, WithDefaultCredentials())
-
 	for _, opt := range opts {
 		if err := opt.Customize(&genericContainerReq); err != nil {
 			return nil, err
 		}
 	}
 
-	username, ok := req.Env["QUERY_DEFAULT_USER"]
-	if !ok {
-		username = defaultUser
-	}
+	username := req.Env["QUERY_DEFAULT_USER"]
 	password := req.Env["QUERY_DEFAULT_PASSWORD"]
-
 	if password == "" && username == "" {
 		return nil, errors.New("empty password and user")
 	}
@@ -135,5 +130,12 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["QUERY_DEFAULT_PASSWORD"] = password
 		return nil
+	}
+}
+
+// WithDatabase sets the name of the database to use.
+func WithDatabase(database string) DatabendOption {
+	return func(d *DatabendContainer) {
+		d.database = database
 	}
 }

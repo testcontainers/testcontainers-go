@@ -5,12 +5,15 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/databend"
 )
 
-func ExampleRun() {
+func TestExampleRun(t *testing.T) {
 	ctx := context.Background()
 
 	databendContainer, err := databend.Run(ctx,
@@ -27,7 +30,6 @@ func ExampleRun() {
 		log.Printf("failed to start container: %s", err)
 		return
 	}
-	// }
 
 	state, err := databendContainer.State(ctx)
 	if err != nil {
@@ -36,15 +38,17 @@ func ExampleRun() {
 	}
 
 	fmt.Println(state.Running)
+	assert.Equal(t, true, state.Running)
 }
 
-func ExampleRun_connect() {
+func TestExampleRun_connect(t *testing.T) {
 	ctx := context.Background()
 
 	databendContainer, err := databend.Run(ctx,
 		"datafuselabs/databend:v1.2.615",
 		databend.WithUsername("root"),
 		databend.WithPassword("password"),
+		databend.WithDatabase("test"),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(databendContainer); err != nil {
@@ -75,15 +79,9 @@ func ExampleRun_connect() {
 	}
 	var i int
 	row, err := db.Query("select 1")
-	if err != nil {
-		log.Printf("failed to query: %s", err)
-		return
-	}
+	assert.NoError(t, err)
 	err = row.Scan(&i)
-	if err != nil {
-		log.Printf("failed to scan row: %s", err)
-		return
-	}
+	assert.NoError(t, err)
 
-	fmt.Println(i)
+	assert.Equal(t, 1, i)
 }

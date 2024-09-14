@@ -26,9 +26,6 @@ go get github.com/testcontainers/testcontainers-go/modules/databend
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-!!!info
-    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
-
 The Databend module exposes one entrypoint function to create the Databend container, and this function receives three parameters:
 
 ```golang
@@ -50,9 +47,9 @@ E.g. `Run(context.Background(), "datafuselabs/databend:v1.2.615")`.
 
 {% include "../features/common_functional_options.md" %}
 
-#### Set username, password 
+#### Set username, password, and database name
 
-If you need to set a different user/password, you can use `WithUsername`, `WithPassword` options.
+If you need to set a different user/password/database, you can use `WithUsername`, `WithPassword`, `WithDatabase` options.
 
 !!!info
 The default values for the username is `databend`, for password is `databend` and for the default database name is `default`.
