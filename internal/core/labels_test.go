@@ -8,7 +8,7 @@ import (
 )
 
 func TestMergeCustomLabels(t *testing.T) {
-	t.Run("merge success", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		dst := map[string]string{"A": "1", "B": "2"}
 		src := map[string]string{"B": "X", "C": "3"}
 
