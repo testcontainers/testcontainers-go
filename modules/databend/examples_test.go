@@ -5,15 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/databend"
 )
 
-func TestExampleRun(t *testing.T) {
+func ExampleRun() {
 	ctx := context.Background()
 
 	databendContainer, err := databend.Run(ctx,
@@ -38,10 +35,12 @@ func TestExampleRun(t *testing.T) {
 	}
 
 	fmt.Println(state.Running)
-	assert.Equal(t, true, state.Running)
+
+	// Output:
+	// true
 }
 
-func TestExampleRun_connect(t *testing.T) {
+func ExampleRun_connect() {
 	ctx := context.Background()
 
 	databendContainer, err := databend.Run(ctx,
@@ -79,9 +78,18 @@ func TestExampleRun_connect(t *testing.T) {
 	}
 	var i int
 	row, err := db.Query("select 1")
-	assert.NoError(t, err)
+	if err != nil {
+		log.Printf("failed to query Databend: %s", err)
+		return
+	}
 	err = row.Scan(&i)
-	assert.NoError(t, err)
+	if err != nil {
+		log.Printf("failed to scan result: %s", err)
+		return
+	}
 
-	assert.Equal(t, 1, i)
+	fmt.Println(i)
+
+	// Output:
+	// true
 }

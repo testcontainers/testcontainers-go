@@ -119,6 +119,7 @@ func (c *DatabendContainer) ConnectionString(ctx context.Context, args ...string
 	return connectionString, nil
 }
 
+// WithUsername sets the username for the Databend container.
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["QUERY_DEFAULT_USER"] = username
@@ -126,6 +127,7 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// WithPassword sets the password for the Databend container.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["QUERY_DEFAULT_PASSWORD"] = password
