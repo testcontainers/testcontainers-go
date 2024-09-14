@@ -18,7 +18,7 @@ func TestMergeCustomLabels(t *testing.T) {
 
 		// --- Then ---
 		require.NoError(t, err)
-		assert.Equal(t, map[string]string{"A": "1", "B": "X", "C": "3"}, dst)
+		require.Equal(t, map[string]string{"A": "1", "B": "X", "C": "3"}, dst)
 	})
 
 	t.Run("src cannot have keys starting with LabelBase", func(t *testing.T) {
