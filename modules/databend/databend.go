@@ -113,6 +113,9 @@ func (c *DatabendContainer) ConnectionString(ctx context.Context, args ...string
 	if extraArgs != "" {
 		extraArgs = "?" + extraArgs
 	}
+	if c.database == "" {
+		c.database = defaultDatabaseName
+	}
 
 	// databend://databend:databend@localhost:8000/default?sslmode=disable
 	connectionString := fmt.Sprintf("databend://%s:%s@%s:%s/%s%s", c.username, c.password, host, containerPort.Port(), c.database, extraArgs)
