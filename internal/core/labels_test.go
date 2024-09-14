@@ -9,14 +9,10 @@ import (
 
 func TestMergeCustomLabels(t *testing.T) {
 	t.Run("merge success", func(t *testing.T) {
-		// --- Given ---
 		dst := map[string]string{"A": "1", "B": "2"}
 		src := map[string]string{"B": "X", "C": "3"}
 
-		// --- When ---
 		err := MergeCustomLabels(dst, src)
-
-		// --- Then ---
 		require.NoError(t, err)
 		require.Equal(t, map[string]string{"A": "1", "B": "X", "C": "3"}, dst)
 	})
