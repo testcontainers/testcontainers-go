@@ -456,16 +456,12 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatu
 
 func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	target := &MockStrategyTarget{
 		HostImpl: func(_ context.Context) (string, error) {
@@ -511,16 +507,12 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 
 func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	target := &MockStrategyTarget{
 		HostImpl: func(_ context.Context) (string, error) {
