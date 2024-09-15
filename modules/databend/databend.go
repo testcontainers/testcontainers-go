@@ -122,6 +122,8 @@ func (c *DatabendContainer) ConnectionString(ctx context.Context, args ...string
 }
 
 // WithUsername sets the username for the Databend container.
+// WithUsername is [Run] option that configures the default query user by setting
+// the `QUERY_DEFAULT_USER` container environment variable.
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["QUERY_DEFAULT_USER"] = username
