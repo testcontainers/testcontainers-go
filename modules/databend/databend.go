@@ -45,9 +45,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"QUERY_DEFAULT_USER":     defaultUser,
 			"QUERY_DEFAULT_PASSWORD": defaultPassword,
 		},
-		WaitingFor: wait.ForAll(
-			wait.ForListeningPort("8000/tcp"),
-		),
+		WaitingFor: wait.ForListeningPort("8000/tcp"),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -113,7 +111,7 @@ func (c *DatabendContainer) ConnectionString(ctx context.Context, args ...string
 		extraArgs = "?" + extraArgs
 	}
 	if c.database == "" {
-		c.database = defaultDatabaseName
+		return "", errors.New("database name is empty")
 	}
 
 	// databend://databend:databend@localhost:8000/default?sslmode=disable
