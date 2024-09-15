@@ -46,8 +46,8 @@ func TestDatabendWithNonRootUserAndEmptyPassword(t *testing.T) {
 
 	ctr, err := databend.Run(ctx,
 		"datafuselabs/databend:v1.2.615",
-		databend.WithUsername("databend"),
-		databend.WithPassword("databend"))
+		databend.WithUsername("test"),
+		databend.WithPassword(""))
 	testcontainers.CleanupContainer(t, ctr)
 	require.Error(t, err)
 }

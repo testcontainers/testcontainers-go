@@ -46,7 +46,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"QUERY_DEFAULT_PASSWORD": defaultPassword,
 		},
 		WaitingFor: wait.ForAll(
-			wait.ForLog("port: 8000  Databend Query Server"),
 			wait.ForListeningPort("8000/tcp"),
 		),
 	}
