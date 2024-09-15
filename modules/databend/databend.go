@@ -97,7 +97,7 @@ func (c *DatabendContainer) MustConnectionString(ctx context.Context, args ...st
 func (c *DatabendContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "8000/tcp")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
 	host, err := c.Host(ctx)
