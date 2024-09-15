@@ -62,7 +62,8 @@ func TestDatabendWithRootUserAndEmptyPassword(t *testing.T) {
 	require.NoError(t, err)
 
 	// perform assertions
-	connectionString, _ := ctr.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
+	require.NoError(t, err)
 
 	db, err := sql.Open("databend", connectionString)
 	require.NoError(t, err)
