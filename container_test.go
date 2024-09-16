@@ -365,8 +365,8 @@ func TestCustomLabelsBuildOptionsModifier(t *testing.T) {
 
 	ctrJSON, err := ctr.Inspect(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, myLabelValue, ctrJSON.Config.Labels[myLabelName])
-	assert.Equal(t, myBuildOptionValue, ctrJSON.Config.Labels[myBuildOptionLabel])
+	require.Equal(t, myLabelValue, ctrJSON.Config.Labels[myLabelName])
+	require.Equal(t, myBuildOptionValue, ctrJSON.Config.Labels[myBuildOptionLabel])
 }
 
 func Test_GetLogsFromFailedContainer(t *testing.T) {
