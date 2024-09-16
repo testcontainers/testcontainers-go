@@ -28,7 +28,7 @@ func DefaultLabels(sessionID string) map[string]string {
 // MergeCustomLabels sets labels from src to dst. Returns error if src label
 // name has [LabelBase] prefix.
 //
-// NOTICE: Default labels must not be nil.
+// NOTICE: dst labels must not be nil.
 func MergeCustomLabels(dst, src map[string]string) error {
 	for key := range src {
 		if strings.HasPrefix(key, LabelBase) {
