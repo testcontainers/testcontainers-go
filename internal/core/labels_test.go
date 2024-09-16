@@ -18,14 +18,11 @@ func TestMergeCustomLabels(t *testing.T) {
 	})
 
 	t.Run("src cannot have keys starting with LabelBase", func(t *testing.T) {
-		// --- Given ---
 		dst := map[string]string{"A": "1", "B": "2"}
 		src := map[string]string{"B": "X", LabelLang: "go"}
 
-		// --- When ---
 		err := MergeCustomLabels(dst, src)
 
-		// --- Then ---
 		require.EqualError(t, err, `cannot use prefix "org.testcontainers" for custom labels`)
 		assert.Equal(t, map[string]string{"A": "1", "B": "2"}, dst)
 	})

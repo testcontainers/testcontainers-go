@@ -305,7 +305,6 @@ func Test_BuildImageWithContexts(t *testing.T) {
 }
 
 func TestCustomLabelsImage(t *testing.T) {
-	// --- Given ---
 	const (
 		myLabelName  = "org.my.label"
 		myLabelValue = "my-label-value"
@@ -319,10 +318,8 @@ func TestCustomLabelsImage(t *testing.T) {
 		},
 	}
 
-	// --- When ---
 	ctr, err := testcontainers.GenericContainer(ctx, req)
 
-	// --- Then ---
 	require.NoError(t, err)
 	t.Cleanup(func() { assert.NoError(t, ctr.Terminate(ctx)) })
 
@@ -332,7 +329,6 @@ func TestCustomLabelsImage(t *testing.T) {
 }
 
 func TestCustomLabelsBuildOptionsModifier(t *testing.T) {
-	// --- Given ---
 	const (
 		myLabelName        = "org.my.label"
 		myLabelValue       = "my-label-value"
@@ -356,10 +352,8 @@ func TestCustomLabelsBuildOptionsModifier(t *testing.T) {
 		},
 	}
 
-	// --- When ---
 	ctr, err := testcontainers.GenericContainer(ctx, req)
 
-	// --- Then ---
 	require.NoError(t, err)
 	t.Cleanup(func() { assert.NoError(t, ctr.Terminate(ctx)) })
 
