@@ -62,7 +62,7 @@ func ExampleRun_connect() {
 		return
 	}
 
-	connectionString, err := databendContainer.ConnectionString(ctx)
+	connectionString, err := databendContainer.ConnectionString(ctx, "sslmode=disable")
 	if err != nil {
 		log.Printf("failed to get connection string: %s", err)
 		return
@@ -75,16 +75,8 @@ func ExampleRun_connect() {
 	}
 	defer db.Close()
 
-	if err = db.Ping(); err != nil {
-		log.Printf("failed to ping Databend: %s", err)
-		return
-	}
 	var i int
-	row, err := db.Query("select 1")
-	if err != nil {
-		log.Printf("failed to query Databend: %s", err)
-		return
-	}
+	row := db.QueryRow("select 1")
 	err = row.Scan(&i)
 	if err != nil {
 		log.Printf("failed to scan result: %s", err)
