@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	_ "github.com/datafuselabs/databend-go"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/databend"
 )
