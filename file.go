@@ -3,139 +3,80 @@ package testcontainers
 import (
 	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
+	"time"
 )
 
+// isDir returns true if the path is a directory and false otherwise.
 func isDir(path string) (bool, error) {
-	file, err := os.Open(path)
+	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return false, err
-	}
-	defer file.Close()
-
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return false, err
+		return false, fmt.Errorf("stat: %w", err)
 	}
 
-	if fileInfo.IsDir() {
-		return true, nil
-	}
-
-	return false, nil
+	return fileInfo.IsDir(), nil
 }
 
-// tarDir compress a directory using tar + gzip algorithms
-func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
-	// always pass src as absolute path
-	abs, err := filepath.Abs(src)
-	if err != nil {
-		return &bytes.Buffer{}, fmt.Errorf("error getting absolute path: %w", err)
-	}
-	src = abs
+// Ensure fileInfo implements fs.FileInfo.
+var _ fs.FileInfo = &fileInfo{}
 
-	buffer := &bytes.Buffer{}
+// modTime is a variable so we can mock it in tests.
+var modTime = time.Now
 
-	Logger.Printf(">> creating TAR file from directory: %s\n", src)
-
-	// tar > gzip > buffer
-	zr := gzip.NewWriter(buffer)
-	tw := tar.NewWriter(zr)
-
-	_, baseDir := filepath.Split(src)
-	// keep the path relative to the parent directory
-	index := strings.LastIndex(src, baseDir)
-
-	// walk through every file in the folder
-	err = filepath.Walk(src, func(file string, fi os.FileInfo, errFn error) error {
-		if errFn != nil {
-			return fmt.Errorf("error traversing the file system: %w", errFn)
-		}
-
-		// if a symlink, skip file
-		if fi.Mode().Type() == os.ModeSymlink {
-			Logger.Printf(">> skipping symlink: %s\n", file)
-			return nil
-		}
-
-		// generate tar header
-		header, err := tar.FileInfoHeader(fi, file)
-		if err != nil {
-			return fmt.Errorf("error getting file info header: %w", err)
-		}
-
-		// see https://pkg.go.dev/archive/tar#FileInfoHeader:
-		// Since fs.FileInfo's Name method only returns the base name of the file it describes,
-		// it may be necessary to modify Header.Name to provide the full path name of the file.
-		header.Name = filepath.ToSlash(file[index:])
-		header.Mode = fileMode
-
-		// write header
-		if err := tw.WriteHeader(header); err != nil {
-			return fmt.Errorf("error writing header: %w", err)
-		}
-
-		// if not a dir, write file content
-		if !fi.IsDir() {
-			data, err := os.Open(file)
-			if err != nil {
-				return fmt.Errorf("error opening file: %w", err)
-			}
-			defer data.Close()
-			if _, err := io.Copy(tw, data); err != nil {
-				return fmt.Errorf("error compressing file: %w", err)
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return buffer, err
-	}
-
-	// produce tar
-	if err := tw.Close(); err != nil {
-		return buffer, fmt.Errorf("error closing tar file: %w", err)
-	}
-	// produce gzip
-	if err := zr.Close(); err != nil {
-		return buffer, fmt.Errorf("error closing gzip file: %w", err)
-	}
-
-	return buffer, nil
+// fileInfo implements fs.FileInfo with fixed details.
+type fileInfo struct {
+	name     string
+	fileMode fs.FileMode
+	modTime  time.Time
+	size     int64
 }
 
-// tarFile compress a single file using tar + gzip algorithms
-func tarFile(basePath string, fileContent func(tw io.Writer) error, fileContentSize int64, fileMode int64) (*bytes.Buffer, error) {
-	buffer := &bytes.Buffer{}
-
-	zr := gzip.NewWriter(buffer)
-	tw := tar.NewWriter(zr)
-
-	hdr := &tar.Header{
-		Name: basePath,
-		Mode: fileMode,
-		Size: fileContentSize,
+// newFileInfo creates a new fileInfo with the given details.
+func newFileInfo(name string, size int64, fileMode fs.FileMode) *fileInfo {
+	return &fileInfo{
+		name:     filepath.Base(name),
+		size:     size,
+		fileMode: fileMode,
+		modTime:  modTime(),
 	}
+}
+
+func (f *fileInfo) Size() int64        { return f.size }
+func (f *fileInfo) Name() string       { return f.name }
+func (f *fileInfo) IsDir() bool        { return false }
+func (f *fileInfo) Mode() fs.FileMode  { return f.fileMode }
+func (f *fileInfo) ModTime() time.Time { return f.modTime }
+func (f *fileInfo) Sys() any           { return nil }
+
+// tarFile creates a tar archive containing a single file with the given
+// details and returns a reader for it.
+func tarFile(filePath string, fileContent []byte, fileMode fs.FileMode) (io.ReadCloser, error) {
+	fi := newFileInfo(filePath, int64(len(fileContent)), fileMode)
+	hdr, err := tar.FileInfoHeader(fi, "")
+	if err != nil {
+		return nil, fmt.Errorf("file info header: %w", err)
+	}
+
+	// Set the name to the fully qualified so we have the right path in the tar.
+	hdr.Name = filePath
+
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
 	if err := tw.WriteHeader(hdr); err != nil {
-		return buffer, err
-	}
-	if err := fileContent(tw); err != nil {
-		return buffer, err
+		return nil, fmt.Errorf("write header: %w", err)
 	}
 
-	// produce tar
+	if _, err := tw.Write(fileContent); err != nil {
+		return nil, fmt.Errorf("write file content: %w", err)
+	}
+
 	if err := tw.Close(); err != nil {
-		return buffer, fmt.Errorf("error closing tar file: %w", err)
-	}
-	// produce gzip
-	if err := zr.Close(); err != nil {
-		return buffer, fmt.Errorf("error closing gzip file: %w", err)
+		return nil, fmt.Errorf("close tar: %w", err)
 	}
 
-	return buffer, nil
+	return io.NopCloser(&buf), nil
 }

@@ -145,12 +145,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.ContainerFile{
 			HostFilePath:      entrypointPath,
 			ContainerFilePath: entrypointFile,
-			FileMode:          700,
+			FileMode:          0o700,
 		},
 		testcontainers.ContainerFile{
 			HostFilePath:      bootstrapConfigPath,
 			ContainerFilePath: filepath.Join(redpandaDir, bootstrapConfigFile),
-			FileMode:          600,
+			FileMode:          0o600,
 		},
 	)
 
@@ -169,12 +169,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			testcontainers.ContainerFile{
 				HostFilePath:      certPath,
 				ContainerFilePath: filepath.Join(redpandaDir, certFile),
-				FileMode:          600,
+				FileMode:          0o600,
 			},
 			testcontainers.ContainerFile{
 				HostFilePath:      keyPath,
 				ContainerFilePath: filepath.Join(redpandaDir, keyFile),
-				FileMode:          600,
+				FileMode:          0o600,
 			},
 		)
 	}

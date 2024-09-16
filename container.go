@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,11 +64,81 @@ type Container interface {
 	Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error)
 	ContainerIP(context.Context) (string, error)    // get container ip
 	ContainerIPs(context.Context) ([]string, error) // get all container IPs
-	CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error
-	CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error
-	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
+
+	// CopyHostPathTo copies the contents of a hostPath to containerPath in the container
+	// with the given options.
+	// If the parent of the containerPath does not exist an error is returned.
+	CopyHostPathTo(ctx context.Context, hostPath, containerPath string, options ...CopyToOption) error
+
+	// CopyToContainer copies a file with contents of fileContent to containerPath in the
+	// container with the given fileMode.
+	// If fileMode contains bits not part of [fs.ModePerm] | [fs.ModeSetuid] | [fs.ModeSetgid] |
+	// [fs.ModeSticky] an error is returned.
+	CopyToContainer(ctx context.Context, fileContent []byte, containerPath string, fileMode int64) error
+
+	// CopyDirToContainer copies the contents of hostPath to containerPath in the container.
+	// If fileMode is non-zero all files will have their file permissions set to that of fileMode
+	// otherwise the file permissions will be copied from the host.
+	// If fileMode contains bits not part of [fs.ModePerm] | [fs.ModeSetuid] | [fs.ModeSetgid] |
+	// [fs.ModeSticky] an error is returned.
+	// If the parent of the containerPath does not exist an error is returned.
+	//
+	// Deprecated: use [DockerContainer.CopyHostPathTo] instead.
+	CopyDirToContainer(ctx context.Context, hostPath, containerPath string, fileMode int64) error
+
+	// CopyFileToContainer copies hostPath to containerPath in the container.
+	// If fileMode is non-zero the files permissions will be set to that of fileMode
+	// otherwise the file permissions will be set to that of the file in hostPath.
+	// If fileMode contains bits not part of [fs.ModePerm] | [fs.ModeSetuid] | [fs.ModeSetgid] |
+	// [fs.ModeSticky] an error is returned.
+	// If the parent of the containerPath does not exist an error is returned.
+	// If hostPath is a directory this is equivalent to [DockerContainer.CopyDirToContainer].
+	//
+	// Deprecated: use [DockerContainer.CopyHostPathTo] instead.
+	CopyFileToContainer(ctx context.Context, hostPath string, containerPath string, fileMode int64) error
+
 	CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error)
 	GetLogProductionErrorChannel() <-chan error
+}
+
+// copyToOptions contains options for the copy operation.
+type copyToOptions struct {
+	// followLink instructs the copy operation to follow symlinks.
+	followLink bool
+
+	// copyUIDGID instructs the copy operation to copy the UID and GID of the source file.
+	copyUIDGID bool
+
+	// allowOverwriteDirWithFile instructs the copy operation to allow overwriting a directory with a file.
+	allowOverwriteDirWithFile bool
+
+	// fileMode if not zero, instructs the copy operation to override the file permissions.
+	fileMode fs.FileMode
+}
+
+// CopyToOption represents a option for CopyTo methods.
+type CopyToOption func(*copyToOptions)
+
+// CopyToFollowLink instructs the copy operation to follow symlinks
+// when identifying the source.
+func CopyToFollowLink() CopyToOption {
+	return func(o *copyToOptions) {
+		o.followLink = true
+	}
+}
+
+// CopyToUIDGID instructs the copy operation to copy the UID and GID of the source.
+func CopyToUIDGID() CopyToOption {
+	return func(o *copyToOptions) {
+		o.copyUIDGID = true
+	}
+}
+
+// CopyToAllowOverwriteDirWithFile instructs the copy operation to allow overwriting a directory with a file.
+func CopyToAllowOverwriteDirWithFile() CopyToOption {
+	return func(o *copyToOptions) {
+		o.allowOverwriteDirWithFile = true
+	}
 }
 
 // ImageBuildInfo defines what is needed to build an image
@@ -104,11 +175,29 @@ type FromDockerfile struct {
 	BuildOptionsModifier func(*types.ImageBuildOptions)
 }
 
+// ContainerMount represents a file or directory to be copied into a container on startup.
 type ContainerFile struct {
-	HostFilePath      string    // If Reader is present, HostFilePath is ignored
-	Reader            io.Reader // If Reader is present, HostFilePath is ignored
+	// HostFilePath is the path to the file on the host machine.
+	// If Reader is present it is ignored.
+	// TODO: Rename to HostPath as HostFilePath infers its a file and it could be a
+	// directory.
+	HostFilePath string
+
+	// Reader provides the file content to be copied to the container.
+	// If present, HostFilePath is ignored.
+	Reader io.Reader
+
+	// ContainerFilePath is the path where this file will be copied to in the container.
+	// TODO: Rename to ContainerPath as ContainerFilePath infers its a file and it could
+	// be a directory.
 	ContainerFilePath string
-	FileMode          int64
+
+	// FileMode is the file mode to set on the file in the container.
+	// Must be set if Reader is present.
+	// If zero or not set, the file mode will be that of the host file.
+	// TODO: Should we only use FileMode for Reader, as it makes more sense to use the
+	// source file permissions when using a host path source?
+	FileMode int64
 }
 
 // validate validates the ContainerFile

@@ -221,7 +221,7 @@ func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
 	}
 
 	containerPath := fmt.Sprintf("/tmp/%s", filepath.Base(imagesTar.Name()))
-	err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
+	err = c.Container.CopyHostPathTo(ctx, imagesTar.Name(), containerPath)
 	if err != nil {
 		return fmt.Errorf("copying image to container %w", err)
 	}

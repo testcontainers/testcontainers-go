@@ -202,7 +202,7 @@ func main() {
 	}
 
 	copiedFileName := "hello_copy.sh"
-	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
+	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 0o700)
 
 	if err != nil {
 		log.Print(err)
