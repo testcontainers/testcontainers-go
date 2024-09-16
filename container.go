@@ -460,7 +460,7 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	}
 
 	if !c.ShouldKeepBuiltImage() {
-		dst := core.DefaultLabels(core.SessionID())
+		dst := GenericLabels()
 		if err = core.MergeCustomLabels(dst, c.Labels); err != nil {
 			return types.ImageBuildOptions{}, err
 		}
