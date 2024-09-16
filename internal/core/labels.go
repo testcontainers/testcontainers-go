@@ -30,13 +30,12 @@ func DefaultLabels(sessionID string) map[string]string {
 //
 // NOTICE: dst labels must not be nil.
 func MergeCustomLabels(dst, src map[string]string) error {
-	for key := range src {
+	for key, value := range src {
 		if strings.HasPrefix(key, LabelBase) {
 			format := "cannot use prefix %q for custom labels"
 			return fmt.Errorf(format, LabelBase)
 		}
-	}
-	for key, value := range src {
+
 		dst[key] = value
 	}
 	return nil
