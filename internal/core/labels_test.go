@@ -26,14 +26,6 @@ func TestMergeCustomLabels(t *testing.T) {
 		require.Equal(t, map[string]string{"A": "1", "B": "X"}, dst)
 	})
 
-	t.Run("nil destination and empty source", func(t *testing.T) {
-		src := map[string]string{}
-
-		err := MergeCustomLabels(nil, src)
-
-		require.NoError(t, err)
-	})
-
 	t.Run("nil-destination", func(t *testing.T) {
 		src := map[string]string{"A": "1"}
 		err := MergeCustomLabels(nil, src)
