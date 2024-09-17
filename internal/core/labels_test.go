@@ -22,7 +22,7 @@ func TestMergeCustomLabels(t *testing.T) {
 
 		err := MergeCustomLabels(dst, src)
 
-		require.EqualError(t, err, `cannot use prefix "org.testcontainers" for custom labels`)
+		require.EqualError(t, err, `key "org.testcontainers.lang" has "org.testcontainers" prefix`)
 		require.Equal(t, map[string]string{"A": "1", "B": "X"}, dst)
 	})
 
