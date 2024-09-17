@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/IBM/sarama"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
@@ -109,26 +110,25 @@ func TestKafka_networkConnectivity(t *testing.T) {
 		topic_out = "topic_out"
 	)
 
-	Network, err := network.New(ctx, network.WithCheckDuplicate())
+	Network, err := network.New(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// kafkaWithListener {
-	KafkaContainer, err := kafka.RunContainer(ctx,
+	KafkaContainer, err := kafka.Run(ctx,
+		"confluentinc/confluent-local:7.6.1",
 		kafka.WithClusterID("test-cluster"),
-		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
 		network.WithNetwork([]string{"kafka"}, Network),
 		kafka.WithListener([]kafka.KafkaListener{
 			{
-				Name: "INTERNAL",
+				Name: "BROKER",
 				Host: "kafka",
 				Port: "9092",
 			},
 		}),
 	)
 	// }
-
 	if err != nil {
 		t.Fatalf("failed to start container: %s", err)
 	}
@@ -138,9 +138,11 @@ func TestKafka_networkConnectivity(t *testing.T) {
 		t.Fatal("failed to get brokers", err)
 	}
 
-	createTopics(brokers, []string{topic_in, topic_out})
+	err = createTopics(brokers, []string{topic_in, topic_out})
+	require.NoError(t, err)
 
-	initKafkaTest(ctx, Network.Name, "kafka:9092", topic_in, topic_out)
+	_, err = initKafkaTest(ctx, Network.Name, "kafka:9092", topic_in, topic_out)
+	require.NoError(t, err)
 
 	// perform assertions
 
@@ -190,118 +192,179 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	}
 }
 
+func TestKafka_withListener(t *testing.T) {
+	ctx := context.Background()
+
+	// 1. Create network
+	rpNetwork, err := network.New(ctx)
+	require.NoError(t, err)
+
+	// 2. Start Kafka ctr
+	// withListenerRP {
+	ctr, err := kafka.Run(ctx,
+		"confluentinc/confluent-local:7.6.1",
+		network.WithNetwork([]string{"kafka"}, rpNetwork),
+		kafka.WithListener([]kafka.KafkaListener{
+			{
+				Name: "BROKER",
+				Host: "kafka",
+				Port: "9092",
+			},
+		}),
+	)
+	// }
+	require.NoError(t, err)
+
+	// 3. Start KCat container
+	// withListenerKcat {
+	kcat, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "confluentinc/cp-kcat:7.4.1",
+			Networks: []string{
+				rpNetwork.Name,
+			},
+			Entrypoint: []string{
+				"sh",
+			},
+			Cmd: []string{
+				"-c",
+				"tail -f /dev/null",
+			},
+		},
+		Started: true,
+	})
+	// }
+
+	require.NoError(t, err)
+
+	// 4. Copy message to kcat
+	err = kcat.CopyToContainer(ctx, []byte("Message produced by kcat"), "/tmp/msgs.txt", 700)
+	require.NoError(t, err)
+
+	// 5. Produce message to Kafka
+	// withListenerExec {
+	_, _, err = kcat.Exec(ctx, []string{"kcat", "-b", "kafka:9092", "-t", "msgs", "-P", "-l", "/tmp/msgs.txt"})
+	// }
+
+	require.NoError(t, err)
+
+	// 6. Consume message from Kafka
+	_, stdout, err := kcat.Exec(ctx, []string{"kcat", "-b", "kafka:9092", "-C", "-t", "msgs", "-c", "1"})
+	require.NoError(t, err)
+
+	// 7. Read Message from stdout
+	out, err := io.ReadAll(stdout)
+	require.NoError(t, err)
+
+	require.Contains(t, string(out), "Message produced by kcat")
+
+	t.Cleanup(func() {
+		if err := kcat.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate kcat container: %s", err)
+		}
+		if err := ctr.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate Kafka container: %s", err)
+		}
+
+		if err := rpNetwork.Remove(ctx); err != nil {
+			t.Fatalf("failed to remove network: %s", err)
+		}
+	})
+}
+
 func TestKafka_restProxyService(t *testing.T) {
 	// TODO: test kafka rest proxy service
 }
 
 func TestKafka_listenersValidation(t *testing.T) {
 	ctx := context.Background()
-	var err error
 
-	_, err = kafka.RunContainer(ctx,
-		kafka.WithClusterID("test-cluster"),
-		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "INTERNAL",
-				Host: "kafka",
-				Port: "9093",
+	testCases := []struct {
+		name      string
+		listeners []kafka.KafkaListener
+	}{
+		{
+			name: "reserved listener port duplication 1",
+			listeners: []kafka.KafkaListener{
+				{
+					Name: "BROKER",
+					Host: "kafka",
+					Port: "9093",
+				},
 			},
-		}),
-	)
-
-	if err == nil {
-		t.Fatalf("expected to fail due to reserved listener port duplication")
+		},
+		{
+			name: "reserved listener port duplication 2",
+			listeners: []kafka.KafkaListener{
+				{
+					Name: "BROKER",
+					Host: "kafka",
+					Port: "9094",
+				},
+			},
+		},
+		{
+			name: "reserved listener name duplication (controller)",
+			listeners: []kafka.KafkaListener{
+				{
+					Name: "  cOnTrOller   ",
+					Host: "kafka",
+					Port: "9092",
+				},
+			},
+		},
+		{
+			name: "reserved listener name duplication (plaintext)",
+			listeners: []kafka.KafkaListener{
+				{
+					Name: "plaintext",
+					Host: "kafka",
+					Port: "9092",
+				},
+			},
+		},
+		{
+			name: "duplicated ports not allowed",
+			listeners: []kafka.KafkaListener{
+				{
+					Name: "test",
+					Host: "kafka",
+					Port: "9092",
+				},
+				{
+					Name: "test2",
+					Host: "kafka",
+					Port: "9092",
+				},
+			},
+		},
+		{
+			name: "duplicated names not allowed",
+			listeners: []kafka.KafkaListener{
+				{
+					Name: "test",
+					Host: "kafka",
+					Port: "9092",
+				},
+				{
+					Name: "test",
+					Host: "kafka",
+					Port: "9095",
+				},
+			},
+		},
 	}
 
-	_, err = kafka.RunContainer(ctx,
-		kafka.WithClusterID("test-cluster"),
-		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "INTERNAL",
-				Host: "kafka",
-				Port: "9094",
-			},
-		}),
-	)
-
-	if err == nil {
-		t.Fatalf("expected to fail due to reserved listener port duplication")
-	}
-
-	_, err = kafka.RunContainer(ctx,
-		kafka.WithClusterID("test-cluster"),
-		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "  cOnTrOller   ",
-				Host: "kafka",
-				Port: "9092",
-			},
-		}),
-	)
-
-	if err == nil {
-		t.Fatalf("expected to fail due to reserved listener name duplication")
-	}
-
-	_, err = kafka.RunContainer(ctx,
-		kafka.WithClusterID("test-cluster"),
-		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "external",
-				Host: "kafka",
-				Port: "9092",
-			},
-		}),
-	)
-
-	if err == nil {
-		t.Fatalf("expected to fail due to reserved listener name duplication")
-	}
-
-	_, err = kafka.RunContainer(ctx,
-		kafka.WithClusterID("test-cluster"),
-		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "test",
-				Host: "kafka",
-				Port: "9092",
-			},
-			{
-				Name: "test2",
-				Host: "kafka",
-				Port: "9092",
-			},
-		}),
-	)
-
-	if err == nil {
-		t.Fatalf("expected to fail due to port duplication")
-	}
-
-	_, err = kafka.RunContainer(ctx,
-		kafka.WithClusterID("test-cluster"),
-		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"),
-		kafka.WithListener([]kafka.KafkaListener{
-			{
-				Name: "test",
-				Host: "kafka",
-				Port: "9092",
-			},
-			{
-				Name: "test",
-				Host: "kafka",
-				Port: "9095",
-			},
-		}),
-	)
-
-	if err == nil {
-		t.Fatalf("expected to fail due to name duplication")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, err := kafka.Run(ctx,
+				"confluentinc/confluent-local:7.6.1",
+				kafka.WithClusterID("test-cluster"),
+				kafka.WithListener(tc.listeners),
+			)
+			require.Error(t, err)
+			require.Nil(t, c, "expected container to be nil")
+		})
 	}
 }
 
@@ -326,37 +389,6 @@ func initKafkaTest(ctx context.Context, network string, brokers string, input st
 		ContainerRequest: req,
 		Started:          true,
 	})
-
-	// TODO: use kcat
-	/*
-		try (
-			Network network = Network.newNetwork();
-			// registerListener {
-			KafkaContainer kafka = new KafkaContainer(KAFKA_KRAFT_TEST_IMAGE)
-				.withListener(() -> "kafka:19092")
-				.withNetwork(network);
-			// }
-			// createKCatContainer {
-			GenericContainer<?> kcat = new GenericContainer<>("confluentinc/cp-kcat:7.4.1")
-				.withCreateContainerCmdModifier(cmd -> {
-					cmd.withEntrypoint("sh");
-				})
-				.withCopyToContainer(Transferable.of("Message produced by kcat"), "/data/msgs.txt")
-				.withNetwork(network)
-				.withCommand("-c", "tail -f /dev/null")
-			// }
-		) {
-			kafka.start();
-			kcat.start();
-			// produceConsumeMessage {
-			kcat.execInContainer("kcat", "-b", "kafka:19092", "-t", "msgs", "-P", "-l", "/data/msgs.txt");
-			String stdout = kcat
-				.execInContainer("kcat", "-b", "kafka:19092", "-C", "-t", "msgs", "-c", "1")
-				.getStdout();
-			// }
-			assertThat(stdout).contains("Message produced by kcat");
-		}
-	*/
 }
 
 func createTopics(brokers []string, topics []string) error {
@@ -369,19 +401,23 @@ func createTopics(brokers []string, topics []string) error {
 	var err error
 
 	c, err := sarama.NewClient(brokers, sarama.NewConfig())
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
+	defer c.Close()
 
 	_, err = c.Brokers()[0].CreateTopics(t)
 	if err != nil {
 		return fmt.Errorf("failed to create topics: %w", err)
 	}
 
-	fmt.Println("succesfully created topics")
+	fmt.Println("successfully created topics")
 
 	return nil
 }
 
 // assertAdvertisedListeners checks that the advertised listeners are set correctly:
-// - The INTERNAL:// protocol is using the hostname of the Kafka container
+// - The BROKER:// protocol is using the hostname of the Kafka container
 func assertAdvertisedListeners(t *testing.T, container testcontainers.Container) {
 	hostname, err := container.Host(context.Background())
 	if err != nil {
@@ -401,7 +437,7 @@ func assertAdvertisedListeners(t *testing.T, container testcontainers.Container)
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(string(bs), "INTERNAL://"+hostname+":9092") {
-		t.Fatalf("expected advertised listeners to contain %s, got %s", "INTERNAL://"+hostname+":9092", string(bs))
+	if !strings.Contains(string(bs), "BROKER://"+hostname+":9092") {
+		t.Fatalf("expected advertised listeners to contain %s, got %s", "BROKER://"+hostname+":9092", string(bs))
 	}
 }

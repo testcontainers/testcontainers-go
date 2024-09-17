@@ -14,13 +14,14 @@ import (
 var ErrPortNotFound = errors.New("port not found")
 
 type MockStrategyTarget struct {
-	HostImpl       func(context.Context) (string, error)
-	InspectImpl    func(context.Context) (*types.ContainerJSON, error)
-	PortsImpl      func(context.Context) (nat.PortMap, error)
-	MappedPortImpl func(context.Context, nat.Port) (nat.Port, error)
-	LogsImpl       func(context.Context) (io.ReadCloser, error)
-	ExecImpl       func(context.Context, []string, ...tcexec.ProcessOption) (int, io.Reader, error)
-	StateImpl      func(context.Context) (*types.ContainerState, error)
+	HostImpl                  func(context.Context) (string, error)
+	InspectImpl               func(context.Context) (*types.ContainerJSON, error)
+	PortsImpl                 func(context.Context) (nat.PortMap, error)
+	MappedPortImpl            func(context.Context, nat.Port) (nat.Port, error)
+	LogsImpl                  func(context.Context) (io.ReadCloser, error)
+	ExecImpl                  func(context.Context, []string, ...tcexec.ProcessOption) (int, io.Reader, error)
+	StateImpl                 func(context.Context) (*types.ContainerState, error)
+	CopyFileFromContainerImpl func(context.Context, string) (io.ReadCloser, error)
 }
 
 func (st MockStrategyTarget) Host(ctx context.Context) (string, error) {
@@ -55,4 +56,8 @@ func (st MockStrategyTarget) Exec(ctx context.Context, cmd []string, options ...
 
 func (st MockStrategyTarget) State(ctx context.Context) (*types.ContainerState, error) {
 	return st.StateImpl(ctx)
+}
+
+func (st MockStrategyTarget) CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error) {
+	return st.CopyFileFromContainerImpl(ctx, filePath)
 }

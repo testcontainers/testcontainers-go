@@ -111,7 +111,6 @@ func TestValidateKRaftVersion(t *testing.T) {
 }
 
 func TestTrimValidateListeners(t *testing.T) {
-
 	tests := []struct {
 		name        string
 		listeners   []KafkaListener
@@ -121,7 +120,7 @@ func TestTrimValidateListeners(t *testing.T) {
 		{
 			listeners: []KafkaListener{
 				{
-					Name: "INTERNAL",
+					Name: "PLAINTEXT",
 					Host: "kafka",
 					Port: "9093",
 				},
@@ -132,7 +131,7 @@ func TestTrimValidateListeners(t *testing.T) {
 		{
 			listeners: []KafkaListener{
 				{
-					Name: "INTERNAL",
+					Name: "PLAINTEXT",
 					Host: "kafka",
 					Port: "9094",
 				},
@@ -160,7 +159,7 @@ func TestTrimValidateListeners(t *testing.T) {
 				},
 			},
 			wantErr:     true,
-			description: "expected to fail due to reserved listener name EXTERNAL duplication",
+			description: "expected to fail due to reserved listener name PLAINTEXT duplication",
 		},
 		{
 			listeners: []KafkaListener{

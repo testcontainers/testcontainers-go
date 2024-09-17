@@ -77,9 +77,9 @@ The environment variables that are already set by default are:
 You can set up cluster id by using `WithClusterID` option.
 
 ```
-KafkaContainer, err = kafka.RunContainer(ctx,
-		kafka.WithClusterID("test-cluster"),
-		testcontainers.WithImage("confluentinc/confluent-local:7.6.1"))
+KafkaContainer, err = kafka.Run(ctx,
+		"confluentinc/confluent-local:7.6.1",
+		kafka.WithClusterID("test-cluster"))
 ```
 
 #### Listeners

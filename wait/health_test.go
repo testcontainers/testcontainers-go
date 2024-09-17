@@ -2,6 +2,7 @@ package wait
 
 import (
 	"context"
+	"errors"
 	"io"
 	"sync"
 	"testing"
@@ -58,6 +59,10 @@ func (st *healthStrategyTarget) setState(health *types.Health) {
 	st.mtx.Lock()
 	defer st.mtx.Unlock()
 	st.state.Health = health
+}
+
+func (st *healthStrategyTarget) CopyFileFromContainer(_ context.Context, _ string) (io.ReadCloser, error) {
+	return nil, errors.New("not implemented")
 }
 
 // TestWaitForHealthTimesOutForUnhealthy confirms that an unhealthy container will eventually

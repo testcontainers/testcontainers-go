@@ -85,7 +85,7 @@ See [Docker environment variables](https://docs.docker.com/engine/reference/comm
     3. `${HOME}/.docker/desktop/docker.sock`.
     4. `/run/user/${UID}/docker.sock`, where `${UID}` is the user ID of the current user.
 
-7. The default Docker socket including schema will be returned if none of the above are set.
+7. The library panics if none of the above are set, meaning that the Docker host was not detected.
 
 ## Docker socket path detection
 
@@ -109,4 +109,4 @@ Path to Docker's socket. Used by Ryuk, Docker Compose, and a few other container
 
 6. Else, the default location of the docker socket is used: `/var/run/docker.sock`
 
-In any case, if the docker socket schema is `tcp://`, the default docker socket path will be returned.
+The library panics if the Docker host cannot be discovered.
