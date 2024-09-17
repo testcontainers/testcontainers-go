@@ -91,8 +91,8 @@ func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Cmd = append(req.Cmd, "--replSet", replSetName)
 		req.WaitingFor = wait.ForAll(
+			req.WaitingFor,
 			wait.ForExec(eval("rs.status().ok")),
-			wait.ForListeningPort("27017/tcp"),
 		).WithDeadline(60 * time.Second)
 		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
 			PostStarts: []testcontainers.ContainerHook{
