@@ -13,10 +13,9 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
 	"github.com/testcontainers/testcontainers-go/network"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func TestKafka(t *testing.T) {
+func TestKafka_Basic(t *testing.T) {
 	topic := "some-topic"
 
 	ctx := context.Background()
@@ -106,8 +105,15 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	var err error
 
 	const (
+		// config
 		topic_in  = "topic_in"
 		topic_out = "topic_out"
+
+		address = "kafka:9092"
+
+		// test data
+		key      = "wow"
+		text_msg = "test-input-external"
 	)
 
 	Network, err := network.New(ctx)
@@ -129,20 +135,37 @@ func TestKafka_networkConnectivity(t *testing.T) {
 		}),
 	)
 	// }
-	if err != nil {
-		t.Fatalf("failed to start container: %s", err)
-	}
+	require.NoError(t, err, "failed to start kafka container")
+
+	kcat, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "confluentinc/cp-kcat:7.4.1",
+			Networks: []string{
+				Network.Name,
+			},
+			Entrypoint: []string{
+				"sh",
+			},
+			Cmd: []string{
+				"-c",
+				"tail -f /dev/null",
+			},
+		},
+		Started: true,
+	})
+	// }
+
+	require.NoError(t, err, "failed to start kcat")
+
+	// 4. Copy message to kcat
+	err = kcat.CopyToContainer(ctx, []byte("Message produced by kcat"), "/tmp/msgs.txt", 700)
+	require.NoError(t, err)
 
 	brokers, err := KafkaContainer.Brokers(context.TODO())
-	if err != nil {
-		t.Fatal("failed to get brokers", err)
-	}
+	require.NoError(t, err, "failed to get brokers")
 
 	err = createTopics(brokers, []string{topic_in, topic_out})
-	require.NoError(t, err)
-
-	_, err = initKafkaTest(ctx, Network.Name, "kafka:9092", topic_in, topic_out)
-	require.NoError(t, err)
+	require.NoError(t, err, "create topics")
 
 	// perform assertions
 
@@ -151,26 +174,37 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	config.Producer.Return.Successes = true
 
 	producer, err := sarama.NewSyncProducer(brokers, config)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err, "create kafka producer")
 
 	// Act
-	key := "wow"
-	text_msg := "test-input-external"
 
-	if _, _, err := producer.SendMessage(&sarama.ProducerMessage{
+	// External write
+	_, _, err = producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic_in,
 		Key:   sarama.StringEncoder(key),
 		Value: sarama.StringEncoder(text_msg),
-	}); err != nil {
-		t.Fatal(err)
-	}
+	})
+	require.NoError(t, err, "send message")
 
+	// Internal read
+	_, stdout, err := kcat.Exec(ctx, []string{"kcat", "-b", address, "-C", "-t", topic_in, "-c", "1"})
+	require.NoError(t, err)
+
+	out, err := io.ReadAll(stdout)
+	require.NoError(t, err, "read message in kcat")
+
+	// Internal write
+	tempfile := "/tmp/msgs.txt"
+
+	err = kcat.CopyToContainer(ctx, []byte(out), tempfile, 700)
+	require.NoError(t, err)
+
+	_, _, err = kcat.Exec(ctx, []string{"kcat", "-b", address, "-t", topic_out, "-P", "-l", tempfile})
+	require.NoError(t, err, "send message with kcat")
+
+	// External read
 	client, err := sarama.NewConsumerGroup(brokers, "groupName", config)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err, "create consumer group")
 
 	consumer, _, done, cancel := NewTestKafkaConsumer(t)
 	go func() {
@@ -368,29 +402,6 @@ func TestKafka_listenersValidation(t *testing.T) {
 	}
 }
 
-func initKafkaTest(ctx context.Context, network string, brokers string, input string, output string) (testcontainers.Container, error) {
-	req := testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:       "./testdata",
-			Dockerfile:    "Dockerfile",
-			PrintBuildLog: true,
-			KeepImage:     true,
-		},
-		WaitingFor: wait.ForLog("start consuming events"),
-		Env: map[string]string{
-			"KAFKA_BROKERS":   brokers,
-			"KAFKA_TOPIC_IN":  input,
-			"KAFKA_TOPIC_OUT": output,
-		},
-		Networks: []string{network},
-	}
-
-	return testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-}
-
 func createTopics(brokers []string, topics []string) error {
 	t := &sarama.CreateTopicsRequest{}
 	t.TopicDetails = make(map[string]*sarama.TopicDetail, len(topics))
@@ -406,7 +417,9 @@ func createTopics(brokers []string, topics []string) error {
 	}
 	defer c.Close()
 
-	_, err = c.Brokers()[0].CreateTopics(t)
+	bs := c.Brokers()
+
+	_, err = bs[0].CreateTopics(t)
 	if err != nil {
 		return fmt.Errorf("failed to create topics: %w", err)
 	}
@@ -419,10 +432,12 @@ func createTopics(brokers []string, topics []string) error {
 // assertAdvertisedListeners checks that the advertised listeners are set correctly:
 // - The BROKER:// protocol is using the hostname of the Kafka container
 func assertAdvertisedListeners(t *testing.T, container testcontainers.Container) {
-	hostname, err := container.Host(context.Background())
+	inspect, err := container.Inspect(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
+	hostname := inspect.Config.Hostname
+
 	code, r, err := container.Exec(context.Background(), []string{"cat", "/usr/sbin/testcontainers_start.sh"})
 	if err != nil {
 		t.Fatal(err)
