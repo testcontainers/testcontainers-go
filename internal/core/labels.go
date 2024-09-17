@@ -31,8 +31,8 @@ func DefaultLabels(sessionID string) map[string]string {
 //
 // NOTICE: The dst labels must not be nil so we can set the labels.
 func MergeCustomLabels(dst, src map[string]string) error {
-	if dst == nil && len(src) > 0 {
-		return errors.New("cannot merge custom labels because destination map is nil")
+	if dst == nil {
+		return errors.New("destination map is nil")
 	}
 	for key, value := range src {
 		if strings.HasPrefix(key, LabelBase) {
