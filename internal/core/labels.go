@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -28,14 +29,16 @@ func DefaultLabels(sessionID string) map[string]string {
 // MergeCustomLabels sets labels from src to dst. Returns error if src label
 // name has [LabelBase] prefix.
 //
-// NOTICE: dst labels must not be nil.
+// NOTICE: The dst labels must not be nil so we can set the labels.
 func MergeCustomLabels(dst, src map[string]string) error {
+	if dst == nil && len(src) > 0 {
+		return errors.New("cannot merge custom labels because destination map is nil")
+	}
 	for key, value := range src {
 		if strings.HasPrefix(key, LabelBase) {
 			format := "cannot use prefix %q for custom labels"
 			return fmt.Errorf(format, LabelBase)
 		}
-
 		dst[key] = value
 	}
 	return nil
