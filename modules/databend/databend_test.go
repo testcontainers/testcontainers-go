@@ -5,9 +5,8 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	_ "github.com/datafuselabs/databend-go"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/databend"

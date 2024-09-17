@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 
+	_ "github.com/datafuselabs/databend-go"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/databend"
-
-	_ "github.com/datafuselabs/databend-go"
 )
 
 func ExampleRun() {
