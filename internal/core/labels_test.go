@@ -16,7 +16,7 @@ func TestMergeCustomLabels(t *testing.T) {
 		require.Equal(t, map[string]string{"A": "1", "B": "X", "C": "3"}, dst)
 	})
 
-	t.Run("src cannot have keys starting with LabelBase", func(t *testing.T) {
+	t.Run("invalid-prefix", func(t *testing.T) {
 		dst := map[string]string{"A": "1", "B": "2"}
 		src := map[string]string{"B": "X", LabelLang: "go"}
 
