@@ -34,11 +34,9 @@ func TestMergeCustomLabels(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("nil destination", func(t *testing.T) {
+	t.Run("nil-destination", func(t *testing.T) {
 		src := map[string]string{"A": "1"}
-
 		err := MergeCustomLabels(nil, src)
-
 		require.Error(t, err)
 	})
 }
