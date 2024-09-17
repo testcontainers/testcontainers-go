@@ -35,8 +35,7 @@ func MergeCustomLabels(dst, src map[string]string) error {
 	}
 	for key, value := range src {
 		if strings.HasPrefix(key, LabelBase) {
-			format := "cannot use prefix %q for custom labels"
-			return fmt.Errorf(format, LabelBase)
+			return fmt.Errorf("key %q has %q prefix", key, LabelBase)
 		}
 		dst[key] = value
 	}
