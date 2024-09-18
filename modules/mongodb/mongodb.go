@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -89,6 +90,10 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Cmd = append(req.Cmd, "--replSet", replSetName)
+		req.WaitingFor = wait.ForAll(
+			req.WaitingFor,
+			wait.ForExec(eval("rs.status().ok")),
+		).WithDeadline(60 * time.Second)
 		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
 			PostStarts: []testcontainers.ContainerHook{
 				func(ctx context.Context, c testcontainers.Container) error {
