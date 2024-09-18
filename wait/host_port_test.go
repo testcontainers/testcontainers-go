@@ -1,8 +1,10 @@
 package wait
 
 import (
+	"bytes"
 	"context"
 	"io"
+	"log"
 	"net"
 	"strconv"
 	"testing"
@@ -501,8 +503,17 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
+	oldWriter := log.Default().Writer()
+	var buf bytes.Buffer
+	log.Default().SetOutput(&buf)
+	t.Cleanup(func() {
+		log.Default().SetOutput(oldWriter)
+	})
+
 	err = wg.WaitUntilReady(context.Background(), target)
 	require.NoError(t, err)
+
+	require.Contains(t, buf.String(), "Shell not executable in container, only external port validated")
 }
 
 func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
@@ -552,108 +563,15 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
+	oldWriter := log.Default().Writer()
+	var buf bytes.Buffer
+	log.Default().SetOutput(&buf)
+	t.Cleanup(func() {
+		log.Default().SetOutput(oldWriter)
+	})
+
 	err = wg.WaitUntilReady(context.Background(), target)
 	require.NoError(t, err)
-}
 
-func TestInternalCheckFailsGivenShellIsNotInstalled(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
-	require.NoError(t, err)
-	defer listener.Close()
-
-	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	require.NoError(t, err)
-
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"80": []nat.PortBinding{
-								{
-									HostIP:   "0.0.0.0",
-									HostPort: port.Port(),
-								},
-							},
-						},
-					},
-				},
-			}, nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return port, nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Running: true,
-			}, nil
-		},
-		ExecImpl: func(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
-			// This is the error that would be returned if the shell is not installed.
-			return exitEaccess, nil, nil
-		},
-	}
-
-	{
-		err := internalCheck(context.Background(), "80", target)
-		require.Error(t, err)
-
-		require.Contains(t, err.Error(), errShellNotExecutable.Error())
-	}
-}
-
-func TestInternalCheckFailsGivenShellIsNotFound(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
-	require.NoError(t, err)
-	defer listener.Close()
-
-	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	require.NoError(t, err)
-
-	target := &MockStrategyTarget{
-		HostImpl: func(_ context.Context) (string, error) {
-			return "localhost", nil
-		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"80": []nat.PortBinding{
-								{
-									HostIP:   "0.0.0.0",
-									HostPort: port.Port(),
-								},
-							},
-						},
-					},
-				},
-			}, nil
-		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return port, nil
-		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
-				Running: true,
-			}, nil
-		},
-		ExecImpl: func(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
-			// This is the error that would be returned if the shell is not found.
-			return exitCmdNotFound, nil, nil
-		},
-	}
-
-	{
-		err := internalCheck(context.Background(), "80", target)
-		require.Error(t, err)
-
-		require.Contains(t, err.Error(), errShellNotFound.Error())
-	}
+	require.Contains(t, buf.String(), "Shell not found in container")
 }

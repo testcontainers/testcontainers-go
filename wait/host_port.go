@@ -24,8 +24,10 @@ var (
 	_ StrategyTimeout = (*HostPortStrategy)(nil)
 )
 
-var errShellNotExecutable = errors.New("/bin/sh command not executable")
-var errShellNotFound = errors.New("/bin/sh command not found")
+var (
+	errShellNotExecutable = errors.New("/bin/sh command not executable")
+	errShellNotFound      = errors.New("/bin/sh command not found")
+)
 
 type HostPortStrategy struct {
 	// Port is a string containing port number and protocol in the format "80/tcp"
@@ -167,7 +169,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		default:
 			return fmt.Errorf("internal check: %w", err)
 		}
-	}	
+	}
 
 	return nil
 }
