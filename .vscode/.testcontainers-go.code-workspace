@@ -50,12 +50,20 @@
             "path": "../modules/couchbase"
         },
         {
+            "name": "module / databend",
+            "path": "../modules/databend"
+        },
+        {
             "name": "module / dolt",
             "path": "../modules/dolt"
         },
         {
             "name": "module / elasticsearch",
             "path": "../modules/elasticsearch"
+        },
+        {
+            "name": "module / etcd",
+            "path": "../modules/etcd"
         },
         {
             "name": "module / gcloud",

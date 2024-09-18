@@ -76,6 +76,7 @@ nav:
         - modules/couchbase.md
         - modules/dolt.md
         - modules/elasticsearch.md
+        - modules/etcd.md
         - modules/gcloud.md
         - modules/grafana-lgtm.md
         - modules/inbucket.md
