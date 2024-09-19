@@ -13,13 +13,21 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+const (
+	exitEaccess     = 126 // container cmd can't be invoked (permission denied)
+	exitCmdNotFound = 127 // container cmd not found/does not exist or invalid bind-mount
+)
+
 // Implement interface
 var (
 	_ Strategy        = (*HostPortStrategy)(nil)
 	_ StrategyTimeout = (*HostPortStrategy)(nil)
 )
 
-var errShellNotExecutable = errors.New("/bin/sh command not executable")
+var (
+	errShellNotExecutable = errors.New("/bin/sh command not executable")
+	errShellNotFound      = errors.New("/bin/sh command not found")
+)
 
 type HostPortStrategy struct {
 	// Port is a string containing port number and protocol in the format "80/tcp"
@@ -151,12 +159,16 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	}
 
 	if err = internalCheck(ctx, internalPort, target); err != nil {
-		if errors.Is(errShellNotExecutable, err) {
+		switch {
+		case errors.Is(err, errShellNotExecutable):
 			log.Println("Shell not executable in container, only external port validated")
 			return nil
+		case errors.Is(err, errShellNotFound):
+			log.Println("Shell not found in container")
+			return nil
+		default:
+			return fmt.Errorf("internal check: %w", err)
 		}
-
-		return fmt.Errorf("internal check: %w", err)
 	}
 
 	return nil
@@ -207,13 +219,18 @@ func internalCheck(ctx context.Context, internalPort nat.Port, target StrategyTa
 			return fmt.Errorf("%w, host port waiting failed", err)
 		}
 
-		if exitCode == 0 {
-			break
-		} else if exitCode == 126 {
+		// Docker has a issue which override exit code 127 to 126 due to:
+		// https://github.com/moby/moby/issues/45795
+		// Handle both to ensure compatibility with Docker and Podman for now.
+		switch exitCode {
+		case 0:
+			return nil
+		case exitEaccess:
 			return errShellNotExecutable
+		case exitCmdNotFound:
+			return errShellNotFound
 		}
 	}
-	return nil
 }
 
 func buildInternalCheckCommand(internalPort int) string {

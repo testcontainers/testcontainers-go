@@ -177,6 +177,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			password:      req.Env["POSTGRES_PASSWORD"],
 			user:          req.Env["POSTGRES_USER"],
 			sqlDriverName: settings.SQLDriverName,
+			snapshotName:  settings.Snapshot,
 		}
 	}
 

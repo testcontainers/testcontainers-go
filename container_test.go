@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -300,6 +301,64 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestCustomLabelsImage(t *testing.T) {
+	const (
+		myLabelName  = "org.my.label"
+		myLabelValue = "my-label-value"
+	)
+
+	ctx := context.Background()
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:  "alpine:latest",
+			Labels: map[string]string{myLabelName: myLabelValue},
+		},
+	}
+
+	ctr, err := testcontainers.GenericContainer(ctx, req)
+
+	require.NoError(t, err)
+	t.Cleanup(func() { assert.NoError(t, ctr.Terminate(ctx)) })
+
+	ctrJSON, err := ctr.Inspect(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, myLabelValue, ctrJSON.Config.Labels[myLabelName])
+}
+
+func TestCustomLabelsBuildOptionsModifier(t *testing.T) {
+	const (
+		myLabelName        = "org.my.label"
+		myLabelValue       = "my-label-value"
+		myBuildOptionLabel = "org.my.bo.label"
+		myBuildOptionValue = "my-bo-label-value"
+	)
+
+	ctx := context.Background()
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			FromDockerfile: testcontainers.FromDockerfile{
+				Context:    "./testdata",
+				Dockerfile: "Dockerfile",
+				BuildOptionsModifier: func(opts *types.ImageBuildOptions) {
+					opts.Labels = map[string]string{
+						myBuildOptionLabel: myBuildOptionValue,
+					}
+				},
+			},
+			Labels: map[string]string{myLabelName: myLabelValue},
+		},
+	}
+
+	ctr, err := testcontainers.GenericContainer(ctx, req)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	ctrJSON, err := ctr.Inspect(ctx)
+	require.NoError(t, err)
+	require.Equal(t, myLabelValue, ctrJSON.Config.Labels[myLabelName])
+	require.Equal(t, myBuildOptionValue, ctrJSON.Config.Labels[myBuildOptionLabel])
 }
 
 func Test_GetLogsFromFailedContainer(t *testing.T) {

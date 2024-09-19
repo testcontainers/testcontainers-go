@@ -7,11 +7,13 @@ import (
 type options struct {
 	// SQLDriverName is the name of the SQL driver to use.
 	SQLDriverName string
+	Snapshot      string
 }
 
 func defaultOptions() options {
 	return options{
 		SQLDriverName: "postgres",
+		Snapshot:      defaultSnapshotName,
 	}
 }
 
