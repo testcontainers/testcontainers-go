@@ -136,10 +136,3 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 		return nil
 	}
 }
-
-// WithDatabase sets the name of the database to use.
-func WithDatabase(database string) DatabendOption {
-	return func(d *DatabendContainer) {
-		d.database = database
-	}
-}

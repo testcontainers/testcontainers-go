@@ -19,7 +19,6 @@ func ExampleRun() {
 		"datafuselabs/databend:v1.2.615",
 		databend.WithUsername("test1"),
 		databend.WithPassword("pass1"),
-		databend.WithDatabase("test1"),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(databendContainer); err != nil {
@@ -50,7 +49,6 @@ func ExampleRun_connect() {
 		"datafuselabs/databend:v1.2.615",
 		databend.WithUsername("root"),
 		databend.WithPassword("password"),
-		databend.WithDatabase("test"),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(databendContainer); err != nil {
