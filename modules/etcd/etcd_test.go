@@ -70,33 +70,6 @@ func TestRunClusterMultipleNodes(t *testing.T) {
 	}
 }
 
-func TestRunClusterMultipleNodes_AutoTLS(t *testing.T) {
-	ctx := context.Background()
-
-	ctr, err := etcd.Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("etcd-1", "etcd-2", "etcd-3"), etcd.WithClusterToken("My-cluster-t0k3n"), etcd.WithAutoTLS())
-	testcontainers.CleanupContainer(t, ctr)
-	require.NoError(t, err)
-
-	require.Equal(t, "My-cluster-t0k3n", ctr.ClusterToken)
-
-	// the topology has one parent node and two child nodes
-	require.Len(t, ctr.Nodes, 2)
-
-	for i, node := range ctr.Nodes {
-		require.Empty(t, node.Nodes) // child nodes has no children
-
-		c, r, err := node.Exec(ctx, []string{"etcdctl", "member", "list"}, tcexec.Multiplexed())
-		require.NoError(t, err)
-
-		output, err := io.ReadAll(r)
-		require.NoError(t, err)
-		require.Contains(t, string(output), fmt.Sprintf("etcd-%d", i+1))
-
-		require.Equal(t, 0, c)
-		require.Equal(t, "My-cluster-t0k3n", node.ClusterToken)
-	}
-}
-
 func TestRun_PutGet(t *testing.T) {
 	ctx := context.Background()
 

@@ -78,13 +78,6 @@ The module creates a Docker network for the etcd cluster, and the nodes are conn
 Sets the cluster token for the etcd cluster. The cluster token is used to identify the etcd cluster. The default value is `mys3cr3ttok3n`.
 The etcd container holds a reference to the cluster token, so you can use it with e.g. `ctr.ClusterToken`.
 
-#### WithAutoTLS
-
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-`WithAutoTLS` is an option to enable automatic TLS. If the cluster needs encrypted communication but does not require authenticated connections,
-etcd can be configured to automatically generate its keys. On initialization, each member creates its own set of keys based on its advertised IP addresses and hosts.
-
 ### Container Methods
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>

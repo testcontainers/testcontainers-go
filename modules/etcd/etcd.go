@@ -146,9 +146,6 @@ func configureCMD(settings options) []string {
 	cmds := []string{"etcd"}
 
 	scheme := "http"
-	if settings.AutoTLS {
-		scheme = "https"
-	}
 
 	if len(settings.Nodes) < 1 {
 		cmds = append(cmds, "--name=default")
@@ -173,10 +170,6 @@ func configureCMD(settings options) []string {
 		}
 
 		cmds = append(cmds, clusterCmds...)
-
-		if settings.AutoTLS {
-			cmds = append(cmds, "--auto-tls", "--peer-auto-tls")
-		}
 	}
 
 	if settings.MountDataDir {

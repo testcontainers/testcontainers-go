@@ -34,25 +34,6 @@ func TestConfigureCMD(t *testing.T) {
 			},
 		},
 		{
-			name: "with-node-auto-tls",
-			settings: options{
-				Nodes:   []string{"node1"},
-				AutoTLS: true,
-			},
-			want: []string{
-				"etcd",
-				"--name=node1",
-				"--initial-advertise-peer-urls=https://node1:2380",
-				"--advertise-client-urls=https://node1:2379",
-				"--listen-peer-urls=https://0.0.0.0:2380",
-				"--listen-client-urls=https://0.0.0.0:2379",
-				"--initial-cluster-state=new",
-				"--initial-cluster=node1=https://node1:2380",
-				"--auto-tls",
-				"--peer-auto-tls",
-			},
-		},
-		{
 			name: "with-node-datadir",
 			settings: options{
 				Nodes:        []string{"node1"},
