@@ -44,7 +44,7 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the MSSQLServer container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MSSQLServerContainer, error) {
-	return Run(ctx, "mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04", opts...)
+	return Run(ctx, "mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04", opts...)
 }
 
 // Run creates an instance of the MSSQLServer container type
