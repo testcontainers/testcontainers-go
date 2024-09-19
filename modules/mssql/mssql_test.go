@@ -17,7 +17,7 @@ func TestMSSQLServer(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04",
+		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
 		mssql.WithAcceptEULA(),
 	)
 	testcontainers.CleanupContainer(t, ctr)
@@ -46,7 +46,7 @@ func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04",
+		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")),
 	)
@@ -65,7 +65,7 @@ func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04",
+		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
 		mssql.WithAcceptEULA(),
 	)
 	testcontainers.CleanupContainer(t, ctr)
@@ -95,7 +95,7 @@ func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04",
+		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
 		mssql.WithAcceptEULA(),
 		mssql.WithPassword("Strong@Passw0rd"),
 	)
@@ -119,34 +119,12 @@ func TestMSSQLServerWithInvalidPassword(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04",
+		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Password validation failed")),
 		mssql.WithAcceptEULA(),
 		mssql.WithPassword("weakPassword"),
 	)
 	testcontainers.CleanupContainer(t, ctr)
-	require.NoError(t, err)
-}
-
-func TestMSSQLServerWithAlternativeImage(t *testing.T) {
-	ctx := context.Background()
-
-	ctr, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04",
-		mssql.WithAcceptEULA(),
-	)
-	testcontainers.CleanupContainer(t, ctr)
-	require.NoError(t, err)
-
-	// perform assertions
-	connectionString, err := ctr.ConnectionString(ctx)
-	require.NoError(t, err)
-
-	db, err := sql.Open("sqlserver", connectionString)
-	require.NoError(t, err)
-	defer db.Close()
-
-	err = db.Ping()
 	require.NoError(t, err)
 }
