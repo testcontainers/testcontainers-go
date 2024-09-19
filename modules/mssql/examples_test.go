@@ -10,18 +10,13 @@ import (
 )
 
 func ExampleRun() {
-	// TODO: restore once #2785 is fixed
-	if true {
-		fmt.Println("true")
-		return
-	}
 	// runMSSQLServerContainer {
 	ctx := context.Background()
 
 	password := "SuperStrong@Passw0rd"
 
 	mssqlContainer, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04",
+		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
 		mssql.WithAcceptEULA(),
 		mssql.WithPassword(password),
 	)
