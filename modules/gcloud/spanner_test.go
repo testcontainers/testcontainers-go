@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
@@ -27,16 +28,15 @@ func ExampleRunSpannerContainer() {
 		"gcr.io/cloud-spanner-emulator/emulator:1.4.0",
 		gcloud.WithProjectID("spanner-project"),
 	)
-	if err != nil {
-		log.Fatalf("failed to run container: %v", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := spannerContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %v", err)
+		if err := testcontainers.TerminateContainer(spannerContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to run container: %v", err)
+		return
+	}
 	// }
 
 	// spannerAdminClient {
@@ -56,7 +56,8 @@ func ExampleRunSpannerContainer() {
 
 	instanceAdmin, err := instance.NewInstanceAdminClient(ctx, options...)
 	if err != nil {
-		log.Fatalf("failed to create instance admin client: %v", err) // nolint:gocritic
+		log.Printf("failed to create instance admin client: %v", err)
+		return
 	}
 	defer instanceAdmin.Close()
 	// }
@@ -69,18 +70,21 @@ func ExampleRunSpannerContainer() {
 		},
 	})
 	if err != nil {
-		log.Fatalf("failed to create instance: %v", err)
+		log.Printf("failed to create instance: %v", err)
+		return
 	}
 
 	_, err = instanceOp.Wait(ctx)
 	if err != nil {
-		log.Fatalf("failed to wait for instance creation: %v", err)
+		log.Printf("failed to wait for instance creation: %v", err)
+		return
 	}
 
 	// spannerDBAdminClient {
 	c, err := database.NewDatabaseAdminClient(ctx, options...)
 	if err != nil {
-		log.Fatalf("failed to create admin client: %v", err)
+		log.Printf("failed to create admin client: %v", err)
+		return
 	}
 	defer c.Close()
 	// }
@@ -93,17 +97,20 @@ func ExampleRunSpannerContainer() {
 		},
 	})
 	if err != nil {
-		log.Fatalf("failed to create database: %v", err)
+		log.Printf("failed to create database: %v", err)
+		return
 	}
 	_, err = databaseOp.Wait(ctx)
 	if err != nil {
-		log.Fatalf("failed to wait for database creation: %v", err)
+		log.Printf("failed to wait for database creation: %v", err)
+		return
 	}
 
 	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectId, instanceId, databaseName)
 	client, err := spanner.NewClient(ctx, db, options...)
 	if err != nil {
-		log.Fatalf("failed to create client: %v", err)
+		log.Printf("failed to create client: %v", err)
+		return
 	}
 	defer client.Close()
 
@@ -113,18 +120,21 @@ func ExampleRunSpannerContainer() {
 			[]interface{}{"Go", "Gopher"}),
 	})
 	if err != nil {
-		log.Fatalf("failed to apply mutation: %v", err)
+		log.Printf("failed to apply mutation: %v", err)
+		return
 	}
 	row, err := client.Single().ReadRow(ctx, "Languages",
 		spanner.Key{"Go"}, []string{"mascot"})
 	if err != nil {
-		log.Fatalf("failed to read row: %v", err)
+		log.Printf("failed to read row: %v", err)
+		return
 	}
 
 	var mascot string
 	err = row.ColumnByName("Mascot", &mascot)
 	if err != nil {
-		log.Fatalf("failed to read column: %v", err)
+		log.Printf("failed to read column: %v", err)
+		return
 	}
 
 	fmt.Println(mascot)

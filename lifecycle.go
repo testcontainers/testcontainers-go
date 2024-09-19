@@ -411,10 +411,10 @@ func (c ContainerLifecycleHooks) Creating(ctx context.Context) func(req Containe
 // containerHookFn is a helper function that will create a function to be returned by all the different
 // container lifecycle hooks. The created function will iterate over all the hooks and call them one by one.
 func containerHookFn(ctx context.Context, containerHook []ContainerHook) func(container Container) error {
-	return func(container Container) error {
+	return func(ctr Container) error {
 		errs := make([]error, len(containerHook))
 		for i, hook := range containerHook {
-			errs[i] = hook(ctx, container)
+			errs[i] = hook(ctx, ctr)
 		}
 
 		return errors.Join(errs...)

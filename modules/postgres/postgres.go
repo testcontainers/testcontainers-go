@@ -169,15 +169,23 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *PostgresContainer
+	if container != nil {
+		c = &PostgresContainer{
+			Container:     container,
+			dbName:        req.Env["POSTGRES_DB"],
+			password:      req.Env["POSTGRES_PASSWORD"],
+			user:          req.Env["POSTGRES_USER"],
+			sqlDriverName: settings.SQLDriverName,
+			snapshotName:  settings.Snapshot,
+		}
 	}
 
-	user := req.Env["POSTGRES_USER"]
-	password := req.Env["POSTGRES_PASSWORD"]
-	dbName := req.Env["POSTGRES_DB"]
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
-	return &PostgresContainer{Container: container, dbName: dbName, password: password, user: user, sqlDriverName: settings.SQLDriverName}, nil
+	return c, nil
 }
 
 type snapshotConfig struct {

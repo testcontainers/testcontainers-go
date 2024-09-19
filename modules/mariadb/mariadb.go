@@ -169,13 +169,21 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *MariaDBContainer
+	if container != nil {
+		c = &MariaDBContainer{
+			Container: container,
+			username:  username,
+			password:  password,
+			database:  req.Env["MARIADB_DATABASE"],
+		}
 	}
 
-	database := req.Env["MARIADB_DATABASE"]
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
-	return &MariaDBContainer{container, username, password, database}, nil
+	return c, nil
 }
 
 // MustConnectionString panics if the address cannot be determined.

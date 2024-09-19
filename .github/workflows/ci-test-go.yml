@@ -62,7 +62,7 @@ jobs:
         run: sudo rm -rf /var/run/docker.sock
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
@@ -85,13 +85,25 @@ jobs:
           #           takes precedence over all other caching options.
           skip-cache: true
 
+      - name: generate
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
+        working-directory: ./${{ inputs.project-directory }}
+        shell: bash
+        run: |
+          make generate
+          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
+
       - name: modVerify
         working-directory: ./${{ inputs.project-directory }}
         run: go mod verify
 
       - name: modTidy
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
         working-directory: ./${{ inputs.project-directory }}
-        run: make tidy
+        shell: bash
+        run: |
+          make tidy
+          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
 
       - name: ensure compilation
         working-directory: ./${{ inputs.project-directory }}
