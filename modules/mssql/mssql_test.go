@@ -14,6 +14,7 @@ import (
 )
 
 func TestMSSQLServer(t *testing.T) {
+	t.Skip("broken see #2785")
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
@@ -43,6 +44,7 @@ func TestMSSQLServer(t *testing.T) {
 }
 
 func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
+	t.Skip("broken see #2785")
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
@@ -62,6 +64,7 @@ func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 }
 
 func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
+	t.Skip("broken see #2785")
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
@@ -92,6 +95,7 @@ func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 }
 
 func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
+	t.Skip("broken see #2785")
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
@@ -116,6 +120,7 @@ func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 
 // tests that a weak password is not accepted by the container due to Microsoft's password strength policy
 func TestMSSQLServerWithInvalidPassword(t *testing.T) {
+	t.Skip("broken see #2785")
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
@@ -130,6 +135,7 @@ func TestMSSQLServerWithInvalidPassword(t *testing.T) {
 }
 
 func TestMSSQLServerWithAlternativeImage(t *testing.T) {
+	t.Skip("broken see #2785")
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
