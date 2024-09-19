@@ -105,10 +105,7 @@ func (c *DatabendContainer) ConnectionString(ctx context.Context, args ...string
 
 	extraArgs := ""
 	if len(args) > 0 {
-		extraArgs = strings.Join(args, "&")
-	}
-	if extraArgs != "" {
-		extraArgs = "?" + extraArgs
+		extraArgs = "?" + strings.Join(args, "&")
 	}
 	if c.database == "" {
 		return "", errors.New("database name is empty")
