@@ -11,6 +11,7 @@ type options struct {
 	ClusterToken   string
 	AdditionalArgs []string
 	MountDataDir   bool
+	AutoTLS        bool
 }
 
 func defaultOptions() options {
@@ -32,6 +33,16 @@ type Option func(*options)
 func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	// NOOP to satisfy interface.
 	return nil
+}
+
+// WithAutoTLS is an option to enable automatic TLS.
+// If the cluster needs encrypted communication but does not require authenticated connections,
+// etcd can be configured to automatically generate its keys. On initialization,
+// each member creates its own set of keys based on its advertised IP addresses and hosts.
+func WithAutoTLS() Option {
+	return func(o *options) {
+		o.AutoTLS = true
+	}
 }
 
 // WithAdditionalArgs is an option to pass additional arguments to the etcd container.
@@ -73,6 +84,7 @@ func withClusterNetwork(n *testcontainers.DockerNetwork) Option {
 	}
 }
 
+// WithClusterToken is an option to set the cluster token.
 func WithClusterToken(token string) Option {
 	return func(o *options) {
 		o.ClusterToken = token

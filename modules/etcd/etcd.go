@@ -145,21 +145,26 @@ func configureCluster(ctx context.Context, settings *options, opts []testcontain
 func configureCMD(settings options) []string {
 	cmds := []string{"etcd"}
 
+	scheme := "http"
+	if settings.AutoTLS {
+		scheme = "https"
+	}
+
 	if len(settings.Nodes) < 1 {
 		cmds = append(cmds, "--name=default")
 	} else {
 		clusterCmds := []string{
 			"--name=" + settings.Nodes[settings.currentNode],
-			"--initial-advertise-peer-urls=http://" + settings.Nodes[settings.currentNode] + ":" + PeerPort,
-			"--advertise-client-urls=http://" + settings.Nodes[settings.currentNode] + ":" + ClientPort,
-			"--listen-peer-urls=http://0.0.0.0:" + PeerPort,
-			"--listen-client-urls=http://0.0.0.0:" + ClientPort,
+			"--initial-advertise-peer-urls=" + scheme + "://" + settings.Nodes[settings.currentNode] + ":" + PeerPort,
+			"--advertise-client-urls=" + scheme + "://" + settings.Nodes[settings.currentNode] + ":" + ClientPort,
+			"--listen-peer-urls=" + scheme + "://0.0.0.0:" + PeerPort,
+			"--listen-client-urls=" + scheme + "://0.0.0.0:" + ClientPort,
 			"--initial-cluster-state=new",
 		}
 
 		clusterStateValues := []string{}
 		for _, node := range settings.Nodes {
-			clusterStateValues = append(clusterStateValues, node+"=http://"+node+":"+PeerPort)
+			clusterStateValues = append(clusterStateValues, node+"="+scheme+"://"+node+":"+PeerPort)
 		}
 		clusterCmds = append(clusterCmds, "--initial-cluster="+strings.Join(clusterStateValues, ","))
 
@@ -168,6 +173,10 @@ func configureCMD(settings options) []string {
 		}
 
 		cmds = append(cmds, clusterCmds...)
+
+		if settings.AutoTLS {
+			cmds = append(cmds, "--auto-tls", "--peer-auto-tls")
+		}
 	}
 
 	if settings.MountDataDir {
