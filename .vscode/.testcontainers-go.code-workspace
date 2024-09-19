@@ -50,10 +50,6 @@
             "path": "../modules/couchbase"
         },
         {
-            "name": "module / databend",
-            "path": "../modules/databend"
-        },
-        {
             "name": "module / dolt",
             "path": "../modules/dolt"
         },
