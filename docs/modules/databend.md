@@ -47,9 +47,9 @@ E.g. `Run(context.Background(), "datafuselabs/databend:v1.2.615")`.
 
 {% include "../features/common_functional_options.md" %}
 
-#### Set username, password, and database name
+#### Set username, password
 
-If you need to set a different user/password/database, you can use `WithUsername`, `WithPassword`, `WithDatabase` options.
+If you need to set a different user/password/database, you can use `WithUsername`, `WithPassword` options.
 
 !!!info
 The default values for the username is `databend`, for password is `databend` and for the default database name is `default`.
