@@ -79,6 +79,51 @@ Produce messages using the new registered listener
 [Produce/consume via registered listener](../../modules/redpanda/redpanda_test.go) inside_block:withListenerExec
 <!--/codeinclude-->
 
+#### Adding Service Accounts
+
+It's possible to add service accounts to the Redpanda container using the `WithNewServiceAccount` option, setting the service account name and its password.
+E.g. `WithNewServiceAccount("service-account", "password")`.
+
+#### Adding Super Users
+
+When a super user is needed, you can use the `WithSuperusers` option, passing a variadic list of super users.
+E.g. `WithSuperusers("superuser-1", "superuser-2")`.
+
+#### Enabling SASL
+
+The `WithEnableSASL()` option enables SASL scram sha authentication. By default, no authentication (plaintext) is used.
+When setting an authentication method, make sure to add users as well and authorize them using the `WithSuperusers()` option.
+
+##### WithEnableKafkaAuthorization
+
+The `WithEnableKafkaAuthorization` enables authorization for connections on the Kafka API.
+
+##### WithEnableWasmTransform
+
+The `WithEnableWasmTransform` enables wasm transform.
+
+!!!warn
+    Should not be used with RP versions before 23.3
+
+##### WithEnableSchemaRegistryHTTPBasicAuth
+
+The `WithEnableSchemaRegistryHTTPBasicAuth` enables HTTP basic authentication for the Schema Registry.
+
+#### WithAutoCreateTopics
+
+The `WithAutoCreateTopics` option enables the auto-creation of topics.
+
+#### WithTLS
+
+The `WithTLS` option enables TLS encryption. It requires a valid PEM encoded certificate and key, passed as byte slices.
+E.g. `WithTLS([]byte(cert), []byte(key))`.
+
+#### WithBootstrapConfig
+
+`WithBootstrapConfig` adds an arbitrary config key-value pair to the Redpanda container. Per the name, this config will be interpolated into the generated bootstrap
+config file, which is particularly useful for configs requiring a restart when otherwise applied to a running Redpanda instance.
+E.g. `WithBootstrapConfig("config_key", config_value)`, where `config_value` is of type `any`.
+
 ### Container Methods
 
 The Redpanda container exposes the following methods:
