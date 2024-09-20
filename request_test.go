@@ -1,10 +1,12 @@
 package testcontainers
 
 import (
+	"context"
 	"testing"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMergePortBindings(t *testing.T) {
@@ -91,7 +93,61 @@ func TestMergePortBindings(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			res := mergePortBindings(c.arg.configPortMap, c.arg.parsedPortMap, c.arg.exposedPorts)
-			assert.Equal(t, c.expected, res)
+			require.Equal(t, c.expected, res)
 		})
 	}
+}
+
+func TestCustomLabelsImage(t *testing.T) {
+	const (
+		myLabelName  = "org.my.label"
+		myLabelValue = "my-label-value"
+	)
+
+	ctx := context.Background()
+	req := Request{
+		Image:  "alpine:latest",
+		Labels: map[string]string{myLabelName: myLabelValue},
+	}
+
+	ctr, err := Run(ctx, req)
+
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, ctr.Terminate(ctx)) })
+
+	ctrJSON, err := ctr.Inspect(ctx)
+	require.NoError(t, err)
+	require.Equal(t, myLabelValue, ctrJSON.Config.Labels[myLabelName])
+}
+
+func TestCustomLabelsBuildOptionsModifier(t *testing.T) {
+	const (
+		myLabelName        = "org.my.label"
+		myLabelValue       = "my-label-value"
+		myBuildOptionLabel = "org.my.bo.label"
+		myBuildOptionValue = "my-bo-label-value"
+	)
+
+	ctx := context.Background()
+	req := Request{
+		FromDockerfile: FromDockerfile{
+			Context:    "./testdata",
+			Dockerfile: "Dockerfile",
+			BuildOptionsModifier: func(opts *types.ImageBuildOptions) {
+				opts.Labels = map[string]string{
+					myBuildOptionLabel: myBuildOptionValue,
+				}
+			},
+		},
+		Labels: map[string]string{myLabelName: myLabelValue},
+	}
+
+	ctr, err := Run(ctx, req)
+	CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	ctrJSON, err := ctr.Inspect(ctx)
+	require.NoError(t, err)
+	require.Equal(t, myLabelValue, ctrJSON.Config.Labels[myLabelName])
+	require.Equal(t, myBuildOptionValue, ctrJSON.Config.Labels[myBuildOptionLabel])
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -48,6 +49,13 @@ func TestMongoDB(t *testing.T) {
 				mongodb.WithReplicaSet("rs"),
 			},
 		},
+		{
+			name: "With Replica set and mongo:7",
+			img:  "mongo:7",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -67,12 +75,15 @@ func TestMongoDB(t *testing.T) {
 			// Force direct connection to the container to avoid the replica set
 			// connection string that is returned by the container itself when
 			// using the replica set option.
-			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint+"/?connect=direct"))
+			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint).SetDirect(true))
 			require.NoError(tt, err)
 
 			err = mongoClient.Ping(ctx, nil)
 			require.NoError(tt, err)
 			require.Equal(t, "test", mongoClient.Database("test").Name())
+
+			_, err = mongoClient.Database("testcontainer").Collection("test").InsertOne(context.Background(), bson.M{})
+			require.NoError(tt, err)
 		})
 	}
 }

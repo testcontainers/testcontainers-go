@@ -158,15 +158,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.RequestCustomiz
 		}
 	}
 
-	ctr, err := testcontainers.Run(ctx, req)
+	container, err := testcontainers.Run(ctx, req)
 	var c *Container
-	if ctr != nil {
+	if container != nil {
 		c = &Container{
-			DockerContainer: ctr,
+			DockerContainer: container,
 			dbName:          req.Env["POSTGRES_DB"],
 			password:        req.Env["POSTGRES_PASSWORD"],
 			user:            req.Env["POSTGRES_USER"],
 			sqlDriverName:   settings.SQLDriverName,
+			snapshotName:    settings.Snapshot,
 		}
 	}
 
