@@ -180,25 +180,6 @@ func configureCMD(settings options) []string {
 		cmds = append(cmds, "--data-dir="+DataDir)
 	}
 
-	/*
-	   if (ssl) {
-	       withClasspathResourceMapping(
-	           "ssl/cert/" + node + ".pem", "/etc/ssl/etcd/server.pem",
-	           BindMode.READ_ONLY,
-	           SelinuxContext.SHARED);
-
-	       withClasspathResourceMapping(
-	           "ssl/cert/" + node + "-key.pem", "/etc/ssl/etcd/server-key.pem",
-	           BindMode.READ_ONLY,
-	           SelinuxContext.SHARED);
-
-	       cmd.add("--cert-file");
-	       cmd.add("/etc/ssl/etcd/server.pem");
-	       cmd.add("--key-file");
-	       cmd.add("/etc/ssl/etcd/server-key.pem");
-	   }
-	*/
-
 	cmds = append(cmds, settings.AdditionalArgs...)
 
 	return cmds
