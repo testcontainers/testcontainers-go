@@ -94,18 +94,18 @@ E.g. `WithSuperusers("superuser-1", "superuser-2")`.
 The `WithEnableSASL()` option enables SASL scram sha authentication. By default, no authentication (plaintext) is used.
 When setting an authentication method, make sure to add users as well and authorize them using the `WithSuperusers()` option.
 
-##### WithEnableKafkaAuthorization
+#### WithEnableKafkaAuthorization
 
 The `WithEnableKafkaAuthorization` enables authorization for connections on the Kafka API.
 
-##### WithEnableWasmTransform
+#### WithEnableWasmTransform
 
 The `WithEnableWasmTransform` enables wasm transform.
 
-!!!warn
+!!!warning
     Should not be used with RP versions before 23.3
 
-##### WithEnableSchemaRegistryHTTPBasicAuth
+#### WithEnableSchemaRegistryHTTPBasicAuth
 
 The `WithEnableSchemaRegistryHTTPBasicAuth` enables HTTP basic authentication for the Schema Registry.
 
