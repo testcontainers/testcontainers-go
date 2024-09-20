@@ -106,6 +106,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
+// configureCluster configures the cluster settings, ensuring that the cluster is properly configured with the necessary network and options,
+// avoiding duplicate application of options to be passed to the successive nodes.
 func configureCluster(ctx context.Context, settings *options, opts []testcontainers.ContainerCustomizer) ([]testcontainers.ContainerCustomizer, error) {
 	var clusterOpts []testcontainers.ContainerCustomizer
 	if len(settings.Nodes) <= 1 {
@@ -142,6 +144,8 @@ func configureCluster(ctx context.Context, settings *options, opts []testcontain
 	return clusterOpts, nil
 }
 
+// configureCMD configures the etcd command line arguments, based on the settings provided,
+// in order to create a cluster or a single-node instance.
 func configureCMD(settings options) []string {
 	cmds := []string{"etcd"}
 
