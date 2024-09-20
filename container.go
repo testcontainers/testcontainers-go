@@ -520,7 +520,7 @@ func (c *ContainerRequest) validateMounts() error {
 
 	c.HostConfigModifier(&hostConfig)
 
-	if hostConfig.Binds != nil && len(hostConfig.Binds) > 0 {
+	if len(hostConfig.Binds) > 0 {
 		for _, bind := range hostConfig.Binds {
 			parts := strings.Split(bind, ":")
 			if len(parts) != 2 {
