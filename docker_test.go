@@ -658,14 +658,12 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 			ExposedPorts: []string{
 				nginxDefaultPort,
 			},
-			WaitingFor: wait.ForHTTP("/").WithStartupTimeout(1 * time.Second),
+			WaitingFor: wait.ForHTTP("/").WithStartupTimeout(time.Millisecond * 500),
 		},
 		Started: true,
 	})
 	CleanupContainer(t, nginxC)
-	if err == nil {
-		t.Error("Expected timeout")
-	}
+	require.Error(t, err, "expected timeout")
 }
 
 func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
