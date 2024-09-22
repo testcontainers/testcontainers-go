@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -517,7 +516,7 @@ func TestReadTCConfig(t *testing.T) {
 			},
 		}
 		for _, tt := range tests {
-			t.Run(fmt.Sprintf(tt.name), func(t *testing.T) {
+			t.Run(tt.name, func(t *testing.T) {
 				tmpDir := t.TempDir()
 				t.Setenv("HOME", tmpDir)
 				t.Setenv("USERPROFILE", tmpDir) // Windows support
