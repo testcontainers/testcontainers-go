@@ -460,7 +460,14 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	}
 
 	if !c.ShouldKeepBuiltImage() {
-		buildOptions.Labels = core.DefaultLabels(core.SessionID())
+		dst := GenericLabels()
+		if err = core.MergeCustomLabels(dst, c.Labels); err != nil {
+			return types.ImageBuildOptions{}, err
+		}
+		if err = core.MergeCustomLabels(dst, buildOptions.Labels); err != nil {
+			return types.ImageBuildOptions{}, err
+		}
+		buildOptions.Labels = dst
 	}
 
 	// Do this as late as possible to ensure we don't leak the context on error/panic.
@@ -513,7 +520,7 @@ func (c *ContainerRequest) validateMounts() error {
 
 	c.HostConfigModifier(&hostConfig)
 
-	if hostConfig.Binds != nil && len(hostConfig.Binds) > 0 {
+	if len(hostConfig.Binds) > 0 {
 		for _, bind := range hostConfig.Binds {
 			parts := strings.Split(bind, ":")
 			if len(parts) != 2 {

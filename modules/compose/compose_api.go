@@ -460,6 +460,10 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 	}
 
 	containerInstance := containers[0]
+	// TODO: Fix as this is only setting a subset of the fields
+	// and the container is not fully initialized, for example
+	// the isRunning flag is not set.
+	// See: https://github.com/testcontainers/testcontainers-go/issues/2667
 	ctr := &testcontainers.DockerContainer{
 		ID:    containerInstance.ID,
 		Image: containerInstance.Image,

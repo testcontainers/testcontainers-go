@@ -210,12 +210,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 			Name: networkName,
 		})
 		require.NoError(t, err)
-		defer func() {
-			err := net.Remove(ctx)
-			if err != nil {
-				t.Logf("failed to remove network %s: %s\n", networkName, err)
-			}
-		}()
+		CleanupNetwork(t, net)
 
 		dockerNetwork, err := provider.GetNetwork(ctx, NetworkRequest{
 			Name: networkName,
@@ -262,12 +257,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 			Name: networkName,
 		})
 		require.NoError(t, err)
-		defer func() {
-			err := net.Remove(ctx)
-			if err != nil {
-				t.Logf("failed to remove network %s: %s\n", networkName, err)
-			}
-		}()
+		CleanupNetwork(t, net)
 
 		dockerNetwork, err := provider.GetNetwork(ctx, NetworkRequest{
 			Name: networkName,
@@ -549,91 +539,91 @@ func TestLifecycleHooks(t *testing.T) {
 					{
 						PreCreates: []ContainerRequestHook{
 							func(ctx context.Context, req ContainerRequest) error {
-								prints = append(prints, fmt.Sprintf("pre-create hook 1: %#v", req))
+								prints = append(prints, "pre-create hook 1")
 								return nil
 							},
 							func(ctx context.Context, req ContainerRequest) error {
-								prints = append(prints, fmt.Sprintf("pre-create hook 2: %#v", req))
+								prints = append(prints, "pre-create hook 2")
 								return nil
 							},
 						},
 						PostCreates: []ContainerHook{
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("post-create hook 1: %#v", c))
+								prints = append(prints, "post-create hook 1")
 								return nil
 							},
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("post-create hook 2: %#v", c))
+								prints = append(prints, "post-create hook 2")
 								return nil
 							},
 						},
 						PreStarts: []ContainerHook{
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("pre-start hook 1: %#v", c))
+								prints = append(prints, "pre-start hook 1")
 								return nil
 							},
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("pre-start hook 2: %#v", c))
+								prints = append(prints, "pre-start hook 2")
 								return nil
 							},
 						},
 						PostStarts: []ContainerHook{
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("post-start hook 1: %#v", c))
+								prints = append(prints, "post-start hook 1")
 								return nil
 							},
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("post-start hook 2: %#v", c))
+								prints = append(prints, "post-start hook 2")
 								return nil
 							},
 						},
 						PostReadies: []ContainerHook{
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("post-ready hook 1: %#v", c))
+								prints = append(prints, "post-ready hook 1")
 								return nil
 							},
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("post-ready hook 2: %#v", c))
+								prints = append(prints, "post-ready hook 2")
 								return nil
 							},
 						},
 						PreStops: []ContainerHook{
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("pre-stop hook 1: %#v", c))
+								prints = append(prints, "pre-stop hook 1")
 								return nil
 							},
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("pre-stop hook 2: %#v", c))
+								prints = append(prints, "pre-stop hook 2")
 								return nil
 							},
 						},
 						PostStops: []ContainerHook{
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("post-stop hook 1: %#v", c))
+								prints = append(prints, "post-stop hook 1")
 								return nil
 							},
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("post-stop hook 2: %#v", c))
+								prints = append(prints, "post-stop hook 2")
 								return nil
 							},
 						},
 						PreTerminates: []ContainerHook{
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("pre-terminate hook 1: %#v", c))
+								prints = append(prints, "pre-terminate hook 1")
 								return nil
 							},
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("pre-terminate hook 2: %#v", c))
+								prints = append(prints, "pre-terminate hook 2")
 								return nil
 							},
 						},
 						PostTerminates: []ContainerHook{
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("post-terminate hook 1: %#v", c))
+								prints = append(prints, "post-terminate hook 1")
 								return nil
 							},
 							func(ctx context.Context, c Container) error {
-								prints = append(prints, fmt.Sprintf("post-terminate hook 2: %#v", c))
+								prints = append(prints, "post-terminate hook 2")
 								return nil
 							},
 						},
@@ -651,6 +641,7 @@ func TestLifecycleHooks(t *testing.T) {
 				Reuse:            tt.reuse,
 				Started:          true,
 			})
+			CleanupContainer(t, c)
 			require.NoError(t, err)
 			require.NotNil(t, c)
 
@@ -664,7 +655,7 @@ func TestLifecycleHooks(t *testing.T) {
 			err = c.Terminate(ctx)
 			require.NoError(t, err)
 
-			lifecycleHooksIsHonouredFn(t, ctx, prints)
+			lifecycleHooksIsHonouredFn(t, prints)
 		})
 	}
 }
@@ -698,6 +689,7 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
+	CleanupContainer(t, c)
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
@@ -711,7 +703,8 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 	err = c.Terminate(ctx)
 	require.NoError(t, err)
 
-	require.Len(t, dl.data, 12)
+	// Includes two additional entries for stop when terminate is called.
+	require.Len(t, dl.data, 14)
 }
 
 func TestCombineLifecycleHooks(t *testing.T) {
@@ -864,6 +857,7 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
+	CleanupContainer(t, c)
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
@@ -877,7 +871,8 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 	err = c.Terminate(ctx)
 	require.NoError(t, err)
 
-	require.Len(t, dl.data, 24)
+	// Includes four additional entries for stop (twice) when terminate is called.
+	require.Len(t, dl.data, 28)
 }
 
 type linesTestLogger struct {
@@ -901,19 +896,19 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 		data: []string{},
 	}
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
 		ContainerRequest: req,
 		Logger:           &arrayOfLinesLogger,
 		Started:          true,
 	})
+	CleanupContainer(t, ctr)
 	// it should fail because the waiting for condition is not met
 	if err == nil {
 		t.Fatal(err)
 	}
-	terminateContainerOnEnd(t, ctx, container)
 
-	containerLogs, err := container.Logs(ctx)
+	containerLogs, err := ctr.Logs(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -944,42 +939,40 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	}
 }
 
-func lifecycleHooksIsHonouredFn(t *testing.T, ctx context.Context, prints []string) {
-	require.Len(t, prints, 24)
+func lifecycleHooksIsHonouredFn(t *testing.T, prints []string) {
+	t.Helper()
 
-	assert.True(t, strings.HasPrefix(prints[0], "pre-create hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[1], "pre-create hook 2: "))
+	expects := []string{
+		"pre-create hook 1",
+		"pre-create hook 2",
+		"post-create hook 1",
+		"post-create hook 2",
+		"pre-start hook 1",
+		"pre-start hook 2",
+		"post-start hook 1",
+		"post-start hook 2",
+		"post-ready hook 1",
+		"post-ready hook 2",
+		"pre-stop hook 1",
+		"pre-stop hook 2",
+		"post-stop hook 1",
+		"post-stop hook 2",
+		"pre-start hook 1",
+		"pre-start hook 2",
+		"post-start hook 1",
+		"post-start hook 2",
+		"post-ready hook 1",
+		"post-ready hook 2",
+		// Terminate currently calls stop to ensure that child containers are stopped.
+		"pre-stop hook 1",
+		"pre-stop hook 2",
+		"post-stop hook 1",
+		"post-stop hook 2",
+		"pre-terminate hook 1",
+		"pre-terminate hook 2",
+		"post-terminate hook 1",
+		"post-terminate hook 2",
+	}
 
-	assert.True(t, strings.HasPrefix(prints[2], "post-create hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[3], "post-create hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[4], "pre-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[5], "pre-start hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[6], "post-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[7], "post-start hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[8], "post-ready hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[9], "post-ready hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[10], "pre-stop hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[11], "pre-stop hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[12], "post-stop hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[13], "post-stop hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[14], "pre-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[15], "pre-start hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[16], "post-start hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[17], "post-start hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[18], "post-ready hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[19], "post-ready hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[20], "pre-terminate hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[21], "pre-terminate hook 2: "))
-
-	assert.True(t, strings.HasPrefix(prints[22], "post-terminate hook 1: "))
-	assert.True(t, strings.HasPrefix(prints[23], "post-terminate hook 2: "))
+	require.Equal(t, expects, prints)
 }

@@ -2,7 +2,6 @@ package gcloud
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -33,13 +32,8 @@ func RunDatastore(ctx context.Context, img string, opts ...testcontainers.Contai
 	req.Cmd = []string{
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators datastore start --host-port 0.0.0.0:8081 " + fmt.Sprintf("--project=%s", settings.ProjectID),
+		"gcloud beta emulators datastore start --host-port 0.0.0.0:8081 --project=" + settings.ProjectID,
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return newGCloudContainer(ctx, 8081, container, settings)
+	return newGCloudContainer(ctx, req, 8081, settings, "")
 }

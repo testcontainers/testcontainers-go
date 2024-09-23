@@ -9,78 +9,64 @@ import (
 
 	// Import mysql into the scope of this package (required)
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dolt"
 )
 
 func TestDolt(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := dolt.Run(ctx, "dolthub/dolt-sql-server:1.32.4")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	ctr, err := dolt.Run(ctx, "dolthub/dolt-sql-server:1.32.4")
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	// perform assertions
 	// connectionString {
-	connectionString, err := container.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
 	// }
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	db, err := sql.Open("mysql", connectionString)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
-	if err = db.Ping(); err != nil {
-		t.Errorf("error pinging db: %+v\n", err)
-	}
+	err = db.Ping()
+	require.NoError(t, err)
+
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
 		" `col_1` VARCHAR(128) NOT NULL, \n" +
 		" `col_2` VARCHAR(128) NOT NULL, \n" +
 		" PRIMARY KEY (`col_1`, `col_2`) \n" +
 		")")
-	if err != nil {
-		t.Errorf("error creating table: %+v\n", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestDoltWithNonRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := dolt.Run(ctx,
+	ctr, err := dolt.Run(ctx,
 		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("test"),
 		dolt.WithPassword(""))
-	if err.Error() != "empty password can be used only with the root user" {
-		t.Fatal(err)
-	}
+	testcontainers.CleanupContainer(t, ctr)
+	require.EqualError(t, err, "empty password can be used only with the root user")
 }
 
 func TestDoltWithPublicRemoteCloneUrl(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := dolt.Run(ctx,
+	ctr, err := dolt.Run(ctx,
 		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("test"),
 		dolt.WithPassword("test"),
 		dolt.WithScripts(filepath.Join("testdata", "check_clone_public.sh")),
 		dolt.WithDoltCloneRemoteUrl("fake-remote-url"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 }
 
 func createTestCredsFile(t *testing.T) string {
@@ -100,7 +86,7 @@ func TestDoltWithPrivateRemoteCloneUrl(t *testing.T) {
 	ctx := context.Background()
 
 	filename := createTestCredsFile(t)
-	_, err := dolt.Run(ctx,
+	ctr, err := dolt.Run(ctx,
 		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("test"),
@@ -109,93 +95,65 @@ func TestDoltWithPrivateRemoteCloneUrl(t *testing.T) {
 		dolt.WithDoltCloneRemoteUrl("fake-remote-url"),
 		dolt.WithDoltCredsPublicKey("fake-public-key"),
 		dolt.WithCredsFile(filename))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 }
 
 func TestDoltWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := dolt.Run(ctx,
+	ctr, err := dolt.Run(ctx,
 		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithDatabase("foo"),
 		dolt.WithUsername("root"),
 		dolt.WithPassword(""))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	// perform assertions
-	connectionString := container.MustConnectionString(ctx)
+	connectionString := ctr.MustConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
-	if err = db.Ping(); err != nil {
-		t.Errorf("error pinging db: %+v\n", err)
-	}
+	err = db.Ping()
+	require.NoError(t, err)
+
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
 		" `col_1` VARCHAR(128) NOT NULL, \n" +
 		" `col_2` VARCHAR(128) NOT NULL, \n" +
 		" PRIMARY KEY (`col_1`, `col_2`) \n" +
 		")")
-	if err != nil {
-		t.Errorf("error creating table: %+v\n", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestDoltWithScripts(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := dolt.Run(ctx,
+	ctr, err := dolt.Run(ctx,
 		"dolthub/dolt-sql-server:1.32.4",
 		dolt.WithScripts(filepath.Join("testdata", "schema.sql")))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	// perform assertions
-	connectionString := container.MustConnectionString(ctx)
+	connectionString := ctr.MustConnectionString(ctx)
 
 	db, err := sql.Open("mysql", connectionString)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
-	if err = db.Ping(); err != nil {
-		t.Errorf("error pinging db: %+v\n", err)
-	}
+	err = db.Ping()
+	require.NoError(t, err)
+
 	stmt, err := db.Prepare("SELECT name from profile")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	defer stmt.Close()
 	row := stmt.QueryRow()
 	var name string
 	err = row.Scan(&name)
-	if err != nil {
-		t.Errorf("error fetching data")
-	}
-	if name != "profile 1" {
-		t.Fatal("The expected record was not found in the database.")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "profile 1", name)
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-stomp/stomp/v3"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/artemis"
 )
 
@@ -18,19 +19,21 @@ func ExampleRun() {
 		"docker.io/apache/activemq-artemis:2.30.0",
 		artemis.WithCredentials("test", "test"),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
 	defer func() {
-		if err := artemisContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(artemisContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := artemisContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -39,7 +42,8 @@ func ExampleRun() {
 	// Get broker endpoint.
 	host, err := artemisContainer.BrokerEndpoint(ctx)
 	if err != nil {
-		log.Fatalf("failed to get broker endpoint: %s", err)
+		log.Printf("failed to get broker endpoint: %s", err)
+		return
 	}
 
 	// containerUser {
@@ -52,11 +56,12 @@ func ExampleRun() {
 	// Connect to Artemis via STOMP.
 	conn, err := stomp.Dial("tcp", host, stomp.ConnOpt.Login(user, pass))
 	if err != nil {
-		log.Fatalf("failed to connect to Artemis: %s", err)
+		log.Printf("failed to connect to Artemis: %s", err)
+		return
 	}
 	defer func() {
 		if err := conn.Disconnect(); err != nil {
-			log.Fatalf("failed to disconnect from Artemis: %s", err)
+			log.Printf("failed to disconnect from Artemis: %s", err)
 		}
 	}()
 	// }

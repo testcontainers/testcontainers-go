@@ -83,7 +83,7 @@ func run() error {
 	go func() {
 		log.Println("serving...")
 		if err := server.ListenAndServeTLS("tls.pem", "tls-key.pem"); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal(err)
+			log.Println(err)
 		}
 	}()
 

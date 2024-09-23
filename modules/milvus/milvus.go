@@ -85,11 +85,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *MilvusContainer
+	if container != nil {
+		c = &MilvusContainer{Container: container}
 	}
 
-	return &MilvusContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 type embedEtcdConfigTplParams struct {

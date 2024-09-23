@@ -12,6 +12,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -21,27 +22,29 @@ import (
 func ExampleExecStrategy() {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:      "localstack/localstack:latest",
-		WaitingFor: wait.ForExec([]string{"awslocal", "dynamodb", "list-tables"}),
+		Image:      "alpine:latest",
+		Entrypoint: []string{"tail", "-f", "/dev/null"}, // needed for the container to stay alive
+		WaitingFor: wait.ForExec([]string{"ls", "/"}).WithStartupTimeout(1 * time.Second),
 	}
 
-	localstack, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := localstack.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(ctr); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
-
-	state, err := localstack.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+
+	state, err := ctr.State(ctx)
+	if err != nil {
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -203,14 +206,8 @@ func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 	// }
 
 	ctx := context.Background()
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+	// }
 }

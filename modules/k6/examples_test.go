@@ -29,27 +29,29 @@ func ExampleRun() {
 		Started: true,
 	}
 	httpbin, err := testcontainers.GenericContainer(ctx, gcr)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := httpbin.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(httpbin); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	// getHTTPBinIP {
 	httpbinIP, err := httpbin.ContainerIP(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container IP: %s", err) // nolint:gocritic
+		log.Printf("failed to get container IP: %s", err)
+		return
 	}
 	// }
 
 	absPath, err := filepath.Abs(filepath.Join("scripts", "httpbin.js"))
 	if err != nil {
-		log.Fatalf("failed to get absolute path to test script: %s", err)
+		log.Printf("failed to get absolute path to test script: %s", err)
+		return
 	}
 
 	// runK6Container {
@@ -61,21 +63,32 @@ func ExampleRun() {
 		k6.WithTestScript(absPath),
 		k6.SetEnvVar("HTTPBIN", httpbinIP),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := k6.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		cacheMount, err := k6.CacheMount(ctx)
+		if err != nil {
+			log.Printf("failed to determine cache mount: %s", err)
+		}
+
+		var options []testcontainers.TerminateOption
+		if cacheMount != "" {
+			options = append(options, testcontainers.RemoveVolumes(cacheMount))
+		}
+
+		if err = testcontainers.TerminateContainer(k6, options...); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	//}
 
 	// assert the result of the test
 	state, err := k6.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err)
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.ExitCode)
