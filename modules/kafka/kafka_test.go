@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/require"
@@ -164,14 +165,19 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	brokers, err := KafkaContainer.Brokers(context.TODO())
 	require.NoError(t, err, "failed to get brokers")
 
-	err = createTopics(brokers, []string{topic_in, topic_out})
-	require.NoError(t, err, "create topics")
+	// err = createTopics(brokers, []string{topic_in, topic_out})
+	_, stdout, err := kcat.Exec(ctx, []string{"kcat", "-b", address, "-C", "-t", topic_in})
+	require.NoError(t, err, "create topic topic_in")
+
+	_, stdout, err = kcat.Exec(ctx, []string{"kcat", "-b", address, "-C", "-t", topic_out})
+	require.NoError(t, err, "create topic topic_out")
 
 	// perform assertions
 
 	// set config to true because successfully delivered messages will be returned on the Successes channel
 	config := sarama.NewConfig()
 	config.Producer.Return.Successes = true
+	config.Consumer.MaxWaitTime = 2 * time.Second
 
 	producer, err := sarama.NewSyncProducer(brokers, config)
 	require.NoError(t, err, "create kafka producer")
@@ -187,11 +193,12 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	require.NoError(t, err, "send message")
 
 	// Internal read
-	_, stdout, err := kcat.Exec(ctx, []string{"kcat", "-b", address, "-C", "-t", topic_in, "-c", "1"})
+	_, stdout, err = kcat.Exec(ctx, []string{"kcat", "-b", address, "-C", "-t", topic_in, "-c", "1"})
 	require.NoError(t, err)
 
 	out, err := io.ReadAll(stdout)
 	require.NoError(t, err, "read message in kcat")
+	require.Contains(t, string(out), text_msg)
 
 	// Internal write
 	tempfile := "/tmp/msgs.txt"
@@ -207,14 +214,20 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	require.NoError(t, err, "create consumer group")
 
 	consumer, _, done, cancel := NewTestKafkaConsumer(t)
+
+	sCtx, _ := context.WithTimeout(context.Background(), time.Second)
 	go func() {
-		if err := client.Consume(context.Background(), []string{topic_out}, consumer); err != nil {
+		if err := client.Consume(sCtx, []string{topic_out}, consumer); err != nil {
 			cancel()
 		}
 	}()
 
-	// wait for the consumer to be ready
-	<-done
+	// wait for the consumer to receive message
+	select {
+	case <-sCtx.Done():
+		t.Log("exit by timeout")
+	case <-done:
+	}
 
 	if consumer.message == nil {
 		t.Fatal("Empty message")
