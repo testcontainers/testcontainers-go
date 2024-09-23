@@ -22,16 +22,17 @@ import (
 func ExampleExecStrategy() {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:      "localstack/localstack:latest",
-		WaitingFor: wait.ForExec([]string{"awslocal", "dynamodb", "list-tables"}),
+		Image:      "alpine:latest",
+		Entrypoint: []string{"tail", "-f", "/dev/null"}, // needed for the container to stay alive
+		WaitingFor: wait.ForExec([]string{"ls", "/"}).WithStartupTimeout(1 * time.Second),
 	}
 
-	localstack, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
 	defer func() {
-		if err := testcontainers.TerminateContainer(localstack); err != nil {
+		if err := testcontainers.TerminateContainer(ctr); err != nil {
 			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
@@ -40,7 +41,7 @@ func ExampleExecStrategy() {
 		return
 	}
 
-	state, err := localstack.State(ctx)
+	state, err := ctr.State(ctx)
 	if err != nil {
 		log.Printf("failed to get container state: %s", err)
 		return
