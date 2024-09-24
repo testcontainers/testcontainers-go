@@ -57,8 +57,14 @@ func ExampleRun_cluster() {
 	// because we have 3 nodes, the nodes slice will have 2 elements
 	fmt.Println(len(ctr.Nodes))
 
+	clientEndpoints, err := ctr.ClientEndpoints(ctx)
+	if err != nil {
+		log.Printf("failed to get client endpoints: %s", err)
+		return
+	}
+
 	cli, err := clientv3.New(clientv3.Config{
-		Endpoints:   ctr.MustClientEndpoints(ctx),
+		Endpoints:   clientEndpoints,
 		DialTimeout: 5 * time.Second,
 	})
 	if err != nil {

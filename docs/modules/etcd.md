@@ -87,32 +87,8 @@ The etcd container exposes the following methods:
 
 Returns the client endpoint for the etcd container and an error, if any. In the case of a cluster, it returns the client endpoint for the first node.
 
-#### MustClientEndpoint
-
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-Returns the client endpoint for the etcd container. In the case of a cluster, it returns the client endpoint for the first node. This method panics if an error occurs.
-
-#### MustClientEndpoints
-
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-Returns the client endpoints for all the nodes in the etcd cluster. In the case of single node, it returns the client endpoint for the first node. This method panics if an error occurs.
-
 #### PeerEndpoint
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 Returns the peer endpoint for the etcd container and an error, if any. In the case of a cluster, it returns the peer endpoint for the first node.
-
-#### MustPeerEndpoint
-
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-Returns the peer endpoint for the etcd container. In the case of a cluster, it returns the peer endpoint for the first node. This method panics if an error occurs.
-
-#### MustPeerEndpoints
-
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-Returns the peer endpoints for all the nodes in the etcd cluster. In the case of single node, it returns the peer endpoint for the first node. This method panics if an error occurs.

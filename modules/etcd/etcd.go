@@ -184,28 +184,24 @@ func (c *EtcdContainer) ClientEndpoint(ctx context.Context) (string, error) {
 	return fmt.Sprintf("http://%s:%s", host, port.Port()), nil
 }
 
-// MustClientEndpoint returns the client endpoint for the etcd container.
-// For a cluster, it returns the client endpoint of the first node.
-// This method panics if an error occurs.
-func (c *EtcdContainer) MustClientEndpoint(ctx context.Context) string {
+// ClientEndpoints returns the client endpoints for the etcd cluster.
+func (c *EtcdContainer) ClientEndpoints(ctx context.Context) ([]string, error) {
 	endpoint, err := c.ClientEndpoint(ctx)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return endpoint
-}
-
-// MustClientEndpoints returns the client endpoints for the etcd cluster.
-// This method panics if an error occurs.
-func (c *EtcdContainer) MustClientEndpoints(ctx context.Context) []string {
-	endpoints := []string{c.MustClientEndpoint(ctx)}
+	endpoints := []string{endpoint}
 
 	for _, node := range c.Nodes {
-		endpoints = append(endpoints, node.MustClientEndpoint(ctx))
+		endpoint, err := node.ClientEndpoint(ctx)
+		if err != nil {
+			return nil, err
+		}
+		endpoints = append(endpoints, endpoint)
 	}
 
-	return endpoints
+	return endpoints, nil
 }
 
 // PeerEndpoint returns the peer endpoint for the etcd container, and an error if any.
@@ -224,26 +220,22 @@ func (c *EtcdContainer) PeerEndpoint(ctx context.Context) (string, error) {
 	return fmt.Sprintf("http://%s:%s", host, port.Port()), nil
 }
 
-// MustPeerEndpoint returns the peer endpoint for the etcd container.
-// For a cluster, it returns the peer endpoint of the first node.
-// This method panics if an error occurs.
-func (c *EtcdContainer) MustPeerEndpoint(ctx context.Context) string {
+// PeerEndpoints returns the peer endpoints for the etcd cluster.
+func (c *EtcdContainer) PeerEndpoints(ctx context.Context) ([]string, error) {
 	endpoint, err := c.PeerEndpoint(ctx)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return endpoint
-}
-
-// MustPeerEndpoints returns the peer endpoints for the etcd cluster.
-// This method panics if an error occurs.
-func (c *EtcdContainer) MustPeerEndpoints(ctx context.Context) []string {
-	endpoints := []string{c.MustPeerEndpoint(ctx)}
+	endpoints := []string{endpoint}
 
 	for _, node := range c.Nodes {
-		endpoints = append(endpoints, node.MustPeerEndpoint(ctx))
+		endpoint, err := node.PeerEndpoint(ctx)
+		if err != nil {
+			return nil, err
+		}
+		endpoints = append(endpoints, endpoint)
 	}
 
-	return endpoints
+	return endpoints, nil
 }

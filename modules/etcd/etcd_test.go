@@ -77,8 +77,11 @@ func TestRun_PutGet(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
+	clientEndpoints, err := ctr.ClientEndpoints(ctx)
+	require.NoError(t, err)
+
 	cli, err := clientv3.New(clientv3.Config{
-		Endpoints:   ctr.MustClientEndpoints(ctx),
+		Endpoints:   clientEndpoints,
 		DialTimeout: 5 * time.Second,
 	})
 	require.NoError(t, err)
