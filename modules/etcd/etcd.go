@@ -14,6 +14,7 @@ const (
 	PeerPort            = "2380"
 	DataDir             = "/data.etcd"
 	DefaultClusterToken = "mys3cr3ttok3n"
+	scheme              = "http"
 )
 
 // EtcdContainer represents the etcd container type used in the module
@@ -132,8 +133,6 @@ func configureCluster(ctx context.Context, settings *options, opts []testcontain
 // in order to create a cluster or a single-node instance.
 func configureCMD(settings options) []string {
 	cmds := []string{"etcd"}
-
-	scheme := "http"
 
 	if len(settings.Nodes) < 1 {
 		cmds = append(cmds, "--name=default")
