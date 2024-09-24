@@ -77,7 +77,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			// move to the next node
 			clusterNode, err := Run(ctx, req.Image, append(clusterOpts, withCurrentNode(i))...)
 			if err != nil {
-				return nil, fmt.Errorf("run cluster node: %w", err)
+				// return the parent cluster node and the error, so the caller can clean up.
+				return c, fmt.Errorf("run cluster node: %w", err)
 			}
 
 			c.Nodes = append(c.Nodes, clusterNode)
