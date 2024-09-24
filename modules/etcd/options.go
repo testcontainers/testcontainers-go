@@ -20,9 +20,6 @@ type options struct {
 
 func defaultOptions(req *testcontainers.ContainerRequest) options {
 	return options{
-		currentNode:      0,
-		Nodes:            []string{},
-		AdditionalArgs:   []string{},
 		ClusterToken:     DefaultClusterToken,
 		containerRequest: req,
 	}
