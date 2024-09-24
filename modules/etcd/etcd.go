@@ -74,8 +74,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// only the first node creates the cluster
 	if settings.currentNode == 0 {
 		for i := 1; i < len(settings.Nodes); i++ {
-			clusterOpts = append(clusterOpts, withCurrentNode(i)) // move to the next node
-			clusterNode, err := Run(ctx, req.Image, clusterOpts...)
+			// move to the next node
+			clusterNode, err := Run(ctx, req.Image, append(clusterOpts, withCurrentNode(i))...)
 			if err != nil {
 				return nil, fmt.Errorf("run cluster node: %w", err)
 			}
