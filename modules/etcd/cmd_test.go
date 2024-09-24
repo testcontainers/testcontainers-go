@@ -33,7 +33,7 @@ func TestConfigureCMD(t *testing.T) {
 	t.Run("with-node-datadir", func(t *testing.T) {
 		got := configureCMD(options{
 			Nodes:        []string{"node1"},
-			MountDataDir: true,
+			mountDataDir: true,
 		})
 		want := []string{
 			"etcd",
@@ -52,7 +52,7 @@ func TestConfigureCMD(t *testing.T) {
 	t.Run("with-node-datadir-additional-args", func(t *testing.T) {
 		got := configureCMD(options{
 			Nodes:          []string{"node1"},
-			MountDataDir:   true,
+			mountDataDir:   true,
 			AdditionalArgs: []string{"--auto-compaction-retention=1"},
 		})
 		want := []string{

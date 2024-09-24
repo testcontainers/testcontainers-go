@@ -1,24 +1,30 @@
 package etcd
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 
 type options struct {
-	currentNode    int
-	clusterNetwork *testcontainers.DockerNetwork
-	Nodes          []string
-	ClusterToken   string
-	AdditionalArgs []string
-	MountDataDir   bool
+	currentNode      int
+	clusterNetwork   *testcontainers.DockerNetwork
+	Nodes            []string
+	ClusterToken     string
+	AdditionalArgs   []string
+	mountDataDir     bool // flag needed to avoid extra calculations with the lifecycle hooks
+	containerRequest *testcontainers.ContainerRequest
 }
 
-func defaultOptions() options {
+func defaultOptions(req *testcontainers.ContainerRequest) options {
 	return options{
-		currentNode:    0,
-		Nodes:          []string{},
-		AdditionalArgs: []string{},
-		ClusterToken:   DefaultClusterToken,
+		currentNode:      0,
+		Nodes:            []string{},
+		AdditionalArgs:   []string{},
+		ClusterToken:     DefaultClusterToken,
+		containerRequest: req,
 	}
 }
 
@@ -43,9 +49,24 @@ func WithAdditionalArgs(args ...string) Option {
 }
 
 // WithDataDir is an option to mount the data directory, which is located at /data.etcd.
+// The option will add a lifecycle hook to the container to change the permissions of the data directory.
 func WithDataDir() Option {
 	return func(o *options) {
-		o.MountDataDir = true
+		// Avoid extra calculations with the lifecycle hooks
+		o.mountDataDir = true
+
+		o.containerRequest.LifecycleHooks = append(o.containerRequest.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
+			PostStarts: []testcontainers.ContainerHook{
+				func(ctx context.Context, c testcontainers.Container) error {
+					_, _, err := c.Exec(ctx, []string{"chmod", "o+rwx", "-R", DataDir}, tcexec.Multiplexed())
+					if err != nil {
+						return fmt.Errorf("chmod etcd data dir: %w", err)
+					}
+
+					return nil
+				},
+			},
+		})
 	}
 }
 

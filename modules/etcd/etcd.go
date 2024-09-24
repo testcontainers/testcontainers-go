@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
-	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 )
 
@@ -36,7 +35,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Started:          true,
 	}
 
-	settings := defaultOptions()
+	settings := defaultOptions(&req)
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
 			apply(&settings)
@@ -44,22 +43,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		if err := opt.Customize(&genericContainerReq); err != nil {
 			return nil, err
 		}
-	}
-
-	// configure data dir
-	if settings.MountDataDir {
-		genericContainerReq.LifecycleHooks = append(genericContainerReq.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
-			PostStarts: []testcontainers.ContainerHook{
-				func(ctx context.Context, c testcontainers.Container) error {
-					_, _, err := c.Exec(ctx, []string{"chmod", "o+rwx", "-R", DataDir}, tcexec.Multiplexed())
-					if err != nil {
-						return fmt.Errorf("chmod etcd data dir: %w", err)
-					}
-
-					return nil
-				},
-			},
-		})
 	}
 
 	clusterOpts, err := configureCluster(ctx, &settings, opts)
@@ -176,7 +159,7 @@ func configureCMD(settings options) []string {
 		cmds = append(cmds, clusterCmds...)
 	}
 
-	if settings.MountDataDir {
+	if settings.mountDataDir {
 		cmds = append(cmds, "--data-dir="+DataDir)
 	}
 
