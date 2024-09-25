@@ -520,17 +520,24 @@ func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 	require.NoError(t, dc.stopLogProduction())
 }
 
+// bufLogger is a Logging implementation that writes to a bytes.Buffer.
+type bufLogger struct {
+	bytes.Buffer
+}
+
+// Printf implements Logging.
+func (l *bufLogger) Printf(format string, v ...any) {
+	fmt.Fprintf(l, format, v...)
+}
+
 func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
-	// Redirect stderr to a buffer
-	r, w, err := os.Pipe()
-	require.NoError(t, err)
-	oldStderr := os.Stderr
-	os.Stderr = w
-	defer func() {
-		// Restore stderr
-		os.Stderr = oldStderr
-		w.Close()
-	}()
+	// Capture global logger.
+	logger := &bufLogger{}
+	Logger = logger
+	oldLogger := Logger
+	t.Cleanup(func() {
+		Logger = oldLogger
+	})
 
 	// Context with cancellation functionality for simulating user interruption
 	ctx, cancel := context.WithCancel(context.Background())
@@ -613,23 +620,10 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 
 	// We check log size due to context cancellation causing
 	// varying message counts, leading to test failure.
-	assert.GreaterOrEqual(t, len(first.Msgs()), 2)
-	assert.GreaterOrEqual(t, len(second.Msgs()), 2)
+	require.GreaterOrEqual(t, len(first.Msgs()), 2)
+	require.GreaterOrEqual(t, len(second.Msgs()), 2)
 
-	// Close the pipe so as not to block on empty.
-	w.Close()
-
-	// Read the stderr output from the buffer
-	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
-
-	// Check the stderr message
-	actual := buf.String()
-
-	// The context cancel shouldn't cause the system to throw a
-	// logStoppedForOutOfSyncMessage, as it hangs the system with
-	// the multiple containers.
-	require.NotContains(t, actual, logStoppedForOutOfSyncMessage)
+	require.NotContains(t, logger.String(), "Unexpected error reading logs")
 }
 
 // FooLogConsumer is a test log consumer that accepts logs from the

@@ -190,7 +190,6 @@ var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHoo
 				}
 
 				dockerContainer := c.(*DockerContainer)
-
 				return dockerContainer.stopLogProduction()
 			},
 		},
