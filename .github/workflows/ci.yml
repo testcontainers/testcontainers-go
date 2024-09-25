@@ -94,7 +94,7 @@ jobs:
       matrix:
         go-version: [1.22.x, 1.x]
         platform: [ubuntu-latest]
-        module: [artemis, azurite, cassandra, chroma, clickhouse, cockroachdb, compose, consul, couchbase, databend, dolt, elasticsearch, gcloud, grafana-lgtm, inbucket, influxdb, k3s, k6, kafka, localstack, mariadb, milvus, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, ollama, openfga, openldap, opensearch, postgres, pulsar, qdrant, rabbitmq, redis, redpanda, registry, surrealdb, valkey, vault, vearch, weaviate]
+        module: [artemis, azurite, cassandra, chroma, clickhouse, cockroachdb, compose, consul, couchbase, databend, dolt, dynamodb, elasticsearch, etcd, gcloud, grafana-lgtm, inbucket, influxdb, k3s, k6, kafka, localstack, mariadb, milvus, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, ollama, openfga, openldap, opensearch, postgres, pulsar, qdrant, rabbitmq, redis, redpanda, registry, surrealdb, valkey, vault, vearch, weaviate]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
@@ -129,7 +129,7 @@ jobs:
     runs-on: ubuntu-latest 
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.1
         with:
           # Disabling shallow clone is recommended for improving relevancy of reporting
           fetch-depth: 0
