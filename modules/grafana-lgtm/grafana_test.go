@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/grafanalgtm"
+	grafanalgtm "github.com/testcontainers/testcontainers-go/modules/grafana-lgtm"
 )
 
 func TestGrafanaLGTM(t *testing.T) {
