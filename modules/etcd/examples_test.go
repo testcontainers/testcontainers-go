@@ -55,7 +55,7 @@ func ExampleRun_cluster() {
 	}()
 
 	// because we have 3 nodes, the nodes slice will have 2 elements
-	fmt.Println(len(ctr.Nodes))
+	fmt.Println(ctr.NodesCount())
 
 	clientEndpoints, err := ctr.ClientEndpoints(ctx)
 	if err != nil {
