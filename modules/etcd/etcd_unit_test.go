@@ -37,7 +37,7 @@ func TestRunClusterMultipleNodes(t *testing.T) {
 	require.Len(t, ctr.childNodes, 2)
 
 	for i, node := range ctr.childNodes {
-		require.Empty(t, ctr.childNodes) // child nodes has no children
+		require.Empty(t, node.childNodes) // child nodes has no children
 
 		c, r, err := node.Exec(ctx, []string{"etcdctl", "member", "list"}, tcexec.Multiplexed())
 		require.NoError(t, err)
