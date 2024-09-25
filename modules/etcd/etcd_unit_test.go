@@ -12,6 +12,18 @@ import (
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 
+func TestRunCluster1Node(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", WithNodes("node1"))
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	// the topology has only one node with no children
+	require.Len(t, ctr.nodes, 0)
+	require.Equal(t, DefaultClusterToken, ctr.ClusterToken)
+}
+
 func TestRunClusterMultipleNodes(t *testing.T) {
 	ctx := context.Background()
 
@@ -22,10 +34,10 @@ func TestRunClusterMultipleNodes(t *testing.T) {
 	require.Equal(t, "My-cluster-t0k3n", ctr.ClusterToken)
 
 	// the topology has one parent node and two child nodes
-	require.Equal(t, 2, ctr.NodesCount())
+	require.Len(t, ctr.nodes, 2)
 
 	for i, node := range ctr.nodes {
-		require.Zero(t, node.NodesCount()) // child nodes has no children
+		require.Len(t, ctr.nodes, 0) // child nodes has no children
 
 		c, r, err := node.Exec(ctx, []string{"etcdctl", "member", "list"}, tcexec.Multiplexed())
 		require.NoError(t, err)

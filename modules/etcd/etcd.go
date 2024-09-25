@@ -24,11 +24,6 @@ type EtcdContainer struct {
 	nodes        []*EtcdContainer
 }
 
-// NodesCount returns the number of nodes in the etcd cluster.
-func (c *EtcdContainer) NodesCount() int {
-	return len(c.nodes)
-}
-
 // Run creates an instance of the etcd container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*EtcdContainer, error) {
 	req := testcontainers.ContainerRequest{

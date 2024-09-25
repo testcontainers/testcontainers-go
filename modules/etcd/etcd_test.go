@@ -30,18 +30,6 @@ func TestRun(t *testing.T) {
 	require.Contains(t, string(output), "default")
 }
 
-func TestRunCluster1Node(t *testing.T) {
-	ctx := context.Background()
-
-	ctr, err := etcd.Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("node1"))
-	testcontainers.CleanupContainer(t, ctr)
-	require.NoError(t, err)
-
-	// the topology has only one node with no children
-	require.Equal(t, 0, ctr.NodesCount())
-	require.Equal(t, etcd.DefaultClusterToken, ctr.ClusterToken)
-}
-
 func TestRun_PutGet(t *testing.T) {
 	ctx := context.Background()
 

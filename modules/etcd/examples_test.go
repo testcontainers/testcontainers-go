@@ -54,14 +54,14 @@ func ExampleRun_cluster() {
 		}
 	}()
 
-	// because we have 3 nodes, the nodes slice will have 2 elements
-	fmt.Println(ctr.NodesCount())
-
 	clientEndpoints, err := ctr.ClientEndpoints(ctx)
 	if err != nil {
 		log.Printf("failed to get client endpoints: %s", err)
 		return
 	}
+
+	// we have 3 nodes, 1 cluster node and 2 child nodes
+	fmt.Println(len(clientEndpoints))
 
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   clientEndpoints,
@@ -91,7 +91,7 @@ func ExampleRun_cluster() {
 	fmt.Println(string(resp.Kvs[0].Value))
 
 	// Output:
-	// 2
+	// 3
 	// 1
 	// sample_value
 }
