@@ -20,7 +20,7 @@ func TestRunCluster1Node(t *testing.T) {
 	require.NoError(t, err)
 
 	// the topology has only one node with no children
-	require.Empty(t, ctr.nodes)
+	require.Empty(t, ctr.childNodes)
 	require.Equal(t, defaultClusterToken, ctr.ClusterToken)
 }
 
@@ -34,10 +34,10 @@ func TestRunClusterMultipleNodes(t *testing.T) {
 	require.Equal(t, "My-cluster-t0k3n", ctr.ClusterToken)
 
 	// the topology has one parent node and two child nodes
-	require.Len(t, ctr.nodes, 2)
+	require.Len(t, ctr.childNodes, 2)
 
-	for i, node := range ctr.nodes {
-		require.Empty(t, ctr.nodes) // child nodes has no children
+	for i, node := range ctr.childNodes {
+		require.Empty(t, ctr.childNodes) // child nodes has no children
 
 		c, r, err := node.Exec(ctx, []string{"etcdctl", "member", "list"}, tcexec.Multiplexed())
 		require.NoError(t, err)

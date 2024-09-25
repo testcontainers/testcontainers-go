@@ -21,7 +21,7 @@ const (
 type EtcdContainer struct {
 	testcontainers.Container
 	ClusterToken string
-	nodes        []*EtcdContainer
+	childNodes   []*EtcdContainer
 }
 
 // Run creates an instance of the etcd container type
@@ -82,7 +82,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return c, fmt.Errorf("run cluster node: %w", err)
 			}
 
-			c.nodes = append(c.nodes, clusterNode)
+			c.childNodes = append(c.childNodes, clusterNode)
 		}
 	}
 
@@ -193,7 +193,7 @@ func (c *EtcdContainer) ClientEndpoints(ctx context.Context) ([]string, error) {
 
 	endpoints := []string{endpoint}
 
-	for _, node := range c.nodes {
+	for _, node := range c.childNodes {
 		endpoint, err := node.ClientEndpoint(ctx)
 		if err != nil {
 			return nil, err
@@ -229,7 +229,7 @@ func (c *EtcdContainer) PeerEndpoints(ctx context.Context) ([]string, error) {
 
 	endpoints := []string{endpoint}
 
-	for _, node := range c.nodes {
+	for _, node := range c.childNodes {
 		endpoint, err := node.PeerEndpoint(ctx)
 		if err != nil {
 			return nil, err
