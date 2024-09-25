@@ -1,4 +1,4 @@
-module github.com/testcontainers/testcontainers-go/modules/grafanalgtm
+module github.com/testcontainers/testcontainers-go/modules/grafana-lgtm
 
 go 1.22
 
