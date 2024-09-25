@@ -17,11 +17,13 @@ const (
 	scheme              = "http"
 )
 
-// EtcdContainer represents the etcd container type used in the module
+// EtcdContainer represents the etcd container type used in the module. It can be used to create a single-node instance or a cluster.
+// For the cluster, the first node creates the cluster and the other nodes join it as child nodes.
 type EtcdContainer struct {
 	testcontainers.Container
 	ClusterToken string
-	childNodes   []*EtcdContainer
+	// childNodes contains the child nodes of the current node, forming a cluster
+	childNodes []*EtcdContainer
 }
 
 // Run creates an instance of the etcd container type
