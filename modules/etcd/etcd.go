@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	ClientPort          = "2379"
-	PeerPort            = "2380"
-	DataDir             = "/data.etcd"
-	DefaultClusterToken = "mys3cr3ttok3n"
+	clientPort          = "2379"
+	peerPort            = "2380"
+	dataDir             = "/data.etcd"
+	defaultClusterToken = "mys3cr3ttok3n"
 	scheme              = "http"
 )
 
@@ -139,16 +139,16 @@ func configureCMD(settings options) []string {
 	} else {
 		clusterCmds := []string{
 			"--name=" + settings.nodeNames[settings.currentNode],
-			"--initial-advertise-peer-urls=" + scheme + "://" + settings.nodeNames[settings.currentNode] + ":" + PeerPort,
-			"--advertise-client-urls=" + scheme + "://" + settings.nodeNames[settings.currentNode] + ":" + ClientPort,
-			"--listen-peer-urls=" + scheme + "://0.0.0.0:" + PeerPort,
-			"--listen-client-urls=" + scheme + "://0.0.0.0:" + ClientPort,
+			"--initial-advertise-peer-urls=" + scheme + "://" + settings.nodeNames[settings.currentNode] + ":" + peerPort,
+			"--advertise-client-urls=" + scheme + "://" + settings.nodeNames[settings.currentNode] + ":" + clientPort,
+			"--listen-peer-urls=" + scheme + "://0.0.0.0:" + peerPort,
+			"--listen-client-urls=" + scheme + "://0.0.0.0:" + clientPort,
 			"--initial-cluster-state=new",
 		}
 
 		clusterStateValues := []string{}
 		for _, node := range settings.nodeNames {
-			clusterStateValues = append(clusterStateValues, node+"="+scheme+"://"+node+":"+PeerPort)
+			clusterStateValues = append(clusterStateValues, node+"="+scheme+"://"+node+":"+peerPort)
 		}
 		clusterCmds = append(clusterCmds, "--initial-cluster="+strings.Join(clusterStateValues, ","))
 
@@ -160,7 +160,7 @@ func configureCMD(settings options) []string {
 	}
 
 	if settings.mountDataDir {
-		cmds = append(cmds, "--data-dir="+DataDir)
+		cmds = append(cmds, "--data-dir="+dataDir)
 	}
 
 	cmds = append(cmds, settings.additionalArgs...)
@@ -176,7 +176,7 @@ func (c *EtcdContainer) ClientEndpoint(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	port, err := c.MappedPort(ctx, ClientPort)
+	port, err := c.MappedPort(ctx, clientPort)
 	if err != nil {
 		return "", err
 	}
@@ -212,7 +212,7 @@ func (c *EtcdContainer) PeerEndpoint(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	port, err := c.MappedPort(ctx, PeerPort)
+	port, err := c.MappedPort(ctx, peerPort)
 	if err != nil {
 		return "", err
 	}

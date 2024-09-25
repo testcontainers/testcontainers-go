@@ -21,7 +21,7 @@ func TestRunCluster1Node(t *testing.T) {
 
 	// the topology has only one node with no children
 	require.Len(t, ctr.nodes, 0)
-	require.Equal(t, DefaultClusterToken, ctr.ClusterToken)
+	require.Equal(t, defaultClusterToken, ctr.ClusterToken)
 }
 
 func TestRunClusterMultipleNodes(t *testing.T) {

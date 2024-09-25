@@ -20,7 +20,7 @@ type options struct {
 
 func defaultOptions(req *testcontainers.ContainerRequest) options {
 	return options{
-		clusterToken:     DefaultClusterToken,
+		clusterToken:     defaultClusterToken,
 		containerRequest: req,
 	}
 }
@@ -55,7 +55,7 @@ func WithDataDir() Option {
 		o.containerRequest.LifecycleHooks = append(o.containerRequest.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
 			PostStarts: []testcontainers.ContainerHook{
 				func(ctx context.Context, c testcontainers.Container) error {
-					_, _, err := c.Exec(ctx, []string{"chmod", "o+rwx", "-R", DataDir}, tcexec.Multiplexed())
+					_, _, err := c.Exec(ctx, []string{"chmod", "o+rwx", "-R", dataDir}, tcexec.Multiplexed())
 					if err != nil {
 						return fmt.Errorf("chmod etcd data dir: %w", err)
 					}
