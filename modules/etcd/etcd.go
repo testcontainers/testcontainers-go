@@ -61,7 +61,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	if settings.clusterNetwork != nil {
 		// apply the network to the current node
-		err := tcnetwork.WithNetwork([]string{settings.Nodes[settings.currentNode]}, settings.clusterNetwork)(&genericContainerReq)
+		err := tcnetwork.WithNetwork([]string{settings.nodeNames[settings.currentNode]}, settings.clusterNetwork)(&genericContainerReq)
 		if err != nil {
 			return nil, fmt.Errorf("with network: %w", err)
 		}
@@ -79,7 +79,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	// only the first node creates the cluster
 	if settings.currentNode == 0 {
-		for i := 1; i < len(settings.Nodes); i++ {
+		for i := 1; i < len(settings.nodeNames); i++ {
 			// move to the next node
 			clusterNode, err := Run(ctx, req.Image, append(clusterOpts, withCurrentNode(i))...)
 			if err != nil {
@@ -91,7 +91,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	c.ClusterToken = settings.ClusterToken
+	c.ClusterToken = settings.clusterToken
 
 	return c, nil
 }
@@ -100,7 +100,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // avoiding duplicate application of options to be passed to the successive nodes.
 func configureCluster(ctx context.Context, settings *options, opts []testcontainers.ContainerCustomizer) ([]testcontainers.ContainerCustomizer, error) {
 	var clusterOpts []testcontainers.ContainerCustomizer
-	if len(settings.Nodes) <= 1 {
+	if len(settings.nodeNames) <= 1 {
 		return clusterOpts, nil
 	}
 
@@ -139,26 +139,26 @@ func configureCluster(ctx context.Context, settings *options, opts []testcontain
 func configureCMD(settings options) []string {
 	cmds := []string{"etcd"}
 
-	if len(settings.Nodes) < 1 {
+	if len(settings.nodeNames) < 1 {
 		cmds = append(cmds, "--name=default")
 	} else {
 		clusterCmds := []string{
-			"--name=" + settings.Nodes[settings.currentNode],
-			"--initial-advertise-peer-urls=" + scheme + "://" + settings.Nodes[settings.currentNode] + ":" + PeerPort,
-			"--advertise-client-urls=" + scheme + "://" + settings.Nodes[settings.currentNode] + ":" + ClientPort,
+			"--name=" + settings.nodeNames[settings.currentNode],
+			"--initial-advertise-peer-urls=" + scheme + "://" + settings.nodeNames[settings.currentNode] + ":" + PeerPort,
+			"--advertise-client-urls=" + scheme + "://" + settings.nodeNames[settings.currentNode] + ":" + ClientPort,
 			"--listen-peer-urls=" + scheme + "://0.0.0.0:" + PeerPort,
 			"--listen-client-urls=" + scheme + "://0.0.0.0:" + ClientPort,
 			"--initial-cluster-state=new",
 		}
 
 		clusterStateValues := []string{}
-		for _, node := range settings.Nodes {
+		for _, node := range settings.nodeNames {
 			clusterStateValues = append(clusterStateValues, node+"="+scheme+"://"+node+":"+PeerPort)
 		}
 		clusterCmds = append(clusterCmds, "--initial-cluster="+strings.Join(clusterStateValues, ","))
 
-		if settings.ClusterToken != "" {
-			clusterCmds = append(clusterCmds, "--initial-cluster-token="+settings.ClusterToken)
+		if settings.clusterToken != "" {
+			clusterCmds = append(clusterCmds, "--initial-cluster-token="+settings.clusterToken)
 		}
 
 		cmds = append(cmds, clusterCmds...)
@@ -168,7 +168,7 @@ func configureCMD(settings options) []string {
 		cmds = append(cmds, "--data-dir="+DataDir)
 	}
 
-	cmds = append(cmds, settings.AdditionalArgs...)
+	cmds = append(cmds, settings.additionalArgs...)
 
 	return cmds
 }

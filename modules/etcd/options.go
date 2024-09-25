@@ -11,16 +11,16 @@ import (
 type options struct {
 	currentNode      int
 	clusterNetwork   *testcontainers.DockerNetwork
-	Nodes            []string
-	ClusterToken     string
-	AdditionalArgs   []string
+	nodeNames        []string
+	clusterToken     string
+	additionalArgs   []string
 	mountDataDir     bool // flag needed to avoid extra calculations with the lifecycle hooks
 	containerRequest *testcontainers.ContainerRequest
 }
 
 func defaultOptions(req *testcontainers.ContainerRequest) options {
 	return options{
-		ClusterToken:     DefaultClusterToken,
+		clusterToken:     DefaultClusterToken,
 		containerRequest: req,
 	}
 }
@@ -41,7 +41,7 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 // They will be appended last to the command line.
 func WithAdditionalArgs(args ...string) Option {
 	return func(o *options) {
-		o.AdditionalArgs = args
+		o.additionalArgs = args
 	}
 }
 
@@ -71,7 +71,7 @@ func WithDataDir() Option {
 // If only one node is specified, the cluster will be a single-node cluster.
 func WithNodes(nodes ...string) Option {
 	return func(o *options) {
-		o.Nodes = nodes
+		o.nodeNames = nodes
 	}
 }
 
@@ -94,7 +94,7 @@ func withClusterNetwork(n *testcontainers.DockerNetwork) Option {
 // WithClusterToken is an option to set the cluster token.
 func WithClusterToken(token string) Option {
 	return func(o *options) {
-		o.ClusterToken = token
+		o.clusterToken = token
 	}
 }
 

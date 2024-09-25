@@ -15,7 +15,7 @@ func TestConfigureCMD(t *testing.T) {
 
 	t.Run("with-node", func(t *testing.T) {
 		got := configureCMD(options{
-			Nodes: []string{"node1"},
+			nodeNames: []string{"node1"},
 		})
 		want := []string{
 			"etcd",
@@ -32,7 +32,7 @@ func TestConfigureCMD(t *testing.T) {
 
 	t.Run("with-node-datadir", func(t *testing.T) {
 		got := configureCMD(options{
-			Nodes:        []string{"node1"},
+			nodeNames:    []string{"node1"},
 			mountDataDir: true,
 		})
 		want := []string{
@@ -51,9 +51,9 @@ func TestConfigureCMD(t *testing.T) {
 
 	t.Run("with-node-datadir-additional-args", func(t *testing.T) {
 		got := configureCMD(options{
-			Nodes:          []string{"node1"},
+			nodeNames:      []string{"node1"},
 			mountDataDir:   true,
-			AdditionalArgs: []string{"--auto-compaction-retention=1"},
+			additionalArgs: []string{"--auto-compaction-retention=1"},
 		})
 		want := []string{
 			"etcd",
@@ -72,7 +72,7 @@ func TestConfigureCMD(t *testing.T) {
 
 	t.Run("with-cluster", func(t *testing.T) {
 		got := configureCMD(options{
-			Nodes: []string{"node1", "node2"},
+			nodeNames: []string{"node1", "node2"},
 		})
 		want := []string{
 			"etcd",
@@ -89,8 +89,8 @@ func TestConfigureCMD(t *testing.T) {
 
 	t.Run("with-cluster-token", func(t *testing.T) {
 		got := configureCMD(options{
-			Nodes:        []string{"node1", "node2"},
-			ClusterToken: "token",
+			nodeNames:    []string{"node1", "node2"},
+			clusterToken: "token",
 		})
 		want := []string{
 			"etcd",
