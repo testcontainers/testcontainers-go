@@ -65,11 +65,13 @@ The DynamoDB container exposes the following methods:
 
 #### ConnectionString
 
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 The `ConnectionString` method returns the connection string to the DynamoDB container. This connection string can be used to connect to the DynamoDB container from your application,
 using the AWS SDK or any other DynamoDB client of your choice.
 
 <!--codeinclude-->
-[Creating a client](../../modules/dynamodb/examples_test.go) inside_block:createClient
+[Creating a client](../../modules/dynamodb/dynamodb_test.go) inside_block:createClient
 <!--/codeinclude-->
 
 The above example uses `github.com/aws/aws-sdk-go-v2/service/dynamodb` to create a client and connect to the DynamoDB container.
