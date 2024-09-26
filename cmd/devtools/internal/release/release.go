@@ -38,7 +38,7 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 
 	version, err := extractCurrentVersion(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to extract the current version: %w", err)
+		return fmt.Errorf("extract current version: %w", err)
 	}
 
 	fmt.Println("Current version:", version)
@@ -47,7 +47,7 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 
 	nextVersion, err := getSemverVersion(bumpType, releaseVersion)
 	if err != nil {
-		return fmt.Errorf("failed to bump the version. Please check the semver-tool image and the bump type: %w", err)
+		return fmt.Errorf("get semver version. Please check the semver-tool image and the bump type: %w", err)
 	}
 
 	fmt.Println("Next version:", nextVersion)
@@ -64,18 +64,18 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 	for _, arg := range args {
 		if err := gitClient.Add(arg...); err != nil {
 			// log the error and continue to add the other files
-			fmt.Printf("error adding files: %s\n", err)
+			fmt.Printf("git-add files: %s\n", err)
 			continue
 		}
 	}
 
 	// Commit the project in the current state
 	if err := gitClient.Commit(fmt.Sprintf("chore: use new version (%s) in modules and examples", releaseVersion)); err != nil {
-		return fmt.Errorf("error committing the release: %w", err)
+		return fmt.Errorf("git-commit release: %w", err)
 	}
 
 	if err := gitClient.Tag(releaseVersion); err != nil {
-		return fmt.Errorf("error tagging the release: %w", err)
+		return fmt.Errorf("git-tag release: %w", err)
 	}
 
 	// loop through the examples and modules directories to create the git tags
@@ -83,14 +83,14 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 		path := filepath.Join(ctx.RootDir, directory)
 		modules, err := getSubdirectories(path)
 		if err != nil {
-			return fmt.Errorf("error getting subdirectories: %w", err)
+			return fmt.Errorf("get subdirectories: %w", err)
 		}
 
 		// loop through the Go modules in the directory
 		for _, module := range modules {
 			moduleTag := fmt.Sprintf("%s/%s/%s", directory, module, releaseVersion) // e.g. modules/mongodb/v0.0.1
 			if err := gitClient.Tag(moduleTag); err != nil {
-				return fmt.Errorf("error tagging the module: %w", err)
+				return fmt.Errorf("git-tag module: %w", err)
 			}
 		}
 	}
@@ -98,21 +98,21 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 	fmt.Printf("Producing a %s bump of the version, from %s to %s\n", bumpType, version, nextVersion)
 
 	if err := replaceInFile(dryRun, false, ctx.VersionFile(), version, nextVersion); err != nil {
-		return fmt.Errorf("error replacing in version file: %w", err)
+		return fmt.Errorf("replace version in file: %w", err)
 	}
 
 	if err := gitClient.Add(ctx.VersionFile()); err != nil {
-		return fmt.Errorf("error adding version file: %w", err)
+		return fmt.Errorf("git-add version file: %w", err)
 	}
 
 	if err := gitClient.Commit(fmt.Sprintf("chore: prepare for next %s development version cycle (%s)", bumpType, nextVersion)); err != nil {
-		return fmt.Errorf("error committing the next version: %w", err)
+		return fmt.Errorf("git-commit next version: %w", err)
 	}
 
 	// for testing purposes, we can skip the remote operations, like pushing the tags
 	if !skipRemoteOps {
 		if err := gitClient.PushTags(); err != nil {
-			return fmt.Errorf("error pushing tags: %w", err)
+			return fmt.Errorf("git-push tags: %w", err)
 		}
 	}
 
@@ -120,7 +120,7 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 	// can be easily mocked in the tests
 
 	if err := hitGolangProxy(proxyURL, dryRun, repository, releaseVersion); err != nil {
-		return fmt.Errorf("error hitting the golang proxy for the core: %w", err)
+		return fmt.Errorf("hit golang proxy for core: %w", err)
 	}
 
 	// loop through the modules to hit the golang proxy
@@ -128,14 +128,14 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 		path := filepath.Join(ctx.RootDir, directory)
 		modules, err := getSubdirectories(path)
 		if err != nil {
-			return fmt.Errorf("error getting subdirectories: %w", err)
+			return fmt.Errorf("get subdirectories: %w", err)
 		}
 
 		// loop through the Go modules in the directory
 		for _, module := range modules {
 			modulePath := fmt.Sprintf("%s/%s/%s", repository, directory, module)
 			if err := hitGolangProxy(proxyURL, dryRun, modulePath, releaseVersion); err != nil {
-				return fmt.Errorf("error hitting the golang proxy for the module: %w", err)
+				return fmt.Errorf("hit golang proxy for module: %w", err)
 			}
 		}
 	}
@@ -166,7 +166,7 @@ func hitGolangProxy(proxyURL string, dryRun bool, modulePath string, moduleVersi
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("error hitting the golang proxy: %s", resp.Status)
+		return fmt.Errorf("hit golang proxy: %s", resp.Status)
 	}
 
 	return nil
@@ -192,7 +192,7 @@ func getSemverVersion(bumpType string, vVersion string) (string, error) {
 	defer func() {
 		err := c.Terminate(context.Background())
 		if err != nil {
-			fmt.Println("Error terminating container", err)
+			fmt.Println("terminate container", err)
 		}
 	}()
 

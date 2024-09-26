@@ -43,7 +43,7 @@ func preRun(ctx context.Context, gitClient *git.GitClient, branch string, dryRun
 
 	err = bumpVersion(ctx, dryRun, vVersion)
 	if err != nil {
-		return fmt.Errorf("error bumping version: %w", err)
+		return fmt.Errorf("bump version: %w", err)
 	}
 
 	// loop through the examples and modules directories to update the go.mod files
@@ -51,7 +51,7 @@ func preRun(ctx context.Context, gitClient *git.GitClient, branch string, dryRun
 		path := filepath.Join(ctx.RootDir, directory)
 		modules, err := getSubdirectories(path)
 		if err != nil {
-			return fmt.Errorf("error getting subdirectories: %w", err)
+			return fmt.Errorf("get subdirectories: %w", err)
 		}
 
 		// loop through the Go modules in the directory
@@ -59,7 +59,7 @@ func preRun(ctx context.Context, gitClient *git.GitClient, branch string, dryRun
 			moduleModFile := filepath.Join(path, module, "go.mod")
 			err := replaceInFile(dryRun, true, moduleModFile, "testcontainers-go v.*", fmt.Sprintf("testcontainers-go v%s", version))
 			if err != nil {
-				return fmt.Errorf("error replacing in file: %w", err)
+				return fmt.Errorf("replace in file: %w", err)
 			}
 		}
 
@@ -80,7 +80,7 @@ func preRun(ctx context.Context, gitClient *git.GitClient, branch string, dryRun
 func extractCurrentVersion(ctx context.Context) (string, error) {
 	data, err := os.ReadFile(ctx.VersionFile())
 	if err != nil {
-		return "", fmt.Errorf("error reading version file: %w", err)
+		return "", fmt.Errorf("read version file: %w", err)
 	}
 
 	for _, line := range strings.Split(string(data), "\n") {
@@ -112,7 +112,7 @@ func replaceInFile(dryRun bool, regex bool, filePath string, old string, new str
 
 	read, err := os.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("error reading file: %w", err)
+		return fmt.Errorf("read file: %w", err)
 	}
 
 	var newContents string
@@ -125,7 +125,7 @@ func replaceInFile(dryRun bool, regex bool, filePath string, old string, new str
 
 	err = os.WriteFile(filePath, []byte(newContents), 0)
 	if err != nil {
-		return fmt.Errorf("error writing to file: %w", err)
+		return fmt.Errorf("write to file: %w", err)
 	}
 
 	return nil
@@ -161,7 +161,7 @@ func processMarkdownFiles(dryRun bool, docsDir, version string) error {
 			releasedText := sinceVersionText(version)
 			err := replaceInFile(dryRun, false, path, nonReleasedText, releasedText)
 			if err != nil {
-				return fmt.Errorf("error replacing in file: %w", err)
+				return fmt.Errorf("replace in file: %w", err)
 			}
 
 			return nil
@@ -181,7 +181,7 @@ func runCommand(ctx context.Context, dryRun bool, command string, arg ...string)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error running command: %w", err)
+		return fmt.Errorf("run command: %w", err)
 	}
 
 	return nil
