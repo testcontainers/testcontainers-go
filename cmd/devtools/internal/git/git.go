@@ -199,7 +199,7 @@ func (g *GitClient) CheckOriginRemote() (func() error, error) {
 	}
 
 	// create a random remote to backup the existing origin remote
-	randomRemote := "backup-" + origin + fmt.Sprintf("-%d", time.Now().Unix())
+	randomRemote := fmt.Sprintf("backup-%d", time.Now().Unix())
 	if err := g.Exec("remote", "add", randomRemote, origin); err != nil {
 		return noopCleanup, fmt.Errorf("error adding remote %s: %w", randomRemote, err)
 	}
