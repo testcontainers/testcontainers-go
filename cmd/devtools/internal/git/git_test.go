@@ -3,6 +3,8 @@ package git
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go/devtools/internal/context"
 )
 
@@ -29,29 +31,20 @@ func TestCheckOriginRemote(t *testing.T) {
 			ctx := context.New(tt.TempDir())
 
 			gitClient := New(ctx, "main", tc.dryRun)
-			if err := gitClient.InitRepository("foo"); err != nil {
-				tt.Fatalf("Error initializing git repository: %v", err)
-			}
+			err := gitClient.InitRepository("foo")
+			require.NoError(tt, err)
 
 			cleanUp, err := gitClient.CheckOriginRemote()
-			if err != nil {
-				tt.Fatalf("Error checking origin remote: %v", err)
-			}
+			require.NoError(tt, err)
+
 			tt.Cleanup(func() {
-				if err := cleanUp(); err != nil {
-					tt.Fatalf("Error cleaning up: %v", err)
-				}
+				require.NoError(tt, cleanUp())
 			})
 
 			if !tc.dryRun {
 				remotes, err := gitClient.Remotes()
-				if err != nil {
-					tt.Fatalf("Error getting remotes: %v", err)
-				}
-
-				if len(remotes) != 4 {
-					tt.Errorf("Expected 4 remotes, got %d", len(remotes))
-				}
+				require.NoError(tt, err)
+				require.Len(tt, remotes, 4)
 
 				// verify that the origin remote contains the Github repository URL
 				if r, ok := remotes["origin-(fetch)"]; !ok || r != tcOrigin {

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	wiremock "github.com/wiremock/wiremock-testcontainers-go"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -61,13 +62,8 @@ func TestGetSemverVersion(t *testing.T) {
 			tt.Parallel()
 
 			got, err := getSemverVersion(tc.args.bumpType, tc.args.vVersion)
-			if (err != nil) != tc.wantErr {
-				tt.Errorf("getSemverVersion() error = %v, wantErr %v", err, tc.wantErr)
-				return
-			}
-			if got != tc.want {
-				tt.Errorf("getSemverVersion() = %v, want %v", got, tc.want)
-			}
+			require.Equal(tt, tc.wantErr, err != nil)
+			require.Equal(tt, tc.want, got)
 		})
 	}
 }
@@ -77,9 +73,7 @@ func TestRun(t *testing.T) {
 
 	// uses two directories up to get the root directory
 	rootCtx, err := context.GetRootContext()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// we need to go two directories up more to get the root directory
 	rootCtx = context.New(filepath.Dir(filepath.Dir(rootCtx.RootDir)))
@@ -145,16 +139,9 @@ func TestRun(t *testing.T) {
 			logConsumer := &wiremockLogConsumer{}
 
 			mockProxyContainer := startGolangProxy(t, logConsumer)
-			tt.Cleanup(func() {
-				if err := mockProxyContainer.Terminate(gocontext.Background()); err != nil {
-					tt.Fatalf("Error terminating container: %v", err)
-				}
-			})
 
 			mockProxyURL, err := mockProxyContainer.PortEndpoint(gocontext.Background(), "8080", "http")
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(tt, err)
 
 			ctx := context.New(tt.TempDir())
 
@@ -176,18 +163,15 @@ func TestRun(t *testing.T) {
 
 			// init the git repository for testing
 			gitClient := git.New(ctx, releaser.branch, false)
-			if err := gitClient.InitRepository(expectedRemote); err != nil {
-				tt.Fatalf("Error initializing git repository: %v", err)
-			}
+			err = gitClient.InitRepository(expectedRemote)
+			require.NoError(tt, err)
 
 			// we need to force the pre-run so that the version file is created
-			if err := releaser.PreRun(ctx, gitClient); err != nil {
-				tt.Fatalf("Pre() error = %v", err)
-			}
+			err = releaser.PreRun(ctx, gitClient)
+			require.NoError(tt, err)
 
-			if err := releaser.Run(ctx, gitClient); err != nil {
-				tt.Fatalf("Run() error = %v", err)
-			}
+			err = releaser.Run(ctx, gitClient)
+			require.NoError(tt, err)
 
 			// wait for the log consumer to process all the logs
 			for i := 0; i < 10; i++ {
@@ -198,54 +182,33 @@ func TestRun(t *testing.T) {
 				time.Sleep(50 * time.Millisecond)
 			}
 			// 3 examples, 3 modules and the core
-			if len(logConsumer.lines) != 7 {
-				tt.Errorf("Expected 7 hits to the golang proxy, got %d", len(logConsumer.lines))
-			}
+			require.Len(tt, logConsumer.lines, 7)
 
 			// assert the commits has been produced
 			output, err := gitClient.Log()
-			if err != nil {
-				tt.Fatalf("Error getting git log: %v", err)
-			}
+			require.NoError(tt, err)
 
-			if !strings.Contains(output, fmt.Sprintf("chore: use new version (%s) in modules and examples", vNextDevelopmentVersion)) {
-				tt.Errorf("Expected new version commit message not found: %s", output)
-			}
-			if !strings.Contains(output, fmt.Sprintf("chore: prepare for next %s development version cycle (%s)", tc.args.bumpType, tc.args.expectedVersion)) {
-				tt.Errorf("Expected next development version commit message not found: %s", output)
-			}
+			require.Contains(tt, output, fmt.Sprintf("chore: use new version (%s) in modules and examples", vNextDevelopmentVersion))
+			require.Contains(tt, output, fmt.Sprintf("chore: prepare for next %s development version cycle (%s)", tc.args.bumpType, tc.args.expectedVersion))
 
 			// assert the tags for the library and all the modules exist
 			output, err = gitClient.ListTags()
-			if err != nil {
-				tt.Fatalf("Error listing git tags: %v", err)
-			}
+			require.NoError(tt, err, "Error listing git tags: %v", err)
+			require.Contains(tt, output, vNextDevelopmentVersion, "Expected core version tag not found: %s", output)
 
-			if !strings.Contains(output, vNextDevelopmentVersion) {
-				tt.Errorf("Expected core version tag not found: %s", output)
-			}
 			for _, module := range modules {
 				moduleTag := fmt.Sprintf("%s/%s/%s", "modules", module, vNextDevelopmentVersion)
-				if !strings.Contains(output, moduleTag) {
-					tt.Errorf("Expected module version tag not found: %s", output)
-				}
+				require.Contains(tt, output, moduleTag)
 			}
 			for _, example := range examples {
 				exampleTag := fmt.Sprintf("%s/%s/%s", "examples", example, vNextDevelopmentVersion)
-				if !strings.Contains(output, exampleTag) {
-					tt.Errorf("Expected example version tag not found: %s", output)
-				}
+				require.Contains(tt, output, exampleTag)
 			}
 
 			// assert the next development version has been applied to the version.go file
 			version, err := extractCurrentVersion(ctx)
-			if err != nil {
-				tt.Fatalf("Error extracting current version: %v", err)
-			}
-
-			if version != tc.args.expectedVersion {
-				tt.Errorf("Expected next development version not found: %s", version)
-			}
+			require.NoError(tt, err)
+			require.Equal(tt, tc.args.expectedVersion, version)
 
 			assertGitState(tt, gitClient, expectedRemote)
 		})
@@ -271,6 +234,8 @@ func (lc *wiremockLogConsumer) Accept(l testcontainers.Log) {
 // startGolangProxy starts a wiremock container with a mapping file to proxy requests to the golang proxy.
 // This mock is used to simulate the requests to the golang proxy
 func startGolangProxy(t *testing.T, consumer testcontainers.LogConsumer) *wiremock.WireMockContainer {
+	t.Helper()
+
 	goCtx := gocontext.Background()
 
 	opts := []testcontainers.ContainerCustomizer{
@@ -284,9 +249,8 @@ func startGolangProxy(t *testing.T, consumer testcontainers.LogConsumer) *wiremo
 	}
 
 	mockProxyContainer, err := wiremock.RunContainer(goCtx, opts...)
-	if err != nil {
-		t.Fatalf("failed to start container: %s", err)
-	}
+	testcontainers.CleanupContainer(t, mockProxyContainer)
+	require.NoError(t, err)
 
 	return mockProxyContainer
 }

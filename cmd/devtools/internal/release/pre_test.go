@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go/devtools/internal/context"
 	"github.com/testcontainers/testcontainers-go/devtools/internal/git"
 )
@@ -22,9 +24,7 @@ func TestPre(t *testing.T) {
 
 	// uses two directories up to get the root directory
 	rootCtx, err := context.GetRootContext()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// we need to go two directories up more to get the root directory
 	rootCtx = context.New(filepath.Dir(filepath.Dir(rootCtx.RootDir)))
@@ -68,13 +68,11 @@ func TestPre(t *testing.T) {
 
 			// init the git repository for testing
 			gitClient := git.New(ctx, releaser.branch, tc.args.dryRun)
-			if err := gitClient.InitRepository(expectedRemote); err != nil {
-				tt.Fatalf("Error initializing git repository: %v", err)
-			}
+			err := gitClient.InitRepository(expectedRemote)
+			require.NoError(tt, err)
 
-			if err := releaser.PreRun(ctx, gitClient); err != nil {
-				tt.Fatalf("Pre() error = %v", err)
-			}
+			err = releaser.PreRun(ctx, gitClient)
+			require.NoError(tt, err)
 
 			expectedVersion := nextVersion
 			expectedMarkDown := sinceVersionText(nextVersion)
@@ -96,36 +94,25 @@ func TestPre(t *testing.T) {
 }
 
 func assertBumpFiles(t *testing.T, ctx context.Context, version string) {
+	t.Helper()
+
 	// mkdocs.yml
 	read, err := os.ReadFile(filepath.Join(ctx.RootDir, bumpFiles[0]))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if string(read) != "extra:\n  latest_version: v"+version {
-		t.Errorf("Expected extra:\n  latest_version: v%s, got %s", version, string(read))
-	}
+	require.NoError(t, err)
+	require.Equal(t, "extra:\n  latest_version: v"+version, string(read))
 
 	// sonar-project.properties file
 	read, err = os.ReadFile(filepath.Join(ctx.RootDir, bumpFiles[1]))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if string(read) != "sonar.projectVersion=v"+version {
-		t.Errorf("Expected sonar.projectVersion=v%s, got %s", version, string(read))
-	}
+	require.NoError(t, err)
+	require.Equal(t, "sonar.projectVersion=v"+version, string(read))
 }
 
 func assertGitState(t *testing.T, gitClient *git.GitClient, expectedRemote string) {
-	remotes, err := gitClient.Remotes()
-	if err != nil {
-		t.Fatalf("Error getting remotes: %v", err)
-	}
+	t.Helper()
 
-	if len(remotes) != 2 {
-		t.Errorf("Expected 2 remotes, got %d", len(remotes))
-	}
+	remotes, err := gitClient.Remotes()
+	require.NoError(t, err)
+	require.Len(t, remotes, 2)
 
 	// verify that the origin remote contains the expected Github repository URL
 	if r, ok := remotes["origin-(fetch)"]; !ok || r != expectedRemote {
@@ -137,19 +124,18 @@ func assertGitState(t *testing.T, gitClient *git.GitClient, expectedRemote strin
 }
 
 func assertMarkdownFiles(t *testing.T, ctx context.Context, expected string) {
+	t.Helper()
+
 	for _, f := range testMarkdownFiles {
 		read, err := os.ReadFile(filepath.Join(ctx.DocsDir(), f))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if string(read) != expected {
-			t.Errorf("Expected %s, got %s", expected, string(read))
-		}
+		require.NoError(t, err)
+		require.Equal(t, expected, string(read))
 	}
 }
 
 func assertModules(t *testing.T, ctx context.Context, isModule bool, version string) {
+	t.Helper()
+
 	types := modules
 
 	moduleType := "modules"
@@ -160,9 +146,7 @@ func assertModules(t *testing.T, ctx context.Context, isModule bool, version str
 
 	for _, m := range types {
 		read, err := os.ReadFile(filepath.Join(ctx.RootDir, moduleType, m, "go.mod"))
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		content := string(read)
 
@@ -170,9 +154,7 @@ func assertModules(t *testing.T, ctx context.Context, isModule bool, version str
 
 go 1.21`
 
-		if !strings.HasPrefix(content, expected) {
-			t.Errorf("Expected %s, got %s", expected, content)
-		}
+		require.True(t, strings.HasPrefix(content, expected))
 
 		expecteds := []string{
 			"require github.com/testcontainers/testcontainers-go v" + version,
@@ -180,9 +162,7 @@ go 1.21`
 		}
 
 		for _, e := range expecteds {
-			if !strings.Contains(content, e) {
-				t.Errorf("Expected %s, got %s", e, content)
-			}
+			require.Contains(t, content, e)
 		}
 	}
 }
@@ -217,9 +197,7 @@ func TestBumpVersion(t *testing.T) {
 			createBumpFiles(tt, ctx, version)
 
 			err := bumpVersion(ctx, tc.dryRun, "v"+newVersion)
-			if err != nil {
-				tt.Fatal(err)
-			}
+			require.NoError(tt, err)
 
 			var expected map[string]string
 			// it's important to note that the YAML files use two spaces as indentation
@@ -239,13 +217,8 @@ func TestBumpVersion(t *testing.T) {
 
 			for f := range expected {
 				read, err := os.ReadFile(filepath.Join(ctx.RootDir, f))
-				if err != nil {
-					tt.Fatal(err)
-				}
-
-				if string(read) != expected[f] {
-					tt.Errorf("Expected %s, got %s", expected[f], string(read))
-				}
+				require.NoError(tt, err)
+				require.Equal(tt, expected[f], string(read))
 			}
 		})
 	}
@@ -259,13 +232,8 @@ func TestExtractVersion(t *testing.T) {
 	createVersionFile(t, ctx, "1.2.3")
 
 	version, err := extractCurrentVersion(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if version != "1.2.3" {
-		t.Errorf("Expected version 1.2.3, got %s", version)
-	}
+	require.NoError(t, err)
+	require.Equal(t, "1.2.3", version)
 }
 
 func TestReplaceInFile(t *testing.T) {
@@ -305,23 +273,14 @@ func TestReplaceInFile(t *testing.T) {
 			content := "latest_version: " + defaultVersion
 
 			err := os.WriteFile(file, []byte(content), 0o644)
-			if err != nil {
-				tt.Fatal(err)
-			}
+			require.NoError(tt, err)
 
 			err = replaceInFile(tc.dryRun, tc.regex, file, "latest_version: .*", "latest_version: "+tc.new)
-			if err != nil {
-				tt.Fatal(err)
-			}
+			require.NoError(tt, err)
 
 			read, err := os.ReadFile(file)
-			if err != nil {
-				tt.Fatal(err)
-			}
-
-			if string(read) != "latest_version: "+tc.expected {
-				tt.Errorf("Expected latest_version: %s, got %s", string(read), tc.expected)
-			}
+			require.NoError(tt, err)
+			require.Equal(tt, "latest_version: "+tc.expected, string(read))
 		})
 	}
 }
@@ -359,9 +318,7 @@ func TestProcessMarkdownFiles(t *testing.T) {
 			createMarkdownFiles(tt, ctx)
 
 			err := processMarkdownFiles(tc.dryRun, ctx.DocsDir(), version)
-			if err != nil {
-				tt.Fatal(err)
-			}
+			require.NoError(tt, err)
 
 			expected := map[string]string{}
 			for _, f := range testMarkdownFiles {
@@ -370,13 +327,8 @@ func TestProcessMarkdownFiles(t *testing.T) {
 
 			for f, content := range expected {
 				read, err := os.ReadFile(filepath.Join(ctx.DocsDir(), f))
-				if err != nil {
-					tt.Fatal(err)
-				}
-
-				if string(read) != content {
-					tt.Errorf("Expected %s, got %s", tc.expected, string(read))
-				}
+				require.NoError(tt, err)
+				require.Equal(tt, content, string(read))
 			}
 		})
 	}

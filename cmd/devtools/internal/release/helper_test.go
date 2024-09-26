@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -41,6 +42,8 @@ func (p *testReleaser) Run(ctx context.Context, gitClient *git.GitClient) error 
 }
 
 func createBumpFiles(t *testing.T, ctx context.Context, version string) {
+	t.Helper()
+
 	files := map[string]string{
 		bumpFiles[0]: `extra:
   latest_version: v` + version,
@@ -49,65 +52,58 @@ func createBumpFiles(t *testing.T, ctx context.Context, version string) {
 
 	for f, content := range files {
 		err := os.WriteFile(filepath.Join(ctx.RootDir, f), []byte(content), 0o644)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	}
 }
 
 func createMarkdownFiles(t *testing.T, ctx context.Context) {
+	t.Helper()
+
 	docsDir := filepath.Join(ctx.RootDir, "docs")
 
 	err := os.MkdirAll(docsDir, 0o755)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	for _, f := range testMarkdownFiles {
 		err = os.WriteFile(filepath.Join(docsDir, f), []byte(nonReleasedText), 0o644)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	}
 }
 
 func createModFile(t *testing.T, ctx context.Context) {
+	t.Helper()
+
 	content := `module github.com/testcontainers/testcontainers-go
 go 1.21`
 
 	err := os.WriteFile(filepath.Join(ctx.RootDir, "go.mod"), []byte(content), 0o644)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func createModules(t *testing.T, ctx context.Context, rootCtx context.Context, version string) {
+	t.Helper()
+
 	rootTemplatesDir := filepath.Join(rootCtx.RootDir, "cmd", "devtools", "_template")
 	templatesDir := filepath.Join(ctx.RootDir, "cmd", "devtools")
 
-	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
+	err := os.MkdirAll(templatesDir, 0o755)
+	require.NoError(t, err)
 
 	cmd := exec.Command("cp", "-R", rootTemplatesDir, templatesDir)
-	if err := cmd.Run(); err != nil {
-		t.Fatal(err)
-	}
+	err = cmd.Run()
+	require.NoError(t, err)
 
 	cmd = exec.Command("cp", filepath.Join(rootCtx.RootDir, "commons-test.mk"), ctx.RootDir)
-	if err := cmd.Run(); err != nil {
-		t.Fatal(err)
-	}
+	err = cmd.Run()
+	require.NoError(t, err)
 
 	modulesDir := filepath.Join(ctx.RootDir, "modules")
-	if err := os.MkdirAll(modulesDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
+	err = os.MkdirAll(modulesDir, 0o755)
+	require.NoError(t, err)
 
 	cmd = exec.Command("cp", filepath.Join(rootCtx.RootDir, "modules", "Makefile"), modulesDir)
-	if err := cmd.Run(); err != nil {
-		t.Fatal(err)
-	}
+	err = cmd.Run()
+	require.NoError(t, err)
 
 	mg := module.Generator{}
 	for _, module := range modules {
@@ -119,20 +115,16 @@ func createModules(t *testing.T, ctx context.Context, rootCtx context.Context, v
 			TCVersion: version,
 			Context:   ctx,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	}
 
 	examplesDir := filepath.Join(ctx.RootDir, "examples")
-	if err := os.MkdirAll(examplesDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
+	err = os.MkdirAll(examplesDir, 0o755)
+	require.NoError(t, err)
 
 	cmd = exec.Command("cp", filepath.Join(rootCtx.RootDir, "examples", "Makefile"), examplesDir)
-	if err := cmd.Run(); err != nil {
-		t.Fatal(err)
-	}
+	err = cmd.Run()
+	require.NoError(t, err)
 
 	for _, example := range examples {
 		err := mg.AddModule(ctx, context.TestcontainersModule{
@@ -143,28 +135,26 @@ func createModules(t *testing.T, ctx context.Context, rootCtx context.Context, v
 			TCVersion: version,
 			Context:   ctx,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	}
 }
 
 func createVersionFile(t *testing.T, ctx context.Context, version string) {
+	t.Helper()
+
 	internalDir := filepath.Join(ctx.RootDir, "internal")
 	content := `const Version = "` + version + `"`
 
 	err := os.MkdirAll(internalDir, 0o755)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	err = os.WriteFile(filepath.Join(internalDir, "version.go"), []byte(content), 0o644)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func initialiseProject(t *testing.T, ctx context.Context, rootCtx context.Context, initVersion string, nextDevelopmentVersion string) {
+	t.Helper()
+
 	createVersionFile(t, ctx, nextDevelopmentVersion)
 	createBumpFiles(t, ctx, initVersion)
 	createMarkdownFiles(t, ctx)

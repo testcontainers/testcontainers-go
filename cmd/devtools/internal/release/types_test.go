@@ -2,6 +2,8 @@ package release
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewReleaseManager(t *testing.T) {
@@ -31,19 +33,12 @@ func TestNewReleaseManager(t *testing.T) {
 			tt.Parallel()
 
 			r := NewReleaseManager(tc.branch, tc.bumpType, tc.dryRun)
-
-			if r == nil {
-				tt.Error("expected a non-nil Releaser")
-			}
+			require.NotNil(tt, r)
 
 			if tc.dryRun {
-				if _, ok := r.(*dryRunReleaseManager); !ok {
-					tt.Error("expected a *dryRunReleaseManager")
-				}
+				require.IsType(tt, &dryRunReleaseManager{}, r)
 			} else {
-				if _, ok := r.(*releaseManager); !ok {
-					tt.Error("expected a *releaseManager")
-				}
+				require.IsType(tt, &releaseManager{}, r)
 			}
 		})
 	}
