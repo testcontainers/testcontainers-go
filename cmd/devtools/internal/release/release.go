@@ -29,7 +29,12 @@ func run(ctx devcontext.Context, gitClient *git.GitClient, bumpType string, dryR
 	if err != nil {
 		return err
 	}
-	defer cleanUpRemote()
+	defer func() {
+		err := cleanUpRemote()
+		if err != nil {
+			fmt.Println("Error cleaning up the remote", err)
+		}
+	}()
 
 	version, err := extractCurrentVersion(ctx)
 	if err != nil {
