@@ -14,7 +14,6 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -23,91 +22,87 @@ import (
 
 const exampleAuth = "https://example-auth.com"
 
-var testDockerConfigDirPath = filepath.Join("testdata", ".docker")
-
-var indexDockerIO = core.IndexDockerIO
-
-func TestGetDockerConfig(t *testing.T) {
-	const expectedErrorMessage = "Expected to find %s in auth configs"
-
-	// Verify that the default docker config file exists before any test in this suite runs.
-	// Then, we can safely run the tests that rely on it.
-	defaultCfg, err := dockercfg.LoadDefaultConfig()
-	require.NoError(t, err)
-	require.NotEmpty(t, defaultCfg)
-
-	t.Run("without DOCKER_CONFIG env var retrieves default", func(t *testing.T) {
-		t.Setenv("DOCKER_CONFIG", "")
+func Test_getDockerConfig(t *testing.T) {
+	expectedConfig := &dockercfg.Config{
+		AuthConfigs: map[string]dockercfg.AuthConfig{
+			core.IndexDockerIO:            {},
+			"https://example.com":         {},
+			"https://my.private.registry": {},
+		},
+		CredentialsStore: "desktop",
+	}
+	t.Run("HOME/valid", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata")
 
 		cfg, err := getDockerConfig()
 		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
-
-		assert.Equal(t, defaultCfg, cfg)
+		require.Equal(t, expectedConfig, cfg)
 	})
 
-	t.Run("with DOCKER_CONFIG env var pointing to a non-existing file raises error", func(t *testing.T) {
-		t.Setenv("DOCKER_CONFIG", filepath.Join(testDockerConfigDirPath, "non-existing"))
+	t.Run("HOME/not-found", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-found")
 
 		cfg, err := getDockerConfig()
-		require.Error(t, err)
-		require.Empty(t, cfg)
+		require.ErrorIs(t, err, os.ErrNotExist)
+		require.Nil(t, cfg)
 	})
 
-	t.Run("with DOCKER_CONFIG env var", func(t *testing.T) {
-		t.Setenv("DOCKER_CONFIG", testDockerConfigDirPath)
+	t.Run("HOME/invalid-config", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "invalid-config")
 
 		cfg, err := getDockerConfig()
-		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
-
-		assert.Len(t, cfg.AuthConfigs, 3)
-
-		authCfgs := cfg.AuthConfigs
-
-		if _, ok := authCfgs[indexDockerIO]; !ok {
-			t.Errorf(expectedErrorMessage, indexDockerIO)
-		}
-		if _, ok := authCfgs["https://example.com"]; !ok {
-			t.Errorf(expectedErrorMessage, "https://example.com")
-		}
-		if _, ok := authCfgs["https://my.private.registry"]; !ok {
-			t.Errorf(expectedErrorMessage, "https://my.private.registry")
-		}
+		require.ErrorContains(t, err, "json: cannot unmarshal array")
+		require.Nil(t, cfg)
 	})
 
-	t.Run("DOCKER_AUTH_CONFIG env var takes precedence", func(t *testing.T) {
-		setAuthConfig(t, exampleAuth, "", "")
-		t.Setenv("DOCKER_CONFIG", testDockerConfigDirPath)
+	t.Run("DOCKER_AUTH_CONFIG/valid", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-found")
+		t.Setenv("DOCKER_AUTH_CONFIG", dockerConfig)
 
 		cfg, err := getDockerConfig()
 		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
-
-		assert.Len(t, cfg.AuthConfigs, 1)
-
-		authCfgs := cfg.AuthConfigs
-
-		if _, ok := authCfgs[indexDockerIO]; ok {
-			t.Errorf("Not expected to find %s in auth configs", indexDockerIO)
-		}
-		if _, ok := authCfgs[exampleAuth]; !ok {
-			t.Errorf(expectedErrorMessage, exampleAuth)
-		}
+		require.Equal(t, expectedConfig, cfg)
 	})
 
+	t.Run("DOCKER_AUTH_CONFIG/invalid-config", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-found")
+		t.Setenv("DOCKER_AUTH_CONFIG", `{"auths": []}`)
+
+		cfg, err := getDockerConfig()
+		require.ErrorContains(t, err, "json: cannot unmarshal array")
+		require.Nil(t, cfg)
+	})
+
+	t.Run("DOCKER_CONFIG/valid", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-found")
+		t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", ".docker"))
+
+		cfg, err := getDockerConfig()
+		require.NoError(t, err)
+		require.Equal(t, expectedConfig, cfg)
+	})
+
+	t.Run("DOCKER_CONFIG/invalid-config", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-found")
+		t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", "invalid-config", ".docker"))
+
+		cfg, err := getDockerConfig()
+		require.ErrorContains(t, err, "json: cannot unmarshal array")
+		require.Nil(t, cfg)
+	})
+}
+
+func TestDockerImageAuth(t *testing.T) {
 	t.Run("retrieve auth with DOCKER_AUTH_CONFIG env var", func(t *testing.T) {
 		username, password := "gopher", "secret"
 		creds := setAuthConfig(t, exampleAuth, username, password)
 
 		registry, cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
 		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
-
-		assert.Equal(t, exampleAuth, registry)
-		assert.Equal(t, username, cfg.Username)
-		assert.Equal(t, password, cfg.Password)
-		assert.Equal(t, creds, cfg.Auth)
+		require.Equal(t, exampleAuth, registry)
+		require.Equal(t, username, cfg.Username)
+		require.Equal(t, password, cfg.Password)
+		require.Equal(t, creds, cfg.Auth)
 	})
 
 	t.Run("match registry authentication by host", func(t *testing.T) {
@@ -117,12 +112,10 @@ func TestGetDockerConfig(t *testing.T) {
 
 		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
 		require.NoError(t, err)
-		require.NotEmpty(t, cfg)
-
-		assert.Equal(t, imageReg, registry)
-		assert.Equal(t, "gopher", cfg.Username)
-		assert.Equal(t, "secret", cfg.Password)
-		assert.Equal(t, base64, cfg.Auth)
+		require.Equal(t, imageReg, registry)
+		require.Equal(t, "gopher", cfg.Username)
+		require.Equal(t, "secret", cfg.Password)
+		require.Equal(t, base64, cfg.Auth)
 	})
 
 	t.Run("fail to match registry authentication due to invalid host", func(t *testing.T) {
@@ -135,8 +128,7 @@ func TestGetDockerConfig(t *testing.T) {
 		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
 		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
 		require.Empty(t, cfg)
-
-		assert.Equal(t, imageReg, registry)
+		require.Equal(t, imageReg, registry)
 	})
 
 	t.Run("fail to match registry authentication by host with empty URL scheme creds and missing default", func(t *testing.T) {
@@ -156,8 +148,7 @@ func TestGetDockerConfig(t *testing.T) {
 		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
 		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
 		require.Empty(t, cfg)
-
-		assert.Equal(t, imageReg, registry)
+		require.Equal(t, imageReg, registry)
 	})
 }
 
@@ -173,8 +164,8 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 	}
 
 	redisC, err := prepareRedisImage(ctx, req)
+	CleanupContainer(t, redisC)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, redisC)
 }
 
 // removeImageFromLocalCache removes the image from the local cache
@@ -211,8 +202,7 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 			BuildArgs: map[string]*string{
 				"REGISTRY_HOST": &registryHost,
 			},
-			Repo:          "localhost",
-			PrintBuildLog: true,
+			Repo: "localhost",
 		},
 		AlwaysPullImage: true, // make sure the authentication takes place
 		ExposedPorts:    []string{"6379/tcp"},
@@ -220,7 +210,7 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 	}
 
 	redisC, err := prepareRedisImage(ctx, req)
-	terminateContainerOnEnd(t, ctx, redisC)
+	CleanupContainer(t, redisC)
 	require.NoError(t, err)
 }
 
@@ -246,7 +236,7 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 	}
 
 	redisC, err := prepareRedisImage(ctx, req)
-	terminateContainerOnEnd(t, ctx, redisC)
+	CleanupContainer(t, redisC)
 	require.Error(t, err)
 }
 
@@ -268,7 +258,7 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	terminateContainerOnEnd(t, ctx, redisContainer)
+	CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
 }
 
@@ -296,7 +286,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 				ContainerFilePath: "/data",
 			},
 		},
-		WaitingFor: wait.ForExposedPort(),
+		WaitingFor: wait.ForHTTP("/").WithPort("5000/tcp"),
 	}
 	// }
 
@@ -307,6 +297,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	}
 
 	registryC, err := GenericContainer(ctx, genContainerReq)
+	CleanupContainer(t, registryC)
 	require.NoError(t, err)
 
 	mappedPort, err := registryC.MappedPort(ctx, "5000/tcp")
@@ -319,12 +310,6 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	t.Cleanup(func() {
 		removeImageFromLocalCache(t, addr+"/redis:5.0-alpine")
 	})
-	t.Cleanup(func() {
-		require.NoError(t, registryC.Terminate(context.Background()))
-	})
-
-	_, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
 
 	return addr
 }
@@ -391,27 +376,90 @@ func localAddress(t *testing.T) string {
 var dockerConfig string
 
 func Test_getDockerAuthConfigs(t *testing.T) {
-	t.Run("file", func(t *testing.T) {
-		got, err := getDockerAuthConfigs()
-		require.NoError(t, err)
-		require.NotNil(t, got)
+	t.Run("HOME/valid", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata")
+
+		requireValidAuthConfig(t)
 	})
 
-	t.Run("env", func(t *testing.T) {
+	t.Run("HOME/not-found", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-exist")
+
+		authConfigs, err := getDockerAuthConfigs()
+		require.NoError(t, err)
+		require.NotNil(t, authConfigs)
+		require.Empty(t, authConfigs)
+	})
+
+	t.Run("HOME/invalid-config", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "invalid-config")
+
+		authConfigs, err := getDockerAuthConfigs()
+		require.ErrorContains(t, err, "json: cannot unmarshal array")
+		require.Nil(t, authConfigs)
+	})
+
+	t.Run("DOCKER_AUTH_CONFIG/valid", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-exist")
 		t.Setenv("DOCKER_AUTH_CONFIG", dockerConfig)
 
-		got, err := getDockerAuthConfigs()
-		require.NoError(t, err)
-
-		// We can only check the keys as the values are not deterministic.
-		expected := map[string]registry.AuthConfig{
-			"https://index.docker.io/v1/": {},
-			"https://example.com":         {},
-			"https://my.private.registry": {},
-		}
-		for k := range got {
-			got[k] = registry.AuthConfig{}
-		}
-		require.Equal(t, expected, got)
+		requireValidAuthConfig(t)
 	})
+
+	t.Run("DOCKER_AUTH_CONFIG/invalid-config", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-exist")
+		t.Setenv("DOCKER_AUTH_CONFIG", `{"auths": []}`)
+
+		authConfigs, err := getDockerAuthConfigs()
+		require.ErrorContains(t, err, "json: cannot unmarshal array")
+		require.Nil(t, authConfigs)
+	})
+
+	t.Run("DOCKER_CONFIG/valid", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-found")
+		t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", ".docker"))
+
+		requireValidAuthConfig(t)
+	})
+
+	t.Run("DOCKER_CONFIG/invalid-config", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-found")
+		t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", "invalid-config", ".docker"))
+
+		cfg, err := getDockerConfig()
+		require.ErrorContains(t, err, "json: cannot unmarshal array")
+		require.Nil(t, cfg)
+	})
+}
+
+// requireValidAuthConfig checks that the given authConfigs map contains the expected keys.
+func requireValidAuthConfig(t *testing.T) {
+	t.Helper()
+
+	authConfigs, err := getDockerAuthConfigs()
+	require.NoError(t, err)
+
+	// We can only check the keys as the values are not deterministic as they depend
+	// on users environment.
+	expected := map[string]registry.AuthConfig{
+		"https://index.docker.io/v1/": {},
+		"https://example.com":         {},
+		"https://my.private.registry": {},
+	}
+	for k := range authConfigs {
+		authConfigs[k] = registry.AuthConfig{}
+	}
+	require.Equal(t, expected, authConfigs)
+}
+
+// testDockerConfigHome sets the user's home directory to the given path
+// and unsets the DOCKER_CONFIG and DOCKER_AUTH_CONFIG environment variables.
+func testDockerConfigHome(t *testing.T, dirs ...string) {
+	t.Helper()
+
+	dir := filepath.Join(dirs...)
+	t.Setenv("DOCKER_AUTH_CONFIG", "")
+	t.Setenv("DOCKER_CONFIG", "")
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir) // Windows
 }

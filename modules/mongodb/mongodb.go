@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -50,14 +51,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *MongoDBContainer
+	if container != nil {
+		c = &MongoDBContainer{Container: container, username: username, password: password}
 	}
 
-	if username != "" && password != "" {
-		return &MongoDBContainer{Container: container, username: username, password: password}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
 	}
-	return &MongoDBContainer{Container: container}, nil
+
+	return c, nil
 }
 
 // WithUsername sets the initial username to be created when the container starts
@@ -87,6 +90,10 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Cmd = append(req.Cmd, "--replSet", replSetName)
+		req.WaitingFor = wait.ForAll(
+			req.WaitingFor,
+			wait.ForExec(eval("rs.status().ok")),
+		).WithDeadline(60 * time.Second)
 		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
 			PostStarts: []testcontainers.ContainerHook{
 				func(ctx context.Context, c testcontainers.Container) error {

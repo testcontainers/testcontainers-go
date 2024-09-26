@@ -2,6 +2,7 @@ package wait
 
 import (
 	"context"
+	"errors"
 	"io"
 	"testing"
 	"time"
@@ -43,6 +44,10 @@ func (st exitStrategyTarget) Exec(ctx context.Context, cmd []string, options ...
 
 func (st exitStrategyTarget) State(ctx context.Context) (*types.ContainerState, error) {
 	return &types.ContainerState{Running: st.isRunning}, nil
+}
+
+func (st exitStrategyTarget) CopyFileFromContainer(context.Context, string) (io.ReadCloser, error) {
+	return nil, errors.New("not implemented")
 }
 
 func TestWaitForExit(t *testing.T) {

@@ -178,14 +178,8 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 		setupRootlessNotFound(t)
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
-		require.ErrorIs(t, err, ErrRootlessDockerNotFound)
+		require.ErrorIs(t, err, ErrRootlessDockerNotFoundXDGRuntimeDir)
 		assert.Empty(t, socketPath)
-
-		// the wrapped error includes all the locations that were checked
-		require.ErrorContains(t, err, ErrRootlessDockerNotFoundXDGRuntimeDir.Error())
-		require.ErrorContains(t, err, ErrRootlessDockerNotFoundHomeRunDir.Error())
-		require.ErrorContains(t, err, ErrRootlessDockerNotFoundHomeDesktopDir.Error())
-		require.ErrorContains(t, err, ErrRootlessDockerNotFoundRunDir.Error())
 	})
 }
 

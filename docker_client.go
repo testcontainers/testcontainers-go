@@ -79,8 +79,8 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
 		infoLabels,
 		internal.Version,
-		core.ExtractDockerHost(ctx),
-		core.ExtractDockerSocket(ctx),
+		core.MustExtractDockerHost(ctx),
+		core.MustExtractDockerSocket(ctx),
 		core.SessionID(),
 		core.ProcessID(),
 	)

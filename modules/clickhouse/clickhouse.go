@@ -249,13 +249,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	var c *ClickHouseContainer
+	if container != nil {
+		c = &ClickHouseContainer{Container: container}
+	}
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	user := req.Env["CLICKHOUSE_USER"]
-	password := req.Env["CLICKHOUSE_PASSWORD"]
-	dbName := req.Env["CLICKHOUSE_DB"]
+	c.User = req.Env["CLICKHOUSE_USER"]
+	c.Password = req.Env["CLICKHOUSE_PASSWORD"]
+	c.DbName = req.Env["CLICKHOUSE_DB"]
 
-	return &ClickHouseContainer{Container: container, DbName: dbName, Password: password, User: user}, nil
+	return c, nil
 }

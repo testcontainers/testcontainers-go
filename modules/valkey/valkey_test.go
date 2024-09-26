@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/valkey-io/valkey-go"
 
+	"github.com/testcontainers/testcontainers-go"
 	tcvalkey "github.com/testcontainers/testcontainers-go/modules/valkey"
 )
 
@@ -18,12 +19,8 @@ func TestIntegrationSetGet(t *testing.T) {
 	ctx := context.Background()
 
 	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5")
+	testcontainers.CleanupContainer(t, valkeyContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := valkeyContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	assertSetsGets(t, ctx, valkeyContainer, 1)
 }
@@ -32,12 +29,8 @@ func TestValkeyWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5", tcvalkey.WithConfigFile(filepath.Join("testdata", "valkey7.conf")))
+	testcontainers.CleanupContainer(t, valkeyContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := valkeyContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	assertSetsGets(t, ctx, valkeyContainer, 1)
 }
@@ -59,12 +52,8 @@ func TestValkeyWithImage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			valkeyContainer, err := tcvalkey.Run(ctx, tt.image, tcvalkey.WithConfigFile(filepath.Join("testdata", "valkey7.conf")))
+			testcontainers.CleanupContainer(t, valkeyContainer)
 			require.NoError(t, err)
-			t.Cleanup(func() {
-				if err := valkeyContainer.Terminate(ctx); err != nil {
-					t.Fatalf("failed to terminate container: %s", err)
-				}
-			})
 
 			assertSetsGets(t, ctx, valkeyContainer, 1)
 		})
@@ -75,12 +64,8 @@ func TestValkeyWithLogLevel(t *testing.T) {
 	ctx := context.Background()
 
 	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5", tcvalkey.WithLogLevel(tcvalkey.LogLevelVerbose))
+	testcontainers.CleanupContainer(t, valkeyContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := valkeyContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	assertSetsGets(t, ctx, valkeyContainer, 10)
 }
@@ -89,12 +74,8 @@ func TestValkeyWithSnapshotting(t *testing.T) {
 	ctx := context.Background()
 
 	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5", tcvalkey.WithSnapshotting(10, 1))
+	testcontainers.CleanupContainer(t, valkeyContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := valkeyContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	assertSetsGets(t, ctx, valkeyContainer, 10)
 }

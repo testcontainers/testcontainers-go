@@ -101,6 +101,59 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 	assert.Contains(t, serviceNames, "api-nginx")
 }
 
+func TestDockerComposeAPIWithProfiles(t *testing.T) {
+	path := RenderComposeProfiles(t)
+
+	testcases := map[string]struct {
+		withProfiles []string
+		wantServices []string
+	}{
+		"nil profile": {
+			withProfiles: nil,
+			wantServices: []string{"starts-always"},
+		},
+		"no profiles": {
+			withProfiles: []string{},
+			wantServices: []string{"starts-always"},
+		},
+		"dev profile": {
+			withProfiles: []string{"dev"},
+			wantServices: []string{"starts-always", "only-dev", "dev-or-test"},
+		},
+		"test profile": {
+			withProfiles: []string{"test"},
+			wantServices: []string{"starts-always", "dev-or-test"},
+		},
+		"wildcard profile": {
+			withProfiles: []string{"*"},
+			wantServices: []string{"starts-always", "only-dev", "dev-or-test", "only-prod"},
+		},
+		"undefined profile": {
+			withProfiles: []string{"undefined-profile"},
+			wantServices: []string{"starts-always"},
+		},
+	}
+
+	for name, test := range testcases {
+		t.Run(name, func(t *testing.T) {
+			compose, err := NewDockerComposeWith(WithStackFiles(path), WithProfiles(test.withProfiles...))
+			require.NoError(t, err, "NewDockerCompose()")
+
+			ctx, cancel := context.WithCancel(context.Background())
+			t.Cleanup(cancel)
+
+			for _, service := range test.wantServices {
+				compose = compose.WaitForService(service, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).(*dockerCompose)
+			}
+			err = compose.Up(ctx, Wait(true))
+			cleanup(t, compose)
+			require.NoError(t, err, "compose.Up()")
+
+			assert.ElementsMatch(t, test.wantServices, compose.Services())
+		})
+	}
+}
+
 func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
 	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerCompose(path)

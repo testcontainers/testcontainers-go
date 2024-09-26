@@ -86,13 +86,21 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *MySQLContainer
+	if container != nil {
+		c = &MySQLContainer{
+			Container: container,
+			password:  password,
+			username:  username,
+			database:  req.Env["MYSQL_DATABASE"],
+		}
 	}
 
-	database := req.Env["MYSQL_DATABASE"]
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
-	return &MySQLContainer{container, username, password, database}, nil
+	return c, nil
 }
 
 // MustConnectionString panics if the address cannot be determined.

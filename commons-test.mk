@@ -6,18 +6,22 @@ define go_install
 endef
 
 $(GOBIN)/golangci-lint:
-	$(call go_install,github.com/golangci/golangci-lint/cmd/golangci-lint@v1.59.1)
+	$(call go_install,github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0)
 
 $(GOBIN)/gotestsum:
 	$(call go_install,gotest.tools/gotestsum@latest)
 
+$(GOBIN)/mockery:
+	$(call go_install,github.com/vektra/mockery/v2@v2.45)
+
 .PHONY: install
-install: $(GOBIN)/golangci-lint $(GOBIN)/gotestsum
+install: $(GOBIN)/golangci-lint $(GOBIN)/gotestsum $(GOBIN)/mockery
 
 .PHONY: clean
 clean:
 	rm $(GOBIN)/golangci-lint
 	rm $(GOBIN)/gotestsum
+	rm $(GOBIN)/mockery
 
 .PHONY: dependencies-scan
 dependencies-scan:
@@ -26,7 +30,11 @@ dependencies-scan:
 
 .PHONY: lint
 lint: $(GOBIN)/golangci-lint
-	golangci-lint run --out-format=github-actions --path-prefix=. --verbose -c $(ROOT_DIR)/.golangci.yml --fix
+	golangci-lint run --out-format=colored-line-number --path-prefix=. --verbose -c $(ROOT_DIR)/.golangci.yml --fix
+
+.PHONY: generate
+generate: $(GOBIN)/mockery
+	go generate ./...
 
 .PHONY: test-%
 test-%: $(GOBIN)/gotestsum
@@ -51,3 +59,6 @@ test-tools: $(GOBIN)/gotestsum
 .PHONY: tidy
 tidy:
 	go mod tidy
+
+.PHONY: pre-commit
+pre-commit: generate tidy lint

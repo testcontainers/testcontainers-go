@@ -10,7 +10,7 @@ import (
 )
 
 func TestImageList(t *testing.T) {
-	t.Setenv("DOCKER_HOST", core.ExtractDockerHost(context.Background()))
+	t.Setenv("DOCKER_HOST", core.MustExtractDockerHost(context.Background()))
 
 	provider, err := ProviderDocker.GetProvider()
 	if err != nil {
@@ -25,14 +25,11 @@ func TestImageList(t *testing.T) {
 		Image: "redis:latest",
 	}
 
-	container, err := provider.CreateContainer(context.Background(), req)
+	ctr, err := provider.CreateContainer(context.Background(), req)
+	CleanupContainer(t, ctr)
 	if err != nil {
 		t.Fatalf("creating test container %v", err)
 	}
-
-	defer func() {
-		_ = container.Terminate(context.Background())
-	}()
 
 	images, err := provider.ListImages(context.Background())
 	if err != nil {
@@ -54,7 +51,7 @@ func TestImageList(t *testing.T) {
 }
 
 func TestSaveImages(t *testing.T) {
-	t.Setenv("DOCKER_HOST", core.ExtractDockerHost(context.Background()))
+	t.Setenv("DOCKER_HOST", core.MustExtractDockerHost(context.Background()))
 
 	provider, err := ProviderDocker.GetProvider()
 	if err != nil {
@@ -69,14 +66,11 @@ func TestSaveImages(t *testing.T) {
 		Image: "redis:latest",
 	}
 
-	container, err := provider.CreateContainer(context.Background(), req)
+	ctr, err := provider.CreateContainer(context.Background(), req)
+	CleanupContainer(t, ctr)
 	if err != nil {
 		t.Fatalf("creating test container %v", err)
 	}
-
-	defer func() {
-		_ = container.Terminate(context.Background())
-	}()
 
 	output := filepath.Join(t.TempDir(), "images.tar")
 	err = provider.SaveImages(context.Background(), output, req.Image)

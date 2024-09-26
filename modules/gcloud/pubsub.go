@@ -2,7 +2,6 @@ package gcloud
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -33,13 +32,8 @@ func RunPubsub(ctx context.Context, img string, opts ...testcontainers.Container
 	req.Cmd = []string{
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators pubsub start --host-port 0.0.0.0:8085 " + fmt.Sprintf("--project=%s", settings.ProjectID),
+		"gcloud beta emulators pubsub start --host-port 0.0.0.0:8085 --project=" + settings.ProjectID,
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return newGCloudContainer(ctx, 8085, container, settings)
+	return newGCloudContainer(ctx, req, 8085, settings, "")
 }

@@ -69,11 +69,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *RedisContainer
+	if container != nil {
+		c = &RedisContainer{Container: container}
 	}
 
-	return &RedisContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 // WithConfigFile sets the config file to be used for the redis container, and sets the command to run the redis server

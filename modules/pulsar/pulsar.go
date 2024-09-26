@@ -164,14 +164,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	c, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	var c *Container
+	if container != nil {
+		c = &Container{Container: container}
+	}
+
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	pc := &Container{
-		Container: c,
-	}
-
-	return pc, nil
+	return c, nil
 }

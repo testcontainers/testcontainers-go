@@ -91,7 +91,7 @@ func createContainerRequest(customize func(ContainerRequest) ContainerRequest) C
 		ExposedPorts: []string{"8080/tcp"},
 		Labels:       core.DefaultLabels(testSessionID),
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
-			hostConfig.Binds = []string{core.ExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
+			hostConfig.Binds = []string{core.MustExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
 		},
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
 		Env: map[string]string{
@@ -119,7 +119,7 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 
 	ctx := context.Background()
 
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
@@ -129,9 +129,8 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 		},
 		Started: true,
 	})
-
+	CleanupContainer(t, ctr)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, container)
 
 	sessionID := core.SessionID()
 
@@ -163,10 +162,10 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 		},
 		Started: true,
 	})
+	CleanupContainer(t, c)
 	if err != nil {
 		t.Fatal(err)
 	}
-	terminateContainerOnEnd(t, ctx, c)
 
 	sessionID := core.SessionID()
 
@@ -198,9 +197,8 @@ func TestContainerStopWithReaper(t *testing.T) {
 		},
 		Started: true,
 	})
-
+	CleanupContainer(t, nginxA)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, nginxA)
 
 	state, err := nginxA.State(ctx)
 	if err != nil {
@@ -246,25 +244,18 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 		},
 		Started: true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	CleanupContainer(t, nginxA)
+	require.NoError(t, err)
 
 	state, err := nginxA.State(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if state.Running != true {
-		t.Fatal("The container shoud be in running state")
-	}
+	require.NoError(t, err)
+	require.True(t, state.Running)
+
 	err = nginxA.Terminate(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	_, err = nginxA.State(ctx)
-	if err == nil {
-		t.Fatal("expected error from container inspect.")
-	}
+	require.Error(t, err)
 }
 
 func TestContainerTerminationWithoutReaper(t *testing.T) {
@@ -286,6 +277,7 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 		},
 		Started: true,
 	})
+	CleanupContainer(t, nginxA)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -376,7 +368,7 @@ func Test_NewReaper(t *testing.T) {
 			name: "docker-host in context",
 			req: createContainerRequest(func(req ContainerRequest) ContainerRequest {
 				req.HostConfigModifier = func(hostConfig *container.HostConfig) {
-					hostConfig.Binds = []string{core.ExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
+					hostConfig.Binds = []string{core.MustExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
 				}
 				return req
 			}),
@@ -493,7 +485,7 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 	require.NoError(t, err, "connecting to Reaper should be successful")
 
 	if !wasReaperRunning {
-		terminateContainerOnEnd(t, ctx, reaper.container)
+		CleanupContainer(t, reaper.container)
 	}
 }
 
@@ -530,7 +522,7 @@ func Test_RecreateReaperIfTerminated(t *testing.T) {
 		term <- true
 	}(terminate)
 	require.NoError(t, err, "connecting to Reaper should be successful")
-	terminateContainerOnEnd(t, ctx, recreatedReaper.container)
+	CleanupContainer(t, recreatedReaper.container)
 }
 
 func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
@@ -582,7 +574,7 @@ func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
 	require.NoError(t, err, "connecting to Reaper should be successful")
 
 	if !wasReaperRunning {
-		terminateContainerOnEnd(t, ctx, reaper.container)
+		CleanupContainer(t, reaper.container)
 	}
 }
 

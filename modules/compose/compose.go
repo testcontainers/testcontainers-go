@@ -32,6 +32,7 @@ type composeStackOptions struct {
 	Paths          []string
 	temporaryPaths map[string]bool
 	Logger         testcontainers.Logging
+	Profiles       []string
 }
 
 type ComposeStackOption interface {
@@ -116,6 +117,11 @@ func WithStackReaders(readers ...io.Reader) ComposeStackOption {
 	return ComposeStackReaders(readers)
 }
 
+// WithProfiles allows to enable/disable services based on the profiles defined in the compose file.
+func WithProfiles(profiles ...string) ComposeStackOption {
+	return ComposeProfiles(profiles)
+}
+
 func NewDockerCompose(filePaths ...string) (*dockerCompose, error) {
 	return NewDockerComposeWith(WithStackFiles(filePaths...))
 }
@@ -125,6 +131,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		Identifier:     uuid.New().String(),
 		temporaryPaths: make(map[string]bool),
 		Logger:         testcontainers.Logger,
+		Profiles:       nil,
 	}
 
 	for i := range opts {
@@ -168,6 +175,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		configs:          composeOptions.Paths,
 		temporaryConfigs: composeOptions.temporaryPaths,
 		logger:           composeOptions.Logger,
+		projectProfiles:  composeOptions.Profiles,
 		composeService:   compose.NewComposeService(dockerCli),
 		dockerClient:     dockerCli.Client(),
 		waitStrategies:   make(map[string]wait.Strategy),

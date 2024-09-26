@@ -220,10 +220,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			// convenient for testing
 			"REGISTRY_STORAGE_DELETE_ENABLED": "true",
 		},
-		WaitingFor: wait.ForAll(
-			wait.ForExposedPort(),
-			wait.ForLog("listening on [::]:5000").WithStartupTimeout(10*time.Second),
-		),
+		WaitingFor: wait.ForHTTP("/").
+			WithPort(registryPort).
+			WithStartupTimeout(10 * time.Second),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -238,15 +237,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *RegistryContainer
+	if container != nil {
+		c = &RegistryContainer{Container: container}
 	}
-
-	c := &RegistryContainer{Container: container}
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
 	address, err := c.Address(ctx)
 	if err != nil {
-		return c, err
+		return c, fmt.Errorf("address: %w", err)
 	}
 
 	c.RegistryName = strings.TrimPrefix(address, "http://")

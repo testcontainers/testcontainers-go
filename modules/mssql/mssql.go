@@ -44,7 +44,7 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the MSSQLServer container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MSSQLServerContainer, error) {
-	return Run(ctx, "mcr.microsoft.com/mssql/server:2022-CU10-ubuntu-22.04", opts...)
+	return Run(ctx, "mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04", opts...)
 }
 
 // Run creates an instance of the MSSQLServer container type
@@ -70,14 +70,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *MSSQLServerContainer
+	if container != nil {
+		c = &MSSQLServerContainer{Container: container, password: req.Env["MSSQL_SA_PASSWORD"], username: defaultUsername}
 	}
 
-	username := defaultUsername
-	password := req.Env["MSSQL_SA_PASSWORD"]
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
-	return &MSSQLServerContainer{Container: container, password: password, username: username}, nil
+	return c, nil
 }
 
 func (c *MSSQLServerContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {

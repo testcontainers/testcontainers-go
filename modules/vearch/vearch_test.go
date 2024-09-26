@@ -5,40 +5,30 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/vearch"
 )
 
 func TestVearch(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := vearch.Run(ctx, "vearch/vearch:3.5.1")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	ctr, err := vearch.Run(ctx, "vearch/vearch:3.5.1")
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	t.Run("REST Endpoint", func(tt *testing.T) {
 		// restEndpoint {
-		restEndpoint, err := container.RESTEndpoint(ctx)
+		restEndpoint, err := ctr.RESTEndpoint(ctx)
 		// }
-		if err != nil {
-			tt.Fatalf("failed to get REST endpoint: %s", err)
-		}
+		require.NoError(t, err)
 
 		cli := &http.Client{}
 		resp, err := cli.Get(restEndpoint)
-		if err != nil {
-			tt.Fatalf("failed to perform GET request: %s", err)
-		}
+		require.NoError(t, err)
 		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			tt.Fatalf("unexpected status code: %d", resp.StatusCode)
-		}
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 }
