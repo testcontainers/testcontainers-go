@@ -240,6 +240,15 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 	}
 }
 
+// testLogConsumer is a simple implementation of LogConsumer that logs to the test output.
+type testLogConsumer struct {
+	t *testing.T
+}
+
+func (l *testLogConsumer) Accept(log Log) {
+	l.t.Log(log.LogType + ": " + strings.TrimSpace(string(log.Content)))
+}
+
 func TestContainerTerminationResetsState(t *testing.T) {
 	ctx := context.Background()
 
@@ -249,6 +258,9 @@ func TestContainerTerminationResetsState(t *testing.T) {
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
 				nginxDefaultPort,
+			},
+			LogConsumerCfg: &LogConsumerConfig{
+				Consumers: []LogConsumer{&testLogConsumer{t: t}},
 			},
 		},
 		Started: true,
@@ -273,6 +285,9 @@ func TestContainerStateAfterTermination(t *testing.T) {
 				Image: nginxAlpineImage,
 				ExposedPorts: []string{
 					nginxDefaultPort,
+				},
+				LogConsumerCfg: &LogConsumerConfig{
+					Consumers: []LogConsumer{&testLogConsumer{t: t}},
 				},
 			},
 			Started: true,

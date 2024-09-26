@@ -27,7 +27,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/grafanalgtm"
+	grafanalgtm "github.com/testcontainers/testcontainers-go/modules/grafana-lgtm"
 )
 
 func ExampleRun() {
