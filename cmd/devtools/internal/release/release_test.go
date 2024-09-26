@@ -193,8 +193,8 @@ func TestRun(t *testing.T) {
 
 			// assert the tags for the library and all the modules exist
 			output, err = gitClient.ListTags()
-			require.NoError(tt, err, "Error listing git tags: %v", err)
-			require.Contains(tt, output, vNextDevelopmentVersion, "Expected core version tag not found: %s", output)
+			require.NoError(tt, err)
+			require.Contains(tt, output, vNextDevelopmentVersion)
 
 			for _, module := range modules {
 				moduleTag := fmt.Sprintf("%s/%s/%s", "modules", module, vNextDevelopmentVersion)
