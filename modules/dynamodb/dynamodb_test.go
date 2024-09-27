@@ -2,7 +2,6 @@ package dynamodb_test
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"testing"
 
@@ -33,17 +32,15 @@ func TestRun(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	cli, err := getDynamoDBClient(ctr)
+	cli := getDynamoDBClient(t, ctr)
 	require.NoError(t, err, "failed to get dynamodb client handle")
 
 	requireTableExists(t, cli, tableName)
 
 	value := "test_value"
-	err = addDataToTable(cli, value)
-	require.NoError(t, err, "data should be added to dynamodb table")
+	addDataToTable(t, cli, value)
 
-	queryResult, err := queryItem(cli, value)
-	require.NoError(t, err, "data should be queried from dynamodb table")
+	queryResult := queryItem(t, cli, value)
 	require.Equal(t, value, queryResult)
 }
 
@@ -71,8 +68,7 @@ func TestRun_withoutEndpointResolver(t *testing.T) {
 
 	cli := dynamodb.New(dynamodb.Options{})
 
-	err = createTable(cli)
-	require.Error(t, err, "dynamodb table creation should have failed with error")
+	createTable(t, cli)
 }
 
 func TestRun_withSharedDB(t *testing.T) {
@@ -82,8 +78,7 @@ func TestRun_withSharedDB(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	cli1, err := getDynamoDBClient(ctr)
-	require.NoError(t, err, "failed to get dynamodb client handle")
+	cli1 := getDynamoDBClient(t, ctr)
 
 	requireTableExists(t, cli1, tableName)
 
@@ -93,7 +88,7 @@ func TestRun_withSharedDB(t *testing.T) {
 	require.NoError(t, err)
 
 	// fetch client handle again
-	cli2, err := getDynamoDBClient(ctr2)
+	cli2 := getDynamoDBClient(t, ctr2)
 	require.NoError(t, err, "failed to get dynamodb client handle")
 
 	// list tables and verify
@@ -106,12 +101,10 @@ func TestRun_withSharedDB(t *testing.T) {
 
 	// add and query data from the second container
 	value := "test_value"
-	err = addDataToTable(cli2, value)
-	require.NoError(t, err, "data should be added to dynamodb table")
+	addDataToTable(t, cli2, value)
 
 	// read data from the first container
-	queryResult, err := queryItem(cli1, value)
-	require.NoError(t, err, "data should be queried from dynamodb table")
+	queryResult := queryItem(t, cli1, value)
 	require.Equal(t, value, queryResult)
 }
 
@@ -122,7 +115,7 @@ func TestRun_withoutSharedDB(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr1)
 	require.NoError(t, err)
 
-	cli, err := getDynamoDBClient(ctr1)
+	cli := getDynamoDBClient(t, ctr1)
 	require.NoError(t, err, "failed to get dynamodb client handle")
 
 	requireTableExists(t, cli, tableName)
@@ -133,7 +126,7 @@ func TestRun_withoutSharedDB(t *testing.T) {
 	require.NoError(t, err)
 
 	// fetch client handle again
-	cli, err = getDynamoDBClient(ctr2)
+	cli = getDynamoDBClient(t, ctr2)
 	require.NoError(t, err, "failed to get dynamodb client handle")
 
 	// list tables and verify
@@ -159,7 +152,9 @@ func TestRun_shouldStartWithSharedDBEnabledAndTelemetryDisabled(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func createTable(client *dynamodb.Client) error {
+func createTable(t *testing.T, client *dynamodb.Client) {
+	t.Helper()
+
 	_, err := client.CreateTable(context.Background(), &dynamodb.CreateTableInput{
 		TableName: aws.String(tableName),
 		KeySchema: []types.KeySchemaElement{
@@ -176,41 +171,35 @@ func createTable(client *dynamodb.Client) error {
 		},
 		BillingMode: types.BillingModePayPerRequest,
 	})
-	if err != nil {
-		return fmt.Errorf("create table %q: %w", tableName, err)
-	}
-
-	return nil
+	require.NoError(t, err)
 }
 
-func addDataToTable(client *dynamodb.Client, val string) error {
+func addDataToTable(t *testing.T, client *dynamodb.Client, val string) {
+	t.Helper()
+
 	_, err := client.PutItem(context.Background(), &dynamodb.PutItemInput{
 		TableName: aws.String(tableName),
 		Item: map[string]types.AttributeValue{
 			pkColumnName: &types.AttributeValueMemberS{Value: val},
 		},
 	})
-	if err != nil {
-		return fmt.Errorf("put item %q: %w", val, err)
-	}
-
-	return nil
+	require.NoError(t, err)
 }
 
-func queryItem(client *dynamodb.Client, val string) (string, error) {
+func queryItem(t *testing.T, client *dynamodb.Client, val string) string {
+	t.Helper()
+
 	output, err := client.GetItem(context.Background(), &dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
 		Key: map[string]types.AttributeValue{
 			pkColumnName: &types.AttributeValueMemberS{Value: val},
 		},
 	})
-	if err != nil {
-		return "", err
-	}
+	require.NoError(t, err)
 
 	result := output.Item[pkColumnName].(*types.AttributeValueMemberS)
 
-	return result.Value, nil
+	return result.Value
 }
 
 type dynamoDBResolver struct {
@@ -224,12 +213,12 @@ func (r *dynamoDBResolver) ResolveEndpoint(ctx context.Context, params dynamodb.
 }
 
 // getDynamoDBClient returns a new DynamoDB client with the endpoint resolver set to the DynamoDB container's host and port
-func getDynamoDBClient(c *tcdynamodb.DynamoDBContainer) (*dynamodb.Client, error) {
+func getDynamoDBClient(t *testing.T, c *tcdynamodb.DynamoDBContainer) *dynamodb.Client {
+	t.Helper()
+
 	// createClient {
 	hostPort, err := c.ConnectionString(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(t, err)
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
 		Value: aws.Credentials{
@@ -237,19 +226,16 @@ func getDynamoDBClient(c *tcdynamodb.DynamoDBContainer) (*dynamodb.Client, error
 			SecretAccessKey: "DUMMYEXAMPLEKEY",
 		},
 	}))
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(t, err)
 
-	return dynamodb.NewFromConfig(cfg, dynamodb.WithEndpointResolverV2(&dynamoDBResolver{HostPort: hostPort})), nil
+	return dynamodb.NewFromConfig(cfg, dynamodb.WithEndpointResolverV2(&dynamoDBResolver{HostPort: hostPort}))
 	// }
 }
 
 func requireTableExists(t *testing.T, cli *dynamodb.Client, tableName string) {
 	t.Helper()
 
-	err := createTable(cli)
-	require.NoError(t, err, "dynamodb create table operation failed")
+	createTable(t, cli)
 
 	result, err := cli.ListTables(context.Background(), nil)
 	require.NoError(t, err, "dynamodb list tables operation failed")
