@@ -172,7 +172,7 @@ func configureCluster(ctx context.Context, settings *options, opts []testcontain
 func configureCMD(settings options) []string {
 	cmds := []string{"etcd"}
 
-	if len(settings.nodeNames) < 1 {
+	if len(settings.nodeNames) == 0 {
 		cmds = append(cmds, "--name=default")
 	} else {
 		clusterCmds := []string{
