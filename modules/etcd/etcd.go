@@ -174,9 +174,9 @@ func configureCMD(settings options) []string {
 			"--initial-cluster-state=new",
 		}
 
-		clusterStateValues := []string{}
-		for _, node := range settings.nodeNames {
-			clusterStateValues = append(clusterStateValues, node+"="+scheme+"://"+node+":"+peerPort)
+		clusterStateValues := make([]string, len(settings.nodeNames))
+		for i, node := range settings.nodeNames {
+			clusterStateValues[i] = node + "=" + scheme + "://" + node + ":" + peerPort
 		}
 		clusterCmds = append(clusterCmds, "--initial-cluster="+strings.Join(clusterStateValues, ","))
 
