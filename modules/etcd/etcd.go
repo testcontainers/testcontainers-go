@@ -209,35 +209,32 @@ func configureCMD(settings options) []string {
 // ClientEndpoint returns the client endpoint for the etcd container, and an error if any.
 // For a cluster, it returns the client endpoint of the first node.
 func (c *EtcdContainer) ClientEndpoint(ctx context.Context) (string, error) {
-	var errs []error
-
 	host, err := c.Host(ctx)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("host: %w", err))
+		return "", err
 	}
 
 	port, err := c.MappedPort(ctx, clientPort)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("mapped port: %w", err))
+		return "", err
 	}
 
-	return fmt.Sprintf("http://%s:%s", host, port.Port()), errors.Join(errs...)
+	return fmt.Sprintf("http://%s:%s", host, port.Port()), nil
 }
 
 // ClientEndpoints returns the client endpoints for the etcd cluster.
 func (c *EtcdContainer) ClientEndpoints(ctx context.Context) ([]string, error) {
-	var endpoints []string
-
 	endpoint, err := c.ClientEndpoint(ctx)
 	if err != nil {
-		return endpoints, err
+		return nil, err
 	}
-	endpoints = append(endpoints, endpoint)
+
+	endpoints := []string{endpoint}
 
 	for _, node := range c.childNodes {
 		endpoint, err := node.ClientEndpoint(ctx)
 		if err != nil {
-			return endpoints, err
+			return nil, err
 		}
 		endpoints = append(endpoints, endpoint)
 	}
@@ -248,35 +245,32 @@ func (c *EtcdContainer) ClientEndpoints(ctx context.Context) ([]string, error) {
 // PeerEndpoint returns the peer endpoint for the etcd container, and an error if any.
 // For a cluster, it returns the peer endpoint of the first node.
 func (c *EtcdContainer) PeerEndpoint(ctx context.Context) (string, error) {
-	var errs []error
-
 	host, err := c.Host(ctx)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("host: %w", err))
+		return "", err
 	}
 
 	port, err := c.MappedPort(ctx, peerPort)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("mapped port: %w", err))
+		return "", err
 	}
 
-	return fmt.Sprintf("http://%s:%s", host, port.Port()), errors.Join(errs...)
+	return fmt.Sprintf("http://%s:%s", host, port.Port()), nil
 }
 
 // PeerEndpoints returns the peer endpoints for the etcd cluster.
 func (c *EtcdContainer) PeerEndpoints(ctx context.Context) ([]string, error) {
-	var endpoints []string
-
 	endpoint, err := c.PeerEndpoint(ctx)
 	if err != nil {
-		return endpoints, err
+		return nil, err
 	}
-	endpoints = append(endpoints, endpoint)
+
+	endpoints := []string{endpoint}
 
 	for _, node := range c.childNodes {
 		endpoint, err := node.PeerEndpoint(ctx)
 		if err != nil {
-			return endpoints, err
+			return nil, err
 		}
 		endpoints = append(endpoints, endpoint)
 	}
