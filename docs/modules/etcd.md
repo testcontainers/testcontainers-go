@@ -63,8 +63,9 @@ You can set the data directory for the etcd container by using the `WithDataDir`
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-You can set the number of nodes for the etcd cluster by using the `WithNodes` option, passing the node names for each of the nodes. The module starts a container for each node,
-having the first node a reference to the other nodes. E.g. `WithNodes('etcd-1', 'etcd-2)`.
+You can set the number of nodes for the etcd cluster by using the `WithNodes` option, passing the node names for each of the nodes. Single-node clusters are not allowed,
+for that reason the functional option receives three string arguments: the first node, the second node, and a variadic argument for the rest of the nodes.
+The module starts a container for each node, having the first node a reference to the other nodes. E.g. `WithNodes("etcd-1", "etcd-2")`, `WithNodes("etcd-1", "etcd-2", "etcd-3")` and so on.
 
 The module creates a Docker network for the etcd cluster, and the nodes are connected to this network, so that they can communicate with each other through the network.
 

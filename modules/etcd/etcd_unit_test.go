@@ -17,7 +17,7 @@ import (
 func TestRunCluster1Node(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", WithNodes("node1"))
+	ctr, err := Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -27,29 +27,56 @@ func TestRunCluster1Node(t *testing.T) {
 }
 
 func TestRunClusterMultipleNodes(t *testing.T) {
-	ctx := context.Background()
+	testCases := []struct {
+		name  string
+		node1 string
+		node2 string
+		nodes []string
+	}{
+		{
+			name:  "2-nodes",
+			node1: "etcd-1",
+			node2: "etcd-2",
+			nodes: []string{},
+		},
+		{
+			name:  "3-nodes",
+			node1: "etcd-1",
+			node2: "etcd-2",
+			nodes: []string{"etcd-3"},
+		},
+	}
 
-	ctr, err := Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", WithNodes("etcd-1", "etcd-2", "etcd-3"), WithClusterToken("My-cluster-t0k3n"))
-	testcontainers.CleanupContainer(t, ctr)
-	require.NoError(t, err)
+	const clusterToken string = "My-cluster-t0k3n"
 
-	require.Equal(t, "My-cluster-t0k3n", ctr.opts.clusterToken)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
 
-	// the topology has one parent node and two child nodes
-	require.Len(t, ctr.childNodes, 2)
+			ctr, err := Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", WithNodes(tc.node1, tc.node2, tc.nodes...), WithClusterToken(clusterToken))
+			testcontainers.CleanupContainer(t, ctr)
+			require.NoError(t, err)
 
-	for i, node := range ctr.childNodes {
-		require.Empty(t, node.childNodes) // child nodes has no children
+			require.Equal(t, clusterToken, ctr.opts.clusterToken)
 
-		c, r, err := node.Exec(ctx, []string{"etcdctl", "member", "list"}, tcexec.Multiplexed())
-		require.NoError(t, err)
+			// the topology has one parent node, one child node and optionally more child nodes
+			// depending on the number of nodes specified
+			require.Len(t, ctr.childNodes, 1+len(tc.nodes))
 
-		output, err := io.ReadAll(r)
-		require.NoError(t, err)
-		require.Contains(t, string(output), fmt.Sprintf("etcd-%d", i+1))
+			for i, node := range ctr.childNodes {
+				require.Empty(t, node.childNodes) // child nodes has no children
 
-		require.Zero(t, c)
-		require.Equal(t, "My-cluster-t0k3n", node.opts.clusterToken)
+				c, r, err := node.Exec(ctx, []string{"etcdctl", "member", "list"}, tcexec.Multiplexed())
+				require.NoError(t, err)
+
+				output, err := io.ReadAll(r)
+				require.NoError(t, err)
+				require.Contains(t, string(output), fmt.Sprintf("etcd-%d", i+1))
+
+				require.Zero(t, c)
+				require.Equal(t, clusterToken, node.opts.clusterToken)
+			}
+		})
 	}
 }
 

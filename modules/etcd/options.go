@@ -69,9 +69,9 @@ func WithDataDir() Option {
 
 // WithNodes is an option to set the nodes of the etcd cluster.
 // If only one node is specified, the cluster will be a single-node cluster.
-func WithNodes(nodes ...string) Option {
+func WithNodes(node1 string, node2 string, nodes ...string) Option {
 	return func(o *options) {
-		o.nodeNames = nodes
+		o.nodeNames = append([]string{node1, node2}, nodes...)
 	}
 }
 
