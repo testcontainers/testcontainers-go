@@ -2,6 +2,8 @@ package dynamodb_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/url"
 	"testing"
 
@@ -217,8 +219,12 @@ func getDynamoDBClient(t *testing.T, c *tcdynamodb.DynamoDBContainer) *dynamodb.
 	t.Helper()
 
 	// createClient {
+	var errs []error
+
 	hostPort, err := c.ConnectionString(context.Background())
-	require.NoError(t, err)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("get connection string: %w", err))
+	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
 		Value: aws.Credentials{
@@ -226,7 +232,11 @@ func getDynamoDBClient(t *testing.T, c *tcdynamodb.DynamoDBContainer) *dynamodb.
 			SecretAccessKey: "DUMMYEXAMPLEKEY",
 		},
 	}))
-	require.NoError(t, err)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("load default config: %w", err))
+	}
+
+	require.NoError(t, errors.Join(errs...))
 
 	return dynamodb.NewFromConfig(cfg, dynamodb.WithEndpointResolverV2(&dynamoDBResolver{HostPort: hostPort}))
 	// }
