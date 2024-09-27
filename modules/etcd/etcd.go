@@ -87,18 +87,23 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// configure CMD with the nodes
 	genericContainerReq.Cmd = configureCMD(settings)
 
+	// Initialise the etcd container with the current settings.
+	// The cluster network, if needed, is already part of the settings,
+	// so the following error handling returns a partially initialised container,
+	// allowing the caller to clean up the resources with the Terminate method.
+	c := &EtcdContainer{opts: settings}
+
 	if settings.clusterNetwork != nil {
 		// apply the network to the current node
 		err := tcnetwork.WithNetwork([]string{settings.nodeNames[settings.currentNode]}, settings.clusterNetwork)(&genericContainerReq)
 		if err != nil {
-			return nil, fmt.Errorf("with network: %w", err)
+			return c, fmt.Errorf("with network: %w", err)
 		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	var c *EtcdContainer
 	if container != nil {
-		c = &EtcdContainer{Container: container}
+		c.Container = container
 	}
 
 	if err != nil {

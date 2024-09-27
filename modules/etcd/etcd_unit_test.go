@@ -12,6 +12,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 )
 
 func TestRunCluster1Node(t *testing.T) {
@@ -51,6 +52,26 @@ func TestTerminate(t *testing.T) {
 		_, err := cli.ContainerInspect(context.Background(), child.GetContainerID())
 		require.True(t, errdefs.IsNotFound(err))
 	}
+
+	_, err = cli.NetworkInspect(context.Background(), ctr.opts.clusterNetwork.ID, network.InspectOptions{})
+	require.True(t, errdefs.IsNotFound(err))
+}
+
+func TestTerminate_partiallyInitialised(t *testing.T) {
+	newNetwork, err := tcnetwork.New(context.Background())
+	require.NoError(t, err)
+
+	ctr := &EtcdContainer{
+		opts: options{
+			clusterNetwork: newNetwork,
+		},
+	}
+
+	require.NoError(t, ctr.Terminate(context.Background()))
+
+	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	require.NoError(t, err)
+	defer cli.Close()
 
 	_, err = cli.NetworkInspect(context.Background(), ctr.opts.clusterNetwork.ID, network.InspectOptions{})
 	require.True(t, errdefs.IsNotFound(err))
