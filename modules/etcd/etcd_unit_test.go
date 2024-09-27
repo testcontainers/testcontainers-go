@@ -48,7 +48,7 @@ func TestRunClusterMultipleNodes(t *testing.T) {
 		require.NoError(t, err)
 		require.Contains(t, string(output), fmt.Sprintf("etcd-%d", i+1))
 
-		require.Equal(t, 0, c)
+		require.Zero(t, c)
 		require.Equal(t, "My-cluster-t0k3n", node.opts.clusterToken)
 	}
 }
