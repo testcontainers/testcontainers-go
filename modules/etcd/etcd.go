@@ -21,9 +21,35 @@ const (
 // For the cluster, the first node creates the cluster and the other nodes join it as child nodes.
 type EtcdContainer struct {
 	testcontainers.Container
-	ClusterToken string
 	// childNodes contains the child nodes of the current node, forming a cluster
 	childNodes []*EtcdContainer
+	opts       options
+}
+
+// Terminate terminates the etcd container, its child nodes, and the network in which the cluster is running
+// to communicate between the nodes.
+func (c *EtcdContainer) Terminate(ctx context.Context) error {
+	// child nodes has no other children
+	for i, child := range c.childNodes {
+		if err := child.Terminate(ctx); err != nil {
+			return fmt.Errorf("terminate child node(%d): %w", i, err)
+		}
+	}
+
+	if err := c.Container.Terminate(ctx); err != nil {
+		return fmt.Errorf("terminate cluster node: %w", err)
+	}
+
+	// remove the cluster network if it was created, but only for the first node
+	// we could check if the current node is the first one (index 0),
+	// and/or check that there are no child nodes
+	if c.opts.clusterNetwork != nil && c.opts.currentNode == 0 {
+		if err := c.opts.clusterNetwork.Remove(ctx); err != nil {
+			return fmt.Errorf("remove cluster network: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // Run creates an instance of the etcd container type
@@ -78,17 +104,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if settings.currentNode == 0 {
 		for i := 1; i < len(settings.nodeNames); i++ {
 			// move to the next node
-			clusterNode, err := Run(ctx, req.Image, append(clusterOpts, withCurrentNode(i))...)
+			childNode, err := Run(ctx, req.Image, append(clusterOpts, withCurrentNode(i))...)
 			if err != nil {
 				// return the parent cluster node and the error, so the caller can clean up.
 				return c, fmt.Errorf("run cluster node: %w", err)
 			}
 
-			c.childNodes = append(c.childNodes, clusterNode)
+			c.childNodes = append(c.childNodes, childNode)
 		}
 	}
 
-	c.ClusterToken = settings.clusterToken
+	c.opts = settings
 
 	return c, nil
 }
