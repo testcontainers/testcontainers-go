@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	image         = "amazon/dynamodb-local:2.2.1"
 	port          = "8000/tcp"
 	containerName = "tc_dynamodb_local"
 )
