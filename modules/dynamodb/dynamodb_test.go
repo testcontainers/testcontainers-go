@@ -175,7 +175,11 @@ func createTable(client *dynamodb.Client) error {
 		BillingMode: types.BillingModePayPerRequest,
 	})
 
-	return err
+	if err != nil {
+		return fmt.Errorf("create table: %w", err)
+	}
+
+	return nil
 }
 
 func addDataToTable(t *testing.T, client *dynamodb.Client, val string) {
