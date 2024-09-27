@@ -2,7 +2,6 @@ package dynamodb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -56,20 +55,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // ConnectionString returns DynamoDB local endpoint host and port in <host>:<port> format
 func (c *DynamoDBContainer) ConnectionString(ctx context.Context) (string, error) {
-	var errs []error
-
 	mappedPort, err := c.MappedPort(ctx, port)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("mapped port: %w", err))
+		return "", err
 	}
 
 	hostIP, err := c.Host(ctx)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("host: %w", err))
+		return "", err
 	}
 
 	uri := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
-	return uri, errors.Join(errs...)
+	return uri, nil
 }
 
 // WithSharedDB allows container reuse between successive runs. Data will be persisted
