@@ -42,7 +42,8 @@ func TestRun(t *testing.T) {
 	value := "test_value"
 	addDataToTable(t, cli, value)
 
-	queryResult := queryItem(t, cli, value)
+	queryResult, err := queryItem(cli, value)
+	require.NoError(t, err)
 	require.Equal(t, value, queryResult)
 }
 
@@ -70,7 +71,8 @@ func TestRun_withoutEndpointResolver(t *testing.T) {
 
 	cli := dynamodb.New(dynamodb.Options{})
 
-	createTable(t, cli)
+	err = createTable(cli)
+	require.Error(t, err)
 }
 
 func TestRun_withSharedDB(t *testing.T) {
@@ -106,7 +108,8 @@ func TestRun_withSharedDB(t *testing.T) {
 	addDataToTable(t, cli2, value)
 
 	// read data from the first container
-	queryResult := queryItem(t, cli1, value)
+	queryResult, err := queryItem(cli1, value)
+	require.NoError(t, err)
 	require.Equal(t, value, queryResult)
 }
 
@@ -154,9 +157,7 @@ func TestRun_shouldStartWithSharedDBEnabledAndTelemetryDisabled(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func createTable(t *testing.T, client *dynamodb.Client) {
-	t.Helper()
-
+func createTable(client *dynamodb.Client) error {
 	_, err := client.CreateTable(context.Background(), &dynamodb.CreateTableInput{
 		TableName: aws.String(tableName),
 		KeySchema: []types.KeySchemaElement{
@@ -173,7 +174,8 @@ func createTable(t *testing.T, client *dynamodb.Client) {
 		},
 		BillingMode: types.BillingModePayPerRequest,
 	})
-	require.NoError(t, err)
+
+	return err
 }
 
 func addDataToTable(t *testing.T, client *dynamodb.Client, val string) {
@@ -188,20 +190,20 @@ func addDataToTable(t *testing.T, client *dynamodb.Client, val string) {
 	require.NoError(t, err)
 }
 
-func queryItem(t *testing.T, client *dynamodb.Client, val string) string {
-	t.Helper()
-
+func queryItem(client *dynamodb.Client, val string) (string, error) {
 	output, err := client.GetItem(context.Background(), &dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
 		Key: map[string]types.AttributeValue{
 			pkColumnName: &types.AttributeValueMemberS{Value: val},
 		},
 	})
-	require.NoError(t, err)
+	if err != nil {
+		return "", fmt.Errorf("get item: %w", err)
+	}
 
 	result := output.Item[pkColumnName].(*types.AttributeValueMemberS)
 
-	return result.Value
+	return result.Value, nil
 }
 
 type dynamoDBResolver struct {
@@ -245,7 +247,8 @@ func getDynamoDBClient(t *testing.T, c *tcdynamodb.DynamoDBContainer) *dynamodb.
 func requireTableExists(t *testing.T, cli *dynamodb.Client, tableName string) {
 	t.Helper()
 
-	createTable(t, cli)
+	err := createTable(cli)
+	require.NoError(t, err)
 
 	result, err := cli.ListTables(context.Background(), nil)
 	require.NoError(t, err, "dynamodb list tables operation failed")
