@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConfigureCMD(t *testing.T) {
+func Test_configureCMD(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		got := configureCMD(options{})
 		want := []string{"etcd", "--name=default"}
