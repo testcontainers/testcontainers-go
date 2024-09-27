@@ -93,6 +93,9 @@ func TestTerminate(t *testing.T) {
 	require.NoError(t, err)
 	defer cli.Close()
 
+	_, err = cli.ContainerInspect(context.Background(), ctr.GetContainerID())
+	require.True(t, errdefs.IsNotFound(err))
+
 	for _, child := range ctr.childNodes {
 		_, err := cli.ContainerInspect(context.Background(), child.GetContainerID())
 		require.True(t, errdefs.IsNotFound(err))
