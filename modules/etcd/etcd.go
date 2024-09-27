@@ -133,7 +133,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // avoiding duplicate application of options to be passed to the successive nodes.
 func configureCluster(ctx context.Context, settings *options, opts []testcontainers.ContainerCustomizer) ([]testcontainers.ContainerCustomizer, error) {
 	var clusterOpts []testcontainers.ContainerCustomizer
-	if len(settings.nodeNames) <= 1 {
+	if len(settings.nodeNames) == 0 {
 		return clusterOpts, nil
 	}
 
