@@ -2,6 +2,7 @@ package etcd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -29,15 +30,17 @@ type EtcdContainer struct {
 // Terminate terminates the etcd container, its child nodes, and the network in which the cluster is running
 // to communicate between the nodes.
 func (c *EtcdContainer) Terminate(ctx context.Context) error {
+	var errs []error
+
 	// child nodes has no other children
 	for i, child := range c.childNodes {
 		if err := child.Terminate(ctx); err != nil {
-			return fmt.Errorf("terminate child node(%d): %w", i, err)
+			errs = append(errs, fmt.Errorf("terminate child node(%d): %w", i, err))
 		}
 	}
 
 	if err := c.Container.Terminate(ctx); err != nil {
-		return fmt.Errorf("terminate cluster node: %w", err)
+		errs = append(errs, fmt.Errorf("terminate cluster node: %w", err))
 	}
 
 	// remove the cluster network if it was created, but only for the first node
@@ -45,11 +48,11 @@ func (c *EtcdContainer) Terminate(ctx context.Context) error {
 	// and/or check that there are no child nodes
 	if c.opts.clusterNetwork != nil && c.opts.currentNode == 0 {
 		if err := c.opts.clusterNetwork.Remove(ctx); err != nil {
-			return fmt.Errorf("remove cluster network: %w", err)
+			errs = append(errs, fmt.Errorf("remove cluster network: %w", err))
 		}
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
 
 // Run creates an instance of the etcd container type
