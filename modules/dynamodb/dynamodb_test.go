@@ -2,6 +2,7 @@ package dynamodb_test
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"testing"
 
@@ -176,7 +177,7 @@ func createTable(client *dynamodb.Client) error {
 		BillingMode: types.BillingModePayPerRequest,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("create table %q: %w", tableName, err)
 	}
 
 	return nil
@@ -190,7 +191,7 @@ func addDataToTable(client *dynamodb.Client, val string) error {
 		},
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("put item %q: %w", val, err)
 	}
 
 	return nil
