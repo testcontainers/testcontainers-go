@@ -39,8 +39,10 @@ func (c *EtcdContainer) Terminate(ctx context.Context) error {
 		}
 	}
 
-	if err := c.Container.Terminate(ctx); err != nil {
-		errs = append(errs, fmt.Errorf("terminate cluster node: %w", err))
+	if c.Container != nil {
+		if err := c.Container.Terminate(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("terminate cluster node: %w", err))
+		}
 	}
 
 	// remove the cluster network if it was created, but only for the first node
