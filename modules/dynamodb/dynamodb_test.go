@@ -42,8 +42,7 @@ func TestRun(t *testing.T) {
 	value := "test_value"
 	addDataToTable(t, cli, value)
 
-	queryResult, err := queryItem(cli, value)
-	require.NoError(t, err)
+	queryResult := queryItem(t, cli, value)
 	require.Equal(t, value, queryResult)
 }
 
@@ -108,7 +107,7 @@ func TestRun_withSharedDB(t *testing.T) {
 	addDataToTable(t, cli2, value)
 
 	// read data from the first container
-	queryResult, err := queryItem(cli1, value)
+	queryResult := queryItem(t, cli1, value)
 	require.NoError(t, err)
 	require.Equal(t, value, queryResult)
 }
@@ -174,7 +173,6 @@ func createTable(client *dynamodb.Client) error {
 		},
 		BillingMode: types.BillingModePayPerRequest,
 	})
-
 	if err != nil {
 		return fmt.Errorf("create table: %w", err)
 	}
@@ -194,20 +192,20 @@ func addDataToTable(t *testing.T, client *dynamodb.Client, val string) {
 	require.NoError(t, err)
 }
 
-func queryItem(client *dynamodb.Client, val string) (string, error) {
+func queryItem(t *testing.T, client *dynamodb.Client, val string) string {
+	t.Helper()
+
 	output, err := client.GetItem(context.Background(), &dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
 		Key: map[string]types.AttributeValue{
 			pkColumnName: &types.AttributeValueMemberS{Value: val},
 		},
 	})
-	if err != nil {
-		return "", fmt.Errorf("get item: %w", err)
-	}
+	require.NoError(t, err)
 
 	result := output.Item[pkColumnName].(*types.AttributeValueMemberS)
 
-	return result.Value, nil
+	return result.Value
 }
 
 type dynamoDBResolver struct {
