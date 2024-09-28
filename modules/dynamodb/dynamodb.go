@@ -64,8 +64,7 @@ func (c *DynamoDBContainer) ConnectionString(ctx context.Context) (string, error
 		return "", err
 	}
 
-	uri := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
-	return uri, nil
+	return hostIP+":"+mappedPort.Port(), nil
 }
 
 // WithSharedDB allows container reuse between successive runs. Data will be persisted
