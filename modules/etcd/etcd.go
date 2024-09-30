@@ -124,8 +124,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	c.opts = settings
-
 	return c, nil
 }
 
