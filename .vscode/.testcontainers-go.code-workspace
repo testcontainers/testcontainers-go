@@ -66,6 +66,10 @@
             "path": "../modules/elasticsearch"
         },
         {
+            "name": "module / etcd",
+            "path": "../modules/etcd"
+        },
+        {
             "name": "module / gcloud",
             "path": "../modules/gcloud"
         },
