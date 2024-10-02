@@ -16,81 +16,10 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/require"
 
-	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const exampleAuth = "https://example-auth.com"
-
-func Test_getDockerConfig(t *testing.T) {
-	expectedConfig := &dockercfg.Config{
-		AuthConfigs: map[string]dockercfg.AuthConfig{
-			core.IndexDockerIO:            {},
-			"https://example.com":         {},
-			"https://my.private.registry": {},
-		},
-		CredentialsStore: "desktop",
-	}
-	t.Run("HOME/valid", func(t *testing.T) {
-		testDockerConfigHome(t, "testdata")
-
-		cfg, err := getDockerConfig()
-		require.NoError(t, err)
-		require.Equal(t, expectedConfig, cfg)
-	})
-
-	t.Run("HOME/not-found", func(t *testing.T) {
-		testDockerConfigHome(t, "testdata", "not-found")
-
-		cfg, err := getDockerConfig()
-		require.ErrorIs(t, err, os.ErrNotExist)
-		require.Nil(t, cfg)
-	})
-
-	t.Run("HOME/invalid-config", func(t *testing.T) {
-		testDockerConfigHome(t, "testdata", "invalid-config")
-
-		cfg, err := getDockerConfig()
-		require.ErrorContains(t, err, "json: cannot unmarshal array")
-		require.Nil(t, cfg)
-	})
-
-	t.Run("DOCKER_AUTH_CONFIG/valid", func(t *testing.T) {
-		testDockerConfigHome(t, "testdata", "not-found")
-		t.Setenv("DOCKER_AUTH_CONFIG", dockerConfig)
-
-		cfg, err := getDockerConfig()
-		require.NoError(t, err)
-		require.Equal(t, expectedConfig, cfg)
-	})
-
-	t.Run("DOCKER_AUTH_CONFIG/invalid-config", func(t *testing.T) {
-		testDockerConfigHome(t, "testdata", "not-found")
-		t.Setenv("DOCKER_AUTH_CONFIG", `{"auths": []}`)
-
-		cfg, err := getDockerConfig()
-		require.ErrorContains(t, err, "json: cannot unmarshal array")
-		require.Nil(t, cfg)
-	})
-
-	t.Run("DOCKER_CONFIG/valid", func(t *testing.T) {
-		testDockerConfigHome(t, "testdata", "not-found")
-		t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", ".docker"))
-
-		cfg, err := getDockerConfig()
-		require.NoError(t, err)
-		require.Equal(t, expectedConfig, cfg)
-	})
-
-	t.Run("DOCKER_CONFIG/invalid-config", func(t *testing.T) {
-		testDockerConfigHome(t, "testdata", "not-found")
-		t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", "invalid-config", ".docker"))
-
-		cfg, err := getDockerConfig()
-		require.ErrorContains(t, err, "json: cannot unmarshal array")
-		require.Nil(t, cfg)
-	})
-}
 
 func TestDockerImageAuth(t *testing.T) {
 	t.Run("retrieve auth with DOCKER_AUTH_CONFIG env var", func(t *testing.T) {
@@ -420,15 +349,6 @@ func Test_getDockerAuthConfigs(t *testing.T) {
 		t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", ".docker"))
 
 		requireValidAuthConfig(t)
-	})
-
-	t.Run("DOCKER_CONFIG/invalid-config", func(t *testing.T) {
-		testDockerConfigHome(t, "testdata", "not-found")
-		t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", "invalid-config", ".docker"))
-
-		cfg, err := getDockerConfig()
-		require.ErrorContains(t, err, "json: cannot unmarshal array")
-		require.Nil(t, cfg)
 	})
 }
 

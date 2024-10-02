@@ -150,7 +150,7 @@ func configKey(cfg *dockercfg.Config) (string, error) {
 // getDockerAuthConfigs returns a map with the auth configs from the docker config file
 // using the registry as the key
 func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
-	cfg, err := getDockerConfig()
+	cfg, err := core.ReadDockerConfig()
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return map[string]registry.AuthConfig{}, nil
@@ -245,26 +245,4 @@ func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 	}
 
 	return cfgs, nil
-}
-
-// getDockerConfig returns the docker config file. It will internally check, in this particular order:
-// 1. the DOCKER_AUTH_CONFIG environment variable, unmarshalling it into a dockercfg.Config
-// 2. the DOCKER_CONFIG environment variable, as the path to the config file
-// 3. else it will load the default config file, which is ~/.docker/config.json
-func getDockerConfig() (*dockercfg.Config, error) {
-	if env := os.Getenv("DOCKER_AUTH_CONFIG"); env != "" {
-		var cfg dockercfg.Config
-		if err := json.Unmarshal([]byte(env), &cfg); err != nil {
-			return nil, fmt.Errorf("unmarshal DOCKER_AUTH_CONFIG: %w", err)
-		}
-
-		return &cfg, nil
-	}
-
-	cfg, err := dockercfg.LoadDefaultConfig()
-	if err != nil {
-		return nil, fmt.Errorf("load default config: %w", err)
-	}
-
-	return &cfg, nil
 }
