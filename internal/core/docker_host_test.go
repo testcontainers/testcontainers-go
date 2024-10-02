@@ -154,6 +154,21 @@ func TestExtractDockerHost(t *testing.T) {
 		require.Equal(t, DockerSocketSchema+"/this/is/a/sample.sock", host)
 	})
 
+	t.Run("Docker Host from Docker context", func(tt *testing.T) {
+		// do not mess with local .testcontainers.properties
+		tmpDir := tt.TempDir()
+		tt.Setenv("HOME", tmpDir)
+		tt.Setenv("USERPROFILE", tmpDir) // Windows support
+		setupDockerSocketNotFound(tt)
+		setupRootlessNotFound(tt)
+		setupTestcontainersProperties(tt, "")
+		setupDockerContexts(tt, 2, 3) // current context is context2
+
+		host, err := extractDockerHost(context.Background())
+		require.NoError(t, err)
+		require.Equal(t, "tcp://127.0.0.1:2", host) // from context2
+	})
+
 	t.Run("Default Docker socket", func(t *testing.T) {
 		setupRootlessNotFound(t)
 		tmpSocket := setupDockerSocket(t)
@@ -298,6 +313,20 @@ func TestExtractDockerHost(t *testing.T) {
 			socket, err := dockerSocketPath(context.Background())
 			require.ErrorIs(t, err, ErrSocketNotFoundInPath)
 			assert.Empty(t, socket)
+		})
+
+		t.Run("extract-from-docker-context/not-found", func(tt *testing.T) {
+			host, err := dockerHostFromDockerContext(context.Background())
+			require.ErrorIs(tt, err, ErrDockerSocketNotSetInDockerContext)
+			assert.Empty(tt, host)
+		})
+
+		t.Run("extract-from-docker-context/found", func(tt *testing.T) {
+			setupDockerContexts(tt, 2, 3) // current context is context2
+
+			host, err := dockerHostFromDockerContext(context.Background())
+			require.NoError(tt, err)
+			assert.Equal(tt, "tcp://127.0.0.1:2", host)
 		})
 	})
 }

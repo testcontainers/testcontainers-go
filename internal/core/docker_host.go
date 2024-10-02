@@ -19,13 +19,14 @@ type dockerHostContext string
 var DockerHostContextKey = dockerHostContext("docker_host")
 
 var (
-	ErrDockerHostNotSet               = errors.New("DOCKER_HOST is not set")
-	ErrDockerSocketOverrideNotSet     = errors.New("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set")
-	ErrDockerSocketNotSetInContext    = errors.New("socket not set in context")
-	ErrDockerSocketNotSetInProperties = errors.New("socket not set in ~/.testcontainers.properties")
-	ErrNoUnixSchema                   = errors.New("URL schema is not unix")
-	ErrSocketNotFound                 = errors.New("socket not found")
-	ErrSocketNotFoundInPath           = errors.New("docker socket not found in " + DockerSocketPath)
+	ErrDockerHostNotSet                  = errors.New("DOCKER_HOST is not set")
+	ErrDockerSocketOverrideNotSet        = errors.New("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set")
+	ErrDockerSocketNotSetInContext       = errors.New("socket not set in Go context")
+	ErrDockerSocketNotSetInDockerContext = errors.New("socket not set in Docker context")
+	ErrDockerSocketNotSetInProperties    = errors.New("socket not set in ~/.testcontainers.properties")
+	ErrNoUnixSchema                      = errors.New("URL schema is not unix")
+	ErrSocketNotFound                    = errors.New("socket not found")
+	ErrSocketNotFoundInPath              = errors.New("docker socket not found in " + DockerSocketPath)
 	// ErrTestcontainersHostNotSetInProperties this error is specific to Testcontainers
 	ErrTestcontainersHostNotSetInProperties = errors.New("tc.host not set in ~/.testcontainers.properties")
 )
@@ -125,6 +126,7 @@ func extractDockerHost(ctx context.Context) (string, error) {
 		testcontainersHostFromProperties,
 		dockerHostFromEnv,
 		dockerHostFromContext,
+		dockerHostFromDockerContext,
 		dockerSocketPath,
 		dockerHostFromProperties,
 		rootlessDockerSocketPath,
@@ -260,6 +262,16 @@ func dockerHostFromContext(ctx context.Context) (string, error) {
 	}
 
 	return "", ErrDockerSocketNotSetInContext
+}
+
+// dockerHostFromContext returns the docker host from the Go context, if it's not empty
+func dockerHostFromDockerContext(ctx context.Context) (string, error) {
+	dockerHost, err := GetDockerHostFromCurrentContext()
+	if err == nil {
+		return dockerHost, nil
+	}
+
+	return "", ErrDockerSocketNotSetInDockerContext
 }
 
 // dockerHostFromProperties returns the docker host from the ~/.testcontainers.properties file, if it's not empty
