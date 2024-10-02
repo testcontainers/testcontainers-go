@@ -192,7 +192,6 @@ func parseDockerSocket(socket string) string {
 // This internal method is handy for testing purposes, passing a mock type simulating the desired behaviour.
 // It panics if the Docker Info call errors, or the Docker host is not discovered.
 func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) string {
-
 	tcHost, err := testcontainersHostFromProperties(ctx)
 	if err == nil {
 		return parseDockerSocket(tcHost)
