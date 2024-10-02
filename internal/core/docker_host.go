@@ -171,33 +171,35 @@ func extractDockerSocket(ctx context.Context) string {
 	return extractDockerSocketFromClient(ctx, cli)
 }
 
+// parseDockerSocket satinitises the docker socket path, removing the TCP schema if present,
+// or the unix schema if present, returning the path without the schema.
+func parseDockerSocket(socket string) string {
+	// this use case will cover the case when the docker host is a tcp socket
+	if strings.HasPrefix(socket, TCPSchema) {
+		return DockerSocketPath
+	}
+
+	if strings.HasPrefix(socket, DockerSocketSchema) {
+		return strings.Replace(socket, DockerSocketSchema, "", 1)
+	}
+
+	return socket
+}
+
 // extractDockerSocketFromClient Extracts the docker socket from the different alternatives, without caching the result,
 // and receiving an instance of the Docker API client interface.
 // This internal method is handy for testing purposes, passing a mock type simulating the desired behaviour.
 // It panics if the Docker Info call errors, or the Docker host is not discovered.
 func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) string {
-	// check that the socket is not a tcp or unix socket
-	checkDockerSocketFn := func(socket string) string {
-		// this use case will cover the case when the docker host is a tcp socket
-		if strings.HasPrefix(socket, TCPSchema) {
-			return DockerSocketPath
-		}
-
-		if strings.HasPrefix(socket, DockerSocketSchema) {
-			return strings.Replace(socket, DockerSocketSchema, "", 1)
-		}
-
-		return socket
-	}
 
 	tcHost, err := testcontainersHostFromProperties(ctx)
 	if err == nil {
-		return checkDockerSocketFn(tcHost)
+		return parseDockerSocket(tcHost)
 	}
 
 	testcontainersDockerSocket, err := dockerSocketOverridePath()
 	if err == nil {
-		return checkDockerSocketFn(testcontainersDockerSocket)
+		return parseDockerSocket(testcontainersDockerSocket)
 	}
 
 	info, err := cli.Info(ctx)
@@ -219,7 +221,7 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 		panic(err) // Docker host is required to get the Docker socket
 	}
 
-	return checkDockerSocketFn(dockerHost)
+	return parseDockerSocket(dockerHost)
 }
 
 // isHostNotSet returns true if the error is related to the Docker host
