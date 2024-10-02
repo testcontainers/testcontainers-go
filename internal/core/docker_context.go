@@ -14,7 +14,6 @@ import (
 	"reflect"
 	"runtime"
 
-	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
 )
@@ -307,7 +306,7 @@ func GetDockerHostFromCurrentContext() (string, error) {
 // validate if the given context exists or if it's valid; errors may
 // occur when trying to use it.
 func currentContext() string {
-	cfg, err := dockercfg.LoadDefaultConfig()
+	cfg, err := ReadDockerConfig()
 	if err != nil {
 		return defaultContextName
 	}
