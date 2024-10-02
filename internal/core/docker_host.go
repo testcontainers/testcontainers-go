@@ -80,11 +80,12 @@ var dockerHostCheck = func(ctx context.Context, host string) error {
 //
 //  1. Docker host from the "tc.host" property in the ~/.testcontainers.properties file.
 //  2. DOCKER_HOST environment variable.
-//  3. Docker host from context.
-//  4. Docker host from the default docker socket path, without the unix schema.
-//  5. Docker host from the "docker.host" property in the ~/.testcontainers.properties file.
-//  6. Rootless docker socket path.
-//  7. Else, because the Docker host is not set, it panics.
+//  3. Docker host from Go context.
+//  4. Docker host from the current Docker context, without the unix schema.
+//  5. Docker host from the default docker socket path, without the unix schema.
+//  6. Docker host from the "docker.host" property in the ~/.testcontainers.properties file.
+//  7. Rootless docker socket path.
+//  8. Else, because the Docker host is not set, it panics.
 func MustExtractDockerHost(ctx context.Context) string {
 	dockerHostOnce.Do(func() {
 		cache, err := extractDockerHost(ctx)
