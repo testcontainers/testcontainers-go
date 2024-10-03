@@ -51,9 +51,9 @@ func TestReadMkDocsConfig(t *testing.T) {
 	// nav bar
 	nav := config.Nav
 	assert.Equal(t, "index.md", nav[0].Home)
-	assert.NotEmpty(t, nav[2].Features)
-	assert.NotEmpty(t, nav[3].Modules)
-	assert.NotEmpty(t, nav[4].Examples)
+	require.NotEmpty(t, nav[2].Features)
+	require.NotEmpty(t, nav[3].Modules)
+	require.NotEmpty(t, nav[4].Examples)
 }
 
 func TestNavItems(t *testing.T) {
