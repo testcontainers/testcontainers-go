@@ -29,8 +29,7 @@ const (
 	// envOverrideConfigDir is the name of the environment variable that can be
 	// used to override the location of the client configuration files (~/.docker).
 	//
-	// It takes priority over the default, but can be overridden by the "--config"
-	// command line option.
+	// It takes priority over the default.
 	envOverrideConfigDir = "DOCKER_CONFIG"
 	// configFileName is the name of the client configuration file inside the
 	// config-directory.
