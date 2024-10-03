@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -197,15 +198,14 @@ func reuseOrCreateReaper(ctx context.Context, sessionID string, provider ReaperP
 // reuseReaperContainer constructs a Reaper from an already running reaper
 // DockerContainer.
 func reuseReaperContainer(ctx context.Context, sessionID string, provider ReaperProvider, reaperContainer *DockerContainer) (*Reaper, error) {
-	endpoint, err := reaperContainer.PortEndpoint(ctx, "8080", "")
+	endpoint, err := reaperEndpoint(ctx, reaperContainer)
 	if err != nil {
 		return nil, err
 	}
 
 	Logger.Printf("⏳ Waiting for Reaper port to be ready")
 
-	err = wait.ForLog("Started").WaitUntilReady(ctx, reaperContainer)
-	if err != nil {
+	if err := wait.ForLog("Started!").WaitUntilReady(ctx, reaperContainer); err != nil {
 		return nil, fmt.Errorf("failed waiting for reaper container %s to be ready: %w",
 			reaperContainer.ID[:8], err)
 	}
@@ -216,6 +216,14 @@ func reuseReaperContainer(ctx context.Context, sessionID string, provider Reaper
 		Endpoint:  endpoint,
 		container: reaperContainer,
 	}, nil
+}
+
+func reaperEndpoint(ctx context.Context, c Container) (string, error) {
+	if _, exists := os.LookupEnv("TESTCONTAINERS_RYUK_ENDPOINT_OVERRIDE_BY_NAME"); exists {
+		return net.JoinHostPort(reaperContainerNameFromSessionID(c.SessionID()), "8080"), nil
+	}
+
+	return c.PortEndpoint(ctx, "8080", "")
 }
 
 // newReaper creates a Reaper with a sessionID to identify containers and a
@@ -237,7 +245,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 		ExposedPorts: []string{string(listeningPort)},
 		Labels:       core.DefaultLabels(sessionID),
 		Privileged:   tcConfig.RyukPrivileged,
-		WaitingFor:   wait.ForLog("Started"),
+		WaitingFor:   wait.ForLog("Started!"),
 		Name:         reaperContainerNameFromSessionID(sessionID),
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.AutoRemove = true
@@ -313,7 +321,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 	}
 	reaper.container = c
 
-	endpoint, err := c.PortEndpoint(ctx, "8080", "")
+	endpoint, err := reaperEndpoint(ctx, c)
 	if err != nil {
 		return nil, err
 	}
@@ -332,6 +340,7 @@ type Reaper struct {
 
 // Connect runs a goroutine which can be terminated by sending true into the returned channel
 func (r *Reaper) Connect() (chan bool, error) {
+	time.Sleep(2 * time.Second)
 	conn, err := net.DialTimeout("tcp", r.Endpoint, 10*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("%w: Connecting to Ryuk on %s failed", err, r.Endpoint)
