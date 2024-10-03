@@ -25,7 +25,7 @@ func TestReadDockerConfig(t *testing.T) {
 	t.Run("HOME/valid", func(t *testing.T) {
 		testDockerConfigHome(t, "testdata")
 
-		cfg, err := ReadDockerConfig()
+		cfg, err := DockerConfig()
 		require.NoError(t, err)
 		require.Equal(t, expectedConfig, cfg)
 	})
@@ -33,7 +33,7 @@ func TestReadDockerConfig(t *testing.T) {
 	t.Run("HOME/not-found", func(t *testing.T) {
 		testDockerConfigHome(t, "testdata", "not-found")
 
-		cfg, err := ReadDockerConfig()
+		cfg, err := DockerConfig()
 		require.ErrorIs(t, err, os.ErrNotExist)
 		require.Nil(t, cfg)
 	})
@@ -41,7 +41,7 @@ func TestReadDockerConfig(t *testing.T) {
 	t.Run("HOME/invalid-config", func(t *testing.T) {
 		testDockerConfigHome(t, "testdata", "invalid-config")
 
-		cfg, err := ReadDockerConfig()
+		cfg, err := DockerConfig()
 		require.ErrorContains(t, err, "json: cannot unmarshal array")
 		require.Nil(t, cfg)
 	})
@@ -50,7 +50,7 @@ func TestReadDockerConfig(t *testing.T) {
 		testDockerConfigHome(t, "testdata", "not-found")
 		t.Setenv("DOCKER_AUTH_CONFIG", dockerConfig)
 
-		cfg, err := ReadDockerConfig()
+		cfg, err := DockerConfig()
 		require.NoError(t, err)
 		require.Equal(t, expectedConfig, cfg)
 	})
@@ -59,7 +59,7 @@ func TestReadDockerConfig(t *testing.T) {
 		testDockerConfigHome(t, "testdata", "not-found")
 		t.Setenv("DOCKER_AUTH_CONFIG", `{"auths": []}`)
 
-		cfg, err := ReadDockerConfig()
+		cfg, err := DockerConfig()
 		require.ErrorContains(t, err, "json: cannot unmarshal array")
 		require.Nil(t, cfg)
 	})
@@ -68,7 +68,7 @@ func TestReadDockerConfig(t *testing.T) {
 		testDockerConfigHome(t, "testdata", "not-found")
 		t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", ".docker"))
 
-		cfg, err := ReadDockerConfig()
+		cfg, err := DockerConfig()
 		require.NoError(t, err)
 		require.Equal(t, expectedConfig, cfg)
 	})
@@ -77,7 +77,7 @@ func TestReadDockerConfig(t *testing.T) {
 		testDockerConfigHome(t, "testdata", "not-found")
 		t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", "invalid-config", ".docker"))
 
-		cfg, err := ReadDockerConfig()
+		cfg, err := DockerConfig()
 		require.ErrorContains(t, err, "json: cannot unmarshal array")
 		require.Nil(t, cfg)
 	})

@@ -78,7 +78,7 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 		// TODO: Remove this debugging.
 		if strings.Contains(err.Error(), "toomanyrequests") {
 			// Debugging information for rate limiting.
-			cfg, err := core.ReadDockerConfig()
+			cfg, err := core.DockerConfig()
 			if err == nil {
 				fmt.Printf("XXX: too many requests: %+v", cfg)
 			}

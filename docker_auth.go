@@ -150,7 +150,7 @@ func configKey(cfg *dockercfg.Config) (string, error) {
 // getDockerAuthConfigs returns a map with the auth configs from the docker config file
 // using the registry as the key
 func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
-	cfg, err := core.ReadDockerConfig()
+	cfg, err := core.DockerConfig()
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return map[string]registry.AuthConfig{}, nil

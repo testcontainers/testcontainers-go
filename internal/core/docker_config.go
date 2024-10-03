@@ -8,11 +8,11 @@ import (
 	"github.com/cpuguy83/dockercfg"
 )
 
-// ReadDockerConfig returns the docker config file. It will internally check, in this particular order:
+// DockerConfig returns the docker config file. It will internally check, in this particular order:
 // 1. the DOCKER_AUTH_CONFIG environment variable, unmarshalling it into a dockercfg.Config
 // 2. the DOCKER_CONFIG environment variable, as the path to the config file
 // 3. else it will load the default config file, which is ~/.docker/config.json
-func ReadDockerConfig() (*dockercfg.Config, error) {
+func DockerConfig() (*dockercfg.Config, error) {
 	if env := os.Getenv("DOCKER_AUTH_CONFIG"); env != "" {
 		var cfg dockercfg.Config
 		if err := json.Unmarshal([]byte(env), &cfg); err != nil {

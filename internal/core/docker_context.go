@@ -306,7 +306,7 @@ func GetDockerHostFromCurrentContext() (string, error) {
 // validate if the given context exists or if it's valid; errors may
 // occur when trying to use it.
 func currentContext() string {
-	cfg, err := ReadDockerConfig()
+	cfg, err := DockerConfig()
 	if err != nil {
 		return defaultContextName
 	}
