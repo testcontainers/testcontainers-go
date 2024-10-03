@@ -273,7 +273,7 @@ func dockerHostFromDockerContext(ctx context.Context) (string, error) {
 		return dockerHost, nil
 	}
 
-	return "", ErrDockerSocketNotSetInDockerContext
+	return "", errors.Join(ErrDockerSocketNotSetInDockerContext, err)
 }
 
 // dockerHostFromProperties returns the docker host from the ~/.testcontainers.properties file, if it's not empty
