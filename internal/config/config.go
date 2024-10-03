@@ -85,6 +85,11 @@ type Config struct {
 	//
 	// Environment variable: TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE
 	TestcontainersHost string `properties:"tc.host,default="`
+
+	// TestcontainersBridgeName is the name of the bridge network used by Testcontainers.
+	//
+	// Environment variable: TESTCONTAINERS_BRIDGE_NAME
+	TestcontainersBridgeName string `properties:"tc.bridge.name,default=bridge"`
 }
 
 // }
@@ -139,6 +144,11 @@ func read() Config {
 		ryukConnectionTimeoutEnv := os.Getenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT")
 		if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err == nil {
 			config.RyukConnectionTimeout = timeout
+		}
+
+		testcontainersBridgeName := os.Getenv("TESTCONTAINERS_BRIDGE_NAME")
+		if testcontainersBridgeName != "" {
+			config.TestcontainersBridgeName = testcontainersBridgeName
 		}
 
 		return config
