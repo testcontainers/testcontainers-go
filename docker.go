@@ -43,8 +43,7 @@ import (
 var _ Container = (*DockerContainer)(nil)
 
 const (
-	Bridge        = "bridge" // Bridge network name (as well as driver)
-	Podman        = "podman"
+	Bridge        = "bridge"         // Bridge network driver and name
 	ReaperDefault = "reaper_default" // Default network name when bridge is not available
 	packagePath   = "github.com/testcontainers/testcontainers-go"
 )

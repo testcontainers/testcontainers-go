@@ -220,7 +220,6 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	// }
 
 	genContainerReq := GenericContainerRequest{
-		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	}
@@ -245,7 +244,6 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 
 func prepareRedisImage(ctx context.Context, req ContainerRequest) (Container, error) {
 	genContainerReq := GenericContainerRequest{
-		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	}

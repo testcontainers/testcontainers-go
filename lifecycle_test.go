@@ -897,7 +897,6 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	}
 
 	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
 		ContainerRequest: req,
 		Logger:           &arrayOfLinesLogger,
 		Started:          true,

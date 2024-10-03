@@ -27,7 +27,6 @@ func TestGenericReusableContainer(t *testing.T) {
 	reusableContainerName := reusableContainerName + "_" + time.Now().Format("20060102150405")
 
 	n1, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:        nginxAlpineImage,
 			ExposedPorts: []string{nginxDefaultPort},
@@ -84,7 +83,6 @@ func TestGenericReusableContainer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			n2, err := GenericContainer(ctx, GenericContainerRequest{
-				ProviderType: providerType,
 				ContainerRequest: ContainerRequest{
 					Image:        nginxAlpineImage,
 					ExposedPorts: []string{nginxDefaultPort},
@@ -114,7 +112,6 @@ func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
 	defer cancel()
 
 	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:      nginxAlpineImage,
 			WaitingFor: wait.ForLog("this string should not be present in the logs"),
@@ -184,7 +181,6 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 	ctx := context.Background()
 
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:        nginxDelayedImage,
 			ExposedPorts: []string{nginxDefaultPort},
