@@ -154,7 +154,7 @@ func TestExtractDockerHost(t *testing.T) {
 		require.Equal(t, DockerSocketSchema+"/this/is/a/sample.sock", host)
 	})
 
-	t.Run("Docker Host from Docker context", func(tt *testing.T) {
+	t.Run("docker-context/docker-host", func(tt *testing.T) {
 		// do not mess with local .testcontainers.properties
 		tmpDir := tt.TempDir()
 		tt.Setenv("HOME", tmpDir)
