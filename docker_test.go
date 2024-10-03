@@ -1390,14 +1390,9 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 			CleanupContainer(t, nginxC)
 			require.NoError(t, err)
 
-			_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), tc.copiedFileName, 700)
-			c, _, err := nginxC.Exec(ctx, []string{"bash", tc.copiedFileName})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if c != 0 {
-				t.Fatalf("File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
-			}
+			err = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), tc.copiedFileName, 0o700)
+			require.NoError(t, err)
+			testFileExists(t, nginxC, tc.copiedFileName)
 		})
 	}
 }
@@ -1418,11 +1413,11 @@ func TestDockerContainerCopyDirToContainer(t *testing.T) {
 	require.NoError(t, err)
 
 	p := filepath.Join(".", "testdata", "Dokerfile")
-	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testdata/Dockerfile", 700)
+	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testdata/Dockerfile", 0o700)
 	require.Error(t, err) // copying a file using the directory method will raise an error
 
 	p = filepath.Join(".", "testdata")
-	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testdata", 700)
+	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testdata", 0o700)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1445,7 +1440,7 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 				{
 					HostFilePath:      hostFileName,
 					ContainerFilePath: copiedFileName,
-					FileMode:          700,
+					FileMode:          0o700,
 				},
 			},
 		},
@@ -1455,11 +1450,10 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 				{
 					HostFilePath:      hostFileName + "123",
 					ContainerFilePath: copiedFileName,
-					FileMode:          700,
+					FileMode:          0o700,
 				},
 			},
-			errMsg: "can't copy " +
-				hostFileName + "123 to container: open " + hostFileName + "123",
+			errMsg: hostFileName + "123: no such file or directory",
 		},
 	}
 
@@ -1515,7 +1509,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			dir: ContainerFile{
 				HostFilePath:      abs,
 				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
-				FileMode:          700,
+				FileMode:          0o700,
 			},
 			hasError: false,
 		},
@@ -1524,7 +1518,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			dir: ContainerFile{
 				HostFilePath:      filepath.Join(".", hostDirName),
 				ContainerFilePath: "/tmp/" + hostDirName, // the parent dir must exist
-				FileMode:          700,
+				FileMode:          0o700,
 			},
 			hasError: false,
 		},
@@ -1533,7 +1527,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			dir: ContainerFile{
 				HostFilePath:      filepath.Join(".", "testdata123"), // does not exist
 				ContainerFilePath: "/tmp/" + hostDirName,             // the parent dir must exist
-				FileMode:          700,
+				FileMode:          0o700,
 			},
 			hasError: true,
 		},
@@ -1542,7 +1536,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			dir: ContainerFile{
 				HostFilePath:      filepath.Join(".", hostDirName),
 				ContainerFilePath: "/parent-does-not-exist/testdata123", // does not exist
-				FileMode:          700,
+				FileMode:          0o700,
 			},
 			hasError: true,
 		},
@@ -1603,22 +1597,28 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 			require.NoError(t, err)
 
 			fileContent, err := os.ReadFile(filepath.Join(".", "testdata", "hello.sh"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			err = nginxC.CopyToContainer(ctx, fileContent, tc.copiedFileName, 700)
-			if err != nil {
-				t.Fatal(err)
-			}
-			c, _, err := nginxC.Exec(ctx, []string{"bash", tc.copiedFileName})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if c != 0 {
-				t.Fatalf("File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
-			}
+			require.NoError(t, err)
+
+			err = nginxC.CopyToContainer(ctx, fileContent, tc.copiedFileName, 0o700)
+			require.NoError(t, err)
+
+			testFileExists(t, nginxC, tc.copiedFileName)
 		})
 	}
+}
+
+func testFileExists(t *testing.T, ctr Container, filename string) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	client, err := NewDockerClientWithOpts(ctx)
+	require.NoError(t, err)
+	stat, err := client.ContainerStatPath(ctx, ctr.GetContainerID(), filename)
+	require.NoError(t, err)
+	require.NoError(t, err)
+	require.True(t, stat.Mode.IsRegular())
 }
 
 func TestDockerContainerCopyFileFromContainer(t *testing.T) {
@@ -1641,26 +1641,17 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	require.NoError(t, err)
 
 	copiedFileName := "hello_copy.sh"
-	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), "/"+copiedFileName, 700)
-	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
-	}
+	err = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), "/"+copiedFileName, 0o700)
+	require.NoError(t, err)
+	testFileExists(t, nginxC, copiedFileName)
 
 	reader, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer reader.Close()
 
 	fileContentFromContainer, err := io.ReadAll(reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, fileContent, fileContentFromContainer)
+	require.NoError(t, err)
+	require.Equal(t, fileContent, fileContentFromContainer)
 }
 
 func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
@@ -1679,26 +1670,17 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 	require.NoError(t, err)
 
 	copiedFileName := "hello_copy.sh"
-	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "empty.sh"), "/"+copiedFileName, 700)
-	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
-	}
+	err = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "empty.sh"), "/"+copiedFileName, 0o700)
+	require.NoError(t, err)
+	testFileExists(t, nginxC, copiedFileName)
 
 	reader, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer reader.Close()
 
 	fileContentFromContainer, err := io.ReadAll(reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Empty(t, fileContentFromContainer)
+	require.NoError(t, err)
+	require.Empty(t, fileContentFromContainer)
 }
 
 func TestDockerContainerResources(t *testing.T) {
@@ -1916,7 +1898,7 @@ func TestNetworkModeWithContainerReference(t *testing.T) {
 }
 
 // creates a temporary dir in which the files will be extracted. Then it will compare the bytes of each file in the source with the bytes from the copied-from-container file
-func assertExtractedFiles(t *testing.T, ctx context.Context, container Container, hostFilePath string, containerFilePath string) {
+func assertExtractedFiles(t *testing.T, ctx context.Context, container Container, hostFilePath, containerPath string) {
 	// create all copied files into a temporary dir
 	tmpDir := t.TempDir()
 
@@ -1933,7 +1915,7 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 			require.NoError(t, err)
 		}
 
-		fp := filepath.Join(containerFilePath, srcFile.Name())
+		fp := filepath.Join(containerPath, srcFile.Name())
 		// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
 		// paths for the container files are using Linux path separators
 		fd, err := container.CopyFileFromContainer(ctx, fp)

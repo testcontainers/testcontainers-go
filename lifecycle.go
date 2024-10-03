@@ -138,11 +138,16 @@ var defaultCopyFileToContainerHook = func(files []ContainerFile) ContainerLifecy
 					}
 
 					var err error
-					// Bytes takes precedence over HostFilePath
+					// This uses the [DockerContainer.CopyToContainer] and
+					// [DockerContainer.CopyFileToContainer] to ensure compatibility
+					// with target path not existing in the container as
+					// [DockerContainer.CopyHostPathTo] does not current support this.
+
+					// Reader takes precedence over HostFilePath
 					if f.Reader != nil {
 						bs, ioerr := io.ReadAll(f.Reader)
 						if ioerr != nil {
-							return fmt.Errorf("can't read from reader: %w", ioerr)
+							return fmt.Errorf("read all reader: %w", ioerr)
 						}
 
 						err = c.CopyToContainer(ctx, bs, f.ContainerFilePath, f.FileMode)
@@ -151,7 +156,7 @@ var defaultCopyFileToContainerHook = func(files []ContainerFile) ContainerLifecy
 					}
 
 					if err != nil {
-						return fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
+						return fmt.Errorf("copy %q to %q container: %w", f.HostFilePath, f.ContainerFilePath, err)
 					}
 				}
 

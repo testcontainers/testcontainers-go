@@ -251,9 +251,9 @@ func configureJvmOpts(ctx context.Context, container testcontainers.Container) e
 	}
 
 	// Spaces are deliberate to allow user to define additional jvm options as elasticsearch resolves option files lexicographically
-	if err := container.CopyFileToContainer(
+	if err := container.CopyHostPathTo(
 		ctx, tmpFile.Name(),
-		"/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-default-memory-vm.options", 0o644); err != nil {
+		"/usr/share/elasticsearch/config/jvm.options.d/elasticsearch-default-memory-vm.options"); err != nil {
 		return err
 	}
 

@@ -13,7 +13,6 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -606,92 +605,87 @@ func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, filePath st
 	return ret, nil
 }
 
-// CopyDirToContainer copies the contents of a directory to a parent path in the container. This parent path must exist in the container first
-// as we cannot create it
-func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error {
-	dir, err := isDir(hostDirPath)
+// CopyDirToContainer copies the contents of hostPath to containerPath in the container.
+// If fileMode is non-zero all files will have their file permissions set to that of fileMode
+// otherwise the file permissions will be copied from the host.
+// If fileMode contains bits not part of [fs.ModePerm] | [fs.ModeSetuid] | [fs.ModeSetgid] |
+// [fs.ModeSticky] an error is returned.
+// If the parent of the containerPath does not exist an error is returned.
+//
+// Deprecated: use [DockerContainer.CopyHostPathTo] instead.
+func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostPath string, containerPath string, fileMode int64) error {
+	if err := validateFileMode(fileMode); err != nil {
+		return err
+	}
+
+	dir, err := isDir(hostPath)
 	if err != nil {
 		return err
 	}
 
 	if !dir {
-		// it's not a dir: let the consumer to handle an error
-		return fmt.Errorf("path %s is not a directory", hostDirPath)
+		// It's not a dir: let the consumer to handle an error.
+		return fmt.Errorf("host dir path %q is not a directory", hostPath)
 	}
 
-	buff, err := tarDir(hostDirPath, fileMode)
-	if err != nil {
-		return err
-	}
-
-	// create the directory under its parent
-	parent := filepath.Dir(containerParentPath)
-
-	err = c.provider.client.CopyToContainer(ctx, c.ID, parent, buff, container.CopyToContainerOptions{})
-	if err != nil {
-		return err
-	}
-	defer c.provider.Close()
-
-	return nil
+	return c.CopyHostPathTo(ctx, hostPath, containerPath, copyToFileMode(fileMode))
 }
 
-func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
-	dir, err := isDir(hostFilePath)
+// CopyFileToContainer copies hostPath to containerPath in the container.
+// If fileMode is non-zero the files permissions will be set to that of fileMode
+// otherwise the file permissions will be set to that of the file in hostPath.
+// If fileMode contains bits not part of [fs.ModePerm] | [fs.ModeSetuid] | [fs.ModeSetgid] |
+// [fs.ModeSticky] an error is returned.
+// If the parent of the containerPath does not exist an error is returned.
+// If hostPath is a directory this is equivalent to [DockerContainer.CopyDirToContainer].
+//
+// Deprecated: use [DockerContainer.CopyHostPathTo] instead.
+func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostPath string, containerPath string, fileMode int64) error {
+	dir, err := isDir(hostPath)
 	if err != nil {
 		return err
 	}
 
 	if dir {
-		return c.CopyDirToContainer(ctx, hostFilePath, containerFilePath, fileMode)
+		return c.CopyDirToContainer(ctx, hostPath, containerPath, fileMode)
 	}
 
-	f, err := os.Open(hostFilePath)
+	data, err := os.ReadFile(hostPath)
 	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	info, err := f.Stat()
-	if err != nil {
-		return err
+		return fmt.Errorf("read file: %w", err)
 	}
 
-	// In Go 1.22 os.File is always an io.WriterTo. However, testcontainers
-	// currently allows Go 1.21, so we need to trick the compiler a little.
-	var file fs.File = f
-	return c.copyToContainer(ctx, func(tw io.Writer) error {
-		// Attempt optimized writeTo, implemented in linux
-		if wt, ok := file.(io.WriterTo); ok {
-			_, err := wt.WriteTo(tw)
-			return err
+	if fileMode == 0 {
+		fi, err := os.Stat(hostPath)
+		if err != nil {
+			return fmt.Errorf("stat file: %w", err)
 		}
-		_, err := io.Copy(tw, f)
-		return err
-	}, info.Size(), containerFilePath, fileMode)
+
+		fileMode = int64(fi.Mode())
+	}
+
+	return c.CopyToContainer(ctx, data, containerPath, fileMode)
 }
 
-// CopyToContainer copies fileContent data to a file in container
-func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error {
-	return c.copyToContainer(ctx, func(tw io.Writer) error {
-		_, err := tw.Write(fileContent)
+// CopyToContainer copies a file with contents of fileContent to containerPath in the
+// container with the given fileMode.
+// If fileMode contains bits not part of [fs.ModePerm] | [fs.ModeSetuid] | [fs.ModeSetgid] |
+// [fs.ModeSticky] an error is returned.
+func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byte, containerPath string, fileMode int64) error {
+	if err := validateFileMode(fileMode); err != nil {
 		return err
-	}, int64(len(fileContent)), containerFilePath, fileMode)
-}
+	}
 
-func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(tw io.Writer) error, fileContentSize int64, containerFilePath string, fileMode int64) error {
-	buffer, err := tarFile(containerFilePath, fileContent, fileContentSize, fileMode)
+	// Create a tar with the single file containing the a file with the
+	// fully qualified container path as the name.
+	tar, err := tarFile(containerPath, fileContent, fs.FileMode(fileMode))
 	if err != nil {
 		return err
 	}
 
-	err = c.provider.client.CopyToContainer(ctx, c.ID, "/", buffer, container.CopyToContainerOptions{})
-	if err != nil {
-		return err
-	}
-	defer c.provider.Close()
-
-	return nil
+	// As the name of the file in the tar is the fully qualified container path
+	// it should by extracted in the container's root directory.
+	return c.copyTarTo(ctx, tar, "/")
 }
 
 // logConsumerWriter is a writer that writes to a LogConsumer.

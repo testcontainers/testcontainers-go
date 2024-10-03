@@ -41,7 +41,7 @@ func TestGenericReusableContainer(t *testing.T) {
 	CleanupContainer(t, n1)
 
 	copiedFileName := "hello_copy.sh"
-	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
+	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 0o700)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -98,9 +98,7 @@ func TestGenericReusableContainer(t *testing.T) {
 			require.NoError(t, tc.errorMatcher(err))
 
 			if err == nil {
-				c, _, err := n2.Exec(ctx, []string{"/bin/ash", copiedFileName})
-				require.NoError(t, err)
-				require.Zero(t, c)
+				testFileExists(t, n2, copiedFileName)
 			}
 		})
 	}
