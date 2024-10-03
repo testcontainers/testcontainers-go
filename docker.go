@@ -979,6 +979,36 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	return buildOptions.Tags[0], nil
 }
 
+func (p *DockerProvider) getTermChan(ctx context.Context, sessionID string) (chan bool, error) {
+	var (
+		r   *Reaper
+		err error
+	)
+
+	if p.config.RyukDisabled {
+		return nil, nil
+	}
+
+	if p.config.RyukExternalAddress != "" {
+		r = &Reaper{
+			Endpoint:  p.config.RyukExternalAddress,
+			SessionID: sessionID,
+		}
+	} else {
+		r, err = reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), core.SessionID(), p)
+		if err != nil {
+			return nil, fmt.Errorf("%w: creating reaper failed", err)
+		}
+	}
+
+	termSignal, err := r.Connect()
+	if err != nil {
+		return nil, fmt.Errorf("%w: connecting to reaper failed", err)
+	}
+
+	return termSignal, nil
+}
+
 // CreateContainer fulfils a request for a container without starting it
 func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	var err error
@@ -1026,14 +1056,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	var termSignal chan bool
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.HasSuffix(imageName, config.ReaperDefaultImage)
-	if !p.config.RyukDisabled && !isReaperContainer {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), core.SessionID(), p)
+	if !isReaperContainer {
+		termSignal, err = p.getTermChan(ctx, core.SessionID())
 		if err != nil {
-			return nil, fmt.Errorf("%w: creating reaper failed", err)
-		}
-		termSignal, err = r.Connect()
-		if err != nil {
-			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
+			return nil, err
 		}
 	}
 
@@ -1277,16 +1303,9 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 
 	sessionID := core.SessionID()
 
-	var termSignal chan bool
-	if !p.config.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
-		if err != nil {
-			return nil, fmt.Errorf("reaper: %w", err)
-		}
-		termSignal, err = r.Connect()
-		if err != nil {
-			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
-		}
+	termSignal, err := p.getTermChan(ctx, sessionID)
+	if err != nil {
+		return nil, err
 	}
 
 	// default hooks include logger hook and pre-create hook
@@ -1483,16 +1502,9 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	sessionID := core.SessionID()
 
-	var termSignal chan bool
-	if !p.config.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
-		if err != nil {
-			return nil, fmt.Errorf("%w: creating network reaper failed", err)
-		}
-		termSignal, err = r.Connect()
-		if err != nil {
-			return nil, fmt.Errorf("%w: connecting to network reaper failed", err)
-		}
+	termSignal, err := p.getTermChan(ctx, sessionID)
+	if err != nil {
+		return nil, err
 	}
 
 	// add the labels that the reaper will use to terminate the network to the request

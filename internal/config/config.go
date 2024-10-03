@@ -60,6 +60,12 @@ type Config struct {
 	// Environment variable: TESTCONTAINERS_RYUK_DISABLED
 	RyukDisabled bool `properties:"ryuk.disabled,default=false"`
 
+	// RyukExternalAddress is the address of the external Garbage Collector container.
+	// If set, Testcontainers will not attempt to start its own Ryuk container.
+	//
+	// Environment variable: TESTCONTAINERS_RYUK_EXTERNAL_ADDRESS
+	RyukExternalAddress string `properties:"ryuk.external.address,default="`
+
 	// RyukPrivileged is a flag to enable or disable the privileged mode for the Garbage Collector container.
 	// Setting this to true will run the Garbage Collector container in privileged mode.
 	//
@@ -114,6 +120,11 @@ func read() Config {
 		ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
 		if parseBool(ryukDisabledEnv) {
 			config.RyukDisabled = ryukDisabledEnv == "true"
+		}
+
+		ryukExternalAddress := os.Getenv("TESTCONTAINERS_RYUK_EXTERNAL_ADDRESS")
+		if ryukExternalAddress != "" {
+			config.RyukExternalAddress = ryukExternalAddress
 		}
 
 		hubImageNamePrefix := os.Getenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX")
