@@ -641,7 +641,7 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 	volumeList, err := compose.dockerClient.VolumeList(ctx, volume.ListOptions{Filters: volumeListFilters})
 	require.NoError(t, err, "compose.dockerClient.VolumeList()")
 
-	assert.Empty(t, volumeList.Volumes, "Volumes are not cleaned up")
+	require.Empty(t, volumeList.Volumes, "Volumes are not cleaned up")
 }
 
 func TestDockerComposeAPIWithBuild(t *testing.T) {

@@ -320,7 +320,7 @@ func TestCustomLabelsImage(t *testing.T) {
 	ctr, err := testcontainers.GenericContainer(ctx, req)
 
 	require.NoError(t, err)
-	t.Cleanup(func() { assert.NoError(t, ctr.Terminate(ctx)) })
+	t.Cleanup(func() { require.NoError(t, ctr.Terminate(ctx)) })
 
 	ctrJSON, err := ctr.Inspect(ctx)
 	require.NoError(t, err)

@@ -88,7 +88,7 @@ func TestS3(t *testing.T) {
 			Bucket: aws.String(bucketName),
 		})
 		require.NoError(t, err)
-		assert.NotNil(t, outputBucket)
+		require.NotNil(t, outputBucket)
 
 		// put object
 		s3Key1 := "key1"
@@ -102,12 +102,12 @@ func TestS3(t *testing.T) {
 			ContentDisposition: aws.String("attachment"),
 		})
 		require.NoError(t, err)
-		assert.NotNil(t, outputObject)
+		require.NotNil(t, outputObject)
 
 		t.Run("List Buckets", func(t *testing.T) {
 			output, err := s3Client.ListBuckets(ctx, &s3.ListBucketsInput{})
 			require.NoError(t, err)
-			assert.NotNil(t, output)
+			require.NotNil(t, output)
 
 			buckets := output.Buckets
 			assert.Len(t, buckets, 1)
@@ -119,7 +119,7 @@ func TestS3(t *testing.T) {
 				Bucket: aws.String(bucketName),
 			})
 			require.NoError(t, err)
-			assert.NotNil(t, output)
+			require.NotNil(t, output)
 
 			objects := output.Contents
 

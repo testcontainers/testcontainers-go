@@ -281,7 +281,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		// assertions
 
-		assert.Empty(
+		require.Empty(
 			t,
 			inputNetworkingConfig.EndpointsConfig[networkName].Aliases,
 			"Networking config's aliases should be empty",
