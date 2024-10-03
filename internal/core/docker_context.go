@@ -265,8 +265,9 @@ func getHomeDir() string {
 func configurationDir() string {
 	configDir := os.Getenv(envOverrideConfigDir)
 	if configDir == "" {
-		configDir = filepath.Join(getHomeDir(), configFileDir)
+		return filepath.Join(getHomeDir(), configFileDir)
 	}
+
 	return configDir
 }
 
