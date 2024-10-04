@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -291,6 +294,102 @@ func TestPreCreateModifierHook(t *testing.T) {
 			dockerNetwork.ID,
 			inputNetworkingConfig.EndpointsConfig[networkName].NetworkID,
 			"Networking config's network ID should be retrieved from Docker",
+		)
+	})
+
+	t.Run("endpoint-settings-modifier/custom-bridge-network", func(t *testing.T) {
+		// set testcontainers properties including a custom bridge network name
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
+		t.Setenv("USERPROFILE", tmpDir) // windows
+
+		const bridgeNetworkName = "test-bridge"
+		content := "tc.bridge.name=" + bridgeNetworkName
+		if err := os.WriteFile(filepath.Join(tmpDir, ".testcontainers.properties"), []byte(content), 0o600); err != nil {
+			t.Errorf("Failed to create the file: %v", err)
+			return
+		}
+		config.Reset() // reset the config to reload the properties for testing purposes
+
+		req := ContainerRequest{
+			Image: nginxAlpineImage, // alpine image does expose port 80
+		}
+
+		// define empty inputs to be overwritten by the pre create hook
+		inputConfig := &container.Config{
+			Image: req.Image,
+		}
+		inputHostConfig := &container.HostConfig{}
+		inputNetworkingConfig := &network.NetworkingConfig{
+			EndpointsConfig: map[string]*network.EndpointSettings{
+				"bridge": {
+					MacAddress: "bridge-mac",
+					Aliases:    []string{"bridge-alias"},
+				},
+			},
+		}
+
+		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		require.NoError(t, err)
+
+		// assertions
+
+		require.Equal(
+			t,
+			"bridge-mac",
+			inputNetworkingConfig.EndpointsConfig[bridgeNetworkName].MacAddress,
+		)
+		require.Equal(
+			t,
+			[]string{"bridge-alias"},
+			inputNetworkingConfig.EndpointsConfig[bridgeNetworkName].Aliases,
+		)
+	})
+
+	t.Run("endpoint-settings-modifier/default-bridge-network", func(t *testing.T) {
+		// set testcontainers properties including a custom bridge network name
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
+		t.Setenv("USERPROFILE", tmpDir) // windows
+
+		if err := os.WriteFile(filepath.Join(tmpDir, ".testcontainers.properties"), []byte(""), 0o600); err != nil {
+			t.Errorf("Failed to create the file: %v", err)
+			return
+		}
+		config.Reset() // reset the config to reload the properties for testing purposes
+
+		req := ContainerRequest{
+			Image: nginxAlpineImage, // alpine image does expose port 80
+		}
+
+		// define empty inputs to be overwritten by the pre create hook
+		inputConfig := &container.Config{
+			Image: req.Image,
+		}
+		inputHostConfig := &container.HostConfig{}
+		inputNetworkingConfig := &network.NetworkingConfig{
+			EndpointsConfig: map[string]*network.EndpointSettings{
+				Bridge: {
+					MacAddress: "bridge-mac",
+					Aliases:    []string{"bridge-alias"},
+				},
+			},
+		}
+
+		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		require.NoError(t, err)
+
+		// assertions
+
+		require.Equal(
+			t,
+			"bridge-mac",
+			inputNetworkingConfig.EndpointsConfig[Bridge].MacAddress,
+		)
+		require.Equal(
+			t,
+			[]string{"bridge-alias"},
+			inputNetworkingConfig.EndpointsConfig[Bridge].Aliases,
 		)
 	})
 
