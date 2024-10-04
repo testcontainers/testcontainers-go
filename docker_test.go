@@ -509,7 +509,7 @@ func TestContainerCreationWithName(t *testing.T) {
 			},
 			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort),
 			Name:       creationName,
-			Networks:   []string{Bridge},
+			Networks:   []string{config.Read().TestcontainersBridgeName},
 		},
 		Started: true,
 	})

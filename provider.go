@@ -21,7 +21,7 @@ type (
 	// GenericProviderOptions defines options applicable to all providers
 	GenericProviderOptions struct {
 		Logger         Logging
-		DefaultNetwork string
+		DefaultNetwork string // Deprecated: it will be removed in the next major version
 	}
 
 	// GenericProviderOption defines a common interface to modify GenericProviderOptions
@@ -35,7 +35,6 @@ type (
 
 	// DockerProviderOptions defines options applicable to DockerProvider
 	DockerProviderOptions struct {
-		defaultBridgeNetworkName string
 		*GenericProviderOptions
 	}
 
@@ -69,9 +68,10 @@ func Generic2DockerOptions(opts ...GenericProviderOption) []DockerProviderOption
 	return converted
 }
 
+// Deprecated: WithDefaultNetwork is deprecated and will be removed in the next major version
 func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
 	return DockerProviderOptionFunc(func(opts *DockerProviderOptions) {
-		opts.defaultBridgeNetworkName = bridgeNetworkName
+		// NOOP
 	})
 }
 
@@ -99,8 +99,7 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 		o.ApplyGenericTo(opt)
 	}
 
-	providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Bridge))
-	provider, err := NewDockerProvider(providerOptions...)
+	provider, err := NewDockerProvider(Generic2DockerOptions(opts...)...)
 	if err != nil {
 		return nil, fmt.Errorf("%w, failed to create Docker provider", err)
 	}
