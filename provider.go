@@ -99,7 +99,7 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 		o.ApplyGenericTo(opt)
 	}
 
-	providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(config.Read().TestcontainersBridgeName))
+	providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Bridge))
 	provider, err := NewDockerProvider(providerOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("%w, failed to create Docker provider", err)

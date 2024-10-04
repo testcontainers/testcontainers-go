@@ -44,7 +44,7 @@ var _ Container = (*DockerContainer)(nil)
 
 const (
 	Bridge        = "bridge"         // Bridge network driver and name
-	ReaperDefault = "reaper_default" // Default network name when bridge is not available
+	ReaperDefault = "reaper_default" // Deprecated: use Bridge instead. Default network name when bridge is not available
 	packagePath   = "github.com/testcontainers/testcontainers-go"
 )
 
@@ -1572,7 +1572,7 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 		return "", err
 	}
 
-	reaperNetwork := ReaperDefault
+	reaperNetwork := Bridge
 
 	reaperNetworkExists := false
 

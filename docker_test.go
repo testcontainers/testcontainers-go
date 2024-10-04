@@ -498,11 +498,6 @@ func TestContainerCreation(t *testing.T) {
 func TestContainerCreationWithName(t *testing.T) {
 	ctx := context.Background()
 
-	cfg := config.Read()
-
-	// use the user-defined bridge network, as it could have been changed by the user
-	bridge := cfg.TestcontainersBridgeName
-
 	creationName := fmt.Sprintf("%s_%d", "test_container", time.Now().Unix())
 	expectedName := "/" + creationName // inspect adds '/' in the beginning
 
@@ -514,7 +509,7 @@ func TestContainerCreationWithName(t *testing.T) {
 			},
 			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort),
 			Name:       creationName,
-			Networks:   []string{bridge},
+			Networks:   []string{Bridge},
 		},
 		Started: true,
 	})
@@ -537,9 +532,12 @@ func TestContainerCreationWithName(t *testing.T) {
 	if len(networks) != 1 {
 		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
 	}
+
+	expectedBridge := config.Read().TestcontainersBridgeName
+
 	network := networks[0]
-	if network != bridge {
-		t.Errorf("Expected network name '%s'. Got '%s'.", bridge, network)
+	if network != expectedBridge {
+		t.Errorf("Expected network name '%s'. Got '%s'.", expectedBridge, network)
 	}
 
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
