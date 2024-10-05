@@ -160,8 +160,9 @@ func read() Config {
 	}
 
 	tcProp := filepath.Join(home, ".testcontainers.properties")
-	// init from a file
-	props, err := properties.LoadFile(tcProp, properties.UTF8)
+	// Init from a file, ignore if it doesn't existm which is the case for most users.
+	// The properties library will return the default values for the struct.
+	props, err := properties.LoadFiles([]string{tcProp}, properties.UTF8, true)
 	if err != nil {
 		return applyEnvironmentConfiguration(config)
 	}
