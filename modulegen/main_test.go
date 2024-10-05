@@ -148,7 +148,11 @@ func TestModule_Validate(outer *testing.T) {
 
 	for _, test := range tests {
 		outer.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedErr, test.module.Validate())
+			if test.expectedErr != nil {
+				require.EqualError(t, test.module.Validate(), test.expectedErr.Error())
+			} else {
+				require.NoError(t, test.module.Validate())
+			}
 		})
 	}
 }

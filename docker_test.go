@@ -307,7 +307,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		state, err := nginx.State(ctx)
 		require.Error(t, err, "expected error from container inspect.")
 
-		assert.Nil(t, state, "expected nil container inspect.")
+		require.Nil(t, state, "expected nil container inspect.")
 	})
 
 	t.Run("Nil State after termination if raw as already set", func(t *testing.T) {
@@ -1339,7 +1339,7 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 	inspect, err := ctr.Inspect(context.Background())
 	require.NoError(t, err)
 
-	assert.NotEmpty(t, inspect.ID)
+	require.NotEmpty(t, inspect.ID)
 
 	require.NoError(t, ctr.Stop(context.Background(), nil))
 }
@@ -1698,7 +1698,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Empty(t, fileContentFromContainer)
+	require.Empty(t, fileContentFromContainer)
 }
 
 func TestDockerContainerResources(t *testing.T) {
