@@ -161,12 +161,12 @@ func read() Config {
 
 	tcProp := filepath.Join(home, ".testcontainers.properties")
 	// init from a file
-	properties, err := properties.LoadFile(tcProp, properties.UTF8)
+	props, err := properties.LoadFile(tcProp, properties.UTF8)
 	if err != nil {
 		return applyEnvironmentConfiguration(config)
 	}
 
-	if err := properties.Decode(&config); err != nil {
+	if err := props.Decode(&config); err != nil {
 		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
 		return applyEnvironmentConfiguration(config)
 	}
