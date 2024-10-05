@@ -99,10 +99,10 @@ func TestDockerImageAuth(t *testing.T) {
 
 		registry, cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
 		require.NoError(t, err)
-		require.Equal(t, exampleAuth, registry)
-		require.Equal(t, username, cfg.Username)
-		require.Equal(t, password, cfg.Password)
-		require.Equal(t, creds, cfg.Auth)
+		assert.Equal(t, exampleAuth, registry)
+		assert.Equal(t, username, cfg.Username)
+		assert.Equal(t, password, cfg.Password)
+		assert.Equal(t, creds, cfg.Auth)
 	})
 
 	t.Run("match registry authentication by host", func(t *testing.T) {
@@ -112,10 +112,10 @@ func TestDockerImageAuth(t *testing.T) {
 
 		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
 		require.NoError(t, err)
-		require.Equal(t, imageReg, registry)
-		require.Equal(t, "gopher", cfg.Username)
-		require.Equal(t, "secret", cfg.Password)
-		require.Equal(t, base64, cfg.Auth)
+		assert.Equal(t, imageReg, registry)
+		assert.Equal(t, "gopher", cfg.Username)
+		assert.Equal(t, "secret", cfg.Password)
+		assert.Equal(t, base64, cfg.Auth)
 	})
 
 	t.Run("fail to match registry authentication due to invalid host", func(t *testing.T) {
@@ -127,8 +127,8 @@ func TestDockerImageAuth(t *testing.T) {
 
 		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
 		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
-		require.Empty(t, cfg)
-		require.Equal(t, imageReg, registry)
+		assert.Empty(t, cfg)
+		assert.Equal(t, imageReg, registry)
 	})
 
 	t.Run("fail to match registry authentication by host with empty URL scheme creds and missing default", func(t *testing.T) {
@@ -147,8 +147,8 @@ func TestDockerImageAuth(t *testing.T) {
 
 		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
 		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
-		require.Empty(t, cfg)
-		require.Equal(t, imageReg, registry)
+		assert.Empty(t, cfg)
+		assert.Equal(t, imageReg, registry)
 	})
 }
 

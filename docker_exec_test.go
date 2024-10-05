@@ -64,8 +64,8 @@ func TestExecWithOptions(t *testing.T) {
 
 			code, reader, err := ctr.Exec(ctx, tt.cmds, tt.opts...)
 			require.NoError(t, err)
-			require.Zero(t, code)
-			require.NotNil(t, reader)
+			assert.Zero(t, code)
+			assert.NotNil(t, reader)
 
 			b, err := io.ReadAll(reader)
 			require.NoError(t, err)
@@ -92,7 +92,7 @@ func TestExecWithMultiplexedResponse(t *testing.T) {
 
 	code, reader, err := ctr.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"}, tcexec.Multiplexed())
 	require.NoError(t, err)
-	require.Zero(t, code)
+	assert.Zero(t, code)
 	require.NotNil(t, reader)
 
 	b, err := io.ReadAll(reader)
@@ -100,8 +100,8 @@ func TestExecWithMultiplexedResponse(t *testing.T) {
 	require.NotNil(t, b)
 
 	str := string(b)
-	require.Contains(t, str, "stdout")
-	require.Contains(t, str, "stderr")
+	assert.Contains(t, str, "stdout")
+	assert.Contains(t, str, "stderr")
 }
 
 func TestExecWithNonMultiplexedResponse(t *testing.T) {
@@ -119,7 +119,7 @@ func TestExecWithNonMultiplexedResponse(t *testing.T) {
 
 	code, reader, err := ctr.Exec(ctx, []string{"sh", "-c", "echo stdout; echo stderr >&2"})
 	require.NoError(t, err)
-	require.Zero(t, code)
+	assert.Zero(t, code)
 	require.NotNil(t, reader)
 
 	var stdout bytes.Buffer
