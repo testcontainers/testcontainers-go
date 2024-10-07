@@ -102,7 +102,7 @@ func TestReadTCConfig(t *testing.T) {
 
 		config := read()
 
-		expected := Config{}
+		expected := defaultConfig()
 
 		assert.Equal(t, expected, config)
 	})
@@ -114,7 +114,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("DOCKER_HOST", tcpDockerHost33293)
 
 		config := read()
-		expected := Config{} // the config does not read DOCKER_HOST, that's why it's empty
+		expected := defaultConfig() // the config does not read DOCKER_HOST, that's why it's empty
 
 		assert.Equal(t, expected, config)
 	})
@@ -148,7 +148,7 @@ func TestReadTCConfig(t *testing.T) {
 	t.Run("HOME contains TC properties file", func(t *testing.T) {
 		defaultRyukConnectionTimeout := 60 * time.Second
 		defaultRyukReconnectionTimeout := 10 * time.Second
-		defaultConfig := Config{
+		defaultCfg := Config{
 			RyukConnectionTimeout:    defaultRyukConnectionTimeout,
 			RyukReconnectionTimeout:  defaultRyukReconnectionTimeout,
 			TestcontainersBridgeName: "bridge",
@@ -219,7 +219,7 @@ func TestReadTCConfig(t *testing.T) {
 				"Comments are ignored",
 				`#docker.host=` + tcpDockerHost33293,
 				map[string]string{},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"Multiple docker host entries, last one wins, with TLS and cert path",
@@ -338,7 +338,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "false",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Ryuk disabled using an env var and properties. Env var wins (3)",
@@ -346,7 +346,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "false",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Ryuk verbose using an env var and properties. Env var wins (0)",
@@ -374,7 +374,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_VERBOSE": "false",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Ryuk verbose using an env var and properties. Env var wins (3)",
@@ -382,7 +382,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_VERBOSE": "false",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Ryuk container privileged using an env var and properties. Env var wins (0)",
@@ -410,7 +410,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Ryuk container privileged using an env var and properties. Env var wins (3)",
@@ -418,7 +418,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With TLS verify using properties when value is wrong",
@@ -439,7 +439,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "foo",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Ryuk container privileged using an env var and properties. Env var does not win because it's not a boolean value",
@@ -447,7 +447,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "foo",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Hub image name prefix set as a property",
@@ -527,10 +527,10 @@ func TestReadTCConfig(t *testing.T) {
 				// In the case of decoding errors in the properties file, the read config
 				// needs to be merged with the default config to avoid setting the fields
 				// that are not set in the properties file.
-				err := mergo.Merge(&config, defaultConfig)
+				err := mergo.Merge(&config, defaultCfg)
 				require.NoError(t, err)
 
-				err = mergo.Merge(&tt.expected, defaultConfig)
+				err = mergo.Merge(&tt.expected, defaultCfg)
 				require.NoError(t, err)
 
 				require.Equal(t, tt.expected, config, "Configuration doesn't not match")

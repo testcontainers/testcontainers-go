@@ -94,6 +94,70 @@ type Config struct {
 
 // }
 
+// defaultConfig
+func defaultConfig() Config {
+	config := Config{}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return applyEnvironmentConfiguration(config)
+	}
+
+	tcProp := filepath.Join(home, ".testcontainers.properties")
+	// Init from a file, ignore if it doesn't exist, which is the case for most users.
+	// The properties library will return the default values for the struct.
+	props, err := properties.LoadFiles([]string{tcProp}, properties.UTF8, true)
+	if err != nil {
+		return applyEnvironmentConfiguration(config)
+	}
+
+	if err := props.Decode(&config); err != nil {
+		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
+		return applyEnvironmentConfiguration(config)
+	}
+
+	return config
+}
+
+func applyEnvironmentConfiguration(config Config) Config {
+	ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
+	if parseBool(ryukDisabledEnv) {
+		config.RyukDisabled = ryukDisabledEnv == "true"
+	}
+
+	hubImageNamePrefix := os.Getenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX")
+	if hubImageNamePrefix != "" {
+		config.HubImageNamePrefix = hubImageNamePrefix
+	}
+
+	ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
+	if parseBool(ryukPrivilegedEnv) {
+		config.RyukPrivileged = ryukPrivilegedEnv == "true"
+	}
+
+	ryukVerboseEnv := os.Getenv("TESTCONTAINERS_RYUK_VERBOSE")
+	if parseBool(ryukVerboseEnv) {
+		config.RyukVerbose = ryukVerboseEnv == "true"
+	}
+
+	ryukReconnectionTimeoutEnv := os.Getenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT")
+	if timeout, err := time.ParseDuration(ryukReconnectionTimeoutEnv); err == nil {
+		config.RyukReconnectionTimeout = timeout
+	}
+
+	ryukConnectionTimeoutEnv := os.Getenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT")
+	if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err == nil {
+		config.RyukConnectionTimeout = timeout
+	}
+
+	testcontainersBridgeName := os.Getenv("TESTCONTAINERS_BRIDGE_NAME")
+	if testcontainersBridgeName != "" {
+		config.TestcontainersBridgeName = testcontainersBridgeName
+	}
+
+	return config
+}
+
 // Read reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
 func Read() Config {
@@ -113,64 +177,7 @@ func Reset() {
 }
 
 func read() Config {
-	config := Config{}
-
-	applyEnvironmentConfiguration := func(config Config) Config {
-		ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
-		if parseBool(ryukDisabledEnv) {
-			config.RyukDisabled = ryukDisabledEnv == "true"
-		}
-
-		hubImageNamePrefix := os.Getenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX")
-		if hubImageNamePrefix != "" {
-			config.HubImageNamePrefix = hubImageNamePrefix
-		}
-
-		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
-		if parseBool(ryukPrivilegedEnv) {
-			config.RyukPrivileged = ryukPrivilegedEnv == "true"
-		}
-
-		ryukVerboseEnv := os.Getenv("TESTCONTAINERS_RYUK_VERBOSE")
-		if parseBool(ryukVerboseEnv) {
-			config.RyukVerbose = ryukVerboseEnv == "true"
-		}
-
-		ryukReconnectionTimeoutEnv := os.Getenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT")
-		if timeout, err := time.ParseDuration(ryukReconnectionTimeoutEnv); err == nil {
-			config.RyukReconnectionTimeout = timeout
-		}
-
-		ryukConnectionTimeoutEnv := os.Getenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT")
-		if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err == nil {
-			config.RyukConnectionTimeout = timeout
-		}
-
-		testcontainersBridgeName := os.Getenv("TESTCONTAINERS_BRIDGE_NAME")
-		if testcontainersBridgeName != "" {
-			config.TestcontainersBridgeName = testcontainersBridgeName
-		}
-
-		return config
-	}
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return applyEnvironmentConfiguration(config)
-	}
-
-	tcProp := filepath.Join(home, ".testcontainers.properties")
-	// Init from a file, ignore if it doesn't exist, which is the case for most users.
-	// The properties library will return the default values for the struct.
-	props, err := properties.LoadFiles([]string{tcProp}, properties.UTF8, true)
-	if err != nil {
-		return applyEnvironmentConfiguration(config)
-	}
-
-	if err := props.Decode(&config); err != nil {
-		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
-		return applyEnvironmentConfiguration(config)
-	}
+	config := defaultConfig()
 
 	return applyEnvironmentConfiguration(config)
 }
