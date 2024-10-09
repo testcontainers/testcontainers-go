@@ -6,7 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"dario.cat/mergo"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -24,6 +26,7 @@ func resetTestEnv(t *testing.T) {
 	t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "")
 	t.Setenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT", "")
 	t.Setenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT", "")
+	t.Setenv("TESTCONTAINERS_BRIDGE_NAME", "")
 }
 
 func TestReadConfig(t *testing.T) {
@@ -99,7 +102,7 @@ func TestReadTCConfig(t *testing.T) {
 
 		config := read()
 
-		expected := Config{}
+		expected := defaultConfig()
 
 		assert.Equal(t, expected, config)
 	})
@@ -111,7 +114,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("DOCKER_HOST", tcpDockerHost33293)
 
 		config := read()
-		expected := Config{} // the config does not read DOCKER_HOST, that's why it's empty
+		expected := defaultConfig() // the config does not read DOCKER_HOST, that's why it's empty
 
 		assert.Equal(t, expected, config)
 	})
@@ -126,15 +129,17 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
 		t.Setenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT", "13s")
 		t.Setenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT", "12s")
+		t.Setenv("TESTCONTAINERS_BRIDGE_NAME", "testbridge")
 
 		config := read()
 		expected := Config{
-			HubImageNamePrefix:      defaultHubPrefix,
-			RyukDisabled:            true,
-			RyukPrivileged:          true,
-			RyukVerbose:             true,
-			RyukReconnectionTimeout: 13 * time.Second,
-			RyukConnectionTimeout:   12 * time.Second,
+			HubImageNamePrefix:       defaultHubPrefix,
+			RyukDisabled:             true,
+			RyukPrivileged:           true,
+			RyukVerbose:              true,
+			RyukReconnectionTimeout:  13 * time.Second,
+			RyukConnectionTimeout:    12 * time.Second,
+			TestcontainersBridgeName: "testbridge",
 		}
 
 		assert.Equal(t, expected, config)
@@ -143,9 +148,10 @@ func TestReadTCConfig(t *testing.T) {
 	t.Run("HOME contains TC properties file", func(t *testing.T) {
 		defaultRyukConnectionTimeout := 60 * time.Second
 		defaultRyukReconnectionTimeout := 10 * time.Second
-		defaultConfig := Config{
-			RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-			RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+		defaultCfg := Config{
+			RyukConnectionTimeout:    defaultRyukConnectionTimeout,
+			RyukReconnectionTimeout:  defaultRyukReconnectionTimeout,
+			TestcontainersBridgeName: "bridge",
 		}
 
 		tests := []struct {
@@ -159,9 +165,7 @@ func TestReadTCConfig(t *testing.T) {
 				"docker.host = " + tcpDockerHost33293,
 				map[string]string{},
 				Config{
-					Host:                    tcpDockerHost33293,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					Host: tcpDockerHost33293,
 				},
 			},
 			{
@@ -171,9 +175,7 @@ func TestReadTCConfig(t *testing.T) {
 	`,
 				map[string]string{},
 				Config{
-					Host:                    tcpDockerHost4711,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					Host: tcpDockerHost4711,
 				},
 			},
 			{
@@ -185,20 +187,15 @@ func TestReadTCConfig(t *testing.T) {
 	`,
 				map[string]string{},
 				Config{
-					Host:                    tcpDockerHost1234,
-					TLSVerify:               1,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					Host:      tcpDockerHost1234,
+					TLSVerify: 1,
 				},
 			},
 			{
 				"Empty file",
 				"",
 				map[string]string{},
-				Config{
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
-				},
+				Config{},
 			},
 			{
 				"Non-valid properties are ignored",
@@ -207,9 +204,7 @@ func TestReadTCConfig(t *testing.T) {
 			`,
 				map[string]string{},
 				Config{
-					Host:                    tcpDockerHost1234,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					Host: tcpDockerHost1234,
 				},
 			},
 			{
@@ -217,16 +212,14 @@ func TestReadTCConfig(t *testing.T) {
 				"docker.host=" + tcpDockerHost33293,
 				map[string]string{},
 				Config{
-					Host:                    tcpDockerHost33293,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					Host: tcpDockerHost33293,
 				},
 			},
 			{
 				"Comments are ignored",
 				`#docker.host=` + tcpDockerHost33293,
 				map[string]string{},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"Multiple docker host entries, last one wins, with TLS and cert path",
@@ -236,10 +229,8 @@ func TestReadTCConfig(t *testing.T) {
 	docker.cert.path=/tmp/certs`,
 				map[string]string{},
 				Config{
-					Host:                    tcpDockerHost1234,
-					CertPath:                "/tmp/certs",
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					Host:     tcpDockerHost1234,
+					CertPath: "/tmp/certs",
 				},
 			},
 			{
@@ -247,9 +238,7 @@ func TestReadTCConfig(t *testing.T) {
 				`ryuk.disabled=true`,
 				map[string]string{},
 				Config{
-					RyukDisabled:            true,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					RyukDisabled: true,
 				},
 			},
 			{
@@ -257,9 +246,7 @@ func TestReadTCConfig(t *testing.T) {
 				`ryuk.container.privileged=true`,
 				map[string]string{},
 				Config{
-					RyukPrivileged:          true,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					RyukPrivileged: true,
 				},
 			},
 			{
@@ -302,9 +289,7 @@ func TestReadTCConfig(t *testing.T) {
 				`ryuk.verbose=true`,
 				map[string]string{},
 				Config{
-					RyukVerbose:             true,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					RyukVerbose: true,
 				},
 			},
 			{
@@ -314,9 +299,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
 				Config{
-					RyukDisabled:            true,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					RyukDisabled: true,
 				},
 			},
 			{
@@ -326,9 +309,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				Config{
-					RyukPrivileged:          true,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					RyukPrivileged: true,
 				},
 			},
 			{
@@ -338,9 +319,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
 				Config{
-					RyukDisabled:            true,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					RyukDisabled: true,
 				},
 			},
 			{
@@ -350,9 +329,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
 				Config{
-					RyukDisabled:            true,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					RyukDisabled: true,
 				},
 			},
 			{
@@ -361,7 +338,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "false",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Ryuk disabled using an env var and properties. Env var wins (3)",
@@ -369,7 +346,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "false",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Ryuk verbose using an env var and properties. Env var wins (0)",
@@ -378,9 +355,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_VERBOSE": "true",
 				},
 				Config{
-					RyukVerbose:             true,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					RyukVerbose: true,
 				},
 			},
 			{
@@ -390,9 +365,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_VERBOSE": "true",
 				},
 				Config{
-					RyukVerbose:             true,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					RyukVerbose: true,
 				},
 			},
 			{
@@ -401,7 +374,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_VERBOSE": "false",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Ryuk verbose using an env var and properties. Env var wins (3)",
@@ -409,7 +382,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_VERBOSE": "false",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Ryuk container privileged using an env var and properties. Env var wins (0)",
@@ -418,9 +391,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				Config{
-					RyukPrivileged:          true,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					RyukPrivileged: true,
 				},
 			},
 			{
@@ -430,9 +401,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				Config{
-					RyukPrivileged:          true,
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					RyukPrivileged: true,
 				},
 			},
 			{
@@ -441,7 +410,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Ryuk container privileged using an env var and properties. Env var wins (3)",
@@ -449,7 +418,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With TLS verify using properties when value is wrong",
@@ -470,7 +439,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "foo",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Ryuk container privileged using an env var and properties. Env var does not win because it's not a boolean value",
@@ -478,16 +447,14 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "foo",
 				},
-				defaultConfig,
+				defaultCfg,
 			},
 			{
 				"With Hub image name prefix set as a property",
 				`hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
 				map[string]string{},
 				Config{
-					HubImageNamePrefix:      defaultHubPrefix + "/props/",
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					HubImageNamePrefix: defaultHubPrefix + "/props/",
 				},
 			},
 			{
@@ -497,9 +464,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
 				},
 				Config{
-					HubImageNamePrefix:      defaultHubPrefix + "/env/",
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					HubImageNamePrefix: defaultHubPrefix + "/env/",
 				},
 			},
 			{
@@ -509,9 +474,35 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
 				},
 				Config{
-					HubImageNamePrefix:      defaultHubPrefix + "/env/",
-					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					HubImageNamePrefix: defaultHubPrefix + "/env/",
+				},
+			},
+			{
+				"bridge-name/property",
+				`tc.bridge.name=props`,
+				map[string]string{},
+				Config{
+					TestcontainersBridgeName: "props",
+				},
+			},
+			{
+				"bridge-name/env-var",
+				``,
+				map[string]string{
+					"TESTCONTAINERS_BRIDGE_NAME": "env",
+				},
+				Config{
+					TestcontainersBridgeName: "env",
+				},
+			},
+			{
+				"bridge-name/env-var-wins",
+				`tc.bridge.name=props`,
+				map[string]string{
+					"TESTCONTAINERS_BRIDGE_NAME": "env",
+				},
+				Config{
+					TestcontainersBridgeName: "env",
 				},
 			},
 		}
@@ -531,7 +522,18 @@ func TestReadTCConfig(t *testing.T) {
 				//
 				config := read()
 
-				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
+				// Merge the returned config, and the expected one, with the default config
+				// to avoid setting all the fields in the expected config.
+				// In the case of decoding errors in the properties file, the read config
+				// needs to be merged with the default config to avoid setting the fields
+				// that are not set in the properties file.
+				err := mergo.Merge(&config, defaultCfg)
+				require.NoError(t, err)
+
+				err = mergo.Merge(&tt.expected, defaultCfg)
+				require.NoError(t, err)
+
+				require.Equal(t, tt.expected, config, "Configuration doesn't not match")
 			})
 		}
 	})

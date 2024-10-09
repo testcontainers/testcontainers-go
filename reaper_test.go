@@ -120,7 +120,6 @@ func TestContainerStartsWithoutTheReaper(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
@@ -153,7 +152,6 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	ctx := context.Background()
 
 	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
@@ -188,7 +186,6 @@ func TestContainerStopWithReaper(t *testing.T) {
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
@@ -235,7 +232,6 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
@@ -268,7 +264,6 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{

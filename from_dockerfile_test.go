@@ -103,7 +103,6 @@ func TestBuildImageFromDockerfile_BuildError(t *testing.T) {
 		},
 	}
 	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	})
