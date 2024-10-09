@@ -68,11 +68,11 @@ func (lc *StdoutLogConsumer) Accept(l Log) {
 // container is stopped when the function ends.
 //
 // before any error check. If container is nil, its a no-op.
-func CleanupContainer(tb testing.TB, container Container, options ...TerminateOption) {
+func CleanupContainer(tb testing.TB, ctr Container, options ...TerminateOption) {
 	tb.Helper()
 
 	tb.Cleanup(func() {
-		noErrorOrIgnored(tb, TerminateContainer(container, options...))
+		noErrorOrIgnored(tb, TerminateContainer(ctr, options...))
 	})
 }
 
