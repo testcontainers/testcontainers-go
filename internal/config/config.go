@@ -65,6 +65,11 @@ type Config struct {
 	//
 	// Environment variable: TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED
 	RyukPrivileged bool `properties:"ryuk.container.privileged,default=false"`
+  
+  // RyukUserNamespace is the container user namespace used to run the Garbage Collector container.
+  //
+  // Environment variable: TESTCONTAINERS_RYUK_CONTAINER_USER_NAMESPACE
+  RyukUserNamespace string `properties:"ryuk.container.user.namespace,default="`
 
 	// RyukReconnectionTimeout is the time to wait before attempting to reconnect to the Garbage Collector container.
 	//
@@ -124,6 +129,11 @@ func read() Config {
 		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
 		if parseBool(ryukPrivilegedEnv) {
 			config.RyukPrivileged = ryukPrivilegedEnv == "true"
+		}
+
+		ryukUserNamespaceEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_USER_NAMESPACE")
+		if ryukUserNamespaceEnv != "" {
+			config.RyukUserNamespace = ryukUserNamespaceEnv
 		}
 
 		ryukVerboseEnv := os.Getenv("TESTCONTAINERS_RYUK_VERBOSE")
