@@ -18,6 +18,16 @@ jobs:
         run: |
           echo "docker_install_type=${{ matrix.rootless-docker == true && 'Rootless' || 'Rootful' }}" >> "$GITHUB_ENV"
 
+      - name: Install Latest Docker
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
+        run: |
+          sudo systemctl stop docker.service
+          sudo apt-get purge docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-ce-rootless-extras docker-buildx-plugin
+          curl -fsSL https://test.docker.com -o get-docker.sh
+          sudo REPO_FILE=docker-ce-staging.repo DOWNLOAD_URL=https://download-stage.docker.com sh ./get-docker.sh
+      - name: Check Docker version
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
+        run: docker version
       - name: Setup rootless Docker
         if: ${{ matrix.rootless-docker }}
         uses: ScribeMD/rootless-docker@6bd157a512c2fafa4e0243a8aa87d964eb890886  # v0.2.2
@@ -43,7 +53,13 @@ jobs:
         run: go mod tidy
 
       - name: Install Latest Docker
-        run: curl https://get.docker.com | CHANNEL=test sh
+        run: |
+          sudo systemctl stop docker.service
+          sudo apt-get purge docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-ce-rootless-extras docker-buildx-plugin
+          curl -fsSL https://test.docker.com -o get-docker.sh
+          sudo REPO_FILE=docker-ce-staging.repo DOWNLOAD_URL=https://download-stage.docker.com sh ./get-docker.sh
+      - name: Check Docker version
+        run: docker version
 
       - name: go test
         timeout-minutes: 30
