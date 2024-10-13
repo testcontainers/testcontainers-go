@@ -26,12 +26,12 @@ type MeilisearchContainer struct {
 }
 
 // Deprecated: use Run instead
-// RunContainer creates an instance of the OpenSearch container type
+// RunContainer creates an instance of the Meilisearch container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MeilisearchContainer, error) {
-	return Run(ctx, "opensearchproject/opensearch:2.11.1", opts...)
+	return Run(ctx, "getmeili/meilisearch:v1.10.3", opts...)
 }
 
-// Run creates an instance of the OpenSearch container type
+// Run creates an instance of the Meilisearch container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MeilisearchContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        img,
@@ -139,7 +139,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-// Address retrieves the address of the OpenSearch container.
+// Address retrieves the address of the Meilisearch container.
 // It will use http as protocol, as TLS is not supported at the moment.
 func (c *MeilisearchContainer) Address(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, defaultHTTPPort)
