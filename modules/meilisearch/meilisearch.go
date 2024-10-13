@@ -37,10 +37,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Image:        img,
 		ExposedPorts: []string{defaultHTTPPort},
 		Env: map[string]string{
-			"discovery.type":              "single-node",
-			"DISABLE_INSTALL_DEMO_CONFIG": "true",
-			"DISABLE_SECURITY_PLUGIN":     "true",
-			"MEILI_MASTER_KEY":            defaultMasterKey,
+			"MEILI_MASTER_KEY": defaultMasterKey,
 		},
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.Ulimits = []*units.Ulimit{
