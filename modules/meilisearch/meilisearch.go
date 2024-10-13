@@ -58,22 +58,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if settings.DumpDataFileDir != "" {
 
 		genericContainerReq.HostConfigModifier = func(hc *container.HostConfig) {
-			//hc.Mounts = append(hc.Mounts, mount.Mount{
-			//	Type:     mount.TypeBind,
-			//	Source:   settings.DumpDataFileDir,
-			//	Target:   "/dumps",
-			//	ReadOnly: false,
-			//})
-			hc.Binds = []string{fmt.Sprintf("/Users/mashail/Projects/testcontainers-go/modules/meilisearch/testdata:/dumps")}
+			hc.Binds = []string{fmt.Sprintf("%s:/dumps", settings.DumpDataFileDir)}
 		}
-		//genericContainerReq.Mounts = testcontainers.ContainerMounts{
-		//	{
-		//		Source: testcontainers.GenericVolumeMountSource{
-		//			Name: settings.DumpDataFileDir,
-		//		},
-		//		Target: "/dumps",
-		//	},
-		//}
 
 		genericContainerReq.Cmd = append(genericContainerReq.Cmd, "meilisearch", "--import-dump", fmt.Sprintf("/dumps/%s", settings.DumpDataFileName))
 		//genericContainerReq.Entrypoint = []string{"/bin/sh", "-c", "meilisearch"}
