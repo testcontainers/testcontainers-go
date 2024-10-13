@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-units"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -38,20 +36,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ExposedPorts: []string{defaultHTTPPort},
 		Env: map[string]string{
 			"MEILI_MASTER_KEY": defaultMasterKey,
-		},
-		HostConfigModifier: func(hc *container.HostConfig) {
-			hc.Ulimits = []*units.Ulimit{
-				{
-					Name: "memlock",
-					Soft: -1, // Set memlock to unlimited (no soft or hard limit)
-					Hard: -1,
-				},
-				{
-					Name: "nofile",
-					Soft: 65536, // Maximum number of open files for the meilisearch user - set to at least 65536
-					Hard: 65536,
-				},
-			}
 		},
 	}
 
