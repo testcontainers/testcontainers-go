@@ -77,7 +77,7 @@ See [Docker environment variables](https://docs.docker.com/engine/reference/comm
 
 4. Read the host endpoint for the current Docker context in the Docker configuration file. E.g. `~/.docker/config.json`.
 
-5. Read the default Docker socket path, without the unix schema. E.g. `/var/run/docker.sock`
+5. Assume the default Docker socket path as `/var/run/docker.sock`.
 
 6. Read the **docker.host** property in the `~/.testcontainers.properties` file. E.g. `docker.host=tcp://my.docker.host:1234`
 
