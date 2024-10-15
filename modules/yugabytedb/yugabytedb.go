@@ -167,12 +167,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 func (y *YugabyteDBContainer) YSQLConnectionString(ctx context.Context, args ...string) (string, error) {
 	host, err := y.Host(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("host: %w", err)
 	}
 
 	mappedPort, err := y.MappedPort(ctx, ysqlPort)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
 	return fmt.Sprintf(
@@ -204,17 +204,17 @@ func (y *YugabyteDBContainer) YSQLConnectionString(ctx context.Context, args ...
 func (y *YugabyteDBContainer) YCQLConfigureClusterConfig(ctx context.Context, cfg *gocql.ClusterConfig) error {
 	host, err := y.Host(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("host: %w", err)
 	}
 
 	mappedPort, err := y.MappedPort(ctx, ycqlPort)
 	if err != nil {
-		return err
+		return fmt.Errorf("mapped port: %w", err)
 	}
 
 	inspect, err := y.Container.Inspect(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("inspect: %w", err)
 	}
 
 	var (

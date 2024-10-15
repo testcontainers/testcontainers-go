@@ -41,12 +41,12 @@ func TestYugabyteDB_YSQL(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("Run with custom options", func(t *testing.T) {
+	t.Run("custom-options", func(t *testing.T) {
 		ctx := context.Background()
 		ctr, err := yugabytedb.Run(ctx, "yugabytedb/yugabyte:2024.1.3.0-b105",
-			yugabytedb.WithYSQLDatabaseName("custom-db"),
-			yugabytedb.WithYSQLDatabaseUser("custom-user"),
-			yugabytedb.WithYSQLDatabasePassword("custom-password"),
+			yugabytedb.WithDatabaseName("custom-db"),
+			yugabytedb.WithDatabaseUser("custom-user"),
+			yugabytedb.WithDatabasePassword("custom-password"),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -83,18 +83,18 @@ func TestYugabyteDB_YCQL(t *testing.T) {
 
 		session, err := cluster.CreateSession()
 		require.NoError(t, err)
-		require.NoError(t, session.Close())
+		t.Cleanup(func() { session.Close() })
 	})
 
-	t.Run("Run with custom options", func(t *testing.T) {
+	t.Run("custom-options", func(t *testing.T) {
 		ctx := context.Background()
-		opts := []testcontainers.ContainerCustomizer{
-			yugabytedb.WithYCQLKeyspace("custom-keyspace"),
-			yugabytedb.WithYCQLUser("custom-user"),
-			yugabytedb.WithYCQLPassword("custom-password"),
-		}
 
-		ctr, err := yugabytedb.Run(ctx, "yugabytedb/yugabyte:2024.1.3.0-b105", opts...)
+		ctr, err := yugabytedb.Run(ctx, "yugabytedb/yugabyte:2024.1.3.0-b105",
+			yugabytedb.WithKeyspace("custom-keyspace"),
+			yugabytedb.WithUser("custom-user"),
+			yugabytedb.WithPassword("custom-password"),
+		)
+
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 

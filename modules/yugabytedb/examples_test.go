@@ -18,11 +18,11 @@ func ExampleRun() {
 	yugabytedbContainer, err := yugabytedb.Run(
 		ctx,
 		"yugabytedb/yugabyte:2024.1.3.0-b105",
-		yugabytedb.WithYCQLKeyspace("custom-keyspace"),
-		yugabytedb.WithYCQLUser("custom-user"),
-		yugabytedb.WithYSQLDatabaseName("custom-db"),
-		yugabytedb.WithYSQLDatabaseUser("custom-user"),
-		yugabytedb.WithYSQLDatabasePassword("custom-password"),
+		yugabytedb.WithKeyspace("custom-keyspace"),
+		yugabytedb.WithUser("custom-user"),
+		yugabytedb.WithDatabaseName("custom-db"),
+		yugabytedb.WithDatabaseUser("custom-user"),
+		yugabytedb.WithDatabasePassword("custom-password"),
 	)
 
 	if err != nil {
@@ -42,8 +42,9 @@ func ExampleRun() {
 		return
 	}
 
-	// Output: true
 	fmt.Println(state.Running)
+
+	// Output: true
 }
 
 func ExampleYugabyteDBContainer_YSQLConnectionString() {
@@ -78,6 +79,20 @@ func ExampleYugabyteDBContainer_YSQLConnectionString() {
 	}
 
 	defer db.Close()
+
+	var (
+		i   int
+		row = db.QueryRowContext(ctx, "SELECT 1")
+	)
+
+	if err := row.Scan(&i); err != nil {
+		log.Printf("failed to scan row: %s", err)
+		return
+	}
+
+	fmt.Println(i)
+
+	// Output: 1
 }
 
 func ExampleYugabyteDBContainer_YCQLConfigureClusterConfig() {
@@ -109,4 +124,18 @@ func ExampleYugabyteDBContainer_YCQLConfigureClusterConfig() {
 	}
 
 	defer session.Close()
+
+	var i int
+	if err := session.Query(`
+		SELECT COUNT(*) 
+		FROM system_schema.keyspaces 
+		WHERE keyspace_name = 'yugabyte'
+	`).Scan(&i); err != nil {
+		log.Printf("failed to scan row: %s", err)
+		return
+	}
+
+	fmt.Println(i)
+
+	// Output: 1
 }
