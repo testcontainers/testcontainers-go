@@ -43,13 +43,11 @@ func TestYugabyteDB_YSQL(t *testing.T) {
 
 	t.Run("Run with custom options", func(t *testing.T) {
 		ctx := context.Background()
-		opts := []testcontainers.ContainerCustomizer{
+		ctr, err := yugabytedb.Run(ctx, "yugabytedb/yugabyte:2024.1.3.0-b105",
 			yugabytedb.WithYSQLDatabaseName("custom-db"),
 			yugabytedb.WithYSQLDatabaseUser("custom-user"),
 			yugabytedb.WithYSQLDatabasePassword("custom-password"),
-		}
-
-		ctr, err := yugabytedb.Run(ctx, "yugabytedb/yugabyte:2024.1.3.0-b105", opts...)
+		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
