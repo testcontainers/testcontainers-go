@@ -224,14 +224,17 @@ func (y *YugabyteDBContainer) YCQLConfigureClusterConfig(ctx context.Context, cf
 	)
 
 	for _, env := range inspect.Config.Env {
-		parts := strings.SplitN(env, "=", 2)
-		switch parts[0] {
+		key, val, found := strings.Cut(env, "=")
+		if !found {
+			continue
+		}
+		switch key {
 		case ycqlKeyspaceEnv:
-			keyspace = parts[1]
+			keyspace = val
 		case ycqlUserNameEnv:
-			user = parts[1]
+			user = val
 		case ycqlPasswordEnv:
-			password = parts[1]
+			password = val
 		}
 	}
 
