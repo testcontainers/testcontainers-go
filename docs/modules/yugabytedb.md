@@ -1,4 +1,4 @@
-# yugabyteDB
+# YugabyteDB
 
 Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
@@ -61,7 +61,7 @@ The connection string can then be used to connect to the yugabyteDB container us
 a standard PostgreSQL client.
 
 <!--codeinclude-->
-[Create a postgres client using the connection string](../../modules/yugabytedb/yugabytedb_test.go)
+[Create a postgres client using the connection string](../../modules/yugabytedb/yugabytedb_test.go) TestYugabyteDB_YSQL
 <!--/codeinclude-->
 
 #### YCQLConfigureClusterConfig
@@ -72,5 +72,5 @@ The cluster configuration can then be used to connect to the yugabyteDB containe
 the official yugabyteDB Go client.
 
 <!--codeinclude-->
-[Create a yugabyteDB client using the cluster configuration](../../modules/yugabytedb/yugabytedb_test.go)
+[Create a yugabyteDB client using the cluster configuration](../../modules/yugabytedb/yugabytedb_test.go) TestYugabyteDB_YCQL
 <!--/codeinclude-->

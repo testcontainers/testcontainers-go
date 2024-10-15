@@ -12,6 +12,11 @@ import (
 )
 
 const (
+	mastDashboardPort    = "7000"
+	tServerDashboardPort = "9000"
+)
+
+const (
 	ycqlPort = "9042/tcp"
 
 	ycqlKeyspaceEnv = "YCQL_KEYSPACE"
