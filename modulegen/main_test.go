@@ -281,7 +281,7 @@ func TestGenerate(t *testing.T) {
 
 	moduleDirFileInfo, err := os.Stat(moduleDirPath)
 	require.NoError(t, err) // error nil implies the file exist
-	assert.True(t, moduleDirFileInfo.IsDir())
+	require.True(t, moduleDirFileInfo.IsDir())
 
 	moduleDocFile := filepath.Join(examplesDocTmp, moduleNameLower+".md")
 	_, err = os.Stat(moduleDocFile)
@@ -337,7 +337,7 @@ func TestGenerateModule(t *testing.T) {
 
 	moduleDirFileInfo, err := os.Stat(moduleDirPath)
 	require.NoError(t, err) // error nil implies the file exist
-	assert.True(t, moduleDirFileInfo.IsDir())
+	require.True(t, moduleDirFileInfo.IsDir())
 
 	moduleDocFile := filepath.Join(modulesDocTmp, moduleNameLower+".md")
 	_, err = os.Stat(moduleDocFile)
