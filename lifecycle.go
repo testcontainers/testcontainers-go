@@ -12,8 +12,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
-
-	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
 // ContainerRequestHook is a hook that will be called before a container is created.
@@ -509,16 +507,6 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 
 	networkingConfig.EndpointsConfig = endpointSettings
 
-	// Move the bridge network to the user-defined bridge network, if configured.
-	// This is needed because different container runtimes might use different a bridge network name.
-	// As an example, when listing the networks, the Docker client always retrives the default
-	// bridge network as "bridge", but when attaching a container to that bridge network,
-	// the container runtime can fail because the bridge network is not named "bridge".
-	// For that reason we need to move the bridge network to the user-defined bridge network,
-	// that's why we are offering an extension point to configure the bridge network name
-	// at the Testcontainers configuration level.
-	bridgeNetworModifier(networkingConfig.EndpointsConfig)
-
 	exposedPorts := req.ExposedPorts
 	// this check must be done after the pre-creation Modifiers are called, so the network mode is already set
 	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
@@ -638,21 +626,5 @@ func defaultHostConfigModifier(req ContainerRequest) func(hostConfig *container.
 		hostConfig.ExtraHosts = req.ExtraHosts
 		hostConfig.NetworkMode = req.NetworkMode
 		hostConfig.Resources = req.Resources
-	}
-}
-
-// bridgeNetworModifier moves the bridge network to the user-defined bridge network, if configured.
-func bridgeNetworModifier(endpointSettings map[string]*network.EndpointSettings) {
-	userDefinedBridge := config.Read().TestcontainersBridgeName
-
-	if userDefinedBridge == Bridge {
-		return
-	}
-
-	// If the map contains a bridge network, use the configured bridge network.
-	if _, ok := endpointSettings[Bridge]; ok {
-		nw := endpointSettings[Bridge]
-		delete(endpointSettings, Bridge)
-		endpointSettings[userDefinedBridge] = nw
 	}
 }

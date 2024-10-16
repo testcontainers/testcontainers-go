@@ -129,17 +129,15 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
 		t.Setenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT", "13s")
 		t.Setenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT", "12s")
-		t.Setenv("TESTCONTAINERS_BRIDGE_NAME", "testbridge")
 
 		config := read()
 		expected := Config{
-			HubImageNamePrefix:       defaultHubPrefix,
-			RyukDisabled:             true,
-			RyukPrivileged:           true,
-			RyukVerbose:              true,
-			RyukReconnectionTimeout:  13 * time.Second,
-			RyukConnectionTimeout:    12 * time.Second,
-			TestcontainersBridgeName: "testbridge",
+			HubImageNamePrefix:      defaultHubPrefix,
+			RyukDisabled:            true,
+			RyukPrivileged:          true,
+			RyukVerbose:             true,
+			RyukReconnectionTimeout: 13 * time.Second,
+			RyukConnectionTimeout:   12 * time.Second,
 		}
 
 		assert.Equal(t, expected, config)
@@ -149,9 +147,8 @@ func TestReadTCConfig(t *testing.T) {
 		defaultRyukConnectionTimeout := 60 * time.Second
 		defaultRyukReconnectionTimeout := 10 * time.Second
 		defaultCfg := Config{
-			RyukConnectionTimeout:    defaultRyukConnectionTimeout,
-			RyukReconnectionTimeout:  defaultRyukReconnectionTimeout,
-			TestcontainersBridgeName: "bridge",
+			RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+			RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
 		}
 
 		tests := []struct {
@@ -475,34 +472,6 @@ func TestReadTCConfig(t *testing.T) {
 				},
 				Config{
 					HubImageNamePrefix: defaultHubPrefix + "/env/",
-				},
-			},
-			{
-				"bridge-name/property",
-				`tc.bridge.name=props`,
-				map[string]string{},
-				Config{
-					TestcontainersBridgeName: "props",
-				},
-			},
-			{
-				"bridge-name/env-var",
-				``,
-				map[string]string{
-					"TESTCONTAINERS_BRIDGE_NAME": "env",
-				},
-				Config{
-					TestcontainersBridgeName: "env",
-				},
-			},
-			{
-				"bridge-name/env-var-wins",
-				`tc.bridge.name=props`,
-				map[string]string{
-					"TESTCONTAINERS_BRIDGE_NAME": "env",
-				},
-				Config{
-					TestcontainersBridgeName: "env",
 				},
 			},
 		}

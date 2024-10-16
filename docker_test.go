@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -509,7 +508,9 @@ func TestContainerCreationWithName(t *testing.T) {
 			},
 			WaitingFor: wait.ForHTTP("/").WithPort(nginxDefaultPort),
 			Name:       creationName,
-			Networks:   []string{config.Read().TestcontainersBridgeName},
+			// no network means it will be connected to the default bridge network
+			// of any given container runtime
+			Networks: []string{},
 		},
 		Started: true,
 	})
@@ -530,14 +531,7 @@ func TestContainerCreationWithName(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(networks) != 1 {
-		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
-	}
-
-	expectedBridge := config.Read().TestcontainersBridgeName
-
-	network := networks[0]
-	if network != expectedBridge {
-		t.Errorf("Expected network name '%s'. Got '%s'.", expectedBridge, network)
+		t.Errorf("Expected networks 1, the default bridge network. Got '%d'.", len(networks))
 	}
 
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")

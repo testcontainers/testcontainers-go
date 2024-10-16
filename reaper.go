@@ -254,7 +254,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.AutoRemove = true
 			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
-			hc.NetworkMode = Bridge
+			hc.NetworkMode = "bridge"
 		},
 		Env: map[string]string{},
 	}

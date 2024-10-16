@@ -43,8 +43,8 @@ import (
 var _ Container = (*DockerContainer)(nil)
 
 const (
-	Bridge        = "bridge"         // Bridge network driver and name
-	ReaperDefault = "reaper_default" // Deprecated: use Bridge instead. Default network name when bridge is not available
+	Bridge        = "bridge"         // Deprecated, it will removed in the next major release. Bridge network driver and name
+	ReaperDefault = "reaper_default" // Deprecated: it will removed in the next major release. Default network name when bridge is not available
 	packagePath   = "github.com/testcontainers/testcontainers-go"
 )
 
@@ -1504,7 +1504,7 @@ func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (ne
 }
 
 func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
-	nw, err := p.GetNetwork(ctx, NetworkRequest{Name: config.Read().TestcontainersBridgeName})
+	nw, err := p.GetNetwork(ctx, NetworkRequest{Name: Bridge})
 	if err != nil {
 		return "", err
 	}
