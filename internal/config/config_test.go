@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -44,7 +45,7 @@ func TestReadConfig(t *testing.T) {
 			Host:         "", // docker socket is empty at the properties file
 		}
 
-		assert.Equal(t, expected, config)
+		require.Equal(t, expected, config)
 
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "false")
 

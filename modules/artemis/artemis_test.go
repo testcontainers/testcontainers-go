@@ -76,7 +76,7 @@ func TestArtemis(t *testing.T) {
 			res, err := http.Get(u)
 			require.NoError(t, err, "failed to access console")
 			res.Body.Close()
-			assert.Equal(t, http.StatusOK, res.StatusCode, "failed to access console")
+			require.Equal(t, http.StatusOK, res.StatusCode, "failed to access console")
 
 			if test.user != "" {
 				assert.Equal(t, test.user, ctr.User(), "unexpected user")
