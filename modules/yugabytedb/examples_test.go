@@ -47,7 +47,7 @@ func ExampleRun() {
 	// Output: true
 }
 
-func ExampleYugabyteDBContainer_YSQLConnectionString() {
+func ExampleContainer_YSQLConnectionString() {
 	ctx := context.Background()
 
 	yugabytedbContainer, err := yugabytedb.Run(
@@ -92,7 +92,7 @@ func ExampleYugabyteDBContainer_YSQLConnectionString() {
 	// Output: 1
 }
 
-func ExampleYugabyteDBContainer_YCQLConfigureClusterConfig() {
+func ExampleContainer_YCQLConfigureClusterConfig() {
 	ctx := context.Background()
 
 	yugabytedbContainer, err := yugabytedb.Run(

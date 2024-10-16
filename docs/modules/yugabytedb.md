@@ -31,7 +31,7 @@ func Run(
     ctx context.Context, 
     img string, 
     opts ...testcontainers.ContainerCustomizer,
-) (*yugabyteDBContainer, error)
+) (*Container, error)
 ```
 
 - `context.Context`, the Go context.
@@ -61,7 +61,7 @@ The connection string can then be used to connect to the yugabyteDB container us
 a standard PostgreSQL client.
 
 <!--codeinclude-->
-[Create a postgres client using the connection string](../../modules/yugabytedb/examples_test.go) block:ExampleYugabyteDBContainer_YSQLConnectionString
+[Create a postgres client using the connection string](../../modules/yugabytedb/examples_test.go) block:ExampleContainer_YSQLConnectionString
 <!--/codeinclude-->
 
 #### YCQLConfigureClusterConfig
@@ -72,5 +72,5 @@ The cluster configuration can then be used to connect to the yugabyteDB containe
 the official yugabyteDB Go client.
 
 <!--codeinclude-->
-[Create a yugabyteDB client using the cluster configuration](../../modules/yugabytedb/examples_test.go) block:ExampleYugabyteDBContainer_YCQLConfigureClusterConfig
+[Create a yugabyteDB client using the cluster configuration](../../modules/yugabytedb/examples_test.go) block:ExampleContainer_YCQLConfigureClusterConfig
 <!--/codeinclude-->

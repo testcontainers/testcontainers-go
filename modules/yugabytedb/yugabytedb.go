@@ -40,8 +40,8 @@ const (
 	ysqlDatabasePassword = "yugabyte"
 )
 
-// YugabyteDBContainer represents the yugabyteDB container type used in the module
-type YugabyteDBContainer struct {
+// Container represents the yugabyteDB container type used in the module
+type Container struct {
 	testcontainers.Container
 
 	ysqlDatabaseName     string
@@ -53,55 +53,9 @@ type YugabyteDBContainer struct {
 // A default configuration is used for the container, but it can be customized using the
 // provided options.
 // When using default configuration values it is recommended to use the provided
-// [*YugabyteDBContainer.YSQLConnectionString] and [*YugabyteDBContainer.YCQLConfigureClusterConfig]
+// [*Container.YSQLConnectionString] and [*Container.YCQLConfigureClusterConfig]
 // methods to use the container in their respective clients.
-//
-// # Example using YSQL dialect:
-//
-//	ctx := context.Background()
-//	y, err := yugabytedb.Run(ctx, "yugabytedb/yugabyte")
-//	if err != nil {
-//		return err
-//	}
-//	defer func() {
-//		if err := testcontainers.TerminateContainer(y); err != nil {
-//			return err
-//		}
-//	}()
-//
-//	connStr, err := y.YSQLConnectionString(ctx)
-//	if err != nil {
-//		return err
-//	}
-//
-//	db, err := sql.Open("postgres", connStr)
-//	if err != nil {
-//		return err
-//	}
-//	defer db.Close()
-//
-// # Example using YCQL dialect:
-//
-//	ctx := context.Background()
-//	y, err := yugabytedb.Run(ctx, "yugabytedb/yugabyte")
-//	if err != nil {
-//		return err
-//	}
-//	defer func() {
-//		if err := testcontainers.TerminateContainer(y); err != nil {
-//			return err
-//		}
-//	}()
-//
-//	cluster := gocql.NewCluster()
-//	y.YCQLConfigureClusterConfig(ctx, cluster)
-//
-//	session, err := cluster.CreateSession()
-//	if err != nil {
-//		return err
-//	}
-//	defer session.Close()
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*YugabyteDBContainer, error) {
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image: img,
 		Cmd:   []string{"bin/yugabyted", "start", "--background=false"},
@@ -133,9 +87,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	var c *YugabyteDBContainer
+	var c *Container
 	if container != nil {
-		c = &YugabyteDBContainer{
+		c = &Container{
 			Container:            container,
 			ysqlDatabaseName:     req.Env[ysqlDatabaseNameEnv],
 			ysqlDatabaseUser:     req.Env[ysqlDatabaseUserEnv],
@@ -155,16 +109,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // arguments.
 // Additional arguments are appended to the connection string as query parameters
 // in the form of key=value pairs separated by "&".
-//
-// # Example:
-//
-//	connStr, err := y.YSQLConnectionString(ctx, "sslmode=disable")
-//	if err != nil {
-//		return err
-//	}
-//
-// The above code will return a connection string with the sslmode set to disable.
-func (y *YugabyteDBContainer) YSQLConnectionString(ctx context.Context, args ...string) (string, error) {
+func (y *Container) YSQLConnectionString(ctx context.Context, args ...string) (string, error) {
 	host, err := y.Host(ctx)
 	if err != nil {
 		return "", fmt.Errorf("host: %w", err)
@@ -189,19 +134,7 @@ func (y *YugabyteDBContainer) YSQLConnectionString(ctx context.Context, args ...
 // yugabyteDB container configuration.
 // The method sets the hosts, keyspace and authenticator fields of the cluster
 // configuration to the values of the yugabyteDB container.
-//
-// # Example:
-//
-//	cluster := gocql.NewCluster()
-//	ctr.YCQLConfigureClusterConfig(ctx, cluster)
-//	session, err := cluster.CreateSession()
-//	if err != nil {
-//		return err
-//	}
-//	defer session.Close()
-//
-// [gocql.ClusterConfig]: https://pkg.go.dev/github.com/gocql/gocql?tab=doc#ClusterConfig
-func (y *YugabyteDBContainer) YCQLConfigureClusterConfig(ctx context.Context, cfg *gocql.ClusterConfig) error {
+func (y *Container) YCQLConfigureClusterConfig(ctx context.Context, cfg *gocql.ClusterConfig) error {
 	host, err := y.Host(ctx)
 	if err != nil {
 		return fmt.Errorf("host: %w", err)
