@@ -194,12 +194,16 @@ func parseDockerSocket(socket string) string {
 func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) string {
 	tcHost, err := testcontainersHostFromProperties(ctx)
 	if err == nil {
-		return parseDockerSocket(tcHost)
+		if err = dockerHostCheck(ctx, tcHost); err == nil {
+			return parseDockerSocket(tcHost)
+		}
 	}
 
 	testcontainersDockerSocket, err := dockerSocketOverridePath()
 	if err == nil {
-		return parseDockerSocket(testcontainersDockerSocket)
+		if err = dockerHostCheck(ctx, testcontainersDockerSocket); err == nil {
+			return parseDockerSocket(testcontainersDockerSocket)
+		}
 	}
 
 	info, err := cli.Info(ctx)
