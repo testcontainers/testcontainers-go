@@ -12,7 +12,7 @@ Please read the [system requirements](../system_requirements/) page before you s
 We use [go mod](https://blog.golang.org/using-go-modules) and you can get it installed via:
 
 ```
-go get github.com/testcontainers/testcontainers-go
+go get github.com/testcontainers/testcontainers-go@main
 ```
 
 ## 3. Spin up Redis
