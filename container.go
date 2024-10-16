@@ -37,17 +37,17 @@ type DeprecatedContainer interface {
 
 // Container allows getting info about and controlling a single container instance
 type Container interface {
-	GetContainerID() string                                         // get the container id from the provider
-	Endpoint(context.Context, string) (string, error)               // get proto://ip:port string for the lowest exposed port
-	PortEndpoint(context.Context, nat.Port, string) (string, error) // get proto://ip:port string for the given exposed port
-	Host(context.Context) (string, error)                           // get host where the container port is exposed
-	Inspect(context.Context) (*types.ContainerJSON, error)          // get container info
-	MappedPort(context.Context, nat.Port) (nat.Port, error)         // get externally mapped port for a container port
-	Ports(context.Context) (nat.PortMap, error)                     // Deprecated: Use c.Inspect(ctx).NetworkSettings.Ports instead
-	SessionID() string                                              // get session id
-	IsRunning() bool                                                // IsRunning returns true if the container is running, false otherwise.
-	Start(context.Context) error                                    // start the container
-	Stop(context.Context, *time.Duration) error                     // stop the container
+	GetContainerID() string                                                        // get the container id from the provider
+	Endpoint(context.Context, string) (string, error)                              // get proto://ip:port string for the lowest exposed port
+	PortEndpoint(ctx context.Context, port nat.Port, proto string) (string, error) // get proto://ip:port string for the given exposed port
+	Host(context.Context) (string, error)                                          // get host where the container port is exposed
+	Inspect(context.Context) (*types.ContainerJSON, error)                         // get container info
+	MappedPort(context.Context, nat.Port) (nat.Port, error)                        // get externally mapped port for a container port
+	Ports(context.Context) (nat.PortMap, error)                                    // Deprecated: Use c.Inspect(ctx).NetworkSettings.Ports instead
+	SessionID() string                                                             // get session id
+	IsRunning() bool                                                               // IsRunning returns true if the container is running, false otherwise.
+	Start(context.Context) error                                                   // start the container
+	Stop(context.Context, *time.Duration) error                                    // stop the container
 
 	// Terminate stops and removes the container and its image if it was built and not flagged as kept.
 	Terminate(ctx context.Context) error
