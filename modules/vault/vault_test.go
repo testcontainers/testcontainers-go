@@ -50,7 +50,7 @@ func TestVault(t *testing.T) {
 			exec, reader, err := vaultContainer.Exec(ctx, []string{"vault", "kv", "get", "-format=json", "secret/test1"})
 			// }
 			require.NoError(t, err)
-			assert.Equal(t, 0, exec)
+			require.Zero(t, exec)
 
 			bytes, err := io.ReadAll(reader)
 			require.NoError(t, err)
