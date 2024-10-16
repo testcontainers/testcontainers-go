@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseDockerIgnore(t *testing.T) {
@@ -37,7 +38,7 @@ func TestParseDockerIgnore(t *testing.T) {
 	for _, testCase := range testCases {
 		exists, excluded, err := parseDockerIgnore(testCase.filePath)
 		assert.Equal(t, testCase.exists, exists)
-		assert.Equal(t, testCase.expectedErr, err)
+		require.ErrorIs(t, testCase.expectedErr, err)
 		assert.Equal(t, testCase.expectedExcluded, excluded)
 	}
 }
