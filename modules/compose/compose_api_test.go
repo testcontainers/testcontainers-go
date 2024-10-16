@@ -73,9 +73,9 @@ func TestDockerComposeAPIWithWaitLogStrategy(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 2)
-	assert.Contains(t, serviceNames, "api-nginx")
-	assert.Contains(t, serviceNames, "api-mysql")
+	require.Len(t, serviceNames, 2)
+	require.Contains(t, serviceNames, "api-nginx")
+	require.Contains(t, serviceNames, "api-mysql")
 }
 
 func TestDockerComposeAPIWithRunServices(t *testing.T) {
@@ -170,9 +170,9 @@ func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 2)
-	assert.Contains(t, serviceNames, "api-nginx")
-	assert.Contains(t, serviceNames, "api-mysql")
+	require.Len(t, serviceNames, 2)
+	require.Contains(t, serviceNames, "api-nginx")
+	require.Contains(t, serviceNames, "api-mysql")
 
 	// all the services in the compose has the Testcontainers Labels
 	for _, serviceName := range serviceNames {
@@ -213,9 +213,9 @@ func TestDockerComposeAPI_WithReaper(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 2)
-	assert.Contains(t, serviceNames, "api-nginx")
-	assert.Contains(t, serviceNames, "api-mysql")
+	require.Len(t, serviceNames, 2)
+	require.Contains(t, serviceNames, "api-nginx")
+	require.Contains(t, serviceNames, "api-mysql")
 }
 
 func TestDockerComposeAPI_WithoutReaper(t *testing.T) {
@@ -240,9 +240,9 @@ func TestDockerComposeAPI_WithoutReaper(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 2)
-	assert.Contains(t, serviceNames, "api-nginx")
-	assert.Contains(t, serviceNames, "api-mysql")
+	require.Len(t, serviceNames, 2)
+	require.Contains(t, serviceNames, "api-nginx")
+	require.Contains(t, serviceNames, "api-mysql")
 }
 
 func TestDockerComposeAPIWithStopServices(t *testing.T) {
@@ -261,9 +261,9 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 2)
-	assert.Contains(t, serviceNames, "api-nginx")
-	assert.Contains(t, serviceNames, "api-mysql")
+	require.Len(t, serviceNames, 2)
+	require.Contains(t, serviceNames, "api-nginx")
+	require.Contains(t, serviceNames, "api-mysql")
 
 	// close mysql container in purpose
 	mysqlContainer, err := compose.ServiceContainer(context.Background(), "api-mysql")
@@ -386,9 +386,9 @@ func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 2)
-	assert.Contains(t, serviceNames, "api-nginx")
-	assert.Contains(t, serviceNames, "api-mysql")
+	require.Len(t, serviceNames, 2)
+	require.Contains(t, serviceNames, "api-nginx")
+	require.Contains(t, serviceNames, "api-mysql")
 }
 
 func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
@@ -430,9 +430,9 @@ func TestDockerComposeAPIComplex(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 2)
-	assert.Contains(t, serviceNames, "api-nginx")
-	assert.Contains(t, serviceNames, "api-mysql")
+	require.Len(t, serviceNames, 2)
+	require.Contains(t, serviceNames, "api-nginx")
+	require.Contains(t, serviceNames, "api-mysql")
 }
 
 func TestDockerComposeAPIWithStackReader(t *testing.T) {

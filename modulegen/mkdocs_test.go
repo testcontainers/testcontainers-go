@@ -40,9 +40,9 @@ func TestReadMkDocsConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
-	assert.Equal(t, "Testcontainers for Go", config.SiteName)
-	assert.Equal(t, "https://github.com/testcontainers/testcontainers-go", config.RepoURL)
-	assert.Equal(t, "edit/main/docs/", config.EditURI)
+	require.Equal(t, "Testcontainers for Go", config.SiteName)
+	require.Equal(t, "https://github.com/testcontainers/testcontainers-go", config.RepoURL)
+	require.Equal(t, "edit/main/docs/", config.EditURI)
 
 	// theme
 	theme := config.Theme

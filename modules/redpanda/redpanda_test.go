@@ -44,7 +44,7 @@ func TestRedpanda(t *testing.T) {
 	kafkaAdmCl := kadm.NewClient(kafkaCl)
 	metadata, err := kafkaAdmCl.Metadata(ctx)
 	require.NoError(t, err)
-	assert.Len(t, metadata.Brokers, 1)
+	require.Len(t, metadata.Brokers, 1)
 
 	// Test Schema Registry API
 	httpCl := &http.Client{Timeout: 5 * time.Second}
@@ -55,7 +55,7 @@ func TestRedpanda(t *testing.T) {
 	resp, err := httpCl.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Test Admin API
 	// adminAPIAddress {
@@ -67,7 +67,7 @@ func TestRedpanda(t *testing.T) {
 	resp, err = httpCl.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Test produce to unknown topic
 	results := kafkaCl.ProduceSync(ctx, &kgo.Record{Topic: "test", Value: []byte("test message")})
@@ -289,7 +289,7 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 	require.NoError(t, err)
 	resp, err := httpCl.Do(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	resp.Body.Close()
 
 	// Successful authentication
@@ -357,7 +357,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 	require.NoError(t, err)
 	resp, err := httpCl.Do(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 	resp.Body.Close()
 
 	// Test Schema Registry API
@@ -368,7 +368,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 	require.NoError(t, err)
 	resp, err = httpCl.Do(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 	resp.Body.Close()
 
 	brokers, err := ctr.KafkaSeedBroker(ctx)

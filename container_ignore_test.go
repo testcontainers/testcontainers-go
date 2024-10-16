@@ -37,7 +37,7 @@ func TestParseDockerIgnore(t *testing.T) {
 	for _, testCase := range testCases {
 		exists, excluded, err := parseDockerIgnore(testCase.filePath)
 		assert.Equal(t, testCase.exists, exists)
-		assert.Equal(t, testCase.expectedErr, err)
+		assert.ErrorIs(t, testCase.expectedErr, err)
 		assert.Equal(t, testCase.expectedExcluded, excluded)
 	}
 }
