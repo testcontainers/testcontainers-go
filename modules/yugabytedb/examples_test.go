@@ -80,9 +80,9 @@ func ExampleYugabyteDBContainer_YSQLConnectionString() {
 
 	defer db.Close()
 
-   var i int
-   row := db.QueryRowContext(ctx, "SELECT 1")
-   if err := row.Scan(&i); err != nil {
+	var i int
+	row := db.QueryRowContext(ctx, "SELECT 1")
+	if err := row.Scan(&i); err != nil {
 		log.Printf("failed to scan row: %s", err)
 		return
 	}

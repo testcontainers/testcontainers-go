@@ -83,7 +83,7 @@ func TestYugabyteDB_YCQL(t *testing.T) {
 
 		session, err := cluster.CreateSession()
 		require.NoError(t, err)
-		t.Cleanup(func() { session.Close() })
+		session.Close()
 	})
 
 	t.Run("custom-options", func(t *testing.T) {
@@ -103,6 +103,6 @@ func TestYugabyteDB_YCQL(t *testing.T) {
 
 		session, err := cluster.CreateSession()
 		require.NoError(t, err)
-		t.Cleanup(func() { session.Close() })
+		session.Close()
 	})
 }
