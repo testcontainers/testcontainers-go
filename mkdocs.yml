@@ -68,6 +68,8 @@ nav:
         - modules/index.md
         - modules/artemis.md
         - modules/azurite.md
+        - modules/blueframevfs.md
+        - modules/blueframevfss.md
         - modules/cassandra.md
         - modules/chroma.md
         - modules/clickhouse.md
@@ -111,6 +113,7 @@ nav:
         - modules/valkey.md
         - modules/vault.md
         - modules/vearch.md
+        - modules/vfs.md
         - modules/weaviate.md
     - Examples:
         - examples/index.md
