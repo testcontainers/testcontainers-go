@@ -12,11 +12,12 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 	const podmanSocket = "unix://$XDG_RUNTIME_DIR/podman/podman.sock"
 
 	tests := []struct {
-		name       string
-		tr         ProviderType
-		DockerHost string
-		want       string
-		wantErr    bool
+		name          string
+		tr            ProviderType
+		DockerHost    string
+		want          string
+		wantErr       bool
+		skipOnWindows bool
 	}{
 		{
 			name:       "default provider without podman.socket",
@@ -25,10 +26,11 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 			want:       Bridge,
 		},
 		{
-			name:       "default provider with podman.socket",
-			tr:         ProviderDefault,
-			DockerHost: podmanSocket,
-			want:       Podman,
+			name:          "default provider with podman.socket",
+			tr:            ProviderDefault,
+			DockerHost:    podmanSocket,
+			want:          Podman,
+			skipOnWindows: true,
 		},
 		{
 			name:       "docker provider without podman.socket",
@@ -38,27 +40,30 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 		},
 		{
 			// Explicitly setting Docker provider should not be overridden by auto-detect
-			name:       "docker provider with podman.socket",
-			tr:         ProviderDocker,
-			DockerHost: podmanSocket,
-			want:       Bridge,
+			name:          "docker provider with podman.socket",
+			tr:            ProviderDocker,
+			DockerHost:    podmanSocket,
+			want:          Bridge,
+			skipOnWindows: true,
 		},
 		{
-			name:       "Podman provider without podman.socket",
-			tr:         ProviderPodman,
-			DockerHost: dockerHost,
-			want:       Podman,
+			name:          "Podman provider without podman.socket",
+			tr:            ProviderPodman,
+			DockerHost:    dockerHost,
+			want:          Podman,
+			skipOnWindows: true,
 		},
 		{
-			name:       "Podman provider with podman.socket",
-			tr:         ProviderPodman,
-			DockerHost: podmanSocket,
-			want:       Podman,
+			name:          "Podman provider with podman.socket",
+			tr:            ProviderPodman,
+			DockerHost:    podmanSocket,
+			want:          Podman,
+			skipOnWindows: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.tr == ProviderPodman && core.IsWindows() {
+			if tt.skipOnWindows && core.IsWindows() {
 				t.Skip("Podman provider is not implemented for Windows")
 			}
 
