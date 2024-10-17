@@ -5,25 +5,25 @@ import (
 )
 
 // WithDatabaseName sets the initial database name for the yugabyteDB container.
-func WithDatabaseName(ysqlDBName string) testcontainers.CustomizeRequestOption {
+func WithDatabaseName(dbName string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env[ysqlDatabaseNameEnv] = ysqlDBName
+		req.Env[ysqlDatabaseNameEnv] = dbName
 		return nil
 	}
 }
 
 // WithDatabaseUser sets the initial database user for the yugabyteDB container.
-func WithDatabaseUser(ysqlDBUser string) testcontainers.CustomizeRequestOption {
+func WithDatabaseUser(dbUser string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env[ysqlDatabaseUserEnv] = ysqlDBUser
+		req.Env[ysqlDatabaseUserEnv] = dbUser
 		return nil
 	}
 }
 
 // WithDatabasePassword sets the initial database password for the yugabyteDB container.
-func WithDatabasePassword(ysqlDBPassword string) testcontainers.CustomizeRequestOption {
+func WithDatabasePassword(dbPassword string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env[ysqlDatabasePasswordEnv] = ysqlDBPassword
+		req.Env[ysqlDatabasePasswordEnv] = dbPassword
 		return nil
 	}
 }

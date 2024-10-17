@@ -49,6 +49,18 @@ E.g. `Run(context.Background(), "yugabytedb/yugabyte")`.
 
 {% include "../features/common_functional_options.md" %}
 
+#### Initial Database
+
+By default the yugabyteDB container will start with a database named `yugabyte` and the default credentials `yugabyte` and `yugabyte`.
+
+If you need to set a different database, and its credentials, you can use the `WithDatabaseName(dbName string)`, `WithDatabaseUser(dbUser string)` and `WithDatabasePassword(dbPassword string)` options.
+
+#### Initial Cluster Configuration
+
+By default the yugabyteDB container will start with a cluster keyspace named `yugabyte` and the default credentials `yugabyte` and `yugabyte`.
+
+If you need to set a different cluster keyspace, and its credentials, you can use the `WithKeyspace(keyspace string)`, `WithUser(user string)` and `WithPassword(password string)` options.
+
 ### Container Methods
 
 The yugabyteDB container exposes the following methods:
