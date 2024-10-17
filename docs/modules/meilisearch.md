@@ -45,14 +45,27 @@ When starting the Meilisearch container, you can pass options in a variadic way 
 If you need to set a different Meilisearch Docker image, you can set a valid Docker image as the second argument in the `Run` function.
 E.g. `Run(context.Background(), "getmeili/meilisearch:v1.10.3")`.
 
+{% include "../features/common_functional_options.md" %}
+
 #### Master Key
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 If you need to set a master key, you can use the `WithMasterKey(key string)` option. Otherwise, the default will be used which is `just-a-master-key-for-test`, which is exported on the container fields.
 
 #### Dump Data
-If you need to dump data in Meilisearch upon initialization for testing, you can use `WithDumpData(filepath string)` option where `filepath` can be an absolute path or relative path.
 
-{% include "../features/common_functional_options.md" %}
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to dump data in Meilisearch upon initialization for testing, you can use `WithDumpData(filepath string)` option where `filepath` can be an absolute path or relative path.
 
 ### Container Methods
 
 The Meilisearch container exposes the following methods:
+
+#### Address
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `Address` method retrieves the address of the Meilisearch container.
+It will use http as protocol, as TLS is not supported at the moment.
