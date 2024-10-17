@@ -61,6 +61,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Cmd:   []string{"bin/yugabyted", "start", "--background=false"},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("YugabyteDB Started").WithOccurrence(1),
+			wait.ForLog("Data placement constraint successfully verified").WithOccurrence(1),
 			wait.ForListeningPort(ysqlPort),
 			wait.ForListeningPort(ycqlPort),
 		),

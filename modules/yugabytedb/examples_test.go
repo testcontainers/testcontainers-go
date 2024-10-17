@@ -112,7 +112,10 @@ func ExampleContainer_YCQLConfigureClusterConfig() {
 	}()
 
 	cluster := gocql.NewCluster()
-	yugabytedbContainer.YCQLConfigureClusterConfig(ctx, cluster)
+	if err := yugabytedbContainer.YCQLConfigureClusterConfig(ctx, cluster); err != nil {
+		log.Printf("failed to configure cluster: %s", err)
+		return
+	}
 
 	session, err := cluster.CreateSession()
 	if err != nil {
