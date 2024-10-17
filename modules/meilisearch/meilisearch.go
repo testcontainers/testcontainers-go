@@ -107,12 +107,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 func (c *MeilisearchContainer) Address(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, defaultHTTPPort)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("host: %w", err)
 	}
 
 	return "http://" + net.JoinHostPort(host, containerPort.Port()), nil
