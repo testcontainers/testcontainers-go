@@ -7,7 +7,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -55,14 +54,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	if settings.DumpDataFileDir != "" {
+	if settings.DumpDataFilePath != "" {
 
-		genericContainerReq.HostConfigModifier = func(hc *container.HostConfig) {
-			hc.Binds = []string{fmt.Sprintf("%s:/dumps", settings.DumpDataFileDir)}
+		genericContainerReq.Files = []testcontainers.ContainerFile{
+			{
+				HostFilePath:      settings.DumpDataFilePath,
+				ContainerFilePath: "/dumps/" + settings.DumpDataFileName,
+				FileMode:          0o777,
+			},
 		}
-
-		genericContainerReq.Cmd = append(genericContainerReq.Cmd, "meilisearch", "--import-dump", fmt.Sprintf("/dumps/%s", settings.DumpDataFileName))
-		//genericContainerReq.Entrypoint = []string{"/bin/sh", "-c", "meilisearch"}
+		genericContainerReq.Cmd = []string{"meilisearch", "--import-dump", fmt.Sprintf("/dumps/%s", settings.DumpDataFileName)}
 	}
 
 	// the wat strategy does not support TLS at the moment,

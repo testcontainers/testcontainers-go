@@ -7,7 +7,7 @@ import (
 
 // Options is a struct for specifying options for the Meilisearch container.
 type Options struct {
-	DumpDataFileDir  string
+	DumpDataFilePath string
 	DumpDataFileName string
 }
 
@@ -28,8 +28,9 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 }
 
 // WithDumpImport sets the data dump file path for the Meilisearch container.
+// dumpFilePath either relative to where you call meilisearch run or absolute path
 func WithDumpImport(dumpFilePath string) Option {
 	return func(o *Options) {
-		o.DumpDataFileDir, o.DumpDataFileName = filepath.Dir(dumpFilePath), filepath.Base(dumpFilePath)
+		o.DumpDataFilePath, o.DumpDataFileName = dumpFilePath, filepath.Base(dumpFilePath)
 	}
 }
