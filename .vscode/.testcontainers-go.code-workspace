@@ -106,6 +106,10 @@
             "path": "../modules/mariadb"
         },
         {
+            "name": "module / meilisearch",
+            "path": "../modules/meilisearch"
+        },
+        {
             "name": "module / milvus",
             "path": "../modules/milvus"
         },
