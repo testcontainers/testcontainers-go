@@ -254,7 +254,7 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.AutoRemove = true
 			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
-			hc.NetworkMode = Bridge
+			hc.NetworkMode = "bridge"
 		},
 		Env: map[string]string{},
 	}
@@ -271,11 +271,6 @@ func newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (
 	// include reaper-specific labels to the reaper container
 	req.Labels[core.LabelReaper] = "true"
 	req.Labels[core.LabelRyuk] = "true"
-
-	// Attach reaper container to a requested network if it is specified
-	if p, ok := provider.(*DockerProvider); ok {
-		req.Networks = append(req.Networks, p.DefaultNetwork)
-	}
 
 	c, err := provider.RunContainer(ctx, req)
 	if err != nil {
