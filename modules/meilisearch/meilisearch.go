@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -14,6 +15,7 @@ import (
 const (
 	defaultMasterKey = "just-a-master-key-for-test"
 	defaultHTTPPort  = "7700/tcp"
+	masterKeyEnvVar  = "MEILI_MASTER_KEY"
 )
 
 // MeilisearchContainer represents the Meilisearch container type used in the module
@@ -22,19 +24,13 @@ type MeilisearchContainer struct {
 	MasterKey string
 }
 
-// Deprecated: use Run instead
-// RunContainer creates an instance of the Meilisearch container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MeilisearchContainer, error) {
-	return Run(ctx, "getmeili/meilisearch:v1.10.3", opts...)
-}
-
 // Run creates an instance of the Meilisearch container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MeilisearchContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        img,
 		ExposedPorts: []string{defaultHTTPPort},
 		Env: map[string]string{
-			"MEILI_MASTER_KEY": defaultMasterKey,
+			masterKeyEnvVar: defaultMasterKey,
 		},
 	}
 
@@ -55,7 +51,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	if settings.DumpDataFilePath != "" {
-
 		genericContainerReq.Files = []testcontainers.ContainerFile{
 			{
 				HostFilePath:      settings.DumpDataFilePath,
@@ -66,7 +61,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		genericContainerReq.Cmd = []string{"meilisearch", "--import-dump", fmt.Sprintf("/dumps/%s", settings.DumpDataFileName)}
 	}
 
-	// the wat strategy does not support TLS at the moment,
+	// the wait strategy does not support TLS at the moment,
 	// so we need to disable it in the strategy for now.
 	genericContainerReq.WaitingFor = wait.ForHTTP("/health").
 		WithPort(defaultHTTPPort).
@@ -97,7 +92,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *MeilisearchContainer
 	if container != nil {
-		c = &MeilisearchContainer{Container: container, MasterKey: req.Env["MEILI_MASTER_KEY"]}
+		c = &MeilisearchContainer{Container: container, MasterKey: req.Env[masterKeyEnvVar]}
 	}
 
 	if err != nil {
@@ -120,10 +115,11 @@ func (c *MeilisearchContainer) Address(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
+	return "http://" + net.JoinHostPort(host, containerPort.Port()), nil
 }
 
 // WithMasterKey sets the master key for the Meilisearch container
+// it satisfies the testcontainers.ContainerCustomizer interface
 func WithMasterKey(masterKey string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["MEILI_MASTER_KEY"] = masterKey
