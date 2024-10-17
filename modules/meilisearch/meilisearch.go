@@ -55,7 +55,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			{
 				HostFilePath:      settings.DumpDataFilePath,
 				ContainerFilePath: "/dumps/" + settings.DumpDataFileName,
-				FileMode:          0o777,
+				FileMode:          0o755,
 			},
 		}
 		genericContainerReq.Cmd = []string{"meilisearch", "--import-dump", fmt.Sprintf("/dumps/%s", settings.DumpDataFileName)}
@@ -116,13 +116,4 @@ func (c *MeilisearchContainer) Address(ctx context.Context) (string, error) {
 	}
 
 	return "http://" + net.JoinHostPort(host, containerPort.Port()), nil
-}
-
-// WithMasterKey sets the master key for the Meilisearch container
-// it satisfies the testcontainers.ContainerCustomizer interface
-func WithMasterKey(masterKey string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MEILI_MASTER_KEY"] = masterKey
-		return nil
-	}
 }

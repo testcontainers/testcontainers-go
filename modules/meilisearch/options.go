@@ -34,3 +34,12 @@ func WithDumpImport(dumpFilePath string) Option {
 		o.DumpDataFilePath, o.DumpDataFileName = dumpFilePath, filepath.Base(dumpFilePath)
 	}
 }
+
+// WithMasterKey sets the master key for the Meilisearch container
+// it satisfies the testcontainers.ContainerCustomizer interface
+func WithMasterKey(masterKey string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Env["MEILI_MASTER_KEY"] = masterKey
+		return nil
+	}
+}
