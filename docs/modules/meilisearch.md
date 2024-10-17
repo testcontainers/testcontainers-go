@@ -45,6 +45,12 @@ When starting the Meilisearch container, you can pass options in a variadic way 
 If you need to set a different Meilisearch Docker image, you can set a valid Docker image as the second argument in the `Run` function.
 E.g. `Run(context.Background(), "getmeili/meilisearch:v1.10.3")`.
 
+#### Master Key
+If you need to set a master key, you can use the `WithMasterKey(key string)` option. Otherwise, the default will be used which is `just-a-master-key-for-test`, which is exported on the container fields.
+
+#### Dump Data
+If you need to dump data in Meilisearch upon initialization for testing, you can use `WithDumpData(filepath string)` option where `filepath` can be an absolute path or relative path.
+
 {% include "../features/common_functional_options.md" %}
 
 ### Container Methods
