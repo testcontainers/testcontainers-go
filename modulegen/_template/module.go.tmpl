@@ -7,13 +7,13 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-// {{ $containerName }} represents the {{ $title }} container type used in the module
-type {{ $containerName }} struct {
+// Container represents the {{ $title }} container type used in the module
+type Container struct {
 	testcontainers.Container
 }
 
 // {{ $entrypoint }} creates an instance of the {{ $title }} container type
-func {{ $entrypoint }}(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*{{ $containerName }}, error) {
+func {{ $entrypoint }}(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image: img,
 	}
@@ -30,9 +30,9 @@ func {{ $entrypoint }}(ctx context.Context, img string, opts ...testcontainers.C
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	var c *{{ $containerName }}
+	var c *Container
 	if container != nil {
-		c = &{{ $containerName }}{Container: container}
+		c = &Container{Container: container}
 	}
 
 	if err != nil {

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"unicode"
-	"unicode/utf8"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -22,16 +20,7 @@ type TestcontainersModule struct {
 // ContainerName returns the name of the container, which is the lower-cased title of the example
 // If the title is set, it will be used instead of the name
 func (m *TestcontainersModule) ContainerName() string {
-	name := m.Lower()
-
-	if m.IsModule {
-		name = m.Title()
-	} else if m.TitleName != "" {
-		r, n := utf8.DecodeRuneInString(m.TitleName)
-		name = string(unicode.ToLower(r)) + m.TitleName[n:]
-	}
-
-	return name + "Container"
+	return "Container"
 }
 
 // Entrypoint returns the name of the entrypoint function, which is the lower-cased title of the example

@@ -1,15 +1,15 @@
-{{ $entrypoint := Entrypoint }}{{ $image := Image }}{{ $lower := ToLower }}{{ $title := Title }}package {{ $lower }}_test
+{{ $entrypoint := Entrypoint }}{{ $image := Image }}{{ $lower := ToLower }}package {{ $lower }}_test
 
 import (
 	"context"
 	"fmt"
 	"log"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/{{ ParentDir }}/{{ $lower }}"
 )
 
 func Example{{ $entrypoint }}() {
-	// run{{ $title }}Container {
 	ctx := context.Background()
 
 	{{ $lower }}Container, err := {{ $lower }}.{{ $entrypoint }}(ctx, "{{ $image }}")

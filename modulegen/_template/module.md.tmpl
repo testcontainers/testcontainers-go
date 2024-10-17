@@ -1,4 +1,4 @@
-{{ $lower := ToLower }}{{ $title := Title }}# {{ $title }}
+{{ $entrypoint := Entrypoint }}{{ $lower := ToLower }}{{ $title := Title }}# {{ $title }}
 
 Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/{{ ParentDir }}/{{ $lower }}
 ## Usage example
 
 <!--codeinclude-->
-[Creating a {{ $title }} container](../../{{ ParentDir }}/{{ $lower }}/examples_test.go) inside_block:run{{ $title }}Container
+[Creating a {{ $title }} container](../../{{ ParentDir }}/{{ $lower }}/examples_test.go) inside_block:Example{{ $entrypoint }}
 <!--/codeinclude-->
 
 ## Module Reference
