@@ -62,8 +62,16 @@
             "path": "../modules/dolt"
         },
         {
+            "name": "module / dynamodb",
+            "path": "../modules/dynamodb"
+        },
+        {
             "name": "module / elasticsearch",
             "path": "../modules/elasticsearch"
+        },
+        {
+            "name": "module / etcd",
+            "path": "../modules/etcd"
         },
         {
             "name": "module / gcloud",

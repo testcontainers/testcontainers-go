@@ -148,7 +148,11 @@ func TestModule_Validate(outer *testing.T) {
 
 	for _, test := range tests {
 		outer.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedErr, test.module.Validate())
+			if test.expectedErr != nil {
+				require.EqualError(t, test.module.Validate(), test.expectedErr.Error())
+			} else {
+				require.NoError(t, test.module.Validate())
+			}
 		})
 	}
 }
@@ -277,7 +281,7 @@ func TestGenerate(t *testing.T) {
 
 	moduleDirFileInfo, err := os.Stat(moduleDirPath)
 	require.NoError(t, err) // error nil implies the file exist
-	assert.True(t, moduleDirFileInfo.IsDir())
+	require.True(t, moduleDirFileInfo.IsDir())
 
 	moduleDocFile := filepath.Join(examplesDocTmp, moduleNameLower+".md")
 	_, err = os.Stat(moduleDocFile)
@@ -333,7 +337,7 @@ func TestGenerateModule(t *testing.T) {
 
 	moduleDirFileInfo, err := os.Stat(moduleDirPath)
 	require.NoError(t, err) // error nil implies the file exist
-	assert.True(t, moduleDirFileInfo.IsDir())
+	require.True(t, moduleDirFileInfo.IsDir())
 
 	moduleDocFile := filepath.Join(modulesDocTmp, moduleNameLower+".md")
 	_, err = os.Stat(moduleDocFile)
