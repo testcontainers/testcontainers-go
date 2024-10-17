@@ -22,6 +22,14 @@
             "path": "../modules/azurite"
         },
         {
+            "name": "module / blueframevfs",
+            "path": "../modules/blueframevfs"
+        },
+        {
+            "name": "module / blueframevfss",
+            "path": "../modules/blueframevfss"
+        },
+        {
             "name": "module / cassandra",
             "path": "../modules/cassandra"
         },
