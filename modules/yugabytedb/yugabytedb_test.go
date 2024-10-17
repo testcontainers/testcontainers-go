@@ -99,7 +99,7 @@ func TestYugabyteDB_YCQL(t *testing.T) {
 		require.NoError(t, err)
 
 		cluster := gocql.NewCluster()
-		ctr.YCQLConfigureClusterConfig(ctx, cluster)
+		require.NoError(t, ctr.YCQLConfigureClusterConfig(ctx, cluster))
 
 		session, err := cluster.CreateSession()
 		require.NoError(t, err)
