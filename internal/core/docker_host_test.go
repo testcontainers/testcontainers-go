@@ -73,7 +73,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host := MustExtractDockerHost(context.Background())
 
-		assert.Equal(t, expected, host)
+		require.Equal(t, expected, host)
 
 		t.Setenv("DOCKER_HOST", "/path/to/another/docker.sock")
 
