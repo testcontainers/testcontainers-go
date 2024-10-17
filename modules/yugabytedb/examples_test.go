@@ -7,9 +7,10 @@ import (
 	"log"
 
 	_ "github.com/lib/pq"
+	"github.com/yugabyte/gocql"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/yugabytedb"
-	"github.com/yugabyte/gocql"
 )
 
 func ExampleRun() {
@@ -24,7 +25,6 @@ func ExampleRun() {
 		yugabytedb.WithDatabaseUser("custom-user"),
 		yugabytedb.WithDatabasePassword("custom-password"),
 	)
-
 	if err != nil {
 		log.Printf("failed to start container: %s", err)
 		return
@@ -54,7 +54,6 @@ func ExampleContainer_YSQLConnectionString() {
 		ctx,
 		"yugabytedb/yugabyte:2024.1.3.0-b105",
 	)
-
 	if err != nil {
 		log.Printf("failed to start container: %s", err)
 		return
@@ -99,7 +98,6 @@ func ExampleContainer_YCQLConfigureClusterConfig() {
 		ctx,
 		"yugabytedb/yugabyte:2024.1.3.0-b105",
 	)
-
 	if err != nil {
 		log.Printf("failed to start container: %s", err)
 		return
@@ -111,10 +109,17 @@ func ExampleContainer_YCQLConfigureClusterConfig() {
 		}
 	}()
 
-	cluster := gocql.NewCluster()
-	if err := yugabytedbContainer.YCQLConfigureClusterConfig(ctx, cluster); err != nil {
-		log.Printf("failed to configure cluster: %s", err)
+	yugabytedbContainerHost, err := yugabytedbContainer.Host(ctx)
+	if err != nil {
+		log.Printf("failed to get container host: %s", err)
 		return
+	}
+
+	cluster := gocql.NewCluster(yugabytedbContainerHost)
+	cluster.Keyspace = "yugabyte"
+	cluster.Authenticator = gocql.PasswordAuthenticator{
+		Username: "yugabyte",
+		Password: "yugabyte",
 	}
 
 	session, err := cluster.CreateSession()

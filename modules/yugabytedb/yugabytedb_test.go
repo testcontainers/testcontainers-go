@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net"
 	"testing"
 
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/yugabyte/gocql"
 
-	_ "github.com/lib/pq"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/yugabytedb"
 )
@@ -78,8 +79,18 @@ func TestYugabyteDB_YCQL(t *testing.T) {
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
-		cluster := gocql.NewCluster()
-		require.NoError(t, ctr.YCQLConfigureClusterConfig(ctx, cluster))
+		ctrHost, err := ctr.Host(ctx)
+		require.NoError(t, err)
+
+		ctrPort, err := ctr.MappedPort(ctx, "9042/tcp")
+		require.NoError(t, err)
+
+		cluster := gocql.NewCluster(net.JoinHostPort(ctrHost, ctrPort.Port()))
+		cluster.Keyspace = "yugabyte"
+		cluster.Authenticator = gocql.PasswordAuthenticator{
+			Username: "yugabyte",
+			Password: "yugabyte",
+		}
 
 		session, err := cluster.CreateSession()
 		require.NoError(t, err)
@@ -98,8 +109,18 @@ func TestYugabyteDB_YCQL(t *testing.T) {
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
-		cluster := gocql.NewCluster()
-		require.NoError(t, ctr.YCQLConfigureClusterConfig(ctx, cluster))
+		ctrHost, err := ctr.Host(ctx)
+		require.NoError(t, err)
+
+		ctrPort, err := ctr.MappedPort(ctx, "9042/tcp")
+		require.NoError(t, err)
+
+		cluster := gocql.NewCluster(net.JoinHostPort(ctrHost, ctrPort.Port()))
+		cluster.Keyspace = "custom-keyspace"
+		cluster.Authenticator = gocql.PasswordAuthenticator{
+			Username: "custom-user",
+			Password: "custom-password",
+		}
 
 		session, err := cluster.CreateSession()
 		require.NoError(t, err)

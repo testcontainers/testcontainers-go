@@ -8,12 +8,6 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/yugabyte/gocql"
-)
-
-const (
-	mastDashboardPort    = "7000"
-	tServerDashboardPort = "9000"
 )
 
 const (
@@ -129,55 +123,4 @@ func (y *Container) YSQLConnectionString(ctx context.Context, args ...string) (s
 		y.ysqlDatabaseName,
 		strings.Join(args, "&"),
 	), nil
-}
-
-// YCQLConfigureClusterConfig merges the provider [gocql.ClusterConfig] with the
-// yugabyteDB container configuration.
-// The method sets the hosts, keyspace and authenticator fields of the cluster
-// configuration to the values of the yugabyteDB container.
-func (y *Container) YCQLConfigureClusterConfig(ctx context.Context, cfg *gocql.ClusterConfig) error {
-	host, err := y.Host(ctx)
-	if err != nil {
-		return fmt.Errorf("host: %w", err)
-	}
-
-	mappedPort, err := y.MappedPort(ctx, ycqlPort)
-	if err != nil {
-		return fmt.Errorf("mapped port: %w", err)
-	}
-
-	inspect, err := y.Container.Inspect(ctx)
-	if err != nil {
-		return fmt.Errorf("inspect: %w", err)
-	}
-
-	var (
-		keyspace string
-		user     string
-		password string
-	)
-
-	for _, env := range inspect.Config.Env {
-		key, val, found := strings.Cut(env, "=")
-		if !found {
-			continue
-		}
-		switch key {
-		case ycqlKeyspaceEnv:
-			keyspace = val
-		case ycqlUserNameEnv:
-			user = val
-		case ycqlPasswordEnv:
-			password = val
-		}
-	}
-
-	cfg.Hosts = append(cfg.Hosts, net.JoinHostPort(host, mappedPort.Port()))
-	cfg.Keyspace = keyspace
-	cfg.Authenticator = gocql.PasswordAuthenticator{
-		Username: user,
-		Password: password,
-	}
-
-	return nil
 }

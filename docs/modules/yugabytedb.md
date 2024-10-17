@@ -76,13 +76,19 @@ a standard PostgreSQL client.
 [Create a postgres client using the connection string](../../modules/yugabytedb/examples_test.go) block:ExampleContainer_YSQLConnectionString
 <!--/codeinclude-->
 
-#### YCQLConfigureClusterConfig
+### Usage examples
 
-This method updates the passed in cluster configuration with the yugabyteDB container's
-host, port, username and password information.
-The cluster configuration can then be used to connect to the yugabyteDB container using
-the official yugabyteDB Go client.
+#### Usage with YSQL and gocql
+
+To use the YCQL query language, you need to configure the cluster 
+with the keyspace, user, and password.
+
+By default, the yugabyteDB container will start with a cluster keyspace named `yugabyte` and the default credentials `yugabyte` and `yugabyte` but you can change it using the `WithKeyspace`, `WithUser` and `WithPassword` options.
+
+In order to get the appropriate host and port to connect to the yugabyteDB container, 
+you can use the `GetHost` and `GetMappedPort` methods on the Container struct.
+See the examples below:
 
 <!--codeinclude-->
-[Create a yugabyteDB client using the cluster configuration](../../modules/yugabytedb/examples_test.go) block:ExampleContainer_YCQLConfigureClusterConfig
+[Create a yugabyteDB client using the cluster configuration](../../modules/yugabytedb/yugabytedb_test.go) block:TestYugabyteDB_YCQL
 <!--/codeinclude-->
