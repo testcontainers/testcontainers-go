@@ -107,7 +107,6 @@ func testContainerStart(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
@@ -171,7 +170,6 @@ func testContainerStop(t *testing.T) {
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
@@ -203,7 +201,6 @@ func testContainerTerminate(t *testing.T) {
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
