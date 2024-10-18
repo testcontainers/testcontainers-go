@@ -305,9 +305,9 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		require.NoError(t, err)
 
 		state, err := nginx.State(ctx)
-		require.Error(t, err, "expected error from container inspect.")
+		require.Errorf(t, err, "expected error from container inspect.")
 
-		require.Nil(t, state, "expected nil container inspect.")
+		require.Nilf(t, state, "expected nil container inspect.")
 	})
 
 	t.Run("Nil State after termination if raw as already set", func(t *testing.T) {
@@ -317,16 +317,16 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		require.NoError(t, err)
 
 		state, err := nginx.State(ctx)
-		require.NoError(t, err, "unexpected error from container inspect before container termination.")
-		require.NotNil(t, state, "unexpected nil container inspect before container termination.")
+		require.NoErrorf(t, err, "unexpected error from container inspect before container termination.")
+		require.NotNilf(t, state, "unexpected nil container inspect before container termination.")
 
 		// terminate the container before the raw state is set
 		err = nginx.Terminate(ctx)
 		require.NoError(t, err)
 
 		state, err = nginx.State(ctx)
-		require.Error(t, err, "expected error from container inspect after container termination.")
-		require.Nil(t, state, "unexpected nil container inspect after container termination.")
+		require.Errorf(t, err, "expected error from container inspect after container termination.")
+		require.Nilf(t, state, "unexpected nil container inspect after container termination.")
 	})
 }
 
@@ -678,7 +678,7 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 		Started: true,
 	})
 	CleanupContainer(t, nginxC)
-	require.Error(t, err, "expected timeout")
+	require.Errorf(t, err, "expected timeout")
 }
 
 func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
@@ -1477,8 +1477,8 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 			})
 			CleanupContainer(t, nginxC)
 
-			if err != nil {
-				require.Contains(t, err.Error(), tc.errMsg)
+			if len(tc.errMsg) > 0 {
+				require.ErrorContains(t, err, tc.errMsg)
 			} else {
 				for _, f := range tc.files {
 					require.NoError(t, err)
@@ -1939,7 +1939,7 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 		// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
 		// paths for the container files are using Linux path separators
 		fd, err := container.CopyFileFromContainer(ctx, fp)
-		require.NoError(t, err, "Path not found in container: %s", fp)
+		require.NoErrorf(t, err, "Path not found in container: %s", fp)
 		defer fd.Close()
 
 		targetPath := filepath.Join(tmpDir, srcFile.Name())
@@ -2017,7 +2017,7 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			ctx := context.Background()
 			// Set up CLI.
 			provider, err := NewDockerProvider()
-			require.NoError(t, err, "get docker provider should not fail")
+			require.NoErrorf(t, err, "get docker provider should not fail")
 			defer func() { _ = provider.Close() }()
 			cli := provider.Client()
 			// Create container.
@@ -2032,14 +2032,14 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 				},
 			})
 			CleanupContainer(t, c)
-			require.NoError(t, err, "create container should not fail")
+			require.NoErrorf(t, err, "create container should not fail")
 			// Get the image ID.
 			containerInspect, err := c.Inspect(ctx)
-			require.NoError(t, err, "container inspect should not fail")
+			require.NoErrorf(t, err, "container inspect should not fail")
 
 			containerName := containerInspect.Name
 			containerDetails, err := cli.ContainerInspect(ctx, containerName)
-			require.NoError(t, err, "inspect container should not fail")
+			require.NoErrorf(t, err, "inspect container should not fail")
 			containerImage := containerDetails.Image
 			t.Cleanup(func() {
 				_, _ = cli.ImageRemove(ctx, containerImage, image.RemoveOptions{
@@ -2049,12 +2049,12 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			})
 			// Now, we terminate the container and check whether the image still exists.
 			err = c.Terminate(ctx)
-			require.NoError(t, err, "terminate container should not fail")
+			require.NoErrorf(t, err, "terminate container should not fail")
 			_, _, err = cli.ImageInspectWithRaw(ctx, containerImage)
 			if tt.keepBuiltImage {
-				require.NoError(t, err, "image should still exist")
+				require.NoErrorf(t, err, "image should still exist")
 			} else {
-				require.Error(t, err, "image should not exist any more")
+				require.Errorf(t, err, "image should not exist any more")
 			}
 		})
 	}

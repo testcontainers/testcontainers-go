@@ -75,16 +75,16 @@ func TestArtemis(t *testing.T) {
 			require.NoError(t, err)
 
 			res, err := http.Get(u)
-			require.NoError(t, err, "failed to access console")
+			require.NoErrorf(t, err, "failed to access console")
 			res.Body.Close()
-			require.Equal(t, http.StatusOK, res.StatusCode, "failed to access console")
+			require.Equalf(t, http.StatusOK, res.StatusCode, "failed to access console")
 
 			if test.user != "" {
-				assert.Equal(t, test.user, ctr.User(), "unexpected user")
+				assert.Equalf(t, test.user, ctr.User(), "unexpected user")
 			}
 
 			if test.pass != "" {
-				assert.Equal(t, test.pass, ctr.Password(), "unexpected password")
+				assert.Equalf(t, test.pass, ctr.Password(), "unexpected password")
 			}
 
 			// brokerEndpoint {
@@ -98,22 +98,22 @@ func TestArtemis(t *testing.T) {
 			}
 
 			conn, err := stomp.Dial("tcp", host, opt...)
-			require.NoError(t, err, "failed to connect")
+			require.NoErrorf(t, err, "failed to connect")
 			t.Cleanup(func() { require.NoError(t, conn.Disconnect()) })
 
 			sub, err := conn.Subscribe("test", stomp.AckAuto)
-			require.NoError(t, err, "failed to subscribe")
+			require.NoErrorf(t, err, "failed to subscribe")
 			t.Cleanup(func() { require.NoError(t, sub.Unsubscribe()) })
 
 			err = conn.Send("test", "", []byte("test"))
-			require.NoError(t, err, "failed to send")
+			require.NoErrorf(t, err, "failed to send")
 
 			ticker := time.NewTicker(10 * time.Second)
 			select {
 			case <-ticker.C:
 				t.Fatal("timed out waiting for message")
 			case msg := <-sub.C:
-				require.Equal(t, "test", string(msg.Body), "received unexpected message")
+				require.Equalf(t, "test", string(msg.Body), "received unexpected message")
 			}
 
 			if test.hook != nil {
@@ -130,12 +130,12 @@ func expectQueue(t *testing.T, container *artemis.Container, queueName string) {
 	require.NoError(t, err)
 
 	r, err := http.Get(u + `/jolokia/read/org.apache.activemq.artemis:broker="0.0.0.0"/QueueNames`)
-	require.NoError(t, err, "failed to request QueueNames")
+	require.NoErrorf(t, err, "failed to request QueueNames")
 	defer r.Body.Close()
 
 	var res struct{ Value []string }
 	err = json.NewDecoder(r.Body).Decode(&res)
-	require.NoError(t, err, "failed to decode QueueNames response")
+	require.NoErrorf(t, err, "failed to decode QueueNames response")
 
 	require.Containsf(t, res.Value, queueName, "should contain queue")
 }

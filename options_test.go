@@ -96,8 +96,7 @@ func TestWithLogConsumers(t *testing.T) {
 	testcontainers.CleanupContainer(t, c)
 	// we expect an error because the MySQL environment variables are not set
 	// but this is expected because we just want to test the log consumer
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "container exited with code 1")
+	require.ErrorContains(t, err, "container exited with code 1")
 	require.NotEmpty(t, lc.msgs)
 }
 

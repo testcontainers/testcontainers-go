@@ -533,7 +533,7 @@ func TestReadTCConfig(t *testing.T) {
 				//
 				config := read()
 
-				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
+				assert.Equalf(t, tt.expected, config, "Configuration doesn't not match")
 			})
 		}
 	})

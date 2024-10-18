@@ -71,7 +71,7 @@ func TestRedpanda(t *testing.T) {
 
 	// Test produce to unknown topic
 	results := kafkaCl.ProduceSync(ctx, &kgo.Record{Topic: "test", Value: []byte("test message")})
-	require.Error(t, results.FirstErr(), kerr.UnknownTopicOrPartition)
+	require.Error(t, results.FirstErr(), kerr.UnknownTopicOrPartition) //nolint:testifylint
 }
 
 func TestRedpandaWithAuthentication(t *testing.T) {
@@ -330,7 +330,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 		Host:      "localhost,127.0.0.1",
 		ParentDir: tmp,
 	})
-	require.NotNil(t, cert, "failed to generate cert")
+	require.NotNilf(t, cert, "failed to generate cert")
 
 	ctx := context.Background()
 
@@ -352,7 +352,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 	// Test Admin API
 	adminAPIURL, err := ctr.AdminAPIAddress(ctx)
 	require.NoError(t, err)
-	require.True(t, strings.HasPrefix(adminAPIURL, "https://"), "AdminAPIAddress should return https url")
+	require.Truef(t, strings.HasPrefix(adminAPIURL, "https://"), "AdminAPIAddress should return https url")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster/health_overview", adminAPIURL), nil)
 	require.NoError(t, err)
 	resp, err := httpCl.Do(req)
@@ -363,7 +363,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 	// Test Schema Registry API
 	schemaRegistryURL, err := ctr.SchemaRegistryAddress(ctx)
 	require.NoError(t, err)
-	require.True(t, strings.HasPrefix(adminAPIURL, "https://"), "SchemaRegistryAddress should return https url")
+	require.Truef(t, strings.HasPrefix(adminAPIURL, "https://"), "SchemaRegistryAddress should return https url")
 	req, err = http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/subjects", schemaRegistryURL), nil)
 	require.NoError(t, err)
 	resp, err = httpCl.Do(req)
@@ -383,7 +383,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 
 	// Test produce to unknown topic
 	results := kafkaCl.ProduceSync(ctx, &kgo.Record{Topic: "test", Value: []byte("test message")})
-	require.Error(t, results.FirstErr(), kerr.UnknownTopicOrPartition)
+	require.Error(t, results.FirstErr(), kerr.UnknownTopicOrPartition) //nolint:testifylint
 }
 
 func TestRedpandaWithTLSAndSASL(t *testing.T) {
@@ -394,7 +394,7 @@ func TestRedpandaWithTLSAndSASL(t *testing.T) {
 		Host:      "localhost,127.0.0.1",
 		ParentDir: tmp,
 	})
-	require.NotNil(t, cert, "failed to generate cert")
+	require.NotNilf(t, cert, "failed to generate cert")
 
 	ctx := context.Background()
 
@@ -507,8 +507,7 @@ func TestRedpandaListener_InvalidPort(t *testing.T) {
 		network.WithNetwork([]string{"redpanda-host"}, RPNetwork),
 	)
 	testcontainers.CleanupContainer(t, ctr)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid port on listener redpanda:99092")
+	require.ErrorContains(t, err, "invalid port on listener redpanda:99092")
 }
 
 func TestRedpandaListener_NoNetwork(t *testing.T) {
@@ -520,9 +519,7 @@ func TestRedpandaListener_NoNetwork(t *testing.T) {
 		redpanda.WithListener("redpanda:99092"),
 	)
 	testcontainers.CleanupContainer(t, ctr)
-	require.Error(t, err)
-
-	require.Contains(t, err.Error(), "container must be attached to at least one network")
+	require.ErrorContains(t, err, "container must be attached to at least one network")
 }
 
 func TestRedpandaBootstrapConfig(t *testing.T) {

@@ -45,9 +45,9 @@ func Test_IsDir(t *testing.T) {
 		t.Run(test.filepath, func(t *testing.T) {
 			result, err := isDir(test.filepath)
 			if test.err != nil {
-				require.Error(t, err, "expected error")
+				require.Errorf(t, err, "expected error")
 			} else {
-				require.NoError(t, err, "not expected error")
+				require.NoErrorf(t, err, "not expected error")
 			}
 			assert.Equal(t, test.expected, result)
 		})

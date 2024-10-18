@@ -347,16 +347,16 @@ func testNewReaper(ctx context.Context, t *testing.T, cfg config.Config, expecte
 	// We should have errored out see mockReaperProvider.RunContainer.
 	require.ErrorIs(t, err, errExpected)
 
-	require.Equal(t, expected.Image, provider.req.Image, "expected image doesn't match the submitted request")
-	require.Equal(t, expected.ExposedPorts, provider.req.ExposedPorts, "expected exposed ports don't match the submitted request")
-	require.Equal(t, expected.Labels, provider.req.Labels, "expected labels don't match the submitted request")
-	require.Equal(t, expected.Mounts, provider.req.Mounts, "expected mounts don't match the submitted request")
-	require.Equal(t, expected.WaitingFor, provider.req.WaitingFor, "expected waitingFor don't match the submitted request")
-	require.Equal(t, expected.Env, provider.req.Env, "expected env doesn't match the submitted request")
+	require.Equalf(t, expected.Image, provider.req.Image, "expected image doesn't match the submitted request")
+	require.Equalf(t, expected.ExposedPorts, provider.req.ExposedPorts, "expected exposed ports don't match the submitted request")
+	require.Equalf(t, expected.Labels, provider.req.Labels, "expected labels don't match the submitted request")
+	require.Equalf(t, expected.Mounts, provider.req.Mounts, "expected mounts don't match the submitted request")
+	require.Equalf(t, expected.WaitingFor, provider.req.WaitingFor, "expected waitingFor don't match the submitted request")
+	require.Equalf(t, expected.Env, provider.req.Env, "expected env doesn't match the submitted request")
 
 	// checks for reaper's preCreationCallback fields
-	require.Equal(t, container.NetworkMode(Bridge), provider.hostConfig.NetworkMode, "expected networkMode doesn't match the submitted request")
-	require.True(t, provider.hostConfig.AutoRemove, "expected networkMode doesn't match the submitted request")
+	require.Equalf(t, container.NetworkMode(Bridge), provider.hostConfig.NetworkMode, "expected networkMode doesn't match the submitted request")
+	require.Truef(t, provider.hostConfig.AutoRemove, "expected networkMode doesn't match the submitted request")
 }
 
 func Test_ReaperReusedIfHealthy(t *testing.T) {
@@ -377,22 +377,22 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 
 	reaper, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
 	cleanupReaper(t, reaper, spawner)
-	require.NoError(t, err, "creating the Reaper should not error")
+	require.NoErrorf(t, err, "creating the Reaper should not error")
 
 	reaperReused, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
 	cleanupReaper(t, reaper, spawner)
-	require.NoError(t, err, "reusing the Reaper should not error")
+	require.NoErrorf(t, err, "reusing the Reaper should not error")
 
 	// Ensure the internal state of both reaper instances is the same
-	require.Equal(t, reaper.SessionID, reaperReused.SessionID, "expecting the same SessionID")
-	require.Equal(t, reaper.Endpoint, reaperReused.Endpoint, "expecting the same reaper endpoint")
-	require.Equal(t, reaper.Provider, reaperReused.Provider, "expecting the same container provider")
-	require.Equal(t, reaper.container.GetContainerID(), reaperReused.container.GetContainerID(), "expecting the same container ID")
-	require.Equal(t, reaper.container.SessionID(), reaperReused.container.SessionID(), "expecting the same session ID")
+	require.Equalf(t, reaper.SessionID, reaperReused.SessionID, "expecting the same SessionID")
+	require.Equalf(t, reaper.Endpoint, reaperReused.Endpoint, "expecting the same reaper endpoint")
+	require.Equalf(t, reaper.Provider, reaperReused.Provider, "expecting the same container provider")
+	require.Equalf(t, reaper.container.GetContainerID(), reaperReused.container.GetContainerID(), "expecting the same container ID")
+	require.Equalf(t, reaper.container.SessionID(), reaperReused.container.SessionID(), "expecting the same session ID")
 
 	termSignal, err := reaper.Connect()
 	cleanupTermSignal(t, termSignal)
-	require.NoError(t, err, "connecting to Reaper should be successful")
+	require.NoErrorf(t, err, "connecting to Reaper should be successful")
 }
 
 func Test_RecreateReaperIfTerminated(t *testing.T) {
@@ -406,7 +406,7 @@ func Test_RecreateReaperIfTerminated(t *testing.T) {
 	ctx := context.Background()
 	reaper, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
 	cleanupReaper(t, reaper, spawner)
-	require.NoError(t, err, "creating the Reaper should not error")
+	require.NoErrorf(t, err, "creating the Reaper should not error")
 
 	termSignal, err := reaper.Connect()
 	if termSignal != nil {
@@ -443,12 +443,12 @@ func Test_RecreateReaperIfTerminated(t *testing.T) {
 
 	recreatedReaper, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
 	cleanupReaper(t, recreatedReaper, spawner)
-	require.NoError(t, err, "creating the Reaper should not error")
-	require.NotEqual(t, reaper.container.GetContainerID(), recreatedReaper.container.GetContainerID(), "expected different container ID")
+	require.NoErrorf(t, err, "creating the Reaper should not error")
+	require.NotEqualf(t, reaper.container.GetContainerID(), recreatedReaper.container.GetContainerID(), "expected different container ID")
 
 	recreatedTermSignal, err := recreatedReaper.Connect()
 	cleanupTermSignal(t, recreatedTermSignal)
-	require.NoError(t, err, "connecting to Reaper should be successful")
+	require.NoErrorf(t, err, "connecting to Reaper should be successful")
 }
 
 func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
@@ -474,7 +474,7 @@ func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
 
 	reaper, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
 	cleanupReaper(t, reaper, spawner)
-	require.NoError(t, err, "creating the Reaper should not error")
+	require.NoErrorf(t, err, "creating the Reaper should not error")
 
 	// Explicitly reset the reaper instance to nil to simulate another test
 	// program in the same session accessing the same reaper.
@@ -482,18 +482,18 @@ func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
 
 	reaperReused, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
 	cleanupReaper(t, reaper, spawner)
-	require.NoError(t, err, "reusing the Reaper should not error")
+	require.NoErrorf(t, err, "reusing the Reaper should not error")
 
 	// Ensure that the internal state of both reaper instances is the same.
-	require.Equal(t, reaper.SessionID, reaperReused.SessionID, "expecting the same SessionID")
-	require.Equal(t, reaper.Endpoint, reaperReused.Endpoint, "expecting the same reaper endpoint")
-	require.Equal(t, reaper.Provider, reaperReused.Provider, "expecting the same container provider")
-	require.Equal(t, reaper.container.GetContainerID(), reaperReused.container.GetContainerID(), "expecting the same container ID")
-	require.Equal(t, reaper.container.SessionID(), reaperReused.container.SessionID(), "expecting the same session ID")
+	require.Equalf(t, reaper.SessionID, reaperReused.SessionID, "expecting the same SessionID")
+	require.Equalf(t, reaper.Endpoint, reaperReused.Endpoint, "expecting the same reaper endpoint")
+	require.Equalf(t, reaper.Provider, reaperReused.Provider, "expecting the same container provider")
+	require.Equalf(t, reaper.container.GetContainerID(), reaperReused.container.GetContainerID(), "expecting the same container ID")
+	require.Equalf(t, reaper.container.SessionID(), reaperReused.container.SessionID(), "expecting the same session ID")
 
 	termSignal, err := reaper.Connect()
 	cleanupTermSignal(t, termSignal)
-	require.NoError(t, err, "connecting to Reaper should be successful")
+	require.NoErrorf(t, err, "connecting to Reaper should be successful")
 }
 
 // TestReaper_ReuseRunning tests whether reusing the reaper if using
@@ -514,7 +514,7 @@ func TestReaper_ReuseRunning(t *testing.T) {
 	sessionID := SessionID()
 
 	dockerProvider, err := NewDockerProvider()
-	require.NoError(t, err, "new docker provider should not fail")
+	require.NoErrorf(t, err, "new docker provider should not fail")
 
 	obtainedReaperContainerIDs := make([]string, concurrency)
 	var wg sync.WaitGroup
@@ -535,14 +535,14 @@ func TestReaper_ReuseRunning(t *testing.T) {
 	// Assure that all calls returned the same container.
 	firstContainerID := obtainedReaperContainerIDs[0]
 	for i, containerID := range obtainedReaperContainerIDs {
-		require.Equal(t, firstContainerID, containerID, "call %d should have returned same container id", i)
+		require.Equalf(t, firstContainerID, containerID, "call %d should have returned same container id", i)
 	}
 }
 
 func TestSpawnerBackoff(t *testing.T) {
 	b := spawner.backoff()
 	for i := 0; i < 100; i++ {
-		require.LessOrEqual(t, b.NextBackOff(), time.Millisecond*250, "backoff should not exceed max interval")
+		require.LessOrEqualf(t, b.NextBackOff(), time.Millisecond*250, "backoff should not exceed max interval")
 	}
 }
 

@@ -508,7 +508,7 @@ func assertMkdocsNavItems(t *testing.T, module context.TestcontainersModule, ori
 	assert.True(t, found)
 
 	// first item is the index
-	assert.Equal(t, parentDir+"/index.md", navItems[0], navItems)
+	assert.Equal(t, parentDir+"/index.md", navItems[0])
 }
 
 func sanitiseContent(bytes []byte) []string {

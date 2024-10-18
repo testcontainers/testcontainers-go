@@ -32,5 +32,7 @@ linters-settings:
       - float-compare
       - go-require
     enable-all: true
+    formatter:
+      require-f-funcs: true
 run:
   timeout: 5m

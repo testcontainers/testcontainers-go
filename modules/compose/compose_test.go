@@ -132,7 +132,7 @@ func TestLocalDockerComposeStrategyForInvalidService(t *testing.T) {
 		// Appending with _1 as given in the Java Test-Containers Example
 		WithExposedService(compose.Format("non-existent-srv", "1"), ports[0], wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Invoke()
-	require.Error(t, err.Error, "Expected error to be thrown because service with wait strategy is not running")
+	require.Errorf(t, err.Error, "Expected error to be thrown because service with wait strategy is not running")
 
 	assert.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
@@ -329,7 +329,7 @@ func TestLocalDockerComposeWithFailedStrategy(t *testing.T) {
 		Invoke()
 	// Verify that an error is thrown and not nil
 	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
-	require.Error(t, err.Error, "Expected error to be thrown because of a wrong suplied wait strategy")
+	require.Errorf(t, err.Error, "Expected error to be thrown because of a wrong suplied wait strategy")
 
 	assert.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")

@@ -75,18 +75,18 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		// assertions
 
-		assert.Equal(
+		assert.Equalf(
 			t,
 			[]string{"a=b"},
 			inputConfig.Env,
 			"Docker config's env should be overwritten by the modifier",
 		)
-		assert.Equal(t,
+		assert.Equalf(t,
 			nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}),
 			inputConfig.ExposedPorts,
 			"Docker config's exposed ports should be overwritten by the modifier",
 		)
-		assert.Equal(
+		assert.Equalf(
 			t,
 			[]mount.Mount{
 				{
@@ -102,7 +102,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 			"Host config's mounts should be mapped to Docker types",
 		)
 
-		assert.Equal(t, nat.PortMap{
+		assert.Equalf(t, nat.PortMap{
 			"80/tcp": []nat.PortBinding{
 				{
 					HostIP:   "",
@@ -113,13 +113,13 @@ func TestPreCreateModifierHook(t *testing.T) {
 			"Host config's port bindings should be overwritten by the modifier",
 		)
 
-		assert.Equal(
+		assert.Equalf(
 			t,
 			[]string{"b"},
 			inputNetworkingConfig.EndpointsConfig["a"].Aliases,
 			"Networking config's aliases should be overwritten by the modifier",
 		)
-		assert.Equal(
+		assert.Equalf(
 			t,
 			[]string{"link1", "link2"},
 			inputNetworkingConfig.EndpointsConfig["a"].Links,
@@ -155,13 +155,13 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		// assertions
 
-		assert.Equal(
+		assert.Equalf(
 			t,
 			nat.PortSet(nat.PortSet{}),
 			inputConfig.ExposedPorts,
 			"Docker config's exposed ports should be empty",
 		)
-		assert.Equal(t,
+		assert.Equalf(t,
 			nat.PortMap{},
 			inputHostConfig.PortBindings,
 			"Host config's portBinding should be empty",
@@ -196,12 +196,12 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		// assertions
 
-		assert.Equal(t, req.AutoRemove, inputHostConfig.AutoRemove, "Deprecated AutoRemove should come from the container request")
-		assert.Equal(t, strslice.StrSlice(req.CapAdd), inputHostConfig.CapAdd, "Deprecated CapAdd should come from the container request")
-		assert.Equal(t, strslice.StrSlice(req.CapDrop), inputHostConfig.CapDrop, "Deprecated CapDrop should come from the container request")
-		assert.Equal(t, req.Binds, inputHostConfig.Binds, "Deprecated Binds should come from the container request")
-		assert.Equal(t, req.ExtraHosts, inputHostConfig.ExtraHosts, "Deprecated ExtraHosts should come from the container request")
-		assert.Equal(t, req.Resources, inputHostConfig.Resources, "Deprecated Resources should come from the container request")
+		assert.Equalf(t, req.AutoRemove, inputHostConfig.AutoRemove, "Deprecated AutoRemove should come from the container request")
+		assert.Equalf(t, strslice.StrSlice(req.CapAdd), inputHostConfig.CapAdd, "Deprecated CapAdd should come from the container request")
+		assert.Equalf(t, strslice.StrSlice(req.CapDrop), inputHostConfig.CapDrop, "Deprecated CapDrop should come from the container request")
+		assert.Equalf(t, req.Binds, inputHostConfig.Binds, "Deprecated Binds should come from the container request")
+		assert.Equalf(t, req.ExtraHosts, inputHostConfig.ExtraHosts, "Deprecated ExtraHosts should come from the container request")
+		assert.Equalf(t, req.Resources, inputHostConfig.Resources, "Deprecated Resources should come from the container request")
 	})
 
 	t.Run("Request contains more than one network including aliases", func(t *testing.T) {
@@ -237,13 +237,13 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		// assertions
 
-		assert.Equal(
+		assert.Equalf(
 			t,
 			req.NetworkAliases[networkName],
 			inputNetworkingConfig.EndpointsConfig[networkName].Aliases,
 			"Networking config's aliases should come from the container request",
 		)
-		assert.Equal(
+		assert.Equalf(
 			t,
 			dockerNetwork.ID,
 			inputNetworkingConfig.EndpointsConfig[networkName].NetworkID,
@@ -281,12 +281,12 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		// assertions
 
-		require.Empty(
+		require.Emptyf(
 			t,
 			inputNetworkingConfig.EndpointsConfig[networkName].Aliases,
 			"Networking config's aliases should be empty",
 		)
-		assert.Equal(
+		assert.Equalf(
 			t,
 			dockerNetwork.ID,
 			inputNetworkingConfig.EndpointsConfig[networkName].NetworkID,
@@ -935,7 +935,7 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 				break
 			}
 		}
-		assert.True(t, found, "container log line not found in the output of the logger: %s", line)
+		assert.Truef(t, found, "container log line not found in the output of the logger: %s", line)
 	}
 }
 

@@ -77,7 +77,7 @@ func TestNavItems(t *testing.T) {
 				continue
 			}
 		}
-		assert.True(t, found, "example %s is not present in the docs", example)
+		assert.Truef(t, found, "example %s is not present in the docs", example)
 	}
 }
 

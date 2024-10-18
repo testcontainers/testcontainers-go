@@ -222,7 +222,7 @@ func TestExtractRegistry(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			actual := ExtractRegistry(test.image, IndexDockerIO)
-			assert.Equal(t, test.expected, actual, "expected %s, got %s", test.expected, actual)
+			assert.Equalf(t, test.expected, actual, "expected %s, got %s", test.expected, actual)
 		})
 	}
 }
