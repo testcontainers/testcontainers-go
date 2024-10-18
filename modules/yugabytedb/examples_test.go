@@ -91,7 +91,7 @@ func ExampleContainer_YSQLConnectionString() {
 	// Output: 1
 }
 
-func ExampleContainer_YCQLConfigureClusterConfig() {
+func ExampleContainer_newCluster() {
 	ctx := context.Background()
 
 	yugabytedbContainer, err := yugabytedb.Run(
