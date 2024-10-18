@@ -20,19 +20,17 @@ func TestMeilisearch(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	t.Run("Connect to Address", func(t *testing.T) {
-		address, err := ctr.Address(ctx)
-		require.NoError(t, err)
+	address, err := ctr.Address(ctx)
+	require.NoError(t, err)
 
-		client := &http.Client{}
+	client := http.DefaultClient
 
-		req, err := http.NewRequest("GET", address, nil)
-		require.NoError(t, err)
+	req, err := http.NewRequest(http.MethodGet, address, nil)
+	require.NoError(t, err)
 
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-	})
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
 }
 
 func TestMeilisearch_WithDataDump(t *testing.T) {
@@ -48,32 +46,32 @@ func TestMeilisearch_WithDataDump(t *testing.T) {
 		address, err := ctr.Address(ctx)
 		require.NoError(t, err)
 
-		client := &http.Client{}
+		client := http.DefaultClient
 
-		req, err := http.NewRequest("GET", address, nil)
+		req, err := http.NewRequest(http.MethodGet, address, nil)
 		require.NoError(t, err)
 
 		resp, err := client.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		resp.Body.Close() // not closing the body in a defer as it's not used anymore
 
 		require.EqualValues(t, http.StatusOK, resp.StatusCode)
 
 		path, err := url.JoinPath(address, "/indexes/movies/documents/1212")
 		require.NoError(t, err)
 
-		req, err = http.NewRequest("GET", path, nil)
+		req, err = http.NewRequest(http.MethodGet, path, nil)
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer my-master-key")
 
-		gresp, err := client.Do(req)
+		resp, err = client.Do(req)
 		require.NoError(t, err)
-		defer gresp.Body.Close()
+		defer resp.Body.Close()
 
-		require.EqualValues(t, http.StatusOK, gresp.StatusCode)
+		require.EqualValues(t, http.StatusOK, resp.StatusCode)
 
-		bodyBytes, err := io.ReadAll(gresp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 
 		// Assert the response of that document.

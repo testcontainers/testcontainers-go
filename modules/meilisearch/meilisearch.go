@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -68,21 +69,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		WithTLS(false).
 		WithStartupTimeout(120 * time.Second).
 		WithStatusCodeMatcher(func(status int) bool {
-			return status == 200
+			return status == http.StatusOK
 		}).
 		WithResponseMatcher(func(body io.Reader) bool {
-			bs, err := io.ReadAll(body)
-			if err != nil {
-				return false
-			}
-
-			type response struct {
+			decoder := json.NewDecoder(body)
+			r := struct {
 				Status string `json:"status"`
-			}
-
-			var r response
-			err = json.Unmarshal(bs, &r)
-			if err != nil {
+			}{}
+			if err := decoder.Decode(&r); err != nil {
 				return false
 			}
 
