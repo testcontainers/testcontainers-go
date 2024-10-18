@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net"
 
 	_ "github.com/lib/pq"
 	"github.com/yugabyte/gocql"
@@ -115,7 +116,13 @@ func ExampleContainer_newCluster() {
 		return
 	}
 
-	cluster := gocql.NewCluster(yugabytedbContainerHost)
+	yugabyteContainerPort, err := yugabytedbContainer.MappedPort(ctx, "9042/tcp")
+	if err != nil {
+		log.Printf("failed to get container port: %s", err)
+		return
+	}
+
+	cluster := gocql.NewCluster(net.JoinHostPort(yugabytedbContainerHost, yugabyteContainerPort.Port()))
 	cluster.Keyspace = "yugabyte"
 	cluster.Authenticator = gocql.PasswordAuthenticator{
 		Username: "yugabyte",
