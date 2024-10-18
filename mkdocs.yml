@@ -112,6 +112,7 @@ nav:
         - modules/vault.md
         - modules/vearch.md
         - modules/weaviate.md
+        - modules/yugabytedb.md
     - Examples:
         - examples/index.md
         - examples/nginx.md
