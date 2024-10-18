@@ -48,8 +48,7 @@ func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 		WaitForService("non-existent-srv-1", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second).WithOccurrence(1)).
 		Up(ctx, Wait(true))
 	cleanup(t, compose)
-	require.Error(t, err, "Expected error to be thrown because service with wait strategy is not running")
-	require.Equal(t, "no container found for service name non-existent-srv-1", err.Error())
+	require.EqualError(t, err, "wait for services: no container found for service name non-existent-srv-1")
 
 	serviceNames := compose.Services()
 

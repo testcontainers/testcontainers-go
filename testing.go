@@ -19,6 +19,7 @@ var errAlreadyInProgress = regexp.MustCompile(`removal of container .* is alread
 // This is a function designed to be used in your test, when Docker is not mandatory for CI/CD.
 // In this way tests that depend on Testcontainers won't run if the provider is provisioned correctly.
 func SkipIfProviderIsNotHealthy(t *testing.T) {
+	t.Helper()
 	ctx := context.Background()
 	provider, err := ProviderDocker.GetProvider()
 	if err != nil {
@@ -33,6 +34,7 @@ func SkipIfProviderIsNotHealthy(t *testing.T) {
 // SkipIfDockerDesktop is a utility function capable of skipping tests
 // if tests are run using Docker Desktop.
 func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
+	t.Helper()
 	cli, err := NewDockerClientWithOpts(ctx)
 	if err != nil {
 		t.Fatalf("failed to create docker client: %s", err)
@@ -68,11 +70,11 @@ func (lc *StdoutLogConsumer) Accept(l Log) {
 // container is stopped when the function ends.
 //
 // before any error check. If container is nil, its a no-op.
-func CleanupContainer(tb testing.TB, container Container, options ...TerminateOption) {
+func CleanupContainer(tb testing.TB, ctr Container, options ...TerminateOption) {
 	tb.Helper()
 
 	tb.Cleanup(func() {
-		noErrorOrIgnored(tb, TerminateContainer(container, options...))
+		noErrorOrIgnored(tb, TerminateContainer(ctr, options...))
 	})
 }
 

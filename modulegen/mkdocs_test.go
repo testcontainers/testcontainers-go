@@ -82,6 +82,7 @@ func TestNavItems(t *testing.T) {
 }
 
 func copyInitialMkdocsConfig(t *testing.T, tmpCtx context.Context) error {
+	t.Helper()
 	ctx := getTestRootContext(t)
 	return mkdocs.CopyConfig(ctx.MkdocsConfigFile(), tmpCtx.MkdocsConfigFile())
 }
