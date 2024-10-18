@@ -183,7 +183,7 @@ func (c *DockerContainer) Inspect(ctx context.Context) (*types.ContainerJSON, er
 func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
 	inspect, err := c.Inspect(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("inspect: %w", err)
 	}
 	if inspect.ContainerJSONBase.HostConfig.NetworkMode == "host" {
 		return port, nil
@@ -204,7 +204,7 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 		return nat.NewPort(k.Proto(), p[0].HostPort)
 	}
 
-	return "", errors.New("port not found")
+	return "", errdefs.NotFound(fmt.Errorf("port %q not found", port))
 }
 
 // Deprecated: use c.Inspect(ctx).NetworkSettings.Ports instead.
@@ -980,9 +980,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 }
 
 // CreateContainer fulfils a request for a container without starting it
-func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
-	var err error
-
+func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerRequest) (con Container, err error) { //nolint:nonamedreturns // Needed for error checking.
 	// defer the close of the Docker client connection the soonest
 	defer p.Close()
 
@@ -1027,22 +1025,23 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.HasSuffix(imageName, config.ReaperDefaultImage)
 	if !p.config.RyukDisabled && !isReaperContainer {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), core.SessionID(), p)
+		r, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), core.SessionID(), p)
 		if err != nil {
-			return nil, fmt.Errorf("%w: creating reaper failed", err)
+			return nil, fmt.Errorf("reaper: %w", err)
 		}
-		termSignal, err = r.Connect()
-		if err != nil {
-			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
-		}
-	}
 
-	// Cleanup on error, otherwise set termSignal to nil before successful return.
-	defer func() {
-		if termSignal != nil {
-			termSignal <- true
+		termSignal, err := r.Connect()
+		if err != nil {
+			return nil, fmt.Errorf("reaper connect: %w", err)
 		}
-	}()
+
+		// Cleanup on error.
+		defer func() {
+			if err != nil {
+				termSignal <- true
+			}
+		}()
+	}
 
 	if err = req.Validate(); err != nil {
 		return nil, err
@@ -1108,10 +1107,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	if !isReaperContainer {
-		// add the labels that the reaper will use to terminate the container to the request
-		for k, v := range core.DefaultLabels(core.SessionID()) {
-			req.Labels[k] = v
-		}
+		// Add the labels that identify this as a testcontainers container and
+		// allow the reaper to terminate it if requested.
+		AddGenericLabels(req.Labels)
 	}
 
 	dockerInput := &container.Config{
@@ -1205,9 +1203,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		return nil, err
 	}
 
-	// Disable cleanup on success
-	termSignal = nil
-
 	return c, nil
 }
 
@@ -1256,7 +1251,7 @@ func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string)
 	)
 }
 
-func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
+func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req ContainerRequest) (con Container, err error) { //nolint:nonamedreturns // Needed for error check.
 	c, err := p.findContainerByName(ctx, req.Name)
 	if err != nil {
 		return nil, err
@@ -1279,14 +1274,22 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 
 	var termSignal chan bool
 	if !p.config.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
+		r, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
 			return nil, fmt.Errorf("reaper: %w", err)
 		}
-		termSignal, err = r.Connect()
+
+		termSignal, err := r.Connect()
 		if err != nil {
-			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
+			return nil, fmt.Errorf("reaper connect: %w", err)
 		}
+
+		// Cleanup on error.
+		defer func() {
+			if err != nil {
+				termSignal <- true
+			}
+		}()
 	}
 
 	// default hooks include logger hook and pre-create hook
@@ -1454,9 +1457,7 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 
 // Deprecated: use network.New instead
 // CreateNetwork returns the object representing a new network identified by its name
-func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) (Network, error) {
-	var err error
-
+func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) (net Network, err error) { //nolint:nonamedreturns // Needed for error check.
 	// defer the close of the Docker client connection the soonest
 	defer p.Close()
 
@@ -1485,31 +1486,30 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	var termSignal chan bool
 	if !p.config.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
+		r, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
-			return nil, fmt.Errorf("%w: creating network reaper failed", err)
+			return nil, fmt.Errorf("reaper: %w", err)
 		}
-		termSignal, err = r.Connect()
+
+		termSignal, err := r.Connect()
 		if err != nil {
-			return nil, fmt.Errorf("%w: connecting to network reaper failed", err)
+			return nil, fmt.Errorf("reaper connect: %w", err)
 		}
+
+		// Cleanup on error.
+		defer func() {
+			if err != nil {
+				termSignal <- true
+			}
+		}()
 	}
 
 	// add the labels that the reaper will use to terminate the network to the request
-	for k, v := range core.DefaultLabels(sessionID) {
-		req.Labels[k] = v
-	}
-
-	// Cleanup on error, otherwise set termSignal to nil before successful return.
-	defer func() {
-		if termSignal != nil {
-			termSignal <- true
-		}
-	}()
+	core.AddDefaultLabels(sessionID, req.Labels)
 
 	response, err := p.client.NetworkCreate(ctx, req.Name, nc)
 	if err != nil {
-		return &DockerNetwork{}, err
+		return &DockerNetwork{}, fmt.Errorf("create network: %w", err)
 	}
 
 	n := &DockerNetwork{
@@ -1519,9 +1519,6 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		terminationSignal: termSignal,
 		provider:          p,
 	}
-
-	// Disable cleanup on success
-	termSignal = nil
 
 	return n, nil
 }
@@ -1592,9 +1589,12 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 		_, err = cli.NetworkCreate(ctx, reaperNetwork, network.CreateOptions{
 			Driver:     Bridge,
 			Attachable: true,
-			Labels:     core.DefaultLabels(core.SessionID()),
+			Labels:     GenericLabels(),
 		})
-		if err != nil {
+		// If the network already exists, we can ignore the error as that can
+		// happen if we are running multiple tests in parallel and we only
+		// need to ensure that the network exists.
+		if err != nil && !errdefs.IsConflict(err) {
 			return "", err
 		}
 	}
@@ -1632,7 +1632,7 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	// populate the raw representation of the container
 	jsonRaw, err := ctr.inspectRawContainer(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("inspect raw container: %w", err)
 	}
 
 	// the health status of the container, if any
