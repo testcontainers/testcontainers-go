@@ -1478,7 +1478,7 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 			CleanupContainer(t, nginxC)
 
 			if err != nil {
-				require.Contains(t, err.Error(), tc.errMsg)
+				require.ErrorContains(t, err, tc.errMsg)
 			} else {
 				for _, f := range tc.files {
 					require.NoError(t, err)

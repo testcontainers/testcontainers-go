@@ -155,10 +155,7 @@ func TestHostPortStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "container crashed with out-of-memory (OOMKilled)")
 	}
 }
 
@@ -189,10 +186,7 @@ func TestHostPortStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T)
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "container exited with code 1"
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "container exited with code 1")
 	}
 }
 
@@ -222,10 +216,7 @@ func TestHostPortStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "unexpected container status \"dead\""
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "unexpected container status \"dead\"")
 	}
 }
 
@@ -250,10 +241,7 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToOOMKilledContainer(t *te
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "container crashed with out-of-memory (OOMKilled)")
 	}
 }
 
@@ -279,10 +267,7 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToExitedContainer(t *testi
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "container exited with code 1"
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "container exited with code 1")
 	}
 }
 
@@ -307,10 +292,7 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToUnexpectedContainerStatu
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "unexpected container status \"dead\""
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "unexpected container status \"dead\"")
 	}
 }
 
@@ -354,10 +336,7 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToOOMKilledContainer(t *te
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "container crashed with out-of-memory (OOMKilled)")
 	}
 }
 
@@ -402,10 +381,7 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testi
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "container exited with code 1"
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "container exited with code 1")
 	}
 }
 
@@ -449,10 +425,7 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatu
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "unexpected container status \"dead\""
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "unexpected container status \"dead\"")
 	}
 }
 

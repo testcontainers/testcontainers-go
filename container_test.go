@@ -376,8 +376,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		Started:          true,
 	})
 	testcontainers.CleanupContainer(t, c)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "container exited with code 0")
+	require.ErrorContains(t, err, "container exited with code 0")
 
 	logs, logErr := c.Logs(ctx)
 	require.NoError(t, logErr)
