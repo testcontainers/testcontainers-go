@@ -33,7 +33,7 @@ type ContainerRequestHook func(ctx context.Context, req ContainerRequest) error
 // - Terminating
 // - Terminated
 // For that, it will receive a Container, modify it and return an error if needed.
-type ContainerHook func(ctx context.Context, container Container) error
+type ContainerHook func(ctx context.Context, ctr Container) error
 
 // ContainerLifecycleHooks is a struct that contains all the hooks that can be used
 // to modify the container lifecycle. All the container lifecycle hooks except the PreCreates hooks

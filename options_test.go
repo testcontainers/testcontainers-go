@@ -115,8 +115,8 @@ func TestWithStartupCommand(t *testing.T) {
 	err := testcontainers.WithStartupCommand(testExec)(&req)
 	require.NoError(t, err)
 
-	assert.Len(t, req.LifecycleHooks, 1)
-	assert.Len(t, req.LifecycleHooks[0].PostStarts, 1)
+	require.Len(t, req.LifecycleHooks, 1)
+	require.Len(t, req.LifecycleHooks[0].PostStarts, 1)
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
 	testcontainers.CleanupContainer(t, c)
@@ -144,8 +144,8 @@ func TestWithAfterReadyCommand(t *testing.T) {
 	err := testcontainers.WithAfterReadyCommand(testExec)(&req)
 	require.NoError(t, err)
 
-	assert.Len(t, req.LifecycleHooks, 1)
-	assert.Len(t, req.LifecycleHooks[0].PostReadies, 1)
+	require.Len(t, req.LifecycleHooks, 1)
+	require.Len(t, req.LifecycleHooks[0].PostReadies, 1)
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
 	testcontainers.CleanupContainer(t, c)

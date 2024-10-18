@@ -73,7 +73,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host := MustExtractDockerHost(context.Background())
 
-		assert.Equal(t, expected, host)
+		require.Equal(t, expected, host)
 
 		t.Setenv("DOCKER_HOST", "/path/to/another/docker.sock")
 
@@ -207,7 +207,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := testcontainersHostFromProperties(context.Background())
 			require.ErrorIs(t, err, ErrTestcontainersHostNotSetInProperties)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("DOCKER_HOST is set", func(t *testing.T) {
@@ -227,7 +227,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerHostFromEnv(context.Background())
 			require.ErrorIs(t, err, ErrDockerHostNotSet)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is set", func(t *testing.T) {
@@ -251,7 +251,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerSocketOverridePath()
 			require.ErrorIs(t, err, ErrDockerSocketOverrideNotSet)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("Context sets the Docker socket", func(t *testing.T) {
@@ -267,7 +267,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
 			require.Error(t, err)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("Context sets a malformed schema for the Docker socket", func(t *testing.T) {
@@ -275,7 +275,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, "http://example.com/docker.sock"))
 			require.ErrorIs(t, err, ErrNoUnixSchema)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("Docker socket exists", func(t *testing.T) {
@@ -304,7 +304,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerHostFromProperties(context.Background())
 			require.ErrorIs(t, err, ErrDockerSocketNotSetInProperties)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("Docker socket does not exist", func(t *testing.T) {
@@ -312,7 +312,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerSocketPath(context.Background())
 			require.ErrorIs(t, err, ErrSocketNotFoundInPath)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("extract-from-docker-context/not-found", func(tt *testing.T) {

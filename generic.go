@@ -101,7 +101,17 @@ type GenericProvider interface {
 	ImageProvider
 }
 
-// GenericLabels returns a map of labels that can be used to identify containers created by this library
+// GenericLabels returns a map of labels that can be used to identify resources
+// created by this library. This includes the standard LabelSessionID if the
+// reaper is enabled, otherwise this is excluded to prevent resources being
+// incorrectly reaped.
 func GenericLabels() map[string]string {
 	return core.DefaultLabels(core.SessionID())
+}
+
+// AddGenericLabels adds the generic labels to target.
+func AddGenericLabels(target map[string]string) {
+	for k, v := range GenericLabels() {
+		target[k] = v
+	}
 }

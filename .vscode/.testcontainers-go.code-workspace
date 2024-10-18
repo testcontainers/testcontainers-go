@@ -202,6 +202,10 @@
             "path": "../modules/weaviate"
         },
         {
+            "name": "module / yugabytedb",
+            "path": "../modules/yugabytedb"
+        },
+        {
             "name": "modulegen",
             "path": "../modulegen"
         }
