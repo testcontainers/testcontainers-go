@@ -57,7 +57,7 @@ If you need to set a master key, you can use the `WithMasterKey(key string)` opt
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-If you need to dump data in Meilisearch upon initialization for testing, you can use `WithDumpData(filepath string)` option where `filepath` can be an absolute path or relative path.
+If you need to dump data in Meilisearch upon initialization for testing, you can use `WithDumpData(filepath string)` option where `filepath` can be an absolute path or relative path to a `dump` file. Please refer to the official Meilisearch documentation about dump files [here](https://www.meilisearch.com/docs/learn/advanced/snapshots_vs_dumps#dumps).
 
 ### Container Methods
 
