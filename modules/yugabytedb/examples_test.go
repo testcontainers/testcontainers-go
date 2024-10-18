@@ -15,6 +15,7 @@ import (
 )
 
 func ExampleRun() {
+	// runyugabyteDBContainer {
 	ctx := context.Background()
 
 	yugabytedbContainer, err := yugabytedb.Run(
@@ -36,6 +37,7 @@ func ExampleRun() {
 			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	// }
 
 	state, err := yugabytedbContainer.State(ctx)
 	if err != nil {
