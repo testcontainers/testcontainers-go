@@ -144,6 +144,7 @@ func TestMariaDBWithScripts(t *testing.T) {
 }
 
 func assertDataCanBeFetched(t *testing.T, ctx context.Context, container *mariadb.MariaDBContainer) {
+	t.Helper()
 	connectionString, err := container.ConnectionString(ctx)
 	require.NoError(t, err)
 	db, err := sql.Open("mysql", connectionString)

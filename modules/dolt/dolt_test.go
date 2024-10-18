@@ -70,6 +70,7 @@ func TestDoltWithPublicRemoteCloneUrl(t *testing.T) {
 }
 
 func createTestCredsFile(t *testing.T) string {
+	t.Helper()
 	file, err := os.CreateTemp(t.TempDir(), "prefix")
 	if err != nil {
 		t.Fatal(err)

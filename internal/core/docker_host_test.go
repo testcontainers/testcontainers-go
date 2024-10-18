@@ -50,6 +50,7 @@ func testCallbackCheckError(_ context.Context, _ string) error {
 }
 
 func mockCallbackCheck(t *testing.T, fn func(_ context.Context, _ string) error) {
+	t.Helper()
 	oldCheck := dockerHostCheck
 	dockerHostCheck = fn
 	t.Cleanup(func() {
@@ -515,10 +516,12 @@ func createTmpDockerSocket(parent string) error {
 // setupDockerHostNotFound sets up the environment for the test case where the DOCKER_HOST environment variable is
 // already set (e.g. rootless docker) therefore we need to unset it before the test
 func setupDockerHostNotFound(t *testing.T) {
+	t.Helper()
 	t.Setenv("DOCKER_HOST", "")
 }
 
 func setupDockerSocket(t *testing.T) string {
+	t.Helper()
 	t.Cleanup(func() {
 		DockerSocketPath = originalDockerSocketPath
 		DockerSocketPathWithSchema = originalDockerSocketPathWithSchema
@@ -536,6 +539,7 @@ func setupDockerSocket(t *testing.T) string {
 }
 
 func setupDockerSocketNotFound(t *testing.T) {
+	t.Helper()
 	t.Cleanup(func() {
 		DockerSocketPath = originalDockerSocketPath
 		DockerSocketPathWithSchema = originalDockerSocketPathWithSchema
@@ -548,6 +552,7 @@ func setupDockerSocketNotFound(t *testing.T) {
 }
 
 func setupTestcontainersProperties(t *testing.T, content string) {
+	t.Helper()
 	t.Cleanup(func() {
 		// reset the properties file after the test
 		config.Reset()

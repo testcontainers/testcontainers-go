@@ -170,6 +170,7 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 
 // removeImageFromLocalCache removes the image from the local cache
 func removeImageFromLocalCache(t *testing.T, img string) {
+	t.Helper()
 	ctx := context.Background()
 
 	testcontainersClient, err := NewDockerClientWithOpts(ctx, client.WithVersion(daemonMaxVersion))
@@ -263,6 +264,7 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 }
 
 func prepareLocalRegistryWithAuth(t *testing.T) string {
+	t.Helper()
 	ctx := context.Background()
 	wd, err := os.Getwd()
 	require.NoError(t, err)
@@ -359,6 +361,7 @@ func setAuthConfig(t *testing.T, host, username, password string) string {
 // which can be used to connect to the local registry.
 // This avoids the issues with localhost on WSL.
 func localAddress(t *testing.T) string {
+	t.Helper()
 	if os.Getenv("WSL_DISTRO_NAME") == "" {
 		return "localhost"
 	}

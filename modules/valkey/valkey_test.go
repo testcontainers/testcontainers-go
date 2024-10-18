@@ -81,6 +81,7 @@ func TestValkeyWithSnapshotting(t *testing.T) {
 }
 
 func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey.ValkeyContainer, keyCount int) {
+	t.Helper()
 	// connectionString {
 	uri, err := valkeyContainer.ConnectionString(ctx)
 	// }
@@ -95,6 +96,7 @@ func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey
 	client, err := valkey.NewClient(options)
 	require.NoError(t, err)
 	defer func(t *testing.T, ctx context.Context, client *valkey.Client) {
+		t.Helper()
 		require.NoError(t, flushValkey(ctx, *client))
 	}(t, ctx, &client)
 

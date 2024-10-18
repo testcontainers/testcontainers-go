@@ -184,6 +184,7 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 }
 
 func setupRootlessNotFound(t *testing.T) {
+	t.Helper()
 	t.Cleanup(func() {
 		baseRunDir = originalBaseRunDir
 		os.Setenv("XDG_RUNTIME_DIR", originalXDGRuntimeDir)

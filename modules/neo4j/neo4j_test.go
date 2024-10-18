@@ -163,6 +163,7 @@ func setupNeo4j(ctx context.Context) (*neo4j.Neo4jContainer, error) {
 }
 
 func createDriver(t *testing.T, ctx context.Context, container *neo4j.Neo4jContainer) neo.DriverWithContext {
+	t.Helper()
 	// boltURL {
 	boltUrl, err := container.BoltUrl(ctx)
 	// }
@@ -182,6 +183,7 @@ func createDriver(t *testing.T, ctx context.Context, container *neo4j.Neo4jConta
 }
 
 func getContainerEnv(t *testing.T, ctx context.Context, container *neo4j.Neo4jContainer) string {
+	t.Helper()
 	exec, reader, err := container.Exec(ctx, []string{"env"})
 	if err != nil {
 		t.Fatalf("expected env to successfully run but did not: %s", err)
