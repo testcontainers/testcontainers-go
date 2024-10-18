@@ -150,8 +150,8 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 	// after the container is ready, create the SSH tunnel
 	// for each exposed port from the host.
 	sshdConnectHook = ContainerLifecycleHooks{
-		PostReadies: []ContainerHook{
-			func(ctx context.Context, c Container) error {
+		PreCreates: []ContainerRequestHook{
+			func(ctx context.Context, req ContainerRequest) error {
 				return sshdContainer.exposeHostPort(ctx, req.HostAccessPorts...)
 			},
 		},
