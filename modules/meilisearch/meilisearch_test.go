@@ -2,13 +2,15 @@ package meilisearch_test
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/meilisearch"
 	"io"
 	"net/http"
 	"net/url"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/meilisearch"
 )
 
 func TestMeilisearch(t *testing.T) {
@@ -30,7 +32,6 @@ func TestMeilisearch(t *testing.T) {
 		resp, err := client.Do(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
-
 	})
 }
 

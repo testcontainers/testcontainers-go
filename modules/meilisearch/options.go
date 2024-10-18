@@ -1,8 +1,9 @@
 package meilisearch
 
 import (
-	"github.com/testcontainers/testcontainers-go"
 	"path/filepath"
+
+	"github.com/testcontainers/testcontainers-go"
 )
 
 // Options is a struct for specifying options for the Meilisearch container.

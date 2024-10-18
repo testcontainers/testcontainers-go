@@ -3,9 +3,10 @@ package meilisearch_test
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/meilisearch"
-	"log"
 )
 
 func ExampleRun() {
