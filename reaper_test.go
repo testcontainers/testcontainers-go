@@ -199,6 +199,7 @@ func testContainerStop(t *testing.T) {
 
 // testContainerTerminate tests terminating a container.
 func testContainerTerminate(t *testing.T) {
+	t.Helper()
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{

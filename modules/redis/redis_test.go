@@ -96,6 +96,7 @@ func TestRedisWithSnapshotting(t *testing.T) {
 }
 
 func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.RedisContainer, keyCount int) {
+	t.Helper()
 	// connectionString {
 	uri, err := redisContainer.ConnectionString(ctx)
 	// }
@@ -109,6 +110,7 @@ func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.R
 
 	client := redis.NewClient(options)
 	defer func(t *testing.T, ctx context.Context, client *redis.Client) {
+		t.Helper()
 		require.NoError(t, flushRedis(ctx, *client))
 	}(t, ctx, client)
 

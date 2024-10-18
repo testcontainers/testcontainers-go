@@ -112,6 +112,7 @@ func TestExposeHostPorts(t *testing.T) {
 }
 
 func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, string) {
+	t.Helper()
 	// wgetHostInternal {
 	code, reader, err := c.Exec(
 		context.Background(),
@@ -129,6 +130,7 @@ func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, strin
 }
 
 func assertContainerHasHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
+	t.Helper()
 	for _, port := range ports {
 		code, response := httpRequest(t, c, port)
 		if code != 0 {
@@ -142,6 +144,7 @@ func assertContainerHasHostAccess(t *testing.T, c testcontainers.Container, port
 }
 
 func assertContainerHasNoHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
+	t.Helper()
 	for _, port := range ports {
 		_, response := httpRequest(t, c, port)
 

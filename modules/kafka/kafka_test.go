@@ -84,6 +84,7 @@ func TestKafka_invalidVersion(t *testing.T) {
 // assertAdvertisedListeners checks that the advertised listeners are set correctly:
 // - The BROKER:// protocol is using the hostname of the Kafka container
 func assertAdvertisedListeners(t *testing.T, container testcontainers.Container) {
+	t.Helper()
 	inspect, err := container.Inspect(context.Background())
 	require.NoError(t, err)
 

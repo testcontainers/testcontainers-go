@@ -1345,6 +1345,7 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 }
 
 func readHostname(tb testing.TB, containerId string) string {
+	tb.Helper()
 	containerClient, err := NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		tb.Fatalf("Failed to create Docker client: %v", err)
@@ -1917,6 +1918,7 @@ func TestNetworkModeWithContainerReference(t *testing.T) {
 
 // creates a temporary dir in which the files will be extracted. Then it will compare the bytes of each file in the source with the bytes from the copied-from-container file
 func assertExtractedFiles(t *testing.T, ctx context.Context, container Container, hostFilePath string, containerFilePath string) {
+	t.Helper()
 	// create all copied files into a temporary dir
 	tmpDir := t.TempDir()
 
