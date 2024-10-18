@@ -340,6 +340,34 @@ func TestSnapshotWithOverrides(t *testing.T) {
 	})
 }
 
+func TestSnapshotDuplicate(t *testing.T) {
+	ctx := context.Background()
+
+	dbname := "other-db"
+	user := "other-user"
+	password := "other-password"
+
+	ctr, err := postgres.Run(
+		ctx,
+		"docker.io/postgres:16-alpine",
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		postgres.BasicWaitStrategies(),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	_, _, err = ctr.Exec(ctx, []string{"psql", "-U", user, "-d", dbname, "-c", "CREATE TABLE users (id SERIAL, name TEXT NOT NULL, age INT NOT NULL)"})
+	require.NoError(t, err)
+
+	err = ctr.Snapshot(ctx, postgres.WithSnapshotName("other-snapshot"))
+	require.NoError(t, err)
+
+	err = ctr.Snapshot(ctx, postgres.WithSnapshotName("other-snapshot"))
+	require.NoError(t, err)
+}
+
 func TestSnapshotWithDockerExecFallback(t *testing.T) {
 	ctx := context.Background()
 
