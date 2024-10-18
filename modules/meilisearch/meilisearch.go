@@ -46,7 +46,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			apply(settings)
 		}
 		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("customize: %w", err)
 		}
 	}
 
