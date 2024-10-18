@@ -37,7 +37,7 @@ func ExampleRun() {
 	}
 
 	fmt.Println(state.Running)
-	fmt.Printf("%s\n", meiliContainer.MasterKey)
+	fmt.Printf("%s\n", meiliContainer.MasterKey())
 
 	// Output:
 	// true

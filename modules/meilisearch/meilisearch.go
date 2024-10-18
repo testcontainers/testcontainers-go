@@ -22,7 +22,12 @@ const (
 // MeilisearchContainer represents the Meilisearch container type used in the module
 type MeilisearchContainer struct {
 	testcontainers.Container
-	MasterKey string
+	masterKey string
+}
+
+// MasterKey retrieves the master key of the Meilisearch container
+func (c *MeilisearchContainer) MasterKey() string {
+	return c.masterKey
 }
 
 // Run creates an instance of the Meilisearch container type
@@ -86,7 +91,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *MeilisearchContainer
 	if container != nil {
-		c = &MeilisearchContainer{Container: container, MasterKey: req.Env[masterKeyEnvVar]}
+		c = &MeilisearchContainer{Container: container, masterKey: req.Env[masterKeyEnvVar]}
 	}
 
 	if err != nil {

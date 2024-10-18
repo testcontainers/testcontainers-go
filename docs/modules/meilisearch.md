@@ -69,3 +69,9 @@ The Meilisearch container exposes the following methods:
 
 The `Address` method retrieves the address of the Meilisearch container.
 It will use http as protocol, as TLS is not supported at the moment.
+
+#### MasterKey
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `MasterKey` method retrieves the master key of the Meilisearch container.
