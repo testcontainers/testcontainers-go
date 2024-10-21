@@ -23,12 +23,10 @@ func TestMeilisearch(t *testing.T) {
 	address, err := ctr.Address(ctx)
 	require.NoError(t, err)
 
-	client := http.DefaultClient
-
 	req, err := http.NewRequest(http.MethodGet, address, nil)
 	require.NoError(t, err)
 
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 }
