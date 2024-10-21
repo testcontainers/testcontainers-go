@@ -507,8 +507,7 @@ func TestRedpandaListener_InvalidPort(t *testing.T) {
 		network.WithNetwork([]string{"redpanda-host"}, RPNetwork),
 	)
 	testcontainers.CleanupContainer(t, ctr)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid port on listener redpanda:99092")
+	require.ErrorContains(t, err, "invalid port on listener redpanda:99092")
 }
 
 func TestRedpandaListener_NoNetwork(t *testing.T) {
@@ -520,9 +519,7 @@ func TestRedpandaListener_NoNetwork(t *testing.T) {
 		redpanda.WithListener("redpanda:99092"),
 	)
 	testcontainers.CleanupContainer(t, ctr)
-	require.Error(t, err)
-
-	require.Contains(t, err.Error(), "container must be attached to at least one network")
+	require.ErrorContains(t, err, "container must be attached to at least one network")
 }
 
 func TestRedpandaBootstrapConfig(t *testing.T) {

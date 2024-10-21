@@ -113,6 +113,7 @@ func TestEventingServiceWithCommunityContainer(t *testing.T) {
 }
 
 func testBucketUsage(t *testing.T, bucket *gocb.Bucket) {
+	t.Helper()
 	err := bucket.WaitUntilReady(5*time.Second, nil)
 	if err != nil {
 		t.Fatalf("could not connect bucket: %s", err)

@@ -57,6 +57,7 @@ func TestArtemis(t *testing.T) {
 			user: "artemis",
 			pass: "artemis",
 			hook: func(t *testing.T, container *artemis.Container) {
+				t.Helper()
 				expectQueue(t, container, "ArgsTestQueue")
 			},
 		},

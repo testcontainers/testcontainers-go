@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/datafuselabs/databend-go v0.7.0
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.33.0
+	github.com/testcontainers/testcontainers-go v0.34.0
 )
 
 require (

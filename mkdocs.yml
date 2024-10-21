@@ -88,6 +88,7 @@ nav:
         - modules/kafka.md
         - modules/localstack.md
         - modules/mariadb.md
+        - modules/meilisearch.md
         - modules/milvus.md
         - modules/minio.md
         - modules/mockserver.md
@@ -136,4 +137,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.33.0
+    latest_version: v0.34.0

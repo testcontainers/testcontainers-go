@@ -357,6 +357,7 @@ func TestGenerateModule(t *testing.T) {
 
 // assert content module file in the docs
 func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, moduleDocFile string) {
+	t.Helper()
 	content, err := os.ReadFile(moduleDocFile)
 	require.NoError(t, err)
 
@@ -383,6 +384,7 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 
 // assert content module test
 func assertExamplesTestContent(t *testing.T, module context.TestcontainersModule, examplesTestFile string) {
+	t.Helper()
 	content, err := os.ReadFile(examplesTestFile)
 	require.NoError(t, err)
 
@@ -402,6 +404,7 @@ func assertExamplesTestContent(t *testing.T, module context.TestcontainersModule
 
 // assert content module test
 func assertModuleTestContent(t *testing.T, module context.TestcontainersModule, exampleTestFile string) {
+	t.Helper()
 	content, err := os.ReadFile(exampleTestFile)
 	require.NoError(t, err)
 
@@ -413,6 +416,7 @@ func assertModuleTestContent(t *testing.T, module context.TestcontainersModule, 
 
 // assert content module
 func assertModuleContent(t *testing.T, module context.TestcontainersModule, exampleFile string) {
+	t.Helper()
 	content, err := os.ReadFile(exampleFile)
 	require.NoError(t, err)
 
@@ -437,6 +441,7 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 
 // assert content GitHub workflow for the module
 func assertModuleGithubWorkflowContent(t *testing.T, moduleWorkflowFile string) {
+	t.Helper()
 	content, err := os.ReadFile(moduleWorkflowFile)
 	require.NoError(t, err)
 
@@ -454,6 +459,7 @@ func assertModuleGithubWorkflowContent(t *testing.T, moduleWorkflowFile string) 
 
 // assert content go.mod
 func assertGoModContent(t *testing.T, module context.TestcontainersModule, tcVersion string, goModFile string) {
+	t.Helper()
 	content, err := os.ReadFile(goModFile)
 	require.NoError(t, err)
 
@@ -465,6 +471,7 @@ func assertGoModContent(t *testing.T, module context.TestcontainersModule, tcVer
 
 // assert content Makefile
 func assertMakefileContent(t *testing.T, module context.TestcontainersModule, makefile string) {
+	t.Helper()
 	content, err := os.ReadFile(makefile)
 	require.NoError(t, err)
 
@@ -474,6 +481,7 @@ func assertMakefileContent(t *testing.T, module context.TestcontainersModule, ma
 
 // assert content in the nav items from mkdocs.yml
 func assertMkdocsNavItems(t *testing.T, module context.TestcontainersModule, originalConfig *mkdocs.Config, tmpCtx context.Context) {
+	t.Helper()
 	config, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
 	require.NoError(t, err)
 

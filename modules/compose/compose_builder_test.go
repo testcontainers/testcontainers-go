@@ -135,6 +135,7 @@ func getFreePort(t *testing.T) int {
 }
 
 func writeTemplate(t *testing.T, templateFile string, port ...int) string {
+	t.Helper()
 	return writeTemplateWithSrvType(t, templateFile, "api", port...)
 }
 
