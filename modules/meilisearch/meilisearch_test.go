@@ -38,7 +38,8 @@ func TestMeilisearch_WithDataDump(t *testing.T) {
 
 	ctr, err := meilisearch.Run(ctx, "getmeili/meilisearch:v1.10.3",
 		meilisearch.WithDumpImport("testdata/movies.dump"),
-		meilisearch.WithMasterKey("my-master-key"))
+		meilisearch.WithMasterKey("my-master-key"),
+	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
