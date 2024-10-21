@@ -216,7 +216,10 @@ func (c *PostgresContainer) Snapshot(ctx context.Context, opts ...SnapshotOption
 
 	// execute the commands to create the snapshot, in order
 	if err := c.execCommandsSQL(ctx,
-		// Drop the snapshot database if it already exists
+		// Update pg_database to remove the template flag, then drop the database if it exists.
+		// This is needed because dropping a template database will fail.
+		// https://www.postgresql.org/docs/current/manage-ag-templatedbs.html
+		fmt.Sprintf(`UPDATE pg_database SET datistemplate = FALSE WHERE datname = '%s'`, snapshotName),
 		fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, snapshotName),
 		// Create a copy of the database to another database to use as a template now that it was fully migrated
 		fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, snapshotName, c.dbName, c.user),
