@@ -28,7 +28,7 @@ func TestMeilisearch(t *testing.T) {
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	resp.Body.Close()
 }
 
 func TestMeilisearch_WithDataDump(t *testing.T) {
