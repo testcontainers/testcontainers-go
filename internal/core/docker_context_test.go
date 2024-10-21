@@ -21,6 +21,8 @@ import (
 // The config.json file contains the current context, and the meta.json files contain the metadata for each context.
 // It generates the specified number of contexts, setting the current context to the one specified by currentContextIndex.
 func setupDockerContexts(t *testing.T, currentContextIndex int, contextsCount int) {
+	t.Helper()
+
 	configDir := filepath.Join(getHomeDir(), configFileDir)
 
 	err := createTmpDir(configDir)
