@@ -15,7 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -873,6 +873,32 @@ func (c *DockerContainer) GetLogProductionErrorChannel() <-chan error {
 	return errCh
 }
 
+// connectReaper connects the reaper to the container if it is needed.
+func (c *DockerContainer) connectReaper(ctx context.Context) error {
+	if c.provider.config.RyukDisabled || isReaperImage(c.Image) {
+		// Reaper is disabled or we are the reaper container.
+		return nil
+	}
+
+	reaper, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, c.provider.host), core.SessionID(), c.provider)
+	if err != nil {
+		return fmt.Errorf("reaper: %w", err)
+	}
+
+	if c.terminationSignal, err = reaper.Connect(); err != nil {
+		return fmt.Errorf("reaper connect: %w", err)
+	}
+
+	return nil
+}
+
+// cleanupTermSignal triggers the termination signal if it was created and an error occurred.
+func (c *DockerContainer) cleanupTermSignal(err error) {
+	if c.terminationSignal != nil && err != nil {
+		c.terminationSignal <- true
+	}
+}
+
 // DockerNetwork represents a network started using Docker
 type DockerNetwork struct {
 	ID                string // Network ID from Docker
@@ -906,6 +932,7 @@ type DockerProvider struct {
 	host      string
 	hostCache string
 	config    config.Config
+	mtx       sync.Mutex
 }
 
 // Client gets the docker client used by the provider
@@ -1021,28 +1048,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		req.Labels = make(map[string]string)
 	}
 
-	var termSignal chan bool
-	// the reaper does not need to start a reaper for itself
-	isReaperContainer := strings.HasSuffix(imageName, config.ReaperDefaultImage)
-	if !p.config.RyukDisabled && !isReaperContainer {
-		r, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), core.SessionID(), p)
-		if err != nil {
-			return nil, fmt.Errorf("reaper: %w", err)
-		}
-
-		termSignal, err := r.Connect()
-		if err != nil {
-			return nil, fmt.Errorf("reaper connect: %w", err)
-		}
-
-		// Cleanup on error.
-		defer func() {
-			if err != nil {
-				termSignal <- true
-			}
-		}()
-	}
-
 	if err = req.Validate(); err != nil {
 		return nil, err
 	}
@@ -1106,7 +1111,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
-	if !isReaperContainer {
+	if !isReaperImage(imageName) {
 		// Add the labels that identify this as a testcontainers container and
 		// allow the reaper to terminate it if requested.
 		AddGenericLabels(req.Labels)
@@ -1184,26 +1189,35 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	}
 
-	c := &DockerContainer{
-		ID:                resp.ID,
-		WaitingFor:        req.WaitingFor,
-		Image:             imageName,
-		imageWasBuilt:     req.ShouldBuildImage(),
-		keepBuiltImage:    req.ShouldKeepBuiltImage(),
-		sessionID:         core.SessionID(),
-		exposedPorts:      req.ExposedPorts,
-		provider:          p,
-		terminationSignal: termSignal,
-		logger:            p.Logger,
-		lifecycleHooks:    req.LifecycleHooks,
+	// This should match the fields set in ContainerFromDockerResponse.
+	ctr := &DockerContainer{
+		ID:             resp.ID,
+		WaitingFor:     req.WaitingFor,
+		Image:          imageName,
+		imageWasBuilt:  req.ShouldBuildImage(),
+		keepBuiltImage: req.ShouldKeepBuiltImage(),
+		sessionID:      req.sessionID(),
+		exposedPorts:   req.ExposedPorts,
+		provider:       p,
+		logger:         p.Logger,
+		lifecycleHooks: req.LifecycleHooks,
 	}
 
-	err = c.createdHook(ctx)
-	if err != nil {
-		return nil, err
+	if err = ctr.connectReaper(ctx); err != nil {
+		return ctr, err // No wrap as it would stutter.
 	}
 
-	return c, nil
+	// Wrapped so the returned error is passed to the cleanup function.
+	defer func(ctr *DockerContainer) {
+		ctr.cleanupTermSignal(err)
+	}(ctr)
+
+	if err = ctr.createdHook(ctx); err != nil {
+		// Return the container to allow caller to clean up.
+		return ctr, fmt.Errorf("created hook: %w", err)
+	}
+
+	return ctr, nil
 }
 
 func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (*types.Container, error) {
@@ -1215,7 +1229,7 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 	filter := filters.NewArgs(filters.Arg("name", fmt.Sprintf("^%s$", name)))
 	containers, err := p.client.ContainerList(ctx, container.ListOptions{Filters: filter})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("container list: %w", err)
 	}
 	defer p.Close()
 
@@ -1270,7 +1284,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		}
 	}
 
-	sessionID := core.SessionID()
+	sessionID := req.sessionID()
 
 	var termSignal chan bool
 	if !p.config.RyukDisabled {
@@ -1411,10 +1425,13 @@ func (p *DockerProvider) Config() TestcontainersConfig {
 // Warning: this is based on your Docker host setting. Will fail if using an SSH tunnel
 // You can use the "TESTCONTAINERS_HOST_OVERRIDE" env variable to set this yourself
 func (p *DockerProvider) DaemonHost(ctx context.Context) (string, error) {
-	return daemonHost(ctx, p)
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+
+	return p.daemonHostLocked(ctx)
 }
 
-func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
+func (p *DockerProvider) daemonHostLocked(ctx context.Context) (string, error) {
 	if p.hostCache != "" {
 		return p.hostCache, nil
 	}
@@ -1482,7 +1499,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		IPAM:       req.IPAM,
 	}
 
-	sessionID := core.SessionID()
+	sessionID := req.sessionID()
 
 	var termSignal chan bool
 	if !p.config.RyukDisabled {
@@ -1602,37 +1619,42 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 	return reaperNetwork, nil
 }
 
-// containerFromDockerResponse builds a Docker container struct from the response of the Docker API
-func containerFromDockerResponse(ctx context.Context, response types.Container) (*DockerContainer, error) {
-	provider, err := NewDockerProvider()
-	if err != nil {
+// ContainerFromType builds a Docker container struct from the response of the Docker API
+func (p *DockerProvider) ContainerFromType(ctx context.Context, response types.Container) (ctr *DockerContainer, err error) {
+	exposedPorts := make([]string, len(response.Ports))
+	for i, port := range response.Ports {
+		exposedPorts[i] = fmt.Sprintf("%d/%s", port.PublicPort, port.Type)
+	}
+
+	// This should match the fields set in CreateContainer.
+	ctr = &DockerContainer{
+		ID:            response.ID,
+		Image:         response.Image,
+		imageWasBuilt: false,
+		sessionID:     response.Labels[core.LabelSessionID],
+		isRunning:     response.State == "running",
+		exposedPorts:  exposedPorts,
+		provider:      p,
+		logger:        p.Logger,
+		lifecycleHooks: []ContainerLifecycleHooks{
+			DefaultLoggingHook(p.Logger),
+		},
+	}
+
+	if err = ctr.connectReaper(ctx); err != nil {
 		return nil, err
 	}
 
-	ctr := DockerContainer{}
-
-	ctr.ID = response.ID
-	ctr.WaitingFor = nil
-	ctr.Image = response.Image
-	ctr.imageWasBuilt = false
-
-	ctr.logger = provider.Logger
-	ctr.lifecycleHooks = []ContainerLifecycleHooks{
-		DefaultLoggingHook(ctr.logger),
-	}
-	ctr.provider = provider
-
-	ctr.sessionID = core.SessionID()
-	ctr.consumers = []LogConsumer{}
-	ctr.isRunning = response.State == "running"
-
-	// the termination signal should be obtained from the reaper
-	ctr.terminationSignal = nil
+	// Wrapped so the returned error is passed to the cleanup function.
+	defer func(ctr *DockerContainer) {
+		ctr.cleanupTermSignal(err)
+	}(ctr)
 
 	// populate the raw representation of the container
 	jsonRaw, err := ctr.inspectRawContainer(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("inspect raw container: %w", err)
+		// Return the container to allow caller to clean up.
+		return ctr, fmt.Errorf("inspect raw container: %w", err)
 	}
 
 	// the health status of the container, if any
@@ -1640,7 +1662,7 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 		ctr.healthStatus = health.Status
 	}
 
-	return &ctr, nil
+	return ctr, nil
 }
 
 // ListImages list images from the provider. If an image has multiple Tags, each tag is reported
