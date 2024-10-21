@@ -1,6 +1,6 @@
 # Meilisearch
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/meilisearch
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
 
 The Meilisearch module exposes one entrypoint function to create the Meilisearch container, and this function receives three parameters:
 
@@ -49,13 +49,13 @@ E.g. `Run(context.Background(), "getmeili/meilisearch:v1.10.3")`.
 
 #### Master Key
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
 
 If you need to set a master key, you can use the `WithMasterKey(key string)` option. Otherwise, the default will be used which is `just-a-master-key-for-test`, which is exported on the container fields.
 
 #### Dump Data
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
 
 If you need to dump data in Meilisearch upon initialization for testing, you can use `WithDumpData(filepath string)` option where `filepath` can be an absolute path or relative path to a `dump` file. Please refer to the official Meilisearch documentation about dump files [here](https://www.meilisearch.com/docs/learn/advanced/snapshots_vs_dumps#dumps).
 
@@ -65,13 +65,13 @@ The Meilisearch container exposes the following methods:
 
 #### Address
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
 
 The `Address` method retrieves the address of the Meilisearch container.
 It will use http as protocol, as TLS is not supported at the moment.
 
 #### MasterKey
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
 
 The `MasterKey` method retrieves the master key of the Meilisearch container.

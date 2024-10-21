@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/inbucket/inbucket v2.0.0+incompatible
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.33.0
+	github.com/testcontainers/testcontainers-go v0.34.0
 )
 
 require (
