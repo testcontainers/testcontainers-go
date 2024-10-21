@@ -1875,18 +1875,17 @@ func TestGetGatewayIP(t *testing.T) {
 	// When using docker compose with DinD mode, and using host port or http wait strategy
 	// It's need to invoke GetGatewayIP for get the host
 	provider, err := providerType.GetProvider(WithLogger(TestLogger(t)))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer provider.Close()
 
-	ip, err := provider.(*DockerProvider).GetGatewayIP(context.Background())
-	if err != nil {
-		t.Fatal(err)
+	dockerProvider, ok := provider.(*DockerProvider)
+	if !ok {
+		t.Skip("provider is not a DockerProvider")
 	}
-	if ip == "" {
-		t.Fatal("could not get gateway ip")
-	}
+
+	ip, err := dockerProvider.GetGatewayIP(context.Background())
+	require.NoError(t, err)
+	require.NotEmpty(t, ip)
 }
 
 func TestNetworkModeWithContainerReference(t *testing.T) {
