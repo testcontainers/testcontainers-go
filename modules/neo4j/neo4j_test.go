@@ -63,8 +63,8 @@ func TestNeo4jWithEnterpriseLicense(t *testing.T) {
 	ctx := context.Background()
 
 	images := map[string]string{
-		"StandardEdition":   "docker.io/neo4j:4.4",
-		"EnterpriseEdition": "docker.io/neo4j:4.4-enterprise",
+		"StandardEdition":   "neo4j:4.4",
+		"EnterpriseEdition": "neo4j:4.4-enterprise",
 	}
 
 	for edition, img := range images {

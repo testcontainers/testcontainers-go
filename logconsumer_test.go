@@ -251,7 +251,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	dind, err := GenericContainer(ctx, GenericContainerRequest{
 		Started: true,
 		ContainerRequest: ContainerRequest{
-			Image:        "docker.io/docker:dind",
+			Image:        "docker:dind",
 			ExposedPorts: []string{"2375/tcp"},
 			Env:          map[string]string{"DOCKER_TLS_CERTDIR": ""},
 			WaitingFor:   wait.ForListeningPort("2375/tcp"),

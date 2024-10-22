@@ -18,7 +18,7 @@ import (
 func TestIntegrationSetGet(t *testing.T) {
 	ctx := context.Background()
 
-	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7")
+	redisContainer, err := tcredis.Run(ctx, "redis:7")
 	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
 
@@ -28,7 +28,7 @@ func TestIntegrationSetGet(t *testing.T) {
 func TestRedisWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7", tcredis.WithConfigFile(filepath.Join("testdata", "redis7.conf")))
+	redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithConfigFile(filepath.Join("testdata", "redis7.conf")))
 	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
 
@@ -44,22 +44,22 @@ func TestRedisWithImage(t *testing.T) {
 	}{
 		{
 			name:  "Redis6",
-			image: "docker.io/redis:6",
+			image: "redis:6",
 		},
 		{
 			name:  "Redis7",
-			image: "docker.io/redis:7",
+			image: "redis:7",
 		},
 		{
 			name: "Redis Stack",
 			// redisStackImage {
-			image: "docker.io/redis/redis-stack:latest",
+			image: "redis/redis-stack:latest",
 			// }
 		},
 		{
 			name: "Redis Stack Server",
 			// redisStackServerImage {
-			image: "docker.io/redis/redis-stack-server:latest",
+			image: "redis/redis-stack-server:latest",
 			// }
 		},
 	}
@@ -78,7 +78,7 @@ func TestRedisWithImage(t *testing.T) {
 func TestRedisWithLogLevel(t *testing.T) {
 	ctx := context.Background()
 
-	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7", tcredis.WithLogLevel(tcredis.LogLevelVerbose))
+	redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithLogLevel(tcredis.LogLevelVerbose))
 	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
 
@@ -88,7 +88,7 @@ func TestRedisWithLogLevel(t *testing.T) {
 func TestRedisWithSnapshotting(t *testing.T) {
 	ctx := context.Background()
 
-	redisContainer, err := tcredis.Run(ctx, "docker.io/redis:7", tcredis.WithSnapshotting(10, 1))
+	redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithSnapshotting(10, 1))
 	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
 

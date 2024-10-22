@@ -46,7 +46,7 @@ When starting the Consul container, you can pass options in a variadic way to co
 #### Image
 
 If you need to set a different Consul Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "docker.io/hashicorp/consul:1.15")`.
+E.g. `Run(context.Background(), "hashicorp/consul:1.15")`.
 
 {% include "../features/common_functional_options.md" %}
 

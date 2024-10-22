@@ -16,7 +16,7 @@ func ExampleRun() {
 	testPassword := "letmein!"
 
 	neo4jContainer, err := neo4j.Run(ctx,
-		"docker.io/neo4j:4.4",
+		"neo4j:4.4",
 		neo4j.WithAdminPassword(testPassword),
 		neo4j.WithLabsPlugin(neo4j.Apoc),
 		neo4j.WithNeo4jSetting("dbms.tx_log.rotation.size", "42M"),
