@@ -392,11 +392,11 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 type dockerImageSubstitutor struct{}
 
 func (s dockerImageSubstitutor) Description() string {
-	return "DockerImageSubstitutor (prepends docker.io)"
+	return "DockerImageSubstitutor (prepends registry.hub.docker.com)"
 }
 
 func (s dockerImageSubstitutor) Substitute(image string) (string, error) {
-	return "docker.io/" + image, nil
+	return "registry.hub.docker.com/library/" + image, nil
 }
 
 // }
@@ -455,7 +455,7 @@ func TestImageSubstitutors(t *testing.T) {
 			name:          "Prepend namespace",
 			image:         "alpine",
 			substitutors:  []testcontainers.ImageSubstitutor{dockerImageSubstitutor{}},
-			expectedImage: "docker.io/alpine",
+			expectedImage: "registry.hub.docker.com/library/alpine",
 		},
 		{
 			name:          "Substitution with error",
@@ -554,5 +554,5 @@ func ExampleGenericContainer_withSubstitutors() {
 
 	fmt.Println(dockerContainer.Image)
 
-	// Output: docker.io/alpine:latest
+	// Output: registry.hub.docker.com/library/alpine:latest
 }
