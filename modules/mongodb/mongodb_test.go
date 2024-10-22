@@ -57,7 +57,7 @@ func TestMongoDB(t *testing.T) {
 			},
 		},
 		{
-			name: "WithAuthReplica set and mongo:7",
+			name: "With Auth, Replica set and mongo:7",
 			img:  "mongo:7",
 			opts: []testcontainers.ContainerCustomizer{
 				mongodb.WithReplicaSet("rs"),
@@ -66,10 +66,18 @@ func TestMongoDB(t *testing.T) {
 			},
 		},
 		{
-			name: "WithAuthReplica set and mongo:6",
+			name: "With Auth, Replica set and mongo:6",
 			img:  "mongo:6",
 			opts: []testcontainers.ContainerCustomizer{
 				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "With Auth only and mongo:6",
+			img:  "mongo:6",
+			opts: []testcontainers.ContainerCustomizer{
 				mongodb.WithUsername("tester"),
 				mongodb.WithPassword("testerpass"),
 			},
