@@ -379,6 +379,7 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 
 	// Lookup the containers for each service and connect them
 	// to the reaper if needed.
+	var termSignalsMtx sync.Mutex
 	for _, srv := range d.project.Services {
 		srv := srv
 		errGrpContainers.Go(func() error {
@@ -394,6 +395,9 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 				}
 
 				dc.SetTerminationSignal(termSignal)
+
+				termSignalsMtx.Lock()
+				defer termSignalsMtx.Unlock()
 				termSignals = append(termSignals, termSignal)
 			}
 
