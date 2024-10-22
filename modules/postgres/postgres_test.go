@@ -303,7 +303,7 @@ func TestSnapshotWithOverrides(t *testing.T) {
 
 	ctr, err := postgres.Run(
 		ctx,
-		"6-alpine",
+		"postgres:16-alpine",
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
