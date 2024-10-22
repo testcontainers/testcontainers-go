@@ -45,7 +45,7 @@ func TestPostgres(t *testing.T) {
 		{
 			name: "Postgis",
 			// postgis {
-			image: "stgis:12-3.0",
+			image: "postgis:12-3.0",
 			// }
 		},
 		{
