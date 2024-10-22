@@ -30,7 +30,7 @@ func TestCopyFileToContainer(t *testing.T) {
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "bash",
+			Image: "bash:5.2.26",
 			Files: []testcontainers.ContainerFile{
 				{
 					Reader:            r,
@@ -104,7 +104,7 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "bash",
+			Image: "bash:5.2.26",
 			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath: dataDirectory,
@@ -141,7 +141,7 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "bash",
+			Image: "bash:5.2.26",
 			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath:      waitForPath,
@@ -183,7 +183,7 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "bash",
+			Image: "bash:5.2.26",
 			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath:      waitForPath,

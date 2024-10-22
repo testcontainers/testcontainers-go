@@ -1147,7 +1147,7 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 	bashC, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "bash",
+			Image: "bash:5.2.26",
 			Files: []ContainerFile{
 				{
 					HostFilePath:      absPath,
