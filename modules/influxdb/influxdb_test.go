@@ -68,9 +68,7 @@ func TestWithWaitStrategy(t *testing.T) {
 	state, err := influxDbContainer.State(ctx)
 	require.NoError(t, err)
 
-	if !state.Running {
-		t.Fatal("InfluxDB container is not running")
-	}
+	require.True(t, state.Running)
 }
 
 func TestWithInitDb(t *testing.T) {
