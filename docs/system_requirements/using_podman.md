@@ -27,7 +27,7 @@ func TestSomething(t *testing.T) {
     req := tc.GenericContainerRequest{
         ProviderType: tc.ProviderPodman,
         ContainerRequest: tc.ContainerRequest{
-            Image: "docker.io/nginx:alpine"
+            Image: "nginx:alpine"
         },
     }
 

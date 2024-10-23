@@ -18,7 +18,7 @@ import (
 func TestIntegrationSetGet(t *testing.T) {
 	ctx := context.Background()
 
-	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5")
+	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5")
 	testcontainers.CleanupContainer(t, valkeyContainer)
 	require.NoError(t, err)
 
@@ -28,7 +28,7 @@ func TestIntegrationSetGet(t *testing.T) {
 func TestValkeyWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5", tcvalkey.WithConfigFile(filepath.Join("testdata", "valkey7.conf")))
+	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5", tcvalkey.WithConfigFile(filepath.Join("testdata", "valkey7.conf")))
 	testcontainers.CleanupContainer(t, valkeyContainer)
 	require.NoError(t, err)
 
@@ -45,7 +45,7 @@ func TestValkeyWithImage(t *testing.T) {
 		// There is only one release of Valkey at the time of writing
 		{
 			name:  "Valkey7.2.5",
-			image: "docker.io/valkey/valkey:7.2.5",
+			image: "valkey/valkey:7.2.5",
 		},
 	}
 
@@ -63,7 +63,7 @@ func TestValkeyWithImage(t *testing.T) {
 func TestValkeyWithLogLevel(t *testing.T) {
 	ctx := context.Background()
 
-	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5", tcvalkey.WithLogLevel(tcvalkey.LogLevelVerbose))
+	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5", tcvalkey.WithLogLevel(tcvalkey.LogLevelVerbose))
 	testcontainers.CleanupContainer(t, valkeyContainer)
 	require.NoError(t, err)
 
@@ -73,7 +73,7 @@ func TestValkeyWithLogLevel(t *testing.T) {
 func TestValkeyWithSnapshotting(t *testing.T) {
 	ctx := context.Background()
 
-	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5", tcvalkey.WithSnapshotting(10, 1))
+	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5", tcvalkey.WithSnapshotting(10, 1))
 	testcontainers.CleanupContainer(t, valkeyContainer)
 	require.NoError(t, err)
 

@@ -1,6 +1,6 @@
 package testcontainers_test
 
 const (
-	nginxAlpineImage = "docker.io/nginx:alpine"
+	nginxAlpineImage = "nginx:alpine"
 	nginxDefaultPort = "80/tcp"
 )

@@ -29,10 +29,10 @@ import (
 )
 
 const (
-	mysqlImage        = "docker.io/mysql:8.0.36"
-	nginxDelayedImage = "docker.io/menedev/delayed-nginx:1.15.2"
-	nginxImage        = "docker.io/nginx"
-	nginxAlpineImage  = "docker.io/nginx:alpine"
+	mysqlImage        = "mysql:8.0.36"
+	nginxDelayedImage = "menedev/delayed-nginx:1.15.2"
+	nginxImage        = "nginx"
+	nginxAlpineImage  = "nginx:alpine"
 	nginxDefaultPort  = "80/tcp"
 	nginxHighPort     = "8080/tcp"
 	daemonMaxVersion  = "1.41"
@@ -804,8 +804,8 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 
 	temp := strings.Split(string(out), "\n")
 
-	if !regexp.MustCompile(`^Step\s*1/\d+\s*:\s*FROM docker.io/alpine$`).MatchString(temp[0]) {
-		t.Errorf("Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM docker.io/alpine", temp[0])
+	if !regexp.MustCompile(`^Step\s*1/\d+\s*:\s*FROM alpine$`).MatchString(temp[0]) {
+		t.Errorf("Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM alpine", temp[0])
 	}
 }
 
@@ -878,7 +878,7 @@ func TestCMD(t *testing.T) {
 	ctx := context.Background()
 
 	req := ContainerRequest{
-		Image: "docker.io/alpine",
+		Image: "alpine",
 		WaitingFor: wait.ForAll(
 			wait.ForLog("command override!"),
 		),
@@ -904,7 +904,7 @@ func TestEntrypoint(t *testing.T) {
 	ctx := context.Background()
 
 	req := ContainerRequest{
-		Image: "docker.io/alpine",
+		Image: "alpine",
 		WaitingFor: wait.ForAll(
 			wait.ForLog("entrypoint override!"),
 		),
@@ -930,7 +930,7 @@ func TestWorkingDir(t *testing.T) {
 	ctx := context.Background()
 
 	req := ContainerRequest{
-		Image: "docker.io/alpine",
+		Image: "alpine",
 		WaitingFor: wait.ForAll(
 			wait.ForLog("/var/tmp/test"),
 		),
@@ -950,7 +950,7 @@ func TestWorkingDir(t *testing.T) {
 func ExampleDockerProvider_CreateContainer() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
+		Image:        "nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
@@ -983,7 +983,7 @@ func ExampleDockerProvider_CreateContainer() {
 func ExampleContainer_Host() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
+		Image:        "nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
@@ -1025,7 +1025,7 @@ func ExampleContainer_Host() {
 func ExampleContainer_Start() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
+		Image:        "nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
@@ -1062,7 +1062,7 @@ func ExampleContainer_Start() {
 func ExampleContainer_Stop() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
+		Image:        "nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
@@ -1096,7 +1096,7 @@ func ExampleContainer_Stop() {
 func ExampleContainer_MappedPort() {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "docker.io/nginx:alpine",
+		Image:        "nginx:alpine",
 		ExposedPorts: []string{"80/tcp"},
 		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
 	}
@@ -1147,7 +1147,7 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 	bashC, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
-			Image: "docker.io/bash",
+			Image: "bash:5.2.26",
 			Files: []ContainerFile{
 				{
 					HostFilePath:      absPath,
@@ -1167,7 +1167,7 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 func TestContainerWithTmpFs(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image: "docker.io/busybox",
+		Image: "busybox",
 		Cmd:   []string{"sleep", "10"},
 		Tmpfs: map[string]string{"/testtmpfs": "rw"},
 	}
@@ -1242,7 +1242,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 		c, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
-				Image:      "docker.io/postgres:12",
+				Image:      "postgres:12",
 				WaitingFor: wait.ForLog("log"),
 			},
 			Started: true,
@@ -1266,7 +1266,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		c, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
-				Image:         "docker.io/redis:latest",
+				Image:         "redis:latest",
 				ImagePlatform: nonExistentPlatform,
 			},
 			Started: false,
@@ -1282,7 +1282,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		c, err := GenericContainer(ctx, GenericContainerRequest{
 			ProviderType: providerType,
 			ContainerRequest: ContainerRequest{
-				Image:         "docker.io/mysql:8.0.36",
+				Image:         "mysql:8.0.36",
 				ImagePlatform: "linux/amd64",
 			},
 			Started: false,
@@ -1817,7 +1817,7 @@ func TestContainerRunningCheckingStatusCode(t *testing.T) {
 func TestContainerWithUserID(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:      "docker.io/alpine:latest",
+		Image:      "alpine:latest",
 		User:       "60125",
 		Cmd:        []string{"sh", "-c", "id -u"},
 		WaitingFor: wait.ForExit(),
@@ -1846,7 +1846,7 @@ func TestContainerWithUserID(t *testing.T) {
 func TestContainerWithNoUserID(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:      "docker.io/alpine:latest",
+		Image:      "alpine:latest",
 		Cmd:        []string{"sh", "-c", "id -u"},
 		WaitingFor: wait.ForExit(),
 	}

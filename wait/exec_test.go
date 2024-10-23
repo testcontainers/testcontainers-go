@@ -192,7 +192,7 @@ func TestExecStrategyWaitUntilReady_withExitCode(t *testing.T) {
 func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 	// waitForExecExitCodeResponse {
 	dockerReq := testcontainers.ContainerRequest{
-		Image: "docker.io/nginx:latest",
+		Image: "nginx:latest",
 		WaitingFor: wait.ForExec([]string{"echo", "hello world!"}).
 			WithStartupTimeout(time.Second * 10).
 			WithExitCodeMatcher(func(exitCode int) bool {

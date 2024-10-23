@@ -72,7 +72,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 | Flag    | Short | Type   | Required | Description                                                                                                                                      |
 |---------|-------|--------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------|
 | --name  | -n    | string | Yes      | Name of the module, use camel-case when needed. Only alphanumerical characters are allowed (leading character must be a letter).                 |
-| --image | -i    | string | Yes      | Fully-qualified name of the Docker image to be used in the examples and tests (i.e. 'docker.io/org/project:tag')                                             |
+| --image | -i    | string | Yes      | Fully-qualified name of the Docker image to be used in the examples and tests (i.e. 'org/project:tag')                                             |
 | --title | -t    | string | No       | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphanumerical characters are allowed (leading character must be a letter). |
 
 

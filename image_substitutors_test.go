@@ -104,16 +104,16 @@ func TestPrependHubRegistrySubstitutor(t *testing.T) {
 			}
 		})
 
-		t.Run("explicitly including docker.io", func(t *testing.T) {
+		t.Run("explicitly including registry.hub.docker.com/library", func(t *testing.T) {
 			s := newPrependHubRegistry("my-registry")
 
-			img, err := s.Substitute("docker.io/foo:latest")
+			img, err := s.Substitute("registry.hub.docker.com/library/foo:latest")
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			if img != "docker.io/foo:latest" {
-				t.Errorf("expected docker.io/foo:latest, got %s", img)
+			if img != "registry.hub.docker.com/library/foo:latest" {
+				t.Errorf("expected registry.hub.docker.com/library/foo:latest, got %s", img)
 			}
 		})
 

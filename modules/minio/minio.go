@@ -59,7 +59,7 @@ func (c *MinioContainer) ConnectionString(ctx context.Context) (string, error) {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Minio container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MinioContainer, error) {
-	return Run(ctx, "docker.io/minio/minio:RELEASE.2024-01-16T16-07-38Z", opts...)
+	return Run(ctx, "minio/minio:RELEASE.2024-01-16T16-07-38Z", opts...)
 }
 
 // Run creates an instance of the Minio container type
