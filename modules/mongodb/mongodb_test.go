@@ -82,6 +82,33 @@ func TestMongoDB(t *testing.T) {
 				mongodb.WithPassword("testerpass"),
 			},
 		},
+		{
+			name: "Enterprise Server with Auth, Replica set",
+			img:  "mongodb/mongodb-enterprise-server:7.0.0-ubi8",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "Community Server with Auth, Replica set",
+			img:  "mongodb/mongodb-community-server:7.0.2-ubi8",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "With Auth, Replica set and mongo:4",
+			img:  "mongo:4",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
