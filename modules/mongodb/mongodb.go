@@ -1,7 +1,9 @@
 package mongodb
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
 	"time"
 
@@ -9,11 +11,21 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+//go:embed mount/entrypoint-tc.sh
+var entrypointContent []byte
+
+const (
+	entrypointPath      = "/tmp/entrypoint-tc.sh"
+	keyFilePath         = "/tmp/mongo_keyfile"
+	replicaSetOptEnvKey = "testcontainers.mongodb.replicaset_name"
+)
+
 // MongoDBContainer represents the MongoDB container type used in the module
 type MongoDBContainer struct {
 	testcontainers.Container
-	username string
-	password string
+	username   string
+	password   string
+	replicaSet string
 }
 
 // Deprecated: use Run instead
@@ -50,10 +62,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, fmt.Errorf("if you specify username or password, you must provide both of them")
 	}
 
+	replicaSet := req.Env[replicaSetOptEnvKey]
+	if replicaSet != "" {
+		if err := configureRequestForReplicaset(username, password, replicaSet, &genericContainerReq); err != nil {
+			return nil, err
+		}
+	}
+
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *MongoDBContainer
 	if container != nil {
-		c = &MongoDBContainer{Container: container, username: username, password: password}
+		c = &MongoDBContainer{Container: container, username: username, password: password, replicaSet: replicaSet}
 	}
 
 	if err != nil {
@@ -85,28 +104,10 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithReplicaSet configures the container to run a single-node MongoDB replica set named "rs".
-// It will wait until the replica set is ready.
+// WithReplicaSet sets the replica set name for Single node MongoDB replica set.
 func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Cmd = append(req.Cmd, "--replSet", replSetName)
-		req.WaitingFor = wait.ForAll(
-			req.WaitingFor,
-			wait.ForExec(eval("rs.status().ok")),
-		).WithDeadline(60 * time.Second)
-		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
-			PostStarts: []testcontainers.ContainerHook{
-				func(ctx context.Context, c testcontainers.Container) error {
-					ip, err := c.ContainerIP(ctx)
-					if err != nil {
-						return fmt.Errorf("container ip: %w", err)
-					}
-
-					cmd := eval("rs.initiate({ _id: '%s', members: [ { _id: 0, host: '%s:27017' } ] })", replSetName, ip)
-					return wait.ForExec(cmd).WaitUntilReady(ctx, c)
-				},
-			},
-		})
+		req.Env[replicaSetOptEnvKey] = replSetName
 
 		return nil
 	}
@@ -129,14 +130,80 @@ func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error)
 	return c.Endpoint(ctx, "mongodb")
 }
 
-// eval builds an mongosh|mongo eval command.
-func eval(command string, args ...any) []string {
-	command = "\"" + fmt.Sprintf(command, args...) + "\""
+func setupEntrypointForAuth(req *testcontainers.GenericContainerRequest) {
+	req.Files = append(
+		req.Files, testcontainers.ContainerFile{
+			Reader:            bytes.NewReader(entrypointContent),
+			ContainerFilePath: entrypointPath,
+			FileMode:          0o755,
+		},
+	)
+	req.Entrypoint = []string{entrypointPath}
+	req.Env["MONGO_KEYFILE"] = keyFilePath
+}
 
-	return []string{
-		"sh",
-		"-c",
-		// In previous versions, the binary "mongosh" was named "mongo".
-		"mongosh --quiet --eval " + command + " || mongo --quiet --eval " + command,
+func configureRequestForReplicaset(
+	username string,
+	password string,
+	replicaSet string,
+	genericContainerReq *testcontainers.GenericContainerRequest,
+) error {
+	if !(username != "" && password != "") {
+		return noAuthReplicaSet(replicaSet)(genericContainerReq)
+	}
+
+	return withAuthReplicaset(replicaSet, username, password)(genericContainerReq)
+}
+
+func noAuthReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		cli := newMongoCli("", "")
+		req.Cmd = append(req.Cmd, "--replSet", replSetName)
+		initiateReplicaSet(req, cli, replSetName)
+
+		return nil
+	}
+}
+
+func initiateReplicaSet(req *testcontainers.GenericContainerRequest, cli mongoCli, replSetName string) {
+	req.WaitingFor = wait.ForAll(
+		req.WaitingFor,
+		wait.ForExec(cli.eval("rs.status().ok")),
+	).WithDeadline(60 * time.Second)
+
+	req.LifecycleHooks = append(
+		req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
+			PostStarts: []testcontainers.ContainerHook{
+				func(ctx context.Context, c testcontainers.Container) error {
+					ip, err := c.ContainerIP(ctx)
+					if err != nil {
+						return fmt.Errorf("container ip: %w", err)
+					}
+
+					cmd := cli.eval(
+						"rs.initiate({ _id: '%s', members: [ { _id: 0, host: '%s:27017' } ] })",
+						replSetName,
+						ip,
+					)
+
+					return wait.ForExec(cmd).WaitUntilReady(ctx, c)
+				},
+			},
+		},
+	)
+}
+
+func withAuthReplicaset(
+	replSetName string,
+	username string,
+	password string,
+) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		setupEntrypointForAuth(req)
+		cli := newMongoCli(username, password)
+		req.Cmd = append(req.Cmd, "--replSet", replSetName, "--keyFile", keyFilePath)
+		initiateReplicaSet(req, cli, replSetName)
+
+		return nil
 	}
 }

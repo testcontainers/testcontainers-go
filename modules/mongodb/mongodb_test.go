@@ -36,24 +36,77 @@ func TestMongoDB(t *testing.T) {
 			opts: []testcontainers.ContainerCustomizer{},
 		},
 		{
-			name: "With Replica set and mongo:4",
+			name: "with-replica/mongo:4",
 			img:  "mongo:4",
 			opts: []testcontainers.ContainerCustomizer{
 				mongodb.WithReplicaSet("rs"),
 			},
 		},
 		{
-			name: "With Replica set and mongo:6",
+			name: "with-replica/mongo:6",
 			img:  "mongo:6",
 			opts: []testcontainers.ContainerCustomizer{
 				mongodb.WithReplicaSet("rs"),
 			},
 		},
 		{
-			name: "With Replica set and mongo:7",
+			name: "with-replica/mongo:7",
 			img:  "mongo:7",
 			opts: []testcontainers.ContainerCustomizer{
 				mongodb.WithReplicaSet("rs"),
+			},
+		},
+		{
+			name: "with-auth/replica/mongo:7",
+			img:  "mongo:7",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "with-auth/replica/mongo:6",
+			img:  "mongo:6",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "with-auth/mongo:6",
+			img:  "mongo:6",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "with-auth/replica/mongodb-enterprise-server:7.0.0-ubi8",
+			img:  "mongodb/mongodb-enterprise-server:7.0.0-ubi8",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "with-auth/replica/mongodb-community-server:7.0.2-ubi8",
+			img:  "mongodb/mongodb-community-server:7.0.2-ubi8",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "with-auth/replica/mongo:4",
+			img:  "mongo:4",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
 			},
 		},
 	}
