@@ -1,5 +1,5 @@
 services:
   {{ .ServiceType }}-nginx:
-    image: docker.io/nginx:stable-alpine
+    image: nginx:stable-alpine
     ports:
      - "80"

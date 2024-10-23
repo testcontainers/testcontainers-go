@@ -48,7 +48,7 @@ func (c *ValkeyContainer) ConnectionString(ctx context.Context) (string, error) 
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Valkey container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ValkeyContainer, error) {
-	return Run(ctx, "docker.io/valkey/valkey:7.2.5", opts...)
+	return Run(ctx, "valkey/valkey:7.2.5", opts...)
 }
 
 // Run creates an instance of the Valkey container type

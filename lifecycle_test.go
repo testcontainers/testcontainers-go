@@ -887,7 +887,7 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	ctx := context.Background()
 
 	req := ContainerRequest{
-		Image:      "docker.io/alpine",
+		Image:      "alpine",
 		Cmd:        []string{"echo", "-n", "I am expecting this"},
 		WaitingFor: wait.ForLog("I was expecting that").WithStartupTimeout(5 * time.Second),
 	}

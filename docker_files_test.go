@@ -13,6 +13,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const testBashImage string = "bash:5.2.26"
+
 func TestCopyFileToContainer(t *testing.T) {
 	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cnl()
@@ -30,7 +32,7 @@ func TestCopyFileToContainer(t *testing.T) {
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.io/bash",
+			Image: testBashImage,
 			Files: []testcontainers.ContainerFile{
 				{
 					Reader:            r,
@@ -66,7 +68,7 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.io/bash:5.2.26",
+			Image: testBashImage,
 			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath:      waitForPath,
@@ -104,7 +106,7 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.io/bash",
+			Image: testBashImage,
 			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath: dataDirectory,
@@ -141,7 +143,7 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.io/bash",
+			Image: testBashImage,
 			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath:      waitForPath,
@@ -183,7 +185,7 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.io/bash",
+			Image: testBashImage,
 			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath:      waitForPath,

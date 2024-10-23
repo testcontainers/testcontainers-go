@@ -440,7 +440,7 @@ func TestDockerComposeAPIWithStackReader(t *testing.T) {
 	composeContent := `
 services:
   api-nginx:
-    image: docker.io/nginx:stable-alpine
+    image: nginx:stable-alpine
     environment:
       bar: ${bar}
       foo: ${foo}
@@ -481,7 +481,7 @@ func TestDockerComposeAPIWithStackReaderAndComposeFile(t *testing.T) {
 	composeContent := `
 services:
   api-postgres:
-    image: docker.io/postgres:14
+    image: postgres:14
     environment:
       POSTGRES_PASSWORD: s3cr3t
 `

@@ -187,7 +187,7 @@ func TestGenerateWrongModuleName(t *testing.T) {
 	for _, test := range tests {
 		module := context.TestcontainersModule{
 			Name:  test.name,
-			Image: "docker.io/example/" + test.name + ":latest",
+			Image: "example/" + test.name + ":latest",
 		}
 
 		err = internal.GenerateFiles(tmpCtx, module)
@@ -231,7 +231,7 @@ func TestGenerateWrongModuleTitle(t *testing.T) {
 		module := context.TestcontainersModule{
 			Name:      "foo",
 			TitleName: test.title,
-			Image:     "docker.io/example/foo:latest",
+			Image:     "example/foo:latest",
 		}
 
 		err = internal.GenerateFiles(tmpCtx, module)
@@ -266,7 +266,7 @@ func TestGenerate(t *testing.T) {
 		Name:      "foodb4tw",
 		TitleName: "FooDB4TheWin",
 		IsModule:  false,
-		Image:     "docker.io/example/foodb:latest",
+		Image:     "example/foodb:latest",
 	}
 	moduleNameLower := module.Lower()
 
@@ -322,7 +322,7 @@ func TestGenerateModule(t *testing.T) {
 		Name:      "foodb",
 		TitleName: "FooDB",
 		IsModule:  true,
-		Image:     "docker.io/example/foodb:latest",
+		Image:     "example/foodb:latest",
 	}
 	moduleNameLower := module.Lower()
 
