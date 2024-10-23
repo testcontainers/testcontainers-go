@@ -12,12 +12,12 @@ import (
 )
 
 var (
-	//go:embed mount/entrypoint.sh
+	//go:embed mount/entrypoint-tc.sh
 	entrypointContent []byte
 )
 
 const (
-	entrypointPath      = "/tmp/entrypoint.sh"
+	entrypointPath      = "/tmp/entrypoint-tc.sh"
 	keyFilePath         = "/tmp/mongo_keyfile"
 	replicaSetOptEnvKey = "testcontainers.mongodb.replicaset_name"
 )
