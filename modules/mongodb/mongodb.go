@@ -141,7 +141,6 @@ func setupEntrypointForAuth(req *testcontainers.GenericContainerRequest) {
 	)
 	req.Entrypoint = []string{entrypointPath}
 	req.Env["MONGO_KEYFILE"] = keyFilePath
-	req.Env["MONGO_USER_GROUP"] = "mongodb:mongodb"
 }
 
 func configureRequestForReplicaset(
