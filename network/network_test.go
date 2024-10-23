@@ -37,7 +37,7 @@ func TestNew(t *testing.T) {
 
 	nginxC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "nginx:alpine",
+			Image: nginxAlpineImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -275,7 +275,7 @@ func TestNew_withOptions(t *testing.T) {
 
 	nginx, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "nginx:alpine",
+			Image: nginxAlpineImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
