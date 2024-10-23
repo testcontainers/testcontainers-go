@@ -14,6 +14,7 @@ func newMongoCli(username string, password string) mongoCli {
 	if username != "" && password != "" {
 		authArgs = fmt.Sprintf("--username %s --password %s", username, password)
 	}
+
 	return mongoCli{
 		mongoshBaseCmd: fmt.Sprintf("mongosh %s --quiet", authArgs),
 		mongoBaseCmd:   fmt.Sprintf("mongo %s --quiet", authArgs),

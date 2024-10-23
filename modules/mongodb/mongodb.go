@@ -63,6 +63,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if username != "" && password == "" || username == "" && password != "" {
 		return nil, fmt.Errorf("if you specify username or password, you must provide both of them")
 	}
+
 	replicaSet := req.Env[replicaSetOptEnvKey]
 	if replicaSet != "" {
 		if err := configureRequestForReplicaset(username, password, replicaSet, &genericContainerReq); err != nil {
@@ -105,11 +106,11 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithReplicaSet configures the container to run a single-node MongoDB replica set named "rs".
-// It will wait until the replica set is ready.
+// WithReplicaSet sets the replica set name for Single node MongoDB replica set.
 func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env[replicaSetOptEnvKey] = replSetName
+
 		return nil
 	}
 }
@@ -152,6 +153,7 @@ func configureRequestForReplicaset(
 	if !(username != "" && password != "") {
 		return noAuthReplicaSet(replicaSet)(genericContainerReq)
 	}
+
 	return withAuthReplicaset(replicaSet, username, password)(genericContainerReq)
 }
 
@@ -170,6 +172,7 @@ func initiateReplicaSet(req *testcontainers.GenericContainerRequest, cli mongoCl
 		req.WaitingFor,
 		wait.ForExec(cli.eval("rs.status().ok")),
 	).WithDeadline(60 * time.Second)
+
 	req.LifecycleHooks = append(
 		req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
 			PostStarts: []testcontainers.ContainerHook{
@@ -184,6 +187,7 @@ func initiateReplicaSet(req *testcontainers.GenericContainerRequest, cli mongoCl
 						replSetName,
 						ip,
 					)
+
 					return wait.ForExec(cmd).WaitUntilReady(ctx, c)
 				},
 			},
