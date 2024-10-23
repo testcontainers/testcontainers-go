@@ -47,7 +47,8 @@ test-%: $(GOBIN)/gotestsum
 		-- \
 		-v \
 		-coverprofile=coverage.out \
-		-timeout=30m
+		-timeout=30m \
+		-race
 
 .PHONY: tools
 tools:
