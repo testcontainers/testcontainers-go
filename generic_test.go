@@ -156,10 +156,14 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, ctrs, 1)
 
-	nginxC, err := containerFromDockerResponse(context.Background(), ctrs[0])
+	provider, err := NewDockerProvider()
 	require.NoError(t, err)
 
+	provider.SetClient(cli)
+
+	nginxC, err := provider.ContainerFromType(context.Background(), ctrs[0])
 	CleanupContainer(t, nginxC)
+	require.NoError(t, err)
 }
 
 func createReuseContainerInSubprocess(t *testing.T) string {

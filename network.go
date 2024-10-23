@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/docker/docker/api/types/network"
+
+	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
 // NetworkProvider allows the creation of networks on an arbitrary system
@@ -46,4 +48,13 @@ type NetworkRequest struct {
 	SkipReaper    bool              // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
 	ReaperImage   string            // Deprecated: use WithImageName ContainerOption instead. Alternative reaper registry
 	ReaperOptions []ContainerOption // Deprecated: the reaper is configured at the properties level, for an entire test session
+}
+
+// sessionID returns the session ID for the network request.
+func (r NetworkRequest) sessionID() string {
+	if sessionID := r.Labels[core.LabelSessionID]; sessionID != "" {
+		return sessionID
+	}
+
+	return core.SessionID()
 }

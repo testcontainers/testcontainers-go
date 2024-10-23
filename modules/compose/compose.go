@@ -153,6 +153,14 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		return nil, fmt.Errorf("initialize docker client: %w", err)
 	}
 
+	provider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(composeOptions.Logger))
+	if err != nil {
+		return nil, fmt.Errorf("new docker provider: %w", err)
+	}
+
+	dockerClient := dockerCli.Client()
+	provider.SetClient(dockerClient)
+
 	composeAPI := &dockerCompose{
 		name:             composeOptions.Identifier,
 		configs:          composeOptions.Paths,
@@ -160,11 +168,12 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		logger:           composeOptions.Logger,
 		projectProfiles:  composeOptions.Profiles,
 		composeService:   compose.NewComposeService(dockerCli),
-		dockerClient:     dockerCli.Client(),
+		dockerClient:     dockerClient,
 		waitStrategies:   make(map[string]wait.Strategy),
 		containers:       make(map[string]*testcontainers.DockerContainer),
 		networks:         make(map[string]*testcontainers.DockerNetwork),
 		sessionID:        testcontainers.SessionID(),
+		provider:         provider,
 	}
 
 	return composeAPI, nil

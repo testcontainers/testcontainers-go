@@ -167,6 +167,15 @@ type ContainerRequest struct {
 	LogConsumerCfg          *LogConsumerConfig                         // define the configuration for the log producer and its log consumers to follow the logs
 }
 
+// sessionID returns the session ID for the container request.
+func (c *ContainerRequest) sessionID() string {
+	if sessionID := c.Labels[core.LabelSessionID]; sessionID != "" {
+		return sessionID
+	}
+
+	return core.SessionID()
+}
+
 // containerOptions functional options for a container
 type containerOptions struct {
 	ImageName           string

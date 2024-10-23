@@ -33,6 +33,12 @@ func TestDockerComposeAPI(t *testing.T) {
 	err = compose.Up(ctx, Wait(true))
 	cleanup(t, compose)
 	require.NoError(t, err, "compose.Up()")
+
+	for _, service := range compose.Services() {
+		container, err := compose.ServiceContainer(context.Background(), service)
+		require.NoError(t, err, "compose.ServiceContainer()")
+		require.True(t, container.IsRunning())
+	}
 }
 
 func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {

@@ -7,11 +7,13 @@ linters:
     - gofumpt
     - misspell
     - nolintlint
-    - nonamedreturns
+    - nakedret
     - testifylint
     - thelper
 
 linters-settings:
+  nakedret:
+    max-func-lines: 0
   errorlint:
     # Check whether fmt.Errorf uses the %w verb for formatting errors.
     # See the https://github.com/polyfloyd/go-errorlint for caveats.
