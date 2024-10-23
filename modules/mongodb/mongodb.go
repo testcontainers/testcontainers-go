@@ -11,10 +11,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var (
-	//go:embed mount/entrypoint-tc.sh
-	entrypointContent []byte
-)
+//go:embed mount/entrypoint-tc.sh
+var entrypointContent []byte
 
 const (
 	entrypointPath      = "/tmp/entrypoint-tc.sh"
