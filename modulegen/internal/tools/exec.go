@@ -19,6 +19,13 @@ func GoVet(cmdDir string) error {
 	return nil
 }
 
+func GoWorkSync(cmdDir string) error {
+	if err := runGoCommand(cmdDir, "work", "sync"); err != nil {
+		return fmt.Errorf(">> error syncing work file: %w", err)
+	}
+	return nil
+}
+
 func MakeLint(cmdDir string) error {
 	if err := runMakeCommand(cmdDir, "lint"); err != nil {
 		return fmt.Errorf(">> error synchronizing the dependencies: %w", err)

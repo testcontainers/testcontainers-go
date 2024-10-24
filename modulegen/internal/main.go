@@ -11,6 +11,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/sonar"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/tools"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/vscode"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/workfile"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/workflow"
 )
 
@@ -37,6 +38,7 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 		tools.GoModTidy,
 		tools.GoVet,
 		tools.MakeLint,
+		tools.GoWorkSync,
 	}
 
 	for _, lintCmd := range lintCmds {
@@ -85,6 +87,7 @@ func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) e
 		workflow.Generator{}, // update github ci workflow
 		vscode.Generator{},   // update vscode workspace
 		sonar.Generator{},    // update sonar-project.properties
+		workfile.Generator{}, // update Go work file
 	}
 
 	for _, generator := range projectGenerators {

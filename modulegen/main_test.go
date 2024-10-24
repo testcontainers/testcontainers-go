@@ -289,6 +289,7 @@ func TestGenerate(t *testing.T) {
 
 	assertModuleDocContent(t, module, moduleDocFile)
 	assertModuleGithubWorkflowContent(t, mainWorkflowFile)
+	assertGoWorkContent(t, module, filepath.Join(tmpCtx.RootDir, "go.work"))
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, moduleNameLower)
 	// do not generate examples_test.go for examples
@@ -467,6 +468,16 @@ func assertGoModContent(t *testing.T, module context.TestcontainersModule, tcVer
 	assert.Equal(t, "module github.com/testcontainers/testcontainers-go/"+module.ParentDir()+"/"+module.Lower(), data[0])
 	assert.Equal(t, "require github.com/testcontainers/testcontainers-go "+tcVersion, data[4])
 	assert.Equal(t, "replace github.com/testcontainers/testcontainers-go => ../..", data[6])
+}
+
+// assert content go.mod
+func assertGoWorkContent(t *testing.T, module context.TestcontainersModule, goWorkFile string) {
+	t.Helper()
+	content, err := os.ReadFile(goWorkFile)
+	require.NoError(t, err)
+
+	data := sanitiseContent(content)
+	require.Contains(t, data, "    ./"+module.ParentDir()+"/"+module.Lower())
 }
 
 // assert content Makefile
