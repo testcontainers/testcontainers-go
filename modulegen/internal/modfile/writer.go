@@ -7,7 +7,7 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-func writeModFile(modFilePath string, file *modfile.File) error {
+func Write(modFilePath string, file *modfile.File) error {
 	err := os.MkdirAll(filepath.Dir(modFilePath), 0o755)
 	if err != nil {
 		return err

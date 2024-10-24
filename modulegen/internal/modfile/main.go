@@ -7,7 +7,7 @@ import (
 )
 
 func GenerateModFile(exampleDir string, rootGoModFilePath string, directory string, tcVersion string) error {
-	rootGoMod, err := readModFile(rootGoModFilePath)
+	rootGoMod, err := Read(rootGoModFilePath)
 	if err != nil {
 		return err
 	}
@@ -18,7 +18,7 @@ func GenerateModFile(exampleDir string, rootGoModFilePath string, directory stri
 	if err != nil {
 		return err
 	}
-	return writeModFile(filepath.Join(exampleDir, "go.mod"), file)
+	return Write(filepath.Join(exampleDir, "go.mod"), file)
 }
 
 func newModFile(moduleStmt string, goStmt string, tcPath string, tcVersion string) (*modfile.File, error) {

@@ -6,7 +6,7 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-func readModFile(modFilePath string) (*modfile.File, error) {
+func Read(modFilePath string) (*modfile.File, error) {
 	file, err := os.ReadFile(modFilePath)
 	if err != nil {
 		return nil, err

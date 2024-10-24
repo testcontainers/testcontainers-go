@@ -3,6 +3,7 @@ package tools
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 func GoModTidy(cmdDir string) error {
@@ -28,19 +29,30 @@ func GoWorkSync(cmdDir string) error {
 
 func MakeLint(cmdDir string) error {
 	if err := runMakeCommand(cmdDir, "lint"); err != nil {
-		return fmt.Errorf(">> error synchronizing the dependencies: %w", err)
+		return fmt.Errorf(">> error linting: %w", err)
 	}
 	return nil
 }
 
 func runGoCommand(cmdDir string, args ...string) error {
-	cmd := exec.Command("go", args...)
-	cmd.Dir = cmdDir
-	return cmd.Run()
+	return runCommand(cmdDir, "go", args...)
 }
 
 func runMakeCommand(cmdDir string, args ...string) error {
-	cmd := exec.Command("make", args...)
+	return runCommand(cmdDir, "make", args...)
+}
+
+func runCommand(cmdDir string, bin string, args ...string) error {
+	cmd := exec.Command(bin, args...)
 	cmd.Dir = cmdDir
-	return cmd.Run()
+
+	var outbuf, errbuf strings.Builder // or bytes.Buffer
+	cmd.Stdout = &outbuf
+	cmd.Stderr = &errbuf
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("[%s] %s %s: %w (%s)", cmdDir, bin, args, err, errbuf.String())
+	}
+	return nil
 }

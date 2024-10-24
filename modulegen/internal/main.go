@@ -15,20 +15,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/workflow"
 )
 
-func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
-	ctx, err := context.GetRootContext()
-	if err != nil {
-		return fmt.Errorf(">> could not get the root dir: %w", err)
-	}
-
-	tcModule := context.TestcontainersModule{
-		Image:     moduleVar.Image,
-		IsModule:  isModule,
-		Name:      moduleVar.Name,
-		TitleName: moduleVar.NameTitle,
-	}
-
-	err = GenerateFiles(ctx, tcModule)
+func Generate(ctx context.Context, tcModule context.TestcontainersModule) error {
+	err := GenerateFiles(ctx, tcModule)
 	if err != nil {
 		return fmt.Errorf(">> error generating the module: %w", err)
 	}
@@ -64,7 +52,7 @@ type FileGenerator interface {
 
 func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) error {
 	if err := tcModule.Validate(); err != nil {
-		return err
+		return fmt.Errorf("module validate: %w", err)
 	}
 
 	fileGenerators := []FileGenerator{
@@ -76,7 +64,7 @@ func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) e
 	for _, generator := range fileGenerators {
 		err := generator.AddModule(ctx, tcModule)
 		if err != nil {
-			return err
+			return fmt.Errorf("add module: %w", err)
 		}
 	}
 
@@ -93,7 +81,7 @@ func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) e
 	for _, generator := range projectGenerators {
 		err := generator.Generate(ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("generate project: %w", err)
 		}
 	}
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/module"
 	internal_template "github.com/testcontainers/testcontainers-go/modulegen/internal/template"
 )
 
@@ -14,18 +15,16 @@ type Generator struct{}
 
 // Generate updates sonar-project.properties
 func (g Generator) Generate(ctx context.Context) error {
+	examples, modules, err := module.ListExamplesAndModules(ctx)
+	if err != nil {
+		return err
+	}
+
 	rootCtx, err := context.GetRootContext()
 	if err != nil {
 		return err
 	}
-	examples, err := rootCtx.GetExamples()
-	if err != nil {
-		return err
-	}
-	modules, err := rootCtx.GetModules()
-	if err != nil {
-		return err
-	}
+
 	mkdocsConfig, err := mkdocs.ReadConfig(rootCtx.MkdocsConfigFile())
 	if err != nil {
 		fmt.Printf(">> could not read MkDocs config: %v\n", err)
