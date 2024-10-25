@@ -7,31 +7,19 @@ import (
 )
 
 func GoModTidy(cmdDir string) error {
-	if err := runGoCommand(cmdDir, "mod", "tidy"); err != nil {
-		return fmt.Errorf(">> error synchronizing the dependencies: %w", err)
-	}
-	return nil
+	return runGoCommand(cmdDir, "mod", "tidy")
 }
 
 func GoVet(cmdDir string) error {
-	if err := runGoCommand(cmdDir, "vet", "./..."); err != nil {
-		return fmt.Errorf(">> error checking generated code: %w", err)
-	}
-	return nil
+	return runGoCommand(cmdDir, "vet", "./...")
 }
 
 func GoWorkSync(cmdDir string) error {
-	if err := runGoCommand(cmdDir, "work", "sync"); err != nil {
-		return fmt.Errorf(">> error syncing work file: %w", err)
-	}
-	return nil
+	return runGoCommand(cmdDir, "work", "sync")
 }
 
 func MakeLint(cmdDir string) error {
-	if err := runMakeCommand(cmdDir, "lint"); err != nil {
-		return fmt.Errorf(">> error linting: %w", err)
-	}
-	return nil
+	return runMakeCommand(cmdDir, "lint")
 }
 
 func runGoCommand(cmdDir string, args ...string) error {
@@ -52,7 +40,7 @@ func runCommand(cmdDir string, bin string, args ...string) error {
 
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("[%s] %s %s: %w (%s)", cmdDir, bin, args, err, errbuf.String())
+		return fmt.Errorf("run [%s] %s %s: %w (%s)", cmdDir, bin, args, err, errbuf.String())
 	}
 	return nil
 }

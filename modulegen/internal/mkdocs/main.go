@@ -1,6 +1,7 @@
 package mkdocs
 
 import (
+	"fmt"
 	"path/filepath"
 	"text/template"
 
@@ -21,7 +22,7 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 	}
 	err := GenerateMdFile(moduleMdFile, funcMap, tcModule)
 	if err != nil {
-		return err
+		return fmt.Errorf("generate %s file: %w", moduleMdFile, err)
 	}
 	moduleMd := tcModule.ParentDir() + "/" + tcModule.Lower() + ".md"
 	indexMd := tcModule.ParentDir() + "/index.md"

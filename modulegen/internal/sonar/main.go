@@ -17,7 +17,7 @@ type Generator struct{}
 func (g Generator) Generate(ctx context.Context) error {
 	examples, modules, err := module.ListExamplesAndModules(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("list examples and modules: %w", err)
 	}
 
 	rootCtx, err := context.GetRootContext()
@@ -27,15 +27,14 @@ func (g Generator) Generate(ctx context.Context) error {
 
 	mkdocsConfig, err := mkdocs.ReadConfig(rootCtx.MkdocsConfigFile())
 	if err != nil {
-		fmt.Printf(">> could not read MkDocs config: %v\n", err)
-		return err
+		return fmt.Errorf("read MkDocs config: %w", err)
 	}
 	tcVersion := mkdocsConfig.Extra.LatestVersion
 	config := newConfig(tcVersion, examples, modules)
 	name := "sonar-project.properties.tmpl"
 	t, err := template.New(name).ParseFiles(filepath.Join("_template", name))
 	if err != nil {
-		return err
+		return fmt.Errorf("parse %s template: %w", name, err)
 	}
 
 	return internal_template.GenerateFile(t, ctx.SonarProjectFile(), name, config)
