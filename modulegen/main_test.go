@@ -136,6 +136,8 @@ func TestGenerateWrongModuleTitle(t *testing.T) {
 	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	require.NoError(t, err)
 
+	copyWorkFile(t, tmpCtx)
+
 	err = copyInitialMkdocsConfig(t, tmpCtx)
 	require.NoError(t, err)
 
@@ -177,13 +179,8 @@ func TestGenerate(t *testing.T) {
 
 		tmpCtx := context.New(t.TempDir())
 
-		dir := "examples"
-		if module.IsModule {
-			dir = "modules"
-		}
-
-		modulesTmp := filepath.Join(tmpCtx.RootDir, dir)
-		modulesDocTmp := filepath.Join(tmpCtx.DocsDir(), dir)
+		modulesTmp := filepath.Join(tmpCtx.RootDir, module.ParentDir())
+		modulesDocTmp := filepath.Join(tmpCtx.DocsDir(), module.ParentDir())
 		githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 
 		err := os.MkdirAll(modulesTmp, 0o777)
@@ -199,6 +196,8 @@ func TestGenerate(t *testing.T) {
 		originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
 		require.NoError(t, err)
 
+		// copy go.work from the root context to the test context
+		copyWorkFile(t, tmpCtx)
 		// copy go.mod from the root context to the test context
 		copyModFile(t, tmpCtx)
 
@@ -386,7 +385,7 @@ func assertGoWorkContent(t *testing.T, module context.TestcontainersModule, goWo
 	require.NoError(t, err)
 
 	data := sanitiseContent(content)
-	require.Contains(t, data, "    ./"+module.ParentDir()+"/"+module.Lower())
+	require.Contains(t, data, "\t./"+module.ParentDir()+"/"+module.Lower())
 }
 
 // assert content Makefile
