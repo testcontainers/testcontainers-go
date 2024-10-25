@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,6 +25,17 @@ const (
 	token     = "c"
 	region    = "us-east-1"
 )
+
+type resolverV2 struct {
+	// you could inject additional application context here as well
+}
+
+func (*resolverV2) ResolveEndpoint(ctx context.Context, params s3.EndpointParameters) (
+	smithyendpoints.Endpoint, error,
+) {
+	// delegate back to the default v2 resolver otherwise
+	return s3.NewDefaultEndpointResolverV2().ResolveEndpoint(ctx, params)
+}
 
 // awsSDKClientV2 {
 func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Client, error) {
@@ -43,25 +55,18 @@ func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Clien
 		return nil, err
 	}
 
-	customResolver := aws.EndpointResolverWithOptionsFunc(
-		func(service, region string, opts ...interface{}) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				PartitionID:   "aws",
-				URL:           fmt.Sprintf("http://%s:%d", host, mappedPort.Int()),
-				SigningRegion: region,
-			}, nil
-		})
-
 	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(region),
-		config.WithEndpointResolverWithOptions(customResolver),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accesskey, secretkey, token)),
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	// reference: https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/endpoints/#with-both
 	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(fmt.Sprintf("http://%s:%d", host, mappedPort.Int()))
+		o.EndpointResolverV2 = &resolverV2{}
 		o.UsePathStyle = true
 	})
 

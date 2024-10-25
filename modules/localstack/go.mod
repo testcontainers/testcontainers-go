@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.37
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.35
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.51.2
+	github.com/aws/smithy-go v1.21.0
 	github.com/docker/docker v27.3.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/stretchr/testify v1.9.0
@@ -32,7 +33,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.23.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.27.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.31.1 // indirect
-	github.com/aws/smithy-go v1.21.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
