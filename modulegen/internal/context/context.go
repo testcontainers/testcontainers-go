@@ -97,9 +97,12 @@ func New(dir string) Context {
 }
 
 func GetRootContext() (Context, error) {
+	var ctx Context
 	current, err := os.Getwd()
 	if err != nil {
-		return Context{}, err
+		return ctx, err
 	}
-	return New(filepath.Dir(current)), nil
+
+	ctx = New(filepath.Dir(current))
+	return ctx, nil
 }
