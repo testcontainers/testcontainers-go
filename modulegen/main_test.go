@@ -172,126 +172,90 @@ func TestGenerateWrongModuleTitle(t *testing.T) {
 }
 
 func TestGenerate(t *testing.T) {
-	tmpCtx := context.New(t.TempDir())
-	examplesTmp := filepath.Join(tmpCtx.RootDir, "examples")
-	examplesDocTmp := filepath.Join(tmpCtx.DocsDir(), "examples")
-	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
+	testGenerateModule := func(t *testing.T, module context.TestcontainersModule) {
+		tmpCtx := context.New(t.TempDir())
 
-	err := os.MkdirAll(examplesTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(examplesDocTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
-	require.NoError(t, err)
+		dir := "examples"
+		if module.IsModule {
+			dir = "modules"
+		}
 
-	err = copyInitialMkdocsConfig(t, tmpCtx)
-	require.NoError(t, err)
+		modulesTmp := filepath.Join(tmpCtx.RootDir, dir)
+		modulesDocTmp := filepath.Join(tmpCtx.DocsDir(), dir)
+		githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 
-	originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
-	require.NoError(t, err)
+		err := os.MkdirAll(modulesTmp, 0o777)
+		require.NoError(t, err)
+		err = os.MkdirAll(modulesDocTmp, 0o777)
+		require.NoError(t, err)
+		err = os.MkdirAll(githubWorkflowsTmp, 0o777)
+		require.NoError(t, err)
 
-	// copy go.mod from the root context to the test context
-	copyModFile(t, tmpCtx)
+		err = copyInitialMkdocsConfig(t, tmpCtx)
+		require.NoError(t, err)
 
-	// copy modules and examples from the root context to the test context
-	copyModulesAndExamples(t, tmpCtx)
+		originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
+		require.NoError(t, err)
 
-	module := context.TestcontainersModule{
-		Name:      "foodb4tw",
-		TitleName: "FooDB4TheWin",
-		IsModule:  false,
-		Image:     "example/foodb:latest",
+		// copy go.mod from the root context to the test context
+		copyModFile(t, tmpCtx)
+
+		// copy modules and examples from the root context to the test context
+		copyModulesAndExamples(t, tmpCtx)
+
+		moduleNameLower := module.Lower()
+
+		err = internal.GenerateFiles(tmpCtx, module)
+		require.NoError(t, err)
+
+		moduleDirPath := filepath.Join(modulesTmp, moduleNameLower)
+
+		moduleDirFileInfo, err := os.Stat(moduleDirPath)
+		require.NoError(t, err) // error nil implies the file exist
+		require.True(t, moduleDirFileInfo.IsDir())
+
+		moduleDocFile := filepath.Join(modulesDocTmp, moduleNameLower+".md")
+		_, err = os.Stat(moduleDocFile)
+		require.NoError(t, err) // error nil implies the file exist
+
+		mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
+		_, err = os.Stat(mainWorkflowFile)
+		require.NoError(t, err) // error nil implies the file exist
+
+		assertModuleDocContent(t, module, moduleDocFile)
+		assertModuleGithubWorkflowContent(t, tmpCtx, mainWorkflowFile)
+		assertGoWorkContent(t, module, filepath.Join(tmpCtx.RootDir, "go.work"))
+
+		generatedTemplatesDir := filepath.Join(modulesTmp, moduleNameLower)
+		assertExamplesTestContent(t, module, filepath.Join(generatedTemplatesDir, "examples_test.go"))
+		assertModuleTestContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+"_test.go"))
+		assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
+		assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
+		assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
+		assertMkdocsNavItems(t, module, originalConfig, tmpCtx)
 	}
-	moduleNameLower := module.Lower()
 
-	err = internal.GenerateFiles(tmpCtx, module)
-	require.NoError(t, err)
+	t.Run("Example", func(t *testing.T) {
+		module := context.TestcontainersModule{
+			Name:      "foodb4tw",
+			TitleName: "FooDB4TheWin",
+			IsModule:  false,
+			Image:     "example/foodb:latest",
+		}
 
-	moduleDirPath := filepath.Join(examplesTmp, moduleNameLower)
+		testGenerateModule(t, module)
+	})
 
-	moduleDirFileInfo, err := os.Stat(moduleDirPath)
-	require.NoError(t, err) // error nil implies the file exist
-	require.True(t, moduleDirFileInfo.IsDir())
+	t.Run("Module", func(t *testing.T) {
+		module := context.TestcontainersModule{
+			Name:      "foodb",
+			TitleName: "FooDB",
+			IsModule:  true,
+			Image:     "module/foodb:latest",
+		}
 
-	moduleDocFile := filepath.Join(examplesDocTmp, moduleNameLower+".md")
-	_, err = os.Stat(moduleDocFile)
-	require.NoError(t, err) // error nil implies the file exist
-
-	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
-	_, err = os.Stat(mainWorkflowFile)
-	require.NoError(t, err) // error nil implies the file exist
-
-	assertModuleDocContent(t, module, moduleDocFile)
-	assertModuleGithubWorkflowContent(t, tmpCtx, mainWorkflowFile)
-	assertGoWorkContent(t, module, filepath.Join(tmpCtx.RootDir, "go.work"))
-
-	generatedTemplatesDir := filepath.Join(examplesTmp, moduleNameLower)
-	// do not generate examples_test.go for examples
-	assertModuleTestContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+"_test.go"))
-	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
-	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
-	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertMkdocsNavItems(t, module, originalConfig, tmpCtx)
-}
-
-func TestGenerateModule(t *testing.T) {
-	tmpCtx := context.New(t.TempDir())
-	modulesTmp := filepath.Join(tmpCtx.RootDir, "modules")
-	modulesDocTmp := filepath.Join(tmpCtx.DocsDir(), "modules")
-	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
-
-	err := os.MkdirAll(modulesTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(modulesDocTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
-	require.NoError(t, err)
-
-	err = copyInitialMkdocsConfig(t, tmpCtx)
-	require.NoError(t, err)
-
-	originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
-	require.NoError(t, err)
-
-	// copy modules and examples from the root context to the test context
-	copyModulesAndExamples(t, tmpCtx)
-
-	module := context.TestcontainersModule{
-		Name:      "foodb",
-		TitleName: "FooDB",
-		IsModule:  true,
-		Image:     "example/foodb:latest",
-	}
-	moduleNameLower := module.Lower()
-
-	err = internal.GenerateFiles(tmpCtx, module)
-	require.NoError(t, err)
-
-	moduleDirPath := filepath.Join(modulesTmp, moduleNameLower)
-
-	moduleDirFileInfo, err := os.Stat(moduleDirPath)
-	require.NoError(t, err) // error nil implies the file exist
-	require.True(t, moduleDirFileInfo.IsDir())
-
-	moduleDocFile := filepath.Join(modulesDocTmp, moduleNameLower+".md")
-	_, err = os.Stat(moduleDocFile)
-	require.NoError(t, err) // error nil implies the file exist
-
-	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
-	_, err = os.Stat(mainWorkflowFile)
-	require.NoError(t, err) // error nil implies the file exist
-
-	assertModuleDocContent(t, module, moduleDocFile)
-	assertModuleGithubWorkflowContent(t, tmpCtx, mainWorkflowFile)
-	assertGoWorkContent(t, module, filepath.Join(tmpCtx.RootDir, "go.work"))
-
-	generatedTemplatesDir := filepath.Join(modulesTmp, moduleNameLower)
-	assertExamplesTestContent(t, module, filepath.Join(generatedTemplatesDir, "examples_test.go"))
-	assertModuleTestContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+"_test.go"))
-	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
-	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
-	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertMkdocsNavItems(t, module, originalConfig, tmpCtx)
+		testGenerateModule(t, module)
+	})
 }
 
 // assert content module file in the docs
@@ -324,6 +288,12 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 // assert content module test
 func assertExamplesTestContent(t *testing.T, module context.TestcontainersModule, examplesTestFile string) {
 	t.Helper()
+
+	// examples does not have an examples_test.go file
+	if !module.IsModule {
+		return
+	}
+
 	content, err := os.ReadFile(examplesTestFile)
 	require.NoError(t, err)
 
