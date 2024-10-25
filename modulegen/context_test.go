@@ -31,7 +31,7 @@ func copyModulesAndExamples(t *testing.T, ctx context.Context) {
 	require.NoError(t, err)
 
 	for _, example := range examples {
-		// create dirs for each example
+		// create dirs for each example, as we do not need to create the rest of the files
 		err = os.MkdirAll(filepath.Join(ctx.RootDir, "examples", example), 0o777)
 		require.NoError(t, err)
 	}
@@ -40,6 +40,7 @@ func copyModulesAndExamples(t *testing.T, ctx context.Context) {
 	require.NoError(t, err)
 
 	for _, module := range modules {
+		// create dirs for each module, as we do not need to create the rest of the files
 		err = os.MkdirAll(filepath.Join(ctx.RootDir, "modules", module), 0o777)
 		require.NoError(t, err)
 	}
