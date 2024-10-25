@@ -173,6 +173,8 @@ func TestGenerateWrongModuleTitle(t *testing.T) {
 
 func TestGenerate(t *testing.T) {
 	testGenerateModule := func(t *testing.T, module context.TestcontainersModule) {
+		t.Helper()
+
 		tmpCtx := context.New(t.TempDir())
 
 		dir := "examples"
