@@ -18,7 +18,7 @@ import (
 func Generate(ctx context.Context, tcModule context.TestcontainersModule) error {
 	err := GenerateFiles(ctx, tcModule)
 	if err != nil {
-		return fmt.Errorf(">> error generating the module: %w", err)
+		return fmt.Errorf("generate files: %w", err)
 	}
 
 	cmdDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())

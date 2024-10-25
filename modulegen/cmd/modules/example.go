@@ -16,7 +16,7 @@ var newExampleCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, err := context.GetRootContext()
 		if err != nil {
-			return fmt.Errorf(">> could not get the root dir: %w", err)
+			return fmt.Errorf("get root dir: %w", err)
 		}
 
 		tcModule := context.TestcontainersModule{
