@@ -12,6 +12,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/modfile"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/workfile"
 )
 
 func TestGenerate(t *testing.T) {
@@ -210,23 +212,47 @@ func assertModuleGithubWorkflowContent(t *testing.T, ctx context.Context, module
 // assert content go.mod
 func assertGoModContent(t *testing.T, module context.TestcontainersModule, tcVersion string, goModFile string) {
 	t.Helper()
-	content, err := os.ReadFile(goModFile)
+
+	f, err := modfile.Read(goModFile)
 	require.NoError(t, err)
 
-	data := sanitiseContent(content)
-	assert.Equal(t, "module github.com/testcontainers/testcontainers-go/"+module.ParentDir()+"/"+module.Lower(), data[0])
-	assert.Equal(t, "require github.com/testcontainers/testcontainers-go "+tcVersion, data[4])
-	assert.Equal(t, "replace github.com/testcontainers/testcontainers-go => ../..", data[6])
+	require.Equal(t, "github.com/testcontainers/testcontainers-go/"+module.ParentDir()+"/"+module.Lower(), f.Module.Mod.Path)
+
+	found := false
+	for _, r := range f.Require {
+		if r.Mod.Path == "github.com/testcontainers/testcontainers-go" && r.Mod.Version == tcVersion {
+			found = true
+			break
+		}
+	}
+	require.True(t, found)
+
+	found = false
+	for _, r := range f.Replace {
+		// we do not include the version in the replace directive
+		if r.Old.Path == "github.com/testcontainers/testcontainers-go" && r.Old.Version == "" && r.New.Path == "../.." {
+			found = true
+			break
+		}
+	}
+	require.True(t, found)
 }
 
-// assert content go.mod
+// assert content go.work
 func assertGoWorkContent(t *testing.T, module context.TestcontainersModule, goWorkFile string) {
 	t.Helper()
-	content, err := os.ReadFile(goWorkFile)
+
+	f, err := workfile.Read(goWorkFile)
 	require.NoError(t, err)
 
-	data := sanitiseContent(content)
-	require.Contains(t, data, "\t./"+module.ParentDir()+"/"+module.Lower())
+	found := false
+	for _, use := range f.Use {
+		if use.Path != "./"+module.ParentDir()+"/"+module.Lower() {
+			continue
+		}
+		found = true
+	}
+	require.True(t, found)
 }
 
 // assert content Makefile
