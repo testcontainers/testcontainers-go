@@ -10,6 +10,7 @@ linters:
     - nonamedreturns
     - testifylint
     - thelper
+    - usestdlibvars
 
 linters-settings:
   errorlint:
