@@ -114,18 +114,14 @@ func TestExecStrategyWaitUntilReady(t *testing.T) {
 	wg := wait.NewExecStrategy([]string{"true"}).
 		WithStartupTimeout(30 * time.Second)
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestExecStrategyWaitUntilReadyForExec(t *testing.T) {
 	target := mockExecTarget{}
 	wg := wait.ForExec([]string{"true"})
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestExecStrategyWaitUntilReady_MultipleChecks(t *testing.T) {
@@ -136,9 +132,7 @@ func TestExecStrategyWaitUntilReady_MultipleChecks(t *testing.T) {
 	wg := wait.NewExecStrategy([]string{"true"}).
 		WithPollInterval(500 * time.Millisecond)
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestExecStrategyWaitUntilReady_DeadlineExceeded(t *testing.T) {
@@ -163,9 +157,7 @@ func TestExecStrategyWaitUntilReady_CustomExitCode(t *testing.T) {
 		return exitCode == 10
 	})
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestExecStrategyWaitUntilReady_withExitCode(t *testing.T) {
@@ -176,9 +168,7 @@ func TestExecStrategyWaitUntilReady_withExitCode(t *testing.T) {
 	// Default is 60. Let's shorten that
 	wg.WithStartupTimeout(time.Second * 2)
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// Ensure we aren't spuriously returning on any code
 	wg = wait.NewExecStrategy([]string{"true"}).WithExitCode(0)

@@ -42,9 +42,7 @@ func TestWeaviate(t *testing.T) {
 		// gRPCHostAddress {
 		host, err := ctr.GrpcHostAddress(ctx)
 		// }
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		var opts []grpc.DialOption
 
@@ -65,22 +63,14 @@ func TestWeaviate(t *testing.T) {
 
 	t.Run("Weaviate client", func(tt *testing.T) {
 		httpScheme, httpHost, err := ctr.HttpHostAddress(ctx)
-		if err != nil {
-			tt.Fatal(err)
-		}
+		require.NoError(tt, err)
 		grpcHost, err := ctr.GrpcHostAddress(ctx)
-		if err != nil {
-			tt.Fatal(err)
-		}
+		require.NoError(tt, err)
 		config := wvt.Config{Scheme: httpScheme, Host: httpHost, GrpcConfig: &wvtgrpc.Config{Host: grpcHost}}
 		client, err := wvt.NewClient(config)
-		if err != nil {
-			tt.Fatal(err)
-		}
+		require.NoError(tt, err)
 		meta, err := client.Misc().MetaGetter().Do(ctx)
-		if err != nil {
-			tt.Fatal(err)
-		}
+		require.NoError(tt, err)
 
 		if meta == nil || meta.Version == "" {
 			tt.Fatal("failed to get /v1/meta response")
