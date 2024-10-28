@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestContainerFileValidation(t *testing.T) {
@@ -17,9 +19,7 @@ func TestContainerFileValidation(t *testing.T) {
 	}
 
 	f, err := os.Open(filepath.Join(".", "testdata", "hello.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	testTable := []ContainerFileValidationTestCase{
 		{
