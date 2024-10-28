@@ -63,16 +63,12 @@ func TestK6(t *testing.T) {
 			var options testcontainers.CustomizeRequestOption
 			if !strings.HasPrefix(tc.script, "http") {
 				absPath, err := filepath.Abs(filepath.Join("scripts", tc.script))
-				if err != nil {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 				options = k6.WithTestScript(absPath)
 			} else {
 
 				uri, err := url.Parse(tc.script)
-				if err != nil {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 
 				desc := k6.DownloadableFile{Uri: *uri, DownloadDir: t.TempDir()}
 				options = k6.WithRemoteTestScript(desc)

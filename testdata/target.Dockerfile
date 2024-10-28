@@ -1,4 +1,4 @@
-FROM docker.io/alpine AS target0
+FROM alpine AS target0
 CMD ["echo", "target0"]
 
 FROM target0 AS target1

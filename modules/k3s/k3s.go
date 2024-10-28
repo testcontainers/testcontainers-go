@@ -50,7 +50,7 @@ func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the K3s container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error) {
-	return Run(ctx, "docker.io/rancher/k3s:v1.27.1-k3s1", opts...)
+	return Run(ctx, "rancher/k3s:v1.27.1-k3s1", opts...)
 }
 
 // Run creates an instance of the K3s container type

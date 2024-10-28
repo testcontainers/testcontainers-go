@@ -17,9 +17,7 @@ import (
 
 func TestBuildImageFromDockerfile(t *testing.T) {
 	provider, err := NewDockerProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer provider.Close()
 
 	cli := provider.Client()
@@ -47,17 +45,13 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 			Force:         true,
 			PruneChildren: true,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	})
 }
 
 func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 	provider, err := NewDockerProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer provider.Close()
 
 	cli := provider.Client()
@@ -82,9 +76,7 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 			Force:         true,
 			PruneChildren: true,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	})
 }
 
@@ -112,9 +104,7 @@ func TestBuildImageFromDockerfile_BuildError(t *testing.T) {
 
 func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 	provider, err := NewDockerProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer provider.Close()
 
 	cli := provider.Client()
@@ -139,9 +129,7 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 			Force:         true,
 			PruneChildren: true,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	})
 }
 

@@ -93,9 +93,8 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 	if amqpsConnection.IsClosed() {
 		t.Fatal(fmt.Errorf("AMQPS Connection unexpectdely closed"))
 	}
-	if err = amqpsConnection.Close(); err != nil {
-		t.Fatal(err)
-	}
+	err = amqpsConnection.Close()
+	require.NoError(t, err)
 }
 
 func TestRunContainer_withAllSettings(t *testing.T) {
@@ -248,14 +247,10 @@ func assertEntity(t *testing.T, container testcontainers.Container, listCommand 
 	cmd := []string{"rabbitmqadmin", "list", listCommand}
 
 	_, out, err := container.Exec(ctx, cmd)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	check, err := io.ReadAll(out)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	for _, e := range entities {
 		if !strings.Contains(string(check), e) {
@@ -277,14 +272,10 @@ func assertEntityWithVHost(t *testing.T, container testcontainers.Container, lis
 	}
 
 	_, out, err := container.Exec(ctx, cmd)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	check, err := io.ReadAll(out)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	for _, e := range entities {
 		if !strings.Contains(string(check), e) {
@@ -303,14 +294,10 @@ func assertPluginIsEnabled(t *testing.T, container testcontainers.Container, plu
 	for _, plugin := range plugins {
 
 		_, out, err := container.Exec(ctx, []string{"rabbitmq-plugins", "is_enabled", plugin})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		check, err := io.ReadAll(out)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		if !strings.Contains(string(check), plugin+" is enabled") {
 			return false
