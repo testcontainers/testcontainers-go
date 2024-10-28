@@ -1,8 +1,8 @@
 services:
   {{ .ServiceType }}-nginx:
-    image: docker.io/nginx:stable-alpine
+    image: nginx:stable-alpine
   {{ .ServiceType }}-mysql:
-    image: docker.io/mysql:8.0.36
+    image: mysql:8.0.36
     environment:
       MYSQL_RANDOM_ROOT_PASSWORD: Y
     ports:

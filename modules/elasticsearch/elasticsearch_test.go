@@ -138,9 +138,8 @@ func TestElasticsearch(t *testing.T) {
 				}
 
 				var esResp ElasticsearchResponse
-				if err := json.NewDecoder(resp.Body).Decode(&esResp); err != nil {
-					t.Fatal(err)
-				}
+				err = json.NewDecoder(resp.Body).Decode(&esResp)
+				require.NoError(t, err)
 
 				if tt.image == baseImage7 && esResp.Version.Number != "7.9.2" {
 					t.Fatal("expected version to be 7.9.2 but got", esResp.Version.Number)
@@ -203,9 +202,7 @@ func TestElasticsearch8WithoutCredentials(t *testing.T) {
 	httpClient := configureHTTPClient(ctr)
 
 	req, err := http.NewRequest("GET", ctr.Settings.Address, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// elastic:changeme are the default credentials for Elasticsearch 8
 	req.SetBasicAuth(ctr.Settings.Username, ctr.Settings.Password)
@@ -218,9 +215,8 @@ func TestElasticsearch8WithoutCredentials(t *testing.T) {
 	defer resp.Body.Close()
 
 	var esResp ElasticsearchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&esResp); err != nil {
-		t.Fatal(err)
-	}
+	err = json.NewDecoder(resp.Body).Decode(&esResp)
+	require.NoError(t, err)
 
 	if esResp.Tagline != "You Know, for Search" {
 		t.Fatal("expected tagline to be 'You Know, for Search' but got", esResp.Tagline)

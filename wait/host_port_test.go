@@ -19,16 +19,12 @@ import (
 
 func TestWaitForListeningPortSucceeds(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var mappedPortCount, execCount int
 	target := &MockStrategyTarget{
@@ -60,23 +56,18 @@ func TestWaitForListeningPortSucceeds(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
-	if err := wg.WaitUntilReady(context.Background(), target); err != nil {
-		t.Fatal(err)
-	}
+	err = wg.WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
 }
 
 func TestWaitForExposedPortSucceeds(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var mappedPortCount, execCount int
 	target := &MockStrategyTarget{
@@ -124,9 +115,8 @@ func TestWaitForExposedPortSucceeds(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
-	if err := wg.WaitUntilReady(context.Background(), target); err != nil {
-		t.Fatal(err)
-	}
+	err = wg.WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
 }
 
 func TestHostPortStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
@@ -298,16 +288,12 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToUnexpectedContainerStatu
 
 func TestHostPortStrategyFailsWhileInternalCheckingDueToOOMKilledContainer(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var stateCount int
 	target := &MockStrategyTarget{
@@ -342,16 +328,12 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToOOMKilledContainer(t *te
 
 func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var stateCount int
 	target := &MockStrategyTarget{
@@ -387,16 +369,12 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testi
 
 func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatus(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var stateCount int
 	target := &MockStrategyTarget{

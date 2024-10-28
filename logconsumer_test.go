@@ -248,7 +248,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	dind, err := GenericContainer(ctx, GenericContainerRequest{
 		Started: true,
 		ContainerRequest: ContainerRequest{
-			Image:        "docker.io/docker:dind",
+			Image:        "docker:dind",
 			ExposedPorts: []string{"2375/tcp"},
 			Env:          map[string]string{"DOCKER_TLS_CERTDIR": ""},
 			WaitingFor:   wait.ForListeningPort("2375/tcp"),
@@ -282,9 +282,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
 
 	dockerClient, err := NewDockerClientWithOpts(ctx, opts...)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer dockerClient.Close()
 
 	provider := &DockerProvider{
@@ -310,18 +308,13 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 			Consumers: []LogConsumer{&consumer},
 		},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := nginx.Start(ctx); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+	err = nginx.Start(ctx)
+	require.NoError(t, err)
 	CleanupContainer(t, nginx)
 
 	port, err := nginx.MappedPort(ctx, "80/tcp")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// Gather the initial container logs
 	time.Sleep(time.Second * 1)
@@ -381,19 +374,13 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 		Started:          true,
 	})
 	CleanupContainer(t, ctr)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	r, err := ctr.Logs(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer r.Close()
 	b, err := io.ReadAll(r)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	assert.Equal(t, "0", strings.TrimSpace(string(b)))
 }
 

@@ -887,7 +887,7 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	ctx := context.Background()
 
 	req := ContainerRequest{
-		Image:      "docker.io/alpine",
+		Image:      "alpine",
 		Cmd:        []string{"echo", "-n", "I am expecting this"},
 		WaitingFor: wait.ForLog("I was expecting that").WithStartupTimeout(5 * time.Second),
 	}
@@ -903,14 +903,10 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	})
 	CleanupContainer(t, ctr)
 	// it should fail because the waiting for condition is not met
-	if err == nil {
-		t.Fatal(err)
-	}
+	require.Error(t, err)
 
 	containerLogs, err := ctr.Logs(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer containerLogs.Close()
 
 	// read container logs line by line, checking that each line is present in the stdout
