@@ -13,7 +13,7 @@ func ExampleRun() {
 	// runPulsarContainer {
 	ctx := context.Background()
 
-	pulsarContainer, err := pulsar.Run(ctx, "docker.io/apachepulsar/pulsar:2.10.2")
+	pulsarContainer, err := pulsar.Run(ctx, "apachepulsar/pulsar:2.10.2")
 	defer func() {
 		if err := testcontainers.TerminateContainer(pulsarContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)

@@ -167,7 +167,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				}{
 					{
 						Name: "Dockerfile",
-						Contents: `FROM docker.io/alpine
+						Contents: `FROM alpine
 								CMD ["echo", "this is from the archive"]`,
 					},
 				}
@@ -216,7 +216,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 					},
 					{
 						Name: "Dockerfile",
-						Contents: `FROM docker.io/alpine
+						Contents: `FROM alpine
 								WORKDIR /app
 								COPY . .
 								CMD ["sh", "./say_hi.sh"]`,
@@ -365,7 +365,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 	ctx := context.Background()
 	// directDockerHubReference {
 	req := testcontainers.ContainerRequest{
-		Image:      "docker.io/alpine",
+		Image:      "alpine",
 		Cmd:        []string{"echo", "-n", "I was not expecting this"},
 		WaitingFor: wait.ForLog("I was expecting this").WithStartupTimeout(5 * time.Second),
 	}
@@ -392,11 +392,11 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 type dockerImageSubstitutor struct{}
 
 func (s dockerImageSubstitutor) Description() string {
-	return "DockerImageSubstitutor (prepends docker.io)"
+	return "DockerImageSubstitutor (prepends registry.hub.docker.com)"
 }
 
 func (s dockerImageSubstitutor) Substitute(image string) (string, error) {
-	return "docker.io/" + image, nil
+	return "registry.hub.docker.com/library/" + image, nil
 }
 
 // }
@@ -455,7 +455,7 @@ func TestImageSubstitutors(t *testing.T) {
 			name:          "Prepend namespace",
 			image:         "alpine",
 			substitutors:  []testcontainers.ImageSubstitutor{dockerImageSubstitutor{}},
-			expectedImage: "docker.io/alpine",
+			expectedImage: "registry.hub.docker.com/library/alpine",
 		},
 		{
 			name:          "Substitution with error",
@@ -554,5 +554,5 @@ func ExampleGenericContainer_withSubstitutors() {
 
 	fmt.Println(dockerContainer.Image)
 
-	// Output: docker.io/alpine:latest
+	// Output: registry.hub.docker.com/library/alpine:latest
 }

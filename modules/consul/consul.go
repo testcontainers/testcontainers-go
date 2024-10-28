@@ -15,7 +15,7 @@ const (
 
 const (
 	// Deprecated: it will be removed in the next major version.
-	DefaultBaseImage = "docker.io/hashicorp/consul:1.15"
+	DefaultBaseImage = "hashicorp/consul:1.15"
 )
 
 // ConsulContainer represents the Consul container type used in the module.
@@ -65,7 +65,7 @@ func WithConfigFile(configPath string) testcontainers.CustomizeRequestOption {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Consul container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error) {
-	return Run(ctx, "docker.io/hashicorp/consul:1.15", opts...)
+	return Run(ctx, "hashicorp/consul:1.15", opts...)
 }
 
 // Run creates an instance of the Consul container type

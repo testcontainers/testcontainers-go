@@ -63,8 +63,8 @@ func TestNeo4jWithEnterpriseLicense(t *testing.T) {
 	ctx := context.Background()
 
 	images := map[string]string{
-		"StandardEdition":   "docker.io/neo4j:4.4",
-		"EnterpriseEdition": "docker.io/neo4j:4.4-enterprise",
+		"StandardEdition":   "neo4j:4.4",
+		"EnterpriseEdition": "neo4j:4.4-enterprise",
 	}
 
 	for edition, img := range images {
@@ -167,13 +167,9 @@ func createDriver(t *testing.T, ctx context.Context, container *neo4j.Neo4jConta
 	// boltURL {
 	boltUrl, err := container.BoltUrl(ctx)
 	// }
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	driver, err := neo.NewDriverWithContext(boltUrl, neo.BasicAuth("neo4j", testPassword, ""))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := driver.Close(ctx); err != nil {
 			t.Fatalf("failed to close neo: %s", err)

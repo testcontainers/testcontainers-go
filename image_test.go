@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
@@ -79,9 +81,7 @@ func TestSaveImages(t *testing.T) {
 	}
 
 	info, err := os.Stat(output)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	if info.Size() == 0 {
 		t.Fatalf("output file is empty")

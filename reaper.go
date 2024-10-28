@@ -408,7 +408,12 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 
 	// Attach reaper container to a requested network if it is specified
 	if p, ok := provider.(*DockerProvider); ok {
-		req.Networks = append(req.Networks, p.DefaultNetwork)
+		defaultNetwork, err := p.ensureDefaultNetwork(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("ensure default network: %w", err)
+		}
+
+		req.Networks = append(req.Networks, defaultNetwork)
 	}
 
 	c, err := provider.RunContainer(ctx, req)

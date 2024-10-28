@@ -72,14 +72,10 @@ func TestDoltWithPublicRemoteCloneUrl(t *testing.T) {
 func createTestCredsFile(t *testing.T) string {
 	t.Helper()
 	file, err := os.CreateTemp(t.TempDir(), "prefix")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer file.Close()
 	_, err = file.WriteString("some-fake-creds")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	return file.Name()
 }
 

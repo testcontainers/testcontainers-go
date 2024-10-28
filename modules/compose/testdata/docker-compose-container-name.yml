@@ -1,7 +1,7 @@
 services:
   {{ .ServiceType }}-nginx:
     container_name: {{ .ServiceType }}-nginxy
-    image: docker.io/nginx:stable-alpine
+    image: nginx:stable-alpine
     environment:
       bar: ${bar}
     ports:

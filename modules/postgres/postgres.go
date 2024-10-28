@@ -136,7 +136,7 @@ func WithUsername(user string) testcontainers.CustomizeRequestOption {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Postgres container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error) {
-	return Run(ctx, "docker.io/postgres:16-alpine", opts...)
+	return Run(ctx, "postgres:16-alpine", opts...)
 }
 
 // Run creates an instance of the Postgres container type

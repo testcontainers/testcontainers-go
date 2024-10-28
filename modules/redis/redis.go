@@ -46,7 +46,7 @@ func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Redis container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*RedisContainer, error) {
-	return Run(ctx, "docker.io/redis:7", opts...)
+	return Run(ctx, "redis:7", opts...)
 }
 
 // Run creates an instance of the Redis container type
