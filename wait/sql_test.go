@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_waitForSql_WithQuery(t *testing.T) {
@@ -102,9 +103,8 @@ func TestWaitForSQLSucceeds(t *testing.T) {
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	if err := wg.WaitUntilReady(context.Background(), target); err != nil {
-		t.Fatal(err)
-	}
+	err := wg.WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
 }
 
 func TestWaitForSQLFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {

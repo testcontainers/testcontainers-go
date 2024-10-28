@@ -21,14 +21,10 @@ func TestCopyFileToContainer(t *testing.T) {
 
 	// copyFileOnCreate {
 	absPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	r, err := os.Open(absPath)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -58,13 +54,9 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 	// Not using the assertations here to avoid leaking the library into the example
 	// copyFileAfterCreate {
 	waitForPath, err := filepath.Abs(filepath.Join(".", "testdata", "waitForHello.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	helloPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -100,9 +92,7 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 	// Not using the assertations here to avoid leaking the library into the example
 	// copyDirectoryToContainer {
 	dataDirectory, err := filepath.Abs(filepath.Join(".", "testdata"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -133,13 +123,9 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 
 	// copyDirectoryToRunningContainerAsFile {
 	dataDirectory, err := filepath.Abs(filepath.Join(".", "testdata"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	waitForPath, err := filepath.Abs(filepath.Join(dataDirectory, "waitForHello.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -175,13 +161,9 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 	// Not using the assertations here to avoid leaking the library into the example
 	// copyDirectoryToRunningContainerAsDir {
 	waitForPath, err := filepath.Abs(filepath.Join(".", "testdata", "waitForHello.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	dataDirectory, err := filepath.Abs(filepath.Join(".", "testdata"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
