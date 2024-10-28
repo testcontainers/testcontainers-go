@@ -23,12 +23,12 @@ type DefaultNetwork string
 
 // Deprecated: will be removed in the future.
 func (n DefaultNetwork) ApplyGenericTo(opts *GenericProviderOptions) {
-	opts.DefaultNetwork = string(n)
+	opts.defaultNetwork = string(n)
 }
 
 // Deprecated: will be removed in the future.
 func (n DefaultNetwork) ApplyDockerTo(opts *DockerProviderOptions) {
-	opts.DefaultNetwork = string(n)
+	opts.defaultNetwork = string(n)
 }
 
 // Deprecated: will be removed in the future

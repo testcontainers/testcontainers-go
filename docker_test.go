@@ -1790,11 +1790,14 @@ func TestGetGatewayIP(t *testing.T) {
 	require.NoError(t, err)
 	defer provider.Close()
 
-	ip, err := provider.(*DockerProvider).GetGatewayIP(context.Background())
-	require.NoError(t, err)
-	if ip == "" {
-		t.Fatal("could not get gateway ip")
+	dockerProvider, ok := provider.(*DockerProvider)
+	if !ok {
+		t.Skip("provider is not a DockerProvider")
 	}
+
+	ip, err := dockerProvider.GetGatewayIP(context.Background())
+	require.NoError(t, err)
+	require.NotEmpty(t, ip)
 }
 
 func TestNetworkModeWithContainerReference(t *testing.T) {
