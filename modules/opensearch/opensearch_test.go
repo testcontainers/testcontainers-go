@@ -24,7 +24,7 @@ func TestOpenSearch(t *testing.T) {
 
 		client := &http.Client{}
 
-		req, err := http.NewRequest("GET", address, nil)
+		req, err := http.NewRequest(http.MethodGet, address, nil)
 		require.NoError(t, err)
 
 		resp, err := client.Do(req)

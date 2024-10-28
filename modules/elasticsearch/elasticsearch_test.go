@@ -87,7 +87,7 @@ func TestElasticsearch(t *testing.T) {
 
 			httpClient := configureHTTPClient(esContainer)
 
-			req, err := http.NewRequest("GET", esContainer.Settings.Address, nil)
+			req, err := http.NewRequest(http.MethodGet, esContainer.Settings.Address, nil)
 			require.NoError(t, err)
 
 			// set the password for the request using the Authentication header
@@ -201,7 +201,7 @@ func TestElasticsearch8WithoutCredentials(t *testing.T) {
 
 	httpClient := configureHTTPClient(ctr)
 
-	req, err := http.NewRequest("GET", ctr.Settings.Address, nil)
+	req, err := http.NewRequest(http.MethodGet, ctr.Settings.Address, nil)
 	require.NoError(t, err)
 
 	// elastic:changeme are the default credentials for Elasticsearch 8
