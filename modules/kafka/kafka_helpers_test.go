@@ -101,9 +101,7 @@ func TestValidateKRaftVersion(t *testing.T) {
 
 			if test.wantErr {
 				require.Errorf(t, err, "expected error, got nil")
-			}
-
-			if !test.wantErr {
+			} else {
 				require.NoErrorf(t, err, "expected no error, got %s", err)
 			}
 		})
