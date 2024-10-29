@@ -8,6 +8,7 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
+// Write writes the given go.work to the given path
 func Write(workFilePath string, file *modfile.WorkFile) error {
 	err := os.MkdirAll(filepath.Dir(workFilePath), 0o755)
 	if err != nil {
