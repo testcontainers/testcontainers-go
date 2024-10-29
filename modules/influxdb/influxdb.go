@@ -3,6 +3,7 @@ package influxdb
 import (
 	"context"
 	"fmt"
+	"io"
 	"path"
 	"strings"
 
@@ -81,15 +82,14 @@ func defaultWaitStrategy(genericContainerReq testcontainers.GenericContainerRequ
 		}
 	}
 
-	if lastIndex := strings.LastIndex(genericContainerReq.Image, ":"); lastIndex != -1 {
-		tag := genericContainerReq.Image[lastIndex+1:]
-		if tag == "latest" || tag[0] == '2' {
-			return wait.ForHTTP("/health")
-		}
-	} else {
-		return wait.ForLog("Listening for signals")
-	}
-	return wait.ForListeningPort("8086/tcp")
+	return wait.ForHTTP("/health").
+		WithResponseMatcher(func(body io.Reader) bool {
+			bs, err := io.ReadAll(body)
+			if err != nil {
+				return false
+			}
+			return strings.Contains(string(bs), "ready for queries and writes")
+		})
 }
 
 func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
