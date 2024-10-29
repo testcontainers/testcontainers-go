@@ -66,8 +66,7 @@ func TestWeaviate(t *testing.T) {
 		meta, err := client.Misc().MetaGetter().Do(ctx)
 		require.NoError(tt, err)
 
-		if meta == nil || meta.Version == "" {
-			tt.Fatal("failed to get /v1/meta response")
-		}
+		require.NotNilf(tt, meta, "failed to get /v1/meta response")
+		require.NotEmptyf(tt, meta.Version, "failed to get /v1/meta response")
 	})
 }

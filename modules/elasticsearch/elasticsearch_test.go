@@ -92,9 +92,7 @@ func TestElasticsearch(t *testing.T) {
 
 			// set the password for the request using the Authentication header
 			if tt.passwordCustomiser != nil {
-				if esContainer.Settings.Username != "elastic" {
-					t.Fatal("expected username to be elastic but got", esContainer.Settings.Username)
-				}
+				require.Equalf(t, "elastic", esContainer.Settings.Username, "expected username to be elastic but got: %s", esContainer.Settings.Username)
 
 				// basicAuthHeader {
 				req.SetBasicAuth(esContainer.Settings.Username, esContainer.Settings.Password)
@@ -102,55 +100,33 @@ func TestElasticsearch(t *testing.T) {
 			}
 
 			resp, err := httpClient.Do(req)
-			if resp != nil {
-				defer resp.Body.Close()
+			require.NoError(t, err)
+			require.NotNil(t, resp)
+			defer resp.Body.Close()
+
+			if tt.image == baseImage8 && tt.passwordCustomiser == nil {
+				// Elasticsearch 8 should return 401 Unauthorized, not an error in the request
+				require.Equalf(t, http.StatusUnauthorized, resp.StatusCode, "expected 401 status code for unauthorised HTTP client using TLS, but got: %s", resp.StatusCode)
+
+				// finish validating the response when the request is unauthorised
+				return
 			}
 
-			if tt.image != baseImage8 && err != nil {
-				if tt.passwordCustomiser != nil {
-					t.Fatal(err, "should access with authorised HTTP client.")
-				} else if tt.passwordCustomiser == nil {
-					t.Fatal(err, "should access with unauthorised HTTP client.")
-				}
+			// validate Elasticsearch response
+			require.Equalf(t, http.StatusOK, resp.StatusCode, "expected 200 status code but got: %s", resp.StatusCode)
+
+			var esResp ElasticsearchResponse
+			err = json.NewDecoder(resp.Body).Decode(&esResp)
+			require.NoError(t, err)
+
+			switch tt.image {
+			case baseImage7:
+				require.Equalf(t, "7.9.2", esResp.Version.Number, "expected version to be 7.9.2 but got: %s", esResp.Version.Number)
+			case baseImage8:
+				require.Equalf(t, "8.9.0", esResp.Version.Number, "expected version to be 8.9.0 but got: %s", esResp.Version.Number)
 			}
 
-			if tt.image == baseImage8 {
-				if tt.passwordCustomiser != nil && err != nil {
-					t.Fatal(err, "should access with authorised HTTP client using TLS.")
-				}
-				if tt.passwordCustomiser == nil && err == nil {
-					// Elasticsearch 8 should return 401 Unauthorized, not an error in the request
-					if resp.StatusCode != http.StatusUnauthorized {
-						t.Fatal("expected 401 status code for unauthorised HTTP client using TLS, but got", resp.StatusCode)
-					}
-
-					// finish validating the response when the request is unauthorised
-					return
-				}
-
-			}
-
-			// validate response
-			if resp != nil {
-				// validate Elasticsearch response
-				if resp.StatusCode != http.StatusOK {
-					t.Fatal("expected 200 status code but got", resp.StatusCode)
-				}
-
-				var esResp ElasticsearchResponse
-				err = json.NewDecoder(resp.Body).Decode(&esResp)
-				require.NoError(t, err)
-
-				if tt.image == baseImage7 && esResp.Version.Number != "7.9.2" {
-					t.Fatal("expected version to be 7.9.2 but got", esResp.Version.Number)
-				} else if tt.image == baseImage8 && esResp.Version.Number != "8.9.0" {
-					t.Fatal("expected version to be 8.9.0 but got", esResp.Version.Number)
-				}
-
-				if esResp.Tagline != "You Know, for Search" {
-					t.Fatal("expected tagline to be 'You Know, for Search' but got", esResp.Tagline)
-				}
-			}
+			require.Equalf(t, "You Know, for Search", esResp.Tagline, "expected tagline to be 'You Know, for Search' but got: %s", esResp.Tagline)
 		})
 	}
 }
@@ -185,9 +161,7 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 			testcontainers.CleanupContainer(t, ctr)
 			require.NoError(t, err)
 
-			if len(ctr.Settings.CACert) > 0 {
-				t.Fatal("expected CA cert to be empty")
-			}
+			require.Emptyf(t, ctr.Settings.CACert, "expected CA cert to be empty")
 		})
 	}
 }
@@ -208,9 +182,7 @@ func TestElasticsearch8WithoutCredentials(t *testing.T) {
 	req.SetBasicAuth(ctr.Settings.Username, ctr.Settings.Password)
 
 	resp, err := httpClient.Do(req)
-	if err != nil {
-		t.Fatal(err, "Should be able to access / URI with client using default password over HTTPS.")
-	}
+	require.NoErrorf(t, err, "Should be able to access / URI with client using default password over HTTPS.")
 
 	defer resp.Body.Close()
 
@@ -218,9 +190,7 @@ func TestElasticsearch8WithoutCredentials(t *testing.T) {
 	err = json.NewDecoder(resp.Body).Decode(&esResp)
 	require.NoError(t, err)
 
-	if esResp.Tagline != "You Know, for Search" {
-		t.Fatal("expected tagline to be 'You Know, for Search' but got", esResp.Tagline)
-	}
+	require.Equalf(t, "You Know, for Search", esResp.Tagline, "expected tagline to be 'You Know, for Search' but got: %s", esResp.Tagline)
 }
 
 func TestElasticsearchOSSCannotuseWithPassword(t *testing.T) {
@@ -230,9 +200,7 @@ func TestElasticsearchOSSCannotuseWithPassword(t *testing.T) {
 
 	ctr, err := elasticsearch.Run(ctx, ossImage, elasticsearch.WithPassword("foo"))
 	testcontainers.CleanupContainer(t, ctr)
-	if err == nil {
-		t.Fatal(err, "Should not be able to use WithPassword with OSS image.")
-	}
+	require.Errorf(t, err, "Should not be able to use WithPassword with OSS image.")
 }
 
 // configureHTTPClient configures an HTTP client for the Elasticsearch container.

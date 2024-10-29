@@ -72,9 +72,7 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 	amqpsURL, err := rabbitmqContainer.AmqpsURL(ctx)
 	require.NoError(t, err)
 
-	if !strings.HasPrefix(amqpsURL, "amqps") {
-		t.Fatal(fmt.Errorf("AMQPS Url should begin with `amqps`"))
-	}
+	require.Truef(t, strings.HasPrefix(amqpsURL, "amqps"), "AMQPS Url should begin with `amqps`")
 
 	certs := x509.NewCertPool()
 
@@ -85,9 +83,7 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 	amqpsConnection, err := amqp.DialTLS(amqpsURL, &tls.Config{InsecureSkipVerify: false, RootCAs: certs})
 	require.NoError(t, err)
 
-	if amqpsConnection.IsClosed() {
-		t.Fatal(fmt.Errorf("AMQPS Connection unexpectdely closed"))
-	}
+	require.Falsef(t, amqpsConnection.IsClosed(), "AMQPS Connection unexpectdely closed")
 	err = amqpsConnection.Close()
 	require.NoError(t, err)
 }

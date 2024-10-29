@@ -115,29 +115,21 @@ func TestEventingServiceWithCommunityContainer(t *testing.T) {
 func testBucketUsage(t *testing.T, bucket *gocb.Bucket) {
 	t.Helper()
 	err := bucket.WaitUntilReady(5*time.Second, nil)
-	if err != nil {
-		t.Fatalf("could not connect bucket: %s", err)
-	}
+	require.NoErrorf(t, err, "could not connect bucket")
 
 	key := "foo"
 	data := map[string]string{"key": "value"}
 	collection := bucket.DefaultCollection()
 
 	_, err = collection.Upsert(key, data, nil)
-	if err != nil {
-		t.Fatalf("could not upsert data: %s", err)
-	}
+	require.NoErrorf(t, err, "could not upsert data")
 
 	result, err := collection.Get(key, nil)
-	if err != nil {
-		t.Fatalf("could not get data: %s", err)
-	}
+	require.NoErrorf(t, err, "could not get data")
 
 	var resultData map[string]string
 	err = result.Content(&resultData)
-	if err != nil {
-		t.Fatalf("could not assign content: %s", err)
-	}
+	require.NoErrorf(t, err, "could not assign content")
 
 	if resultData["key"] != "value" {
 		t.Errorf("Expected value to be [%s], got %s", "value", resultData["key"])
