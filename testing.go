@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"context"
 	"fmt"
+	"io"
 	"regexp"
 	"testing"
 
@@ -146,4 +147,19 @@ func isCleanupSafe(err error) bool {
 	default:
 		return false
 	}
+}
+
+// RequireContainerExec is a helper function that executes a command in a container
+// It insures that there is no error during the execution
+// Finally returns the output of its execution
+func RequireContainerExec(ctx context.Context, t *testing.T, container Container, cmd []string) string {
+	t.Helper()
+
+	code, out, err := container.Exec(ctx, cmd)
+	require.NoError(t, err)
+	require.Zero(t, code)
+
+	checkBytes, err := io.ReadAll(out)
+	require.NoError(t, err)
+	return string(checkBytes)
 }
