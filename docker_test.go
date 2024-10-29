@@ -1146,12 +1146,12 @@ func TestContainerWithTmpFs(t *testing.T) {
 	// exec_example {
 	c, _, err = ctr.Exec(ctx, []string{"touch", path})
 	require.NoError(t, err)
-	require.Equalf(t, 0, c, "File %s should have been created successfully, expected return code 0, got %v", path, c)
+	require.Zerof(t, c, "File %s should have been created successfully, expected return code 0, got %v", path, c)
 	// }
 
 	c, _, err = ctr.Exec(ctx, []string{"ls", path})
 	require.NoError(t, err)
-	require.Equalf(t, 0, c, "File %s should exist, expected return code 0, got %v", path, c)
+	require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", path, c)
 }
 
 func TestContainerNonExistentImage(t *testing.T) {
@@ -1319,7 +1319,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 			_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), tc.copiedFileName, 700)
 			c, _, err := nginxC.Exec(ctx, []string{"bash", tc.copiedFileName})
 			require.NoError(t, err)
-			require.Equalf(t, 0, c, "File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
+			require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
 		})
 	}
 }
@@ -1528,7 +1528,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 			require.NoError(t, err)
 			c, _, err := nginxC.Exec(ctx, []string{"bash", tc.copiedFileName})
 			require.NoError(t, err)
-			require.Equalf(t, 0, c, "File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
+			require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
 		})
 	}
 }
@@ -1554,7 +1554,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), "/"+copiedFileName, 700)
 	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	require.NoError(t, err)
-	require.Equalf(t, 0, c, "File %s should exist, expected return code 0, got %v", copiedFileName, c)
+	require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", copiedFileName, c)
 
 	reader, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
 	require.NoError(t, err)
@@ -1584,7 +1584,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "empty.sh"), "/"+copiedFileName, 700)
 	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	require.NoError(t, err)
-	require.Equalf(t, 0, c, "File %s should exist, expected return code 0, got %v", copiedFileName, c)
+	require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", copiedFileName, c)
 
 	reader, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
 	require.NoError(t, err)

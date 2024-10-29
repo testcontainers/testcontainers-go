@@ -133,7 +133,7 @@ func assertContainerHasHostAccess(t *testing.T, c testcontainers.Container, port
 	t.Helper()
 	for _, port := range ports {
 		code, response := httpRequest(t, c, port)
-		require.Equalf(t, 0, code, "expected status code [%d] but got [%d]", 0, code)
+		require.Zerof(t, code, "expected status code [%d] but got [%d]", 0, code)
 
 		require.Equalf(t, expectedResponse, response, "expected [%s] but got [%s]", expectedResponse, response)
 	}

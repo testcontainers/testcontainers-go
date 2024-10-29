@@ -69,5 +69,5 @@ func TestSaveImages(t *testing.T) {
 	info, err := os.Stat(output)
 	require.NoError(t, err)
 
-	require.NotEqualf(t, 0, info.Size(), "output file is empty")
+	require.NotZerof(t, info.Size(), "output file is empty")
 }
