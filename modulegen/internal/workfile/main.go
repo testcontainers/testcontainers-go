@@ -27,12 +27,12 @@ func (g Generator) Generate(ctx context.Context) error {
 
 	rootGoWork, err := Read(rootGoWorkFilePath)
 	if err != nil {
-		return fmt.Errorf("read go.mod file: %w", err)
+		return fmt.Errorf("read go.work file: %w", err)
 	}
 
 	err = newWorkFile(rootGoWork, examples, modules)
 	if err != nil {
-		return fmt.Errorf("create go.mod file: %w", err)
+		return fmt.Errorf("create go.work file: %w", err)
 	}
 
 	return Write(rootGoWorkFilePath, rootGoWork)
