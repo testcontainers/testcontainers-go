@@ -161,6 +161,13 @@ func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (
 	}
 	defer dockerClient.Close()
 
+	provider, err := NewDockerProvider()
+	if err != nil {
+		return nil, fmt.Errorf("new provider: %w", err)
+	}
+
+	provider.SetClient(dockerClient)
+
 	opts := container.ListOptions{
 		All: true,
 		Filters: filters.NewArgs(
@@ -184,11 +191,10 @@ func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (
 			}
 
 			if len(resp) > 1 {
-				return nil, fmt.Errorf("multiple reaper containers found for session ID %s", sessionID)
+				return nil, fmt.Errorf("found %d reaper containers for session ID %q", len(resp), sessionID)
 			}
 
-			container := resp[0]
-			r, err := containerFromDockerResponse(ctx, container)
+			r, err := provider.ContainerFromType(ctx, resp[0])
 			if err != nil {
 				return nil, fmt.Errorf("from docker: %w", err)
 			}
@@ -402,7 +408,12 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 
 	// Attach reaper container to a requested network if it is specified
 	if p, ok := provider.(*DockerProvider); ok {
-		req.Networks = append(req.Networks, p.DefaultNetwork)
+		defaultNetwork, err := p.ensureDefaultNetwork(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("ensure default network: %w", err)
+		}
+
+		req.Networks = append(req.Networks, defaultNetwork)
 	}
 
 	c, err := provider.RunContainer(ctx, req)
@@ -560,4 +571,9 @@ func (r *Reaper) handshake(conn net.Conn) error {
 // Deprecated: internally replaced by core.DefaultLabels(sessionID)
 func (r *Reaper) Labels() map[string]string {
 	return GenericLabels()
+}
+
+// isReaperImage returns true if the image name is the reaper image.
+func isReaperImage(name string) bool {
+	return strings.HasSuffix(name, config.ReaperDefaultImage)
 }

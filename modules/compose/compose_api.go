@@ -229,6 +229,9 @@ type dockerCompose struct {
 
 	// sessionID is used to identify the reaper session
 	sessionID string
+
+	// provider is used to docker operations.
+	provider *testcontainers.DockerProvider
 }
 
 func (d *dockerCompose) ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
@@ -325,17 +328,12 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 		return err
 	}
 
-	provider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(d.logger))
-	if err != nil {
-		return fmt.Errorf("new docker provider: %w", err)
-	}
-
 	var termSignals []chan bool
 	var reaper *testcontainers.Reaper
-	if !provider.Config().Config.RyukDisabled {
+	if !d.provider.Config().Config.RyukDisabled {
 		// NewReaper is deprecated: we need to find a way to create the reaper for compose
 		// bypassing the deprecation.
-		reaper, err = testcontainers.NewReaper(ctx, testcontainers.SessionID(), provider, "")
+		reaper, err = testcontainers.NewReaper(ctx, testcontainers.SessionID(), d.provider, "")
 		if err != nil {
 			return fmt.Errorf("create reaper: %w", err)
 		}
@@ -492,25 +490,10 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 		return nil, fmt.Errorf("no container found for service name %s", svcName)
 	}
 
-	containerInstance := containers[0]
-	// TODO: Fix as this is only setting a subset of the fields
-	// and the container is not fully initialized, for example
-	// the isRunning flag is not set.
-	// See: https://github.com/testcontainers/testcontainers-go/issues/2667
-	ctr := &testcontainers.DockerContainer{
-		ID:    containerInstance.ID,
-		Image: containerInstance.Image,
-	}
-	ctr.SetLogger(d.logger)
-
-	dockerProvider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(d.logger))
+	ctr, err := d.provider.ContainerFromType(ctx, containers[0])
 	if err != nil {
-		return nil, fmt.Errorf("new docker provider: %w", err)
+		return nil, fmt.Errorf("container from type: %w", err)
 	}
-
-	dockerProvider.SetClient(d.dockerClient)
-
-	ctr.SetProvider(dockerProvider)
 
 	d.containersLock.Lock()
 	defer d.containersLock.Unlock()
