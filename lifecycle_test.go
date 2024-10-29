@@ -781,7 +781,7 @@ func TestCombineLifecycleHooks(t *testing.T) {
 
 	// There are 5 lifecycles (create, start, ready, stop, terminate),
 	// but ready has only half of the hooks (it only has post), so we have 90 hooks in total.
-	assert.Len(t, prints, 90)
+	require.Len(t, prints, 90)
 
 	// The order of the hooks is:
 	// - pre-X hooks: first default (2*2), then user-defined (3*2)

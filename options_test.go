@@ -54,7 +54,7 @@ func TestOverrideContainerRequest(t *testing.T) {
 
 	// toBeMergedRequest should not be changed
 	assert.Equal(t, "", toBeMergedRequest.Env["BAR"])
-	assert.Len(t, toBeMergedRequest.ExposedPorts, 1)
+	require.Len(t, toBeMergedRequest.ExposedPorts, 1)
 	assert.Equal(t, "67890/tcp", toBeMergedRequest.ExposedPorts[0])
 
 	// req should be merged with toBeMergedRequest

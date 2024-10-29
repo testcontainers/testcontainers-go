@@ -134,7 +134,7 @@ func TestLocalDockerComposeStrategyForInvalidService(t *testing.T) {
 		Invoke()
 	require.Error(t, err.Error, "Expected error to be thrown because service with wait strategy is not running")
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 }
 
@@ -157,7 +157,7 @@ func TestLocalDockerComposeWithWaitLogStrategy(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 2)
+	require.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "local-nginx")
 	assert.Contains(t, compose.Services, "local-mysql")
 }
@@ -183,7 +183,7 @@ func TestLocalDockerComposeWithWaitForService(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 }
 
@@ -207,7 +207,7 @@ func TestLocalDockerComposeWithWaitForShortLifespanService(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 2)
+	require.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "falafel")
 	assert.Contains(t, compose.Services, "tzatziki")
 }
@@ -233,7 +233,7 @@ func TestLocalDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 }
 
@@ -258,7 +258,7 @@ func TestLocalDockerComposeWithContainerName(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 }
 
@@ -280,7 +280,7 @@ func TestLocalDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 }
 
@@ -303,7 +303,7 @@ func TestLocalDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 2)
+	require.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "local-nginx")
 	assert.Contains(t, compose.Services, "local-mysql")
 }
@@ -331,7 +331,7 @@ func TestLocalDockerComposeWithFailedStrategy(t *testing.T) {
 	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
 	require.Error(t, err.Error, "Expected error to be thrown because of a wrong suplied wait strategy")
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 }
 
@@ -352,7 +352,7 @@ func TestLocalDockerComposeComplex(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 2)
+	require.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "local-nginx")
 	assert.Contains(t, compose.Services, "local-mysql")
 }
@@ -377,7 +377,7 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 
 	present := map[string]string{
@@ -413,7 +413,7 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 3)
+	require.Len(t, compose.Services, 3)
 	assert.Contains(t, compose.Services, "local-nginx")
 	assert.Contains(t, compose.Services, "local-mysql")
 	assert.Contains(t, compose.Services, "local-postgres")
