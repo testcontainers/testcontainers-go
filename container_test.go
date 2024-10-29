@@ -137,9 +137,7 @@ func Test_GetDockerfile(t *testing.T) {
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
 			n := testCase.ContainerRequest.GetDockerfile()
-			if n != testCase.ExpectedDockerfileName {
-				t.Fatalf("expected Dockerfile name: %s, received: %s", testCase.ExpectedDockerfileName, n)
-			}
+			require.Equalf(t, n, testCase.ExpectedDockerfileName, "expected Dockerfile name: %s, received: %s", testCase.ExpectedDockerfileName, n)
 		})
 	}
 }

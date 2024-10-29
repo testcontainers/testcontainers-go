@@ -278,9 +278,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 		t.Log("retrying get endpoint")
 	}
-	if err != nil {
-		t.Fatal("get endpoint:", err)
-	}
+	require.NoErrorf(t, err, "get endpoint")
 
 	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
 
@@ -333,9 +331,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	hitNginx()
 	time.Sleep(time.Second * 1)
 	msgs := consumer.Msgs()
-	if len(msgs)-existingLogs != 1 {
-		t.Fatalf("logConsumer should have 1 new log message, instead has: %v", msgs[existingLogs:])
-	}
+	require.Equalf(t, 1, len(msgs)-existingLogs, "logConsumer should have 1 new log message, instead has: %v", msgs[existingLogs:])
 	existingLogs = len(consumer.Msgs())
 
 	iptableArgs := []string{
@@ -357,12 +353,10 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	hitNginx()
 	time.Sleep(time.Second * 1)
 	msgs = consumer.Msgs()
-	if len(msgs)-existingLogs != 2 {
-		t.Fatalf(
-			"LogConsumer should have 2 new log messages after detecting closed connection and"+
-				" re-requesting logs. Instead has:\n%s", msgs[existingLogs:],
-		)
-	}
+	require.Equalf(t, 2, len(msgs)-existingLogs,
+		"LogConsumer should have 2 new log messages after detecting closed connection and"+
+			" re-requesting logs. Instead has:\n%s", msgs[existingLogs:],
+	)
 }
 
 func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
