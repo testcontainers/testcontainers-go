@@ -346,9 +346,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		require.NoError(t, err)
 
 		_, _, err = dockerClient.ImageInspectWithRaw(ctx, nginxAlpineImage)
-		if err != nil {
-			t.Fatal("nginx image should not have been removed")
-		}
+		require.NoErrorf(t, err, "nginx image should not have been removed")
 	})
 
 	t.Run("if built from Dockerfile", func(t *testing.T) {
@@ -380,9 +378,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		require.NoError(t, err)
 
 		_, _, err = dockerClient.ImageInspectWithRaw(ctx, imageID)
-		if err == nil {
-			t.Fatal("custom built image should have been removed", err)
-		}
+		require.Errorf(t, err, "custom built image should have been removed")
 	})
 }
 
@@ -785,9 +781,7 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 		Started:          true,
 	})
 	CleanupContainer(t, c)
-	if err == nil {
-		t.Fatal("Expected timeout")
-	}
+	require.Errorf(t, err, "Expected timeout")
 }
 
 func TestContainerCreationWaitingForHostPort(t *testing.T) {
@@ -1139,9 +1133,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 	// exec_reader_example {
 	c, reader, err := ctr.Exec(ctx, []string{"ls", path})
 	require.NoError(t, err)
-	if c != 1 {
-		t.Fatalf("File %s should not have existed, expected return code 1, got %v", path, c)
-	}
+	require.Equalf(t, 1, c, "File %s should not have existed, expected return code 1, got %v", path, c)
 
 	buf := new(strings.Builder)
 	_, err = io.Copy(buf, reader)
@@ -1154,16 +1146,12 @@ func TestContainerWithTmpFs(t *testing.T) {
 	// exec_example {
 	c, _, err = ctr.Exec(ctx, []string{"touch", path})
 	require.NoError(t, err)
-	if c != 0 {
-		t.Fatalf("File %s should have been created successfully, expected return code 0, got %v", path, c)
-	}
+	require.Zerof(t, c, "File %s should have been created successfully, expected return code 0, got %v", path, c)
 	// }
 
 	c, _, err = ctr.Exec(ctx, []string{"ls", path})
 	require.NoError(t, err)
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", path, c)
-	}
+	require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", path, c)
 }
 
 func TestContainerNonExistentImage(t *testing.T) {
@@ -1177,9 +1165,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 		CleanupContainer(t, ctr)
 
 		var nf errdefs.ErrNotFound
-		if !errors.As(err, &nf) {
-			t.Fatalf("the error should have been an errdefs.ErrNotFound: %v", err)
-		}
+		require.ErrorAsf(t, err, &nf, "the error should have been an errdefs.ErrNotFound: %v", err)
 	})
 
 	t.Run("the context cancellation is propagated to container creation", func(t *testing.T) {
@@ -1194,9 +1180,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 			Started: true,
 		})
 		CleanupContainer(t, c)
-		if !errors.Is(err, ctx.Err()) {
-			t.Fatalf("err should be a ctx cancelled error %v", err)
-		}
+		require.ErrorIsf(t, err, ctx.Err(), "err should be a ctx cancelled error %v", err)
 	})
 }
 
@@ -1267,9 +1251,8 @@ func TestContainerWithCustomHostname(t *testing.T) {
 	CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	if actualHostname := readHostname(t, ctr.GetContainerID()); actualHostname != hostname {
-		t.Fatalf("expected hostname %s, got %s", hostname, actualHostname)
-	}
+	actualHostname := readHostname(t, ctr.GetContainerID())
+	require.Equalf(t, actualHostname, hostname, "expected hostname %s, got %s", hostname, actualHostname)
 }
 
 func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
@@ -1293,15 +1276,11 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 func readHostname(tb testing.TB, containerId string) string {
 	tb.Helper()
 	containerClient, err := NewDockerClientWithOpts(context.Background())
-	if err != nil {
-		tb.Fatalf("Failed to create Docker client: %v", err)
-	}
+	require.NoErrorf(tb, err, "Failed to create Docker client")
 	defer containerClient.Close()
 
 	containerDetails, err := containerClient.ContainerInspect(context.Background(), containerId)
-	if err != nil {
-		tb.Fatalf("Failed to inspect container: %v", err)
-	}
+	require.NoErrorf(tb, err, "Failed to inspect container")
 
 	return containerDetails.Config.Hostname
 }
@@ -1340,9 +1319,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 			_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), tc.copiedFileName, 700)
 			c, _, err := nginxC.Exec(ctx, []string{"bash", tc.copiedFileName})
 			require.NoError(t, err)
-			if c != 0 {
-				t.Fatalf("File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
-			}
+			require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
 		})
 	}
 }
@@ -1551,9 +1528,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 			require.NoError(t, err)
 			c, _, err := nginxC.Exec(ctx, []string{"bash", tc.copiedFileName})
 			require.NoError(t, err)
-			if c != 0 {
-				t.Fatalf("File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
-			}
+			require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
 		})
 	}
 }
@@ -1579,9 +1554,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), "/"+copiedFileName, 700)
 	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	require.NoError(t, err)
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
-	}
+	require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", copiedFileName, c)
 
 	reader, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
 	require.NoError(t, err)
@@ -1611,9 +1584,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "empty.sh"), "/"+copiedFileName, 700)
 	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	require.NoError(t, err)
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
-	}
+	require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", copiedFileName, c)
 
 	reader, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
 	require.NoError(t, err)

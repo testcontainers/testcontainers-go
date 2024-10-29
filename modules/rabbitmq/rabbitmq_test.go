@@ -46,9 +46,7 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 		IsCA:      true,
 		ParentDir: tmpDir,
 	})
-	if caCert == nil {
-		t.Fatal("failed to generate CA certificate")
-	}
+	require.NotNilf(t, caCert, "failed to generate CA certificate")
 
 	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
 		Name:      "client",
@@ -57,9 +55,7 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 		Parent:    caCert,
 		ParentDir: tmpDir,
 	})
-	if cert == nil {
-		t.Fatal("failed to generate certificate")
-	}
+	require.NotNilf(t, cert, "failed to generate certificate")
 
 	sslSettings := rabbitmq.SSLSettings{
 		CACertFile:        caCert.CertPath,
@@ -216,27 +212,13 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 	testcontainers.CleanupContainer(t, rabbitmqContainer)
 	require.NoError(t, err)
 
-	if !assertEntity(t, rabbitmqContainer, "queues", "queue1", "queue2", "queue3", "queue4") {
-		t.Fatal(err)
-	}
-	if !assertEntity(t, rabbitmqContainer, "exchanges", "direct-exchange", "topic-exchange", "topic-exchange-2", "topic-exchange-3", "topic-exchange-4") {
-		t.Fatal(err)
-	}
-	if !assertEntity(t, rabbitmqContainer, "users", "user1", "user2") {
-		t.Fatal(err)
-	}
-	if !assertEntity(t, rabbitmqContainer, "policies", "max length policy", "alternate exchange policy") {
-		t.Fatal(err)
-	}
-	if !assertEntityWithVHost(t, rabbitmqContainer, "policies", 2, "max length policy", "alternate exchange policy") {
-		t.Fatal(err)
-	}
-	if !assertEntity(t, rabbitmqContainer, "operator_policies", "operator policy 1") {
-		t.Fatal(err)
-	}
-	if !assertPluginIsEnabled(t, rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange") {
-		t.Fatal(err)
-	}
+	require.True(t, assertEntity(t, rabbitmqContainer, "queues", "queue1", "queue2", "queue3", "queue4"))
+	require.True(t, assertEntity(t, rabbitmqContainer, "exchanges", "direct-exchange", "topic-exchange", "topic-exchange-2", "topic-exchange-3", "topic-exchange-4"))
+	require.True(t, assertEntity(t, rabbitmqContainer, "users", "user1", "user2"))
+	require.True(t, assertEntity(t, rabbitmqContainer, "policies", "max length policy", "alternate exchange policy"))
+	require.True(t, assertEntityWithVHost(t, rabbitmqContainer, "policies", 2, "max length policy", "alternate exchange policy"))
+	require.True(t, assertEntity(t, rabbitmqContainer, "operator_policies", "operator policy 1"))
+	require.True(t, assertPluginIsEnabled(t, rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange"))
 }
 
 func assertEntity(t *testing.T, container testcontainers.Container, listCommand string, entities ...string) bool {
