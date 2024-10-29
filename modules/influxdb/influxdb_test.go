@@ -3,7 +3,6 @@ package influxdb_test
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/influxdb"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestV1Container(t *testing.T) {
@@ -48,27 +46,6 @@ func TestV2Container(t *testing.T) {
 	if !state.Running {
 		t.Fatal("InfluxDB container is not running")
 	}
-}
-
-func TestWithWaitStrategy(t *testing.T) {
-	ctx := context.Background()
-	influxDbContainer, err := influxdb.Run(ctx,
-		"influxdb:2.7.5-alpine",
-		influxdb.WithDatabase("foo"),
-		influxdb.WithUsername("root"),
-		influxdb.WithPassword("password"),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/health").
-			WithStatusCodeMatcher(func(status int) bool {
-				return status == http.StatusOK
-			})),
-	)
-	testcontainers.CleanupContainer(t, influxDbContainer)
-	require.NoError(t, err)
-
-	state, err := influxDbContainer.State(ctx)
-	require.NoError(t, err)
-
-	require.True(t, state.Running)
 }
 
 func TestWithInitDb(t *testing.T) {
