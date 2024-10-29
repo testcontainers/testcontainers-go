@@ -84,7 +84,7 @@ func defaultWaitStrategy(genericContainerReq testcontainers.GenericContainerRequ
 	if lastIndex := strings.LastIndex(genericContainerReq.Image, ":"); lastIndex != -1 {
 		tag := genericContainerReq.Image[lastIndex+1:]
 		if tag == "latest" || tag[0] == '2' {
-			return wait.ForLog(`Listening log_id=[0-9a-zA-Z_~]+ service=tcp-listener transport=http`).AsRegexp()
+			return wait.ForHTTP("/health")
 		}
 	} else {
 		return wait.ForLog("Listening for signals")
