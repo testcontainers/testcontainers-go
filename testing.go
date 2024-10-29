@@ -36,14 +36,10 @@ func SkipIfProviderIsNotHealthy(t *testing.T) {
 func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
 	t.Helper()
 	cli, err := NewDockerClientWithOpts(ctx)
-	if err != nil {
-		t.Fatalf("failed to create docker client: %s", err)
-	}
+	require.NoErrorf(t, err, "failed to create docker client: %s", err)
 
 	info, err := cli.Info(ctx)
-	if err != nil {
-		t.Fatalf("failed to get docker info: %s", err)
-	}
+	require.NoErrorf(t, err, "failed to get docker info: %s", err)
 
 	if info.OperatingSystem == "Docker Desktop" {
 		t.Skip("Skipping test that requires host network access when running in Docker Desktop")

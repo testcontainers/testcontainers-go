@@ -144,9 +144,7 @@ func TestExecStrategyWaitUntilReady_DeadlineExceeded(t *testing.T) {
 	}
 	wg := wait.NewExecStrategy([]string{"true"})
 	err := wg.WaitUntilReady(ctx, target)
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatal(err)
-	}
+	require.ErrorIs(t, err, context.DeadlineExceeded)
 }
 
 func TestExecStrategyWaitUntilReady_CustomExitCode(t *testing.T) {
@@ -174,9 +172,7 @@ func TestExecStrategyWaitUntilReady_withExitCode(t *testing.T) {
 	wg = wait.NewExecStrategy([]string{"true"}).WithExitCode(0)
 	wg.WithStartupTimeout(time.Second * 2)
 	err = wg.WaitUntilReady(context.Background(), target)
-	if err == nil {
-		t.Fatalf("Expected strategy to timeout out")
-	}
+	require.Errorf(t, err, "Expected strategy to timeout out")
 }
 
 func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {

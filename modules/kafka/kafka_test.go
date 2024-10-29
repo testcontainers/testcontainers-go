@@ -24,9 +24,7 @@ func TestKafka(t *testing.T) {
 
 	assertAdvertisedListeners(t, kafkaContainer)
 
-	if !strings.EqualFold(kafkaContainer.ClusterID, "kraftCluster") {
-		t.Fatalf("expected clusterID to be %s, got %s", "kraftCluster", kafkaContainer.ClusterID)
-	}
+	require.Truef(t, strings.EqualFold(kafkaContainer.ClusterID, "kraftCluster"), "expected clusterID to be %s, got %s", "kraftCluster", kafkaContainer.ClusterID)
 
 	// getBrokers {
 	brokers, err := kafkaContainer.Brokers(ctx)
@@ -65,12 +63,8 @@ func TestKafka(t *testing.T) {
 
 	<-done
 
-	if !strings.EqualFold(string(consumer.message.Key), "key") {
-		t.Fatalf("expected key to be %s, got %s", "key", string(consumer.message.Key))
-	}
-	if !strings.EqualFold(string(consumer.message.Value), "value") {
-		t.Fatalf("expected value to be %s, got %s", "value", string(consumer.message.Value))
-	}
+	require.Truef(t, strings.EqualFold(string(consumer.message.Key), "key"), "expected key to be %s, got %s", "key", string(consumer.message.Key))
+	require.Truef(t, strings.EqualFold(string(consumer.message.Value), "value"), "expected value to be %s, got %s", "value", string(consumer.message.Value))
 }
 
 func TestKafka_invalidVersion(t *testing.T) {
@@ -98,7 +92,5 @@ func assertAdvertisedListeners(t *testing.T, container testcontainers.Container)
 	bs, err := io.ReadAll(r)
 	require.NoError(t, err)
 
-	if !strings.Contains(string(bs), "BROKER://"+hostname+":9092") {
-		t.Fatalf("expected advertised listeners to contain %s, got %s", "BROKER://"+hostname+":9092", string(bs))
-	}
+	require.Containsf(t, string(bs), "BROKER://"+hostname+":9092", "expected advertised listeners to contain %s, got %s", "BROKER://"+hostname+":9092", string(bs))
 }

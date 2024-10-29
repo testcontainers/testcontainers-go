@@ -18,9 +18,7 @@ func Test_waitForSql_WithQuery(t *testing.T) {
 			return "fake-url"
 		})
 
-		if got := w.query; got != defaultForSqlQuery {
-			t.Fatalf("expected %s, got %s", defaultForSqlQuery, got)
-		}
+		require.Equal(t, defaultForSqlQuery, w.query)
 	})
 	t.Run("custom query", func(t *testing.T) {
 		const q = "SELECT 100;"
@@ -29,9 +27,7 @@ func Test_waitForSql_WithQuery(t *testing.T) {
 			return "fake-url"
 		}).WithQuery(q)
 
-		if got := w.query; got != q {
-			t.Fatalf("expected %s, got %s", q, got)
-		}
+		require.Equal(t, q, w.query)
 	})
 }
 
@@ -133,14 +129,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.EqualError(t, err, "container crashed with out-of-memory (OOMKilled)")
 	}
 }
 
@@ -171,14 +160,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.EqualError(t, err, "container exited with code 1")
 	}
 }
 
@@ -208,14 +190,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToUnexpectedContainerStatus(t *testin
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.EqualError(t, err, "unexpected container status \"dead\"")
 	}
 }
 
@@ -240,14 +215,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToOOMKilledContainer(t *testing.T)
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.EqualError(t, err, "container crashed with out-of-memory (OOMKilled)")
 	}
 }
 
@@ -273,14 +241,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToExitedContainer(t *testing.T) {
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.EqualError(t, err, "container exited with code 1")
 	}
 }
 
@@ -305,13 +266,6 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToUnexpectedContainerStatus(t *tes
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.EqualError(t, err, "unexpected container status \"dead\"")
 	}
 }
