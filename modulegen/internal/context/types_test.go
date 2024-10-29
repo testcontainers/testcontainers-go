@@ -17,7 +17,7 @@ func TestModule(t *testing.T) {
 		expectedTitle      string
 	}{
 		{
-			name: "Module with title",
+			name: "module/title",
 			module: context.TestcontainersModule{
 				Name:      "mongoDB",
 				IsModule:  true,
@@ -28,7 +28,7 @@ func TestModule(t *testing.T) {
 			expectedTitle:      "MongoDB",
 		},
 		{
-			name: "Module without title",
+			name: "module/no-title",
 			module: context.TestcontainersModule{
 				Name:     "mongoDB",
 				IsModule: true,
@@ -38,7 +38,7 @@ func TestModule(t *testing.T) {
 			expectedTitle:      "Mongodb",
 		},
 		{
-			name: "Example with title",
+			name: "example/title",
 			module: context.TestcontainersModule{
 				Name:      "mongoDB",
 				IsModule:  false,
@@ -49,7 +49,7 @@ func TestModule(t *testing.T) {
 			expectedTitle:      "MongoDB",
 		},
 		{
-			name: "Example without title",
+			name: "example/no-title",
 			module: context.TestcontainersModule{
 				Name:     "mongoDB",
 				IsModule: false,
@@ -82,28 +82,28 @@ func TestModule_Validate(outer *testing.T) {
 		expectedErr error
 	}{
 		{
-			name: "only alphabetical characters in name/title",
+			name: "name-title/alphanumerical",
 			module: context.TestcontainersModule{
 				Name:      "AmazingDB",
 				TitleName: "AmazingDB",
 			},
 		},
 		{
-			name: "alphanumerical characters in name",
+			name: "name/alphanumerical",
 			module: context.TestcontainersModule{
 				Name:      "AmazingDB4tw",
 				TitleName: "AmazingDB",
 			},
 		},
 		{
-			name: "alphanumerical characters in title",
+			name: "title/alphanumerical",
 			module: context.TestcontainersModule{
 				Name:      "AmazingDB",
 				TitleName: "AmazingDB4tw",
 			},
 		},
 		{
-			name: "non-alphanumerical characters in name",
+			name: "name/non-alphanumerical",
 			module: context.TestcontainersModule{
 				Name:      "Amazing DB 4 The Win",
 				TitleName: "AmazingDB",
@@ -111,7 +111,7 @@ func TestModule_Validate(outer *testing.T) {
 			expectedErr: errors.New("invalid name: Amazing DB 4 The Win. Only alphanumerical characters are allowed (leading character must be a letter)"),
 		},
 		{
-			name: "non-alphanumerical characters in title",
+			name: "title/non-alphanumerical",
 			module: context.TestcontainersModule{
 				Name:      "AmazingDB",
 				TitleName: "Amazing DB 4 The Win",
@@ -119,7 +119,7 @@ func TestModule_Validate(outer *testing.T) {
 			expectedErr: errors.New("invalid title: Amazing DB 4 The Win. Only alphanumerical characters are allowed (leading character must be a letter)"),
 		},
 		{
-			name: "leading numerical character in name",
+			name: "name/leading-number",
 			module: context.TestcontainersModule{
 				Name:      "1AmazingDB",
 				TitleName: "AmazingDB",
@@ -127,7 +127,7 @@ func TestModule_Validate(outer *testing.T) {
 			expectedErr: errors.New("invalid name: 1AmazingDB. Only alphanumerical characters are allowed (leading character must be a letter)"),
 		},
 		{
-			name: "leading numerical character in title",
+			name: "title/leading-number",
 			module: context.TestcontainersModule{
 				Name:      "AmazingDB",
 				TitleName: "1AmazingDB",
