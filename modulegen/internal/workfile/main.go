@@ -10,9 +10,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/module"
 )
 
+// Generator is responsible for updating the go.work file.
+// It reads all the modules and examples submodules, and updates the go.work file with them.
 type Generator struct{}
 
-// Generate updates github ci workflow
+// Generate updates the go.work file with the examples and modules as project's submodules
 func (g Generator) Generate(ctx context.Context) error {
 	examples, modules, err := module.ListExamplesAndModules(ctx)
 	if err != nil {
