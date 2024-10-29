@@ -34,7 +34,7 @@ func runCommand(cmdDir string, bin string, args ...string) error {
 	cmd := exec.Command(bin, args...)
 	cmd.Dir = cmdDir
 
-	var outbuf, errbuf strings.Builder // or bytes.Buffer
+	var outbuf, errbuf strings.Builder
 	cmd.Stdout = &outbuf
 	cmd.Stderr = &errbuf
 
