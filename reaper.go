@@ -277,7 +277,7 @@ func (r *reaperSpawner) reaper(ctx context.Context, sessionID string, provider R
 // If connect is true, the reaper will be connected to the reaper container.
 // It must be called with the lock held.
 func (r *reaperSpawner) retryLocked(ctx context.Context, sessionID string, provider ReaperProvider) func() (*Reaper, error) {
-	return func() (reaper *Reaper, err error) { //nolint:nonamedreturns // Needed for deferred error check.
+	return func() (reaper *Reaper, err error) {
 		reaper, err = r.reuseOrCreate(ctx, sessionID, provider)
 		// Ensure that the reaper is terminated if an error occurred.
 		defer func() {
@@ -372,7 +372,7 @@ func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, pro
 
 // newReaper creates a connected Reaper with a sessionID to identify containers
 // and a provider to use.
-func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (reaper *Reaper, err error) { //nolint:nonamedreturns // Needed for deferred error check.
+func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (reaper *Reaper, err error) {
 	dockerHostMount := core.MustExtractDockerSocket(ctx)
 
 	port := r.port()
