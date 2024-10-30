@@ -55,7 +55,7 @@ func ExampleRun() {
 func ExampleRun_withRecommendedSettings() {
 	ctx := context.Background()
 
-	cockroachdbContainer, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", cockroachdb.WithStatements(cockroachdb.ClusterDefaults...))
+	cockroachdbContainer, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", cockroachdb.WithStatements(cockroachdb.DefaultStatements...))
 	defer func() {
 		if err := testcontainers.TerminateContainer(cockroachdbContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)

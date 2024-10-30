@@ -241,7 +241,7 @@ func addTLS(ctx context.Context, container testcontainers.Container, opts option
 }
 
 // runStatements runs the configured statements against the CockroachDB container.
-func runStatements(ctx context.Context, container testcontainers.Container, opts options) (err error) { //nolint:nonamedreturns // Needed for error checking.
+func runStatements(ctx context.Context, container testcontainers.Container, opts options) (err error) {
 	if len(opts.Statements) == 0 {
 		return nil
 	}
