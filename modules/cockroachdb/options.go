@@ -17,7 +17,7 @@ func defaultOptions() options {
 		Password:   defaultPassword,
 		Database:   defaultDatabase,
 		StoreSize:  defaultStoreSize,
-		Statements: ClusterDefaults,
+		Statements: DefaultStatements,
 	}
 }
 
@@ -70,9 +70,9 @@ func WithTLS(cfg *TLSConfig) Option {
 	}
 }
 
-// ClusterDefaults are the settings recommended by Cockroach Labs for testing clusters.
+// DefaultStatements are the settings recommended by Cockroach Labs for testing clusters.
 // See https://www.cockroachlabs.com/docs/stable/local-testing for more information.
-var ClusterDefaults = []string{
+var DefaultStatements = []string{
 	"SET CLUSTER SETTING kv.range_merge.queue_interval = '50ms'",
 	"SET CLUSTER SETTING jobs.registry.interval.gc = '30s'",
 	"SET CLUSTER SETTING jobs.registry.interval.cancel = '180s'",
@@ -84,7 +84,7 @@ var ClusterDefaults = []string{
 }
 
 // WithStatements sets the statements to run on the CockroachDB cluster once the container is ready.
-// This, in combination with ClusterDefaults, can be used to configure the cluster with the settings
+// This, in combination with DefaultStatements, can be used to configure the cluster with the settings
 // recommended by Cockroach Labs.
 func WithStatements(statements ...string) Option {
 	return func(o *options) {
