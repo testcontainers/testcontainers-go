@@ -71,7 +71,7 @@ func WithTLS(cfg *TLSConfig) Option {
 
 // ClusterDefaults are the settings recommended by Cockroach Labs for testing clusters.
 // See https://www.cockroachlabs.com/docs/stable/local-testing for more information.
-var ClusterDefaults []string = []string{
+var ClusterDefaults = []string{
 	"SET CLUSTER SETTING kv.range_merge.queue_interval = '50ms'",
 	"SET CLUSTER SETTING jobs.registry.interval.gc = '30s'",
 	"SET CLUSTER SETTING jobs.registry.interval.cancel = '180s'",
