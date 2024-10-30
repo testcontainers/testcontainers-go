@@ -94,7 +94,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 					},
 					PostReadies: []testcontainers.ContainerHook{
 						func(ctx context.Context, container testcontainers.Container) error {
-							return setRecommendedSettings(ctx, container, o)
+							return runStatements(ctx, container, o)
 						},
 					},
 				},
@@ -240,9 +240,12 @@ func addTLS(ctx context.Context, container testcontainers.Container, opts option
 	return nil
 }
 
-// setRecommendedSettings applies the cluster settings recommended by cockroachlabs for testing clusters.
-// See https://www.cockroachlabs.com/docs/stable/local-testing for more information.
-func setRecommendedSettings(ctx context.Context, container testcontainers.Container, opts options) error {
+// runStatements runs the configured statements against the CockroachDB container.
+func runStatements(ctx context.Context, container testcontainers.Container, opts options) error {
+	if len(opts.Statements) == 0 {
+		return nil
+	}
+
 	port, err := container.MappedPort(ctx, defaultSQLPort)
 	if err != nil {
 		return fmt.Errorf("mapped port: %w", err)
@@ -259,18 +262,7 @@ func setRecommendedSettings(ctx context.Context, container testcontainers.Contai
 	}
 	defer db.Close()
 
-	stmts := []string{
-		"SET CLUSTER SETTING kv.range_merge.queue_interval = '50ms'",
-		"SET CLUSTER SETTING jobs.registry.interval.gc = '30s'",
-		"SET CLUSTER SETTING jobs.registry.interval.cancel = '180s'",
-		"SET CLUSTER SETTING jobs.retention_time = '15s'",
-		"SET CLUSTER SETTING sql.stats.automatic_collection.enabled = false",
-		"SET CLUSTER SETTING kv.range_split.by_load_merge_delay = '5s'",
-		`ALTER RANGE default CONFIGURE ZONE USING "gc.ttlseconds" = 600`,
-		`ALTER DATABASE system CONFIGURE ZONE USING "gc.ttlseconds" = 600`,
-	}
-
-	for _, stmt := range stmts {
+	for _, stmt := range opts.Statements {
 		_, err = db.Exec(stmt)
 		if err != nil {
 			return fmt.Errorf("db.Exec: %w", err)
