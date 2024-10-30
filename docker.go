@@ -1022,7 +1022,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 }
 
 // CreateContainer fulfils a request for a container without starting it
-func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerRequest) (con Container, err error) { //nolint:nonamedreturns // Needed for error checking.
+func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerRequest) (con Container, err error) {
 	// defer the close of the Docker client connection the soonest
 	defer p.Close()
 
@@ -1277,7 +1277,7 @@ func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string)
 	)
 }
 
-func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req ContainerRequest) (con Container, err error) { //nolint:nonamedreturns // Needed for error check.
+func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req ContainerRequest) (con Container, err error) {
 	c, err := p.findContainerByName(ctx, req.Name)
 	if err != nil {
 		return nil, err
@@ -1486,7 +1486,7 @@ func (p *DockerProvider) daemonHostLocked(ctx context.Context) (string, error) {
 
 // Deprecated: use network.New instead
 // CreateNetwork returns the object representing a new network identified by its name
-func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) (net Network, err error) { //nolint:nonamedreturns // Needed for error check.
+func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) (net Network, err error) {
 	// defer the close of the Docker client connection the soonest
 	defer p.Close()
 
