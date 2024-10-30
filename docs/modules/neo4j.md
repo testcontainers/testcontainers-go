@@ -58,12 +58,6 @@ When starting the Neo4j container, you can pass options in a variadic way to con
 If you need to set a different Neo4j Docker image, you can set a valid Docker image as the second argument in the `Run` function.
 E.g. `Run(context.Background(), "neo4j:4.4")`.
 
-By default, the container will use the following Docker image:
-
-<!--codeinclude-->
-[Default Docker image](../../modules/neo4j/neo4j.go) inside_block:defaultImage
-<!--/codeinclude-->
-
 {% include "../features/common_functional_options.md" %}
 
 #### Logger
