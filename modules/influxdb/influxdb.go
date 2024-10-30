@@ -2,6 +2,7 @@ package influxdb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"path"
@@ -69,26 +70,29 @@ func defaultWaitStrategy(genericContainerReq testcontainers.GenericContainerRequ
 		if f.ContainerFilePath == "/" && strings.HasSuffix(f.HostFilePath, "docker-entrypoint-initdb.d") {
 			// Init service in container will start influxdb, run scripts in docker-entrypoint-initdb.d and then
 			// terminate the influxdb server, followed by restart of influxdb.  This is tricky to wait for, and
-			// in this case, we are assuming that data was added by init script, so we then look for an
-			// "Open shard" which is the last thing that happens before the server is ready to accept connections.
+			// in this case, we are assuming that data was added by init script
 			// This is probably different for InfluxDB 2.x, but that is left as an exercise for the reader.
 			strategies := []wait.Strategy{
-				wait.ForListeningPort("8086/tcp"),
-				wait.ForLog("influxdb init process in progress..."),
 				wait.ForLog("Server shutdown completed"),
-				wait.ForLog("Opened shard"),
+				waitForHttpHealth(),
 			}
 			return wait.ForAll(strategies...)
 		}
 	}
+	return waitForHttpHealth()
+}
 
+func waitForHttpHealth() *wait.HTTPStrategy {
 	return wait.ForHTTP("/health").
 		WithResponseMatcher(func(body io.Reader) bool {
-			bs, err := io.ReadAll(body)
-			if err != nil {
+			decoder := json.NewDecoder(body)
+			r := struct {
+				Status string `json:"status"`
+			}{}
+			if err := decoder.Decode(&r); err != nil {
 				return false
 			}
-			return strings.Contains(string(bs), "ready for queries and writes")
+			return r.Status == "pass"
 		})
 }
 
