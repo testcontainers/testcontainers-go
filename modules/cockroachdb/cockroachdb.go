@@ -241,7 +241,7 @@ func addTLS(ctx context.Context, container testcontainers.Container, opts option
 }
 
 // runStatements runs the configured statements against the CockroachDB container.
-func runStatements(ctx context.Context, container testcontainers.Container, opts options) error {
+func runStatements(ctx context.Context, container testcontainers.Container, opts options) (err error) {
 	if len(opts.Statements) == 0 {
 		return nil
 	}
@@ -260,7 +260,12 @@ func runStatements(ctx context.Context, container testcontainers.Container, opts
 	if err != nil {
 		return fmt.Errorf("sql.Open: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		cerr := db.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
 
 	for _, stmt := range opts.Statements {
 		if _, err = db.Exec(stmt); err != nil {
