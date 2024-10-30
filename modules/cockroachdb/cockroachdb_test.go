@@ -28,6 +28,9 @@ func TestCockroach_NotRoot(t *testing.T) {
 		url: "postgres://test@localhost:xxxxx/defaultdb?sslmode=disable",
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithUser("test"),
+			// Do not run the default statements as the user used on this test is
+			// lacking the needed MODIFYCLUSTERSETTING privilege to run them.
+			cockroachdb.WithStatements(),
 		},
 	})
 }
@@ -38,6 +41,9 @@ func TestCockroach_Password(t *testing.T) {
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithUser("foo"),
 			cockroachdb.WithPassword("bar"),
+			// Do not run the default statements as the user used on this test is
+			// lacking the needed MODIFYCLUSTERSETTING privilege to run them.
+			cockroachdb.WithStatements(),
 		},
 	})
 }
@@ -50,6 +56,9 @@ func TestCockroach_TLS(t *testing.T) {
 		url: "postgres://root@localhost:xxxxx/defaultdb?sslmode=verify-full",
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithTLS(tlsCfg),
+			// Do not run the default statements as the user used on this test is
+			// lacking the needed MODIFYCLUSTERSETTING privilege to run them.
+			cockroachdb.WithStatements(),
 		},
 	})
 }
