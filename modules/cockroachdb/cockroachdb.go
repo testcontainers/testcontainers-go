@@ -262,8 +262,7 @@ func runStatements(ctx context.Context, container testcontainers.Container, opts
 	defer db.Close()
 
 	for _, stmt := range opts.Statements {
-		_, err = db.Exec(stmt)
-		if err != nil {
+		if _, err = db.Exec(stmt); err != nil {
 			return fmt.Errorf("db.Exec: %w", err)
 		}
 	}
