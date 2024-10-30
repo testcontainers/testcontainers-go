@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 	"testing"
@@ -212,38 +211,29 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 	testcontainers.CleanupContainer(t, rabbitmqContainer)
 	require.NoError(t, err)
 
-	require.True(t, assertEntity(t, rabbitmqContainer, "queues", "queue1", "queue2", "queue3", "queue4"))
-	require.True(t, assertEntity(t, rabbitmqContainer, "exchanges", "direct-exchange", "topic-exchange", "topic-exchange-2", "topic-exchange-3", "topic-exchange-4"))
-	require.True(t, assertEntity(t, rabbitmqContainer, "users", "user1", "user2"))
-	require.True(t, assertEntity(t, rabbitmqContainer, "policies", "max length policy", "alternate exchange policy"))
-	require.True(t, assertEntityWithVHost(t, rabbitmqContainer, "policies", 2, "max length policy", "alternate exchange policy"))
-	require.True(t, assertEntity(t, rabbitmqContainer, "operator_policies", "operator policy 1"))
-	require.True(t, assertPluginIsEnabled(t, rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange"))
+	requireEntity(t, rabbitmqContainer, "queues", "queue1", "queue2", "queue3", "queue4")
+	requireEntity(t, rabbitmqContainer, "exchanges", "direct-exchange", "topic-exchange", "topic-exchange-2", "topic-exchange-3", "topic-exchange-4")
+	requireEntity(t, rabbitmqContainer, "users", "user1", "user2")
+	requireEntity(t, rabbitmqContainer, "policies", "max length policy", "alternate exchange policy")
+	requireEntityWithVHost(t, rabbitmqContainer, "policies", 2, "max length policy", "alternate exchange policy")
+	requireEntity(t, rabbitmqContainer, "operator_policies", "operator policy 1")
+	requirePluginIsEnabled(t, rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange")
 }
 
-func assertEntity(t *testing.T, container testcontainers.Container, listCommand string, entities ...string) bool {
+func requireEntity(t *testing.T, container testcontainers.Container, listCommand string, entities ...string) {
 	t.Helper()
 
 	ctx := context.Background()
 
 	cmd := []string{"rabbitmqadmin", "list", listCommand}
 
-	_, out, err := container.Exec(ctx, cmd)
-	require.NoError(t, err)
-
-	check, err := io.ReadAll(out)
-	require.NoError(t, err)
-
+	check := testcontainers.RequireContainerExec(ctx, t, container, cmd)
 	for _, e := range entities {
-		if !strings.Contains(string(check), e) {
-			return false
-		}
+		require.Contains(t, check, e)
 	}
-
-	return true
 }
 
-func assertEntityWithVHost(t *testing.T, container testcontainers.Container, listCommand string, vhostID int, entities ...string) bool {
+func requireEntityWithVHost(t *testing.T, container testcontainers.Container, listCommand string, vhostID int, entities ...string) {
 	t.Helper()
 
 	ctx := context.Background()
@@ -253,38 +243,22 @@ func assertEntityWithVHost(t *testing.T, container testcontainers.Container, lis
 		cmd = append(cmd, fmt.Sprintf("--vhost=vhost%d", vhostID))
 	}
 
-	_, out, err := container.Exec(ctx, cmd)
-	require.NoError(t, err)
-
-	check, err := io.ReadAll(out)
-	require.NoError(t, err)
-
+	check := testcontainers.RequireContainerExec(ctx, t, container, cmd)
 	for _, e := range entities {
-		if !strings.Contains(string(check), e) {
-			return false
-		}
+		require.Contains(t, check, e)
 	}
-
-	return true
 }
 
-func assertPluginIsEnabled(t *testing.T, container testcontainers.Container, plugins ...string) bool {
+func requirePluginIsEnabled(t *testing.T, container testcontainers.Container, plugins ...string) {
 	t.Helper()
 
 	ctx := context.Background()
 
 	for _, plugin := range plugins {
 
-		_, out, err := container.Exec(ctx, []string{"rabbitmq-plugins", "is_enabled", plugin})
-		require.NoError(t, err)
+		cmd := []string{"rabbitmq-plugins", "is_enabled", plugin}
 
-		check, err := io.ReadAll(out)
-		require.NoError(t, err)
-
-		if !strings.Contains(string(check), plugin+" is enabled") {
-			return false
-		}
+		check := testcontainers.RequireContainerExec(ctx, t, container, cmd)
+		require.Contains(t, check, plugin+" is enabled")
 	}
-
-	return true
 }
