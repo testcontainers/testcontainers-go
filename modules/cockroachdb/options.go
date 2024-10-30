@@ -13,10 +13,11 @@ type options struct {
 
 func defaultOptions() options {
 	return options{
-		User:      defaultUser,
-		Password:  defaultPassword,
-		Database:  defaultDatabase,
-		StoreSize: defaultStoreSize,
+		User:       defaultUser,
+		Password:   defaultPassword,
+		Database:   defaultDatabase,
+		StoreSize:  defaultStoreSize,
+		Statements: ClusterDefaults,
 	}
 }
 
@@ -83,6 +84,8 @@ var ClusterDefaults = []string{
 }
 
 // WithStatements sets the statements to run on the CockroachDB cluster once the container is ready.
+// This, in combination with ClusterDefaults, can be used to configure the cluster with the settings
+// recommended by Cockroach Labs.
 func WithStatements(statements ...string) Option {
 	return func(o *options) {
 		o.Statements = statements
