@@ -244,17 +244,17 @@ func addTLS(ctx context.Context, container testcontainers.Container, opts option
 func setRecommendedSettings(ctx context.Context, container testcontainers.Container, opts options) error {
 	port, err := container.MappedPort(ctx, defaultSQLPort)
 	if err != nil {
-		return err
+		return fmt.Errorf("mapped port: %w", err)
 	}
 
 	host, err := container.Host(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("host: %w", err)
 	}
 
 	db, err := sql.Open("pgx/v5", connString(opts, host, port))
 	if err != nil {
-		return err
+		return fmt.Errorf("sql.Open: %w", err)
 	}
 	defer db.Close()
 
@@ -272,7 +272,7 @@ func setRecommendedSettings(ctx context.Context, container testcontainers.Contai
 	for _, stmt := range stmts {
 		_, err = db.Exec(stmt)
 		if err != nil {
-			return err
+			return fmt.Errorf("db.Exec: %w", err)
 		}
 	}
 
