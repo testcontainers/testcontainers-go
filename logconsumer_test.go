@@ -503,12 +503,24 @@ func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 
 // bufLogger is a Logging implementation that writes to a bytes.Buffer.
 type bufLogger struct {
-	bytes.Buffer
+	mtx sync.Mutex
+	buf bytes.Buffer
 }
 
 // Printf implements Logging.
 func (l *bufLogger) Printf(format string, v ...any) {
-	fmt.Fprintf(l, format, v...)
+	l.mtx.Lock()
+	defer l.mtx.Unlock()
+
+	fmt.Fprintf(&l.buf, format, v...)
+}
+
+// String returns the contents of the buffer as a string.
+func (l *bufLogger) String() string {
+	l.mtx.Lock()
+	defer l.mtx.Unlock()
+
+	return l.buf.String()
 }
 
 func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
