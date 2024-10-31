@@ -141,11 +141,10 @@ func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {
 		}
 		req.Files = append(req.Files, cf)
 
-		strategies := []wait.Strategy{
+		req.WaitingFor = wait.ForAll(
 			wait.ForLog("Server shutdown completed"),
 			waitForHttpHealth(),
-		}
-		req.WaitingFor = wait.ForAll(strategies...)
+		)
 		return nil
 	}
 }
