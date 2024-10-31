@@ -4,12 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"path"
-	"strings"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"io"
+	"path"
 )
 
 // InfluxDbContainer represents the MySQL container type used in the module
@@ -36,6 +34,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"INFLUXDB_HTTP_HTTPS_ENABLED":    "false",
 			"INFLUXDB_HTTP_AUTH_ENABLED":     "false",
 		},
+		WaitingFor: waitForHttpHealth(),
 	}
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -46,10 +45,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		if err := opt.Customize(&genericContainerReq); err != nil {
 			return nil, err
 		}
-	}
-
-	if genericContainerReq.WaitingFor == nil {
-		genericContainerReq.WaitingFor = defaultWaitStrategy(genericContainerReq)
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
@@ -63,37 +58,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	return c, nil
-}
-
-func defaultWaitStrategy(genericContainerReq testcontainers.GenericContainerRequest) wait.Strategy {
-	for _, f := range genericContainerReq.Files {
-		if f.ContainerFilePath == "/" && strings.HasSuffix(f.HostFilePath, "docker-entrypoint-initdb.d") {
-			// Init service in container will start influxdb, run scripts in docker-entrypoint-initdb.d and then
-			// terminate the influxdb server, followed by restart of influxdb.  This is tricky to wait for, and
-			// in this case, we are assuming that data was added by init script
-			// This is probably different for InfluxDB 2.x, but that is left as an exercise for the reader.
-			strategies := []wait.Strategy{
-				wait.ForLog("Server shutdown completed"),
-				waitForHttpHealth(),
-			}
-			return wait.ForAll(strategies...)
-		}
-	}
-	return waitForHttpHealth()
-}
-
-func waitForHttpHealth() *wait.HTTPStrategy {
-	return wait.ForHTTP("/health").
-		WithResponseMatcher(func(body io.Reader) bool {
-			decoder := json.NewDecoder(body)
-			r := struct {
-				Status string `json:"status"`
-			}{}
-			if err := decoder.Decode(&r); err != nil {
-				return false
-			}
-			return r.Status == "pass"
-		})
 }
 
 func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
@@ -151,9 +115,22 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithInitDb will copy a 'docker-entrypoint-initdb.d' directory to the container.
-// The secPath is the path to the directory on the host machine.
-// The directory will be copied to the root of the container.
+// WithInitDb copies a 'docker-entrypoint-initdb.d' directory from the specified host path to the root of the container.
+// The `srcPath` parameter should point to the directory containing initialization files on the host.
+//
+// Initialization Process in the Container:
+// 1. The copied 'docker-entrypoint-initdb.d' directory contains scripts that initialize the database.
+// 2. On container start, InfluxDB runs, executes the scripts in 'docker-entrypoint-initdb.d', and then shuts down.
+// 3. The InfluxDB server restarts automatically after initialization to make the new data available.
+//
+// Note: This approach assumes the initialization completes on startup and the data is properly added.
+// This behavior may differ in InfluxDB 2.x and may require additional handling.
+//
+// Parameters:
+// - srcPath: The host path to the directory containing initialization scripts.
+//
+// Returns:
+// - testcontainers.CustomizeRequestOption: An option to customize the container request.
 func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
@@ -162,6 +139,26 @@ func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {
 			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
+
+		strategies := []wait.Strategy{
+			wait.ForLog("Server shutdown completed"),
+			waitForHttpHealth(),
+		}
+		req.WaitingFor = wait.ForAll(strategies...)
 		return nil
 	}
+}
+
+func waitForHttpHealth() *wait.HTTPStrategy {
+	return wait.ForHTTP("/health").
+		WithResponseMatcher(func(body io.Reader) bool {
+			decoder := json.NewDecoder(body)
+			r := struct {
+				Status string `json:"status"`
+			}{}
+			if err := decoder.Decode(&r); err != nil {
+				return false
+			}
+			return r.Status == "pass"
+		})
 }
