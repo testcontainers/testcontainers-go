@@ -20,14 +20,18 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const exampleAuth = "https://example-auth.com"
+const (
+	exampleAuth     = "https://example-auth.com"
+	privateRegistry = "https://my.private.registry"
+	exampleRegistry = "https://example.com"
+)
 
 func Test_getDockerConfig(t *testing.T) {
 	expectedConfig := &dockercfg.Config{
 		AuthConfigs: map[string]dockercfg.AuthConfig{
-			core.IndexDockerIO:            {},
-			"https://example.com":         {},
-			"https://my.private.registry": {},
+			core.IndexDockerIO: {},
+			exampleRegistry:    {},
+			privateRegistry:    {},
 		},
 		CredentialsStore: "desktop",
 	}
@@ -378,6 +382,13 @@ func localAddress(t *testing.T) string {
 //go:embed testdata/.docker/config.json
 var dockerConfig string
 
+// reset resets the credentials cache.
+func (c *credentialsCache) reset() {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	c.entries = make(map[string]credentials)
+}
+
 func Test_getDockerAuthConfigs(t *testing.T) {
 	t.Run("HOME/valid", func(t *testing.T) {
 		testDockerConfigHome(t, "testdata")
@@ -418,6 +429,45 @@ func Test_getDockerAuthConfigs(t *testing.T) {
 		require.Nil(t, authConfigs)
 	})
 
+	t.Run("DOCKER_AUTH_CONFIG/identity-token", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-exist")
+
+		// Reset the credentials cache to ensure our mocked method is called.
+		creds.reset()
+
+		// Mock getRegistryCredentials to return identity-token for index.docker.io.
+		old := getRegistryCredentials
+		t.Cleanup(func() {
+			getRegistryCredentials = old
+			creds.reset() // Ensure our mocked results aren't cached.
+		})
+		getRegistryCredentials = func(hostname string) (string, string, error) {
+			switch hostname {
+			case core.IndexDockerIO:
+				return "", "identity-token", nil
+			default:
+				return "username", "password", nil
+			}
+		}
+		t.Setenv("DOCKER_AUTH_CONFIG", dockerConfig)
+
+		authConfigs, err := getDockerAuthConfigs()
+		require.NoError(t, err)
+		require.Equal(t, map[string]registry.AuthConfig{
+			core.IndexDockerIO: {
+				IdentityToken: "identity-token",
+			},
+			privateRegistry: {
+				Username: "username",
+				Password: "password",
+			},
+			exampleRegistry: {
+				Username: "username",
+				Password: "password",
+			},
+		}, authConfigs)
+	})
+
 	t.Run("DOCKER_CONFIG/valid", func(t *testing.T) {
 		testDockerConfigHome(t, "testdata", "not-found")
 		t.Setenv("DOCKER_CONFIG", filepath.Join("testdata", ".docker"))
@@ -445,9 +495,9 @@ func requireValidAuthConfig(t *testing.T) {
 	// We can only check the keys as the values are not deterministic as they depend
 	// on users environment.
 	expected := map[string]registry.AuthConfig{
-		"https://index.docker.io/v1/": {},
-		"https://example.com":         {},
-		"https://my.private.registry": {},
+		core.IndexDockerIO: {},
+		exampleRegistry:    {},
+		privateRegistry:    {},
 	}
 	for k := range authConfigs {
 		authConfigs[k] = registry.AuthConfig{}
