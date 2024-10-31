@@ -3,7 +3,9 @@ package testcontainers
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -914,13 +916,10 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	rd := bufio.NewReader(containerLogs)
 	for {
 		line, err := rd.ReadString('\n')
-		if err != nil {
-			if err.Error() == "EOF" {
-				break
-			}
-
-			t.Fatal("Read Error:", err)
+		if errors.Is(err, io.EOF) {
+			break
 		}
+		require.NoErrorf(t, err, "Read Error")
 
 		// the last line of the array should contain the line of interest,
 		// but we are checking all the lines to make sure that is present

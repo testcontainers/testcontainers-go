@@ -39,9 +39,9 @@ func TestNeo4j(outer *testing.T) {
 			"RETURN apoc.number.arabicToRoman(1986) AS output", nil,
 			neo.EagerResultTransformer)
 		require.NoErrorf(t, err, "expected APOC query to successfully run but did not")
-		if value, _ := result.Records[0].Get("output"); value != "MCMLXXXVI" {
-			t.Fatalf("did not get expected roman number: %s", value)
-		}
+		require.NotEmpty(t, result.Records)
+		value, _ := result.Records[0].Get("output")
+		require.Equalf(t, "MCMLXXXVI", value, "did not get expected roman number: %s", value)
 	})
 
 	outer.Run("is configured with custom Neo4j settings", func(t *testing.T) {
@@ -118,10 +118,8 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 		require.NoError(t, err)
 
 		errorLogs := logger.Logs()
-		if !Contains(errorLogs, `setting "some.key" with value "value1" is now overwritten with value "value2"`+"\n") ||
-			!Contains(errorLogs, `setting "some.key" with value "value2" is now overwritten with value "value3"`+"\n") {
-			t.Fatalf("expected setting overwrites to be logged")
-		}
+		require.Containsf(t, errorLogs, `setting "some.key" with value "value1" is now overwritten with value "value2"`+"\n", "expected setting overwrites to be logged")
+		require.Containsf(t, errorLogs, `setting "some.key" with value "value2" is now overwritten with value "value3"`+"\n", "expected setting overwrites to be logged")
 		require.Containsf(t, getContainerEnv(t, ctx, ctr), "NEO4J_some_key=value3", "expected custom setting to be set with last value")
 	})
 
@@ -129,9 +127,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 		ctr, err := neo4j.Run(ctx, "neo4j:4.4", neo4j.WithLogger(nil))
 		testcontainers.CleanupContainer(t, ctr)
 		require.Nilf(t, ctr, "container must not be created with nil logger")
-		if err == nil || err.Error() != "nil logger is not permitted" {
-			t.Fatalf("expected config validation error but got no error")
-		}
+		require.EqualErrorf(t, err, "nil logger is not permitted", "expected config validation error but got no error")
 	})
 }
 

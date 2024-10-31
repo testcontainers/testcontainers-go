@@ -24,9 +24,7 @@ func TestV1Container(t *testing.T) {
 	state, err := influxDbContainer.State(ctx)
 	require.NoError(t, err)
 
-	if !state.Running {
-		t.Fatal("InfluxDB container is not running")
-	}
+	require.Truef(t, state.Running, "InfluxDB container is not running")
 }
 
 func TestV2Container(t *testing.T) {

@@ -323,9 +323,8 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	hitNginx := func() {
 		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + port.Port()})
-		if err != nil || i > 0 {
-			t.Fatalf("Can't make request to nginx container from dind container")
-		}
+		require.NoError(t, err, "Can't make request to nginx container from dind container")
+		require.Zerof(t, i, "Can't make request to nginx container from dind container")
 	}
 
 	hitNginx()
@@ -340,13 +339,11 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	}
 	// Simulate a transient closed connection to the docker daemon
 	i, _, err := dind.Exec(ctx, append([]string{"iptables", "-A"}, iptableArgs...))
-	if err != nil || i > 0 {
-		t.Fatalf("Failed to close connection to dind daemon: i(%d), err %v", i, err)
-	}
+	require.NoErrorf(t, err, "Failed to close connection to dind daemon: i(%d), err %v", i, err)
+	require.Zerof(t, i, "Failed to close connection to dind daemon: i(%d), err %v", i, err)
 	i, _, err = dind.Exec(ctx, append([]string{"iptables", "-D"}, iptableArgs...))
-	if err != nil || i > 0 {
-		t.Fatalf("Failed to re-open connection to dind daemon: i(%d), err %v", i, err)
-	}
+	require.NoErrorf(t, err, "Failed to re-open connection to dind daemon: i(%d), err %v", i, err)
+	require.Zerof(t, i, "Failed to re-open connection to dind daemon: i(%d), err %v", i, err)
 	time.Sleep(time.Second * 3)
 
 	hitNginx()
