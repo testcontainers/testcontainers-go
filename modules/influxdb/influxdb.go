@@ -116,22 +116,8 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithInitDb copies a 'docker-entrypoint-initdb.d' directory from the specified host path to the root of the container.
-// The `srcPath` parameter should point to the directory containing initialization files on the host.
-//
-// Initialization Process in the Container:
-// 1. The copied 'docker-entrypoint-initdb.d' directory contains scripts that initialize the database.
-// 2. On container start, InfluxDB runs, executes the scripts in 'docker-entrypoint-initdb.d', and then shuts down.
-// 3. The InfluxDB server restarts automatically after initialization to make the new data available.
-//
-// Note: This approach assumes the initialization completes on startup and the data is properly added.
-// This behavior may differ in InfluxDB 2.x and may require additional handling.
-//
-// Parameters:
-// - srcPath: The host path to the directory containing initialization scripts.
-//
-// Returns:
-// - testcontainers.CustomizeRequestOption: An option to customize the container request.
+// WithInitDb returns a request customizer that initialises the database using the file `docker-entrypoint-initdb.d`
+// located in `srcPath`.
 func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
