@@ -117,7 +117,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 }
 
 // WithInitDb returns a request customizer that initialises the database using the file `docker-entrypoint-initdb.d`
-// located in `srcPath`.
+// located in `srcPath` directory.
 func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
