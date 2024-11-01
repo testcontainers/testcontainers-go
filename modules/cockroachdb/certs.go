@@ -1,8 +1,10 @@
 package cockroachdb
 
 import (
+	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"net"
 	"time"
 
@@ -63,5 +65,22 @@ func NewTLSConfig() (*TLSConfig, error) {
 		NodeKey:    nodeCert.KeyBytes,
 		ClientCert: clientCert.Bytes,
 		ClientKey:  clientCert.KeyBytes,
+	}, nil
+}
+
+// tlsConfig returns a [tls.Config] for options.
+func (c *TLSConfig) tlsConfig() (*tls.Config, error) {
+	keyPair, err := tls.X509KeyPair(c.ClientCert, c.ClientKey)
+	if err != nil {
+		return nil, fmt.Errorf("x509 key pair: %w", err)
+	}
+
+	certPool := x509.NewCertPool()
+	certPool.AddCert(c.CACert)
+
+	return &tls.Config{
+		RootCAs:      certPool,
+		Certificates: []tls.Certificate{keyPair},
+		ServerName:   "localhost",
 	}, nil
 }

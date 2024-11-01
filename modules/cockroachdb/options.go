@@ -1,6 +1,17 @@
 package cockroachdb
 
-import "github.com/testcontainers/testcontainers-go"
+import (
+	"context"
+	"fmt"
+	"net"
+	"net/url"
+
+	"github.com/docker/go-connections/nat"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/testcontainers/testcontainers-go"
+)
 
 type options struct {
 	Database   string
@@ -9,6 +20,81 @@ type options struct {
 	StoreSize  string
 	TLS        *TLSConfig
 	Statements []string
+}
+
+// containerConnConfig returns the [pgx.ConnConfig] for the given container and options.
+func (opts options) containerConnConfig(ctx context.Context, container testcontainers.Container) (*pgx.ConnConfig, error) {
+	port, err := container.MappedPort(ctx, defaultSQLPort)
+	if err != nil {
+		return nil, fmt.Errorf("mapped port: %w", err)
+	}
+
+	host, err := container.Host(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("host: %w", err)
+	}
+
+	return opts.connConfig(host, port)
+}
+
+// containerConnString returns the connection string for the given container and options.
+func (opts options) containerConnString(ctx context.Context, container testcontainers.Container) (string, error) {
+	cfg, err := opts.containerConnConfig(ctx, container)
+	if err != nil {
+		return "", fmt.Errorf("container connection config: %w", err)
+	}
+
+	return stdlib.RegisterConnConfig(cfg), nil
+}
+
+// connString returns a connection string for the given host, port and options.
+func (opts options) connString(host string, port nat.Port) (string, error) {
+	cfg, err := opts.connConfig(host, port)
+	if err != nil {
+		return "", fmt.Errorf("connection config: %w", err)
+	}
+
+	return stdlib.RegisterConnConfig(cfg), nil
+}
+
+// connConfig returns a [pgx.ConnConfig] for the given host, port and options.
+func (opts options) connConfig(host string, port nat.Port) (*pgx.ConnConfig, error) {
+	user := url.User(opts.User)
+	if opts.Password != "" {
+		user = url.UserPassword(opts.User, opts.Password)
+	}
+
+	sslMode := "disable"
+	if opts.TLS != nil {
+		sslMode = "require" // We can't use "verify-full" as it might be a self signed cert.
+	}
+	params := url.Values{
+		"sslmode": []string{sslMode},
+	}
+
+	u := url.URL{
+		Scheme:   "postgres",
+		User:     user,
+		Host:     net.JoinHostPort(host, port.Port()),
+		Path:     opts.Database,
+		RawQuery: params.Encode(),
+	}
+
+	cfg, err := pgx.ParseConfig(u.String())
+	if err != nil {
+		return nil, fmt.Errorf("parse config: %w", err)
+	}
+
+	if opts.TLS != nil {
+		tlsCfg, err := opts.TLS.tlsConfig()
+		if err != nil {
+			return nil, fmt.Errorf("tls config: %w", err)
+		}
+
+		cfg.TLSConfig = tlsCfg
+	}
+
+	return cfg, nil
 }
 
 func defaultOptions() options {
@@ -85,8 +171,8 @@ var DefaultStatements = []string{
 }
 
 // WithStatements sets the statements to run on the CockroachDB cluster once the container is ready.
-// This, in combination with DefaultStatements, can be used to configure the cluster with the settings
-// recommended by Cockroach Labs.
+// By default, the container will run the statements in [DefaultStatements] as recommended by
+// Cockroach Labs however that is not always possible due to the user not having the required privileges.
 func WithStatements(statements ...string) Option {
 	return func(o *options) {
 		o.Statements = statements

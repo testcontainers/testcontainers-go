@@ -3,23 +3,20 @@ package cockroachdb
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"database/sql"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"net"
-	"net/url"
 	"path/filepath"
 
 	"github.com/docker/go-connections/nat"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// ErrTLSNotEnabled is returned when trying to get a TLS config from a container that does not have TLS enabled.
 var ErrTLSNotEnabled = errors.New("tls not enabled")
 
 const (
@@ -40,7 +37,9 @@ type CockroachDBContainer struct {
 	opts options
 }
 
-// MustConnectionString panics if the address cannot be determined.
+// MustConnectionString returns a connection string to open a new connection to CockroachDB
+// as described by [CockroachDBContainer.ConnectionString].
+// It panics if an error occurs.
 func (c *CockroachDBContainer) MustConnectionString(ctx context.Context) string {
 	addr, err := c.ConnectionString(ctx)
 	if err != nil {
@@ -49,27 +48,33 @@ func (c *CockroachDBContainer) MustConnectionString(ctx context.Context) string 
 	return addr
 }
 
-// ConnectionString returns the dial address to open a new connection to CockroachDB.
+// ConnectionString returns a connection string to open a new connection to CockroachDB.
+// The returned string is suitable for use by [sql.Open] but is not be compatible with
+// [pgx.ParseConfig], so if you want to call [pgx.ConnectConfig] use the
+// [CockroachDBContainer.ConnectionConfig] method instead.
 func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, error) {
-	port, err := c.MappedPort(ctx, defaultSQLPort)
-	if err != nil {
-		return "", err
-	}
+	return c.opts.containerConnString(ctx, c.Container)
+}
 
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return connString(c.opts, host, port), nil
+// ConnectionConfig returns a [pgx.ConnConfig] for the CockroachDB container.
+// This can be passed to [pgx.ConnectConfig] to open a new connection.
+func (c *CockroachDBContainer) ConnectionConfig(ctx context.Context) (*pgx.ConnConfig, error) {
+	return c.opts.containerConnConfig(ctx, c.Container)
 }
 
 // TLSConfig returns config necessary to connect to CockroachDB over TLS.
+//
+// Deprecated: use [CockroachDBContainer.ConnectionConfig] or
+// [CockroachDBContainer.ConnectionConfig] instead.
 func (c *CockroachDBContainer) TLSConfig() (*tls.Config, error) {
-	return connTLS(c.opts)
+	if c.opts.TLS == nil {
+		return nil, ErrTLSNotEnabled
+	}
+
+	return c.opts.TLS.tlsConfig()
 }
 
-// Deprecated: use Run instead
+// Deprecated: use Run instead.
 // RunContainer creates an instance of the CockroachDB container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error) {
 	return Run(ctx, "cockroachdb/cockroach:latest-v23.1", opts...)
@@ -178,29 +183,12 @@ func addEnvs(req *testcontainers.GenericContainerRequest, opts options) error {
 }
 
 func addWaitingFor(req *testcontainers.GenericContainerRequest, opts options) error {
-	var tlsConfig *tls.Config
-	if opts.TLS != nil {
-		cfg, err := connTLS(opts)
-		if err != nil {
-			return err
-		}
-		tlsConfig = cfg
-	}
-
 	sqlWait := wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
-		connStr := connString(opts, host, port)
-		if tlsConfig == nil {
-			return connStr
-		}
-
-		// register TLS config with pgx driver
-		connCfg, err := pgx.ParseConfig(connStr)
+		connStr, err := opts.connString(host, port)
 		if err != nil {
 			panic(err)
 		}
-		connCfg.TLSConfig = tlsConfig
-
-		return stdlib.RegisterConnConfig(connCfg)
+		return connStr
 	})
 	defaultStrategy := wait.ForAll(
 		wait.ForHTTP("/health").WithPort(defaultAdminPort),
@@ -246,17 +234,12 @@ func runStatements(ctx context.Context, container testcontainers.Container, opts
 		return nil
 	}
 
-	port, err := container.MappedPort(ctx, defaultSQLPort)
+	connStr, err := opts.containerConnString(ctx, container)
 	if err != nil {
-		return fmt.Errorf("mapped port: %w", err)
+		return fmt.Errorf("connection string: %w", err)
 	}
 
-	host, err := container.Host(ctx)
-	if err != nil {
-		return fmt.Errorf("host: %w", err)
-	}
-
-	db, err := sql.Open("pgx/v5", connString(opts, host, port))
+	db, err := sql.Open("pgx/v5", connStr)
 	if err != nil {
 		return fmt.Errorf("sql.Open: %w", err)
 	}
@@ -274,49 +257,4 @@ func runStatements(ctx context.Context, container testcontainers.Container, opts
 	}
 
 	return nil
-}
-
-func connString(opts options, host string, port nat.Port) string {
-	user := url.User(opts.User)
-	if opts.Password != "" {
-		user = url.UserPassword(opts.User, opts.Password)
-	}
-
-	sslMode := "disable"
-	if opts.TLS != nil {
-		sslMode = "verify-full"
-	}
-	params := url.Values{
-		"sslmode": []string{sslMode},
-	}
-
-	u := url.URL{
-		Scheme:   "postgres",
-		User:     user,
-		Host:     net.JoinHostPort(host, port.Port()),
-		Path:     opts.Database,
-		RawQuery: params.Encode(),
-	}
-
-	return u.String()
-}
-
-func connTLS(opts options) (*tls.Config, error) {
-	if opts.TLS == nil {
-		return nil, ErrTLSNotEnabled
-	}
-
-	keyPair, err := tls.X509KeyPair(opts.TLS.ClientCert, opts.TLS.ClientKey)
-	if err != nil {
-		return nil, err
-	}
-
-	certPool := x509.NewCertPool()
-	certPool.AddCert(opts.TLS.CACert)
-
-	return &tls.Config{
-		RootCAs:      certPool,
-		Certificates: []tls.Certificate{keyPair},
-		ServerName:   "localhost",
-	}, nil
 }
