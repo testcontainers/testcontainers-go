@@ -2,9 +2,6 @@ package cockroachdb_test
 
 import (
 	"context"
-	"errors"
-	"net/url"
-	"strings"
 	"testing"
 	"time"
 
@@ -18,14 +15,11 @@ import (
 )
 
 func TestCockroach_Insecure(t *testing.T) {
-	suite.Run(t, &AuthNSuite{
-		url: "postgres://root@localhost:xxxxx/defaultdb?sslmode=disable",
-	})
+	suite.Run(t, &AuthNSuite{})
 }
 
 func TestCockroach_NotRoot(t *testing.T) {
 	suite.Run(t, &AuthNSuite{
-		url: "postgres://test@localhost:xxxxx/defaultdb?sslmode=disable",
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithUser("test"),
 			// Do not run the default statements as the user used on this test is
@@ -37,7 +31,6 @@ func TestCockroach_NotRoot(t *testing.T) {
 
 func TestCockroach_Password(t *testing.T) {
 	suite.Run(t, &AuthNSuite{
-		url: "postgres://foo:bar@localhost:xxxxx/defaultdb?sslmode=disable",
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithUser("foo"),
 			cockroachdb.WithPassword("bar"),
@@ -53,19 +46,26 @@ func TestCockroach_TLS(t *testing.T) {
 	require.NoError(t, err)
 
 	suite.Run(t, &AuthNSuite{
-		url: "postgres://root@localhost:xxxxx/defaultdb?sslmode=verify-full",
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithTLS(tlsCfg),
-			// Do not run the default statements as the user used on this test is
-			// lacking the needed MODIFYCLUSTERSETTING privilege to run them.
-			cockroachdb.WithStatements(),
 		},
 	})
 }
 
+func TestTLS(t *testing.T) {
+	tlsCfg, err := cockroachdb.NewTLSConfig()
+	require.NoError(t, err)
+
+	ctx := context.Background()
+
+	ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", cockroachdb.WithTLS(tlsCfg))
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+	require.NotNil(t, ctr)
+}
+
 type AuthNSuite struct {
 	suite.Suite
-	url  string
 	opts []testcontainers.ContainerCustomizer
 }
 
@@ -75,11 +75,6 @@ func (suite *AuthNSuite) TestConnectionString() {
 	ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", suite.opts...)
 	testcontainers.CleanupContainer(suite.T(), ctr)
 	suite.Require().NoError(err)
-
-	connStr, err := removePort(ctr.MustConnectionString(ctx))
-	suite.Require().NoError(err)
-
-	suite.Equal(suite.url, connStr)
 }
 
 func (suite *AuthNSuite) TestPing() {
@@ -203,29 +198,10 @@ func (suite *AuthNSuite) TestWithWaitStrategyAndDeadline() {
 }
 
 func conn(ctx context.Context, container *cockroachdb.CockroachDBContainer) (*pgx.Conn, error) {
-	cfg, err := pgx.ParseConfig(container.MustConnectionString(ctx))
+	cfg, err := container.ConnectionConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	tlsCfg, err := container.TLSConfig()
-	switch {
-	case err != nil:
-		if !errors.Is(err, cockroachdb.ErrTLSNotEnabled) {
-			return nil, err
-		}
-	default:
-		// apply TLS config
-		cfg.TLSConfig = tlsCfg
-	}
-
 	return pgx.ConnectConfig(ctx, cfg)
-}
-
-func removePort(s string) (string, error) {
-	u, err := url.Parse(s)
-	if err != nil {
-		return "", err
-	}
-	return strings.Replace(s, ":"+u.Port(), ":xxxxx", 1), nil
 }

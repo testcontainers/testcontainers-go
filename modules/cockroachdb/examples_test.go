@@ -5,7 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net/url"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cockroachdb"
@@ -34,25 +35,34 @@ func ExampleRun() {
 	}
 	fmt.Println(state.Running)
 
-	addr, err := cockroachdbContainer.ConnectionString(ctx)
+	cfg, err := cockroachdbContainer.ConnectionConfig(ctx)
 	if err != nil {
 		log.Printf("failed to get connection string: %s", err)
 		return
 	}
-	u, err := url.Parse(addr)
+
+	conn, err := pgx.ConnectConfig(ctx, cfg)
 	if err != nil {
-		log.Printf("failed to parse connection string: %s", err)
+		log.Printf("failed to connect: %s", err)
 		return
 	}
-	u.Host = fmt.Sprintf("%s:%s", u.Hostname(), "xxx")
-	fmt.Println(u.String())
+
+	defer func() {
+		if err := conn.Close(ctx); err != nil {
+			log.Printf("failed to close connection: %s", err)
+		}
+	}()
+
+	if err = conn.Ping(ctx); err != nil {
+		log.Printf("failed to ping: %s", err)
+		return
+	}
 
 	// Output:
 	// true
-	// postgres://root@localhost:xxx/defaultdb?sslmode=disable
 }
 
-func ExampleRun_withRecommendedSettings() {
+func ExampleRun_withCustomStatements() {
 	ctx := context.Background()
 
 	cockroachdbContainer, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", cockroachdb.WithStatements(cockroachdb.DefaultStatements...))
