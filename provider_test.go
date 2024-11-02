@@ -67,15 +67,14 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 			t.Setenv("DOCKER_HOST", tt.DockerHost)
 
 			got, err := tt.tr.GetProvider()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ProviderType.GetProvider() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			if tt.wantErr {
+				require.Errorf(t, err, "ProviderType.GetProvider()")
+			} else {
+				require.NoErrorf(t, err, "ProviderType.GetProvider()")
 			}
 			provider, ok := got.(*DockerProvider)
 			require.Truef(t, ok, "ProviderType.GetProvider() = %T, want %T", got, &DockerProvider{})
-			if provider.defaultBridgeNetworkName != tt.want {
-				t.Errorf("ProviderType.GetProvider() = %v, want %v", provider.defaultBridgeNetworkName, tt.want)
-			}
+			require.Equalf(t, tt.want, provider.defaultBridgeNetworkName, "ProviderType.GetProvider() = %v, want %v", provider.defaultBridgeNetworkName, tt.want)
 		})
 	}
 }

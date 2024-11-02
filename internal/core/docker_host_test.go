@@ -567,8 +567,6 @@ func setupTestcontainersProperties(t *testing.T, content string) {
 	t.Setenv("HOME", homeDir)
 	t.Setenv("USERPROFILE", homeDir) // Windows support
 
-	if err := os.WriteFile(filepath.Join(homeDir, ".testcontainers.properties"), []byte(content), 0o600); err != nil {
-		t.Errorf("Failed to create the file: %v", err)
-		return
-	}
+	err = os.WriteFile(filepath.Join(homeDir, ".testcontainers.properties"), []byte(content), 0o600)
+	require.NoErrorf(t, err, "Failed to create the file")
 }

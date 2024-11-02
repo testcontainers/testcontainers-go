@@ -525,10 +525,8 @@ func TestReadTCConfig(t *testing.T) {
 				for k, v := range tt.env {
 					t.Setenv(k, v)
 				}
-				if err := os.WriteFile(filepath.Join(tmpDir, ".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
-					t.Errorf("Failed to create the file: %v", err)
-					return
-				}
+				err := os.WriteFile(filepath.Join(tmpDir, ".testcontainers.properties"), []byte(tt.content), 0o600)
+				require.NoErrorf(t, err, "Failed to create the file")
 
 				//
 				config := read()
