@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -135,7 +136,7 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 	}
 
 	return func(req *testcontainers.GenericContainerRequest) error {
-		processRedisServerArgs(req, []string{"--save", fmt.Sprintf("%d", seconds), fmt.Sprintf("%d", changedKeys)})
+		processRedisServerArgs(req, []string{"--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys)})
 		return nil
 	}
 }

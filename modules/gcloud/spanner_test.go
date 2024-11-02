@@ -63,7 +63,7 @@ func ExampleRunSpannerContainer() {
 	// }
 
 	instanceOp, err := instanceAdmin.CreateInstance(ctx, &instancepb.CreateInstanceRequest{
-		Parent:     fmt.Sprintf("projects/%s", projectId),
+		Parent:     "projects/" + projectId,
 		InstanceId: instanceId,
 		Instance: &instancepb.Instance{
 			DisplayName: instanceId,

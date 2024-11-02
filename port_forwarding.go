@@ -40,7 +40,7 @@ var sshPassword = uuid.NewString()
 // 3. Close the SSH sessions before killing the container.
 func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (sshdConnectHook ContainerLifecycleHooks, err error) {
 	if len(ports) == 0 {
-		return sshdConnectHook, fmt.Errorf("no ports to expose")
+		return sshdConnectHook, errors.New("no ports to expose")
 	}
 
 	// Use the first network of the container to connect to the SSHD container.
@@ -252,7 +252,7 @@ func configureSSHConfig(ctx context.Context, sshdC *sshdContainer) (*ssh.ClientC
 
 func (sshdC *sshdContainer) exposeHostPort(ctx context.Context, ports ...int) error {
 	for _, port := range ports {
-		pw := NewPortForwarder(fmt.Sprintf("localhost:%s", sshdC.port), sshdC.sshConfig, port, port)
+		pw := NewPortForwarder("localhost:"+sshdC.port, sshdC.sshConfig, port, port)
 		sshdC.portForwarders = append(sshdC.portForwarders, *pw)
 
 		go pw.Forward(ctx) //nolint:errcheck // Nothing we can usefully do with the error

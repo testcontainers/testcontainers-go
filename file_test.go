@@ -6,6 +6,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -37,7 +38,7 @@ func Test_IsDir(t *testing.T) {
 		{
 			filepath: "foobar.doc",
 			expected: false,
-			err:      fmt.Errorf("does not exist"),
+			err:      errors.New("does not exist"),
 		},
 	}
 
