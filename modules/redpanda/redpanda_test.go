@@ -50,7 +50,7 @@ func TestRedpanda(t *testing.T) {
 	httpCl := &http.Client{Timeout: 5 * time.Second}
 	schemaRegistryURL, err := ctr.SchemaRegistryAddress(ctx)
 	require.NoError(t, err)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/subjects", schemaRegistryURL), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
 	require.NoError(t, err)
 	resp, err := httpCl.Do(req)
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestRedpanda(t *testing.T) {
 	adminAPIURL, err := ctr.AdminAPIAddress(ctx)
 	// }
 	require.NoError(t, err)
-	req, err = http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster/health_overview", adminAPIURL), nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, adminAPIURL+"/v1/cluster/health_overview", nil)
 	require.NoError(t, err)
 	resp, err = httpCl.Do(req)
 	require.NoError(t, err)
@@ -162,7 +162,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 	require.NoError(t, err)
 
 	// Failed authentication
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/subjects", schemaRegistryURL), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
 	require.NoError(t, err)
 	resp, err := httpCl.Do(req)
 	require.NoError(t, err)
@@ -285,7 +285,7 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 	require.NoError(t, err)
 
 	// Failed authentication
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/subjects", schemaRegistryURL), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
 	require.NoError(t, err)
 	resp, err := httpCl.Do(req)
 	require.NoError(t, err)
@@ -353,7 +353,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 	adminAPIURL, err := ctr.AdminAPIAddress(ctx)
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(adminAPIURL, "https://"), "AdminAPIAddress should return https url")
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster/health_overview", adminAPIURL), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, adminAPIURL+"/v1/cluster/health_overview", nil)
 	require.NoError(t, err)
 	resp, err := httpCl.Do(req)
 	require.NoError(t, err)
@@ -364,7 +364,7 @@ func TestRedpandaWithTLS(t *testing.T) {
 	schemaRegistryURL, err := ctr.SchemaRegistryAddress(ctx)
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(adminAPIURL, "https://"), "SchemaRegistryAddress should return https url")
-	req, err = http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/subjects", schemaRegistryURL), nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
 	require.NoError(t, err)
 	resp, err = httpCl.Do(req)
 	require.NoError(t, err)
@@ -545,7 +545,7 @@ func TestRedpandaBootstrapConfig(t *testing.T) {
 
 	{
 		// Check that the configs reflect specified values
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster_config", adminAPIUrl), nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, adminAPIUrl+"/v1/cluster_config", nil)
 		require.NoError(t, err)
 		resp, err := httpCl.Do(req)
 		require.NoError(t, err)
@@ -562,7 +562,7 @@ func TestRedpandaBootstrapConfig(t *testing.T) {
 
 	{
 		// Check that no restart is required. i.e. that the configs were applied via bootstrap config
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster_config/status", adminAPIUrl), nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, adminAPIUrl+"/v1/cluster_config/status", nil)
 		require.NoError(t, err)
 		resp, err := httpCl.Do(req)
 		require.NoError(t, err)

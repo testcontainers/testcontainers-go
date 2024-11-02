@@ -2,6 +2,7 @@ package minio
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -89,7 +90,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	username := req.Env["MINIO_ROOT_USER"]
 	password := req.Env["MINIO_ROOT_PASSWORD"]
 	if username == "" || password == "" {
-		return nil, fmt.Errorf("username or password has not been set")
+		return nil, errors.New("username or password has not been set")
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

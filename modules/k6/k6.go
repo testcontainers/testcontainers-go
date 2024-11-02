@@ -143,7 +143,7 @@ func WithCache() testcontainers.CustomizeRequestOption {
 	cacheVol := os.Getenv("TC_K6_BUILD_CACHE")
 	// if no volume is provided, create one and ensure add labels for garbage collection
 	if cacheVol == "" {
-		cacheVol = fmt.Sprintf("k6-cache-%s", testcontainers.SessionID())
+		cacheVol = "k6-cache-" + testcontainers.SessionID()
 		volOptions = &mount.VolumeOptions{
 			Labels: testcontainers.GenericLabels(),
 		}

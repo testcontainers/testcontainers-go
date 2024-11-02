@@ -284,11 +284,11 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 		},
 		Files: []ContainerFile{
 			{
-				HostFilePath:      fmt.Sprintf("%s/testdata/auth", wd),
+				HostFilePath:      wd + "/testdata/auth",
 				ContainerFilePath: "/auth",
 			},
 			{
-				HostFilePath:      fmt.Sprintf("%s/testdata/data", wd),
+				HostFilePath:      wd + "/testdata/data",
 				ContainerFilePath: "/data",
 			},
 		},

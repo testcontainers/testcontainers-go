@@ -85,7 +85,7 @@ func ExampleRun_withModel_llama2_http() {
 	"prompt":"Why is the sky blue?"
 }`
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/generate", connectionStr), strings.NewReader(payload))
+	req, err := http.NewRequest(http.MethodPost, connectionStr+"/api/generate", strings.NewReader(payload))
 	if err != nil {
 		log.Printf("failed to create request: %s", err)
 		return

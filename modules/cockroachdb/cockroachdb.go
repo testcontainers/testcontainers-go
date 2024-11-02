@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -18,7 +19,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var ErrTLSNotEnabled = fmt.Errorf("tls not enabled")
+var ErrTLSNotEnabled = errors.New("tls not enabled")
 
 const (
 	certsDir = "/tmp"
@@ -144,7 +145,7 @@ func addCmd(req *testcontainers.GenericContainerRequest, opts options) error {
 			return fmt.Errorf("unsupported user %s with TLS, use %s", opts.User, defaultUser)
 		}
 		if opts.Password != "" {
-			return fmt.Errorf("cannot use password authentication with TLS")
+			return errors.New("cannot use password authentication with TLS")
 		}
 	}
 

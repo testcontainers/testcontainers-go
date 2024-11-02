@@ -2,7 +2,7 @@ package cockroachdb
 
 import (
 	"crypto/x509"
-	"fmt"
+	"errors"
 	"net"
 	"time"
 
@@ -28,7 +28,7 @@ func NewTLSConfig() (*TLSConfig, error) {
 		ValidFor:          time.Hour,
 	})
 	if caCert == nil {
-		return nil, fmt.Errorf("failed to generate CA certificate")
+		return nil, errors.New("failed to generate CA certificate")
 	}
 	// }
 
@@ -42,7 +42,7 @@ func NewTLSConfig() (*TLSConfig, error) {
 		Parent:            caCert, // using the CA certificate as parent
 	})
 	if nodeCert == nil {
-		return nil, fmt.Errorf("failed to generate node certificate")
+		return nil, errors.New("failed to generate node certificate")
 	}
 	// }
 
@@ -54,7 +54,7 @@ func NewTLSConfig() (*TLSConfig, error) {
 		Parent:            caCert, // using the CA certificate as parent
 	})
 	if clientCert == nil {
-		return nil, fmt.Errorf("failed to generate client certificate")
+		return nil, errors.New("failed to generate client certificate")
 	}
 
 	return &TLSConfig{
