@@ -18,7 +18,6 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 		tr         ProviderType
 		DockerHost string
 		want       string
-		wantErr    bool
 	}{
 		{
 			name:       "default provider without podman.socket",
@@ -67,12 +66,7 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 			t.Setenv("DOCKER_HOST", tt.DockerHost)
 
 			got, err := tt.tr.GetProvider()
-			if tt.wantErr {
-				require.Errorf(t, err, "ProviderType.GetProvider()")
-				return
-			} else {
-				require.NoErrorf(t, err, "ProviderType.GetProvider()")
-			}
+			require.NoErrorf(t, err, "ProviderType.GetProvider()")
 			provider, ok := got.(*DockerProvider)
 			require.Truef(t, ok, "ProviderType.GetProvider() = %T, want %T", got, &DockerProvider{})
 			require.Equalf(t, tt.want, provider.defaultBridgeNetworkName, "ProviderType.GetProvider() = %v, want %v", provider.defaultBridgeNetworkName, tt.want)
