@@ -69,6 +69,7 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 			got, err := tt.tr.GetProvider()
 			if tt.wantErr {
 				require.Errorf(t, err, "ProviderType.GetProvider()")
+				return
 			} else {
 				require.NoErrorf(t, err, "ProviderType.GetProvider()")
 			}
