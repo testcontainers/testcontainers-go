@@ -10,6 +10,12 @@ jobs:
     strategy:
       matrix:
         rootless-docker: [true, false]
+        containerd-integration: [true, false]
+        # ghaction-setup-docker doesn't work with rootless yet
+        exclude:
+          - rootless-docker: true
+            container-integration: true
+
     name: "Core tests using latest moby/moby"
     runs-on: 'ubuntu-latest'
     continue-on-error: true
@@ -42,7 +48,22 @@ jobs:
       - name: modTidy
         run: go mod tidy
 
-      - name: Install Latest Docker
+      - name: Install Nightly Docker
+        # rootless not supported with ghaction-setup-docker yet
+        if: ${{ matrix.rootless-docker == false }}
+        uses: crazy-max/ghaction-setup-docker@master
+        with:
+          daemon-config: |
+            {
+              "debug": true,
+              "features": {
+                "containerd-snapshotter": ${{ matrix.containerd-integration }}
+              }
+            }
+          version: type=image,tag=master
+
+      - name: Install test Docker
+        if: ${{ matrix.rootless-docker }}
         run: curl https://get.docker.com | CHANNEL=test sh
 
       - name: go test

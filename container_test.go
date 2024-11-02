@@ -137,9 +137,7 @@ func Test_GetDockerfile(t *testing.T) {
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
 			n := testCase.ContainerRequest.GetDockerfile()
-			if n != testCase.ExpectedDockerfileName {
-				t.Fatalf("expected Dockerfile name: %s, received: %s", testCase.ExpectedDockerfileName, n)
-			}
+			require.Equalf(t, n, testCase.ExpectedDockerfileName, "expected Dockerfile name: %s, received: %s", testCase.ExpectedDockerfileName, n)
 		})
 	}
 }
@@ -167,7 +165,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 				}{
 					{
 						Name: "Dockerfile",
-						Contents: `FROM docker.io/alpine
+						Contents: `FROM alpine
 								CMD ["echo", "this is from the archive"]`,
 					},
 				}
@@ -216,7 +214,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 					},
 					{
 						Name: "Dockerfile",
-						Contents: `FROM docker.io/alpine
+						Contents: `FROM alpine
 								WORKDIR /app
 								COPY . .
 								CMD ["sh", "./say_hi.sh"]`,
@@ -320,7 +318,7 @@ func TestCustomLabelsImage(t *testing.T) {
 	ctr, err := testcontainers.GenericContainer(ctx, req)
 
 	require.NoError(t, err)
-	t.Cleanup(func() { assert.NoError(t, ctr.Terminate(ctx)) })
+	t.Cleanup(func() { require.NoError(t, ctr.Terminate(ctx)) })
 
 	ctrJSON, err := ctr.Inspect(ctx)
 	require.NoError(t, err)
@@ -365,7 +363,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 	ctx := context.Background()
 	// directDockerHubReference {
 	req := testcontainers.ContainerRequest{
-		Image:      "docker.io/alpine",
+		Image:      "alpine",
 		Cmd:        []string{"echo", "-n", "I was not expecting this"},
 		WaitingFor: wait.ForLog("I was expecting this").WithStartupTimeout(5 * time.Second),
 	}
@@ -376,8 +374,7 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 		Started:          true,
 	})
 	testcontainers.CleanupContainer(t, c)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "container exited with code 0")
+	require.ErrorContains(t, err, "container exited with code 0")
 
 	logs, logErr := c.Logs(ctx)
 	require.NoError(t, logErr)
@@ -393,11 +390,11 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 type dockerImageSubstitutor struct{}
 
 func (s dockerImageSubstitutor) Description() string {
-	return "DockerImageSubstitutor (prepends docker.io)"
+	return "DockerImageSubstitutor (prepends registry.hub.docker.com)"
 }
 
 func (s dockerImageSubstitutor) Substitute(image string) (string, error) {
-	return "docker.io/" + image, nil
+	return "registry.hub.docker.com/library/" + image, nil
 }
 
 // }
@@ -456,7 +453,7 @@ func TestImageSubstitutors(t *testing.T) {
 			name:          "Prepend namespace",
 			image:         "alpine",
 			substitutors:  []testcontainers.ImageSubstitutor{dockerImageSubstitutor{}},
-			expectedImage: "docker.io/alpine",
+			expectedImage: "registry.hub.docker.com/library/alpine",
 		},
 		{
 			name:          "Substitution with error",
@@ -555,5 +552,5 @@ func ExampleGenericContainer_withSubstitutors() {
 
 	fmt.Println(dockerContainer.Image)
 
-	// Output: docker.io/alpine:latest
+	// Output: registry.hub.docker.com/library/alpine:latest
 }

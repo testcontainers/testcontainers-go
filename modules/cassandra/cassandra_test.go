@@ -62,9 +62,7 @@ func TestCassandraWithConfigFile(t *testing.T) {
 
 	cluster := gocql.NewCluster(connectionHost)
 	session, err := cluster.CreateSession()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer session.Close()
 
 	var result string
@@ -90,9 +88,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 
 		cluster := gocql.NewCluster(connectionHost)
 		session, err := cluster.CreateSession()
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		defer session.Close()
 
 		var test Test
@@ -113,9 +109,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 
 		cluster := gocql.NewCluster(connectionHost)
 		session, err := cluster.CreateSession()
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		defer session.Close()
 
 		var test Test

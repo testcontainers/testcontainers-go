@@ -112,6 +112,7 @@ func TestExposeHostPorts(t *testing.T) {
 }
 
 func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, string) {
+	t.Helper()
 	// wgetHostInternal {
 	code, reader, err := c.Exec(
 		context.Background(),
@@ -129,24 +130,20 @@ func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, strin
 }
 
 func assertContainerHasHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
+	t.Helper()
 	for _, port := range ports {
 		code, response := httpRequest(t, c, port)
-		if code != 0 {
-			t.Fatalf("expected status code [%d] but got [%d]", 0, code)
-		}
+		require.Zerof(t, code, "expected status code [%d] but got [%d]", 0, code)
 
-		if response != expectedResponse {
-			t.Fatalf("expected [%s] but got [%s]", expectedResponse, response)
-		}
+		require.Equalf(t, expectedResponse, response, "expected [%s] but got [%s]", expectedResponse, response)
 	}
 }
 
 func assertContainerHasNoHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
+	t.Helper()
 	for _, port := range ports {
 		_, response := httpRequest(t, c, port)
 
-		if response == expectedResponse {
-			t.Fatalf("expected not to get [%s] but got [%s]", expectedResponse, response)
-		}
+		require.NotEqualf(t, expectedResponse, response, "expected not to get [%s] but got [%s]", expectedResponse, response)
 	}
 }

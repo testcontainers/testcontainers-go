@@ -98,7 +98,7 @@ func TestPulsar(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, err := testcontainerspulsar.Run(
 				ctx,
-				"docker.io/apachepulsar/pulsar:2.10.2",
+				"apachepulsar/pulsar:2.10.2",
 				tt.opts...,
 			)
 			testcontainers.CleanupContainer(t, c)
@@ -166,9 +166,7 @@ func TestPulsar(t *testing.T) {
 			case <-ticker.C:
 				t.Fatal("did not receive message in time")
 			case msg := <-msgChan:
-				if string(msg) != "hello world" {
-					t.Fatal("received unexpected message bytes")
-				}
+				require.Equalf(t, "hello world", string(msg), "received unexpected message bytes")
 			}
 
 			// get topic statistics using the Admin endpoint

@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
@@ -70,9 +72,7 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 				return
 			}
 			provider, ok := got.(*DockerProvider)
-			if !ok {
-				t.Fatalf("ProviderType.GetProvider() = %T, want %T", got, &DockerProvider{})
-			}
+			require.Truef(t, ok, "ProviderType.GetProvider() = %T, want %T", got, &DockerProvider{})
 			if provider.defaultBridgeNetworkName != tt.want {
 				t.Errorf("ProviderType.GetProvider() = %v, want %v", provider.defaultBridgeNetworkName, tt.want)
 			}

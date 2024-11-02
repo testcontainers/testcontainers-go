@@ -16,6 +16,7 @@ type TestKafkaConsumer struct {
 }
 
 func NewTestKafkaConsumer(t *testing.T) (*TestKafkaConsumer, <-chan bool, <-chan bool, func()) {
+	t.Helper()
 	kc := &TestKafkaConsumer{
 		t:      t,
 		ready:  make(chan bool, 1),

@@ -23,7 +23,7 @@ func TestRun(t *testing.T) {
 
 	c, r, err := ctr.Exec(ctx, []string{"etcdctl", "member", "list"}, tcexec.Multiplexed())
 	require.NoError(t, err)
-	require.Equal(t, 0, c)
+	require.Zero(t, c)
 
 	output, err := io.ReadAll(r)
 	require.NoError(t, err)

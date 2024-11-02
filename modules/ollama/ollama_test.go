@@ -75,6 +75,7 @@ func TestOllama(t *testing.T) {
 // For that, it checks if the response of the /api/tags endpoint
 // contains the model name.
 func assertLoadedModel(t *testing.T, c *ollama.OllamaContainer) {
+	t.Helper()
 	url, err := c.ConnectionString(context.Background())
 	require.NoError(t, err)
 

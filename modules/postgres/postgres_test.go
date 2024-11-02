@@ -34,24 +34,24 @@ func TestPostgres(t *testing.T) {
 	}{
 		{
 			name:  "Postgres",
-			image: "docker.io/postgres:15.2-alpine",
+			image: "postgres:15.2-alpine",
 		},
 		{
 			name: "Timescale",
 			// timescale {
-			image: "docker.io/timescale/timescaledb:2.1.0-pg11",
+			image: "timescale/timescaledb:2.1.0-pg11",
 			// }
 		},
 		{
 			name: "Postgis",
 			// postgis {
-			image: "docker.io/postgis/postgis:12-3.0",
+			image: "postgis/postgis:12-3.0",
 			// }
 		},
 		{
 			name: "Pgvector",
 			// pgvector {
-			image: "docker.io/pgvector/pgvector:pg16",
+			image: "pgvector/pgvector:pg16",
 			// }
 		},
 	}
@@ -112,7 +112,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	t.Run("default query", func(t *testing.T) {
 		ctr, err := postgres.Run(
 			ctx,
-			"docker.io/postgres:16-alpine",
+			"postgres:16-alpine",
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
@@ -125,7 +125,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	t.Run("custom query", func(t *testing.T) {
 		ctr, err := postgres.Run(
 			ctx,
-			"docker.io/postgres:16-alpine",
+			"postgres:16-alpine",
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
@@ -138,7 +138,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	t.Run("custom bad query", func(t *testing.T) {
 		ctr, err := postgres.Run(
 			ctx,
-			"docker.io/postgres:16-alpine",
+			"postgres:16-alpine",
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
@@ -153,7 +153,7 @@ func TestWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := postgres.Run(ctx,
-		"docker.io/postgres:16-alpine",
+		"postgres:16-alpine",
 		postgres.WithConfigFile(filepath.Join("testdata", "my-postgres.conf")),
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
@@ -177,7 +177,7 @@ func TestWithInitScript(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := postgres.Run(ctx,
-		"docker.io/postgres:15.2-alpine",
+		"postgres:15.2-alpine",
 		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
@@ -228,7 +228,7 @@ func TestSnapshot(t *testing.T) {
 			// 1. Start the postgres ctr and run any migrations on it
 			ctr, err := postgres.Run(
 				ctx,
-				"docker.io/postgres:16-alpine",
+				"postgres:16-alpine",
 				postgres.WithDatabase(dbname),
 				postgres.WithUsername(user),
 				postgres.WithPassword(password),
@@ -303,7 +303,7 @@ func TestSnapshotWithOverrides(t *testing.T) {
 
 	ctr, err := postgres.Run(
 		ctx,
-		"docker.io/postgres:16-alpine",
+		"postgres:16-alpine",
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
@@ -340,6 +340,34 @@ func TestSnapshotWithOverrides(t *testing.T) {
 	})
 }
 
+func TestSnapshotDuplicate(t *testing.T) {
+	ctx := context.Background()
+
+	dbname := "other-db"
+	user := "other-user"
+	password := "other-password"
+
+	ctr, err := postgres.Run(
+		ctx,
+		"postgres:16-alpine",
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		postgres.BasicWaitStrategies(),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	_, _, err = ctr.Exec(ctx, []string{"psql", "-U", user, "-d", dbname, "-c", "CREATE TABLE users (id SERIAL, name TEXT NOT NULL, age INT NOT NULL)"})
+	require.NoError(t, err)
+
+	err = ctr.Snapshot(ctx, postgres.WithSnapshotName("other-snapshot"))
+	require.NoError(t, err)
+
+	err = ctr.Snapshot(ctx, postgres.WithSnapshotName("other-snapshot"))
+	require.NoError(t, err)
+}
+
 func TestSnapshotWithDockerExecFallback(t *testing.T) {
 	ctx := context.Background()
 
@@ -347,7 +375,7 @@ func TestSnapshotWithDockerExecFallback(t *testing.T) {
 	// 1. Start the postgres container and run any migrations on it
 	ctr, err := postgres.Run(
 		ctx,
-		"docker.io/postgres:16-alpine",
+		"postgres:16-alpine",
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),

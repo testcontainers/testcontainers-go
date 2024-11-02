@@ -57,6 +57,7 @@ func TestArtemis(t *testing.T) {
 			user: "artemis",
 			pass: "artemis",
 			hook: func(t *testing.T, container *artemis.Container) {
+				t.Helper()
 				expectQueue(t, container, "ArgsTestQueue")
 			},
 		},
@@ -64,7 +65,7 @@ func TestArtemis(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctr, err := artemis.Run(ctx, "docker.io/apache/activemq-artemis:2.30.0-alpine", test.opts...)
+			ctr, err := artemis.Run(ctx, "apache/activemq-artemis:2.30.0-alpine", test.opts...)
 			testcontainers.CleanupContainer(t, ctr)
 			require.NoError(t, err)
 
@@ -76,7 +77,7 @@ func TestArtemis(t *testing.T) {
 			res, err := http.Get(u)
 			require.NoError(t, err, "failed to access console")
 			res.Body.Close()
-			assert.Equal(t, http.StatusOK, res.StatusCode, "failed to access console")
+			require.Equal(t, http.StatusOK, res.StatusCode, "failed to access console")
 
 			if test.user != "" {
 				assert.Equal(t, test.user, ctr.User(), "unexpected user")

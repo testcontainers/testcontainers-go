@@ -50,6 +50,7 @@ func testCallbackCheckError(_ context.Context, _ string) error {
 }
 
 func mockCallbackCheck(t *testing.T, fn func(_ context.Context, _ string) error) {
+	t.Helper()
 	oldCheck := dockerHostCheck
 	dockerHostCheck = fn
 	t.Cleanup(func() {
@@ -73,7 +74,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host := MustExtractDockerHost(context.Background())
 
-		assert.Equal(t, expected, host)
+		require.Equal(t, expected, host)
 
 		t.Setenv("DOCKER_HOST", "/path/to/another/docker.sock")
 
@@ -192,7 +193,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := testcontainersHostFromProperties(context.Background())
 			require.ErrorIs(t, err, ErrTestcontainersHostNotSetInProperties)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("DOCKER_HOST is set", func(t *testing.T) {
@@ -212,7 +213,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerHostFromEnv(context.Background())
 			require.ErrorIs(t, err, ErrDockerHostNotSet)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is set", func(t *testing.T) {
@@ -236,7 +237,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerSocketOverridePath()
 			require.ErrorIs(t, err, ErrDockerSocketOverrideNotSet)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("Context sets the Docker socket", func(t *testing.T) {
@@ -252,7 +253,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
 			require.Error(t, err)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("Context sets a malformed schema for the Docker socket", func(t *testing.T) {
@@ -260,7 +261,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, "http://example.com/docker.sock"))
 			require.ErrorIs(t, err, ErrNoUnixSchema)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("Docker socket exists", func(t *testing.T) {
@@ -289,7 +290,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerHostFromProperties(context.Background())
 			require.ErrorIs(t, err, ErrDockerSocketNotSetInProperties)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("Docker socket does not exist", func(t *testing.T) {
@@ -297,7 +298,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerSocketPath(context.Background())
 			require.ErrorIs(t, err, ErrSocketNotFoundInPath)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 	})
 }
@@ -515,10 +516,12 @@ func createTmpDockerSocket(parent string) error {
 // setupDockerHostNotFound sets up the environment for the test case where the DOCKER_HOST environment variable is
 // already set (e.g. rootless docker) therefore we need to unset it before the test
 func setupDockerHostNotFound(t *testing.T) {
+	t.Helper()
 	t.Setenv("DOCKER_HOST", "")
 }
 
 func setupDockerSocket(t *testing.T) string {
+	t.Helper()
 	t.Cleanup(func() {
 		DockerSocketPath = originalDockerSocketPath
 		DockerSocketPathWithSchema = originalDockerSocketPathWithSchema
@@ -536,6 +539,7 @@ func setupDockerSocket(t *testing.T) string {
 }
 
 func setupDockerSocketNotFound(t *testing.T) {
+	t.Helper()
 	t.Cleanup(func() {
 		DockerSocketPath = originalDockerSocketPath
 		DockerSocketPathWithSchema = originalDockerSocketPathWithSchema
@@ -548,6 +552,7 @@ func setupDockerSocketNotFound(t *testing.T) {
 }
 
 func setupTestcontainersProperties(t *testing.T, content string) {
+	t.Helper()
 	t.Cleanup(func() {
 		// reset the properties file after the test
 		config.Reset()

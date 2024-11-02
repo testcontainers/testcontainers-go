@@ -254,6 +254,7 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 }
 
 func performReplicatedCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {
+	t.Helper()
 	return backoff.RetryNotifyWithData(
 		func() ([]Test, error) {
 			err := conn.Exec(context.Background(), "CREATE TABLE replicated_test_table (id UInt64) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/mdb.data_transfer_cp_cdc', '{replica}') PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
@@ -292,6 +293,7 @@ func performReplicatedCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {
 }
 
 func performCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {
+	t.Helper()
 	return backoff.RetryNotifyWithData(
 		func() ([]Test, error) {
 			err := conn.Exec(context.Background(), "create table if not exists test_table (id UInt64) engine = MergeTree PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")

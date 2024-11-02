@@ -49,7 +49,7 @@ When starting the Postgres container, you can pass options in a variadic way to 
 #### Image
 
 If you need to set a different Postgres Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "docker.io/postgres:16-alpine")`.
+E.g. `Run(context.Background(), "postgres:16-alpine")`.
 
 {% include "../features/common_functional_options.md" %}
 

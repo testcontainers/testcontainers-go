@@ -12,15 +12,12 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/image"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBuildImageFromDockerfile(t *testing.T) {
 	provider, err := NewDockerProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer provider.Close()
 
 	cli := provider.Client()
@@ -38,7 +35,7 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 		// }
 	})
 	require.NoError(t, err)
-	assert.Equal(t, "test-repo:test-tag", tag)
+	require.Equal(t, "test-repo:test-tag", tag)
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
 	require.NoError(t, err)
@@ -48,17 +45,13 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 			Force:         true,
 			PruneChildren: true,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	})
 }
 
 func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 	provider, err := NewDockerProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer provider.Close()
 
 	cli := provider.Client()
@@ -73,7 +66,7 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(tag, "test-repo:"))
+	require.True(t, strings.HasPrefix(tag, "test-repo:"))
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
 	require.NoError(t, err)
@@ -83,9 +76,7 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 			Force:         true,
 			PruneChildren: true,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	})
 }
 
@@ -113,9 +104,7 @@ func TestBuildImageFromDockerfile_BuildError(t *testing.T) {
 
 func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 	provider, err := NewDockerProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer provider.Close()
 
 	cli := provider.Client()
@@ -130,7 +119,7 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	assert.True(t, strings.HasSuffix(tag, ":test-tag"))
+	require.True(t, strings.HasSuffix(tag, ":test-tag"))
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
 	require.NoError(t, err)
@@ -140,9 +129,7 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 			Force:         true,
 			PruneChildren: true,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	})
 }
 

@@ -19,16 +19,12 @@ import (
 
 func TestWaitForListeningPortSucceeds(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var mappedPortCount, execCount int
 	target := &MockStrategyTarget{
@@ -60,23 +56,18 @@ func TestWaitForListeningPortSucceeds(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
-	if err := wg.WaitUntilReady(context.Background(), target); err != nil {
-		t.Fatal(err)
-	}
+	err = wg.WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
 }
 
 func TestWaitForExposedPortSucceeds(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var mappedPortCount, execCount int
 	target := &MockStrategyTarget{
@@ -124,9 +115,8 @@ func TestWaitForExposedPortSucceeds(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
-	if err := wg.WaitUntilReady(context.Background(), target); err != nil {
-		t.Fatal(err)
-	}
+	err = wg.WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
 }
 
 func TestHostPortStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
@@ -155,10 +145,7 @@ func TestHostPortStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "container crashed with out-of-memory (OOMKilled)")
 	}
 }
 
@@ -189,10 +176,7 @@ func TestHostPortStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T)
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "container exited with code 1"
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "container exited with code 1")
 	}
 }
 
@@ -222,10 +206,7 @@ func TestHostPortStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "unexpected container status \"dead\""
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "unexpected container status \"dead\"")
 	}
 }
 
@@ -250,10 +231,7 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToOOMKilledContainer(t *te
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "container crashed with out-of-memory (OOMKilled)")
 	}
 }
 
@@ -279,10 +257,7 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToExitedContainer(t *testi
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "container exited with code 1"
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "container exited with code 1")
 	}
 }
 
@@ -307,25 +282,18 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToUnexpectedContainerStatu
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "unexpected container status \"dead\""
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "unexpected container status \"dead\"")
 	}
 }
 
 func TestHostPortStrategyFailsWhileInternalCheckingDueToOOMKilledContainer(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var stateCount int
 	target := &MockStrategyTarget{
@@ -354,25 +322,18 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToOOMKilledContainer(t *te
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "container crashed with out-of-memory (OOMKilled)")
 	}
 }
 
 func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var stateCount int
 	target := &MockStrategyTarget{
@@ -402,25 +363,18 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testi
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "container exited with code 1"
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "container exited with code 1")
 	}
 }
 
 func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatus(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var stateCount int
 	target := &MockStrategyTarget{
@@ -449,10 +403,7 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatu
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		require.Error(t, err)
-
-		expected := "unexpected container status \"dead\""
-		require.Contains(t, err.Error(), expected)
+		require.ErrorContains(t, err, "unexpected container status \"dead\"")
 	}
 }
 

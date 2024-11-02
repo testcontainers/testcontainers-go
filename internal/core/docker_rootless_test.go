@@ -70,7 +70,7 @@ func TestRootlessDockerSocketPathNotSupportedOnWindows(t *testing.T) {
 	t.Setenv("GOOS", "windows")
 	socketPath, err := rootlessDockerSocketPath(context.Background())
 	require.ErrorIs(t, err, ErrRootlessDockerNotSupportedWindows)
-	assert.Empty(t, socketPath)
+	require.Empty(t, socketPath)
 }
 
 func TestRootlessDockerSocketPath(t *testing.T) {
@@ -179,11 +179,12 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
 		require.ErrorIs(t, err, ErrRootlessDockerNotFoundXDGRuntimeDir)
-		assert.Empty(t, socketPath)
+		require.Empty(t, socketPath)
 	})
 }
 
 func setupRootlessNotFound(t *testing.T) {
+	t.Helper()
 	t.Cleanup(func() {
 		baseRunDir = originalBaseRunDir
 		os.Setenv("XDG_RUNTIME_DIR", originalXDGRuntimeDir)

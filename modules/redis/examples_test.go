@@ -15,7 +15,7 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	redisContainer, err := redis.Run(ctx,
-		"docker.io/redis:7",
+		"redis:7",
 		redis.WithSnapshotting(10, 1),
 		redis.WithLogLevel(redis.LogLevelVerbose),
 		redis.WithConfigFile(filepath.Join("testdata", "redis7.conf")),

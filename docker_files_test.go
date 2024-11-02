@@ -13,24 +13,22 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const testBashImage string = "bash:5.2.26"
+
 func TestCopyFileToContainer(t *testing.T) {
 	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cnl()
 
 	// copyFileOnCreate {
 	absPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	r, err := os.Open(absPath)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.io/bash",
+			Image: testBashImage,
 			Files: []testcontainers.ContainerFile{
 				{
 					Reader:            r,
@@ -56,17 +54,13 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 	// Not using the assertations here to avoid leaking the library into the example
 	// copyFileAfterCreate {
 	waitForPath, err := filepath.Abs(filepath.Join(".", "testdata", "waitForHello.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	helloPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.io/bash:5.2.26",
+			Image: testBashImage,
 			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath:      waitForPath,
@@ -98,13 +92,11 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 	// Not using the assertations here to avoid leaking the library into the example
 	// copyDirectoryToContainer {
 	dataDirectory, err := filepath.Abs(filepath.Join(".", "testdata"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.io/bash",
+			Image: testBashImage,
 			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath: dataDirectory,
@@ -131,17 +123,13 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 
 	// copyDirectoryToRunningContainerAsFile {
 	dataDirectory, err := filepath.Abs(filepath.Join(".", "testdata"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	waitForPath, err := filepath.Abs(filepath.Join(dataDirectory, "waitForHello.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.io/bash",
+			Image: testBashImage,
 			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath:      waitForPath,
@@ -173,17 +161,13 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 	// Not using the assertations here to avoid leaking the library into the example
 	// copyDirectoryToRunningContainerAsDir {
 	waitForPath, err := filepath.Abs(filepath.Join(".", "testdata", "waitForHello.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	dataDirectory, err := filepath.Abs(filepath.Join(".", "testdata"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.io/bash",
+			Image: testBashImage,
 			Files: []testcontainers.ContainerFile{
 				{
 					HostFilePath:      waitForPath,

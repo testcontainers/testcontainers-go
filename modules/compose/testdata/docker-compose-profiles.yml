@@ -1,24 +1,24 @@
 services:
   starts-always:
-    image: docker.io/nginx:stable-alpine
+    image: nginx:stable-alpine
     ports:
       - ":80"
     # profiles: none defined, therefore always starts.
   only-dev:
-    image: docker.io/nginx:stable-alpine
+    image: nginx:stable-alpine
     ports:
       - ":80"
     profiles:
       - dev
   dev-or-test:
-    image: docker.io/nginx:stable-alpine
+    image: nginx:stable-alpine
     ports:
       - ":80"
     profiles:
       - dev
       - test
   only-prod:
-    image: docker.io/nginx:stable-alpine
+    image: nginx:stable-alpine
     ports:
       - ":80"
     profiles:

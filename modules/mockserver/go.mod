@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/BraspagDevelopers/mock-server-client v0.2.2
-	github.com/testcontainers/testcontainers-go v0.33.0
+	github.com/testcontainers/testcontainers-go v0.34.0
 )
 
 require (
