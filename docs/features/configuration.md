@@ -115,4 +115,8 @@ Path to Docker's socket. Used by Ryuk, Docker Compose, and a few other container
 
 6. Else, the default location of the docker socket is used: `/var/run/docker.sock`
 
+In any case, if the docker socket schema is `tcp://`, the default docker socket path will be returned.
+
 The library panics if the Docker host cannot be discovered.
+
+## Windows
