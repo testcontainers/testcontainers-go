@@ -2,7 +2,6 @@ package kafka_test
 
 import (
 	"context"
-	"io"
 	"strings"
 	"testing"
 
@@ -82,15 +81,11 @@ func assertAdvertisedListeners(t *testing.T, container testcontainers.Container)
 	inspect, err := container.Inspect(context.Background())
 	require.NoError(t, err)
 
-	hostname := inspect.Config.Hostname
+	brokerURL := "BROKER://" + inspect.Config.Hostname + ":9092"
 
-	code, r, err := container.Exec(context.Background(), []string{"cat", "/usr/sbin/testcontainers_start.sh"})
-	require.NoError(t, err)
+	ctx := context.Background()
 
-	require.Zero(t, code)
+	bs := testcontainers.RequireContainerExec(ctx, t, container, []string{"cat", "/usr/sbin/testcontainers_start.sh"})
 
-	bs, err := io.ReadAll(r)
-	require.NoError(t, err)
-
-	require.Containsf(t, string(bs), "BROKER://"+hostname+":9092", "expected advertised listeners to contain %s, got %s", "BROKER://"+hostname+":9092", string(bs))
+	require.Containsf(t, bs, brokerURL, "expected advertised listeners to contain %s, got %s", brokerURL, bs)
 }
