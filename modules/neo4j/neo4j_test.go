@@ -3,7 +3,6 @@ package neo4j_test
 import (
 	"context"
 	"fmt"
-	"io"
 	"strings"
 	"testing"
 
@@ -159,12 +158,7 @@ func createDriver(t *testing.T, ctx context.Context, container *neo4j.Neo4jConta
 
 func getContainerEnv(t *testing.T, ctx context.Context, container *neo4j.Neo4jContainer) string {
 	t.Helper()
-	exec, reader, err := container.Exec(ctx, []string{"env"})
-	require.NoErrorf(t, err, "expected env to successfully run but did not")
-	require.Zerof(t, exec, "expected env to exit with status 0 but exited with: %d", exec)
-	envVars, err := io.ReadAll(reader)
-	require.NoErrorf(t, err, "expected to read all bytes from env output but did not")
-	return string(envVars)
+	return testcontainers.RequireContainerExec(ctx, t, container, []string{"env"})
 }
 
 const logSeparator = "---$$$---"
