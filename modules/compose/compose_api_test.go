@@ -2,7 +2,7 @@ package compose
 
 import (
 	"context"
-	"fmt"
+	"encoding/hex"
 	"hash/fnv"
 	"os"
 	"path/filepath"
@@ -642,7 +642,7 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 
 	volumeListFilters := filters.NewArgs()
 	// the "mydata" identifier comes from the "testdata/docker-compose-volume.yml" file
-	volumeListFilters.Add("name", fmt.Sprintf("%s_mydata", identifier))
+	volumeListFilters.Add("name", identifier+"_mydata")
 	volumeList, err := compose.dockerClient.VolumeList(ctx, volume.ListOptions{Filters: volumeListFilters})
 	require.NoError(t, err, "compose.dockerClient.VolumeList()")
 
@@ -690,7 +690,7 @@ func TestDockerComposeApiWithWaitForShortLifespanService(t *testing.T) {
 }
 
 func testNameHash(name string) StackIdentifier {
-	return StackIdentifier(fmt.Sprintf("%x", fnv.New32a().Sum([]byte(name))))
+	return StackIdentifier(hex.EncodeToString(fnv.New32a().Sum([]byte(name))))
 }
 
 // cleanup is a helper function that schedules the compose stack to be stopped when the test ends.

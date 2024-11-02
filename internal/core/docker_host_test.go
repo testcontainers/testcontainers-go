@@ -2,7 +2,7 @@ package core
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,7 +46,7 @@ func testCallbackCheckPassing(_ context.Context, _ string) error {
 }
 
 func testCallbackCheckError(_ context.Context, _ string) error {
-	return fmt.Errorf("could not check the Docker host")
+	return errors.New("could not check the Docker host")
 }
 
 func mockCallbackCheck(t *testing.T, fn func(_ context.Context, _ string) error) {

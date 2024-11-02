@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -82,7 +83,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	password := req.Env["MYSQL_PASSWORD"]
 
 	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
-		return nil, fmt.Errorf("empty password can be used only with the root user")
+		return nil, errors.New("empty password can be used only with the root user")
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

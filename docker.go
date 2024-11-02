@@ -152,7 +152,7 @@ func (c *DockerContainer) PortEndpoint(ctx context.Context, port nat.Port, proto
 
 	protoFull := ""
 	if proto != "" {
-		protoFull = fmt.Sprintf("%s://", proto)
+		protoFull = proto + "://"
 	}
 
 	return fmt.Sprintf("%s%s:%s", protoFull, host, outerPort.Port()), nil

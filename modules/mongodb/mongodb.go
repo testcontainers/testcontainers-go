@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"time"
 
@@ -59,7 +60,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	username := req.Env["MONGO_INITDB_ROOT_USERNAME"]
 	password := req.Env["MONGO_INITDB_ROOT_PASSWORD"]
 	if username != "" && password == "" || username == "" && password != "" {
-		return nil, fmt.Errorf("if you specify username or password, you must provide both of them")
+		return nil, errors.New("if you specify username or password, you must provide both of them")
 	}
 
 	replicaSet := req.Env[replicaSetOptEnvKey]

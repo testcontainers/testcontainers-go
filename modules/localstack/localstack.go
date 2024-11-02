@@ -29,7 +29,7 @@ func isLegacyMode(image string) bool {
 	}
 
 	if !strings.HasPrefix(version, "v") {
-		version = fmt.Sprintf("v%s", version)
+		version = "v" + version
 	}
 
 	if semver.IsValid(version) {
@@ -48,7 +48,7 @@ func isVersion2(image string) bool {
 	}
 
 	if !strings.HasPrefix(version, "v") {
-		version = fmt.Sprintf("v%s", version)
+		version = "v" + version
 	}
 
 	if semver.IsValid(version) {
@@ -82,7 +82,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
 		Env:          map[string]string{},
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
-			hostConfig.Binds = []string{fmt.Sprintf("%s:/var/run/docker.sock", dockerHost)}
+			hostConfig.Binds = []string{dockerHost + ":/var/run/docker.sock"}
 		},
 	}
 

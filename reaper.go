@@ -83,7 +83,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 func reaperContainerNameFromSessionID(sessionID string) string {
 	// The session id is 64 characters, so we will not hit the limit of 128
 	// characters for container names.
-	return fmt.Sprintf("reaper_%s", sessionID)
+	return "reaper_" + sessionID
 }
 
 // reaperSpawner is a singleton that manages the reaper container.

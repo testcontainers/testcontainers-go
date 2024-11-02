@@ -56,9 +56,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"NEO4J_AUTH": "none",
 		},
 		ExposedPorts: []string{
-			fmt.Sprintf("%s/tcp", defaultBoltPort),
-			fmt.Sprintf("%s/tcp", defaultHttpPort),
-			fmt.Sprintf("%s/tcp", defaultHttpsPort),
+			defaultBoltPort + "/tcp",
+			defaultHttpPort + "/tcp",
+			defaultHttpsPort + "/tcp",
 		},
 		WaitingFor: &wait.MultiStrategy{
 			Strategies: []wait.Strategy{

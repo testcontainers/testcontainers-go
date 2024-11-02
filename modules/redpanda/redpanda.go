@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	_ "embed"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -329,7 +330,7 @@ func registerListeners(settings options, req testcontainers.GenericContainerRequ
 	}
 
 	if len(req.Networks) == 0 {
-		return fmt.Errorf("container must be attached to at least one network")
+		return errors.New("container must be attached to at least one network")
 	}
 
 	for _, listener := range settings.Listeners {
@@ -418,11 +419,11 @@ func isAtLeastVersion(image, major string) bool {
 	}
 
 	if !strings.HasPrefix(version, "v") {
-		version = fmt.Sprintf("v%s", version)
+		version = "v" + version
 	}
 
 	if semver.IsValid(version) {
-		return semver.Compare(version, fmt.Sprintf("v%s", major)) >= 0 // version >= v8.x
+		return semver.Compare(version, "v"+major) >= 0 // version >= v8.x
 	}
 
 	return false

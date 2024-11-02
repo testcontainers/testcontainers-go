@@ -2,9 +2,9 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -161,7 +161,7 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 		})
 
 		uid := os.Getuid()
-		runDir := filepath.Join(tmpDir, "user", fmt.Sprintf("%d", uid))
+		runDir := filepath.Join(tmpDir, "user", strconv.Itoa(uid))
 		err = createTmpDockerSocket(runDir)
 		require.NoError(t, err)
 
@@ -208,7 +208,7 @@ func setupRootlessNotFound(t *testing.T) {
 
 	baseRunDir = tmpDir
 	uid := os.Getuid()
-	runDir := filepath.Join(tmpDir, "run", "user", fmt.Sprintf("%d", uid))
+	runDir := filepath.Join(tmpDir, "run", "user", strconv.Itoa(uid))
 	err = createTmpDir(runDir)
 	require.NoError(t, err)
 }
