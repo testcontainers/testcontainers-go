@@ -17,11 +17,10 @@ import (
 
 func TestModule(t *testing.T) {
 	tests := []struct {
-		name                  string
-		module                context.TestcontainersModule
-		expectedContainerName string
-		expectedEntrypoint    string
-		expectedTitle         string
+		name               string
+		module             context.TestcontainersModule
+		expectedEntrypoint string
+		expectedTitle      string
 	}{
 		{
 			name: "Module with title",
@@ -31,9 +30,8 @@ func TestModule(t *testing.T) {
 				Image:     "mongodb:latest",
 				TitleName: "MongoDB",
 			},
-			expectedContainerName: "MongoDBContainer",
-			expectedEntrypoint:    "Run",
-			expectedTitle:         "MongoDB",
+			expectedEntrypoint: "Run",
+			expectedTitle:      "MongoDB",
 		},
 		{
 			name: "Module without title",
@@ -42,9 +40,8 @@ func TestModule(t *testing.T) {
 				IsModule: true,
 				Image:    "mongodb:latest",
 			},
-			expectedContainerName: "MongodbContainer",
-			expectedEntrypoint:    "Run",
-			expectedTitle:         "Mongodb",
+			expectedEntrypoint: "Run",
+			expectedTitle:      "Mongodb",
 		},
 		{
 			name: "Example with title",
@@ -54,9 +51,8 @@ func TestModule(t *testing.T) {
 				Image:     "mongodb:latest",
 				TitleName: "MongoDB",
 			},
-			expectedContainerName: "mongoDBContainer",
-			expectedEntrypoint:    "run",
-			expectedTitle:         "MongoDB",
+			expectedEntrypoint: "run",
+			expectedTitle:      "MongoDB",
 		},
 		{
 			name: "Example without title",
@@ -65,9 +61,9 @@ func TestModule(t *testing.T) {
 				IsModule: false,
 				Image:    "mongodb:latest",
 			},
-			expectedContainerName: "mongodbContainer",
-			expectedEntrypoint:    "run",
-			expectedTitle:         "Mongodb",
+
+			expectedEntrypoint: "run",
+			expectedTitle:      "Mongodb",
 		},
 	}
 
@@ -77,7 +73,7 @@ func TestModule(t *testing.T) {
 
 			assert.Equal(t, "mongodb", module.Lower())
 			assert.Equal(t, test.expectedTitle, module.Title())
-			assert.Equal(t, test.expectedContainerName, module.ContainerName())
+			assert.Equal(t, "Container", module.ContainerName())
 			assert.Equal(t, test.expectedEntrypoint, module.Entrypoint())
 		})
 	}
@@ -148,7 +144,11 @@ func TestModule_Validate(outer *testing.T) {
 
 	for _, test := range tests {
 		outer.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedErr, test.module.Validate())
+			if test.expectedErr != nil {
+				require.EqualError(t, test.module.Validate(), test.expectedErr.Error())
+			} else {
+				require.NoError(t, test.module.Validate())
+			}
 		})
 	}
 }
@@ -187,7 +187,7 @@ func TestGenerateWrongModuleName(t *testing.T) {
 	for _, test := range tests {
 		module := context.TestcontainersModule{
 			Name:  test.name,
-			Image: "docker.io/example/" + test.name + ":latest",
+			Image: "example/" + test.name + ":latest",
 		}
 
 		err = internal.GenerateFiles(tmpCtx, module)
@@ -231,7 +231,7 @@ func TestGenerateWrongModuleTitle(t *testing.T) {
 		module := context.TestcontainersModule{
 			Name:      "foo",
 			TitleName: test.title,
-			Image:     "docker.io/example/foo:latest",
+			Image:     "example/foo:latest",
 		}
 
 		err = internal.GenerateFiles(tmpCtx, module)
@@ -266,7 +266,7 @@ func TestGenerate(t *testing.T) {
 		Name:      "foodb4tw",
 		TitleName: "FooDB4TheWin",
 		IsModule:  false,
-		Image:     "docker.io/example/foodb:latest",
+		Image:     "example/foodb:latest",
 	}
 	moduleNameLower := module.Lower()
 
@@ -277,7 +277,7 @@ func TestGenerate(t *testing.T) {
 
 	moduleDirFileInfo, err := os.Stat(moduleDirPath)
 	require.NoError(t, err) // error nil implies the file exist
-	assert.True(t, moduleDirFileInfo.IsDir())
+	require.True(t, moduleDirFileInfo.IsDir())
 
 	moduleDocFile := filepath.Join(examplesDocTmp, moduleNameLower+".md")
 	_, err = os.Stat(moduleDocFile)
@@ -322,7 +322,7 @@ func TestGenerateModule(t *testing.T) {
 		Name:      "foodb",
 		TitleName: "FooDB",
 		IsModule:  true,
-		Image:     "docker.io/example/foodb:latest",
+		Image:     "example/foodb:latest",
 	}
 	moduleNameLower := module.Lower()
 
@@ -333,7 +333,7 @@ func TestGenerateModule(t *testing.T) {
 
 	moduleDirFileInfo, err := os.Stat(moduleDirPath)
 	require.NoError(t, err) // error nil implies the file exist
-	assert.True(t, moduleDirFileInfo.IsDir())
+	require.True(t, moduleDirFileInfo.IsDir())
 
 	moduleDocFile := filepath.Join(modulesDocTmp, moduleNameLower+".md")
 	_, err = os.Stat(moduleDocFile)
@@ -357,11 +357,13 @@ func TestGenerateModule(t *testing.T) {
 
 // assert content module file in the docs
 func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, moduleDocFile string) {
+	t.Helper()
 	content, err := os.ReadFile(moduleDocFile)
 	require.NoError(t, err)
 
 	lower := module.Lower()
 	title := module.Title()
+	entrypoint := module.Entrypoint()
 
 	data := sanitiseContent(content)
 	assert.Equal(t, "# "+title, data[0])
@@ -372,7 +374,7 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 	assert.Equal(t, "Please run the following command to add the "+title+" module to your Go dependencies:", data[10])
 	assert.Equal(t, "go get github.com/testcontainers/testcontainers-go/"+module.ParentDir()+"/"+lower, data[13])
 	assert.Equal(t, "<!--codeinclude-->", data[18])
-	assert.Equal(t, "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/examples_test.go) inside_block:run"+title+"Container", data[19])
+	assert.Equal(t, "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/examples_test.go) inside_block:Example"+entrypoint, data[19])
 	assert.Equal(t, "<!--/codeinclude-->", data[20])
 	assert.Equal(t, "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives three parameters:", data[31])
 	assert.True(t, strings.HasSuffix(data[34], "(*"+title+"Container, error)"))
@@ -382,18 +384,18 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 
 // assert content module test
 func assertExamplesTestContent(t *testing.T, module context.TestcontainersModule, examplesTestFile string) {
+	t.Helper()
 	content, err := os.ReadFile(examplesTestFile)
 	require.NoError(t, err)
 
 	lower := module.Lower()
 	entrypoint := module.Entrypoint()
-	title := module.Title()
 
 	data := sanitiseContent(content)
 	assert.Equal(t, "package "+lower+"_test", data[0])
-	assert.Equal(t, "\t\"github.com/testcontainers/testcontainers-go/modules/"+lower+"\"", data[7])
-	assert.Equal(t, "func Example"+entrypoint+"() {", data[10])
-	assert.Equal(t, "\t// run"+title+"Container {", data[11])
+	assert.Equal(t, "\t\"github.com/testcontainers/testcontainers-go\"", data[7])
+	assert.Equal(t, "\t\"github.com/testcontainers/testcontainers-go/modules/"+lower+"\"", data[8])
+	assert.Equal(t, "func Example"+entrypoint+"() {", data[11])
 	assert.Equal(t, "\t"+lower+"Container, err := "+lower+"."+entrypoint+"(ctx, \""+module.Image+"\")", data[14])
 	assert.Equal(t, "\tfmt.Println(state.Running)", data[32])
 	assert.Equal(t, "\t// Output:", data[34])
@@ -402,17 +404,19 @@ func assertExamplesTestContent(t *testing.T, module context.TestcontainersModule
 
 // assert content module test
 func assertModuleTestContent(t *testing.T, module context.TestcontainersModule, exampleTestFile string) {
+	t.Helper()
 	content, err := os.ReadFile(exampleTestFile)
 	require.NoError(t, err)
 
 	data := sanitiseContent(content)
 	assert.Equal(t, "package "+module.Lower()+"_test", data[0])
-	assert.Equal(t, "func Test"+module.Title()+"(t *testing.T) {", data[11])
-	assert.Equal(t, "\tctr, err := "+module.Lower()+"."+module.Entrypoint()+"(ctx, \""+module.Image+"\")", data[14])
+	assert.Equal(t, "func Test"+module.Title()+"(t *testing.T) {", data[12])
+	assert.Equal(t, "\tctr, err := "+module.Lower()+"."+module.Entrypoint()+"(ctx, \""+module.Image+"\")", data[15])
 }
 
 // assert content module
 func assertModuleContent(t *testing.T, module context.TestcontainersModule, exampleFile string) {
+	t.Helper()
 	content, err := os.ReadFile(exampleFile)
 	require.NoError(t, err)
 
@@ -423,7 +427,7 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 
 	data := sanitiseContent(content)
 	require.Equal(t, "package "+lower, data[0])
-	require.Equal(t, "// "+containerName+" represents the "+exampleName+" container type used in the module", data[9])
+	require.Equal(t, "// Container represents the "+exampleName+" container type used in the module", data[9])
 	require.Equal(t, "type "+containerName+" struct {", data[10])
 	require.Equal(t, "// "+entrypoint+" creates an instance of the "+exampleName+" container type", data[14])
 	require.Equal(t, "func "+entrypoint+"(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*"+containerName+", error) {", data[15])
@@ -437,6 +441,7 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 
 // assert content GitHub workflow for the module
 func assertModuleGithubWorkflowContent(t *testing.T, moduleWorkflowFile string) {
+	t.Helper()
 	content, err := os.ReadFile(moduleWorkflowFile)
 	require.NoError(t, err)
 
@@ -454,6 +459,7 @@ func assertModuleGithubWorkflowContent(t *testing.T, moduleWorkflowFile string) 
 
 // assert content go.mod
 func assertGoModContent(t *testing.T, module context.TestcontainersModule, tcVersion string, goModFile string) {
+	t.Helper()
 	content, err := os.ReadFile(goModFile)
 	require.NoError(t, err)
 
@@ -465,6 +471,7 @@ func assertGoModContent(t *testing.T, module context.TestcontainersModule, tcVer
 
 // assert content Makefile
 func assertMakefileContent(t *testing.T, module context.TestcontainersModule, makefile string) {
+	t.Helper()
 	content, err := os.ReadFile(makefile)
 	require.NoError(t, err)
 
@@ -474,6 +481,7 @@ func assertMakefileContent(t *testing.T, module context.TestcontainersModule, ma
 
 // assert content in the nav items from mkdocs.yml
 func assertMkdocsNavItems(t *testing.T, module context.TestcontainersModule, originalConfig *mkdocs.Config, tmpCtx context.Context) {
+	t.Helper()
 	config, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
 	require.NoError(t, err)
 
@@ -486,7 +494,7 @@ func assertMkdocsNavItems(t *testing.T, module context.TestcontainersModule, ori
 		expectedEntries = originalConfig.Nav[3].Modules
 	}
 
-	assert.Len(t, navItems, len(expectedEntries)+1)
+	require.Len(t, navItems, len(expectedEntries)+1)
 
 	// the module should be in the nav
 	found := false

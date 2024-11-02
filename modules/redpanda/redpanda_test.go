@@ -44,30 +44,30 @@ func TestRedpanda(t *testing.T) {
 	kafkaAdmCl := kadm.NewClient(kafkaCl)
 	metadata, err := kafkaAdmCl.Metadata(ctx)
 	require.NoError(t, err)
-	assert.Len(t, metadata.Brokers, 1)
+	require.Len(t, metadata.Brokers, 1)
 
 	// Test Schema Registry API
 	httpCl := &http.Client{Timeout: 5 * time.Second}
 	schemaRegistryURL, err := ctr.SchemaRegistryAddress(ctx)
 	require.NoError(t, err)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/subjects", schemaRegistryURL), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
 	require.NoError(t, err)
 	resp, err := httpCl.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Test Admin API
 	// adminAPIAddress {
 	adminAPIURL, err := ctr.AdminAPIAddress(ctx)
 	// }
 	require.NoError(t, err)
-	req, err = http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster/health_overview", adminAPIURL), nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, adminAPIURL+"/v1/cluster/health_overview", nil)
 	require.NoError(t, err)
 	resp, err = httpCl.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Test produce to unknown topic
 	results := kafkaCl.ProduceSync(ctx, &kgo.Record{Topic: "test", Value: []byte("test message")})
@@ -162,7 +162,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 	require.NoError(t, err)
 
 	// Failed authentication
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/subjects", schemaRegistryURL), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
 	require.NoError(t, err)
 	resp, err := httpCl.Do(req)
 	require.NoError(t, err)
@@ -285,11 +285,11 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 	require.NoError(t, err)
 
 	// Failed authentication
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/subjects", schemaRegistryURL), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
 	require.NoError(t, err)
 	resp, err := httpCl.Do(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	resp.Body.Close()
 
 	// Successful authentication
@@ -353,22 +353,22 @@ func TestRedpandaWithTLS(t *testing.T) {
 	adminAPIURL, err := ctr.AdminAPIAddress(ctx)
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(adminAPIURL, "https://"), "AdminAPIAddress should return https url")
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster/health_overview", adminAPIURL), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, adminAPIURL+"/v1/cluster/health_overview", nil)
 	require.NoError(t, err)
 	resp, err := httpCl.Do(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 	resp.Body.Close()
 
 	// Test Schema Registry API
 	schemaRegistryURL, err := ctr.SchemaRegistryAddress(ctx)
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(adminAPIURL, "https://"), "SchemaRegistryAddress should return https url")
-	req, err = http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/subjects", schemaRegistryURL), nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
 	require.NoError(t, err)
 	resp, err = httpCl.Do(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 	resp.Body.Close()
 
 	brokers, err := ctr.KafkaSeedBroker(ctx)
@@ -507,8 +507,7 @@ func TestRedpandaListener_InvalidPort(t *testing.T) {
 		network.WithNetwork([]string{"redpanda-host"}, RPNetwork),
 	)
 	testcontainers.CleanupContainer(t, ctr)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid port on listener redpanda:99092")
+	require.ErrorContains(t, err, "invalid port on listener redpanda:99092")
 }
 
 func TestRedpandaListener_NoNetwork(t *testing.T) {
@@ -520,9 +519,7 @@ func TestRedpandaListener_NoNetwork(t *testing.T) {
 		redpanda.WithListener("redpanda:99092"),
 	)
 	testcontainers.CleanupContainer(t, ctr)
-	require.Error(t, err)
-
-	require.Contains(t, err.Error(), "container must be attached to at least one network")
+	require.ErrorContains(t, err, "container must be attached to at least one network")
 }
 
 func TestRedpandaBootstrapConfig(t *testing.T) {
@@ -548,7 +545,7 @@ func TestRedpandaBootstrapConfig(t *testing.T) {
 
 	{
 		// Check that the configs reflect specified values
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster_config", adminAPIUrl), nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, adminAPIUrl+"/v1/cluster_config", nil)
 		require.NoError(t, err)
 		resp, err := httpCl.Do(req)
 		require.NoError(t, err)
@@ -565,7 +562,7 @@ func TestRedpandaBootstrapConfig(t *testing.T) {
 
 	{
 		// Check that no restart is required. i.e. that the configs were applied via bootstrap config
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/v1/cluster_config/status", adminAPIUrl), nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, adminAPIUrl+"/v1/cluster_config/status", nil)
 		require.NoError(t, err)
 		resp, err := httpCl.Do(req)
 		require.NoError(t, err)

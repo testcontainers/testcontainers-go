@@ -15,7 +15,7 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	valkeyContainer, err := valkey.Run(ctx,
-		"docker.io/valkey/valkey:7.2.5",
+		"valkey/valkey:7.2.5",
 		valkey.WithSnapshotting(10, 1),
 		valkey.WithLogLevel(valkey.LogLevelVerbose),
 		valkey.WithConfigFile(filepath.Join("testdata", "valkey7.conf")),

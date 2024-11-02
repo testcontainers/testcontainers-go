@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -18,12 +19,13 @@ const (
 // unset environment variables to avoid side effects
 // execute this function before each test
 func resetTestEnv(t *testing.T) {
+	t.Helper()
 	t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", "")
 	t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "")
 	t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "")
-	t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "")
-	t.Setenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT", "")
-	t.Setenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT", "")
+	t.Setenv("RYUK_VERBOSE", "")
+	t.Setenv("RYUK_RECONNECTION_TIMEOUT", "")
+	t.Setenv("RYUK_CONNECTION_TIMEOUT", "")
 }
 
 func TestReadConfig(t *testing.T) {
@@ -44,7 +46,7 @@ func TestReadConfig(t *testing.T) {
 			Host:         "", // docker socket is empty at the properties file
 		}
 
-		assert.Equal(t, expected, config)
+		require.Equal(t, expected, config)
 
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "false")
 
@@ -75,8 +77,8 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
-		t.Setenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT", "13s")
-		t.Setenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT", "12s")
+		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
+		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
 
 		config := read()
 
@@ -123,9 +125,9 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
-		t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
-		t.Setenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT", "13s")
-		t.Setenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT", "12s")
+		t.Setenv("RYUK_VERBOSE", "true")
+		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
+		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
 
 		config := read()
 		expected := Config{
@@ -276,8 +278,8 @@ func TestReadTCConfig(t *testing.T) {
 				"With Ryuk container timeouts configured using env vars",
 				``,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT": "13s",
-					"TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT":   "12s",
+					"RYUK_RECONNECTION_TIMEOUT": "13s",
+					"RYUK_CONNECTION_TIMEOUT":   "12s",
 				},
 				Config{
 					RyukReconnectionTimeout: 13 * time.Second,
@@ -289,8 +291,8 @@ func TestReadTCConfig(t *testing.T) {
 				`ryuk.connection.timeout=22s
 	ryuk.reconnection.timeout=23s`,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT": "13s",
-					"TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT":   "12s",
+					"RYUK_RECONNECTION_TIMEOUT": "13s",
+					"RYUK_CONNECTION_TIMEOUT":   "12s",
 				},
 				Config{
 					RyukReconnectionTimeout: 13 * time.Second,
@@ -375,7 +377,7 @@ func TestReadTCConfig(t *testing.T) {
 				"With Ryuk verbose using an env var and properties. Env var wins (0)",
 				`ryuk.verbose=true`,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_VERBOSE": "true",
+					"RYUK_VERBOSE": "true",
 				},
 				Config{
 					RyukVerbose:             true,
@@ -387,7 +389,7 @@ func TestReadTCConfig(t *testing.T) {
 				"With Ryuk verbose using an env var and properties. Env var wins (1)",
 				`ryuk.verbose=false`,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_VERBOSE": "true",
+					"RYUK_VERBOSE": "true",
 				},
 				Config{
 					RyukVerbose:             true,
@@ -399,7 +401,7 @@ func TestReadTCConfig(t *testing.T) {
 				"With Ryuk verbose using an env var and properties. Env var wins (2)",
 				`ryuk.verbose=true`,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_VERBOSE": "false",
+					"RYUK_VERBOSE": "false",
 				},
 				defaultConfig,
 			},
@@ -407,7 +409,7 @@ func TestReadTCConfig(t *testing.T) {
 				"With Ryuk verbose using an env var and properties. Env var wins (3)",
 				`ryuk.verbose=false`,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_VERBOSE": "false",
+					"RYUK_VERBOSE": "false",
 				},
 				defaultConfig,
 			},

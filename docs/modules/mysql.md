@@ -52,12 +52,6 @@ When starting the MySQL container, you can pass options in a variadic way to con
 If you need to set a different MySQL Docker image, you can set a valid Docker image as the second argument in the `Run` function.
 E.g. `Run(context.Background(), "mysql:8.0.36")`.
 
-By default, the container will use the following Docker image:
-
-<!--codeinclude-->
-[Default Docker image](../../modules/mysql/mysql.go) inside_block:defaultImage
-<!--/codeinclude-->
-
 {% include "../features/common_functional_options.md" %}
 
 #### Set username, password and database name

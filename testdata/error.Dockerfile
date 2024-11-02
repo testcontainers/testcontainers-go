@@ -1,4 +1,4 @@
-FROM docker.io/alpine
+FROM alpine
 
 RUN exit 1
 

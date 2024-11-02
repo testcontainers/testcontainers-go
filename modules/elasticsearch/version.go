@@ -22,7 +22,7 @@ func isAtLeastVersion(image string, major int) bool {
 	}
 
 	if !strings.HasPrefix(version, "v") {
-		version = fmt.Sprintf("v%s", version)
+		version = "v" + version
 	}
 
 	if semver.IsValid(version) {

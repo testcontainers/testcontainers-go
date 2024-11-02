@@ -207,8 +207,7 @@ func TestRunContainer_wrongData(t *testing.T) {
 		Started: true,
 	})
 	testcontainers.CleanupContainer(t, redisC)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "manifest unknown")
+	require.ErrorContains(t, err, "manifest unknown")
 }
 
 // setAuthConfig sets the DOCKER_AUTH_CONFIG environment variable with

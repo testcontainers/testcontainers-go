@@ -3,7 +3,9 @@ package testcontainers
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -281,7 +283,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		// assertions
 
-		assert.Empty(
+		require.Empty(
 			t,
 			inputNetworkingConfig.EndpointsConfig[networkName].Aliases,
 			"Networking config's aliases should be empty",
@@ -781,7 +783,7 @@ func TestCombineLifecycleHooks(t *testing.T) {
 
 	// There are 5 lifecycles (create, start, ready, stop, terminate),
 	// but ready has only half of the hooks (it only has post), so we have 90 hooks in total.
-	assert.Len(t, prints, 90)
+	require.Len(t, prints, 90)
 
 	// The order of the hooks is:
 	// - pre-X hooks: first default (2*2), then user-defined (3*2)
@@ -887,7 +889,7 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	ctx := context.Background()
 
 	req := ContainerRequest{
-		Image:      "docker.io/alpine",
+		Image:      "alpine",
 		Cmd:        []string{"echo", "-n", "I am expecting this"},
 		WaitingFor: wait.ForLog("I was expecting that").WithStartupTimeout(5 * time.Second),
 	}
@@ -904,27 +906,20 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	})
 	CleanupContainer(t, ctr)
 	// it should fail because the waiting for condition is not met
-	if err == nil {
-		t.Fatal(err)
-	}
+	require.Error(t, err)
 
 	containerLogs, err := ctr.Logs(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer containerLogs.Close()
 
 	// read container logs line by line, checking that each line is present in the stdout
 	rd := bufio.NewReader(containerLogs)
 	for {
 		line, err := rd.ReadString('\n')
-		if err != nil {
-			if err.Error() == "EOF" {
-				break
-			}
-
-			t.Fatal("Read Error:", err)
+		if errors.Is(err, io.EOF) {
+			break
 		}
+		require.NoErrorf(t, err, "Read Error")
 
 		// the last line of the array should contain the line of interest,
 		// but we are checking all the lines to make sure that is present

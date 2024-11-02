@@ -54,7 +54,7 @@ func TestOverrideContainerRequest(t *testing.T) {
 
 	// toBeMergedRequest should not be changed
 	assert.Equal(t, "", toBeMergedRequest.Env["BAR"])
-	assert.Len(t, toBeMergedRequest.ExposedPorts, 1)
+	require.Len(t, toBeMergedRequest.ExposedPorts, 1)
 	assert.Equal(t, "67890/tcp", toBeMergedRequest.ExposedPorts[0])
 
 	// req should be merged with toBeMergedRequest
@@ -96,8 +96,7 @@ func TestWithLogConsumers(t *testing.T) {
 	testcontainers.CleanupContainer(t, c)
 	// we expect an error because the MySQL environment variables are not set
 	// but this is expected because we just want to test the log consumer
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "container exited with code 1")
+	require.ErrorContains(t, err, "container exited with code 1")
 	require.NotEmpty(t, lc.msgs)
 }
 
@@ -115,8 +114,8 @@ func TestWithStartupCommand(t *testing.T) {
 	err := testcontainers.WithStartupCommand(testExec)(&req)
 	require.NoError(t, err)
 
-	assert.Len(t, req.LifecycleHooks, 1)
-	assert.Len(t, req.LifecycleHooks[0].PostStarts, 1)
+	require.Len(t, req.LifecycleHooks, 1)
+	require.Len(t, req.LifecycleHooks[0].PostStarts, 1)
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
 	testcontainers.CleanupContainer(t, c)
@@ -144,8 +143,8 @@ func TestWithAfterReadyCommand(t *testing.T) {
 	err := testcontainers.WithAfterReadyCommand(testExec)(&req)
 	require.NoError(t, err)
 
-	assert.Len(t, req.LifecycleHooks, 1)
-	assert.Len(t, req.LifecycleHooks[0].PostReadies, 1)
+	require.Len(t, req.LifecycleHooks, 1)
+	require.Len(t, req.LifecycleHooks[0].PostReadies, 1)
 
 	c, err := testcontainers.GenericContainer(context.Background(), req)
 	testcontainers.CleanupContainer(t, c)

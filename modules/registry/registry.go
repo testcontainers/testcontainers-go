@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -286,7 +287,7 @@ func SetDockerAuthConfig(host, username, password string, additional ...string) 
 // triples to add more auth configurations.
 func DockerAuthConfig(host, username, password string, additional ...string) (map[string]dockercfg.AuthConfig, error) {
 	if len(additional)%3 != 0 {
-		return nil, fmt.Errorf("additional must be a multiple of 3")
+		return nil, errors.New("additional must be a multiple of 3")
 	}
 
 	additional = append(additional, host, username, password)

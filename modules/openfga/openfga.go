@@ -36,7 +36,7 @@ func (c *OpenFGAContainer) PlaygroundEndpoint(ctx context.Context) (string, erro
 		return "", fmt.Errorf("failed to get playground endpoint: %w", err)
 	}
 
-	return fmt.Sprintf("%s/playground", endpoint), nil
+	return endpoint + "/playground", nil
 }
 
 // Deprecated: use Run instead

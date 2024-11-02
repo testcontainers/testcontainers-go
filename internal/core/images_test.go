@@ -67,7 +67,7 @@ func TestExtractImagesFromDockerfile(t *testing.T) {
 			images, err := ExtractImagesFromDockerfile(tt.dockerfile, tt.buildArgs)
 			if tt.expectedError {
 				require.Error(t, err)
-				assert.Empty(t, images)
+				require.Empty(t, images)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.expected, images)

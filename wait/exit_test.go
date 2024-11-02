@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
@@ -56,7 +57,5 @@ func TestWaitForExit(t *testing.T) {
 	}
 	wg := NewExitStrategy().WithExitTimeout(100 * time.Millisecond)
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }

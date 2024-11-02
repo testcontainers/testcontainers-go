@@ -2,6 +2,7 @@ package minio
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -59,7 +60,7 @@ func (c *MinioContainer) ConnectionString(ctx context.Context) (string, error) {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Minio container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MinioContainer, error) {
-	return Run(ctx, "docker.io/minio/minio:RELEASE.2024-01-16T16-07-38Z", opts...)
+	return Run(ctx, "minio/minio:RELEASE.2024-01-16T16-07-38Z", opts...)
 }
 
 // Run creates an instance of the Minio container type
@@ -89,7 +90,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	username := req.Env["MINIO_ROOT_USER"]
 	password := req.Env["MINIO_ROOT_PASSWORD"]
 	if username == "" || password == "" {
-		return nil, fmt.Errorf("username or password has not been set")
+		return nil, errors.New("username or password has not been set")
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

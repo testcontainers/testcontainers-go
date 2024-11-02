@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -212,7 +213,7 @@ func configurePassword(settings *Options, req *testcontainers.GenericContainerRe
 
 	if settings.Password != "" {
 		if isOSS(req.Image) {
-			return fmt.Errorf("it's not possible to activate security on Elastic OSS Image. Please switch to the default distribution.")
+			return errors.New("it's not possible to activate security on Elastic OSS Image. Please switch to the default distribution.")
 		}
 
 		if _, ok := req.Env["ELASTIC_PASSWORD"]; !ok {
