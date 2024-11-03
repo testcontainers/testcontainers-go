@@ -3,7 +3,6 @@
 package testcontainers
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,7 +13,7 @@ import (
 func TestContainerFileValidation(t *testing.T) {
 	type ContainerFileValidationTestCase struct {
 		Name          string
-		ExpectedError error
+		ExpectedError string
 		File          ContainerFile
 	}
 
@@ -38,7 +37,7 @@ func TestContainerFileValidation(t *testing.T) {
 		},
 		{
 			Name:          "invalid container file",
-			ExpectedError: errors.New("either HostFilePath or Reader must be specified"),
+			ExpectedError: "either HostFilePath or Reader must be specified",
 			File: ContainerFile{
 				HostFilePath:      "",
 				Reader:            nil,
@@ -47,7 +46,7 @@ func TestContainerFileValidation(t *testing.T) {
 		},
 		{
 			Name:          "invalid container file",
-			ExpectedError: errors.New("ContainerFilePath must be specified"),
+			ExpectedError: "ContainerFilePath must be specified",
 			File: ContainerFile{
 				HostFilePath:      "/path/to/host",
 				ContainerFilePath: "",
@@ -58,15 +57,10 @@ func TestContainerFileValidation(t *testing.T) {
 	for _, testCase := range testTable {
 		t.Run(testCase.Name, func(t *testing.T) {
 			err := testCase.File.validate()
-			switch {
-			case err == nil && testCase.ExpectedError == nil:
-				return
-			case err == nil && testCase.ExpectedError != nil:
-				t.Errorf("did not receive expected error: %s", testCase.ExpectedError.Error())
-			case err != nil && testCase.ExpectedError == nil:
-				t.Errorf("received unexpected error: %s", err.Error())
-			case err.Error() != testCase.ExpectedError.Error():
-				t.Errorf("errors mismatch: %s != %s", err.Error(), testCase.ExpectedError.Error())
+			if testCase.ExpectedError != "" {
+				require.EqualError(t, err, testCase.ExpectedError)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}

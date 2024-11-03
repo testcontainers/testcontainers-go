@@ -75,9 +75,7 @@ func TestPostgres(t *testing.T) {
 			require.NoError(t, err)
 
 			mustConnStr := ctr.MustConnectionString(ctx, "sslmode=disable", "application_name=test")
-			if mustConnStr != connStr {
-				t.Errorf("ConnectionString was not equal to MustConnectionString")
-			}
+			require.Equalf(t, mustConnStr, connStr, "ConnectionString was not equal to MustConnectionString")
 
 			// Ensure connection string is using generic format
 			id, err := ctr.MappedPort(ctx, "5432/tcp")

@@ -23,14 +23,14 @@ import (
 func Test_ContainerValidation(t *testing.T) {
 	type ContainerValidationTestCase struct {
 		Name             string
-		ExpectedError    error
+		ExpectedError    string
 		ContainerRequest testcontainers.ContainerRequest
 	}
 
 	testTable := []ContainerValidationTestCase{
 		{
 			Name:          "cannot set both context and image",
-			ExpectedError: errors.New("you cannot specify both an Image and Context in a ContainerRequest"),
+			ExpectedError: "you cannot specify both an Image and Context in a ContainerRequest",
 			ContainerRequest: testcontainers.ContainerRequest{
 				FromDockerfile: testcontainers.FromDockerfile{
 					Context: ".",
@@ -39,15 +39,13 @@ func Test_ContainerValidation(t *testing.T) {
 			},
 		},
 		{
-			Name:          "can set image without context",
-			ExpectedError: nil,
+			Name: "can set image without context",
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "redis:latest",
 			},
 		},
 		{
-			Name:          "can set context without image",
-			ExpectedError: nil,
+			Name: "can set context without image",
 			ContainerRequest: testcontainers.ContainerRequest{
 				FromDockerfile: testcontainers.FromDockerfile{
 					Context: ".",
@@ -55,8 +53,7 @@ func Test_ContainerValidation(t *testing.T) {
 			},
 		},
 		{
-			Name:          "Can mount same source to multiple targets",
-			ExpectedError: nil,
+			Name: "Can mount same source to multiple targets",
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "redis:latest",
 				HostConfigModifier: func(hc *container.HostConfig) {
@@ -66,7 +63,7 @@ func Test_ContainerValidation(t *testing.T) {
 		},
 		{
 			Name:          "Cannot mount multiple sources to same target",
-			ExpectedError: errors.New("duplicate mount target detected: /data"),
+			ExpectedError: "duplicate mount target detected: /data",
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "redis:latest",
 				HostConfigModifier: func(hc *container.HostConfig) {
@@ -76,7 +73,7 @@ func Test_ContainerValidation(t *testing.T) {
 		},
 		{
 			Name:          "Invalid bind mount",
-			ExpectedError: errors.New("invalid bind mount: /data:/data:/data"),
+			ExpectedError: "invalid bind mount: /data:/data:/data",
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "redis:latest",
 				HostConfigModifier: func(hc *container.HostConfig) {
@@ -89,15 +86,10 @@ func Test_ContainerValidation(t *testing.T) {
 	for _, testCase := range testTable {
 		t.Run(testCase.Name, func(t *testing.T) {
 			err := testCase.ContainerRequest.Validate()
-			switch {
-			case err == nil && testCase.ExpectedError == nil:
-				return
-			case err == nil && testCase.ExpectedError != nil:
-				t.Errorf("did not receive expected error: %s", testCase.ExpectedError.Error())
-			case err != nil && testCase.ExpectedError == nil:
-				t.Errorf("received unexpected error: %s", err.Error())
-			case err.Error() != testCase.ExpectedError.Error():
-				t.Errorf("errors mismatch: %s != %s", err.Error(), testCase.ExpectedError.Error())
+			if testCase.ExpectedError != "" {
+				require.EqualError(t, err, testCase.ExpectedError)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}

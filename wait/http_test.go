@@ -235,10 +235,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	require.NoError(t, err)
 
 	certpool := x509.NewCertPool()
-	if !certpool.AppendCertsFromPEM(cafile) {
-		t.Errorf("the ca file isn't valid")
-		return
-	}
+	require.Truef(t, certpool.AppendCertsFromPEM(cafile), "the ca file isn't valid")
 
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
 	dockerReq := testcontainers.ContainerRequest{
@@ -299,10 +296,7 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 	require.NoError(t, err)
 
 	certpool := x509.NewCertPool()
-	if !certpool.AppendCertsFromPEM(cafile) {
-		t.Errorf("the ca file isn't valid")
-		return
-	}
+	require.Truef(t, certpool.AppendCertsFromPEM(cafile), "the ca file isn't valid")
 
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
 	dockerReq := testcontainers.ContainerRequest{
@@ -362,10 +356,7 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	certpool := x509.NewCertPool()
-	if !certpool.AppendCertsFromPEM(cafile) {
-		t.Errorf("the ca file isn't valid")
-		return
-	}
+	require.Truef(t, certpool.AppendCertsFromPEM(cafile), "the ca file isn't valid")
 
 	// waitForHTTPStatusCode {
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}

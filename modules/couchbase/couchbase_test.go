@@ -130,10 +130,8 @@ func testBucketUsage(t *testing.T, bucket *gocb.Bucket) {
 	var resultData map[string]string
 	err = result.Content(&resultData)
 	require.NoErrorf(t, err, "could not assign content")
-
-	if resultData["key"] != "value" {
-		t.Errorf("Expected value to be [%s], got %s", "value", resultData["key"])
-	}
+	require.Contains(t, resultData, "key")
+	require.Equalf(t, "value", resultData["key"], "Expected value to be [%s], got %s", "value", resultData["key"])
 }
 
 func connectCluster(ctx context.Context, container *tccouchbase.CouchbaseContainer) (*gocb.Cluster, error) {
