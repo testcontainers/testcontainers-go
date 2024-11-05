@@ -2,7 +2,7 @@ package compose
 
 import (
 	"context"
-	"fmt"
+	"encoding/hex"
 	"hash/fnv"
 	"os"
 	"path/filepath"
@@ -33,6 +33,12 @@ func TestDockerComposeAPI(t *testing.T) {
 	err = compose.Up(ctx, Wait(true))
 	cleanup(t, compose)
 	require.NoError(t, err, "compose.Up()")
+
+	for _, service := range compose.Services() {
+		container, err := compose.ServiceContainer(context.Background(), service)
+		require.NoError(t, err, "compose.ServiceContainer()")
+		require.True(t, container.IsRunning())
+	}
 }
 
 func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
@@ -52,7 +58,7 @@ func TestDockerComposeAPIStrategyForInvalidService(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 1)
+	require.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "api-nginx")
 }
 
@@ -96,7 +102,7 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 	_, err = compose.ServiceContainer(context.Background(), "api-mysql")
 	require.Error(t, err, "Make sure there is no mysql container")
 
-	assert.Len(t, serviceNames, 1)
+	require.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "api-nginx")
 }
 
@@ -298,7 +304,7 @@ func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 1)
+	require.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "api-nginx")
 }
 
@@ -321,7 +327,7 @@ func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 1)
+	require.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "api-nginx")
 }
 
@@ -344,7 +350,7 @@ func TestDockerComposeAPIWithContainerName(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 1)
+	require.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "api-nginx")
 }
 
@@ -364,7 +370,7 @@ func TestDockerComposeAPIWithWaitStrategy_NoExposedPorts(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 1)
+	require.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "api-nginx")
 }
 
@@ -411,7 +417,7 @@ func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 1)
+	require.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "api-nginx")
 }
 
@@ -440,7 +446,7 @@ func TestDockerComposeAPIWithStackReader(t *testing.T) {
 	composeContent := `
 services:
   api-nginx:
-    image: docker.io/nginx:stable-alpine
+    image: nginx:stable-alpine
     environment:
       bar: ${bar}
       foo: ${foo}
@@ -463,7 +469,7 @@ services:
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 1)
+	require.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "api-nginx")
 
 	require.NoError(t, compose.Down(context.Background(), RemoveOrphans(true), RemoveVolumes(true), RemoveImagesLocal), "compose.Down()")
@@ -481,7 +487,7 @@ func TestDockerComposeAPIWithStackReaderAndComposeFile(t *testing.T) {
 	composeContent := `
 services:
   api-postgres:
-    image: docker.io/postgres:14
+    image: postgres:14
     environment:
       POSTGRES_PASSWORD: s3cr3t
 `
@@ -507,7 +513,7 @@ services:
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 2)
+	require.Len(t, serviceNames, 2)
 	assert.Contains(t, serviceNames, "api-nginx")
 	assert.Contains(t, serviceNames, "api-postgres")
 
@@ -540,7 +546,7 @@ func TestDockerComposeAPIWithEnvironment(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 1)
+	require.Len(t, serviceNames, 1)
 	assert.Contains(t, serviceNames, "api-nginx")
 
 	present := map[string]string{
@@ -577,7 +583,7 @@ func TestDockerComposeAPIWithMultipleComposeFiles(t *testing.T) {
 
 	serviceNames := compose.Services()
 
-	assert.Len(t, serviceNames, 3)
+	require.Len(t, serviceNames, 3)
 	assert.Contains(t, serviceNames, "api-nginx")
 	assert.Contains(t, serviceNames, "api-mysql")
 	assert.Contains(t, serviceNames, "api-postgres")
@@ -636,7 +642,7 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 
 	volumeListFilters := filters.NewArgs()
 	// the "mydata" identifier comes from the "testdata/docker-compose-volume.yml" file
-	volumeListFilters.Add("name", fmt.Sprintf("%s_mydata", identifier))
+	volumeListFilters.Add("name", identifier+"_mydata")
 	volumeList, err := compose.dockerClient.VolumeList(ctx, volume.ListOptions{Filters: volumeListFilters})
 	require.NoError(t, err, "compose.dockerClient.VolumeList()")
 
@@ -678,13 +684,13 @@ func TestDockerComposeApiWithWaitForShortLifespanService(t *testing.T) {
 
 	services := compose.Services()
 
-	assert.Len(t, services, 2)
+	require.Len(t, services, 2)
 	assert.Contains(t, services, "falafel")
 	assert.Contains(t, services, "tzatziki")
 }
 
 func testNameHash(name string) StackIdentifier {
-	return StackIdentifier(fmt.Sprintf("%x", fnv.New32a().Sum([]byte(name))))
+	return StackIdentifier(hex.EncodeToString(fnv.New32a().Sum([]byte(name))))
 }
 
 // cleanup is a helper function that schedules the compose stack to be stopped when the test ends.

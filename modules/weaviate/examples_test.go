@@ -73,7 +73,7 @@ func ExampleRun_connectWithClient() {
 	connectionClient := &http.Client{}
 	headers := map[string]string{
 		// put here the custom API key, e.g. for OpenAPI
-		"Authorization": fmt.Sprintf("Bearer %s", "custom-api-key"),
+		"Authorization": "Bearer custom-api-key",
 	}
 
 	cli := weaviate.New(weaviate.Config{
@@ -142,7 +142,7 @@ func ExampleRun_connectWithClientWithModules() {
 	connectionClient := &http.Client{}
 	headers := map[string]string{
 		// put here the custom API key, e.g. for OpenAPI
-		"Authorization": fmt.Sprintf("Bearer %s", "custom-api-key"),
+		"Authorization": "Bearer custom-api-key",
 	}
 
 	cli := weaviate.New(weaviate.Config{

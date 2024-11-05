@@ -64,7 +64,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				FileMode:          0o755,
 			},
 		}
-		genericContainerReq.Cmd = []string{"meilisearch", "--import-dump", fmt.Sprintf("/dumps/%s", settings.DumpDataFileName)}
+		genericContainerReq.Cmd = []string{"meilisearch", "--import-dump", "/dumps/" + settings.DumpDataFileName}
 	}
 
 	// the wait strategy does not support TLS at the moment,

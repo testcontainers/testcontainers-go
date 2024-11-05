@@ -2,6 +2,7 @@ package vearch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -73,7 +74,7 @@ func (c *VearchContainer) RESTEndpoint(ctx context.Context) (string, error) {
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get container host")
+		return "", errors.New("failed to get container host")
 	}
 
 	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil

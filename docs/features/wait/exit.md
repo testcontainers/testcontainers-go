@@ -9,7 +9,7 @@ The exit wait strategy will check that the container is not in the running state
 
 ```golang
 req := ContainerRequest{
-	Image:      "docker.io/alpine:latest",
+	Image:      "alpine:latest",
 	WaitingFor: wait.ForExit(),
 }
 ```

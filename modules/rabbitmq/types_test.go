@@ -46,16 +46,16 @@ func (b Binding) AsCommand() []string {
 	cmd := []string{"rabbitmqadmin"}
 
 	if b.VHost != "" {
-		cmd = append(cmd, fmt.Sprintf("--vhost=%s", b.VHost))
+		cmd = append(cmd, "--vhost="+b.VHost)
 	}
 
-	cmd = append(cmd, "declare", "binding", fmt.Sprintf("source=%s", b.Source), fmt.Sprintf("destination=%s", b.Destination))
+	cmd = append(cmd, "declare", "binding", "source="+b.Source, "destination="+b.Destination)
 
 	if b.DestinationType != "" {
-		cmd = append(cmd, fmt.Sprintf("destination_type=%s", b.DestinationType))
+		cmd = append(cmd, "destination_type="+b.DestinationType)
 	}
 	if b.RoutingKey != "" {
-		cmd = append(cmd, fmt.Sprintf("routing_key=%s", b.RoutingKey))
+		cmd = append(cmd, "routing_key="+b.RoutingKey)
 	}
 
 	if len(b.Args) > 0 {
@@ -92,7 +92,7 @@ func (e Exchange) AsCommand() []string {
 		cmd = append(cmd, "--vhost="+e.VHost)
 	}
 
-	cmd = append(cmd, "declare", "exchange", fmt.Sprintf("name=%s", e.Name), fmt.Sprintf("type=%s", e.Type))
+	cmd = append(cmd, "declare", "exchange", "name="+e.Name, "type="+e.Type)
 
 	if e.AutoDelete {
 		cmd = append(cmd, "auto_delete=true")
@@ -130,13 +130,13 @@ type OperatorPolicy struct {
 }
 
 func (op OperatorPolicy) AsCommand() []string {
-	cmd := []string{"rabbitmqadmin", "declare", "operator_policy", fmt.Sprintf("name=%s", op.Name), fmt.Sprintf("pattern=%s", op.Pattern)}
+	cmd := []string{"rabbitmqadmin", "declare", "operator_policy", "name=" + op.Name, "pattern=" + op.Pattern}
 
 	if op.Priority > 0 {
 		cmd = append(cmd, fmt.Sprintf("priority=%d", op.Priority))
 	}
 	if op.ApplyTo != "" {
-		cmd = append(cmd, fmt.Sprintf("apply-to=%s", op.ApplyTo))
+		cmd = append(cmd, "apply-to="+op.ApplyTo)
 	}
 
 	if len(op.Definition) > 0 {
@@ -173,7 +173,7 @@ func NewParameter(component string, name string, value string) Parameter {
 func (p Parameter) AsCommand() []string {
 	return []string{
 		"rabbitmqadmin", "declare", "parameter",
-		fmt.Sprintf("component=%s", p.Component), fmt.Sprintf("name=%s", p.Name), fmt.Sprintf("value=%s", p.Value),
+		"component=" + p.Component, "name=" + p.Name, "value=" + p.Value,
 	}
 }
 
@@ -203,8 +203,8 @@ func NewPermission(vhost string, user string, configure string, write string, re
 func (p Permission) AsCommand() []string {
 	return []string{
 		"rabbitmqadmin", "declare", "permission",
-		fmt.Sprintf("vhost=%s", p.VHost), fmt.Sprintf("user=%s", p.User),
-		fmt.Sprintf("configure=%s", p.Configure), fmt.Sprintf("write=%s", p.Write), fmt.Sprintf("read=%s", p.Read),
+		"vhost=" + p.VHost, "user=" + p.User,
+		"configure=" + p.Configure, "write=" + p.Write, "read=" + p.Read,
 	}
 }
 
@@ -242,13 +242,13 @@ func (p Policy) AsCommand() []string {
 		cmd = append(cmd, "--vhost="+p.VHost)
 	}
 
-	cmd = append(cmd, "declare", "policy", fmt.Sprintf("name=%s", p.Name), fmt.Sprintf("pattern=%s", p.Pattern))
+	cmd = append(cmd, "declare", "policy", "name="+p.Name, "pattern="+p.Pattern)
 
 	if p.Priority > 0 {
 		cmd = append(cmd, fmt.Sprintf("priority=%d", p.Priority))
 	}
 	if p.ApplyTo != "" {
-		cmd = append(cmd, fmt.Sprintf("apply-to=%s", p.ApplyTo))
+		cmd = append(cmd, "apply-to="+p.ApplyTo)
 	}
 
 	if len(p.Definition) > 0 {
@@ -283,7 +283,7 @@ func (q Queue) AsCommand() []string {
 		cmd = append(cmd, "--vhost="+q.VHost)
 	}
 
-	cmd = append(cmd, "declare", "queue", fmt.Sprintf("name=%s", q.Name))
+	cmd = append(cmd, "declare", "queue", "name="+q.Name)
 
 	if q.AutoDelete {
 		cmd = append(cmd, "auto_delete=true")
@@ -328,8 +328,8 @@ func (u User) AsCommand() []string {
 
 	return []string{
 		"rabbitmqadmin", "declare", "user",
-		fmt.Sprintf("name=%s", u.Name), fmt.Sprintf("password=%s", u.Password),
-		fmt.Sprintf("tags=%s", strings.Join(uniqueTags, ",")),
+		"name=" + u.Name, "password=" + u.Password,
+		"tags=" + strings.Join(uniqueTags, ","),
 	}
 }
 
@@ -344,7 +344,7 @@ type VirtualHost struct {
 }
 
 func (v VirtualHost) AsCommand() []string {
-	cmd := []string{"rabbitmqadmin", "declare", "vhost", fmt.Sprintf("name=%s", v.Name)}
+	cmd := []string{"rabbitmqadmin", "declare", "vhost", "name=" + v.Name}
 
 	if v.Tracing {
 		cmd = append(cmd, "tracing=true")
@@ -361,7 +361,7 @@ type VirtualHostLimit struct {
 }
 
 func (v VirtualHostLimit) AsCommand() []string {
-	return []string{"rabbitmqadmin", "declare", "vhost_limit", fmt.Sprintf("vhost=%s", v.VHost), fmt.Sprintf("name=%s", v.Name), fmt.Sprintf("value=%d", v.Value)}
+	return []string{"rabbitmqadmin", "declare", "vhost_limit", "vhost=" + v.VHost, "name=" + v.Name, fmt.Sprintf("value=%d", v.Value)}
 }
 
 // --------- Virtual Hosts ---------

@@ -74,7 +74,7 @@ type Container interface {
 type ImageBuildInfo interface {
 	BuildOptions() (types.ImageBuildOptions, error) // converts the ImageBuildInfo to a types.ImageBuildOptions
 	GetContext() (io.Reader, error)                 // the path to the build context
-	GetDockerfile() string                          // the relative path to the Dockerfile, including the fileitself
+	GetDockerfile() string                          // the relative path to the Dockerfile, including the file itself
 	GetRepo() string                                // get repo label for image
 	GetTag() string                                 // get tag label for image
 	ShouldPrintBuildLog() bool                      // allow build log to be printed to stdout
@@ -165,6 +165,15 @@ type ContainerRequest struct {
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 	LifecycleHooks          []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
 	LogConsumerCfg          *LogConsumerConfig                         // define the configuration for the log producer and its log consumers to follow the logs
+}
+
+// sessionID returns the session ID for the container request.
+func (c *ContainerRequest) sessionID() string {
+	if sessionID := c.Labels[core.LabelSessionID]; sessionID != "" {
+		return sessionID
+	}
+
+	return core.SessionID()
 }
 
 // containerOptions functional options for a container
@@ -277,34 +286,34 @@ func (c *ContainerRequest) GetBuildArgs() map[string]*string {
 	return c.FromDockerfile.BuildArgs
 }
 
-// GetDockerfile returns the Dockerfile from the ContainerRequest, defaults to "Dockerfile"
+// GetDockerfile returns the Dockerfile from the ContainerRequest, defaults to "Dockerfile".
+// Sets FromDockerfile.Dockerfile to the default if blank.
 func (c *ContainerRequest) GetDockerfile() string {
-	f := c.FromDockerfile.Dockerfile
-	if f == "" {
-		return "Dockerfile"
+	if c.FromDockerfile.Dockerfile == "" {
+		c.FromDockerfile.Dockerfile = "Dockerfile"
 	}
 
-	return f
+	return c.FromDockerfile.Dockerfile
 }
 
-// GetRepo returns the Repo label for image from the ContainerRequest, defaults to UUID
+// GetRepo returns the Repo label for image from the ContainerRequest, defaults to UUID.
+// Sets FromDockerfile.Repo to the default value if blank.
 func (c *ContainerRequest) GetRepo() string {
-	r := c.FromDockerfile.Repo
-	if r == "" {
-		return uuid.NewString()
+	if c.FromDockerfile.Repo == "" {
+		c.FromDockerfile.Repo = uuid.NewString()
 	}
 
-	return strings.ToLower(r)
+	return strings.ToLower(c.FromDockerfile.Repo)
 }
 
-// GetTag returns the Tag label for image from the ContainerRequest, defaults to UUID
+// GetTag returns the Tag label for image from the ContainerRequest, defaults to UUID.
+// Sets FromDockerfile.Tag to the default value if blank.
 func (c *ContainerRequest) GetTag() string {
-	t := c.FromDockerfile.Tag
-	if t == "" {
-		return uuid.NewString()
+	if c.FromDockerfile.Tag == "" {
+		c.FromDockerfile.Tag = uuid.NewString()
 	}
 
-	return strings.ToLower(t)
+	return strings.ToLower(c.FromDockerfile.Tag)
 }
 
 // Deprecated: Testcontainers will detect registry credentials automatically, and it will be removed in the next major release.

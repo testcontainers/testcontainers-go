@@ -2,7 +2,7 @@ package wait
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 )
 
@@ -58,7 +58,7 @@ func (ms *MultiStrategy) WaitUntilReady(ctx context.Context, target StrategyTarg
 	}
 
 	if len(ms.Strategies) == 0 {
-		return fmt.Errorf("no wait strategy supplied")
+		return errors.New("no wait strategy supplied")
 	}
 
 	for _, strategy := range ms.Strategies {

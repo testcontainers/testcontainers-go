@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -46,7 +47,7 @@ func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Redis container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*RedisContainer, error) {
-	return Run(ctx, "docker.io/redis:7", opts...)
+	return Run(ctx, "redis:7", opts...)
 }
 
 // Run creates an instance of the Redis container type
@@ -135,7 +136,7 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 	}
 
 	return func(req *testcontainers.GenericContainerRequest) error {
-		processRedisServerArgs(req, []string{"--save", fmt.Sprintf("%d", seconds), fmt.Sprintf("%d", changedKeys)})
+		processRedisServerArgs(req, []string{"--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys)})
 		return nil
 	}
 }

@@ -7,7 +7,7 @@ The health wait strategy will check that the container is in the healthy state a
 
 ```golang
 req := ContainerRequest{
-	Image:      "docker.io/alpine:latest",
+	Image:      "alpine:latest",
 	WaitingFor: wait.ForHealthCheck(),
 }
 ```

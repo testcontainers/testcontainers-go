@@ -83,7 +83,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 func reaperContainerNameFromSessionID(sessionID string) string {
 	// The session id is 64 characters, so we will not hit the limit of 128
 	// characters for container names.
-	return fmt.Sprintf("reaper_%s", sessionID)
+	return "reaper_" + sessionID
 }
 
 // reaperSpawner is a singleton that manages the reaper container.
@@ -161,6 +161,13 @@ func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (
 	}
 	defer dockerClient.Close()
 
+	provider, err := NewDockerProvider()
+	if err != nil {
+		return nil, fmt.Errorf("new provider: %w", err)
+	}
+
+	provider.SetClient(dockerClient)
+
 	opts := container.ListOptions{
 		All: true,
 		Filters: filters.NewArgs(
@@ -184,11 +191,10 @@ func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (
 			}
 
 			if len(resp) > 1 {
-				return nil, fmt.Errorf("multiple reaper containers found for session ID %s", sessionID)
+				return nil, fmt.Errorf("found %d reaper containers for session ID %q", len(resp), sessionID)
 			}
 
-			container := resp[0]
-			r, err := containerFromDockerResponse(ctx, container)
+			r, err := provider.ContainerFromType(ctx, resp[0])
 			if err != nil {
 				return nil, fmt.Errorf("from docker: %w", err)
 			}
@@ -271,7 +277,7 @@ func (r *reaperSpawner) reaper(ctx context.Context, sessionID string, provider R
 // If connect is true, the reaper will be connected to the reaper container.
 // It must be called with the lock held.
 func (r *reaperSpawner) retryLocked(ctx context.Context, sessionID string, provider ReaperProvider) func() (*Reaper, error) {
-	return func() (reaper *Reaper, err error) { //nolint:nonamedreturns // Needed for deferred error check.
+	return func() (reaper *Reaper, err error) {
 		reaper, err = r.reuseOrCreate(ctx, sessionID, provider)
 		// Ensure that the reaper is terminated if an error occurred.
 		defer func() {
@@ -366,7 +372,7 @@ func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, pro
 
 // newReaper creates a connected Reaper with a sessionID to identify containers
 // and a provider to use.
-func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (reaper *Reaper, err error) { //nolint:nonamedreturns // Needed for deferred error check.
+func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provider ReaperProvider) (reaper *Reaper, err error) {
 	dockerHostMount := core.MustExtractDockerSocket(ctx)
 
 	port := r.port()
@@ -402,7 +408,12 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 
 	// Attach reaper container to a requested network if it is specified
 	if p, ok := provider.(*DockerProvider); ok {
-		req.Networks = append(req.Networks, p.DefaultNetwork)
+		defaultNetwork, err := p.ensureDefaultNetwork(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("ensure default network: %w", err)
+		}
+
+		req.Networks = append(req.Networks, defaultNetwork)
 	}
 
 	c, err := provider.RunContainer(ctx, req)
@@ -560,4 +571,9 @@ func (r *Reaper) handshake(conn net.Conn) error {
 // Deprecated: internally replaced by core.DefaultLabels(sessionID)
 func (r *Reaper) Labels() map[string]string {
 	return GenericLabels()
+}
+
+// isReaperImage returns true if the image name is the reaper image.
+func isReaperImage(name string) bool {
+	return strings.HasSuffix(name, config.ReaperDefaultImage)
 }

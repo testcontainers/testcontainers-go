@@ -16,7 +16,7 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	artemisContainer, err := artemis.Run(ctx,
-		"docker.io/apache/activemq-artemis:2.30.0",
+		"apache/activemq-artemis:2.30.0",
 		artemis.WithCredentials("test", "test"),
 	)
 	defer func() {

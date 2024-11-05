@@ -186,7 +186,7 @@ func (p prependHubRegistry) Description() string {
 //   - if the prefix is empty, the image is returned as is.
 //   - if the image is a non-hub image (e.g. where another registry is set), the image is returned as is.
 //   - if the image is a Docker Hub image where the hub registry is explicitly part of the name
-//     (i.e. anything with a docker.io or registry.hub.docker.com host part), the image is returned as is.
+//     (i.e. anything with a registry.hub.docker.com host part), the image is returned as is.
 func (p prependHubRegistry) Substitute(image string) (string, error) {
 	registry := core.ExtractRegistry(image, "")
 

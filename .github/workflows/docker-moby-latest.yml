@@ -10,6 +10,12 @@ jobs:
     strategy:
       matrix:
         rootless-docker: [true, false]
+        containerd-integration: [true, false]
+        # ghaction-setup-docker doesn't work with rootless yet
+        exclude:
+          - rootless-docker: true
+            containerd-integration: true
+
     name: "Core tests using latest moby/moby"
     runs-on: 'ubuntu-latest'
     continue-on-error: true
@@ -17,6 +23,7 @@ jobs:
       - name: Set the Docker Install type
         run: |
           echo "docker_install_type=${{ matrix.rootless-docker == true && 'Rootless' || 'Rootful' }}" >> "$GITHUB_ENV"
+          echo "containerd_integration=${{ matrix.containerd-integration == true && 'containerd' || '' }}" >> "$GITHUB_ENV"
 
       - name: Setup rootless Docker
         if: ${{ matrix.rootless-docker }}
@@ -42,7 +49,22 @@ jobs:
       - name: modTidy
         run: go mod tidy
 
-      - name: Install Latest Docker
+      - name: Install Nightly Docker
+        # rootless not supported with ghaction-setup-docker yet
+        if: ${{ matrix.rootless-docker == false }}
+        uses: crazy-max/ghaction-setup-docker@master
+        with:
+          daemon-config: |
+            {
+              "debug": true,
+              "features": {
+                "containerd-snapshotter": ${{ matrix.containerd-integration }}
+              }
+            }
+          version: type=image,tag=master
+
+      - name: Install test Docker
+        if: ${{ matrix.rootless-docker }}
         run: curl https://get.docker.com | CHANNEL=test sh
 
       - name: go test
@@ -56,6 +78,7 @@ jobs:
           {
               "tc_project": "testcontainers-go",
               "tc_docker_install_type": "${docker_install_type}",
+              "tc_containerd_integration": "${containerd_integration}",
               "tc_github_action_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}",
               "tc_github_action_status": "FAILED",
               "tc_slack_channel_id": "${{ secrets.SLACK_DOCKER_LATEST_CHANNEL_ID }}"

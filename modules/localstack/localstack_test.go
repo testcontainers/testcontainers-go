@@ -2,7 +2,6 @@ package localstack
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -100,7 +99,7 @@ func TestIsLegacyMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
-			got := isLegacyMode(fmt.Sprintf("localstack/localstack:%s", tt.version))
+			got := isLegacyMode("localstack/localstack:" + tt.version)
 			require.Equal(t, tt.want, got, "runInLegacyMode() = %v, want %v", got, tt.want)
 		})
 	}
@@ -119,7 +118,7 @@ func TestRunContainer(t *testing.T) {
 
 		ctr, err := Run(
 			ctx,
-			fmt.Sprintf("localstack/localstack:%s", tt.version),
+			"localstack/localstack:"+tt.version,
 		)
 		testcontainers.CleanupContainer(t, ctr)
 

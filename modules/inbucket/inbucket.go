@@ -44,7 +44,7 @@ func (c *InbucketContainer) WebInterface(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("http://%s", net.JoinHostPort(host, containerPort.Port())), nil
+	return "http://" + net.JoinHostPort(host, containerPort.Port()), nil
 }
 
 // Deprecated: use Run instead

@@ -38,7 +38,7 @@ func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, args ...string
 		return "", err
 	}
 
-	connStr := fmt.Sprintf("ldap://%s", net.JoinHostPort(host, containerPort.Port()))
+	connStr := "ldap://" + net.JoinHostPort(host, containerPort.Port())
 	return connStr, nil
 }
 

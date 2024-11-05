@@ -79,7 +79,7 @@ func TestFileStrategyWaitUntilReady_WithMatcher(t *testing.T) {
 	// waitForFileWithMatcher {
 	var out bytes.Buffer
 	dockerReq := testcontainers.ContainerRequest{
-		Image: "docker.io/nginx:latest",
+		Image: "nginx:latest",
 		WaitingFor: wait.ForFile("/etc/nginx/nginx.conf").
 			WithStartupTimeout(time.Second * 10).
 			WithPollInterval(time.Second).

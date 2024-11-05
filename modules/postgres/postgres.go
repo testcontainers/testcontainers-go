@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -136,7 +137,7 @@ func WithUsername(user string) testcontainers.CustomizeRequestOption {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Postgres container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error) {
-	return Run(ctx, "docker.io/postgres:16-alpine", opts...)
+	return Run(ctx, "postgres:16-alpine", opts...)
 }
 
 // Run creates an instance of the Postgres container type
@@ -262,7 +263,7 @@ func (c *PostgresContainer) checkSnapshotConfig(opts []SnapshotOption) (string, 
 	}
 
 	if c.dbName == "postgres" {
-		return "", fmt.Errorf("cannot restore the postgres system database as it cannot be dropped to be restored")
+		return "", errors.New("cannot restore the postgres system database as it cannot be dropped to be restored")
 	}
 	return snapshotName, nil
 }
