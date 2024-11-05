@@ -23,7 +23,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    uses: ./.github/workflows/ci-lint.yml
+    with:
+      project-directory: "."
+
   test:
+    needs: lint
     strategy:
       matrix:
         go-version: [1.22.x, 1.x]
@@ -42,6 +48,7 @@ jobs:
   # It's executed in the first stage to avoid concurrency issues.
   test-reaper-off:
     name: "Test with reaper off"
+    needs: lint
     strategy:
       matrix:
         go-version: [1.22.x, 1.x]
@@ -59,6 +66,7 @@ jobs:
   # It's executed in the first stage to avoid concurrency issues.
   test-rootless-docker:
     name: "Test with Rootless Docker"
+    needs: lint
     strategy:
       matrix:
         go-version: [1.22.x, 1.x]
@@ -73,7 +81,13 @@ jobs:
       run-tests: true
       ryuk-disabled: false
 
+  lint-module-generator:
+    uses: ./.github/workflows/ci-lint.yml
+    with:
+      project-directory: "modulegen"
+
   test-module-generator:
+    needs: lint-module-generator
     strategy:
       matrix:
         go-version: [1.22.x, 1.x]
@@ -88,8 +102,17 @@ jobs:
       run-tests: true
       ryuk-disabled: false
 
-  test-modules:
+  lint-modules:
     needs: test
+    strategy:
+      matrix:
+        module: [artemis, azurite, cassandra, chroma, clickhouse, cockroachdb, compose, consul, couchbase, databend, dolt, dynamodb, elasticsearch, etcd, gcloud, grafana-lgtm, inbucket, influxdb, k3s, k6, kafka, localstack, mariadb, meilisearch, milvus, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, ollama, openfga, openldap, opensearch, postgres, pulsar, qdrant, rabbitmq, redis, redpanda, registry, surrealdb, valkey, vault, vearch, weaviate, yugabytedb]
+    uses: ./.github/workflows/ci-lint.yml
+    with:
+      project-directory: "modules/${{ matrix.module }}"
+
+  test-modules:
+    needs: lint-modules
     strategy:
       matrix:
         go-version: [1.22.x, 1.x]
@@ -105,8 +128,17 @@ jobs:
       run-tests: ${{ matrix.platform == 'ubuntu-latest' }}
       ryuk-disabled: false
 
-  test-examples:
+  lint-examples:
     needs: test-modules
+    strategy:
+      matrix:
+        module: [nginx, toxiproxy]
+    uses: ./.github/workflows/ci-lint.yml
+    with:
+      project-directory: "modules/${{ matrix.module }}"
+
+  test-examples:
+    needs: lint-examples
     strategy:
       matrix:
         module: [nginx, toxiproxy]
