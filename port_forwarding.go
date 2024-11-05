@@ -105,6 +105,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 		return sshdConnectHook, fmt.Errorf("inspect sshd container: %w", err)
 	}
 
+	// TODO: remove once we have docker context support via #2810
 	sshdIP := inspect.NetworkSettings.IPAddress
 	if sshdIP == "" {
 		single := len(inspect.NetworkSettings.Networks) == 1

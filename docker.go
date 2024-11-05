@@ -1635,6 +1635,7 @@ func (p *DockerProvider) ensureDefaultNetwork(ctx context.Context) (string, erro
 		return "", fmt.Errorf("network list: %w", err)
 	}
 
+	// TODO: remove once we have docker context support via #2810
 	// Prefer the default bridge network if it exists.
 	// This makes the results stable as network list order is not guaranteed.
 	for _, net := range networkResources {

@@ -23,23 +23,35 @@ const (
 
 func TestExposeHostPorts(t *testing.T) {
 	t.Run("single-port", func(t *testing.T) {
-		testExposeHostPorts(t, 1, false, true)
-	})
-
-	t.Run("single-port-using-network", func(t *testing.T) {
-		testExposeHostPorts(t, 1, true, true)
-	})
-
-	t.Run("single-port-cancellation", func(t *testing.T) {
 		testExposeHostPorts(t, 1, false, false)
 	})
 
+	t.Run("single-port-network", func(t *testing.T) {
+		testExposeHostPorts(t, 1, true, false)
+	})
+
+	t.Run("single-port-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, 1, false, true)
+	})
+
+	t.Run("single-port-network-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, 1, true, true)
+	})
+
 	t.Run("multi-port", func(t *testing.T) {
+		testExposeHostPorts(t, 3, false, false)
+	})
+
+	t.Run("multi-port-network", func(t *testing.T) {
+		testExposeHostPorts(t, 3, true, false)
+	})
+
+	t.Run("multi-port-host-access", func(t *testing.T) {
 		testExposeHostPorts(t, 3, false, true)
 	})
 
-	t.Run("multi-port-using-network", func(t *testing.T) {
-		testExposeHostPorts(t, 3, false, true)
+	t.Run("multi-port-network-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, 3, true, true)
 	})
 }
 
@@ -82,7 +94,7 @@ func testExposeHostPorts(t *testing.T, numberOfPorts int, hasNetwork, hasHostAcc
 	ctx := context.Background()
 	if !hasHostAccess {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+		ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
 		defer cancel()
 	}
 
@@ -91,12 +103,12 @@ func testExposeHostPorts(t *testing.T, numberOfPorts int, hasNetwork, hasHostAcc
 	require.NoError(t, err)
 
 	if hasHostAccess {
-		// create a container that has host access, which will
-		// automatically forward the port to the container
+		// Create a container that has host access, which will
+		// automatically forward the port to the container.
 		assertContainerHasHostAccess(t, c, freePorts...)
 	} else {
-		// force cancellation because of timeout
-		time.Sleep(11 * time.Second)
+		// Force cancellation because of timeout.
+		time.Sleep(4 * time.Second)
 
 		assertContainerHasNoHostAccess(t, c, freePorts...)
 	}
