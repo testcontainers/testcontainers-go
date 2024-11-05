@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -970,4 +971,106 @@ func lifecycleHooksIsHonouredFn(t *testing.T, prints []string) {
 	}
 
 	require.Equal(t, expects, prints)
+}
+
+func Test_combineContainerHooks(t *testing.T) {
+	var funcID string
+	defaultContainerRequestHook := func(ctx context.Context, req ContainerRequest) error {
+		funcID = "defaultContainerRequestHook"
+		return nil
+	}
+	userContainerRequestHook := func(ctx context.Context, req ContainerRequest) error {
+		funcID = "userContainerRequestHook"
+		return nil
+	}
+	defaultContainerHook := func(ctx context.Context, container Container) error {
+		funcID = "defaultContainerHook"
+		return nil
+	}
+	userContainerHook := func(ctx context.Context, container Container) error {
+		funcID = "userContainerHook"
+		return nil
+	}
+
+	defaultHooks := []ContainerLifecycleHooks{
+		{
+			PreBuilds:      []ContainerRequestHook{defaultContainerRequestHook},
+			PostBuilds:     []ContainerRequestHook{defaultContainerRequestHook},
+			PreCreates:     []ContainerRequestHook{defaultContainerRequestHook},
+			PostCreates:    []ContainerHook{defaultContainerHook},
+			PreStarts:      []ContainerHook{defaultContainerHook},
+			PostStarts:     []ContainerHook{defaultContainerHook},
+			PostReadies:    []ContainerHook{defaultContainerHook},
+			PreStops:       []ContainerHook{defaultContainerHook},
+			PostStops:      []ContainerHook{defaultContainerHook},
+			PreTerminates:  []ContainerHook{defaultContainerHook},
+			PostTerminates: []ContainerHook{defaultContainerHook},
+		},
+	}
+	userDefinedHooks := []ContainerLifecycleHooks{
+		{
+			PreBuilds:      []ContainerRequestHook{userContainerRequestHook},
+			PostBuilds:     []ContainerRequestHook{userContainerRequestHook},
+			PreCreates:     []ContainerRequestHook{userContainerRequestHook},
+			PostCreates:    []ContainerHook{userContainerHook},
+			PreStarts:      []ContainerHook{userContainerHook},
+			PostStarts:     []ContainerHook{userContainerHook},
+			PostReadies:    []ContainerHook{userContainerHook},
+			PreStops:       []ContainerHook{userContainerHook},
+			PostStops:      []ContainerHook{userContainerHook},
+			PreTerminates:  []ContainerHook{userContainerHook},
+			PostTerminates: []ContainerHook{userContainerHook},
+		},
+	}
+	expects := ContainerLifecycleHooks{
+		PreBuilds:      []ContainerRequestHook{defaultContainerRequestHook, userContainerRequestHook},
+		PostBuilds:     []ContainerRequestHook{userContainerRequestHook, defaultContainerRequestHook},
+		PreCreates:     []ContainerRequestHook{defaultContainerRequestHook, userContainerRequestHook},
+		PostCreates:    []ContainerHook{userContainerHook, defaultContainerHook},
+		PreStarts:      []ContainerHook{defaultContainerHook, userContainerHook},
+		PostStarts:     []ContainerHook{userContainerHook, defaultContainerHook},
+		PostReadies:    []ContainerHook{userContainerHook, defaultContainerHook},
+		PreStops:       []ContainerHook{defaultContainerHook, userContainerHook},
+		PostStops:      []ContainerHook{userContainerHook, defaultContainerHook},
+		PreTerminates:  []ContainerHook{defaultContainerHook, userContainerHook},
+		PostTerminates: []ContainerHook{userContainerHook, defaultContainerHook},
+	}
+
+	ctx := context.Background()
+	ctxVal := reflect.ValueOf(ctx)
+	var req ContainerRequest
+	reqVal := reflect.ValueOf(req)
+	container := &DockerContainer{}
+	containerVal := reflect.ValueOf(container)
+
+	got := combineContainerHooks(defaultHooks, userDefinedHooks)
+
+	// Compare for equal. This can't be done with deep equals as functions
+	// are not comparable so we us the unique value stored in funcID when
+	// the function is called to determine if they are the same.
+	gotVal := reflect.ValueOf(got)
+	gotType := reflect.TypeOf(got)
+	expectedVal := reflect.ValueOf(expects)
+	for i := 0; i < gotVal.NumField(); i++ {
+		fieldName := gotType.Field(i).Name
+		gotField := gotVal.Field(i)
+		expectedField := expectedVal.Field(i)
+		require.Equalf(t, expectedField.Len(), 2, "field %q not setup len expected %d got %d", fieldName, 2, expectedField.Len()) //nolint:testifylint // False positive.
+		require.Equalf(t, expectedField.Len(), gotField.Len(), "field %q len expected %d got %d", fieldName, gotField.Len(), expectedField.Len())
+		for j := 0; j < gotField.Len(); j++ {
+			gotIndex := gotField.Index(j)
+			expectedIndex := expectedField.Index(j)
+			var gotID string
+			if gotIndex.Type().Name() == "ContainerRequestHook" {
+				gotIndex.Call([]reflect.Value{ctxVal, reqVal})
+				gotID = funcID
+				expectedIndex.Call([]reflect.Value{ctxVal, reqVal})
+			} else {
+				gotIndex.Call([]reflect.Value{ctxVal, containerVal})
+				gotID = funcID
+				expectedIndex.Call([]reflect.Value{ctxVal, containerVal})
+			}
+			require.Equalf(t, funcID, gotID, "field %q[%d] func expected %s got %s", fieldName, j, funcID, gotID)
+		}
+	}
 }

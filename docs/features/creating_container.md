@@ -106,6 +106,8 @@ _Testcontainers for Go_ allows you to define your own lifecycle hooks for better
 
 You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an array of `testcontainers.ContainerLifecycleHooks`. The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecycle hooks, each of them backed by an array of functions representing the hooks:
 
+* `PreBuilds` - hooks that are executed before the container is built
+* `PostBuilds` - hooks that are executed after the container is built
 * `PreCreates` - hooks that are executed before the container is created
 * `PostCreates` - hooks that are executed after the container is created
 * `PreStarts` - hooks that are executed before the container is started
