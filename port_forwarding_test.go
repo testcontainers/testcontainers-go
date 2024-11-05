@@ -22,68 +22,68 @@ const (
 )
 
 func TestExposeHostPorts(t *testing.T) {
-	t.Run("single-port", func(t *testing.T) {
-		testExposeHostPorts(t, 1, false, false)
-	})
-
-	t.Run("single-port-network", func(t *testing.T) {
-		testExposeHostPorts(t, 1, true, false)
-	})
-
-	t.Run("single-port-host-access", func(t *testing.T) {
-		testExposeHostPorts(t, 1, false, true)
-	})
-
-	t.Run("single-port-network-host-access", func(t *testing.T) {
-		testExposeHostPorts(t, 1, true, true)
-	})
-
-	t.Run("multi-port", func(t *testing.T) {
-		testExposeHostPorts(t, 3, false, false)
-	})
-
-	t.Run("multi-port-network", func(t *testing.T) {
-		testExposeHostPorts(t, 3, true, false)
-	})
-
-	t.Run("multi-port-host-access", func(t *testing.T) {
-		testExposeHostPorts(t, 3, false, true)
-	})
-
-	t.Run("multi-port-network-host-access", func(t *testing.T) {
-		testExposeHostPorts(t, 3, true, true)
-	})
-}
-
-func testExposeHostPorts(t *testing.T, numberOfPorts int, hasNetwork, hasHostAccess bool) {
-	t.Helper()
-
-	freePorts := make([]int, numberOfPorts)
-	for i := range freePorts {
+	hostPorts := make([]int, 3)
+	for i := range hostPorts {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, expectedResponse)
 		}))
-		freePorts[i] = server.Listener.Addr().(*net.TCPAddr).Port
+		hostPorts[i] = server.Listener.Addr().(*net.TCPAddr).Port
 		t.Cleanup(func() {
 			server.Close()
 		})
 	}
 
+	singlePort := hostPorts[0:1]
+
+	t.Run("single-port", func(t *testing.T) {
+		testExposeHostPorts(t, singlePort, false, false)
+	})
+
+	t.Run("single-port-network", func(t *testing.T) {
+		testExposeHostPorts(t, singlePort, true, false)
+	})
+
+	t.Run("single-port-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, singlePort, false, true)
+	})
+
+	t.Run("single-port-network-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, singlePort, true, true)
+	})
+
+	t.Run("multi-port", func(t *testing.T) {
+		testExposeHostPorts(t, hostPorts, false, false)
+	})
+
+	t.Run("multi-port-network", func(t *testing.T) {
+		testExposeHostPorts(t, hostPorts, true, false)
+	})
+
+	t.Run("multi-port-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, hostPorts, false, true)
+	})
+
+	t.Run("multi-port-network-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, hostPorts, true, true)
+	})
+}
+
+func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAccess bool) {
+	t.Helper()
+
 	req := testcontainers.GenericContainerRequest{
 		// hostAccessPorts {
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:           "alpine:3.17",
-			HostAccessPorts: freePorts,
+			HostAccessPorts: hostPorts,
 			Cmd:             []string{"top"},
 		},
 		// }
 		Started: true,
 	}
 
-	var nw *testcontainers.DockerNetwork
 	if hasNetwork {
-		var err error
-		nw, err = network.New(context.Background())
+		nw, err := network.New(context.Background())
 		require.NoError(t, err)
 		testcontainers.CleanupNetwork(t, nw)
 
@@ -91,12 +91,8 @@ func testExposeHostPorts(t *testing.T, numberOfPorts int, hasNetwork, hasHostAcc
 		req.NetworkAliases = map[string][]string{nw.Name: {"myalpine"}}
 	}
 
-	ctx := context.Background()
-	if !hasHostAccess {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
-		defer cancel()
-	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	c, err := testcontainers.GenericContainer(ctx, req)
 	testcontainers.CleanupContainer(t, c)
@@ -105,13 +101,14 @@ func testExposeHostPorts(t *testing.T, numberOfPorts int, hasNetwork, hasHostAcc
 	if hasHostAccess {
 		// Create a container that has host access, which will
 		// automatically forward the port to the container.
-		assertContainerHasHostAccess(t, c, freePorts...)
-	} else {
-		// Force cancellation because of timeout.
-		time.Sleep(4 * time.Second)
-
-		assertContainerHasNoHostAccess(t, c, freePorts...)
+		assertContainerHasHostAccess(t, c, hostPorts...)
+		return
 	}
+
+	// Force cancellation.
+	cancel()
+
+	assertContainerHasNoHostAccess(t, c, hostPorts...)
 }
 
 func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, string) {
