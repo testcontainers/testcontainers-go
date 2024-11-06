@@ -99,10 +99,26 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 		return sshdConnectHook, fmt.Errorf("new sshd container: %w", err)
 	}
 
-	// IP in the first network of the container
-	sshdIP, err := sshdContainer.ContainerIP(context.Background())
+	// IP in the first network of the container.
+	inspect, err := sshdContainer.Inspect(ctx)
 	if err != nil {
-		return sshdConnectHook, fmt.Errorf("get sshd container IP: %w", err)
+		return sshdConnectHook, fmt.Errorf("inspect sshd container: %w", err)
+	}
+
+	// TODO: remove once we have docker context support via #2810
+	sshdIP := inspect.NetworkSettings.IPAddress
+	if sshdIP == "" {
+		single := len(inspect.NetworkSettings.Networks) == 1
+		for name, network := range inspect.NetworkSettings.Networks {
+			if name == sshdFirstNetwork || single {
+				sshdIP = network.IPAddress
+				break
+			}
+		}
+	}
+
+	if sshdIP == "" {
+		return sshdConnectHook, errors.New("sshd container IP not found")
 	}
 
 	if req.HostConfigModifier == nil {
@@ -166,11 +182,10 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 func newSshdContainer(ctx context.Context, opts ...ContainerCustomizer) (*sshdContainer, error) {
 	req := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:           sshdImage,
-			HostAccessPorts: []int{}, // empty list because it does not need any port
-			ExposedPorts:    []string{sshPort},
-			Env:             map[string]string{"PASSWORD": sshPassword},
-			WaitingFor:      wait.ForListeningPort(sshPort),
+			Image:        sshdImage,
+			ExposedPorts: []string{sshPort},
+			Env:          map[string]string{"PASSWORD": sshPassword},
+			WaitingFor:   wait.ForListeningPort(sshPort),
 		},
 		Started: true,
 	}

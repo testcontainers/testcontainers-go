@@ -22,101 +22,104 @@ const (
 )
 
 func TestExposeHostPorts(t *testing.T) {
-	tests := []struct {
-		name          string
-		numberOfPorts int
-		hasNetwork    bool
-		hasHostAccess bool
-	}{
-		{
-			name:          "single port",
-			numberOfPorts: 1,
-			hasHostAccess: true,
-		},
-		{
-			name:          "single port using a network",
-			numberOfPorts: 1,
-			hasNetwork:    true,
-			hasHostAccess: true,
-		},
-		{
-			name:          "multiple ports",
-			numberOfPorts: 3,
-			hasHostAccess: true,
-		},
-		{
-			name:          "single port with cancellation",
-			numberOfPorts: 1,
-			hasHostAccess: false,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(tt *testing.T) {
-			freePorts := make([]int, tc.numberOfPorts)
-			for i := range freePorts {
-				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					fmt.Fprint(w, expectedResponse)
-				}))
-				freePorts[i] = server.Listener.Addr().(*net.TCPAddr).Port
-				tt.Cleanup(func() {
-					server.Close()
-				})
-			}
-
-			req := testcontainers.GenericContainerRequest{
-				// hostAccessPorts {
-				ContainerRequest: testcontainers.ContainerRequest{
-					Image:           "alpine:3.17",
-					HostAccessPorts: freePorts,
-					Cmd:             []string{"top"},
-				},
-				// }
-				Started: true,
-			}
-
-			var nw *testcontainers.DockerNetwork
-			if tc.hasNetwork {
-				var err error
-				nw, err = network.New(context.Background())
-				require.NoError(tt, err)
-				testcontainers.CleanupNetwork(t, nw)
-
-				req.Networks = []string{nw.Name}
-				req.NetworkAliases = map[string][]string{nw.Name: {"myalpine"}}
-			}
-
-			ctx := context.Background()
-			if !tc.hasHostAccess {
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
-				defer cancel()
-			}
-
-			c, err := testcontainers.GenericContainer(ctx, req)
-			testcontainers.CleanupContainer(t, c)
-			require.NoError(tt, err)
-
-			if tc.hasHostAccess {
-				// create a container that has host access, which will
-				// automatically forward the port to the container
-				assertContainerHasHostAccess(tt, c, freePorts...)
-			} else {
-				// force cancellation because of timeout
-				time.Sleep(11 * time.Second)
-
-				assertContainerHasNoHostAccess(tt, c, freePorts...)
-			}
+	hostPorts := make([]int, 3)
+	for i := range hostPorts {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, expectedResponse)
+		}))
+		hostPorts[i] = server.Listener.Addr().(*net.TCPAddr).Port
+		t.Cleanup(func() {
+			server.Close()
 		})
 	}
+
+	singlePort := hostPorts[0:1]
+
+	t.Run("single-port", func(t *testing.T) {
+		testExposeHostPorts(t, singlePort, false, false)
+	})
+
+	t.Run("single-port-network", func(t *testing.T) {
+		testExposeHostPorts(t, singlePort, true, false)
+	})
+
+	t.Run("single-port-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, singlePort, false, true)
+	})
+
+	t.Run("single-port-network-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, singlePort, true, true)
+	})
+
+	t.Run("multi-port", func(t *testing.T) {
+		testExposeHostPorts(t, hostPorts, false, false)
+	})
+
+	t.Run("multi-port-network", func(t *testing.T) {
+		testExposeHostPorts(t, hostPorts, true, false)
+	})
+
+	t.Run("multi-port-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, hostPorts, false, true)
+	})
+
+	t.Run("multi-port-network-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, hostPorts, true, true)
+	})
+}
+
+func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAccess bool) {
+	t.Helper()
+
+	req := testcontainers.GenericContainerRequest{
+		// hostAccessPorts {
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:           "alpine:3.17",
+			HostAccessPorts: hostPorts,
+			Cmd:             []string{"top"},
+		},
+		// }
+		Started: true,
+	}
+
+	if hasNetwork {
+		nw, err := network.New(context.Background())
+		require.NoError(t, err)
+		testcontainers.CleanupNetwork(t, nw)
+
+		req.Networks = []string{nw.Name}
+		req.NetworkAliases = map[string][]string{nw.Name: {"myalpine"}}
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	c, err := testcontainers.GenericContainer(ctx, req)
+	testcontainers.CleanupContainer(t, c)
+	require.NoError(t, err)
+
+	if hasHostAccess {
+		// Create a container that has host access, which will
+		// automatically forward the port to the container.
+		assertContainerHasHostAccess(t, c, hostPorts...)
+		return
+	}
+
+	// Force cancellation.
+	cancel()
+
+	assertContainerHasNoHostAccess(t, c, hostPorts...)
 }
 
 func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, string) {
 	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
 	// wgetHostInternal {
 	code, reader, err := c.Exec(
-		context.Background(),
-		[]string{"wget", "-q", "-O", "-", fmt.Sprintf("http://%s:%d", testcontainers.HostInternal, port)},
+		ctx,
+		[]string{"wget", "-q", "-O", "-", "-T", "2", fmt.Sprintf("http://%s:%d", testcontainers.HostInternal, port)},
 		tcexec.Multiplexed(),
 	)
 	// }
