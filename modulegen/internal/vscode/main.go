@@ -1,24 +1,19 @@
 package vscode
 
 import (
+	"fmt"
+
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/module"
 )
 
 type Generator struct{}
 
 // Generate updates the workspace for vscode
 func (g Generator) Generate(ctx context.Context) error {
-	rootCtx, err := context.GetRootContext()
+	examples, modules, err := module.ListExamplesAndModules(ctx)
 	if err != nil {
-		return err
-	}
-	examples, err := rootCtx.GetExamples()
-	if err != nil {
-		return err
-	}
-	modules, err := rootCtx.GetModules()
-	if err != nil {
-		return err
+		return fmt.Errorf("list examples and modules: %w", err)
 	}
 
 	return writeConfig(ctx.VSCodeWorkspaceFile(), newConfig(examples, modules))

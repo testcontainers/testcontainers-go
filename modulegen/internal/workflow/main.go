@@ -1,10 +1,12 @@
 package workflow
 
 import (
+	"fmt"
 	"path/filepath"
 	"text/template"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/module"
 	internal_template "github.com/testcontainers/testcontainers-go/modulegen/internal/template"
 )
 
@@ -12,17 +14,9 @@ type Generator struct{}
 
 // Generate updates github ci workflow
 func (g Generator) Generate(ctx context.Context) error {
-	rootCtx, err := context.GetRootContext()
+	examples, modules, err := module.ListExamplesAndModules(ctx)
 	if err != nil {
-		return err
-	}
-	examples, err := rootCtx.GetExamples()
-	if err != nil {
-		return err
-	}
-	modules, err := rootCtx.GetModules()
-	if err != nil {
-		return err
+		return fmt.Errorf("list examples and modules: %w", err)
 	}
 
 	githubWorkflowsDir := ctx.GithubWorkflowsDir()

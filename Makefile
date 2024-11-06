@@ -11,6 +11,7 @@ test-examples:
 .PHONY: tidy-all
 tidy-all:
 	$(MAKE) tidy
+	$(MAKE) -C modulegen tidy
 	$(MAKE) -C examples tidy-examples
 	$(MAKE) -C modules tidy-modules
 

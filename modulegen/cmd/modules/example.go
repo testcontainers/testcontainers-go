@@ -1,9 +1,12 @@
 package modules
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 )
 
 var newExampleCmd = &cobra.Command{
@@ -11,7 +14,19 @@ var newExampleCmd = &cobra.Command{
 	Short: "Create a new Example",
 	Long:  "Create a new Example",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return internal.Generate(tcModuleVar, false)
+		ctx, err := context.GetRootContext()
+		if err != nil {
+			return fmt.Errorf("get root dir: %w", err)
+		}
+
+		tcModule := context.TestcontainersModule{
+			Image:     tcModuleVar.Image,
+			IsModule:  false,
+			Name:      tcModuleVar.Name,
+			TitleName: tcModuleVar.NameTitle,
+		}
+
+		return internal.Generate(ctx, tcModule)
 	},
 }
 

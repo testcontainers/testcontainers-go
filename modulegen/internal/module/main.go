@@ -19,7 +19,7 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 	moduleDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
 	err := generateGoFiles(moduleDir, tcModule)
 	if err != nil {
-		return err
+		return fmt.Errorf("generate go files: %w", err)
 	}
 	return generateGoModFile(moduleDir, tcModule)
 }
@@ -43,8 +43,7 @@ func generateGoModFile(moduleDir string, tcModule context.TestcontainersModule) 
 	}
 	mkdocsConfig, err := mkdocs.ReadConfig(rootCtx.MkdocsConfigFile())
 	if err != nil {
-		fmt.Printf(">> could not read MkDocs config: %v\n", err)
-		return err
+		return fmt.Errorf("read mkdocs config: %w", err)
 	}
 	rootGoModFile := rootCtx.GoModFile()
 	directory := "/" + tcModule.ParentDir() + "/" + tcModule.Lower()
@@ -64,13 +63,13 @@ func GenerateFiles(moduleDir string, moduleName string, funcMap template.FuncMap
 		name := tmpl + ".tmpl"
 		t, err := template.New(name).Funcs(funcMap).ParseFiles(filepath.Join("_template", name))
 		if err != nil {
-			return err
+			return fmt.Errorf("parse %s template: %w", name, err)
 		}
 		moduleFilePath := filepath.Join(moduleDir, strings.ReplaceAll(tmpl, "module", moduleName))
 
 		err = internal_template.GenerateFile(t, moduleFilePath, name, tcModule)
 		if err != nil {
-			return err
+			return fmt.Errorf("generate %s file: %w", moduleFilePath, err)
 		}
 	}
 	return nil

@@ -1,6 +1,7 @@
 package make
 
 import (
+	"fmt"
 	"path/filepath"
 	"text/template"
 
@@ -18,26 +19,13 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 	name := "Makefile.tmpl"
 	t, err := template.New(name).ParseFiles(filepath.Join("_template", name))
 	if err != nil {
-		return err
+		return fmt.Errorf("parse makefile template: %w", err)
 	}
 
 	moduleFilePath := filepath.Join(moduleDir, "Makefile")
-
-	return internal_template.GenerateFile(t, moduleFilePath, name, moduleName)
-}
-
-// creates Makefile for example
-func GenerateMakefile(ctx context.Context, tcModule context.TestcontainersModule) error {
-	moduleDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
-	moduleName := tcModule.Lower()
-
-	name := "Makefile.tmpl"
-	t, err := template.New(name).ParseFiles(filepath.Join("_template", name))
-	if err != nil {
-		return err
+	if err := internal_template.GenerateFile(t, moduleFilePath, name, moduleName); err != nil {
+		return fmt.Errorf("generate file: %w", err)
 	}
 
-	moduleFilePath := filepath.Join(moduleDir, "Makefile")
-
-	return internal_template.GenerateFile(t, moduleFilePath, name, moduleName)
+	return nil
 }

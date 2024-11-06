@@ -1,17 +1,18 @@
 package template
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"text/template"
 )
 
-// Generate writes the template to the writer, interpolating the data.
-func Generate(t *template.Template, wr io.Writer, name string, data any) error {
+// generate writes the template to the writer, interpolating the data.
+func generate(t *template.Template, wr io.Writer, name string, data any) error {
 	err := t.ExecuteTemplate(wr, name, data)
 	if err != nil {
-		return err
+		return fmt.Errorf("execute template: %w", err)
 	}
 	return nil
 }
@@ -30,5 +31,5 @@ func GenerateFile(t *template.Template, exampleFilePath string, name string, dat
 	}
 	defer exampleFile.Close()
 
-	return Generate(t, exampleFile, name, data)
+	return generate(t, exampleFile, name, data)
 }
