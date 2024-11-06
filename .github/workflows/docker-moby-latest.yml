@@ -11,10 +11,6 @@ jobs:
       matrix:
         rootless-docker: [true, false]
         containerd-integration: [true, false]
-        # ghaction-setup-docker doesn't work with rootless yet
-        exclude:
-          - rootless-docker: true
-            containerd-integration: true
 
     name: "Core tests using latest moby/moby"
     runs-on: 'ubuntu-latest'
@@ -24,14 +20,6 @@ jobs:
         run: |
           echo "docker_install_type=${{ matrix.rootless-docker == true && 'Rootless' || 'Rootful' }}" >> "$GITHUB_ENV"
           echo "containerd_integration=${{ matrix.containerd-integration == true && 'containerd' || '' }}" >> "$GITHUB_ENV"
-
-      - name: Setup rootless Docker
-        if: ${{ matrix.rootless-docker }}
-        uses: ScribeMD/rootless-docker@6bd157a512c2fafa4e0243a8aa87d964eb890886  # v0.2.2
-
-      - name: Remove Docker root socket
-        if: ${{ matrix.rootless-docker }}
-        run: sudo rm -rf /var/run/docker.sock
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
@@ -50,10 +38,10 @@ jobs:
         run: go mod tidy
 
       - name: Install Nightly Docker
-        # rootless not supported with ghaction-setup-docker yet
-        if: ${{ matrix.rootless-docker == false }}
         uses: crazy-max/ghaction-setup-docker@master
         with:
+          rootless: ${{ matrix.rootless-docker }}
+          version: type=image,tag=master
           daemon-config: |
             {
               "debug": true,
@@ -61,11 +49,6 @@ jobs:
                 "containerd-snapshotter": ${{ matrix.containerd-integration }}
               }
             }
-          version: type=image,tag=master
-
-      - name: Install test Docker
-        if: ${{ matrix.rootless-docker }}
-        run: curl https://get.docker.com | CHANNEL=test sh
 
       - name: go test
         timeout-minutes: 30
