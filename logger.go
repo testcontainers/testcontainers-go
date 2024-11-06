@@ -19,7 +19,7 @@ func init() {
 		// Parse manually because testing.Verbose() panics unless flag.Parse() has done.
 		for _, arg := range os.Args {
 			if strings.EqualFold(arg, "-test.v=true") || strings.EqualFold(arg, "-v") {
-				return
+				Logger = log.New(os.Stderr, "", log.LstdFlags)
 			}
 		}
 	}
