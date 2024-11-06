@@ -135,7 +135,7 @@ jobs:
         module: [nginx, toxiproxy]
     uses: ./.github/workflows/ci-lint.yml
     with:
-      project-directory: "examples/${{ matrix.module }}"
+      project-directory: "modules/${{ matrix.module }}"
 
   test-examples:
     needs: lint-examples
