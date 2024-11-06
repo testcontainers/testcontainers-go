@@ -26,6 +26,7 @@ const (
 	region    = "us-east-1"
 )
 
+// awsResolverV2 {
 type resolverV2 struct {
 	// you could inject additional application context here as well
 }
@@ -36,6 +37,8 @@ func (*resolverV2) ResolveEndpoint(ctx context.Context, params s3.EndpointParame
 	// delegate back to the default v2 resolver otherwise
 	return s3.NewDefaultEndpointResolverV2().ResolveEndpoint(ctx, params)
 }
+
+// }
 
 // awsSDKClientV2 {
 func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Client, error) {
