@@ -71,6 +71,28 @@ jobs:
             cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
         id: go
 
+      - name: golangci-lint
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
+        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
+        with:
+          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
+          version: v1.61.0
+          # Optional: working directory, useful for monorepos
+          working-directory: ${{ inputs.project-directory }}
+          # Optional: golangci-lint command line arguments.
+          args: --verbose
+          # Optional: if set to true then the all caching functionality will be complete disabled,
+          #           takes precedence over all other caching options.
+          skip-cache: true
+
+      - name: generate
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
+        working-directory: ./${{ inputs.project-directory }}
+        shell: bash
+        run: |
+          make generate
+          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
+
       - name: modVerify
         working-directory: ./${{ inputs.project-directory }}
         run: go mod verify
