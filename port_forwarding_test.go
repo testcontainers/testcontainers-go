@@ -28,9 +28,7 @@ func TestExposeHostPorts(t *testing.T) {
 			fmt.Fprint(w, expectedResponse)
 		}))
 		hostPorts[i] = server.Listener.Addr().(*net.TCPAddr).Port
-		t.Cleanup(func() {
-			server.Close()
-		})
+		t.Cleanup(server.Close)
 	}
 
 	singlePort := hostPorts[0:1]
@@ -71,11 +69,18 @@ func TestExposeHostPorts(t *testing.T) {
 func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAccess bool) {
 	t.Helper()
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	var hostAccessPorts []int
+	if hasHostAccess {
+		hostAccessPorts = hostPorts
+	}
 	req := testcontainers.GenericContainerRequest{
 		// hostAccessPorts {
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:           "alpine:3.17",
-			HostAccessPorts: hostPorts,
+			HostAccessPorts: hostAccessPorts,
 			Cmd:             []string{"top"},
 		},
 		// }
@@ -83,7 +88,7 @@ func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAcces
 	}
 
 	if hasNetwork {
-		nw, err := network.New(context.Background())
+		nw, err := network.New(ctx)
 		require.NoError(t, err)
 		testcontainers.CleanupNetwork(t, nw)
 
@@ -91,26 +96,22 @@ func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAcces
 		req.NetworkAliases = map[string][]string{nw.Name: {"myalpine"}}
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	c, err := testcontainers.GenericContainer(ctx, req)
 	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
 
 	if hasHostAccess {
-		// Create a container that has host access, which will
-		// automatically forward the port to the container.
-		assertContainerHasHostAccess(t, c, hostPorts...)
+		// Verify that the container can access the host ports.
+		containerHasHostAccess(t, c, hostPorts...)
 		return
 	}
 
-	// Force cancellation.
-	cancel()
-
-	assertContainerHasNoHostAccess(t, c, hostPorts...)
+	// Verify that the container cannot access the host ports.
+	containerHasNoHostAccess(t, c, hostPorts...)
 }
 
+// httpRequest sends an HTTP request from the container to the host port via
+// [testcontainers.HostInternal] address.
 func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, string) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -132,21 +133,24 @@ func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, strin
 	return code, string(bs)
 }
 
-func assertContainerHasHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
+// containerHasHostAccess verifies that the container can access the host ports
+// via [testcontainers.HostInternal] address.
+func containerHasHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
 	t.Helper()
 	for _, port := range ports {
 		code, response := httpRequest(t, c, port)
-		require.Zerof(t, code, "expected status code [%d] but got [%d]", 0, code)
-
-		require.Equalf(t, expectedResponse, response, "expected [%s] but got [%s]", expectedResponse, response)
+		require.Zero(t, code)
+		require.Equal(t, expectedResponse, response)
 	}
 }
 
-func assertContainerHasNoHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
+// containerHasNoHostAccess verifies that the container cannot access the host ports
+// via [testcontainers.HostInternal] address.
+func containerHasNoHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
 	t.Helper()
 	for _, port := range ports {
-		_, response := httpRequest(t, c, port)
-
-		require.NotEqualf(t, expectedResponse, response, "expected not to get [%s] but got [%s]", expectedResponse, response)
+		code, response := httpRequest(t, c, port)
+		require.NotZero(t, code)
+		require.Contains(t, response, "bad address")
 	}
 }
