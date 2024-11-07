@@ -83,7 +83,7 @@ jobs:
 
   test-go-project:
     needs: lint-go-project
-    name: "test: ${{ inputs.project-directory }}/${{ runner.name }}/${{ inputs.go-version }}"
+    name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }}"
     # Modulegen can run the tests on all platforms
     runs-on: [ "${{ inputs.project-directory == 'modulegen' && 'ubuntu-latest, macos-latest, windows-latest' || 'ubuntu-latest' }}" ]
     continue-on-error: ${{ !inputs.fail-fast }}
