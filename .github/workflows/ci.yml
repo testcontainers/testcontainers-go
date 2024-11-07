@@ -69,6 +69,8 @@ jobs:
   # The job below is a copy of the job above, but with ryuk disabled.
   # It's executed in the first stage to avoid concurrency issues.
   test-reaper-off:
+    # the core module is identified by the empty string (the root path)
+    if: ${{ contains(needs.detect-modules.outputs.modules, '') }}
     needs: lint
     name: "Test with reaper off"
     strategy:
@@ -85,6 +87,8 @@ jobs:
   # The job below is a copy of the job above, but with Docker rootless.
   # It's executed in the first stage to avoid concurrency issues.
   test-rootless-docker:
+    # the core module is identified by the empty string (the root path)
+    if: ${{ contains(needs.detect-modules.outputs.modules, '') }}
     needs: lint
     name: "Test with Rootless Docker"
     strategy:
