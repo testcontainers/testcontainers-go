@@ -88,20 +88,6 @@ jobs:
       rootless-docker: true
       ryuk-disabled: false
 
-  test-module-generator:
-    strategy:
-      matrix:
-        go-version: [1.22.x, 1.x]
-        platform: [ubuntu-latest, macos-latest, windows-latest]
-    uses: ./.github/workflows/ci-test-go.yml
-    with:
-      go-version: ${{ matrix.go-version }}
-      fail-fast: true
-      platform: ${{ matrix.platform }}
-      project-directory: "modulegen"
-      rootless-docker: false
-      ryuk-disabled: false
-
   sonarcloud:
     permissions:
       contents: read  # for actions/checkout to fetch code
