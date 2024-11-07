@@ -62,7 +62,7 @@ jobs:
     with:
       go-version: ${{ matrix.go-version }}
       fail-fast: true
-      platform: ${{ matrix.module == 'modulegen' && 'ubuntu-latest, macos-latest, windows-latest') || 'ubuntu-latest' }}
+      platform: ${{ matrix.module == 'modulegen' && 'ubuntu-latest, macos-latest, windows-latest' || 'ubuntu-latest' }}
       project-directory: "${{ matrix.module }}"
       rootless-docker: false
       ryuk-disabled: false
