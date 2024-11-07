@@ -103,6 +103,7 @@ For further reference on the SDK v1, please check out the AWS docs [here](https:
 ### Using the AWS SDK v2
 
 <!--codeinclude-->
+[EndpointResolver](../../modules/localstack/v2/s3_test.go) inside_block:awsResolverV2
 [AWS SDK v2](../../modules/localstack/v2/s3_test.go) inside_block:awsSDKClientV2
 <!--/codeinclude-->
 
