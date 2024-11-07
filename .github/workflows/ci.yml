@@ -55,7 +55,6 @@ jobs:
 
   test:
     needs:
-      - detect-modules
       - lint
     strategy:
       matrix:
@@ -72,6 +71,7 @@ jobs:
   # The job below is a copy of the job above, but with ryuk disabled.
   # It's executed in the first stage to avoid concurrency issues.
   test-reaper-off:
+    needs: lint
     name: "Test with reaper off"
     strategy:
       matrix:
@@ -87,6 +87,7 @@ jobs:
   # The job below is a copy of the job above, but with Docker rootless.
   # It's executed in the first stage to avoid concurrency issues.
   test-rootless-docker:
+    needs: lint
     name: "Test with Rootless Docker"
     strategy:
       matrix:
