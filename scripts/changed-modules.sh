@@ -2,33 +2,65 @@
 
 # How to test this script, run it with the required environment variables:
 # 1. A Go file from the core module is modified:
-#    ALL_CHANGED_FILES="examples/nginx/go.mod examples/foo/a.txt a/b/c/d/a.go" ALL_AVAILABLE_MODULES="$(./scripts/list-modules.sh)" ./scripts/changed-modules.sh
+#    ALL_CHANGED_FILES="examples/nginx/go.mod examples/foo/a.txt a/b/c/d/a.go" ./scripts/changed-modules.sh
 #    The output should be: all modules.
 #
 # 2. A file from a module in the modules dir is modified:
-#    ALL_CHANGED_FILES="modules/nginx/go.mod" ALL_AVAILABLE_MODULES="$(./scripts/list-modules.sh)" ./scripts/changed-modules.sh
+#    ALL_CHANGED_FILES="modules/nginx/go.mod" ./scripts/changed-modules.sh
 #    The output should be: just the modules/nginx module.
 #
 # 3. A file from a module in the examples dir is modified:
-#    ALL_CHANGED_FILES="examples/nginx/go.mod" ALL_AVAILABLE_MODULES="$(./scripts/list-modules.sh)" ./scripts/changed-modules.sh
+#    ALL_CHANGED_FILES="examples/nginx/go.mod" ./scripts/changed-modules.sh
 #    The output should be: just the examples/nginx module.
 #
 # 4. A Go file from the modulegen dir is modified:
-#    ALL_CHANGED_FILES="modulegen/a.go" ALL_AVAILABLE_MODULES="$(./scripts/list-modules.sh)" ./scripts/changed-modules.sh
+#    ALL_CHANGED_FILES="modulegen/a.go" ./scripts/changed-modules.sh
 #    The output should be: just the modulegen module.
 #
 # 5. A non-Go file from the core dir is modified:
-#    ALL_CHANGED_FILES="docs/README.md" ALL_AVAILABLE_MODULES="$(./scripts/list-modules.sh)" ./scripts/changed-modules.sh
+#    ALL_CHANGED_FILES="docs/README.md" ./scripts/changed-modules.sh
 #    The output should be: all modules.
 #
 # 6. A file from two modules in the modules dir are modified:
-#    ALL_CHANGED_FILES="modules/nginx/go.mod modules/localstack/go.mod" ALL_AVAILABLE_MODULES="$(./scripts/list-modules.sh)" ./scripts/changed-modules.sh
+#    ALL_CHANGED_FILES="modules/nginx/go.mod modules/localstack/go.mod" ./scripts/changed-modules.sh
 #    The output should be: the modules/nginx and modules/localstack modules.
 #
 # There is room for improvement in this script. For example, it could detect if the changes applied to the docs or the .github dirs, and then do not include any module in the list.
 # But then we would need to verify the CI scripts to ensure that the job receives the correct modules to build.
 
-# Get the list of modified files
+# ROOT_DIR is the root directory of the repository.
+readonly ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+# modules is an array that will store the paths of all the modules in the repository.
+modules=()
+
+# Find all go.mod files in the repository, building a list of all the available modules and examples.
+for modFile in $(find "${ROOT_DIR}/modules" -name "go.mod" -not -path "${ROOT_DIR}/**/testdata/*"); do
+    modules+=("\"modules/$(basename "$(dirname "${modFile}")")\"")
+done
+for modFile in $(find "${ROOT_DIR}/examples" -name "go.mod" -not -path "${ROOT_DIR}/**/testdata/*"); do
+    modules+=("\"examples/$(basename "$(dirname "${modFile}")")\"")
+done
+
+# sort modules array
+IFS=$'\n' modules=($(sort <<<"${modules[*]}"))
+unset IFS
+
+# capture the root module
+readonly rootModule="\"\""
+
+# capture the modulegen module
+readonly modulegenModule="\"modulegen\""
+
+# merge all modules and examples into a single array
+allModules=(${rootModule} ${modulegenModule} "${modules[@]}")
+
+# sort allModules array
+IFS=$'\n' allModules=($(sort <<<"${allModules[*]}"))
+unset IFS
+
+# Get the list of modified files, retrieved from the environment variable ALL_CHANGED_FILES.
+# On CI, this value will come from a Github Action retrieving the list of modified files from the pull request.
 readonly modified_files=${ALL_CHANGED_FILES[@]}
 
 # Initialize variables
@@ -54,7 +86,7 @@ for file in $modified_files; do
         modified_modules+=("\"modulegen\"")
     else
         # a file from the core module is modified, so include all modules in the list and stop the loop
-        modified_modules=${ALL_AVAILABLE_MODULES[@]}
+        modified_modules=${allModules[@]}
         break
     fi
 done
