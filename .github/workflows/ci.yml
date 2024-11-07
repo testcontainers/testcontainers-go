@@ -50,7 +50,7 @@ jobs:
       # if the module is the core, testcontainers-go run the tests on linux and macos
       # for modulegen, run in all the platforms
       # else, a module or an example, run on linux
-      platform: ${{ endsWith(matrix.module, 'testcontainers-go') && "ubuntu-latest, macos-latest" || (endsWith(matrix.module, 'modulegen') && "ubuntu-latest, macos-latest, windows-latest" || "ubuntu-latest") }}
+      platform: ${{ endsWith(matrix.module, 'testcontainers-go') && 'ubuntu-latest, macos-latest' || (endsWith(matrix.module, 'modulegen') && 'ubuntu-latest, macos-latest, windows-latest' || 'ubuntu-latest') }}
       project-directory: "${{ matrix.module }}"
       rootless-docker: false
       ryuk-disabled: false
