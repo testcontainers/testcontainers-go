@@ -1,5 +1,5 @@
 name: Run tests for a Go project
-run-name: "${{ inputs.project-directory }} ${{ inputs.go-version }} ${{ inputs.platform }}"
+run-name: "${{ inputs.project-directory }} ${{ inputs.go-version }}"
 
 on:
   workflow_call:
@@ -8,10 +8,6 @@ on:
         required: true
         type: string
         description: "The version of Go to use for the test."
-      platform:
-        required: true
-        type: string
-        description: "The platform to run the test on."
       fail-fast:
         required: false
         type: boolean
@@ -39,9 +35,57 @@ permissions:
   # pull-requests: read
 
 jobs:
+  lint-go-project:
+    name: "lint: ${{ inputs.project-directory }}/${{ inputs.go-version }}"
+    runs-on: 'ubuntu-latest'
+    continue-on-error: false
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+
+      - name: Set up Go
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
+        with:
+            go-version: '${{ inputs.go-version }}'
+            cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
+        id: go
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
+        with:
+          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
+          version: v1.61.0
+          # Optional: working directory, useful for monorepos
+          working-directory: ${{ inputs.project-directory }}
+          # Optional: golangci-lint command line arguments.
+          args: --verbose
+          # Optional: if set to true then the all caching functionality will be complete disabled,
+          #           takes precedence over all other caching options.
+          skip-cache: true
+
+      - name: generate
+        working-directory: ./${{ inputs.project-directory }}
+        shell: bash
+        run: |
+          make generate
+          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
+    
+      - name: modVerify
+        working-directory: ./${{ inputs.project-directory }}
+        run: go mod verify
+
+      - name: modTidy
+        working-directory: ./${{ inputs.project-directory }}
+        shell: bash
+        run: |
+          make tidy
+          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
+
   test-go-project:
-    name: "${{ inputs.project-directory }}/${{ inputs.platform }}/${{ inputs.go-version }}"
-    runs-on: [ "${{ inputs.platform }}" ]
+    needs: lint-go-project
+    name: "test: ${{ inputs.project-directory }}/${{ runner.name }}/${{ inputs.go-version }}"
+    # Modulegen can run the tests on all platforms
+    runs-on: [ "${{ inputs.project-directory == 'modulegen' && 'ubuntu-latest, macos-latest, windows-latest' || 'ubuntu-latest' }}" ]
     continue-on-error: ${{ !inputs.fail-fast }}
     env:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
@@ -66,53 +110,17 @@ jobs:
             cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
         id: go
 
-      - name: golangci-lint
-        if: ${{ inputs.platform == 'ubuntu-latest' }}
-        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
-        with:
-          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
-          version: v1.61.0
-          # Optional: working directory, useful for monorepos
-          working-directory: ${{ inputs.project-directory }}
-          # Optional: golangci-lint command line arguments.
-          args: --verbose
-          # Optional: if set to true then the all caching functionality will be complete disabled,
-          #           takes precedence over all other caching options.
-          skip-cache: true
-
-      - name: generate
-        if: ${{ inputs.platform == 'ubuntu-latest' }}
-        working-directory: ./${{ inputs.project-directory }}
-        shell: bash
-        run: |
-          make generate
-          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
-
-      - name: modVerify
-        working-directory: ./${{ inputs.project-directory }}
-        run: go mod verify
-
-      - name: modTidy
-        if: ${{ inputs.platform == 'ubuntu-latest' }}
-        working-directory: ./${{ inputs.project-directory }}
-        shell: bash
-        run: |
-          make tidy
-          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
-
       - name: ensure compilation
         working-directory: ./${{ inputs.project-directory }}
         run: go build
 
       - name: go test
-        # for the core, only run the tests on Linux
-        if: ${{ (endsWith(inputs.project-directory, 'testcontainers-go') && matrix.platform != 'ubuntu-latest') && false || true }}
         working-directory: ./${{ inputs.project-directory }}
         timeout-minutes: 30
         run: make test-unit
 
       - name: Upload SonarCloud files
-        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && matrix.platform == 'ubuntu-latest' && !inputs.rootless-docker }}
+        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && runner.name == 'ubuntu-latest' && !inputs.rootless-docker }}
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
         with:
           name: sonarcloud
