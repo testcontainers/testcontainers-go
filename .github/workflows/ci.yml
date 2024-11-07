@@ -81,6 +81,7 @@ jobs:
     with:
       go-version: ${{ matrix.go-version }}
       fail-fast: false
+      platform: 'ubuntu-latest'
       project-directory: "."
       rootless-docker: false
       ryuk-disabled: true
@@ -100,6 +101,7 @@ jobs:
     with:
       go-version: ${{ matrix.go-version }}
       fail-fast: false
+      platform: 'ubuntu-latest'
       project-directory: "."
       rootless-docker: true
       ryuk-disabled: false
