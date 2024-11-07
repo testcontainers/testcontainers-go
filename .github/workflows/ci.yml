@@ -39,8 +39,24 @@ jobs:
       - name: Print out the modules to be used
         run: echo "${{ steps.set-modified-modules.outputs.modules }}[*]"
 
-  test:
+  lint:
     needs: detect-modules
+    strategy:
+      matrix:
+        go-version: [1.22.x, 1.x]
+        module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+    uses: ./.github/workflows/ci-lint-go.yml
+    with:
+      go-version: ${{ matrix.go-version }}
+      fail-fast: true
+      project-directory: "${{ matrix.module }}"
+      rootless-docker: false
+      ryuk-disabled: false
+
+  test:
+    needs:
+      - detect-modules
+      - lint
     strategy:
       matrix:
         go-version: [1.22.x, 1.x]
