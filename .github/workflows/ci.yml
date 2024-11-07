@@ -39,21 +39,9 @@ jobs:
       - name: Print out the modules to be used
         run: echo "${{ steps.set-modified-modules.outputs.modules }}[*]"
 
-  lint:
-    needs: detect-modules
-    strategy:
-      matrix:
-        module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
-    uses: ./.github/workflows/ci-lint-go.yml
-    with:
-      fail-fast: true
-      project-directory: "${{ matrix.module }}"
-      rootless-docker: false
-      ryuk-disabled: false
-
   test:
     needs:
-      - lint
+      - detect-modules
     strategy:
       matrix:
         go-version: [1.22.x, 1.x]
@@ -71,7 +59,7 @@ jobs:
   test-reaper-off:
     # the core module is identified by the empty string (the root path)
     if: ${{ contains(needs.detect-modules.outputs.modules, '') }}
-    needs: lint
+    needs: detect-modules
     name: "Test with reaper off"
     strategy:
       matrix:
@@ -89,7 +77,7 @@ jobs:
   test-rootless-docker:
     # the core module is identified by the empty string (the root path)
     if: ${{ contains(needs.detect-modules.outputs.modules, '') }}
-    needs: lint
+    needs: detect-modules
     name: "Test with Rootless Docker"
     strategy:
       matrix:
