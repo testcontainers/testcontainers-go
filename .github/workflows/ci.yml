@@ -55,7 +55,7 @@ jobs:
     with:
       go-version: ${{ matrix.go-version }}
       fail-fast: true
-      platform: ${{ endsWith(matrix.module, 'testcontainers-go') && env.CORE_PLATFORMS || (endsWith(matrix.module, 'modulegen') && env.MODULEGEN_PLATFORMS || env.MODULES_PLATFORMS) }}
+      platform: ${{ endsWith(matrix.module, 'testcontainers-go') && $CORE_PLATFORMS || (endsWith(matrix.module, 'modulegen') && $MODULEGEN_PLATFORMS || $MODULES_PLATFORMS) }}
       project-directory: "${{ matrix.module }}"
       rootless-docker: false
       ryuk-disabled: false
