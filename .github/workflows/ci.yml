@@ -43,7 +43,6 @@ jobs:
     needs: detect-modules
     strategy:
       matrix:
-        go-version: [1.22.x, 1.x]
         module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
     uses: ./.github/workflows/ci-lint-go.yml
     with:
