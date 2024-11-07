@@ -32,7 +32,7 @@ jobs:
       - id: set-modified-modules
         name: Set all modified modules
         env:
-          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+          ALL_CHANGED_FILES: "${{ steps.changed-files.outputs.all_changed_files }}"
           ALL_AVAILABLE_MODULES: ${{ steps.set-available-modules.outputs.modules }}
         run: echo "modules=$(./scripts/changed-modules.sh)" >> $GITHUB_OUTPUT
 
