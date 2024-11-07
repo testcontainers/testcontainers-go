@@ -38,4 +38,4 @@ IFS=$'\n' modified_modules=($(sort <<<"${modified_modules[*]}"))
 # each module will be enclosed in double quotes
 # each module will be separated by a comma
 # the entire list will be enclosed in square brackets
-echo "["$(IFS=,; echo "${allModules[*]}" | sed 's/ /,/g')"]"
+echo "$(IFS=,; echo "${allModules[*]}" | sed 's/ /,/g')"
