@@ -12,14 +12,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
   cancel-in-progress: true
 
-env:
-  # if the module is the core, testcontainers-go run the tests on linux and macos
-  # for modulegen, run in all the platforms
-  # else, a module or an example, run on linux
-  CORE_PLATFORMS: "ubuntu-latest, macos-latest"
-  MODULEGEN_PLATFORMS: "ubuntu-latest, macos-latest, windows-latest"
-  MODULES_PLATFORMS: "ubuntu-latest"
-
 jobs:
   detect-modules:
     runs-on: ubuntu-latest
@@ -55,7 +47,10 @@ jobs:
     with:
       go-version: ${{ matrix.go-version }}
       fail-fast: true
-      platform: ${{ endsWith(matrix.module, 'testcontainers-go') && $CORE_PLATFORMS || (endsWith(matrix.module, 'modulegen') && $MODULEGEN_PLATFORMS || $MODULES_PLATFORMS) }}
+      # if the module is the core, testcontainers-go run the tests on linux and macos
+      # for modulegen, run in all the platforms
+      # else, a module or an example, run on linux
+      platform: ${{ endsWith(matrix.module, 'testcontainers-go') && "ubuntu-latest, macos-latest" || (endsWith(matrix.module, 'modulegen') && "ubuntu-latest, macos-latest, windows-latest" || "ubuntu-latest") }}
       project-directory: "${{ matrix.module }}"
       rootless-docker: false
       ryuk-disabled: false
