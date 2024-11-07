@@ -42,8 +42,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
         with:
-            go-version-file: '${{ inputs.project-directory }}/go.mod'
-            cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
+            go-version-file: "${{ inputs.project-directory == '' && '.' || inputs.project-directory }}/go.mod"
+            cache-dependency-path: "${{ inputs.project-directory == '' && '.' || inputs.project-directory }}/go.sum"
         id: go
 
       - name: golangci-lint
