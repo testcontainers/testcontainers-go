@@ -36,6 +36,9 @@ jobs:
           ALL_AVAILABLE_MODULES: ${{ steps.set-available-modules.outputs.modules }}
         run: echo "modules=$(./scripts/changed-modules.sh)" >> $GITHUB_OUTPUT
 
+      - name: Print out the modules to be used
+        run: echo "${{ steps.set-modified-modules.outputs.modules }}[*]"
+
   test:
     needs: detect-modules
     strategy:
