@@ -16,7 +16,7 @@ on:
       platform:
         required: true
         type: string
-        default: "."
+        default: "[ubuntu-latest]"
         description: "The platform where to run the project."
       project-directory:
         required: true
