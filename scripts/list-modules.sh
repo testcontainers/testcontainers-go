@@ -29,10 +29,10 @@ rootModule="\"\""
 modulegenModule="\"modulegen\""
 
 # merge all modules and examples into a single array
-readonly allModules=("${rootModule}" "${modulegenModule}" "${modules[@]}")
+allModules=("${rootModule}" "${modulegenModule}" "${modules[@]}")
 
-# sort modified_modules array
-IFS=$'\n' modified_modules=($(sort <<<"${modified_modules[*]}"))
+# sort allModules array
+IFS=$'\n' allModules=($(sort <<<"${allModules[*]}"))
 
 # print all modules with this format:
 # each module will be enclosed in double quotes
