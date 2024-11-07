@@ -43,7 +43,7 @@ jobs:
   test-go-project:
     name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }}"
     # Modulegen can run the tests on all platforms
-    runs-on: ${{ inputs.platform }}
+    runs-on: ${{ fromJson(inputs.platform) }}
     continue-on-error: ${{ !inputs.fail-fast }}
     env:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
