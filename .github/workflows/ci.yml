@@ -44,9 +44,12 @@ jobs:
     strategy:
       matrix:
         module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
-    runs-on: 'ubuntu-latest'
-    steps:
-      - run: echo "hello lint"
+    uses: ./.github/workflows/ci-lint-go.yml
+    with:
+      fail-fast: true
+      project-directory: "${{ matrix.module }}"
+      rootless-docker: false
+      ryuk-disabled: false
 
   test:
     needs:
